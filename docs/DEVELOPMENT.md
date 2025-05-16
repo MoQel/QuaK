@@ -10,6 +10,9 @@ We use default naming conventions, e.g.,
 - feature branches use the prefix `feature/`.
 - bugfix branches use the prefix `bugfix/`.
 
+## Commit messages
+You can add #[issue number] in your commit message to make it reference the issue (optional).
+
 ## Pull requests
 Please use the defined pull requests template.  
 Please review the pull request by yourself before assigning another reviewer.  
