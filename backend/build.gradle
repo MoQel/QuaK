@@ -26,9 +26,13 @@ dependencies {
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
-tasks.register('cleanFrontendFiles', Exec) {
-	workingDir = layout.projectDirectory.toString()
-	commandLine 'rm', '-rf', 'src/main/resources/static/*'
+tasks.register('cleanFrontendFiles', Delete) {
+	group = 'QuaK'
+	def stat = layout.projectDirectory.dir("src/main/resources/static").asFile
+	def toDelete = stat.listFiles().findAll() { file ->
+		!file.name.startsWith(".git")
+	}
+	delete toDelete
 }
 
 tasks.register('npmRunBuild', Exec) {
@@ -36,15 +40,21 @@ tasks.register('npmRunBuild', Exec) {
 	commandLine 'npm', 'run', 'build'
 }
 
-tasks.register('getFrontend', Exec) {
-	doFirst {
-		cleanFrontendFiles
-		npmRunBuild
-	}
-	group = 'Bundle'
+tasks.register('getFrontend', Copy) {
+	dependsOn npmRunBuild
+	dependsOn cleanFrontendFiles
+	dependsOn processResources
+	group = 'QuaK'
 	description = 'Copy frontend into static-folder inside the backend'
-	workingDir = layout.projectDirectory.dir("../frontend/dist").toString()
-	commandLine 'cp', '-r', '.', layout.projectDirectory.dir('src/main/resources/static')
+	from(layout.projectDirectory.dir("../frontend/dist"))
+	into(layout.projectDirectory.dir('src/main/resources/static'))
+}
+
+
+tasks.named("bootRun") {
+	group = 'QuaK'
+	dependsOn getFrontend
+	mainClass = 'edu.kit.quak.QuaKApplication'
 }
 
 
