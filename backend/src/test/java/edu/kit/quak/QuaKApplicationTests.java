@@ -1,10 +1,10 @@
-package edu.kit.qide;
+package edu.kit.quak;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class QideApplicationTests {
+class QuaKApplicationTests {
 
 	@Test
 	void contextLoads() {

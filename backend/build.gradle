@@ -21,9 +21,32 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-jdbc'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
+	runtimeOnly 'com.h2database:h2'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
+
+tasks.register('cleanFrontendFiles', Exec) {
+	workingDir = layout.projectDirectory.toString()
+	commandLine 'rm', '-rf', 'src/main/resources/static/*'
+}
+
+tasks.register('npmRunBuild', Exec) {
+	workingDir = layout.projectDirectory.dir("../frontend").toString()
+	commandLine 'npm', 'run', 'build'
+}
+
+tasks.register('getFrontend', Exec) {
+	doFirst {
+		cleanFrontendFiles
+		npmRunBuild
+	}
+	group = 'Bundle'
+	description = 'Copy frontend into static-folder inside the backend'
+	workingDir = layout.projectDirectory.dir("../frontend/dist").toString()
+	commandLine 'cp', '-r', '.', layout.projectDirectory.dir('src/main/resources/static')
+}
+
 
 tasks.named('test') {
 	useJUnitPlatform()
