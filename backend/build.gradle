@@ -50,17 +50,18 @@ tasks.named("npm_run_build") {
 tasks.register('getFrontend', Copy) {
 	dependsOn npm_run_build
 	dependsOn cleanFrontendFiles
-	dependsOn processResources
 	group = 'QuaK'
 	description = 'Copy frontend into static-folder inside the backend'
 	from(layout.projectDirectory.dir("../frontend/dist"))
 	into(layout.projectDirectory.dir('src/main/resources/static'))
 }
 
+tasks.named("processResources") {
+	dependsOn getFrontend
+}
 
 tasks.named("bootRun") {
 	group = 'QuaK'
-	dependsOn getFrontend
 	mainClass = 'edu.kit.quak.QuaKApplication'
 }
 
