@@ -1,0 +1,145 @@
+openapi: 3.1.0
+info:
+  title: QuaK
+  description: The specification of the REST-API handling communication between frontend and backend
+  version: 0.1.0
+servers:
+  - url: 'https://localhost:8080'
+tags:
+  - name: projects
+    description: Querying information about projects
+  - name: files
+    description: Querying information about files
+paths:
+  /projects/:
+    get:
+      tags:
+        - projects
+      summary: Retrieve an overview of existing projects
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      format: int32
+                    name:
+                      type: string
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /project/{pId}:
+    get:
+      tags:
+        - projects
+      summary: Retrieve information about the given project
+      parameters:
+        - name: pId
+          in: path
+          description: ID of the project to query
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        400:
+          description: invalid ID
+        default:
+          description: Unexpected error
+  /file/{fId}:
+    get:
+      tags:
+        - files
+      summary: Retrieves meta-information about a file
+      parameters:
+        - name: fId
+          in: path
+          description: ID of the file to query
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileMeta'
+        400:
+          description: invalid ID
+        default:
+          description: Unexpected error
+
+  /file/{fId}/content:
+    get:
+      tags:
+        - files
+      summary: Retrieves the content of a file
+      parameters:
+        - name: fId
+          in: path
+          description: ID of the file to query
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        200:
+          description: The file's content
+          content:
+            text/*:
+              example: "Hello World"
+            application/json:
+              example:
+                key: value
+
+components:
+  schemas:
+    Error:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+
+    Project:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+          example: 42
+        name:
+          type: string
+          example: "Hello World"
+        files:
+          type: array
+          items:
+            $ref: '#/components/schemas/FileMeta'
+
+    FileMeta:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+        name:
+          type: string
