@@ -2,6 +2,7 @@ plugins {
 	id 'java'
 	id 'org.springframework.boot' version '3.4.5'
 	id 'io.spring.dependency-management' version '1.1.7'
+	id "com.github.node-gradle.node" version "7.1.0"
 }
 
 group = 'edu.kit'
@@ -35,13 +36,19 @@ tasks.register('cleanFrontendFiles', Delete) {
 	delete toDelete
 }
 
-tasks.register('npmRunBuild', Exec) {
-	workingDir = layout.projectDirectory.dir("../frontend").toString()
-	commandLine 'npm', 'run', 'build'
+tasks.named("npm_install") {
+	workingDir = layout.projectDirectory.file("../frontend")
+}
+
+tasks.named("npm_run_build") {
+	dependsOn {
+		tasks.named("npm_install")
+	}
+	workingDir = layout.projectDirectory.file("../frontend")
 }
 
 tasks.register('getFrontend', Copy) {
-	dependsOn npmRunBuild
+	dependsOn npm_run_build
 	dependsOn cleanFrontendFiles
 	dependsOn processResources
 	group = 'QuaK'
