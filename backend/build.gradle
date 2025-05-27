@@ -1,0 +1,63 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.4.5'
+	id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'edu.kit'
+version = '0.0.1-SNAPSHOT'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	runtimeOnly 'com.h2database:h2'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.register('cleanFrontendFiles', Delete) {
+	group = 'QuaK'
+	def stat = layout.projectDirectory.dir("src/main/resources/static").asFile
+	def toDelete = stat.listFiles().findAll() { file ->
+		!file.name.startsWith(".git")
+	}
+	delete toDelete
+}
+
+tasks.register('npmRunBuild', Exec) {
+	workingDir = layout.projectDirectory.dir("../frontend").toString()
+	commandLine 'npm', 'run', 'build'
+}
+
+tasks.register('getFrontend', Copy) {
+	dependsOn npmRunBuild
+	dependsOn cleanFrontendFiles
+	dependsOn processResources
+	group = 'QuaK'
+	description = 'Copy frontend into static-folder inside the backend'
+	from(layout.projectDirectory.dir("../frontend/dist"))
+	into(layout.projectDirectory.dir('src/main/resources/static'))
+}
+
+
+tasks.named("bootRun") {
+	group = 'QuaK'
+	dependsOn getFrontend
+	mainClass = 'edu.kit.quak.QuaKApplication'
+}
+
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
