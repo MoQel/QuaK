@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: QuaK
   description: The specification of the REST-API handling communication between frontend and backend
-  version: 0.2.0
+  version: 0.3.0
 servers:
   - url: 'https://localhost:8080'
 tags:
@@ -104,7 +104,11 @@ paths:
             type: integer
             format: int32
       requestBody:
-        description: Parts of the project that should be changed
+        description: >
+          Parts of the project that should be changed
+          Note that not all properties can be changed. These are for example:
+            * The `id` field
+            * The `contents`-array. Use the appropriate API-endpoints to change these.
         content:
           application/json:
             schema:
@@ -152,11 +156,18 @@ paths:
         - files
       summary: Create a new file
       description: This will only create the metadata of the file. The content is initialized as empty, similar to the touch command in unix.
+      parameters:
+        - name: parent_id
+          in: header
+          required: true
+          description: ID of the parent-container
+          schema:
+            type: integer
+            format: int32
       requestBody:
-        description: Initial metadata
+        description: Initial metadata. The field id will be ignored
         content:
           application/json:
-            description: The field id will be ignored
             schema:
               $ref: '#/components/schemas/FileMeta'
       responses:
@@ -229,7 +240,11 @@ paths:
             type: integer
             format: int32
       requestBody:
-        description: Parts of a file's metadata tha should be changed
+        description: >
+          Parts of a file's metadata tha should be changed.
+          Things that can not be changed are for example:
+            * The `id` field
+            * The `contents`-array. Use the appropriate API-endpoints to change these.
         content:
           application/json:
             schema:
@@ -324,13 +339,22 @@ components:
         name:
           type: string
           example: "Hello World"
-        files:
+        contents:
           type: array
           items:
             $ref: '#/components/schemas/FileMeta'
 
     FileMeta:
+      oneOf:
+        - $ref: '#/components/schemas/File'
+        - $ref: '#/components/schemas/Directory'
+      discriminator:
+        propertyName: type
+
+    AbstractFile:
       type: object
+      required:
+        - type
       properties:
         id:
           type: integer
@@ -340,11 +364,28 @@ components:
         type:
           type: string
           enum: [file, directory]
-        lastAccess:
-          type: integer
-          format: int64
-          description: Unix-Timestamp
-        createdOn:
-          type: integer
-          format: int64
-          description: Unix-Timestamp
+
+
+    File:
+      allOf:
+        - $ref: '#/components/schemas/AbstractFile'
+        - type: object
+          properties:
+            lastAccess:
+              type: integer
+              format: int64
+              description: Unix-Timestamp
+            createdOn:
+              type: integer
+              format: int64
+              description: Unix-Timestamp
+
+    Directory:
+      allOf:
+        - $ref: '#/components/schemas/AbstractFile'
+        - type: object
+          properties:
+            contents:
+              type: array
+              items:
+                $ref: '#/components/schemas/FileMeta'
