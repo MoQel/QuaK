@@ -18,6 +18,13 @@ repositories {
 	mavenCentral()
 }
 
+// Add the commandline-flag "-PdownloadNode" to a task to download node
+// via the gradle-node-plugin.
+// Use the task removeCustomNode to delete the downloaded version
+if (project.hasProperty("downloadNode")) {
+	node.download = true
+}
+
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-jdbc'
@@ -47,6 +54,12 @@ tasks.named("npm_run_build") {
 	workingDir = layout.projectDirectory.file("../frontend")
 }
 
+tasks.register("removeCustomNode", Delete) {
+	delete node.workDir
+	delete node.npmWorkDir
+	delete node.yarnWorkDir
+}
+
 tasks.register('getFrontend', Copy) {
 	dependsOn npm_run_build
 	dependsOn cleanFrontendFiles
@@ -64,7 +77,6 @@ tasks.named("bootRun") {
 	group = 'QuaK'
 	mainClass = 'edu.kit.quak.QuaKApplication'
 }
-
 
 tasks.named('test') {
 	useJUnitPlatform()
