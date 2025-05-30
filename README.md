@@ -9,6 +9,10 @@ To run the QuaK editor, run
 `gradlew bootRun`
 inside the `backend` directory
 
+### Dependencies
+The project requires the following dependencies to be installed on the system:
+* Java >= Version 21
+
 ### Automatic installation of nodejs
 Through the use of the [gradle-node-plugin], the project can automatically install `npm`.
 If you want to use this feature, run any gradle-command with the flag `-PdownloadNode` (i.e. `gradlew :bootRun -PdownloadNode`).
