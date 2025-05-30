@@ -1,0 +1,23 @@
+// Add the commandline-flag "-PdownloadNode" to a task to download node
+// via the gradle-node-plugin.
+// Use the task removeCustomNode to delete the downloaded version
+if (project.hasProperty("downloadNode")) {
+    node.download = true
+}
+
+tasks.register("removeCustomNode", Delete) {
+    delete node.workDir
+    delete node.npmWorkDir
+    delete node.yarnWorkDir
+}
+
+tasks.named("npm_install") {
+    workingDir = layout.projectDirectory.file("../frontend")
+}
+
+tasks.named("npm_run_build") {
+    dependsOn {
+        tasks.named("npm_install")
+    }
+    workingDir = layout.projectDirectory.file("../frontend")
+}

@@ -4,6 +4,7 @@ plugins {
 	id 'io.spring.dependency-management' version '1.1.7'
 	id "com.github.node-gradle.node" version "7.1.0"
 }
+apply from: 'node.gradle'
 
 group = 'edu.kit'
 version = '0.0.1-SNAPSHOT'
@@ -16,13 +17,6 @@ java {
 
 repositories {
 	mavenCentral()
-}
-
-// Add the commandline-flag "-PdownloadNode" to a task to download node
-// via the gradle-node-plugin.
-// Use the task removeCustomNode to delete the downloaded version
-if (project.hasProperty("downloadNode")) {
-	node.download = true
 }
 
 dependencies {
@@ -41,23 +35,6 @@ tasks.register('cleanFrontendFiles', Delete) {
 		!file.name.startsWith(".git")
 	}
 	delete toDelete
-}
-
-tasks.named("npm_install") {
-	workingDir = layout.projectDirectory.file("../frontend")
-}
-
-tasks.named("npm_run_build") {
-	dependsOn {
-		tasks.named("npm_install")
-	}
-	workingDir = layout.projectDirectory.file("../frontend")
-}
-
-tasks.register("removeCustomNode", Delete) {
-	delete node.workDir
-	delete node.npmWorkDir
-	delete node.yarnWorkDir
 }
 
 tasks.register('getFrontend', Copy) {
