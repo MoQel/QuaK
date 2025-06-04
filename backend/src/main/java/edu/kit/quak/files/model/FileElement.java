@@ -12,6 +12,7 @@ import java.util.Objects;
 public abstract class FileElement implements Savable {
     @JsonProperty
     @Id
+    @CustomIdGenerator.FileElementId
     private String id;
 
     @JsonProperty
