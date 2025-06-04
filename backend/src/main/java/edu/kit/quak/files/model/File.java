@@ -1,7 +1,6 @@
 package edu.kit.quak.files.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.gson.JsonElement;
 import jakarta.persistence.Entity;
 
 import java.time.Instant;
@@ -33,10 +32,5 @@ public class File extends FileElement {
     @Override
     public Type getType() {
         return Type.FILE;
-    }
-
-    @Override
-    public JsonElement toJson() {
-        return null;
     }
 }

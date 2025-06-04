@@ -1,7 +1,6 @@
 package edu.kit.quak.files.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.gson.JsonElement;
 import edu.kit.quak.Savable;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -19,8 +18,6 @@ public abstract class FileElement implements Savable {
     private String name;
 
     public abstract Type getType();
-
-    public abstract JsonElement toJson();
 
     /// Constructor used by the persistence implementation
     protected FileElement() { }

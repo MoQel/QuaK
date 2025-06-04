@@ -1,6 +1,5 @@
 package edu.kit.quak.files.model;
 
-import com.google.gson.JsonElement;
 import jakarta.persistence.Entity;
 import jakarta.persistence.OneToMany;
 
@@ -11,9 +10,10 @@ import java.util.Set;
 import static edu.kit.quak.files.model.Type.DIRECTORY;
 
 @Entity
-public class Directory extends FileElement {
-    @OneToMany(mappedBy = "id")
-    private Set<FileElement> contents;
+public class Directory extends FileElement implements FileElementContainer {
+
+    @OneToMany
+    private Set<FileElement> contents = new HashSet<>();
 
     public boolean removeElement(FileElement element) {
         return contents.remove(element);
@@ -25,11 +25,6 @@ public class Directory extends FileElement {
 
     public Collection<FileElement> getContent() {
         return new HashSet<>(contents);
-    }
-
-    @Override
-    public JsonElement toJson() {
-        return null;
     }
 
     @Override
