@@ -6,7 +6,7 @@ import jakarta.persistence.Entity;
 import java.time.Instant;
 
 @Entity
-public class File extends FileElement {
+public class File extends FileElement<File> {
 
     @JsonProperty
     private Instant lastAccess;
@@ -27,6 +27,11 @@ public class File extends FileElement {
 
     public void setLastAccess(Instant lastAccess) {
         this.lastAccess = lastAccess;
+    }
+
+    @Override
+    public File patch(File modified) {
+        return null;
     }
 
     @Override

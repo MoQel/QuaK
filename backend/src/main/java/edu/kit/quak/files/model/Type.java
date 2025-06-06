@@ -5,21 +5,27 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Optional;
 
 public enum Type {
-    DIRECTORY("directory", 'd'),
-    FILE("file", 'f'),
-    PROJECT("project", 'p');
+    DIRECTORY("directory", 'd', Directory.class),
+    FILE("file", 'f', File.class),
+    PROJECT("project", 'p', /* TODO */ Directory.class);
 
     @JsonValue
     public final String name;
     private final char prefix;
+    private final Class<? extends FileElement<?>> relatedClass;
 
-    Type(String name, char prefix) {
+    Type(String name, char prefix, Class<? extends FileElement<?>> relatedClass) {
         this.name = name;
         this.prefix = prefix;
+        this.relatedClass = relatedClass;
     }
 
     public String toId(Object id) {
         return prefix + id.toString();
+    }
+
+    public Class<? extends FileElement<?>> getRelatedClass() {
+        return relatedClass;
     }
 
     @Override

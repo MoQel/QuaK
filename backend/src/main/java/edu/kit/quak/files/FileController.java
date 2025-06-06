@@ -46,7 +46,7 @@ public class FileController {
 
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping("/")
-    public FileElement newFile(@RequestBody Map<String, Object> obj, @RequestHeader(name = "parent_id") String parent) {
+    public FileElement<?> newFile(@RequestBody Map<String, Object> obj, @RequestHeader(name = "parent_id") String parent) {
         Type element = Type.getTypeByName(obj.getOrDefault("type", "").toString()).orElseThrow(
                 () -> new ResponseStatusException(BAD_REQUEST, "Type of object could not be determined")
         );
@@ -97,7 +97,7 @@ public class FileController {
     }
 
     @GetMapping("/{fId}")
-    public FileElement retrieveFile(@PathVariable String fId) {
+    public FileElement<?> retrieveFile(@PathVariable String fId) {
         Optional<File> file = files.findById(fId);
         if (file.isPresent())
             return file.get();
@@ -119,15 +119,34 @@ public class FileController {
     }
 
     @PatchMapping("/{fId}")
-    public void patchFileElement(@PathVariable String fId, @RequestBody File file) {
-        if (!fId.equals(file.getId()))
-            throw new ResponseStatusException(BAD_REQUEST, "File-ID cannot be changed");
-
-        File original = files.findById(file.getId())
-                .orElseThrow(
-                        () -> new ResponseStatusException(BAD_REQUEST, "Given file-ID does not resolve to an existing file.")
-                );
-        //TODO: Patch file
-        files.save(original);
+    public void patchFileElement(@PathVariable String fId, @RequestBody Map<String, Object> body) {
+        Type element = Type.getTypeByName(body.getOrDefault("type", "").toString()).orElseThrow(
+                () -> new ResponseStatusException(BAD_REQUEST, "Type of object could not be determined")
+        );
+        switch (element) {
+            case FILE -> {
+                File modified = objectMapper.convertValue(body, File.class);
+                if (!fId.equals(modified.getId()))
+                    throw new ResponseStatusException(BAD_REQUEST, "File-ID cannot be changed");
+                File original = files.findById(modified.getId())
+                        .orElseThrow(
+                                () -> new ResponseStatusException(BAD_REQUEST, "Given file-ID does not resolve to an existing file.")
+                        );
+                original.patch(modified);
+                files.save(original);
+            }
+            case DIRECTORY -> {
+                Directory modified = objectMapper.convertValue(body, Directory.class);
+                if (!fId.equals(modified.getId()))
+                    throw new ResponseStatusException(BAD_REQUEST, "Directory-ID cannot be changed");
+                Directory original = directories.findById(modified.getId())
+                        .orElseThrow(
+                                () -> new ResponseStatusException(BAD_REQUEST, "Given file-ID does not resolve to an existing file.")
+                        );
+                original.patch(modified);
+                directories.save(original);
+            }
+            default -> throw new ResponseStatusException(BAD_REQUEST, "Given object type can not be modified under this endpoint");
+        }
     }
 }

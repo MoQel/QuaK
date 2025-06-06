@@ -8,7 +8,7 @@ import jakarta.persistence.Id;
 import java.util.Objects;
 
 @Entity
-public abstract class FileElement implements Savable {
+public abstract class FileElement<SELF extends FileElement> implements Savable {
     @JsonProperty
     @Id
     @CustomIdGenerator.FileElementId
@@ -18,6 +18,8 @@ public abstract class FileElement implements Savable {
     private String name;
 
     public abstract Type getType();
+
+    public abstract SELF patch(SELF modified);
 
     /// Constructor used by the persistence implementation
     protected FileElement() { }
