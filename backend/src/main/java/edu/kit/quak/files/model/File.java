@@ -38,8 +38,10 @@ public class File extends FileElement<File> {
     }
 
     @Override
-    public File patch(File modified) {
-        return null;
+    public void patch(File modified) {
+        super.patch(modified);
+        this.createdOn = modified.createdOn;
+        this.lastAccess = modified.lastAccess;
     }
 
     @Override

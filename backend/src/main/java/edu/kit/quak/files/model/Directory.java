@@ -28,8 +28,9 @@ public class Directory extends FileElement<Directory> implements FileElementCont
     }
 
     @Override
-    public Directory patch(Directory modified) {
-        return null;
+    public void patch(Directory modified) {
+        //Can't patch contents, use #removeElement(FileElement<?>)
+        super.patch(modified);
     }
 
     @Override
