@@ -8,6 +8,7 @@ import edu.kit.quak.files.model.FileElementContainer;
 import edu.kit.quak.files.model.Type;
 import edu.kit.quak.files.repository.DirectoryRepository;
 import edu.kit.quak.files.repository.FileRepository;
+import edu.kit.quak.files.repository.ProjectRepository;
 import edu.kit.quak.files.repository.RepoMonad;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.data.repository.CrudRepository;
@@ -36,13 +37,14 @@ public class FileController {
 
     private final FileRepository files;
     private final DirectoryRepository directories;
+    private final ProjectRepository projects;
     private final ObjectMapper objectMapper;
 
-    public FileController(FileRepository files, DirectoryRepository directories, ObjectMapper objectMapper) {
+    public FileController(FileRepository files, DirectoryRepository directories, ProjectRepository projects, ObjectMapper objectMapper) {
         this.files = files;
         this.directories = directories;
         this.objectMapper = objectMapper;
-        directories.save(new Directory());
+        this.projects = projects;
     }
 
 
@@ -83,7 +85,7 @@ public class FileController {
                 return new RepoMonad<>(directories);
             }
             case PROJECT -> {
-                return new RepoMonad<>(/* TODO */ directories);
+                return new RepoMonad<>(projects);
             }
             default -> throw new ResponseStatusException(BAD_REQUEST, "Given id maps to a wrong type");
         }

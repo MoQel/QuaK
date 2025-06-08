@@ -7,7 +7,7 @@ import java.util.Optional;
 public enum Type {
     DIRECTORY("directory", 'd', Directory.class),
     FILE("file", 'f', File.class),
-    PROJECT("project", 'p', /* TODO */ Directory.class);
+    PROJECT("project", 'p', Project.class);
 
     @JsonValue
     public final String name;
