@@ -21,7 +21,7 @@ public class CustomIdGenerator extends SequenceStyleGenerator {
     @Override
     public Object generate(SharedSessionContractImplementor session, Object object) throws HibernateException {
         Object id = super.generate(session, object);
-        if (object instanceof FileElement element) {
+        if (object instanceof FileElement<?> element) {
             id = element.getType().toId(id);
         }
         return id;

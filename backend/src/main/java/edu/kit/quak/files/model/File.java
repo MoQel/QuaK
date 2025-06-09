@@ -1,5 +1,6 @@
 package edu.kit.quak.files.model;
 
+import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.Entity;
@@ -27,6 +28,7 @@ public class File extends FileElement<File> {
     public File(String name) {
         super(name);
         this.createdOn = Instant.now();
+        this.lastAccess = Instant.now();
     }
 
     public void setLastAccessNow() {
@@ -40,8 +42,10 @@ public class File extends FileElement<File> {
     @Override
     public void patch(File modified) {
         super.patch(modified);
-        this.createdOn = modified.createdOn;
-        this.lastAccess = modified.lastAccess;
+        if (modified.createdOn != null && modified.createdOn.isAfter(createdOn))
+            this.createdOn = modified.createdOn;
+        if (modified.lastAccess != null && modified.lastAccess.isAfter(lastAccess))
+            this.lastAccess = modified.lastAccess;
     }
 
     @Override
@@ -63,5 +67,23 @@ public class File extends FileElement<File> {
 
     public void setContent(byte[] content) {
         this.content = content;
+    }
+
+    public Instant getLastAccess() {
+        return lastAccess;
+    }
+
+    public Instant getCreatedOn() {
+        return createdOn;
+    }
+
+    @JsonGetter("lastAccess")
+    private long getLastAccessLong() {
+        return lastAccess.getEpochSecond();
+    }
+
+    @JsonGetter("createdOn")
+    private long getCreatedOnLong() {
+        return createdOn.getEpochSecond();
     }
 }

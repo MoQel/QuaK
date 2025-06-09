@@ -1,5 +1,6 @@
 package edu.kit.quak.files.model;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import jakarta.persistence.Entity;
 import jakarta.persistence.OneToMany;
 
@@ -10,6 +11,9 @@ import java.util.Set;
 import static edu.kit.quak.files.model.Type.PROJECT;
 
 @Entity
+@JsonTypeInfo(
+        use = JsonTypeInfo.Id.NONE
+)
 public class Project extends FileElement<Project> implements FileElementContainer {
 
     @OneToMany

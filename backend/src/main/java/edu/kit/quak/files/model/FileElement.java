@@ -1,6 +1,9 @@
 package edu.kit.quak.files.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
 import edu.kit.quak.Savable;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -8,6 +11,12 @@ import jakarta.persistence.Id;
 import java.util.Objects;
 
 @Entity
+@JsonTypeInfo(
+        use = JsonTypeInfo.Id.NAME,
+        include = JsonTypeInfo.As.PROPERTY,
+        property = "type"
+)
+@JsonTypeIdResolver(FileElementResolver.class)
 public abstract class FileElement<SELF extends FileElement<?>> implements Savable {
     @JsonProperty
     @Id
@@ -17,10 +26,12 @@ public abstract class FileElement<SELF extends FileElement<?>> implements Savabl
     @JsonProperty
     private String name;
 
+    @JsonIgnore
     public abstract Type getType();
 
     public void patch(SELF modified) {
-        this.name = modified.getName();
+        if (modified.getName() != null)
+            this.name = modified.getName();
     }
 
     /// Constructor used by the persistence implementation
@@ -46,7 +57,7 @@ public abstract class FileElement<SELF extends FileElement<?>> implements Savabl
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
-        FileElement element = (FileElement) o;
+        FileElement<?> element = (FileElement<?>) o;
         return Objects.equals(id, element.id) && Objects.equals(name, element.name);
     }
 

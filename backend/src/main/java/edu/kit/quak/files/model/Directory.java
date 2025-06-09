@@ -1,11 +1,14 @@
 package edu.kit.quak.files.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.Entity;
 import jakarta.persistence.OneToMany;
 
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Set;
+import java.util.LinkedList;
+import java.util.List;
 
 import static edu.kit.quak.files.model.Type.DIRECTORY;
 
@@ -13,7 +16,8 @@ import static edu.kit.quak.files.model.Type.DIRECTORY;
 public class Directory extends FileElement<Directory> implements FileElementContainer {
 
     @OneToMany
-    private Set<FileElement<?>> contents = new HashSet<>();
+    @JsonProperty("contents")
+    private List<FileElement<?>> contents = new LinkedList<>();
 
     public boolean removeElement(FileElement<?> element) {
         return contents.remove(element);
@@ -23,6 +27,7 @@ public class Directory extends FileElement<Directory> implements FileElementCont
         return contents.add(element);
     }
 
+    @JsonIgnore
     public Collection<FileElement<?>> getContent() {
         return new HashSet<>(contents);
     }

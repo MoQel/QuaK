@@ -49,4 +49,13 @@ public enum Type {
         }
         return Optional.empty();
     }
+
+    public static Optional<Type> getByRelatedClass(Class<?> clazz) {
+        for (Type value : values()) {
+            if (value.relatedClass.equals(clazz)) {
+                return Optional.of(value);
+            }
+        }
+        return Optional.empty();
+    }
 }

@@ -1,5 +1,6 @@
 package edu.kit.quak.files;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.kit.quak.files.model.Directory;
 import edu.kit.quak.files.model.File;
@@ -13,6 +14,7 @@ import edu.kit.quak.files.repository.RepoMonad;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.http.HttpStatus;
+import org.springframework.util.PathMatcher;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -40,11 +42,12 @@ public class FileController {
     private final ProjectRepository projects;
     private final ObjectMapper objectMapper;
 
-    public FileController(FileRepository files, DirectoryRepository directories, ProjectRepository projects, ObjectMapper objectMapper) {
+    public FileController(FileRepository files, DirectoryRepository directories, ProjectRepository projects, ObjectMapper objectMapper, PathMatcher pathMatcher) {
         this.files = files;
         this.directories = directories;
         this.objectMapper = objectMapper;
         this.projects = projects;
+        this.objectMapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
     }
 
 
@@ -124,34 +127,29 @@ public class FileController {
 
     @PatchMapping("/{fId}")
     public void patchFileElement(@PathVariable String fId, @RequestBody Map<String, Object> body) {
-        Type element = Type.getTypeByName(body.getOrDefault("type", "").toString()).orElseThrow(
-                () -> new ResponseStatusException(BAD_REQUEST, "Type of object could not be determined")
-        );
-        switch (element) {
-            case FILE -> {
-                File modified = objectMapper.convertValue(body, File.class);
-                if (!fId.equals(modified.getId()))
-                    throw new ResponseStatusException(BAD_REQUEST, "File-ID cannot be changed");
-                File original = files.findById(modified.getId())
-                        .orElseThrow(
-                                () -> new ResponseStatusException(BAD_REQUEST, "Given file-ID does not resolve to an existing file.")
-                        );
-                original.patch(modified);
-                files.save(original);
-            }
-            case DIRECTORY -> {
-                Directory modified = objectMapper.convertValue(body, Directory.class);
-                if (!fId.equals(modified.getId()))
-                    throw new ResponseStatusException(BAD_REQUEST, "Directory-ID cannot be changed");
-                Directory original = directories.findById(modified.getId())
-                        .orElseThrow(
-                                () -> new ResponseStatusException(BAD_REQUEST, "Given file-ID does not resolve to an existing file.")
-                        );
-                original.patch(modified);
-                directories.save(original);
-            }
-            default -> throw new ResponseStatusException(BAD_REQUEST, "Given object type can not be modified under this endpoint");
+        Optional<File> file = files.findById(fId);
+        Optional<Directory> directory = directories.findById(fId);
+        if (file.isPresent()) {
+            body.put("type", Type.FILE.name);
+            patchFile(file.get(), body);
+        } else if (directory.isPresent()) {
+            body.put("type", Type.DIRECTORY.name);
+            patchDirectory(directory.get(), body);
+        } else {
+            throw new ResponseStatusException(BAD_REQUEST, "Given ID did not resolve to file or directory");
         }
+    }
+
+    private void patchFile(File original, Map<String, Object> body) {
+        File patch = objectMapper.convertValue(body, File.class);
+        original.patch(patch);
+        files.save(original);
+    }
+
+    private void patchDirectory(Directory original, Map<String, Object> body) {
+        Directory patch = objectMapper.convertValue(body, Directory.class);
+        original.patch(patch);
+        directories.save(original);
     }
 
     @GetMapping("/{fId}/content")
