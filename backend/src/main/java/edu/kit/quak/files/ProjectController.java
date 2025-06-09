@@ -17,6 +17,8 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.LinkedList;
 import java.util.List;
 
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
+
 @RestController
 @RequestMapping("/project")
 public class ProjectController {
@@ -39,7 +41,7 @@ public class ProjectController {
     public Project createProject(@RequestBody Project project) {
         project.setId(null);
         if (!project.getContent().isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "New Projects cannot already contain files");
+            throw new ResponseStatusException(BAD_REQUEST, "New Projects cannot already contain files");
         }
         return projects.save(project);
     }
@@ -47,14 +49,18 @@ public class ProjectController {
     @GetMapping("/{pId}")
     public Project getProject(@PathVariable String pId) {
         return projects.findById(pId).orElseThrow(
-                () -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Given id does not map to a project")
+                () -> new ResponseStatusException(BAD_REQUEST, "Given id does not map to a project")
         );
     }
 
     @PatchMapping("/{pId}")
     public Project patchProject(@PathVariable String pId, @RequestBody Project modified) {
         Project original = getProject(pId);
-        original.patch(modified);
+        try {
+            original.patch(modified);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(BAD_REQUEST, e.getMessage());
+        }
         projects.save(original);
         return original;
     }
@@ -62,13 +68,13 @@ public class ProjectController {
     @DeleteMapping("/{pId}")
     public void deleteProject(@PathVariable String pId) {
         Project project = projects.findById(pId).orElseThrow(
-                () -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Given id does not map to a project")
+                () -> new ResponseStatusException(BAD_REQUEST, "Given id does not map to a project")
         );
 
         if (project.getContent().isEmpty()) {
             projects.delete(project);
         } else {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The referenced project still has content");
+            throw new ResponseStatusException(BAD_REQUEST, "The referenced project still has content");
         }
     }
 }

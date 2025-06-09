@@ -1,5 +1,7 @@
 package edu.kit.quak.files.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import jakarta.persistence.Entity;
 import jakarta.persistence.OneToMany;
@@ -17,6 +19,7 @@ import static edu.kit.quak.files.model.Type.PROJECT;
 public class Project extends FileElement<Project> implements FileElementContainer {
 
     @OneToMany
+    @JsonProperty("contents")
     private Set<FileElement<?>> content = new HashSet<>();
 
     @Override
@@ -25,9 +28,12 @@ public class Project extends FileElement<Project> implements FileElementContaine
     }
 
     @Override
-    public void patch(Project modified) {
-        //Can't patch contents, use #removeElement(FileElement<?>)
-        super.patch(modified);
+    public void patch(Project modified) throws IllegalArgumentException {
+        if (modified.content == null || content.containsAll(modified.content) && modified.content.containsAll(content)) {
+            super.patch(modified);
+        } else {
+            throw new IllegalArgumentException("Cant patch contents. Use the appropriate method");
+        }
     }
 
     @Override
@@ -41,6 +47,7 @@ public class Project extends FileElement<Project> implements FileElementContaine
     }
 
     @Override
+    @JsonIgnore
     public Collection<FileElement<?>> getContent() {
         return new HashSet<>(content);
     }
