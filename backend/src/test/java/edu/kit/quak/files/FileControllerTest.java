@@ -1,5 +1,6 @@
 package edu.kit.quak.files;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import edu.kit.quak.QuaKApplicationTests;
@@ -74,7 +75,7 @@ class FileControllerTest extends QuaKApplicationTests {
                );
     }
 
-    private JsonObject getResource(String name) throws IOException {
+    public static JsonObject getResource(String name) throws IOException {
         return JsonParser.parseString(
                 new ClassPathResource("edu/kit/quak/files/" + name).getContentAsString(StandardCharsets.UTF_8)
         ).getAsJsonObject();
@@ -195,13 +196,15 @@ class FileControllerTest extends QuaKApplicationTests {
     void notPatchingDirectoryContent() throws Exception {
         Directory toPatch = directories.save(new Directory());
         JsonObject patch = new JsonObject();
-        patch.add("contents", getResource("file.json"));
+        JsonArray contents = new JsonArray();
+        contents.add(getResource("file.json"));
+        patch.add("contents", contents);
 
         mockMvc.perform(
                 patch("/file/" + toPatch.getId())
                         .contentType(JSON_CONTENT_TYPE)
                         .content(patch.toString())
-        );
+        ).andExpect(status().isBadRequest());
 
         Directory patched = directories.findById(toPatch.getId()).orElseThrow();
         assertTrue(patched.getContent().isEmpty());

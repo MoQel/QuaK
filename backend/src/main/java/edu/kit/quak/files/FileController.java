@@ -142,13 +142,21 @@ public class FileController {
 
     private void patchFile(File original, Map<String, Object> body) {
         File patch = objectMapper.convertValue(body, File.class);
-        original.patch(patch);
+        try {
+            original.patch(patch);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(BAD_REQUEST, e.getMessage());
+        }
         files.save(original);
     }
 
     private void patchDirectory(Directory original, Map<String, Object> body) {
         Directory patch = objectMapper.convertValue(body, Directory.class);
-        original.patch(patch);
+        try {
+            original.patch(patch);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(BAD_REQUEST, e.getMessage());
+        }
         directories.save(original);
     }
 

@@ -29,7 +29,7 @@ public abstract class FileElement<SELF extends FileElement<?>> implements Savabl
     @JsonIgnore
     public abstract Type getType();
 
-    public void patch(SELF modified) {
+    public void patch(SELF modified) throws IllegalArgumentException {
         if (modified.getName() != null)
             this.name = modified.getName();
     }

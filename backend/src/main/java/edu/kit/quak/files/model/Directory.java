@@ -7,8 +7,7 @@ import jakarta.persistence.OneToMany;
 
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.Set;
 
 import static edu.kit.quak.files.model.Type.DIRECTORY;
 
@@ -17,7 +16,7 @@ public class Directory extends FileElement<Directory> implements FileElementCont
 
     @OneToMany
     @JsonProperty("contents")
-    private List<FileElement<?>> contents = new LinkedList<>();
+    private Set<FileElement<?>> contents = new HashSet<>();
 
     public boolean removeElement(FileElement<?> element) {
         return contents.remove(element);
@@ -33,9 +32,12 @@ public class Directory extends FileElement<Directory> implements FileElementCont
     }
 
     @Override
-    public void patch(Directory modified) {
-        //Can't patch contents, use #removeElement(FileElement<?>)
-        super.patch(modified);
+    public void patch(Directory modified) throws IllegalArgumentException {
+        if (modified.contents == null || contents.containsAll(modified.contents) && modified.contents.containsAll(contents)) {
+            super.patch(modified);
+        } else {
+            throw new IllegalArgumentException("Cant patch contents. Use the appropriate method");
+        }
     }
 
     @Override
