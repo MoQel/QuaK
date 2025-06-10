@@ -1,5 +1,6 @@
 package edu.kit.quak.files;
 
+import edu.kit.quak.files.model.FileElement;
 import edu.kit.quak.files.model.Project;
 import edu.kit.quak.files.repository.ProjectRepository;
 import org.springframework.http.HttpStatus;
@@ -24,9 +25,11 @@ import static org.springframework.http.HttpStatus.BAD_REQUEST;
 public class ProjectController {
 
     private final ProjectRepository projects;
+    private final FileController fileController;
 
-    public ProjectController(ProjectRepository projects) {
+    public ProjectController(ProjectRepository projects, FileController fileController) {
         this.projects = projects;
+        this.fileController = fileController;
     }
 
     @GetMapping
@@ -71,10 +74,9 @@ public class ProjectController {
                 () -> new ResponseStatusException(BAD_REQUEST, "Given id does not map to a project")
         );
 
-        if (project.getContent().isEmpty()) {
-            projects.delete(project);
-        } else {
-            throw new ResponseStatusException(BAD_REQUEST, "The referenced project still has content");
+        for (FileElement<?> element : project.getContent()) {
+            fileController.deleteFile(element.getId());
         }
+        projects.delete(project);
     }
 }

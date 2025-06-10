@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import edu.kit.quak.QuaKApplicationTests;
+import edu.kit.quak.files.model.File;
 import edu.kit.quak.files.model.Project;
 import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.Test;
@@ -18,8 +19,7 @@ import java.util.UUID;
 import java.util.function.Function;
 
 import static edu.kit.quak.files.FileControllerTest.JSON_CONTENT_TYPE;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -115,5 +115,20 @@ class ProjectControllerTest extends QuaKApplicationTests {
                 delete("/project/" + toDelete.getId())
         ).andExpect(status().isOk());
         assertTrue(projects.findById(toDelete.getId()).isEmpty());
+    }
+
+    @Test
+    @Transactional
+    void deleteProjectContent() throws Exception {
+        Project toDelete = projects.save(new Project());
+        File inner = files.save(new File("Hello"));
+        toDelete.addElement(inner);
+        projects.save(toDelete);
+
+        mockMvc.perform(
+                delete("/project/" + toDelete.getId())
+        ).andExpect(status().isOk());
+        assertEmpty(files.findById(inner.getId()));
+        assertEmpty(projects.findById(toDelete.getId()));
     }
 }
