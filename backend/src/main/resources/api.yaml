@@ -1,0 +1,391 @@
+openapi: 3.1.0
+info:
+  title: QuaK
+  description: The specification of the REST-API handling communication between frontend and backend
+  version: 0.3.0
+servers:
+  - url: 'https://localhost:8080'
+tags:
+  - name: projects
+    description: Querying information about projects
+  - name: files
+    description: Querying information about files
+paths:
+  /projects/:
+    get:
+      tags:
+        - projects
+      summary: Retrieve an overview of existing projects
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      format: int32
+                    name:
+                      type: string
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      tags:
+        - projects
+      summary: Create a new project
+      requestBody:
+        description: Create a new project
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "My cool project"
+      responses:
+        201:
+          description: A new project was created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        400:
+          description: Project creation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+
+  /project/{pId}:
+    get:
+      tags:
+        - projects
+      summary: Retrieve information about the given project
+      parameters:
+        - name: pId
+          in: path
+          description: ID of the project to query
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        400:
+          description: invalid ID
+        default:
+          description: Unexpected error
+    patch:
+      tags:
+        - projects
+      summary: Change elements of a project
+      parameters:
+        - name: pId
+          in: path
+          description: ID of the project to patch
+          required: true
+          schema:
+            type: integer
+            format: int32
+      requestBody:
+        description: >
+          Parts of the project that should be changed
+          Note that not all properties can be changed. These are for example:
+            * The `id` field
+            * The `contents`-array. Use the appropriate API-endpoints to change these.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+      responses:
+        200:
+          description: The project was successfully changed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        400:
+          description: The project was not edited because the request-body contained a field that is not allowed to be edited
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+    delete:
+      tags:
+        - projects
+      summary: Delete a project
+      description: Besides the project, all files contained within this project are deleted
+      parameters:
+        - name: pId
+          in: path
+          description: ID of the project to delete
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        200:
+          description: Project was deleted
+        default:
+          description: Unexpected error
+
+  /file/:
+    post:
+      tags:
+        - files
+      summary: Create a new file
+      description: This will only create the metadata of the file. The content is initialized as empty, similar to the touch command in unix.
+      parameters:
+        - name: parent_id
+          in: header
+          required: true
+          description: ID of the parent-container
+          schema:
+            type: integer
+            format: int32
+      requestBody:
+        description: Initial metadata. The field id will be ignored
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FileMeta'
+      responses:
+        201:
+          description: The file was successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileMeta'
+        400:
+          description: File creation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+
+  /file/{fId}:
+    get:
+      tags:
+        - files
+      summary: Retrieves meta-information about a file
+      parameters:
+        - name: fId
+          in: path
+          description: ID of the file to query
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileMeta'
+        400:
+          description: invalid ID
+        default:
+          description: Unexpected error
+    delete:
+      tags:
+        - files
+      summary: Deletes a file and its content
+      parameters:
+        - name: fId
+          in: path
+          description: ID of the file
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        200:
+          description: successful deletion
+        default:
+          description: Unexpected error
+    patch:
+      tags:
+        - files
+      summary: Changes parts of the metadata of a file
+      parameters:
+        - name: fId
+          in: path
+          description: ID of the file
+          required: true
+          schema:
+            type: integer
+            format: int32
+      requestBody:
+        description: >
+          Parts of a file's metadata tha should be changed.
+          Things that can not be changed are for example:
+            * The `id` field
+            * The `contents`-array. Use the appropriate API-endpoints to change these.
+        content:
+          application/json:
+            schema:
+              example:
+                name: "circuit.py"
+      responses:
+        200:
+          description: The metadata was updated
+        400:
+          description: The metadata was not edited because the request-body contained a field that is not allowed to be edited
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: Unexpected error
+
+
+  /file/{fId}/content:
+    get:
+      tags:
+        - files
+      summary: Retrieves the content of a file
+      parameters:
+        - name: fId
+          in: path
+          description: ID of the file to query
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        200:
+          description: The file's content
+          content:
+            text/*:
+              example: "Hello World"
+            application/json:
+              example:
+                key: value
+    put:
+      tags:
+        - files
+      summary: Change the content of a file
+      parameters:
+        - name: fId
+          in: path
+          description: ID of the file
+          required: true
+          schema:
+            type: integer
+            format: int32
+        - name: media_type
+          in: header
+          description: If the file's media type changes, this header can indicate the new media_type
+          required: false
+          schema:
+            type: string
+      requestBody:
+        content:
+          text/*:
+            schema:
+              example: "Hello World"
+          application/json:
+            schema:
+              example:
+                key: value
+      responses:
+        200:
+          description: The file's content was updated
+        default:
+          description: Unexpected error
+
+
+components:
+  schemas:
+    Error:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+
+    Project:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+          example: 42
+        name:
+          type: string
+          example: "Hello World"
+        contents:
+          type: array
+          items:
+            $ref: '#/components/schemas/FileMeta'
+
+    FileMeta:
+      oneOf:
+        - $ref: '#/components/schemas/File'
+        - $ref: '#/components/schemas/Directory'
+      discriminator:
+        propertyName: type
+
+    AbstractFile:
+      type: object
+      required:
+        - type
+      properties:
+        id:
+          type: integer
+          format: int32
+        name:
+          type: string
+        type:
+          type: string
+          enum: [file, directory]
+
+
+    File:
+      allOf:
+        - $ref: '#/components/schemas/AbstractFile'
+        - type: object
+          properties:
+            lastAccess:
+              type: integer
+              format: int64
+              description: Unix-Timestamp
+            createdOn:
+              type: integer
+              format: int64
+              description: Unix-Timestamp
+
+    Directory:
+      allOf:
+        - $ref: '#/components/schemas/AbstractFile'
+        - type: object
+          properties:
+            contents:
+              type: array
+              items:
+                $ref: '#/components/schemas/FileMeta'
