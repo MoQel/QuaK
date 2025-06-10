@@ -4,7 +4,6 @@ import edu.kit.quak.files.repository.DirectoryRepository;
 import edu.kit.quak.files.repository.FileRepository;
 import edu.kit.quak.files.repository.ProjectRepository;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -20,10 +19,6 @@ public class QuaKApplicationTests {
 	protected FileRepository files;
 	@Autowired
 	protected DirectoryRepository directories;
-
-	@Test
-	void contextLoads() {
-	}
 
 	public void assertEmpty(Optional<?> optional) {
 		Assertions.assertTrue(optional.isEmpty());
