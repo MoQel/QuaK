@@ -11,7 +11,7 @@ tags:
   - name: files
     description: Querying information about files
 paths:
-  /projects/:
+  /project/:
     get:
       tags:
         - projects
@@ -27,8 +27,7 @@ paths:
                   type: object
                   properties:
                     id:
-                      type: integer
-                      format: int32
+                      type: string
                     name:
                       type: string
         default:
@@ -59,7 +58,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/Project'
         400:
-          description: Project creation failed
+          description: >
+            Project creation failed.
+            This is thrown for example when the `contents`-field of a project is not empty.
           content:
             application/json:
               schema:
@@ -78,8 +79,7 @@ paths:
           description: ID of the project to query
           required: true
           schema:
-            type: integer
-            format: int32
+            type: string
       responses:
         200:
           description: successful operation
@@ -101,8 +101,7 @@ paths:
           description: ID of the project to patch
           required: true
           schema:
-            type: integer
-            format: int32
+            type: string
       requestBody:
         description: >
           Parts of the project that should be changed
@@ -135,15 +134,14 @@ paths:
       tags:
         - projects
       summary: Delete a project
-      description: Besides the project, all files contained within this project are deleted
+      description: Additionally to the project, all files contained within this project are deleted
       parameters:
         - name: pId
           in: path
           description: ID of the project to delete
           required: true
           schema:
-            type: integer
-            format: int32
+            type: string
       responses:
         200:
           description: Project was deleted
@@ -155,15 +153,16 @@ paths:
       tags:
         - files
       summary: Create a new file
-      description: This will only create the metadata of the file. The content is initialized as empty, similar to the touch command in unix.
+      description: >
+        This will only create the metadata of the file.
+        The content of a file is initialized as empty, similar to the touch command in unix.
       parameters:
         - name: parent_id
           in: header
           required: true
           description: ID of the parent-container
           schema:
-            type: integer
-            format: int32
+            type: string
       requestBody:
         description: Initial metadata. The field id will be ignored
         content:
@@ -178,7 +177,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/FileMeta'
         400:
-          description: File creation failed
+          description: >
+            File creation failed. For example because the field `type` could not be parsed.
           content:
             application/json:
               schema:
@@ -197,8 +197,7 @@ paths:
           description: ID of the file to query
           required: true
           schema:
-            type: integer
-            format: int32
+            type: string
       responses:
         200:
           description: successful operation
@@ -213,15 +212,17 @@ paths:
     delete:
       tags:
         - files
-      summary: Deletes a file and its content
+      summary: Deletes a file
+      description: >
+        Deletes a file and its content.
+        In the case of a directory, the contained elements are also deleted.
       parameters:
         - name: fId
           in: path
           description: ID of the file
           required: true
           schema:
-            type: integer
-            format: int32
+            type: string
       responses:
         200:
           description: successful deletion
@@ -237,11 +238,10 @@ paths:
           description: ID of the file
           required: true
           schema:
-            type: integer
-            format: int32
+            type: string
       requestBody:
         description: >
-          Parts of a file's metadata tha should be changed.
+          Parts of a file's metadata that should be changed.
           Things that can not be changed are for example:
             * The `id` field
             * The `contents`-array. Use the appropriate API-endpoints to change these.
@@ -254,7 +254,9 @@ paths:
         200:
           description: The metadata was updated
         400:
-          description: The metadata was not edited because the request-body contained a field that is not allowed to be edited
+          description: >
+            The metadata was not edited because the request-body contained a field that is not allowed to be edited.
+            Also gets returned when no matching file was found.
           content:
             application/json:
               schema:
@@ -274,17 +276,13 @@ paths:
           description: ID of the file to query
           required: true
           schema:
-            type: integer
-            format: int32
+            type: string
       responses:
         200:
-          description: The file's content
+          description: The file's content. The content-type is chosen by the user.
           content:
-            text/*:
+            '*/*':
               example: "Hello World"
-            application/json:
-              example:
-                key: value
     put:
       tags:
         - files
@@ -295,12 +293,11 @@ paths:
           description: ID of the file
           required: true
           schema:
-            type: integer
-            format: int32
-        - name: media_type
+            type: string
+        - name: Content-Type
           in: header
-          description: If the file's media type changes, this header can indicate the new media_type
-          required: false
+          description: Indicates the media type of the content
+          required: true
           schema:
             type: string
       requestBody:
@@ -333,9 +330,8 @@ components:
       type: object
       properties:
         id:
-          type: integer
-          format: int32
-          example: 42
+          type: string
+          example: a42
         name:
           type: string
           example: "Hello World"
@@ -351,14 +347,13 @@ components:
       discriminator:
         propertyName: type
 
-    AbstractFile:
+    FileElement:
       type: object
       required:
         - type
       properties:
         id:
-          type: integer
-          format: int32
+          type: string
         name:
           type: string
         type:
@@ -368,21 +363,21 @@ components:
 
     File:
       allOf:
-        - $ref: '#/components/schemas/AbstractFile'
+        - $ref: '#/components/schemas/FileElement'
         - type: object
           properties:
             lastAccess:
               type: integer
               format: int64
-              description: Unix-Timestamp
+              description: Unix-Epoch in seconds
             createdOn:
               type: integer
               format: int64
-              description: Unix-Timestamp
+              description: Unix-Epoch in seconds
 
     Directory:
       allOf:
-        - $ref: '#/components/schemas/AbstractFile'
+        - $ref: '#/components/schemas/FileElement'
         - type: object
           properties:
             contents:
