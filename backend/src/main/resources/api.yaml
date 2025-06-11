@@ -1,7 +1,11 @@
 openapi: 3.1.0
 info:
   title: QuaK
-  description: The specification of the REST-API handling communication between frontend and backend
+  description: >
+    The specification of the REST-API handling communication between frontend and backend.
+
+    Note that the contents of objects only get displayed two layers deep.
+    After that, the client has to call the appropriate endpoints to learn more about a specific endpoint.
   version: 0.3.0
 servers:
   - url: 'https://localhost:8080'

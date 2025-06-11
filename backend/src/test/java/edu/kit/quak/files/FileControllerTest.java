@@ -47,7 +47,7 @@ class FileControllerTest extends QuaKApplicationTests {
 
     @BeforeEach
     void setUp() {
-        parent = projects.save(new Project());
+        parent = projects.save(new Project("Main"));
     }
 
     @AfterEach
@@ -118,7 +118,7 @@ class FileControllerTest extends QuaKApplicationTests {
     @Test
     void retrieveDirectory() throws Exception {
         //Creating without a parent because the directory shouldn't even know its parent
-        Directory query = directories.save(new Directory());
+        Directory query = directories.save(new Directory("Hi"));
         mockMvc.perform(get("/file/"+query.getId()))
                .andExpectAll(
                        status().isOk(),
@@ -141,7 +141,7 @@ class FileControllerTest extends QuaKApplicationTests {
 
     @Test
     void deleteDirectory() throws Exception {
-        Directory toDelete = directories.save(new Directory());
+        Directory toDelete = directories.save(new Directory("toDelete"));
         mockMvc.perform(delete("/file/" + toDelete.getId()))
                .andExpect(status().isOk());
         Assertions.assertTrue(directories.findById(toDelete.getId()).isEmpty());
@@ -174,7 +174,7 @@ class FileControllerTest extends QuaKApplicationTests {
     @Test
     @Transactional
     void patchDirectory() throws Exception {
-        Directory toPatch = directories.save(new Directory());
+        Directory toPatch = directories.save(new Directory("toPatch"));
         final String name = UUID.randomUUID().toString();
 
         JsonObject patch = new JsonObject();
@@ -194,7 +194,7 @@ class FileControllerTest extends QuaKApplicationTests {
     @Test
     @Transactional
     void notPatchingDirectoryContent() throws Exception {
-        Directory toPatch = directories.save(new Directory());
+        Directory toPatch = directories.save(new Directory("toPatch"));
         JsonObject patch = new JsonObject();
         JsonArray contents = new JsonArray();
         contents.add(getResource("file.json"));
@@ -275,7 +275,7 @@ class FileControllerTest extends QuaKApplicationTests {
 
     @Test
     void failOnDirectoryContentEndpoint() throws Exception {
-        Directory dir = directories.save(new Directory());
+        Directory dir = directories.save(new Directory("dir"));
         mockMvc.perform(
                 get(String.format("/file/%s/content", dir.getContent()))
         ).andExpect(
@@ -285,7 +285,7 @@ class FileControllerTest extends QuaKApplicationTests {
 
     @Test
     void failOnSetDirectoryContent() throws Exception {
-        Directory dir = directories.save(new Directory());
+        Directory dir = directories.save(new Directory("dir"));
         mockMvc.perform(
                 put(String.format("/file/%s/content", dir.getContent()))
                         .contentType("text/plain")
@@ -303,6 +303,38 @@ class FileControllerTest extends QuaKApplicationTests {
                         .header("parent_id", parent.getId())
         ).andExpect(
                 status().is4xxClientError()
+        );
+    }
+
+    @Test
+    @Transactional
+    //We don't allow the content of a contained directory to be displayed
+    void noRecursiveDirectoryContent() throws Exception {
+        File file = files.save(new File("Hi"));
+        Directory lower = new Directory("lower");
+        lower.addElement(file);
+        lower = directories.save(lower);
+        Directory main = new Directory("main");
+        main.addElement(lower);
+        main = directories.save(main);
+
+        mockMvc.perform(
+            get("/file/" + main.getId())
+        ).andExpectAll(
+            status().isOk(),
+            jsonPath("$.name", is(main.getName())),
+            jsonPath("$.contents").isArray(),
+            jsonPath("$.contents[0].name", is(lower.getName())),
+            jsonPath("$.contents[0].type", is(Type.DIRECTORY.name)),
+            jsonPath("$.contents[0].contents").doesNotExist()
+        );
+
+        //Make sure `lower` has contents
+        mockMvc.perform(
+            get("/file/" + lower.getId())
+        ).andExpectAll(
+            status().isOk(),
+            jsonPath("$.contents[0].name", is(file.getName()))
         );
     }
 }

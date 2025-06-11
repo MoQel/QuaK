@@ -4,8 +4,10 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import edu.kit.quak.QuaKApplicationTests;
+import edu.kit.quak.files.model.Directory;
 import edu.kit.quak.files.model.File;
 import edu.kit.quak.files.model.Project;
+import edu.kit.quak.files.model.Type;
 import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -72,7 +74,7 @@ class ProjectControllerTest extends QuaKApplicationTests {
     @Test
     @Transactional
     void patchProject() throws Exception {
-        Project toPatch = projects.save(new Project());
+        Project toPatch = projects.save(new Project("ToPatch"));
 
         final String name = UUID.randomUUID().toString();
         JsonObject patch = new JsonObject();
@@ -92,7 +94,7 @@ class ProjectControllerTest extends QuaKApplicationTests {
 
     @Test
     void failPatchWithContent() throws Exception {
-        Project toPatch = projects.save(new Project());
+        Project toPatch = projects.save(new Project("toPatch"));
 
         JsonObject patch = new JsonObject();
         JsonArray contents = new JsonArray();
@@ -110,7 +112,7 @@ class ProjectControllerTest extends QuaKApplicationTests {
 
     @Test
     void deleteProject() throws Exception {
-        Project toDelete = projects.save(new Project());
+        Project toDelete = projects.save(new Project("toDelete"));
         mockMvc.perform(
                 delete("/project/" + toDelete.getId())
         ).andExpect(status().isOk());
@@ -120,7 +122,7 @@ class ProjectControllerTest extends QuaKApplicationTests {
     @Test
     @Transactional
     void deleteProjectContent() throws Exception {
-        Project toDelete = projects.save(new Project());
+        Project toDelete = projects.save(new Project("toDelete"));
         File inner = files.save(new File("Hello"));
         toDelete.addElement(inner);
         projects.save(toDelete);
@@ -130,5 +132,29 @@ class ProjectControllerTest extends QuaKApplicationTests {
         ).andExpect(status().isOk());
         assertEmpty(files.findById(inner.getId()));
         assertEmpty(projects.findById(toDelete.getId()));
+    }
+
+    @Test
+    @Transactional
+    //We don't allow the content of a contained directory to be displayed
+    void noRecursiveDirectoryContent() throws Exception {
+        File file = files.save(new File("Hi"));
+        Directory lower = new Directory("lower");
+        lower.addElement(file);
+        lower = directories.save(lower);
+        Project main = new Project("main");
+        main.addElement(lower);
+        main = projects.save(main);
+
+        mockMvc.perform(
+                get("/project/" + main.getId())
+        ).andExpectAll(
+                status().isOk(),
+                jsonPath("$.name", is(main.getName())),
+                jsonPath("$.contents").isArray(),
+                jsonPath("$.contents[0].name", is(lower.getName())),
+                jsonPath("$.contents[0].type", is(Type.DIRECTORY.name)),
+                jsonPath("$.contents[0].contents").doesNotExist()
+        );
     }
 }

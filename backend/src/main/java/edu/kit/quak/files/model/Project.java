@@ -1,8 +1,10 @@
 package edu.kit.quak.files.model;
 
+import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import edu.kit.quak.files.configuration.DepthFilter;
 import jakarta.persistence.Entity;
 import jakarta.persistence.OneToMany;
 
@@ -20,11 +22,21 @@ public class Project extends FileElement<Project> implements FileElementContaine
 
     @OneToMany
     @JsonProperty("contents")
+    @JsonFilter(DepthFilter.FILTER_NAME)
     private Set<FileElement<?>> content = new HashSet<>();
 
+    //We don't need a json-type info here since projects get posted
+    //to a dedicated endpoint
+    @JsonIgnore
     @Override
     public Type getType() {
         return PROJECT;
+    }
+
+    protected Project() { }
+
+    public Project(String name) {
+        super(name);
     }
 
     @Override

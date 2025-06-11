@@ -1,6 +1,5 @@
 package edu.kit.quak.files.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
@@ -10,14 +9,24 @@ import jakarta.persistence.Id;
 
 import java.util.Objects;
 
+/**
+ * A FileElement is an element inside a {@link FileElementContainer container} or the container itself.
+ * The idea behind this class is the concept of files and directories as they are found inside a POSIX filesystem.
+ *
+ * @param <SELF> The type used by the implementing classes in the method {@link #patch(FileElement)}
+ * @author Henrik K
+ */
 @Entity
 @JsonTypeInfo(
         use = JsonTypeInfo.Id.NAME,
-        include = JsonTypeInfo.As.PROPERTY,
-        property = "type"
+        include = JsonTypeInfo.As.EXISTING_PROPERTY,
+        property = FileElement.TYPE_FIELD
 )
 @JsonTypeIdResolver(FileElementResolver.class)
 public abstract class FileElement<SELF extends FileElement<?>> implements Savable {
+
+    public static final String TYPE_FIELD = "type";
+
     @JsonProperty
     @Id
     @CustomIdGenerator.FileElementId
@@ -26,7 +35,6 @@ public abstract class FileElement<SELF extends FileElement<?>> implements Savabl
     @JsonProperty
     private String name;
 
-    @JsonIgnore
     public abstract Type getType();
 
     public void patch(SELF modified) throws IllegalArgumentException {
