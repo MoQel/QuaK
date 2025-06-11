@@ -14,6 +14,14 @@ import java.util.Set;
 
 import static edu.kit.quak.files.model.Type.PROJECT;
 
+/**
+ * A project is a top level container of {@link FileElement}.
+ *
+ * @implNote Projects are in their core similar to a directory.
+ * They are implemented in an own class to allow for different functionalities
+ * later in development.
+ * @author Henrik K
+ */
 @Entity
 @JsonTypeInfo(
         use = JsonTypeInfo.Id.NONE

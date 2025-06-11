@@ -4,6 +4,16 @@ import com.fasterxml.jackson.annotation.JsonValue;
 
 import java.util.Optional;
 
+/**
+ * A Type represents the different types of FileElements and their static metadata.
+ *
+ * @see FileElement
+ * @author Henrik K
+ */
+/*
+ * TODO: The information inside this enum should be moved to their respective classes
+ *       to allow for better extensibility
+ */
 public enum Type {
     DIRECTORY("directory", 'd', Directory.class),
     FILE("file", 'f', File.class),
@@ -20,8 +30,8 @@ public enum Type {
         this.relatedClass = relatedClass;
     }
 
-    public String toId(Object id) {
-        return prefix + id.toString();
+    public String appendPrefixToId(Object baseId) {
+        return prefix + baseId.toString();
     }
 
     public Class<? extends FileElement<?>> getRelatedClass() {

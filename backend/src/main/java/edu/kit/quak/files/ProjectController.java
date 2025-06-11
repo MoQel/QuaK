@@ -20,6 +20,12 @@ import java.util.List;
 
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 
+/**
+ * This controller handles all the calls to the {@code /project/} endpoint.
+ * See the API-documentation for further information.
+ *
+ * @author Henrik K
+ */
 @RestController
 @RequestMapping("/project")
 public class ProjectController {

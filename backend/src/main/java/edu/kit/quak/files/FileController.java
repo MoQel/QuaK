@@ -1,6 +1,5 @@
 package edu.kit.quak.files;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.kit.quak.files.model.Directory;
 import edu.kit.quak.files.model.File;
@@ -33,6 +32,12 @@ import java.util.Optional;
 
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 
+/**
+ * This controller handles all the calls to the {@code /file/} endpoint.
+ * See the API-documentation for further information.
+ *
+ * @author Henrik K
+ */
 @RestController
 @RequestMapping("/file")
 public class FileController {
@@ -47,7 +52,6 @@ public class FileController {
         this.directories = directories;
         this.objectMapper = objectMapper;
         this.projects = projects;
-        this.objectMapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
     }
 
 

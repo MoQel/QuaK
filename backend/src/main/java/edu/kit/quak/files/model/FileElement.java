@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
 import edu.kit.quak.Savable;
+import edu.kit.quak.files.configuration.CustomIdGenerator;
+import edu.kit.quak.files.configuration.FileElementResolver;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 
@@ -37,6 +39,13 @@ public abstract class FileElement<SELF extends FileElement<?>> implements Savabl
 
     public abstract Type getType();
 
+    /**
+     * Similar to the HTTP's PATCH-method, this method allows for changing predefined
+     * values of this object to the values of a modified object.
+     * @param modified The object that holds the information to be changed
+     * @throws IllegalArgumentException If the patch has a set (not null) property that
+     * differs from this object and that is considered to be non-changeable.
+     */
     public void patch(SELF modified) throws IllegalArgumentException {
         if (modified.getName() != null)
             this.name = modified.getName();

@@ -1,5 +1,6 @@
-package edu.kit.quak.files.model;
+package edu.kit.quak.files.configuration;
 
+import edu.kit.quak.files.model.FileElement;
 import org.hibernate.HibernateException;
 import org.hibernate.MappingException;
 import org.hibernate.annotations.IdGeneratorType;
@@ -17,12 +18,19 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.Properties;
 
+/**
+ * This class handles ID-generation for the elements of type {@link FileElement}.
+ *
+ * @see edu.kit.quak.files.model.Type
+ * @author Henrik K
+ */
 public class CustomIdGenerator extends SequenceStyleGenerator {
+
     @Override
     public Object generate(SharedSessionContractImplementor session, Object object) throws HibernateException {
         Object id = super.generate(session, object);
         if (object instanceof FileElement<?> element) {
-            id = element.getType().toId(id);
+            id = element.getType().appendPrefixToId(id);
         }
         return id;
     }
