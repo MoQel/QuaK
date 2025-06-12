@@ -38,14 +38,14 @@ public class ProjectController {
         this.fileController = fileController;
     }
 
-    @GetMapping
+    @GetMapping({"", "/"})
     public List<Project> getProjects() {
         List<Project> list = new LinkedList<>();
         projects.findAll().forEach(list::add);
         return list;
     }
 
-    @PostMapping
+    @PostMapping({"", "/"})
     @ResponseStatus(HttpStatus.CREATED)
     public Project createProject(@RequestBody Project project) {
         project.setId(null);

@@ -157,4 +157,36 @@ class ProjectControllerTest extends QuaKApplicationTests {
                 jsonPath("$.contents[0].contents").doesNotExist()
         );
     }
+
+    @Test
+    @Transactional
+    void projectOverviewContainsOnlyFirstLevelOfProjectContent() throws Exception {
+        File inner = files.save(new File("inner"));
+        Directory lower = new Directory("lower");
+        lower.addElement(inner);
+        lower = directories.save(lower);
+        Project main = new Project("main");
+        main.addElement(lower);
+        main = projects.save(main);
+
+        mockMvc.perform(
+                get("/project/")
+        ).andExpectAll(
+                status().isOk(),
+                jsonPath("$[0].name", is(main.getName())),
+                jsonPath("$[0].contents").isArray(),
+                jsonPath("$[0].contents[0].name", is(lower.getName())),
+                jsonPath("$[0].contents[0].contents").doesNotExist()
+        );
+
+        //Ensure that the normal view is correct
+        mockMvc.perform(
+                get("/project/" + main.getId())
+        ).andExpectAll(
+                status().isOk(),
+                jsonPath("$.name", is(main.getName())),
+                jsonPath("$.contents").isArray(),
+                jsonPath("$.contents[0].name", is(lower.getName()))
+        );
+    }
 }
