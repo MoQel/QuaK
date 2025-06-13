@@ -11,7 +11,7 @@ import java.util.Optional;
 
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 @SpringBootTest
-public class QuaKApplicationTests {
+public abstract class QuaKApplicationTests {
 
 	@Autowired
 	protected ProjectRepository projects;

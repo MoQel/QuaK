@@ -1,8 +1,9 @@
 package edu.kit.quak.files;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import edu.kit.quak.QuaKApplicationTests;
 import edu.kit.quak.files.model.Directory;
 import edu.kit.quak.files.model.File;
@@ -40,6 +41,8 @@ class FileControllerTest extends QuaKApplicationTests {
 
     public static final String JSON_CONTENT_TYPE = "application/json";
 
+    private final ObjectMapper mapper = new ObjectMapper();
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -57,7 +60,7 @@ class FileControllerTest extends QuaKApplicationTests {
 
     @Test
     void newFile() throws Exception {
-        JsonObject sent = getResource("file.json");
+        JsonNode sent = getResource("file.json");
 
         mockMvc.perform(
                 post("/file/")
@@ -69,22 +72,20 @@ class FileControllerTest extends QuaKApplicationTests {
                         content().contentType(JSON_CONTENT_TYPE),
                         jsonPath("$.id", notNullValue()),
                         jsonPath("$.id", not("")),
-                        jsonPath("$.name", is(sent.getAsJsonPrimitive("name").getAsString())),
-                        jsonPath("$.type", is(sent.getAsJsonPrimitive("type").getAsString())),
-                        jsonPath("$.createdOn", equalTo(sent.getAsJsonPrimitive("createdOn").getAsLong()), Long.class)
+                        jsonPath("$.name", is(sent.get("name").asText())),
+                        jsonPath("$.type", is(sent.get("type").asText())),
+                        jsonPath("$.createdOn", equalTo(sent.get("createdOn").asLong()), Long.class)
                );
     }
 
-    public static JsonObject getResource(String name) throws IOException {
-        return JsonParser.parseString(
-                new ClassPathResource("edu/kit/quak/files/" + name).getContentAsString(StandardCharsets.UTF_8)
-        ).getAsJsonObject();
-
+    public static JsonNode getResource(String name) throws IOException {
+        ObjectMapper mapper = new ObjectMapper();
+        return mapper.readTree(new ClassPathResource("edu/kit/quak/files/" + name).getContentAsString(StandardCharsets.UTF_8));
     }
 
     @Test
     void newDirectory() throws Exception {
-        JsonObject sent = getResource("directory.json");
+        JsonNode sent = getResource("directory.json");
 
         mockMvc.perform(
                 post("/file/")
@@ -96,8 +97,8 @@ class FileControllerTest extends QuaKApplicationTests {
                 content().contentType(JSON_CONTENT_TYPE),
                 jsonPath("$.id", notNullValue()),
                 jsonPath("$.id", not("")),
-                jsonPath("$.name", is(sent.getAsJsonPrimitive("name").getAsString())),
-                jsonPath("$.type", is(sent.getAsJsonPrimitive("type").getAsString())),
+                jsonPath("$.name", is(sent.get("name").asText())),
+                jsonPath("$.type", is(sent.get("type").asText())),
                 jsonPath("$.contents", empty())
         );
     }
@@ -154,9 +155,9 @@ class FileControllerTest extends QuaKApplicationTests {
         File toPatch = files.save(new File("Hi"));
         final String name = UUID.randomUUID().toString();
 
-        JsonObject patch = new JsonObject();
-        patch.addProperty("name", name);
-        patch.addProperty("lastAccess", Instant.now().plus(5, ChronoUnit.HOURS).getEpochSecond());
+        ObjectNode patch = mapper.createObjectNode();
+        patch.put("name", name);
+        patch.put("lastAccess", Instant.now().plus(5, ChronoUnit.HOURS).getEpochSecond());
 
         mockMvc.perform(
                 patch("/file/" + toPatch.getId())
@@ -177,8 +178,8 @@ class FileControllerTest extends QuaKApplicationTests {
         Directory toPatch = directories.save(new Directory("toPatch"));
         final String name = UUID.randomUUID().toString();
 
-        JsonObject patch = new JsonObject();
-        patch.addProperty("name", name);
+        ObjectNode patch = mapper.createObjectNode();
+        patch.put("name", name);
 
         mockMvc.perform(
                 patch("/file/" + toPatch.getId())
@@ -195,10 +196,10 @@ class FileControllerTest extends QuaKApplicationTests {
     @Transactional
     void notPatchingDirectoryContent() throws Exception {
         Directory toPatch = directories.save(new Directory("toPatch"));
-        JsonObject patch = new JsonObject();
-        JsonArray contents = new JsonArray();
+        ObjectNode patch = mapper.createObjectNode();
+        ArrayNode contents = mapper.createArrayNode();
         contents.add(getResource("file.json"));
-        patch.add("contents", contents);
+        patch.set("contents", contents);
 
         mockMvc.perform(
                 patch("/file/" + toPatch.getId())

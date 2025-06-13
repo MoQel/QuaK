@@ -1,8 +1,8 @@
 package edu.kit.quak.files;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import edu.kit.quak.QuaKApplicationTests;
 import edu.kit.quak.files.model.Directory;
 import edu.kit.quak.files.model.File;
@@ -21,7 +21,8 @@ import java.util.UUID;
 import java.util.function.Function;
 
 import static edu.kit.quak.files.FileControllerTest.JSON_CONTENT_TYPE;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -34,11 +35,13 @@ class ProjectControllerTest extends QuaKApplicationTests {
     @Autowired
     private MockMvc mockMvc;
 
+    private final ObjectMapper mapper = new ObjectMapper();
+
     @Test
     void createAndGetProject() throws Exception {
         final String name = UUID.randomUUID().toString();
-        JsonObject project = new JsonObject();
-        project.addProperty("name", name);
+        ObjectNode project = mapper.createObjectNode();
+        project.put("name", name);
 
         MvcResult result = mockMvc.perform(
                 post("/project")
@@ -52,9 +55,8 @@ class ProjectControllerTest extends QuaKApplicationTests {
                 jsonPath("$.contents", empty())
         ).andReturn();
 
-        String id = JsonParser.parseString(result.getResponse().getContentAsString())
-                                      .getAsJsonObject()
-                                              .get("id").getAsString();
+        String id = mapper.readTree(result.getResponse().getContentAsString())
+                              .get("id").asText();
         Function<String, ResultMatcher[]> matchers = (path) -> new ResultMatcher[]{
             status().isOk(),
             content().contentType(JSON_CONTENT_TYPE),
@@ -77,8 +79,8 @@ class ProjectControllerTest extends QuaKApplicationTests {
         Project toPatch = projects.save(new Project("ToPatch"));
 
         final String name = UUID.randomUUID().toString();
-        JsonObject patch = new JsonObject();
-        patch.addProperty("name", name);
+        ObjectNode patch = mapper.createObjectNode();
+        patch.put("name", name);
 
         mockMvc.perform(
                 patch("/project/"+toPatch.getId())
@@ -96,10 +98,10 @@ class ProjectControllerTest extends QuaKApplicationTests {
     void failPatchWithContent() throws Exception {
         Project toPatch = projects.save(new Project("toPatch"));
 
-        JsonObject patch = new JsonObject();
-        JsonArray contents = new JsonArray();
+        ObjectNode patch = mapper.createObjectNode();
+        ArrayNode contents = mapper.createArrayNode();
         contents.add(FileControllerTest.getResource("file.json"));
-        patch.add("contents", contents);
+        patch.set("contents", contents);
 
         mockMvc.perform(
                 patch("/project/"+toPatch.getId())
