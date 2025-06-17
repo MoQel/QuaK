@@ -11,6 +11,9 @@ import java.time.Instant;
 @Entity
 public class File extends FileElement<File> {
 
+    public static final String TYPE_IDENTIFIER = "file";
+    public static final char ID_PREFIX = 'f';
+
     @JsonProperty
     private Instant lastAccess;
 
@@ -49,8 +52,13 @@ public class File extends FileElement<File> {
     }
 
     @Override
-    public Type getType() {
-        return Type.FILE;
+    public String getTypeIdentifier() {
+        return TYPE_IDENTIFIER;
+    }
+
+    @Override
+    public String generateId(Object base) {
+        return ID_PREFIX + base.toString();
     }
 
     public String getContentType() {

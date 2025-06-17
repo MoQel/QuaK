@@ -7,7 +7,6 @@ import edu.kit.quak.QuaKApplicationTests;
 import edu.kit.quak.files.model.Directory;
 import edu.kit.quak.files.model.File;
 import edu.kit.quak.files.model.Project;
-import edu.kit.quak.files.model.Type;
 import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -155,7 +154,7 @@ class ProjectControllerTest extends QuaKApplicationTests {
                 jsonPath("$.name", is(main.getName())),
                 jsonPath("$.contents").isArray(),
                 jsonPath("$.contents[0].name", is(lower.getName())),
-                jsonPath("$.contents[0].type", is(Type.DIRECTORY.name)),
+                jsonPath("$.contents[0].type", is(lower.getTypeIdentifier())),
                 jsonPath("$.contents[0].contents").doesNotExist()
         );
     }

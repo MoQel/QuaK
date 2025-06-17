@@ -12,8 +12,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
-import static edu.kit.quak.files.model.Type.PROJECT;
-
 /**
  * A project is a top level container of {@link FileElement}.
  *
@@ -28,18 +26,13 @@ import static edu.kit.quak.files.model.Type.PROJECT;
 )
 public class Project extends FileElement<Project> implements FileElementContainer {
 
+    public static final String TYPE_IDENTIFIER = "project";
+    public static final char ID_PREFIX = 'p';
+
     @OneToMany
     @JsonProperty("contents")
     @JsonFilter(DepthFilter.FILTER_NAME)
     private Set<FileElement<?>> content = new HashSet<>();
-
-    //We don't need a json-type info here since projects get posted
-    //to a dedicated endpoint
-    @JsonIgnore
-    @Override
-    public Type getType() {
-        return PROJECT;
-    }
 
     protected Project() { }
 
@@ -70,5 +63,18 @@ public class Project extends FileElement<Project> implements FileElementContaine
     @JsonIgnore
     public Collection<FileElement<?>> getContent() {
         return new HashSet<>(content);
+    }
+
+    //We don't need a json-type info here since projects get posted
+    //to a dedicated endpoint
+    @Override
+    @JsonIgnore
+    public String getTypeIdentifier() {
+        return TYPE_IDENTIFIER;
+    }
+
+    @Override
+    public String generateId(Object base) {
+        return ID_PREFIX + base.toString();
     }
 }

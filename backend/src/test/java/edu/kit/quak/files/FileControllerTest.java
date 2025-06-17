@@ -8,7 +8,6 @@ import edu.kit.quak.QuaKApplicationTests;
 import edu.kit.quak.files.model.Directory;
 import edu.kit.quak.files.model.File;
 import edu.kit.quak.files.model.Project;
-import edu.kit.quak.files.model.Type;
 import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -112,7 +111,7 @@ class FileControllerTest extends QuaKApplicationTests {
                        status().isOk(),
                        jsonPath("$.id", is(query.getId())),
                        jsonPath("$.name", is(query.getName())),
-                       jsonPath("$.type", is(Type.FILE.name))
+                       jsonPath("$.type", is(query.getTypeIdentifier()))
                );
     }
 
@@ -126,7 +125,7 @@ class FileControllerTest extends QuaKApplicationTests {
                        jsonPath("$.id", is(query.getId())),
                        jsonPath("$.name", is(query.getName())),
                        jsonPath("$.contents", empty()),
-                       jsonPath("$.type", is(Type.DIRECTORY.name))
+                       jsonPath("$.type", is(query.getTypeIdentifier()))
                );
     }
 
@@ -326,7 +325,7 @@ class FileControllerTest extends QuaKApplicationTests {
             jsonPath("$.name", is(main.getName())),
             jsonPath("$.contents").isArray(),
             jsonPath("$.contents[0].name", is(lower.getName())),
-            jsonPath("$.contents[0].type", is(Type.DIRECTORY.name)),
+            jsonPath("$.contents[0].type", is(lower.getTypeIdentifier())),
             jsonPath("$.contents[0].contents").doesNotExist()
         );
 

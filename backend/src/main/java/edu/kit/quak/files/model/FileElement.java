@@ -37,8 +37,6 @@ public abstract class FileElement<SELF extends FileElement<?>> implements Savabl
     @JsonProperty
     private String name;
 
-    public abstract Type getType();
-
     /**
      * Similar to the HTTP's PATCH-method, this method allows for changing predefined
      * values of this object to the values of a modified object.
@@ -61,6 +59,11 @@ public abstract class FileElement<SELF extends FileElement<?>> implements Savabl
     public String getName() {
         return name;
     }
+
+    @JsonProperty("type")
+    public abstract String getTypeIdentifier();
+
+    public abstract String generateId(Object base);
 
     @Override
     public String getId() {

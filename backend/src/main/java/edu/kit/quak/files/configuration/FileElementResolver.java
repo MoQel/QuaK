@@ -6,7 +6,10 @@ import com.fasterxml.jackson.databind.jsontype.impl.TypeIdResolverBase;
 import edu.kit.quak.files.model.Directory;
 import edu.kit.quak.files.model.File;
 import edu.kit.quak.files.model.FileElement;
-import edu.kit.quak.files.model.Type;
+import edu.kit.quak.files.repository.savers.FileElementSaver;
+import edu.kit.quak.files.repository.savers.FileElementSaversRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
@@ -20,7 +23,12 @@ import static com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
  *
  * @author Henrik K
  */
+@Component
 public class FileElementResolver extends TypeIdResolverBase {
+
+    @Autowired
+    private FileElementSaversRepository repository;
+
     private JavaType superType;
 
     @Override
@@ -30,17 +38,21 @@ public class FileElementResolver extends TypeIdResolverBase {
 
     @Override
     public String idFromValue(Object value) {
-        return idFromValueAndType(value, value.getClass());
+        return repository.getSaverForClass(value.getClass())
+                         .map(FileElementSaver::getTypeIdentifier)
+                         .orElseThrow(
+                             () -> new IllegalStateException("Tried to serialize unknown class as FileElement")
+                         );
     }
 
     @Override
     public String idFromValueAndType(Object value, Class<?> suggestedType) {
-        return Type.getByRelatedClass(suggestedType).orElseThrow().name;
+        return repository.getSaverForClass(suggestedType).orElseThrow().getTypeIdentifier();
     }
 
     @Override
     public JavaType typeFromId(DatabindContext context, String id) throws IOException {
-        return context.constructSpecializedType(superType, Type.getTypeByName(id).orElseThrow().getRelatedClass());
+        return context.constructSpecializedType(superType, repository.getSaverForTypeName(id).orElseThrow().getRelatedClass());
     }
 
     @Override

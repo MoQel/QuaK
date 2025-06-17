@@ -11,8 +11,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
-import static edu.kit.quak.files.model.Type.DIRECTORY;
-
 /**
  * A Directory is a container of FileElements inside a project.
  *
@@ -20,6 +18,9 @@ import static edu.kit.quak.files.model.Type.DIRECTORY;
  */
 @Entity
 public class Directory extends FileElement<Directory> implements FileElementContainer {
+
+    public static final String TYPE_IDENTIFIER = "directory";
+    public static final char ID_PREFIX = 'd';
 
     protected Directory() { }
 
@@ -55,7 +56,12 @@ public class Directory extends FileElement<Directory> implements FileElementCont
     }
 
     @Override
-    public Type getType() {
-        return DIRECTORY;
+    public String getTypeIdentifier() {
+        return TYPE_IDENTIFIER;
+    }
+
+    @Override
+    public String generateId(Object base) {
+        return ID_PREFIX + base.toString();
     }
 }

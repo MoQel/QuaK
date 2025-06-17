@@ -21,7 +21,6 @@ import java.util.Properties;
 /**
  * This class handles ID-generation for the elements of type {@link FileElement}.
  *
- * @see edu.kit.quak.files.model.Type
  * @author Henrik K
  */
 public class CustomIdGenerator extends SequenceStyleGenerator {
@@ -30,7 +29,7 @@ public class CustomIdGenerator extends SequenceStyleGenerator {
     public Object generate(SharedSessionContractImplementor session, Object object) throws HibernateException {
         Object id = super.generate(session, object);
         if (object instanceof FileElement<?> element) {
-            id = element.getType().appendPrefixToId(id);
+            id = element.generateId(id);
         }
         return id;
     }

@@ -14,8 +14,6 @@ public class DepthFilter extends SimpleBeanPropertyFilter {
 
     private static final HashSet<String> IGNORE = new HashSet<>(List.of("contents"));
 
-    private final static int MAX_DEPTH = 3;
-
     @Override
     public void serializeAsField(Object pojo, JsonGenerator jgen, SerializerProvider provider, PropertyWriter writer) throws Exception {
         if (!IGNORE.contains(writer.getName())) {

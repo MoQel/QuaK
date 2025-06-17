@@ -4,16 +4,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.kit.quak.files.model.Directory;
 import edu.kit.quak.files.model.File;
 import edu.kit.quak.files.model.FileElement;
-import edu.kit.quak.files.model.FileElementContainer;
-import edu.kit.quak.files.model.Type;
 import edu.kit.quak.files.repository.DirectoryRepository;
 import edu.kit.quak.files.repository.FileRepository;
-import edu.kit.quak.files.repository.ProjectRepository;
 import edu.kit.quak.files.repository.RepoMonad;
+import edu.kit.quak.files.repository.savers.FileElementSaver;
+import edu.kit.quak.files.repository.savers.FileElementSaversRepository;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.data.repository.CrudRepository;
 import org.springframework.http.HttpStatus;
-import org.springframework.util.PathMatcher;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -44,66 +41,27 @@ public class FileController {
 
     private final FileRepository files;
     private final DirectoryRepository directories;
-    private final ProjectRepository projects;
     private final ObjectMapper objectMapper;
+    private final FileElementSaversRepository savers;
 
-    public FileController(FileRepository files, DirectoryRepository directories, ProjectRepository projects, ObjectMapper objectMapper, PathMatcher pathMatcher) {
+    public FileController(FileRepository files, DirectoryRepository directories, ObjectMapper objectMapper, FileElementSaversRepository savers) {
         this.files = files;
         this.directories = directories;
         this.objectMapper = objectMapper;
-        this.projects = projects;
+        this.savers = savers;
     }
 
 
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping("/")
     public FileElement<?> newFile(@RequestBody Map<String, Object> obj, @RequestHeader(name = "parent_id") String parent) {
-        Type element = Type.getTypeByName(obj.getOrDefault("type", "").toString()).orElseThrow(
-                () -> new ResponseStatusException(BAD_REQUEST, "Type of object could not be determined")
-        );
-        switch (element) {
-            case FILE -> {
-                return saveFile(objectMapper.convertValue(obj, File.class), parent);
-            }
-            case DIRECTORY -> {
-                return saveDir(objectMapper.convertValue(obj, Directory.class), parent);
-            }
-            default -> throw new ResponseStatusException(BAD_REQUEST, "Given object type can not be saved under this endpoint");
-        }
-    }
-
-    private File saveFile(File file, String parent) {
-        RepoMonad<?> container = getFileElementContainer(parent);
-        // Ensure that new file is created
-        file.setId(null);
-        final File saved  = files.save(file);
-        container.addAndSave(parent, saved);
-        return saved;
-    }
-
-    private RepoMonad<?> getFileElementContainer(String parent) {
-        Optional<Type> type = Type.getTypeForId(parent);
-        if (type.isEmpty()) {
-            throw new ResponseStatusException(BAD_REQUEST, "Given parent_id does not map to an existing element");
-        }
-        CrudRepository<? extends FileElementContainer, String> repo;
-        switch (type.get()) {
-            case DIRECTORY -> {
-                return new RepoMonad<>(directories);
-            }
-            case PROJECT -> {
-                return new RepoMonad<>(projects);
-            }
-            default -> throw new ResponseStatusException(BAD_REQUEST, "Given id maps to a wrong type");
-        }
-    }
-
-    private Directory saveDir(Directory dir, String parent) {
-        RepoMonad<?> container = getFileElementContainer(parent);
-        dir.setId(null);
-        dir.getContent().forEach(dir::removeElement);
-        final Directory saved = directories.save(dir);
-        container.addAndSave(parent, saved);
+        final RepoMonad<?> dest = savers.getSaverForElementId(parent)
+                                        .flatMap(FileElementSaver::getRepoMonad)
+                                        .orElseThrow(() -> new ResponseStatusException(BAD_REQUEST, "No matching parent found"));
+        final FileElement<?> saved = savers.getSaverForTypeName(obj.getOrDefault("type", "").toString())
+                .map(s -> s.mapAndSaveNew(objectMapper, obj))
+                .orElseThrow(() -> new ResponseStatusException(BAD_REQUEST, "Given object type can not be saved under this endpoint"));
+        dest.addAndSave(parent, saved);
         return saved;
     }
 
@@ -134,11 +92,13 @@ public class FileController {
         Optional<File> file = files.findById(fId);
         Optional<Directory> directory = directories.findById(fId);
         if (file.isPresent()) {
-            body.put("type", Type.FILE.name);
-            patchFile(file.get(), body);
+            File base = file.get();
+            body.put("type", base.getTypeIdentifier());
+            patchFile(base, body);
         } else if (directory.isPresent()) {
-            body.put("type", Type.DIRECTORY.name);
-            patchDirectory(directory.get(), body);
+            Directory base = directory.get();
+            body.put("type", base.getTypeIdentifier());
+            patchDirectory(base, body);
         } else {
             throw new ResponseStatusException(BAD_REQUEST, "Given ID did not resolve to file or directory");
         }
