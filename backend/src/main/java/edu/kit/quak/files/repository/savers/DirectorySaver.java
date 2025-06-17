@@ -4,6 +4,7 @@ import edu.kit.quak.files.model.Directory;
 import edu.kit.quak.files.repository.DirectoryRepository;
 import edu.kit.quak.files.repository.RepoMonad;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
@@ -43,6 +44,11 @@ public class DirectorySaver implements FileElementSaver<Directory> {
     @Override
     public Class<Directory> getRelatedClass() {
         return Directory.class;
+    }
+
+    @Override
+    public CrudRepository<Directory, String> getRepository() {
+        return repository;
     }
 
     @Override

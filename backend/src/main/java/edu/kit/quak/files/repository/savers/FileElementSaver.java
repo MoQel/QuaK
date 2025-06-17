@@ -3,9 +3,11 @@ package edu.kit.quak.files.repository.savers;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.kit.quak.files.model.FileElement;
 import edu.kit.quak.files.repository.RepoMonad;
+import org.springframework.data.repository.CrudRepository;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.BiFunction;
 
 /**
  * A FileElementSaver handles saving of a {@link FileElement}.
@@ -13,7 +15,7 @@ import java.util.Optional;
  * @author Henrik K
  * @param <T> The type of FileElement this saver saves.
  */
-public interface FileElementSaver<T extends FileElement<?>> {
+public interface FileElementSaver<T extends FileElement<T>> {
 
     /**
      * @return The type identifier of {@link T the FileElement}
@@ -34,6 +36,15 @@ public interface FileElementSaver<T extends FileElement<?>> {
      * @return The result of saving the {@code element}
      */
     T saveNew(T element) throws IllegalArgumentException;
+
+    default T patch(String id, BiFunction<T, Class<T>, T> mapping) throws IllegalArgumentException {
+        T toPatch = getRepository().findById(id).orElseThrow(
+                () -> new IllegalArgumentException("Given ID does not resolve")
+        );
+        T patch = mapping.apply(toPatch, getRelatedClass());
+        toPatch.patch(patch);
+        return getRepository().save(toPatch);
+    }
 
     /**
      * Maps the given object and {@link #saveNew(FileElement) saves} it.
@@ -57,4 +68,6 @@ public interface FileElementSaver<T extends FileElement<?>> {
      * @return The class of {@link T}
      */
     Class<T> getRelatedClass();
+
+    CrudRepository<T, String> getRepository();
 }

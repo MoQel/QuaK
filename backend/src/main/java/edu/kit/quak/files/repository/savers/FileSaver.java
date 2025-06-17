@@ -4,6 +4,7 @@ import edu.kit.quak.files.model.File;
 import edu.kit.quak.files.repository.FileRepository;
 import edu.kit.quak.files.repository.RepoMonad;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
@@ -41,6 +42,11 @@ public class FileSaver implements FileElementSaver<File> {
     @Override
     public Class<File> getRelatedClass() {
         return File.class;
+    }
+
+    @Override
+    public CrudRepository<File, String> getRepository() {
+        return repository;
     }
 
     @Override

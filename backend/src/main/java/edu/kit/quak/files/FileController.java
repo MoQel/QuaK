@@ -51,7 +51,6 @@ public class FileController {
         this.savers = savers;
     }
 
-
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping("/")
     public FileElement<?> newFile(@RequestBody Map<String, Object> obj, @RequestHeader(name = "parent_id") String parent) {
@@ -67,13 +66,10 @@ public class FileController {
 
     @GetMapping("/{fId}")
     public FileElement<?> retrieveFile(@PathVariable String fId) {
-        Optional<File> file = files.findById(fId);
-        if (file.isPresent())
-            return file.get();
-        Optional<Directory> dir = directories.findById(fId);
-        if (dir.isPresent())
-            return dir.get();
-        throw new ResponseStatusException(BAD_REQUEST, "No matching FileElement found for id");
+        return savers.getSaverForElementId(fId)
+                .map(FileElementSaver::getRepository)
+                .flatMap(repo -> repo.findById(fId))
+                .orElseThrow(() -> new ResponseStatusException(BAD_REQUEST, "No matching FileElement found for id"));
     }
 
     @DeleteMapping("/{fId}")
@@ -89,39 +85,15 @@ public class FileController {
 
     @PatchMapping("/{fId}")
     public void patchFileElement(@PathVariable String fId, @RequestBody Map<String, Object> body) {
-        Optional<File> file = files.findById(fId);
-        Optional<Directory> directory = directories.findById(fId);
-        if (file.isPresent()) {
-            File base = file.get();
-            body.put("type", base.getTypeIdentifier());
-            patchFile(base, body);
-        } else if (directory.isPresent()) {
-            Directory base = directory.get();
-            body.put("type", base.getTypeIdentifier());
-            patchDirectory(base, body);
-        } else {
-            throw new ResponseStatusException(BAD_REQUEST, "Given ID did not resolve to file or directory");
-        }
-    }
-
-    private void patchFile(File original, Map<String, Object> body) {
-        File patch = objectMapper.convertValue(body, File.class);
         try {
-            original.patch(patch);
+            savers.getSaverForElementId(fId)
+                  .ifPresent(sav -> sav.patch(fId, (toPatch, clazz) -> {
+                      body.put("type", toPatch.getTypeIdentifier());
+                      return objectMapper.convertValue(body, clazz);
+                  }));
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(BAD_REQUEST, e.getMessage());
         }
-        files.save(original);
-    }
-
-    private void patchDirectory(Directory original, Map<String, Object> body) {
-        Directory patch = objectMapper.convertValue(body, Directory.class);
-        try {
-            original.patch(patch);
-        } catch (IllegalArgumentException e) {
-            throw new ResponseStatusException(BAD_REQUEST, e.getMessage());
-        }
-        directories.save(original);
     }
 
     @GetMapping("/{fId}/content")
