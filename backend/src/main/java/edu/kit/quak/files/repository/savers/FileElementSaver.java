@@ -8,6 +8,7 @@ import org.springframework.data.repository.CrudRepository;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 
 /**
  * A FileElementSaver handles saving of a {@link FileElement}.
@@ -70,4 +71,15 @@ public interface FileElementSaver<T extends FileElement<T>> {
     Class<T> getRelatedClass();
 
     CrudRepository<T, String> getRepository();
+
+    /**
+     * Deletes a given element and possibly its content, depending on
+     * the implementing class
+     * @param toDelete The ID of the element to delete
+     * @param deleter A consumer which deletes a given ID from persistent storage
+     * @throws IllegalArgumentException If no element with ID {@code toDelete} could be found.
+     */
+    default void delete(String toDelete, Consumer<String> deleter) throws IllegalArgumentException {
+        getRepository().deleteById(toDelete);
+    }
 }

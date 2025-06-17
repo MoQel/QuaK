@@ -1,10 +1,8 @@
 package edu.kit.quak.files;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import edu.kit.quak.files.model.Directory;
 import edu.kit.quak.files.model.File;
 import edu.kit.quak.files.model.FileElement;
-import edu.kit.quak.files.repository.DirectoryRepository;
 import edu.kit.quak.files.repository.FileRepository;
 import edu.kit.quak.files.repository.RepoMonad;
 import edu.kit.quak.files.repository.savers.FileElementSaver;
@@ -25,7 +23,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Map;
-import java.util.Optional;
 
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 
@@ -40,13 +37,11 @@ import static org.springframework.http.HttpStatus.BAD_REQUEST;
 public class FileController {
 
     private final FileRepository files;
-    private final DirectoryRepository directories;
     private final ObjectMapper objectMapper;
     private final FileElementSaversRepository savers;
 
-    public FileController(FileRepository files, DirectoryRepository directories, ObjectMapper objectMapper, FileElementSaversRepository savers) {
+    public FileController(FileRepository files, ObjectMapper objectMapper, FileElementSaversRepository savers) {
         this.files = files;
-        this.directories = directories;
         this.objectMapper = objectMapper;
         this.savers = savers;
     }
@@ -74,13 +69,11 @@ public class FileController {
 
     @DeleteMapping("/{fId}")
     public void deleteFile(@PathVariable String fId) {
-        files.findById(fId).ifPresent(files::delete);
-
-        //Currently deleting a directory and all of its content
-        Optional<Directory> dir = directories.findById(fId);
-        dir.map(Directory::getContent)
-                .ifPresent(s -> s.forEach(e -> this.deleteFile(e.getId())));
-        dir.ifPresent(directories::delete);
+        try {
+            savers.delete(fId);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(BAD_REQUEST, e.getMessage());
+        }
     }
 
     @PatchMapping("/{fId}")

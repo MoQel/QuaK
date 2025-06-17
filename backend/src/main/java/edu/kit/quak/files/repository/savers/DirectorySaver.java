@@ -8,6 +8,7 @@ import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
+import java.util.function.Consumer;
 
 /**
  * Handles saving of {@link Directory Directories}.
@@ -54,5 +55,13 @@ public class DirectorySaver implements FileElementSaver<Directory> {
     @Override
     public boolean hasElement(String id) {
         return repository.findById(id).isPresent();
+    }
+
+    @Override
+    public void delete(String toDelete, Consumer<String> deleter) {
+        Optional<Directory> dir = repository.findById(toDelete);
+        dir.map(Directory::getContent)
+           .ifPresent(s -> s.forEach(e -> deleter.accept(e.getId())));
+        dir.ifPresent(repository::delete);
     }
 }

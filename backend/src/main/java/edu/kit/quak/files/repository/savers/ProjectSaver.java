@@ -1,5 +1,6 @@
 package edu.kit.quak.files.repository.savers;
 
+import edu.kit.quak.files.model.FileElement;
 import edu.kit.quak.files.model.Project;
 import edu.kit.quak.files.repository.ProjectRepository;
 import edu.kit.quak.files.repository.RepoMonad;
@@ -8,6 +9,7 @@ import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
+import java.util.function.Consumer;
 
 /**
  * Handles saving of {@link Project projects}.
@@ -56,5 +58,17 @@ public class ProjectSaver implements FileElementSaver<Project> {
     @Override
     public boolean hasElement(String id) {
         return repository.findById(id).isPresent();
+    }
+
+    @Override
+    public void delete(String toDelete, Consumer<String> deleter) throws IllegalArgumentException {
+        Project delete = repository.findById(toDelete).orElseThrow(
+                () -> new IllegalArgumentException("Given id does not map to a project")
+        );
+
+        for (FileElement<?> element : delete.getContent()) {
+            deleter.accept(element.getId());
+        }
+        repository.delete(delete);
     }
 }

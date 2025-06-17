@@ -48,4 +48,8 @@ public class FileElementSaversRepository {
     public Optional<FileElementSaver<?>> getSaverForElementId(String id) {
         return getFor(saver -> saver.hasElement(id));
     }
+
+    public void delete(String id) {
+        getSaverForElementId(id).ifPresent(saver -> saver.delete(id, this::delete));
+    }
 }
