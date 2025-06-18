@@ -1,0 +1,53 @@
+#root {
+  margin: 0 auto;
+  text-align: center;
+  --gateWidth : 20px;
+  --colorBack: #2f2e2e;
+  --colorFront: #1e1616;
+  --colorHighlight : #000;
+  --colorTitles: #0ae655;
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;           /* Fill the full screen height */
+  padding-left: 30px;
+  padding-right: 30px;
+}
+/* responsible for the project manager, circuit-view and text-editor*/
+.workspace-view {
+  display: flex;
+  flex: 2;                 /* Takes 2/3 of the height */
+  width: 100%;
+  gap: 1rem;               /* Space between the two divs */
+}
+
+/*responsible for the library, inspector and results-view */
+.tools-view {
+  flex: 1;                 /* Takes 1/3 of the height */
+  width: 100%;
+}
+
+.lines {
+  background-size: 100% 2px;
+  background-image: linear-gradient(to right,
+  white 0% 100%);
+  background-position-y: center;
+  background-position-x: right;
+  background-repeat: no-repeat;
+}
+
+.gate {
+  padding: 9px 11px;
+  border-radius: 4px;
+  color: white;
+  background-color: var(--colorFront);
+  border: 1px solid white;
+  margin-top: 0px;
+  width: var(--gateWidth);
+  display: inline-block;
+  text-align: center;
+  user-select: none;
+
+}
