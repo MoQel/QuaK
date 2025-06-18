@@ -45,8 +45,6 @@ public class File extends FileElement<File> {
     @Override
     public void patch(File modified) {
         super.patch(modified);
-        if (modified.createdOn != null && modified.createdOn.isAfter(createdOn))
-            this.createdOn = modified.createdOn;
         if (modified.lastAccess != null && modified.lastAccess.isAfter(lastAccess))
             this.lastAccess = modified.lastAccess;
     }

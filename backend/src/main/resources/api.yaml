@@ -20,6 +20,10 @@ paths:
       tags:
         - projects
       summary: Retrieve an overview of existing projects
+      description: >
+        The returned projects is only an overview.
+        This means that the content of the projects are not displayed.
+        To get the content of a project, use the `/project/{pId}` endpoint.
       responses:
         200:
           description: successful operation

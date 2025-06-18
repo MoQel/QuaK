@@ -180,6 +180,7 @@ class ProjectControllerTest extends QuaKApplicationTests {
                 get("/project/")
         ).andExpectAll(
                 status().isOk(),
+                jsonPath("$.id", is(main.getId())),
                 jsonPath("$[0].name", is(main.getName())),
                 jsonPath("$[0].contents").isArray(),
                 jsonPath("$[0].contents[0].name", is(lower.getName())),
