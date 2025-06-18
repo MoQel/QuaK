@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Lob;
+import org.springframework.http.MediaType;
 
 import java.time.Instant;
 
@@ -20,8 +21,8 @@ public class File extends FileElement<File> {
     @JsonProperty
     private Instant createdOn;
 
-    @JsonIgnore
-    private String contentType;
+    @JsonProperty
+    private String contentType = MediaType.ALL_VALUE;
     @Lob
     @JsonIgnore
     private byte[] content;

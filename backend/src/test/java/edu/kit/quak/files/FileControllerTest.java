@@ -73,7 +73,8 @@ class FileControllerTest extends QuaKApplicationTests {
                         jsonPath("$.id", not("")),
                         jsonPath("$.name", is(sent.get("name").asText())),
                         jsonPath("$.type", is(sent.get("type").asText())),
-                        jsonPath("$.createdOn", equalTo(sent.get("createdOn").asLong()), Long.class)
+                        jsonPath("$.createdOn", equalTo(sent.get("createdOn").asLong()), Long.class),
+                        jsonPath("$.contentType", equalTo(MediaType.ALL_VALUE))
                );
     }
 
@@ -236,6 +237,14 @@ class FileControllerTest extends QuaKApplicationTests {
                 content().contentType(contentHeader),
                 content().bytes(content)
         );
+
+        mockMvc.perform(
+                get("/file/"+file.getId())
+        ).andExpectAll(
+                status().isOk(),
+                jsonPath("$.contentType", startsWith(contentType))
+        );
+
         files.deleteById(file.getId());
     }
 

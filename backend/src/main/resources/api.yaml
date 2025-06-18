@@ -382,6 +382,9 @@ components:
               type: integer
               format: int64
               description: Unix-Epoch in seconds
+            contentType:
+              type: string
+              description: The content-type of the file's content
 
     Directory:
       allOf:
