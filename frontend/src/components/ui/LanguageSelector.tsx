@@ -18,7 +18,6 @@ import {
     FormControl,
     FormField,
     FormItem,
-    FormLabel,
     FormMessage,
 } from "@/components/ui/form"
 import {
@@ -67,7 +66,6 @@ export const LanguageSelector
                     name="language"
                     render={({ field }) => (
                         <FormItem className="flex flex-col">
-                            <FormLabel>Language</FormLabel>
                             <Popover>
                                 <PopoverTrigger asChild>
                                     <FormControl>
