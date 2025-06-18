@@ -8,6 +8,7 @@ import edu.kit.quak.files.model.Directory;
 import edu.kit.quak.files.model.File;
 import edu.kit.quak.files.model.Project;
 import jakarta.transaction.Transactional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -35,6 +36,11 @@ class ProjectControllerTest extends QuaKApplicationTests {
     private MockMvc mockMvc;
 
     private final ObjectMapper mapper = new ObjectMapper();
+
+    @BeforeEach
+    void setUp() {
+        projects.deleteAll();
+    }
 
     @Test
     void createAndGetProject() throws Exception {

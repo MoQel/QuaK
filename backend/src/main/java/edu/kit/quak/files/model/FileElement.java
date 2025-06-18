@@ -60,7 +60,7 @@ public abstract class FileElement<SELF extends FileElement<?>> implements Savabl
         return name;
     }
 
-    @JsonProperty("type")
+    @JsonProperty(TYPE_FIELD)
     public abstract String getTypeIdentifier();
 
     public abstract String generateId(Object base);

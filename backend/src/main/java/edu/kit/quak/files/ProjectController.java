@@ -1,8 +1,8 @@
 package edu.kit.quak.files;
 
-import edu.kit.quak.files.model.FileElement;
 import edu.kit.quak.files.model.Project;
 import edu.kit.quak.files.repository.ProjectRepository;
+import edu.kit.quak.files.repository.savers.FileElementSaversRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,11 +31,11 @@ import static org.springframework.http.HttpStatus.BAD_REQUEST;
 public class ProjectController {
 
     private final ProjectRepository projects;
-    private final FileController fileController;
+    private final FileElementSaversRepository savers;
 
-    public ProjectController(ProjectRepository projects, FileController fileController) {
+    public ProjectController(ProjectRepository projects, FileElementSaversRepository savers) {
         this.projects = projects;
-        this.fileController = fileController;
+        this.savers = savers;
     }
 
     @GetMapping({"", "/"})
@@ -76,13 +76,6 @@ public class ProjectController {
     
     @DeleteMapping("/{pId}")
     public void deleteProject(@PathVariable String pId) {
-        Project project = projects.findById(pId).orElseThrow(
-                () -> new ResponseStatusException(BAD_REQUEST, "Given id does not map to a project")
-        );
-
-        for (FileElement<?> element : project.getContent()) {
-            fileController.deleteFile(element.getId());
-        }
-        projects.delete(project);
+        savers.delete(pId, Project.class);
     }
 }

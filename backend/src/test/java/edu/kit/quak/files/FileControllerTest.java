@@ -337,4 +337,14 @@ class FileControllerTest extends QuaKApplicationTests {
             jsonPath("$.contents[0].name", is(file.getName()))
         );
     }
+
+    @Test
+    void cantRequestProjectInFileEndpoint() throws Exception {
+        Project project = projects.save(new Project("Test"));
+        mockMvc.perform(
+                get("/file/"+project.getId())
+        ).andExpectAll(
+                status().isBadRequest()
+        );
+    }
 }

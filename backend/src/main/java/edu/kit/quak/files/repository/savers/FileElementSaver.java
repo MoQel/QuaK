@@ -38,6 +38,14 @@ public interface FileElementSaver<T extends FileElement<T>> {
      */
     T saveNew(T element) throws IllegalArgumentException;
 
+    /**
+     * Allows for patching a {@link FileElement} stored in this saver
+     * @param id The id of the element to patch
+     * @param mapping A function which provides the <i>patch</i> based on two parameters: The element to patch
+     *                and the class of the element to patch.
+     * @return The patched element
+     * @throws IllegalArgumentException If the {@code id} does not resolve or patching the element fails
+     */
     default T patch(String id, BiFunction<T, Class<T>, T> mapping) throws IllegalArgumentException {
         T toPatch = getRepository().findById(id).orElseThrow(
                 () -> new IllegalArgumentException("Given ID does not resolve")

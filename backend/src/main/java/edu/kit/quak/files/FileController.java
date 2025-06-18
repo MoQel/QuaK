@@ -1,6 +1,7 @@
 package edu.kit.quak.files;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import edu.kit.quak.files.model.Directory;
 import edu.kit.quak.files.model.File;
 import edu.kit.quak.files.model.FileElement;
 import edu.kit.quak.files.repository.FileRepository;
@@ -24,6 +25,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Map;
 
+import static edu.kit.quak.files.model.FileElement.TYPE_FIELD;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 
 /**
@@ -35,6 +37,8 @@ import static org.springframework.http.HttpStatus.BAD_REQUEST;
 @RestController
 @RequestMapping("/file")
 public class FileController {
+
+    private static final Class<?>[] FILTER = {File.class, Directory.class};
 
     private final FileRepository files;
     private final ObjectMapper objectMapper;
@@ -52,7 +56,7 @@ public class FileController {
         final RepoMonad<?> dest = savers.getSaverForElementId(parent)
                                         .flatMap(FileElementSaver::getRepoMonad)
                                         .orElseThrow(() -> new ResponseStatusException(BAD_REQUEST, "No matching parent found"));
-        final FileElement<?> saved = savers.getSaverForTypeName(obj.getOrDefault("type", "").toString())
+        final FileElement<?> saved = savers.getSaverForTypeName(obj.getOrDefault(TYPE_FIELD, "").toString(), FILTER)
                 .map(s -> s.mapAndSaveNew(objectMapper, obj))
                 .orElseThrow(() -> new ResponseStatusException(BAD_REQUEST, "Given object type can not be saved under this endpoint"));
         dest.addAndSave(parent, saved);
@@ -61,7 +65,7 @@ public class FileController {
 
     @GetMapping("/{fId}")
     public FileElement<?> retrieveFile(@PathVariable String fId) {
-        return savers.getSaverForElementId(fId)
+        return savers.getSaverForElementId(fId, FILTER)
                 .map(FileElementSaver::getRepository)
                 .flatMap(repo -> repo.findById(fId))
                 .orElseThrow(() -> new ResponseStatusException(BAD_REQUEST, "No matching FileElement found for id"));
@@ -70,7 +74,7 @@ public class FileController {
     @DeleteMapping("/{fId}")
     public void deleteFile(@PathVariable String fId) {
         try {
-            savers.delete(fId);
+            savers.delete(fId, FILTER);
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(BAD_REQUEST, e.getMessage());
         }
@@ -79,9 +83,9 @@ public class FileController {
     @PatchMapping("/{fId}")
     public void patchFileElement(@PathVariable String fId, @RequestBody Map<String, Object> body) {
         try {
-            savers.getSaverForElementId(fId)
+            savers.getSaverForElementId(fId, FILTER)
                   .ifPresent(sav -> sav.patch(fId, (toPatch, clazz) -> {
-                      body.put("type", toPatch.getTypeIdentifier());
+                      body.put(TYPE_FIELD, toPatch.getTypeIdentifier());
                       return objectMapper.convertValue(body, clazz);
                   }));
         } catch (IllegalArgumentException e) {
