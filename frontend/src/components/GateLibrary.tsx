@@ -1,12 +1,21 @@
 import styles from '../App.module.css'
+import {Button} from "@/components/ui/button.tsx";
+import {Badge} from "@/components/ui/badge.tsx";
 
-export function GateInfoElement(){
+
+function GateLibrary() {
 
     return (
-        <p draggable="true"
-           className={styles.availableGate}>
-            X
-        </p>
-    )
+        <>
+            <Badge
+                draggable
+                className={styles.gate}
 
+            >
+                X
+            </Badge>
+        </>
+    )
 }
+
+export default GateLibrary;

@@ -4,8 +4,6 @@
   --gateWidth : 20px;
   --colorBack: #2f2e2e;
   --colorFront: #1e1616;
-  --colorHighlight : #000;
-  --colorTitles: #0ae655;
 }
 
 .main {
@@ -32,7 +30,7 @@
 .lines {
   background-size: 100% 2px;
   background-image: linear-gradient(to right,
-  white 0% 100%);
+  var(--color-amber-200) 0% 100%);
   background-position-y: center;
   background-position-x: right;
   background-repeat: no-repeat;
@@ -41,13 +39,20 @@
 .gate {
   padding: 9px 11px;
   border-radius: 4px;
-  color: white;
-  background-color: var(--colorFront);
-  border: 1px solid white;
   margin-top: 0px;
   width: var(--gateWidth);
   display: inline-block;
   text-align: center;
   user-select: none;
 
+}
+
+.availableGateContainer {
+  padding: 9px 11px;
+  display: flex;
+  grid-auto-flow: column;
+  min-width: 0;
+  min-height: 0;
+  justify-content: space-evenly;
+  flex-wrap: wrap;
 }
