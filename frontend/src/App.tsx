@@ -13,7 +13,14 @@ function App() {
         <>
             <div className="flex flex-col h-screen px-[10px]">
                 <div className="flex flex-row h-2/3">
-                    <div className="border-2 border-amber-200 w-1/4">project manager</div>
+
+                    <Card className="h-full">
+                        <CardContent>
+                                <div>
+                                    Project Manager
+                                </div>
+                        </CardContent>
+                    </Card>
                     <div className="flex flex-grow-[2] w-full">
                         <ResizablePanelGroup direction="horizontal">
                             <ResizablePanel>
