@@ -1,6 +1,6 @@
 import {Editor} from "@monaco-editor/react";
 import {useState} from "react";
-import {LanguageSelector} from "@/components/ui/LanguageSelector.tsx";
+import {LanguageSelector} from "@/views/text-editor-view/LanguageSelector.tsx";
 import {toast} from "sonner";
 
 function QLPEditor() {

@@ -1,8 +1,8 @@
 import {useEffect} from "react";
 import styles from './App.module.css'
 import {ResizableHandle, ResizablePanel, ResizablePanelGroup} from "@/components/ui/resizable.tsx";
-import QLPEditor from "./components/ui/QLPEditor";
-import GateLibrary from "./components/GateLibrary";
+import QLPEditor from "@/views/text-editor-view/QLPEditor.tsx";
+import GateLibrary from "./views/library-view/GateLibrary.tsx";
 import {Card, CardContent} from "@/components/ui/card.tsx";
 
 function App() {

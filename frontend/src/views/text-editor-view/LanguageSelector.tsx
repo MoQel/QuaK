@@ -5,26 +5,26 @@ import { Check, ChevronsUpDown } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils.ts"
+import { Button } from "@/components/ui/button.tsx"
 import {
     Command,
     CommandGroup,
     CommandItem,
     CommandList,
-} from "@/components/ui/command"
+} from "@/components/ui/command.tsx"
 import {
     Form,
     FormControl,
     FormField,
     FormItem,
     FormMessage,
-} from "@/components/ui/form"
+} from "@/components/ui/form.tsx"
 import {
     Popover,
     PopoverContent,
     PopoverTrigger,
-} from "@/components/ui/popover"
+} from "@/components/ui/popover.tsx"
 import {toast} from "sonner";
 
 const languages = [
