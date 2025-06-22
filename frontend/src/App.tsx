@@ -1,9 +1,10 @@
 import {useEffect} from "react";
-import styles from './App.module.css'
 import {ResizableHandle, ResizablePanel, ResizablePanelGroup} from "@/components/ui/resizable.tsx";
-import QLPEditor from "@/views/text-editor-view/QLPEditor.tsx";
-import GateLibrary from "./views/library-view/GateLibrary.tsx";
 import {Card, CardContent} from "@/components/ui/card.tsx";
+import {GateLibraryView} from "@/views/library-view/GateLibraryView.tsx";
+import {CircuitView} from "@/views/circuit-view/CircuitView.tsx";
+import {TextEditorView} from "@/views/text-editor-view/TextEditorView.tsx";
+import {ProjectManagerView} from "@/views/project-manager-view/ProjectManagerView.tsx";
 
 function App() {
     useEffect(() => {
@@ -13,46 +14,21 @@ function App() {
         <>
             <div className="flex flex-col h-screen px-[10px]">
                 <div className="flex flex-row h-2/3">
-
-                    <Card className="h-full">
-                        <CardContent>
-                                <div>
-                                    Project Manager
-                                </div>
-                        </CardContent>
-                    </Card>
+                    <ProjectManagerView/>
                     <div className="flex flex-grow-[2] w-full">
                         <ResizablePanelGroup direction="horizontal">
                             <ResizablePanel>
-                                <Card className="h-full">
-                                    <CardContent>
-                                <span className={styles.lines}>
-                                    <span className={styles.gate}>
-                                        X
-                                    </span>
-                                </span>
-                                    </CardContent>
-                                </Card>
+                                <CircuitView/>
                             </ResizablePanel>
                             <ResizableHandle withHandle/>
                             <ResizablePanel>
-                                <Card className="h-full">
-                                    <CardContent>
-                                        <QLPEditor/>
-                                    </CardContent>
-                                </Card>
+                                <TextEditorView/>
                             </ResizablePanel>
                         </ResizablePanelGroup>
                     </div>
                 </div>
                 <div className="flex flex-grow-[1] flex-row w-full">
-                    <Card className="w-full">
-                        <CardContent>
-                            <div className={styles.availableGateContainer}>
-                                <GateLibrary/>
-                            </div>
-                        </CardContent>
-                    </Card>
+                    <GateLibraryView/>
                     <Card className="w-full">
                         <CardContent>
                             inspector
