@@ -21,7 +21,7 @@ function App() {
                                 <CircuitView/>
                             </ResizablePanel>
                             <ResizableHandle withHandle/>
-                            <ResizablePanel>
+                            <ResizablePanel className="flex-col h-full">
                                 <TextEditorView/>
                             </ResizablePanel>
                         </ResizablePanelGroup>
