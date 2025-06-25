@@ -57,7 +57,13 @@ public class FileController {
                                         .flatMap(FileElementSaver::getRepoMonad)
                                         .orElseThrow(() -> new ResponseStatusException(BAD_REQUEST, "No matching parent found"));
         final FileElement<?> saved = savers.getSaverForTypeName(obj.getOrDefault(TYPE_FIELD, "").toString(), FILTER)
-                .map(s -> s.mapAndSaveNew(objectMapper, obj))
+                .map(s -> {
+                    try {
+                        return s.mapAndSaveNew(objectMapper, obj);
+                    } catch (IllegalArgumentException e) {
+                        throw new ResponseStatusException(BAD_REQUEST, e.getMessage());
+                    }
+                })
                 .orElseThrow(() -> new ResponseStatusException(BAD_REQUEST, "Given object type can not be saved under this endpoint"));
         dest.addAndSave(parent, saved);
         return saved;

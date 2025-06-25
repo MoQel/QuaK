@@ -60,8 +60,9 @@ public interface FileElementSaver<T extends FileElement<T>> {
      * @param mapper The mapper to map the {@code object} to type {@link T}
      * @param object The object to map
      * @return The newly saved element
+     * @throws IllegalArgumentException if the mapped element has an illegal state
      */
-    default T mapAndSaveNew(ObjectMapper mapper, Map<String, Object> object) {
+    default T mapAndSaveNew(ObjectMapper mapper, Map<String, Object> object) throws IllegalArgumentException {
         T element = mapper.convertValue(object, getRelatedClass());
         return saveNew(element);
     }

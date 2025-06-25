@@ -21,11 +21,13 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Iterator;
 import java.util.Random;
 import java.util.UUID;
 
@@ -354,6 +356,53 @@ class FileControllerTest extends QuaKApplicationTests {
                 get("/file/"+project.getId())
         ).andExpectAll(
                 status().isBadRequest()
+        );
+    }
+
+    @Test
+    void failOnCreatedOnMissingInFile() throws Exception {
+        JsonNode toSend = withoutField("createdOn", getResource("file.json"));
+
+        mockMvc.perform(
+                post("/file/")
+                    .header("parent_id", parent.getId())
+                    .contentType(JSON_CONTENT_TYPE)
+                    .content(toSend.toString())
+        ).andExpectAll(
+                status().isBadRequest()
+        );
+    }
+
+    private JsonNode withoutField(String field, JsonNode original) {
+        ObjectNode modified = mapper.createObjectNode();
+        for (Iterator<String> it = original.fieldNames(); it.hasNext(); ) {
+            String name = it.next();
+            if (!name.equals(field))
+                modified.set(name, original.get(name));
+        }
+        return modified;
+    }
+
+    @Test
+    void failNotOnLastAccessMissingInFile() throws Exception {
+        JsonNode toSend = withoutField("lastAccess", getResource("file.json"));
+
+        MvcResult result = mockMvc.perform(
+                post("/file/")
+                        .header("parent_id", parent.getId())
+                        .contentType(JSON_CONTENT_TYPE)
+                        .content(toSend.toString())
+        ).andExpectAll(
+                status().isCreated()
+        ).andReturn();
+
+        JsonNode response = mapper.readTree(result.getResponse().getContentAsString());
+
+        mockMvc.perform(
+                get("/file/"+response.get("id").asText())
+        ).andExpectAll(
+                status().isOk(),
+                jsonPath("$.lastAccess", notNullValue())
         );
     }
 }

@@ -34,8 +34,12 @@ public class FileSaver implements FileElementSaver<File> {
     }
 
     @Override
-    public File saveNew(File element) {
+    public File saveNew(File element) throws IllegalArgumentException {
         element.setId(null);
+        if (element.getCreatedOn() == null) {
+            throw new IllegalArgumentException("createdOn must be given");
+        }
+        element.setLastAccess(element.getCreatedOn());
         return repository.save(element);
     }
 
