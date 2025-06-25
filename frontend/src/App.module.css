@@ -39,20 +39,20 @@
 .gate {
   padding: 9px 11px;
   border-radius: 4px;
-  margin-top: 0px;
+  margin-top: 0;
   width: var(--gateWidth);
   display: inline-block;
   text-align: center;
   user-select: none;
-
+  font-size: 20px;
 }
 
 .availableGateContainer {
   padding: 9px 11px;
   display: flex;
   grid-auto-flow: column;
-  min-width: 0;
-  min-height: 0;
+  min-width: 10px;
+  min-height: 10px;
   justify-content: space-evenly;
   flex-wrap: wrap;
 }
