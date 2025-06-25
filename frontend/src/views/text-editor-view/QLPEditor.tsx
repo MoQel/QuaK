@@ -11,16 +11,24 @@ function QLPEditor() {
         setLanguage(language);
         toast("Language " + language);
     }
-    return <div className="h-full">
-        <LanguageSelector language={language} onSelect={onSelect} />
-        <Editor
-            className="h-full"
-            language={language}
-            defaultValue="# Some Quantum Code"
-            theme="vs-dark"
-            value={value}
-            onChange={(value) => setValue(value || '')}
-        />
+    return <div className="h-full flex flex-col">
+        <div className="shrink-0">
+            <LanguageSelector language={language} onSelect={onSelect}/>
+        </div>
+        <div className="h-full">
+            <Editor
+                language={language}
+                defaultValue="# Some Quantum Code"
+                theme="vs-dark"
+                value={value}
+                onChange={(value) => setValue(value || '')}
+                options={{
+                    minimap: {enabled: false},
+                    wordWrap: 'on',
+                }}
+                height="100%"
+            />
+        </div>
     </div>;
 }
 
