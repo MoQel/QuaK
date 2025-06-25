@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/dialog.tsx";
 import {useState} from "react";
 import {Button} from "@/components/ui/button.tsx";
+import {CreateDialog} from "@/views/project-manager-view/CreateDialog.tsx";
 
 export function Project({name, id}: {name: string, id: string}) {
     const [isHover, setIsHover] = useState(false);
@@ -23,6 +24,7 @@ export function Project({name, id}: {name: string, id: string}) {
                 >
                     {name}
                 </CollapsibleTrigger>
+                <CreateDialog id={id}/>
                 <ProjectEdit id={id}/>
             </div>
             <CollapsibleContent>
