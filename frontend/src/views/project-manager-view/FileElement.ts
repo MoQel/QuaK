@@ -3,7 +3,3 @@ export interface FileElement {
     name: string,
     type: string,
 }
-
-export interface FileElementContainer extends FileElement {
-    contents: Array<FileElement>
-}
