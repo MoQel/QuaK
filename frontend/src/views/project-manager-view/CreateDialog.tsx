@@ -67,7 +67,6 @@ function CreateFile({parent}: {parent: string}) {
             createdOn: Math.round(Date.now().valueOf() / 1000),
             ...values
         }
-        console.log(body)
 
         fetch("/file/", {
             method: "POST",
@@ -85,11 +84,11 @@ function CreateFile({parent}: {parent: string}) {
                 <FormField
                     control={form.control}
                     name="name"
-                    render={() => (
+                    render={({field}) => (
                         <FormItem className="pb-2">
                             <FormLabel>Filename</FormLabel>
                             <FormControl>
-                                <Input placeholder="new_file.txt"/>
+                                <Input placeholder="new_file.txt" {...field}/>
                             </FormControl>
                         </FormItem>
                     )}
@@ -140,7 +139,6 @@ function CreateDirectory({parent}: {parent: string}) {
             },
             body: JSON.stringify(body),
         })
-        console.log(body)
     }
 
     return (
@@ -149,11 +147,11 @@ function CreateDirectory({parent}: {parent: string}) {
                 <FormField
                     control={form.control}
                     name="name"
-                    render={() => (
+                    render={({field}) => (
                         <FormItem className="pb-2">
                             <FormLabel>Name of the directory</FormLabel>
                             <FormControl>
-                                <Input placeholder="folder"/>
+                                <Input placeholder="folder" {...field}/>
                             </FormControl>
                         </FormItem>
                     )}

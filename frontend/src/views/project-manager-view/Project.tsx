@@ -6,12 +6,47 @@ import {
     DialogHeader, DialogTitle,
     DialogTrigger
 } from "@/components/ui/dialog.tsx";
-import {useState} from "react";
+import {useEffect, useState} from "react";
 import {Button} from "@/components/ui/button.tsx";
 import {CreateDialog} from "@/views/project-manager-view/CreateDialog.tsx";
+import {FileElement, FileElementContainer} from "@/views/project-manager-view/FileElement.ts";
+import {File} from "@/views/project-manager-view/File.tsx";
+import {Directory} from "@/views/project-manager-view/Directory.tsx";
+import {Skeleton} from "@/components/ui/skeleton.tsx";
+
+interface Project extends FileElementContainer {
+}
+
+async function ProjectContent(id : string) {
+    const response = await fetch("/project/" + id, {
+        method: "GET",
+    })
+
+    const project = await response.json() as Project
+    const elements = [];
+    for (const element of project.contents) {
+        elements.push(getElementForFileElement(element))
+    }
+    return elements
+}
+
+function getElementForFileElement(object: FileElement) {
+    if (object.type === "file") {
+        return (<File {...object}/>)
+    } else if (object.type === "directory") {
+        return (<Directory {...object}/>)
+    }
+    throw new Error("Could not parse FileElement");
+}
 
 export function Project({name, id}: {name: string, id: string}) {
     const [isHover, setIsHover] = useState(false);
+    const [content, setContent] = useState([<Skeleton className="h-4 w-[250px]" />])
+    const [click, setClick] = useState(false);
+
+    useEffect(() => {
+            ProjectContent(id).then(setContent)
+    }, [id, click])
 
     return (
         <Collapsible>
@@ -20,6 +55,7 @@ export function Project({name, id}: {name: string, id: string}) {
                     className="flex-auto"
                     onMouseEnter={() => setIsHover(true)}
                     onMouseLeave={() => setIsHover(false)}
+                    onClick={() => setClick(!click)}
                     style={isHover ? {textDecoration: 'underline', textAlign: "start"} : {textAlign: "start"}}
                 >
                     {name}
@@ -29,8 +65,7 @@ export function Project({name, id}: {name: string, id: string}) {
             </div>
             <CollapsibleContent>
                 <div className="pl-4">
-                    {/* TODO: Implement filling of content */}
-                    Content
+                    {content}
                 </div>
             </CollapsibleContent>
         </Collapsible>
