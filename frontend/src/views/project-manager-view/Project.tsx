@@ -8,7 +8,7 @@ import {
 import {Button} from "@/components/ui/button.tsx";
 import {FileElementContainer, getElementForFileElement} from "@/views/project-manager-view/FileElementContainer.tsx";
 
-interface Project extends FileElementContainer {
+export interface Project extends FileElementContainer {
 }
 
 async function getProjectContent(id : string) {

@@ -9,27 +9,52 @@ import {
 } from "@/components/ui/dialog.tsx";
 import {Project} from "@/views/project-manager-view/Project.tsx";
 import {Button} from "@/components/ui/button.tsx";
-import {useState} from "react";
+import {useEffect, useState} from "react";
 import {Form, FormControl, FormField, FormItem, FormLabel} from "@/components/ui/form.tsx";
 import {z} from "zod";
 import {useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
 import {Input} from "@/components/ui/input.tsx";
+import {Skeleton} from "@/components/ui/skeleton.tsx";
+
+async function retrieveProjects() {
+    const response = await fetch("/project/", {
+        method: "GET",
+    })
+
+    const projects = await response.json() as Project[]
+    const elements = [];
+    if (projects.length == 0) {
+        elements.push(<p className="text-center p-1">Empty</p>)
+    } else {
+        for (const project of projects) {
+            elements.push(<Project name={project.name} id={project.id}/>)
+        }
+    }
+    return elements
+}
 
 export function ProjectManagerView() {
+    const [content, setContent] = useState([<Skeleton className="h-4" />])
+    const [reloaded, reload] = useState(false)
+
+    useEffect(() => {
+        retrieveProjects().then(setContent)
+    }, [reloaded])
+
     return (
         <Card className="h-full">
-            <CardContent>
-                <div className="flex-col h-8">
-                    <Project name="Test" id="p1"/>
-                    <CreateProject/>
+            <CardContent className="overflow-auto">
+                <div className="flex-col">
+                    {content}
+                    <CreateProject reload={() => reload(!reloaded)}/>
                 </div>
             </CardContent>
         </Card>
     )
 }
 
-function CreateProject() {
+function CreateProject({reload}: {reload: () => void}) {
     const [open, setOpen] = useState(false)
     console.log(open)
 
@@ -57,7 +82,7 @@ function CreateProject() {
                 "Content-Type": "application/json",
             },
             body: JSON.stringify(body),
-        })
+        }).then(reload)
     }
 
     return (
