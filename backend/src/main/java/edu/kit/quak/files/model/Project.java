@@ -42,7 +42,7 @@ public class Project extends FileElement<Project> implements FileElementContaine
 
     @Override
     public void patch(Project modified) throws IllegalArgumentException {
-        if (modified.content == null || content.containsAll(modified.content) && modified.content.containsAll(content)) {
+        if (modified.content == null || modified.content.isEmpty() || content.containsAll(modified.content) && modified.content.containsAll(content)) {
             super.patch(modified);
         } else {
             throw new IllegalArgumentException("Cant patch contents. Use the appropriate method");

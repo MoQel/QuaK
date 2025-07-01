@@ -14,6 +14,7 @@ import {Input} from "@/components/ui/input.tsx";
 import {z} from "zod"
 import {useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
+import {API_ENDPOINT} from "@/views/project-manager-view/ProjectManagerView.tsx";
 
 export function CreateDialog({id}: {id: string}) {
     const [type, setType] = useState("file");
@@ -68,7 +69,7 @@ function CreateFile({parent}: {parent: string}) {
             ...values
         }
 
-        fetch("/file/", {
+        fetch(API_ENDPOINT + "/file/", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -131,7 +132,7 @@ function CreateDirectory({parent}: {parent: string}) {
             ...values
         }
 
-        fetch("/file/", {
+        fetch(API_ENDPOINT + "/file/", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",

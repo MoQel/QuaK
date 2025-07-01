@@ -17,8 +17,10 @@ import {zodResolver} from "@hookform/resolvers/zod";
 import {Input} from "@/components/ui/input.tsx";
 import {Skeleton} from "@/components/ui/skeleton.tsx";
 
+export const API_ENDPOINT = ""
+
 async function retrieveProjects() {
-    const response = await fetch("/project/", {
+    const response = await fetch(API_ENDPOINT + "/project/", {
         method: "GET",
     })
 
@@ -55,9 +57,6 @@ export function ProjectManagerView() {
 }
 
 function CreateProject({reload}: {reload: () => void}) {
-    const [open, setOpen] = useState(false)
-    console.log(open)
-
     const formSchema = z.object({
         name: z.string().min(1, {
             message: "Name of the project must be at least 1 characters.",
@@ -76,7 +75,7 @@ function CreateProject({reload}: {reload: () => void}) {
             ...values
         }
 
-        fetch("/project/", {
+        fetch(API_ENDPOINT + "/project/", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -88,7 +87,7 @@ function CreateProject({reload}: {reload: () => void}) {
     return (
         <Dialog>
             <DialogTrigger asChild>
-                <Button className="w-full" variant="ghost" onClick={() => setOpen(true)}>+</Button>
+                <Button className="w-full" variant="ghost">+</Button>
             </DialogTrigger>
             <DialogContent>
                 <DialogHeader>
@@ -112,7 +111,7 @@ function CreateProject({reload}: {reload: () => void}) {
                             <DialogClose asChild>
                                 <Button variant="outline">Cancel</Button>
                             </DialogClose>
-                            <DialogClose>
+                            <DialogClose asChild>
                                 <Button type="submit">Save changes</Button>
                             </DialogClose>
                         </DialogFooter>

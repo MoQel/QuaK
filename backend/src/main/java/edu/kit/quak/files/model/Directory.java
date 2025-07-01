@@ -48,7 +48,7 @@ public class Directory extends FileElement<Directory> implements FileElementCont
 
     @Override
     public void patch(Directory modified) throws IllegalArgumentException {
-        if (modified.contents == null || contents.containsAll(modified.contents) && modified.contents.containsAll(contents)) {
+        if (modified.contents == null || modified.contents.isEmpty() || contents.containsAll(modified.contents) && modified.contents.containsAll(contents)) {
             super.patch(modified);
         } else {
             throw new IllegalArgumentException("Cant patch contents. Use the appropriate method");
