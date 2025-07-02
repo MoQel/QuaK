@@ -7,6 +7,12 @@ import {File} from "@/views/project-manager-view/File.tsx";
 import {Skeleton} from "@/components/ui/skeleton.tsx";
 import {Empty, ParentRefresh} from "@/views/project-manager-view/ProjectManagerView.tsx";
 import "./ProjectManagerView.css"
+import {
+    ContextMenu,
+    ContextMenuContent,
+    ContextMenuTrigger
+} from "@/components/ui/context-menu.tsx";
+import {Dialog, DialogContent} from "@/components/ui/dialog.tsx";
 
 export interface FileElementContainer extends FileElement {
     contents: Array<FileElement>
@@ -21,36 +27,53 @@ export function getElementForFileElement(object: FileElement) {
     throw new Error("Could not parse FileElement");
 }
 
-export function FileElementContainer({name, id, getContent, edit}: {name: string, id: string, getContent: (id: string) => Promise<JSX.Element[]>, edit: ({id}: {id: string}) => JSX.Element}) {
+export function FileElementContainer({name, id, getContent, edit}: {name: string, id: string, getContent: (id: string) => Promise<JSX.Element[]>, edit: (id: string, trigger: (content: Promise<JSX.Element>) => void) => JSX.Element}) {
     const [content, setContent] = useState([<Skeleton className="h-4" />])
+    const [dialogContent, setDialogContent] = useState(<Skeleton className="h-5 mt-5" />)
     const [reloaded, r] = useState(false);
     const reload = () => r(!reloaded)
+    const [open, setOpen] = useState(false)
 
     useEffect(() => {
         getContent(id).then(setContent)
     }, [id, reloaded, getContent])
 
+    const dialogTrigger = (content: Promise<JSX.Element>) => {
+        setOpen(true)
+        content.then(setDialogContent)
+    }
+
     return (
-        <Collapsible>
-            <div className="flex">
-                <CollapsibleTrigger
-                    className="flex-auto entry"
-                    onClick={reload}
-                >
-                    {name}
-                </CollapsibleTrigger>
-                <ParentRefresh value={reload}>
-                    <CreateDialog id={id}/>
-                </ParentRefresh>
-                {edit({id})}
-            </div>
-            <CollapsibleContent>
-                <div className="pl-4">
-                    <ParentRefresh value={reload}>
+        <ParentRefresh value={reload}>
+            <Collapsible>
+                <Dialog open={open} onOpenChange={setOpen}>
+                    <ContextMenu>
+                        <ContextMenuTrigger>
+                            <div className="flex">
+                                <CollapsibleTrigger
+                                    className="flex-auto entry h-8"
+                                    onClick={reload}
+                                >
+                                    {name}
+                                </CollapsibleTrigger>
+                            </div>
+                        </ContextMenuTrigger>
+                        <ContextMenuContent>
+                            <CreateDialog id={id} trigger={dialogTrigger}/>
+                            {edit(id, dialogTrigger)}
+                        </ContextMenuContent>
+                    </ContextMenu>
+                    <DialogContent>
+                        {dialogContent}
+                    </DialogContent>
+                </Dialog>
+
+                <CollapsibleContent>
+                    <div className="pl-4">
                         {content.length === 0 ? [<Empty/>] : content}
-                    </ParentRefresh>
-                </div>
-            </CollapsibleContent>
-        </Collapsible>
+                    </div>
+                </CollapsibleContent>
+            </Collapsible>
+        </ParentRefresh>
     )
 }

@@ -1,11 +1,7 @@
 import {
-    Dialog,
-    DialogContent,
     DialogDescription,
-    DialogHeader, DialogTitle,
-    DialogTrigger
+    DialogHeader, DialogTitle
 } from "@/components/ui/dialog.tsx";
-import {Button} from "@/components/ui/button.tsx";
 import {FileElementContainer, getElementForFileElement} from "@/views/project-manager-view/FileElementContainer.tsx";
 import {API_ENDPOINT, ParentRefresh} from "@/views/project-manager-view/ProjectManagerView.tsx";
 import {z} from "zod";
@@ -13,9 +9,9 @@ import {useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
 import {Form, FormControl, FormField, FormItem, FormLabel} from "@/components/ui/form.tsx";
 import {Input} from "@/components/ui/input.tsx";
-import {Skeleton} from "@/components/ui/skeleton.tsx";
-import {useContext, useState} from "react";
+import {JSX, useContext} from "react";
 import {DialogCloseButtons} from "@/views/project-manager-view/CreateDialog.tsx";
+import {ContextMenuItem} from "@/components/ui/context-menu.tsx";
 
 export interface Project extends FileElementContainer {
 }
@@ -37,39 +33,33 @@ export function Project({name, id}: {name: string, id: string}) {
     return <FileElementContainer name={name} id={id} getContent={getProjectContent} edit={ProjectEdit}/>
 }
 
-function ProjectEdit({id}: {id: string}) {
-    const [content, setContent] = useState(<Skeleton className="h-4" />)
-
+function ProjectEdit(id: string, trigger: (element: Promise<JSX.Element>) => void) {
     const getProject = () => {
         return fetch(API_ENDPOINT + "/project/" + id, {
             method: "GET"
         }).then((result) => result.json() as unknown as Project)
     }
 
-    const onClick = () => {
-        getProject().then(proj => setContent(<EditForm {...proj}/>))
-    }
-
-    return (
-        <Dialog>
-            <DialogTrigger asChild>
-                <Button className="w-2 flex-none" variant="ghost" onClick={onClick}>E</Button>
-            </DialogTrigger>
-            <DialogContent>
+    const reloadParent = useContext(ParentRefresh)
+    const dialog = () => {
+        trigger(getProject()
+            .then(proj => <>
                 <DialogHeader>
                     <DialogTitle>Edit Project</DialogTitle>
                     <DialogDescription>
                         Edit Project with id <i>{id}</i>
                     </DialogDescription>
                 </DialogHeader>
-                {content}
-            </DialogContent>
-        </Dialog>
+                <EditForm project={proj} reloadParent={reloadParent}/>
+            </>))
+    }
+
+    return (
+        <ContextMenuItem onSelect={dialog}>Edit</ContextMenuItem>
     )
 }
 
-function EditForm(project: Project) {
-    const reloadParent = useContext(ParentRefresh)
+function EditForm({project, reloadParent}: {project: Project, reloadParent: () => void}) {
     const formSchema = z.object({
         name: z.string().min(1, {
             message: "Project name must be at least 1 characters.",

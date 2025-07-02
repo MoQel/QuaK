@@ -1,12 +1,8 @@
 import {
-    Dialog,
     DialogClose,
-    DialogContent,
-    DialogDescription,
     DialogFooter,
     DialogHeader,
     DialogTitle,
-    DialogTrigger
 } from "@/components/ui/dialog.tsx";
 import {Button} from "@/components/ui/button.tsx";
 import {Form, FormControl, FormField, FormItem, FormLabel} from "@/components/ui/form.tsx";
@@ -15,32 +11,42 @@ import {z} from "zod"
 import {useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
 import {API_ENDPOINT, ParentRefresh} from "@/views/project-manager-view/ProjectManagerView.tsx";
-import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs.tsx";
-import {useContext} from "react";
+import {JSX, useContext} from "react";
+import {
+    ContextMenuItem,
+    ContextMenuSub,
+    ContextMenuSubContent,
+    ContextMenuSubTrigger
+} from "@/components/ui/context-menu";
 
-export function CreateDialog({id}: {id: string}) {
+export function CreateDialog({id, trigger}: {id: string, trigger: (element: Promise<JSX.Element>) => void}) {
+    const dialog = (e: JSX.Element) => trigger(Promise.resolve(e))
     return (
-        <Dialog>
-            <DialogTrigger asChild>
-                <Button className="w-2 flex-none" variant="ghost">P</Button>
-            </DialogTrigger>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Create Element</DialogTitle>
-                    <DialogDescription>
-                        Use the dropdown to select which type of Element to create
-                    </DialogDescription>
-                </DialogHeader>
-                <Tabs defaultValue="file">
-                    <TabsList>
-                        <TabsTrigger value="file">File</TabsTrigger>
-                        <TabsTrigger value="directory">Directory</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="file"><CreateFile parent={id}/></TabsContent>
-                    <TabsContent value="directory"><CreateDirectory parent={id}/></TabsContent>
-                </Tabs>
-            </DialogContent>
-        </Dialog>
+        <ContextMenuSub>
+            <ContextMenuSubTrigger>New...</ContextMenuSubTrigger>
+            <ContextMenuSubContent>
+                <ContextMenuItem onSelect={() => dialog(
+                    <>
+                        <DialogHeader>
+                            <DialogTitle>Create a new file</DialogTitle>
+                        </DialogHeader>
+                        <CreateFile parent={id}/>
+                    </>
+                )}>
+                    File
+                </ContextMenuItem>
+                <ContextMenuItem onSelect={() => dialog(
+                    <>
+                        <DialogHeader>
+                            <DialogTitle>Create a new Directory</DialogTitle>
+                        </DialogHeader>
+                        <CreateDirectory parent={id}/>
+                    </>
+                )}>
+                    Directory
+                </ContextMenuItem>
+            </ContextMenuSubContent>
+        </ContextMenuSub>
     )
 }
 

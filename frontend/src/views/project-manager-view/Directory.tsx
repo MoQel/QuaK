@@ -1,11 +1,9 @@
 import {FileElementContainer, getElementForFileElement} from "@/views/project-manager-view/FileElementContainer.tsx";
 import {
-    Dialog, DialogClose,
-    DialogContent,
+    DialogClose,
     DialogDescription, DialogFooter,
     DialogHeader,
     DialogTitle,
-    DialogTrigger
 } from "@/components/ui/dialog.tsx";
 import {Button} from "@/components/ui/button.tsx";
 import {API_ENDPOINT, ParentRefresh} from "@/views/project-manager-view/ProjectManagerView.tsx";
@@ -14,8 +12,8 @@ import {useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
 import {Form, FormControl, FormField, FormItem, FormLabel} from "@/components/ui/form.tsx";
 import {Input} from "@/components/ui/input.tsx";
-import {useContext, useState} from "react";
-import {Skeleton} from "@/components/ui/skeleton.tsx";
+import {JSX, useContext} from "react";
+import {ContextMenuItem} from "@/components/ui/context-menu.tsx";
 
 export function Directory({name, id}: {name: string, id: string}) {
     return <FileElementContainer name={name} id={id} getContent={getDirectoryContent} edit={DirectoryEdit}/>
@@ -23,9 +21,7 @@ export function Directory({name, id}: {name: string, id: string}) {
 
 interface Directory extends FileElementContainer { }
 
-function DirectoryEdit({id}: {id: string}) {
-    const [content, setContent] = useState(<Skeleton className="h-4" />)
-
+function DirectoryEdit(id: string, trigger: (element: Promise<JSX.Element>) => void) {
     const getDir = () => {
         return fetch(API_ENDPOINT + "/file/" + id, {
             method: "GET"
@@ -39,31 +35,26 @@ function DirectoryEdit({id}: {id: string}) {
           })
     }
 
-    const onClick = () => {
-        getDir().then((dir) => setContent(<EditForm {...dir}/>))
-    }
-
-    return (
-        <Dialog>
-            <DialogTrigger asChild>
-                <Button className="w-2 flex-none" variant="ghost" onClick={onClick}>E</Button>
-            </DialogTrigger>
-            <DialogContent>
+    const reloadParent = useContext(ParentRefresh)
+    const dialog = () => {
+        trigger(getDir()
+            .then(dir => <>
                 <DialogHeader>
                     <DialogTitle>Edit Directory</DialogTitle>
                     <DialogDescription>
                         Edit directory with id <i>{id}</i>.
                     </DialogDescription>
                 </DialogHeader>
-                {content}
-            </DialogContent>
-        </Dialog>
+                <EditForm dir={dir} reloadParent={reloadParent}/>
+            </>))
+    }
+
+    return (
+        <ContextMenuItem onSelect={dialog}>Edit</ContextMenuItem>
     )
 }
 
-function EditForm(dir: Directory) {
-    const reloadParent = useContext(ParentRefresh)
-
+function EditForm({dir, reloadParent}: {dir: Directory, reloadParent: () => void}) {
     const formSchema = z.object({
         name: z.string().min(1, {
             message: "Directory name must be at least 1 characters.",
@@ -118,10 +109,6 @@ function EditForm(dir: Directory) {
         </Form>
     )
 }
-
-interface Directory extends FileElementContainer {
-}
-
 
 async function getDirectoryContent(id : string) {
     const response = await fetch(API_ENDPOINT + "/file/" + id, {
