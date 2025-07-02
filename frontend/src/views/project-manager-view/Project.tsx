@@ -1,9 +1,7 @@
 import {
     Dialog,
-    DialogClose,
     DialogContent,
     DialogDescription,
-    DialogFooter,
     DialogHeader, DialogTitle,
     DialogTrigger
 } from "@/components/ui/dialog.tsx";
@@ -17,6 +15,7 @@ import {Form, FormControl, FormField, FormItem, FormLabel} from "@/components/ui
 import {Input} from "@/components/ui/input.tsx";
 import {Skeleton} from "@/components/ui/skeleton.tsx";
 import {useState} from "react";
+import {DialogCloseButtons} from "@/views/project-manager-view/CreateDialog.tsx";
 
 export interface Project extends FileElementContainer {
 }
@@ -111,14 +110,7 @@ function EditForm(project: Project) {
                         </FormItem>
                     )}
                 />
-                <DialogFooter>
-                    <DialogClose asChild={true}>
-                        <Button variant="outline">Cancel</Button>
-                    </DialogClose>
-                    <DialogClose asChild={true} >
-                        <Button type="submit">Save</Button>
-                    </DialogClose>
-                </DialogFooter>
+                <DialogCloseButtons submit={"Save"}/>
             </form>
         </Form>
     )

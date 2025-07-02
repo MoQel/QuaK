@@ -5,6 +5,8 @@ import {JSX, useEffect, useState} from "react";
 import {CreateDialog} from "@/views/project-manager-view/CreateDialog.tsx";
 import {File} from "@/views/project-manager-view/File.tsx";
 import {Skeleton} from "@/components/ui/skeleton.tsx";
+import {Empty} from "@/views/project-manager-view/ProjectManagerView.tsx";
+import "./ProjectManagerView.css"
 
 export interface FileElementContainer extends FileElement {
     contents: Array<FileElement>
@@ -20,7 +22,6 @@ export function getElementForFileElement(object: FileElement) {
 }
 
 export function FileElementContainer({name, id, getContent, edit}: {name: string, id: string, getContent: (id: string) => Promise<JSX.Element[]>, edit: ({id}: {id: string}) => JSX.Element}) {
-    const [isHover, setIsHover] = useState(false);
     const [content, setContent] = useState([<Skeleton className="h-4" />])
     const [click, setClick] = useState(false);
 
@@ -32,11 +33,8 @@ export function FileElementContainer({name, id, getContent, edit}: {name: string
         <Collapsible>
             <div className="flex">
                 <CollapsibleTrigger
-                    className="flex-auto"
-                    onMouseEnter={() => setIsHover(true)}
-                    onMouseLeave={() => setIsHover(false)}
+                    className="flex-auto entry"
                     onClick={() => setClick(!click)}
-                    style={isHover ? {textDecoration: 'underline', textAlign: "start"} : {textAlign: "start"}}
                 >
                     {name}
                 </CollapsibleTrigger>
@@ -45,7 +43,7 @@ export function FileElementContainer({name, id, getContent, edit}: {name: string
             </div>
             <CollapsibleContent>
                 <div className="pl-4">
-                    {content}
+                    {content.length === 0 ? [<Empty/>] : content}
                 </div>
             </CollapsibleContent>
         </Collapsible>

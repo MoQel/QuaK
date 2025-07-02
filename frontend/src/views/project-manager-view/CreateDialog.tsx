@@ -1,24 +1,23 @@
 import {
     Dialog,
+    DialogClose,
     DialogContent,
     DialogDescription,
+    DialogFooter,
     DialogHeader,
     DialogTitle,
     DialogTrigger
 } from "@/components/ui/dialog.tsx";
 import {Button} from "@/components/ui/button.tsx";
-import {useState} from "react";
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select.tsx";
 import {Form, FormControl, FormField, FormItem, FormLabel} from "@/components/ui/form.tsx";
 import {Input} from "@/components/ui/input.tsx";
 import {z} from "zod"
 import {useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
 import {API_ENDPOINT} from "@/views/project-manager-view/ProjectManagerView.tsx";
+import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs.tsx";
 
 export function CreateDialog({id}: {id: string}) {
-    const [type, setType] = useState("file");
-
     return (
         <Dialog>
             <DialogTrigger asChild>
@@ -31,16 +30,14 @@ export function CreateDialog({id}: {id: string}) {
                         Use the dropdown to select which type of Element to create
                     </DialogDescription>
                 </DialogHeader>
-                <Select onValueChange={setType} defaultValue={type}>
-                    <SelectTrigger>
-                        <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="file">File</SelectItem>
-                        <SelectItem value="directory">Directory</SelectItem>
-                    </SelectContent>
-                </Select>
-                {type === "file" ? <CreateFile parent={id}/> : <CreateDirectory parent={id}/>}
+                <Tabs defaultValue="file">
+                    <TabsList>
+                        <TabsTrigger value="file">File</TabsTrigger>
+                        <TabsTrigger value="directory">Directory</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="file"><CreateFile parent={id}/></TabsContent>
+                    <TabsContent value="directory"><CreateDirectory parent={id}/></TabsContent>
+                </Tabs>
             </DialogContent>
         </Dialog>
     )
@@ -106,10 +103,21 @@ function CreateFile({parent}: {parent: string}) {
                         </FormItem>
                     )}
                 />
-                <Button type="submit">Submit</Button>
+                <DialogCloseButtons/>
             </form>
         </Form>
     )
+}
+
+export function DialogCloseButtons({cancel = "Cancel", submit = "Submit"}: {cancel?: string, submit?: string}) {
+    return (<DialogFooter>
+        <DialogClose asChild>
+            <Button variant="outline">{cancel}</Button>
+        </DialogClose>
+        <DialogClose asChild>
+            <Button type="submit">{submit}</Button>
+        </DialogClose>
+    </DialogFooter>)
 }
 
 function CreateDirectory({parent}: {parent: string}) {
@@ -157,7 +165,7 @@ function CreateDirectory({parent}: {parent: string}) {
                         </FormItem>
                     )}
                 />
-                <Button type="submit">Submit</Button>
+                <DialogCloseButtons/>
             </form>
         </Form>
     )

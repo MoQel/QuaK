@@ -1,9 +1,7 @@
 import {Card, CardContent} from "@/components/ui/card.tsx";
 import {
     Dialog,
-    DialogClose,
     DialogContent,
-    DialogFooter,
     DialogHeader, DialogTitle,
     DialogTrigger
 } from "@/components/ui/dialog.tsx";
@@ -16,6 +14,7 @@ import {useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
 import {Input} from "@/components/ui/input.tsx";
 import {Skeleton} from "@/components/ui/skeleton.tsx";
+import {DialogCloseButtons} from "@/views/project-manager-view/CreateDialog.tsx";
 
 export const API_ENDPOINT = ""
 
@@ -27,13 +26,17 @@ async function retrieveProjects() {
     const projects = await response.json() as Project[]
     const elements = [];
     if (projects.length == 0) {
-        elements.push(<p className="text-center p-1">Empty</p>)
+        elements.push(<Empty/>)
     } else {
         for (const project of projects) {
             elements.push(<Project name={project.name} id={project.id}/>)
         }
     }
     return elements
+}
+
+export function Empty() {
+    return (<p className="text-center p-1">Empty</p>)
 }
 
 export function ProjectManagerView() {
@@ -107,14 +110,7 @@ function CreateProject({reload}: {reload: () => void}) {
                                 </FormItem>
                             )}
                         />
-                        <DialogFooter>
-                            <DialogClose asChild>
-                                <Button variant="outline">Cancel</Button>
-                            </DialogClose>
-                            <DialogClose asChild>
-                                <Button type="submit">Save changes</Button>
-                            </DialogClose>
-                        </DialogFooter>
+                        <DialogCloseButtons submit={"Save"}/>
                     </form>
                 </Form>
             </DialogContent>
