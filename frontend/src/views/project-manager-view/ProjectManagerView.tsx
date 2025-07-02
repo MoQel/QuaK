@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/dialog.tsx";
 import {Project} from "@/views/project-manager-view/Project.tsx";
 import {Button} from "@/components/ui/button.tsx";
-import {useEffect, useState} from "react";
+import {createContext, useEffect, useState} from "react";
 import {Form, FormControl, FormField, FormItem, FormLabel} from "@/components/ui/form.tsx";
 import {z} from "zod";
 import {useForm} from "react-hook-form";
@@ -17,6 +17,7 @@ import {Skeleton} from "@/components/ui/skeleton.tsx";
 import {DialogCloseButtons} from "@/views/project-manager-view/CreateDialog.tsx";
 
 export const API_ENDPOINT = ""
+export const ParentRefresh = createContext(() => {})
 
 async function retrieveProjects() {
     const response = await fetch(API_ENDPOINT + "/project/", {
@@ -41,7 +42,8 @@ export function Empty() {
 
 export function ProjectManagerView() {
     const [content, setContent] = useState([<Skeleton className="h-4" />])
-    const [reloaded, reload] = useState(false)
+    const [reloaded, r] = useState(false)
+    const reload = () => r(!reloaded)
 
     useEffect(() => {
         retrieveProjects().then(setContent)
@@ -51,8 +53,10 @@ export function ProjectManagerView() {
         <Card className="h-full">
             <CardContent className="overflow-auto">
                 <div className="flex-col">
-                    {content}
-                    <CreateProject reload={() => reload(!reloaded)}/>
+                    <ParentRefresh value={reload}>
+                        {content}
+                        <CreateProject reload={reload}/>
+                    </ParentRefresh>
                 </div>
             </CardContent>
         </Card>

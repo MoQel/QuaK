@@ -5,7 +5,7 @@ import {JSX, useEffect, useState} from "react";
 import {CreateDialog} from "@/views/project-manager-view/CreateDialog.tsx";
 import {File} from "@/views/project-manager-view/File.tsx";
 import {Skeleton} from "@/components/ui/skeleton.tsx";
-import {Empty} from "@/views/project-manager-view/ProjectManagerView.tsx";
+import {Empty, ParentRefresh} from "@/views/project-manager-view/ProjectManagerView.tsx";
 import "./ProjectManagerView.css"
 
 export interface FileElementContainer extends FileElement {
@@ -23,27 +23,32 @@ export function getElementForFileElement(object: FileElement) {
 
 export function FileElementContainer({name, id, getContent, edit}: {name: string, id: string, getContent: (id: string) => Promise<JSX.Element[]>, edit: ({id}: {id: string}) => JSX.Element}) {
     const [content, setContent] = useState([<Skeleton className="h-4" />])
-    const [click, setClick] = useState(false);
+    const [reloaded, r] = useState(false);
+    const reload = () => r(!reloaded)
 
     useEffect(() => {
         getContent(id).then(setContent)
-    }, [id, click, getContent])
+    }, [id, reloaded, getContent])
 
     return (
         <Collapsible>
             <div className="flex">
                 <CollapsibleTrigger
                     className="flex-auto entry"
-                    onClick={() => setClick(!click)}
+                    onClick={reload}
                 >
                     {name}
                 </CollapsibleTrigger>
-                <CreateDialog id={id}/>
+                <ParentRefresh value={reload}>
+                    <CreateDialog id={id}/>
+                </ParentRefresh>
                 {edit({id})}
             </div>
             <CollapsibleContent>
                 <div className="pl-4">
-                    {content.length === 0 ? [<Empty/>] : content}
+                    <ParentRefresh value={reload}>
+                        {content.length === 0 ? [<Empty/>] : content}
+                    </ParentRefresh>
                 </div>
             </CollapsibleContent>
         </Collapsible>

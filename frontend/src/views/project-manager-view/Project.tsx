@@ -7,14 +7,14 @@ import {
 } from "@/components/ui/dialog.tsx";
 import {Button} from "@/components/ui/button.tsx";
 import {FileElementContainer, getElementForFileElement} from "@/views/project-manager-view/FileElementContainer.tsx";
-import {API_ENDPOINT} from "@/views/project-manager-view/ProjectManagerView.tsx";
+import {API_ENDPOINT, ParentRefresh} from "@/views/project-manager-view/ProjectManagerView.tsx";
 import {z} from "zod";
 import {useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
 import {Form, FormControl, FormField, FormItem, FormLabel} from "@/components/ui/form.tsx";
 import {Input} from "@/components/ui/input.tsx";
 import {Skeleton} from "@/components/ui/skeleton.tsx";
-import {useState} from "react";
+import {useContext, useState} from "react";
 import {DialogCloseButtons} from "@/views/project-manager-view/CreateDialog.tsx";
 
 export interface Project extends FileElementContainer {
@@ -69,6 +69,7 @@ function ProjectEdit({id}: {id: string}) {
 }
 
 function EditForm(project: Project) {
+    const reloadParent = useContext(ParentRefresh)
     const formSchema = z.object({
         name: z.string().min(1, {
             message: "Project name must be at least 1 characters.",
@@ -93,7 +94,7 @@ function EditForm(project: Project) {
                 "Content-Type": "application/json",
             },
             body: JSON.stringify(body),
-        })
+        }).then(reloadParent)
     }
     return (
         <Form {...form}>

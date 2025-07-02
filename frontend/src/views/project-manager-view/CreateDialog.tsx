@@ -14,8 +14,9 @@ import {Input} from "@/components/ui/input.tsx";
 import {z} from "zod"
 import {useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
-import {API_ENDPOINT} from "@/views/project-manager-view/ProjectManagerView.tsx";
+import {API_ENDPOINT, ParentRefresh} from "@/views/project-manager-view/ProjectManagerView.tsx";
 import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs.tsx";
+import {useContext} from "react";
 
 export function CreateDialog({id}: {id: string}) {
     return (
@@ -44,6 +45,8 @@ export function CreateDialog({id}: {id: string}) {
 }
 
 function CreateFile({parent}: {parent: string}) {
+    const reloadParent = useContext(ParentRefresh)
+
     const formSchema = z.object({
         name: z.string().min(1, {
             message: "Filename must be at least 1 characters.",
@@ -73,7 +76,7 @@ function CreateFile({parent}: {parent: string}) {
                 'parent_id': parent
             },
             body: JSON.stringify(body),
-        })
+        }).then(reloadParent)
     }
 
     return (
@@ -121,6 +124,7 @@ export function DialogCloseButtons({cancel = "Cancel", submit = "Submit"}: {canc
 }
 
 function CreateDirectory({parent}: {parent: string}) {
+    const reloadParent = useContext(ParentRefresh)
     const formSchema = z.object({
         name: z.string().min(1, {
             message: "Name of the directory must be at least 1 characters.",
@@ -147,7 +151,7 @@ function CreateDirectory({parent}: {parent: string}) {
                 'parent_id': parent
             },
             body: JSON.stringify(body),
-        })
+        }).then(reloadParent)
     }
 
     return (

@@ -1,22 +1,20 @@
 import {FileElementContainer, getElementForFileElement} from "@/views/project-manager-view/FileElementContainer.tsx";
 import {
-    Dialog,
-    DialogClose,
+    Dialog, DialogClose,
     DialogContent,
-    DialogDescription,
-    DialogFooter,
+    DialogDescription, DialogFooter,
     DialogHeader,
     DialogTitle,
     DialogTrigger
 } from "@/components/ui/dialog.tsx";
 import {Button} from "@/components/ui/button.tsx";
-import {API_ENDPOINT} from "@/views/project-manager-view/ProjectManagerView.tsx";
+import {API_ENDPOINT, ParentRefresh} from "@/views/project-manager-view/ProjectManagerView.tsx";
 import {z} from "zod";
 import {useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
 import {Form, FormControl, FormField, FormItem, FormLabel} from "@/components/ui/form.tsx";
 import {Input} from "@/components/ui/input.tsx";
-import {useState} from "react";
+import {useContext, useState} from "react";
 import {Skeleton} from "@/components/ui/skeleton.tsx";
 
 export function Directory({name, id}: {name: string, id: string}) {
@@ -64,6 +62,8 @@ function DirectoryEdit({id}: {id: string}) {
 }
 
 function EditForm(dir: Directory) {
+    const reloadParent = useContext(ParentRefresh)
+
     const formSchema = z.object({
         name: z.string().min(1, {
             message: "Directory name must be at least 1 characters.",
@@ -89,7 +89,7 @@ function EditForm(dir: Directory) {
                 "Content-Type": "application/json",
             },
             body: JSON.stringify(body),
-        })
+        }).then(reloadParent)
     }
     return (
         <Form {...form}>
