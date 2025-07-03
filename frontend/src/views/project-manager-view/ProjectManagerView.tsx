@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/dialog.tsx";
 import {Project} from "@/views/project-manager-view/Project.tsx";
 import {Button} from "@/components/ui/button.tsx";
-import {createContext, useEffect, useState} from "react";
+import {createContext, JSX, useEffect, useState} from "react";
 import {Form, FormControl, FormField, FormItem, FormLabel} from "@/components/ui/form.tsx";
 import {z} from "zod";
 import {useForm} from "react-hook-form";
@@ -38,6 +38,13 @@ async function retrieveProjects() {
 
 export function Empty() {
     return (<p className="text-center p-1">Empty</p>)
+}
+
+export function ListingElement({text, icon}: {text: string, icon: JSX.Element}) {
+    return (<div className="flex self-center">
+        {<icon.type {...icon.props} className="mr-1 h-5 w-5 self-center"/>}
+        {text}
+    </div>)
 }
 
 export function ProjectManagerView() {

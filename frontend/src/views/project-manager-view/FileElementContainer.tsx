@@ -5,7 +5,7 @@ import {JSX, useEffect, useState} from "react";
 import {CreateDialog} from "@/views/project-manager-view/CreateDialog.tsx";
 import {File} from "@/views/project-manager-view/File.tsx";
 import {Skeleton} from "@/components/ui/skeleton.tsx";
-import {Empty, ParentRefresh} from "@/views/project-manager-view/ProjectManagerView.tsx";
+import {Empty, ListingElement, ParentRefresh} from "@/views/project-manager-view/ProjectManagerView.tsx";
 import "./ProjectManagerView.css"
 import {
     ContextMenu,
@@ -27,12 +27,13 @@ export function getElementForFileElement(object: FileElement) {
     throw new Error("Could not parse FileElement");
 }
 
-export function FileElementContainer({name, id, getContent, edit}: {name: string, id: string, getContent: (id: string) => Promise<JSX.Element[]>, edit: (id: string, trigger: (content: Promise<JSX.Element>) => void) => JSX.Element}) {
+export function FileElementContainer({name, id, getContent, edit, icon}: {name: string, id: string, getContent: (id: string) => Promise<JSX.Element[]>, edit: (id: string, trigger: (content: Promise<JSX.Element>) => void) => JSX.Element, icon: (open: boolean) => JSX.Element}) {
     const [content, setContent] = useState([<Skeleton className="h-4" />])
     const [dialogContent, setDialogContent] = useState(<Skeleton className="h-5 mt-5" />)
     const [reloaded, r] = useState(false);
     const reload = () => r(!reloaded)
     const [open, setOpen] = useState(false)
+    const [collapsible, toggleCollapsible] = useState(false)
 
     useEffect(() => {
         getContent(id).then(setContent)
@@ -45,16 +46,16 @@ export function FileElementContainer({name, id, getContent, edit}: {name: string
 
     return (
         <ParentRefresh value={reload}>
-            <Collapsible>
+            <Collapsible open={collapsible} onOpenChange={toggleCollapsible}>
                 <Dialog open={open} onOpenChange={setOpen}>
                     <ContextMenu>
                         <ContextMenuTrigger>
                             <div className="flex">
                                 <CollapsibleTrigger
-                                    className="flex-auto entry h-8"
+                                    className="flex-auto entry h-8 flex"
                                     onClick={reload}
                                 >
-                                    {name}
+                                    <ListingElement text={name} icon={icon(collapsible)}/>
                                 </CollapsibleTrigger>
                             </div>
                         </ContextMenuTrigger>

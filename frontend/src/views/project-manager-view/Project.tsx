@@ -12,6 +12,7 @@ import {Input} from "@/components/ui/input.tsx";
 import {JSX, useContext} from "react";
 import {DialogCloseButtons} from "@/views/project-manager-view/CreateDialog.tsx";
 import {ContextMenuItem} from "@/components/ui/context-menu.tsx";
+import {ChevronDown, ChevronRight} from "lucide-react";
 
 export interface Project extends FileElementContainer {
 }
@@ -30,7 +31,8 @@ async function getProjectContent(id : string) {
 }
 
 export function Project({name, id}: {name: string, id: string}) {
-    return <FileElementContainer name={name} id={id} getContent={getProjectContent} edit={ProjectEdit}/>
+    const icon = (open: boolean) => open ? <ChevronDown/> : <ChevronRight/>;
+    return <FileElementContainer name={name} id={id} getContent={getProjectContent} edit={ProjectEdit} icon={icon}/>
 }
 
 function ProjectEdit(id: string, trigger: (element: Promise<JSX.Element>) => void) {

@@ -14,9 +14,11 @@ import {Form, FormControl, FormField, FormItem, FormLabel} from "@/components/ui
 import {Input} from "@/components/ui/input.tsx";
 import {JSX, useContext} from "react";
 import {ContextMenuItem} from "@/components/ui/context-menu.tsx";
+import {Folder, FolderClosed, FolderOpen} from "lucide-react";
 
 export function Directory({name, id}: {name: string, id: string}) {
-    return <FileElementContainer name={name} id={id} getContent={getDirectoryContent} edit={DirectoryEdit}/>
+    const icon = (open: boolean) => open ? <FolderOpen/> : <Folder/>;
+    return <FileElementContainer name={name} id={id} getContent={getDirectoryContent} edit={DirectoryEdit} icon={icon}/>
 }
 
 interface Directory extends FileElementContainer { }
