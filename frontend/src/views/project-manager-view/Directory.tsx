@@ -15,6 +15,7 @@ import {Input} from "@/components/ui/input.tsx";
 import {JSX, useContext} from "react";
 import {ContextMenuItem} from "@/components/ui/context-menu.tsx";
 import {Folder, FolderClosed, FolderOpen} from "lucide-react";
+import {sort} from "@/views/project-manager-view/FileElement.ts";
 
 export function Directory({name, id}: {name: string, id: string}) {
     const icon = (open: boolean) => open ? <FolderOpen/> : <Folder/>;
@@ -119,7 +120,7 @@ async function getDirectoryContent(id : string) {
 
     const dir = await response.json() as Directory
     const elements = [];
-    for (const element of dir.contents) {
+    for (const element of sort(dir.contents)) {
         elements.push(getElementForFileElement(element))
     }
     return elements

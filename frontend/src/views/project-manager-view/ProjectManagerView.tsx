@@ -15,6 +15,7 @@ import {zodResolver} from "@hookform/resolvers/zod";
 import {Input} from "@/components/ui/input.tsx";
 import {Skeleton} from "@/components/ui/skeleton.tsx";
 import {DialogCloseButtons} from "@/views/project-manager-view/CreateDialog.tsx";
+import {sort} from "@/views/project-manager-view/FileElement.ts";
 
 export const API_ENDPOINT = ""
 export const ParentRefresh = createContext(() => {})
@@ -29,7 +30,7 @@ async function retrieveProjects() {
     if (projects.length == 0) {
         elements.push(<Empty/>)
     } else {
-        for (const project of projects) {
+        for (const project of sort(projects)) {
             elements.push(<Project name={project.name} id={project.id}/>)
         }
     }
@@ -37,7 +38,7 @@ async function retrieveProjects() {
 }
 
 export function Empty() {
-    return (<p className="text-center p-1">Empty</p>)
+    return (<p className="text-center p-1 opacity-70 italic">Empty</p>)
 }
 
 export function ListingElement({text, icon}: {text: string, icon: JSX.Element}) {

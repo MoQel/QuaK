@@ -70,9 +70,9 @@ export function FileElementContainer({name, id, getContent, edit, icon}: {name: 
                 </Dialog>
 
                 <CollapsibleContent>
-                    <div className="pl-4">
+                    <div className="pl-2"><div className="pl-2 mb-1 mt-1 border-l-1 border-gray-500 border-opacity-50">
                         {content.length === 0 ? [<Empty/>] : content}
-                    </div>
+                    </div></div>
                 </CollapsibleContent>
             </Collapsible>
         </ParentRefresh>

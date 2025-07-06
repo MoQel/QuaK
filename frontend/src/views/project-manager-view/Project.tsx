@@ -13,6 +13,7 @@ import {JSX, useContext} from "react";
 import {DialogCloseButtons} from "@/views/project-manager-view/CreateDialog.tsx";
 import {ContextMenuItem} from "@/components/ui/context-menu.tsx";
 import {ChevronDown, ChevronRight} from "lucide-react";
+import {sort} from "@/views/project-manager-view/FileElement.ts";
 
 export interface Project extends FileElementContainer {
 }
@@ -24,7 +25,7 @@ async function getProjectContent(id : string) {
 
     const project = await response.json() as Project
     const elements = [];
-    for (const element of project.contents) {
+    for (const element of sort(project.contents)) {
         elements.push(getElementForFileElement(element))
     }
     return elements
