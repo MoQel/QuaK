@@ -14,7 +14,6 @@ export function CircuitView() {
     });
 
     const removeQubit = useCallback(() => {
-        console.log("Minus pressed")
         setCircuitState(prev => ({
             qubits: Math.max(prev.qubits - 1, 1),
             steps: prev.steps,
@@ -22,9 +21,15 @@ export function CircuitView() {
     }, []);
 
     const addQubit = useCallback(() => {
-        console.log("Minus pressed")
         setCircuitState(prev => ({
             qubits: Math.min(prev.qubits + 1, 20),
+            steps: prev.steps,
+        }));
+    }, []);
+
+    const resetCircuit = useCallback(() => {
+        setCircuitState(prev => ({
+            qubits: 1,
             steps: prev.steps,
         }));
     }, []);
@@ -41,7 +46,7 @@ export function CircuitView() {
                         <Button onClick={removeQubit} size="icon" className="size-8">
                             <Minus/>
                         </Button>
-                        <Button size="icon" className="size-8">
+                        <Button onClick={resetCircuit} size="icon" className="size-8">
                             <Trash/>
                         </Button>
                     </div>
