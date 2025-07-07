@@ -1,6 +1,7 @@
 import {Card, CardContent} from "@/components/ui/card.tsx";
-import styles from "@/App.module.css";
 import {QuantumWires} from "@/views/circuit-view/QuantumWires.tsx";
+import {Button} from "@/components/ui/button.tsx";
+import {Minus, Plus, Trash} from "lucide-react";
 
 export function CircuitView() {
     let length = 1000
@@ -9,6 +10,17 @@ export function CircuitView() {
         <Card className="h-full overflow-scroll">
             <CardContent>
                 <div className="">
+                    <div className="pb-5 flex justify-end space-x-3">
+                        <Button size="icon" className="size-8">
+                            <Plus/>
+                        </Button>
+                        <Button size="icon" className="size-8">
+                            <Minus/>
+                        </Button>
+                        <Button size="icon" className="size-8">
+                            <Trash/>
+                        </Button>
+                    </div>
                     <div>
                         {Array.from({length: qubits}).map((_, qubitIndex) => (
                             <QuantumWires
