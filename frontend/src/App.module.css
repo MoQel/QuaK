@@ -43,6 +43,8 @@
   width: var(--gateWidth);
   display: inline-block;
   text-align: center;
+  font-family: var(--font-mono);
+  font-weight: bold;
   user-select: none;
   font-size: 20px;
 }
@@ -54,5 +56,6 @@
   min-width: 10px;
   min-height: 10px;
   justify-content: space-evenly;
+  row-gap: 5px;
   flex-wrap: wrap;
 }
