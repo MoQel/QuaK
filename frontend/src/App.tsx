@@ -12,7 +12,7 @@ function App() {
     }, []);
     return (
         <>
-            <div className="flex flex-col h-screen px-[10px]">
+            <div className="flex flex-col h-screen">
                 <div className="flex flex-row h-2/3">
                     <ProjectManagerView/>
                     <div className="flex flex-grow-[2] w-full">
