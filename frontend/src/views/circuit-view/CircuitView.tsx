@@ -5,11 +5,6 @@ export function CircuitView() {
     return (
         <Card className="h-full">
             <CardContent>
-                                <span className={styles.lines}>
-                                    <span className={styles.gate}>
-                                        X
-                                    </span>
-                                </span>
             </CardContent>
         </Card>
     )

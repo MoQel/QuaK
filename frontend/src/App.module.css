@@ -28,9 +28,9 @@
 }
 
 .lines {
+  height: 2px;
   background-size: 100% 2px;
-  background-image: linear-gradient(to right,
-  var(--color-amber-200) 0% 100%);
+  background-image: linear-gradient(to right, var(--color-white) 0% 100%);
   background-position-y: center;
   background-position-x: right;
   background-repeat: no-repeat;
