@@ -13,6 +13,7 @@ import {
     ContextMenuTrigger
 } from "@/components/ui/context-menu.tsx";
 import {Dialog, DialogContent} from "@/components/ui/dialog.tsx";
+import {Delete} from "@/views/project-manager-view/Delete.tsx";
 
 export interface FileElementContainer extends FileElement {
     contents: Array<FileElement>
@@ -27,7 +28,7 @@ export function getElementForFileElement(object: FileElement) {
     throw new Error("Could not parse FileElement");
 }
 
-export function FileElementContainer({name, id, getContent, edit, icon}: {name: string, id: string, getContent: (id: string) => Promise<JSX.Element[]>, edit: (id: string, trigger: (content: Promise<JSX.Element>) => void) => JSX.Element, icon: (open: boolean) => JSX.Element}) {
+export function FileElementContainer({name, id, getContent, edit, icon, deletePath}: {name: string, id: string, getContent: (id: string) => Promise<JSX.Element[]>, edit: (id: string, trigger: (content: Promise<JSX.Element>) => void) => JSX.Element, icon: (open: boolean) => JSX.Element, deletePath: string}) {
     const [content, setContent] = useState([<Skeleton className="h-4" />])
     const [dialogContent, setDialogContent] = useState(<Skeleton className="h-5 mt-5" />)
     const [reloaded, r] = useState(false);
@@ -45,36 +46,41 @@ export function FileElementContainer({name, id, getContent, edit, icon}: {name: 
     }
 
     return (
-        <ParentRefresh value={reload}>
-            <Collapsible open={collapsible} onOpenChange={toggleCollapsible}>
-                <Dialog open={open} onOpenChange={setOpen}>
-                    <ContextMenu>
-                        <ContextMenuTrigger>
-                            <div className="flex">
-                                <CollapsibleTrigger
-                                    className="flex-auto entry h-8 flex"
-                                    onClick={reload}
-                                >
-                                    <ListingElement text={name} icon={icon(collapsible)}/>
-                                </CollapsibleTrigger>
-                            </div>
-                        </ContextMenuTrigger>
-                        <ContextMenuContent>
+        <Collapsible open={collapsible} onOpenChange={toggleCollapsible}>
+            <Dialog open={open} onOpenChange={setOpen}>
+                <ContextMenu>
+                    <ContextMenuTrigger>
+                        <div className="flex">
+                            <CollapsibleTrigger
+                                className="flex-auto h-8 flex"
+                                onClick={reload}
+                            >
+                                <ListingElement text={name} icon={icon(collapsible)}/>
+                            </CollapsibleTrigger>
+                        </div>
+                    </ContextMenuTrigger>
+                    <ContextMenuContent>
+                        <ParentRefresh value={reload}>
                             <CreateDialog id={id} trigger={dialogTrigger}/>
                             {edit(id, dialogTrigger)}
-                        </ContextMenuContent>
-                    </ContextMenu>
+                        </ParentRefresh>
+                        <Delete path={deletePath} trigger={dialogTrigger}/>
+                    </ContextMenuContent>
+                </ContextMenu>
+                <ParentRefresh value={reload}>
                     <DialogContent>
                         {dialogContent}
                     </DialogContent>
-                </Dialog>
+                </ParentRefresh>
+            </Dialog>
 
-                <CollapsibleContent>
+            <CollapsibleContent>
+                <ParentRefresh value={reload}>
                     <div className="pl-2"><div className="pl-2 mb-1 mt-1 border-l-1 border-gray-500 border-opacity-50">
                         {content.length === 0 ? [<Empty/>] : content}
                     </div></div>
-                </CollapsibleContent>
-            </Collapsible>
-        </ParentRefresh>
+                </ParentRefresh>
+            </CollapsibleContent>
+        </Collapsible>
     )
 }

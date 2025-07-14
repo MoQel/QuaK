@@ -3,6 +3,7 @@ package edu.kit.quak.files;
 import edu.kit.quak.files.model.Project;
 import edu.kit.quak.files.repository.ProjectRepository;
 import edu.kit.quak.files.repository.savers.FileElementSaversRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -49,7 +50,7 @@ public class ProjectController {
     @ResponseStatus(HttpStatus.CREATED)
     public Project createProject(@RequestBody Project project) {
         project.setId(null);
-        if (!project.getContent().isEmpty()) {
+        if (!project.getElements().isEmpty()) {
             throw new ResponseStatusException(BAD_REQUEST, "New Projects cannot already contain files");
         }
         return projects.save(project);
@@ -75,6 +76,7 @@ public class ProjectController {
     }
     
     @DeleteMapping("/{pId}")
+    @Transactional
     public void deleteProject(@PathVariable String pId) {
         savers.delete(pId, Project.class);
     }

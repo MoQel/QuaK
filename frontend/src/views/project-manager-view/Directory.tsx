@@ -14,12 +14,12 @@ import {Form, FormControl, FormField, FormItem, FormLabel} from "@/components/ui
 import {Input} from "@/components/ui/input.tsx";
 import {JSX, useContext} from "react";
 import {ContextMenuItem} from "@/components/ui/context-menu.tsx";
-import {Folder, FolderClosed, FolderOpen} from "lucide-react";
+import {Folder, FolderOpen} from "lucide-react";
 import {sort} from "@/views/project-manager-view/FileElement.ts";
 
 export function Directory({name, id}: {name: string, id: string}) {
     const icon = (open: boolean) => open ? <FolderOpen/> : <Folder/>;
-    return <FileElementContainer name={name} id={id} getContent={getDirectoryContent} edit={DirectoryEdit} icon={icon}/>
+    return <FileElementContainer name={name} id={id} getContent={getDirectoryContent} edit={DirectoryEdit} icon={icon} deletePath={API_ENDPOINT + "/file/" + id}/>
 }
 
 interface Directory extends FileElementContainer { }

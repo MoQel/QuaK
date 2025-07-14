@@ -42,14 +42,14 @@ export function Empty() {
 }
 
 export function ListingElement({text, icon}: {text: string, icon: JSX.Element}) {
-    return (<div className="flex self-center">
+    return (<div className="flex self-center entry">
         {<icon.type {...icon.props} className="mr-1 h-5 w-5 self-center"/>}
         {text}
     </div>)
 }
 
 export function ProjectManagerView() {
-    const [content, setContent] = useState([<Skeleton className="h-4" />])
+    const [content, setContent] = useState([<Skeleton className="h-4"/>])
     const [reloaded, r] = useState(false)
     const reload = () => r(!reloaded)
 

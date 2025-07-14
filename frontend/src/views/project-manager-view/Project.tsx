@@ -33,7 +33,7 @@ async function getProjectContent(id : string) {
 
 export function Project({name, id}: {name: string, id: string}) {
     const icon = (open: boolean) => open ? <ChevronDown/> : <ChevronRight/>;
-    return <FileElementContainer name={name} id={id} getContent={getProjectContent} edit={ProjectEdit} icon={icon}/>
+    return <FileElementContainer name={name} id={id} getContent={getProjectContent} edit={ProjectEdit} icon={icon} deletePath={API_ENDPOINT + "/project/" + id}/>
 }
 
 function ProjectEdit(id: string, trigger: (element: Promise<JSX.Element>) => void) {
