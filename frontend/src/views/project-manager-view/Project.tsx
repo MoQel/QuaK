@@ -2,7 +2,7 @@ import {
     DialogDescription,
     DialogHeader, DialogTitle
 } from "@/components/ui/dialog.tsx";
-import {FileElementContainer, getElementForFileElement} from "@/views/project-manager-view/FileElementContainer.tsx";
+import {FileElementContainer} from "@/views/project-manager-view/FileElementContainer.tsx";
 import {API_ENDPOINT, ParentRefresh} from "@/views/project-manager-view/ProjectManagerView.tsx";
 import {z} from "zod";
 import {useForm} from "react-hook-form";
@@ -10,15 +10,12 @@ import {zodResolver} from "@hookform/resolvers/zod";
 import {Form, FormControl, FormField, FormItem, FormLabel} from "@/components/ui/form.tsx";
 import {Input} from "@/components/ui/input.tsx";
 import {JSX, useContext} from "react";
-import {DialogCloseButtons} from "@/views/project-manager-view/CreateDialog.tsx";
 import {ContextMenuItem} from "@/components/ui/context-menu.tsx";
 import {ChevronDown, ChevronRight} from "lucide-react";
-import {sort} from "@/views/project-manager-view/FileElement.ts";
+import {getElementForFileElement, type Project, sort} from "@/views/project-manager-view/util/FileElement.tsx";
+import {DialogCloseButtons} from "@/views/project-manager-view/util/FormComponents.tsx";
 
-export interface Project extends FileElementContainer {
-}
-
-async function getProjectContent(id : string) {
+async function fetchProjectContent(id : string) {
     const response = await fetch(API_ENDPOINT + "/project/" + id, {
         method: "GET",
     })
@@ -31,9 +28,15 @@ async function getProjectContent(id : string) {
     return elements
 }
 
+/**
+ * Provides a new Project-display using {@link FileElementContainer}
+ * @param name The name of the project
+ * @param id The id of the project
+ * @constructor
+ */
 export function Project({name, id}: {name: string, id: string}) {
     const icon = (open: boolean) => open ? <ChevronDown/> : <ChevronRight/>;
-    return <FileElementContainer name={name} id={id} getContent={getProjectContent} edit={ProjectEdit} icon={icon} deletePath={API_ENDPOINT + "/project/" + id}/>
+    return <FileElementContainer name={name} id={id} getContent={fetchProjectContent} edit={ProjectEdit} icon={icon} deletePath={API_ENDPOINT + "/project/" + id}/>
 }
 
 function ProjectEdit(id: string, trigger: (element: Promise<JSX.Element>) => void) {

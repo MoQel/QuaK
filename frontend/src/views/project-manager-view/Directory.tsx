@@ -1,37 +1,50 @@
-import {FileElementContainer, getElementForFileElement} from "@/views/project-manager-view/FileElementContainer.tsx";
+import {FileElementContainer} from "@/views/project-manager-view/FileElementContainer.tsx";
 import {
-    DialogClose,
-    DialogDescription, DialogFooter,
+    DialogDescription,
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog.tsx";
-import {Button} from "@/components/ui/button.tsx";
 import {API_ENDPOINT, ParentRefresh} from "@/views/project-manager-view/ProjectManagerView.tsx";
 import {z} from "zod";
 import {useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
-import {Form, FormControl, FormField, FormItem, FormLabel} from "@/components/ui/form.tsx";
-import {Input} from "@/components/ui/input.tsx";
+import {Form, FormField} from "@/components/ui/form.tsx";
 import {JSX, useContext} from "react";
 import {ContextMenuItem} from "@/components/ui/context-menu.tsx";
 import {Folder, FolderOpen} from "lucide-react";
-import {sort} from "@/views/project-manager-view/FileElement.ts";
+import {
+    Directory as IDirectory,
+    getElementForFileElement,
+    sort
+} from "@/views/project-manager-view/util/FileElement.tsx";
 
+import {DialogCloseButtons, TextInput} from "@/views/project-manager-view/util/FormComponents.tsx";
+
+/**
+ * Displays a {@link IDirectory Directory}
+ * @param name The display-name of the directory
+ * @param id The id of the directory
+ * @constructor
+ */
 export function Directory({name, id}: {name: string, id: string}) {
     const icon = (open: boolean) => open ? <FolderOpen/> : <Folder/>;
-    return <FileElementContainer name={name} id={id} getContent={getDirectoryContent} edit={DirectoryEdit} icon={icon} deletePath={API_ENDPOINT + "/file/" + id}/>
+    return <FileElementContainer name={name} id={id} getContent={fetchDirectoryContent} edit={DirectoryEdit} icon={icon} deletePath={API_ENDPOINT + "/file/" + id}/>
 }
 
-interface Directory extends FileElementContainer { }
-
-function DirectoryEdit(id: string, trigger: (element: Promise<JSX.Element>) => void) {
+/**
+ * Provides a {@link ContextMenuItem} to edit a given directory
+ * @param id The id of the directory to edit
+ * @param openDialog A function that opens a dialog and displays the given elements after their promise resolves.
+ * @constructor
+ */
+function DirectoryEdit(id: string, openDialog: (element: Promise<JSX.Element>) => void) {
     const getDir = () => {
         return fetch(API_ENDPOINT + "/file/" + id, {
             method: "GET"
         }).then((result) => result.json())
           .then((obj) => {
               if (obj.type === "directory") {
-                  return obj as Directory
+                  return obj as IDirectory
               } else {
                   throw "Not a directory"
               }
@@ -40,7 +53,7 @@ function DirectoryEdit(id: string, trigger: (element: Promise<JSX.Element>) => v
 
     const reloadParent = useContext(ParentRefresh)
     const dialog = () => {
-        trigger(getDir()
+        openDialog(getDir()
             .then(dir => <>
                 <DialogHeader>
                     <DialogTitle>Edit Directory</DialogTitle>
@@ -57,7 +70,7 @@ function DirectoryEdit(id: string, trigger: (element: Promise<JSX.Element>) => v
     )
 }
 
-function EditForm({dir, reloadParent}: {dir: Directory, reloadParent: () => void}) {
+function EditForm({dir, reloadParent}: {dir: IDirectory, reloadParent: () => void}) {
     const formSchema = z.object({
         name: z.string().min(1, {
             message: "Directory name must be at least 1 characters.",
@@ -92,33 +105,21 @@ function EditForm({dir, reloadParent}: {dir: Directory, reloadParent: () => void
                     name="name"
                     control={form.control}
                     render={({field}) => (
-                        <FormItem className="pb-2">
-                            <FormLabel>Name</FormLabel>
-                            <FormControl>
-                                <Input placeholder="Enter a new name" {...field}/>
-                            </FormControl>
-                        </FormItem>
+                        <TextInput placeholder="Enter a new name" label="Name" field={field}/>
                     )}
                 />
-                <DialogFooter>
-                    <DialogClose asChild={true}>
-                        <Button variant="outline">Cancel</Button>
-                    </DialogClose>
-                    <DialogClose asChild={true} >
-                        <Button type="submit">Save</Button>
-                    </DialogClose>
-                </DialogFooter>
+                <DialogCloseButtons submit="Save"/>
             </form>
         </Form>
     )
 }
 
-async function getDirectoryContent(id : string) {
+async function fetchDirectoryContent(id : string) {
     const response = await fetch(API_ENDPOINT + "/file/" + id, {
         method: "GET",
     })
 
-    const dir = await response.json() as Directory
+    const dir = await response.json() as IDirectory
     const elements = [];
     for (const element of sort(dir.contents)) {
         elements.push(getElementForFileElement(element))

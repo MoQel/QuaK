@@ -1,4 +1,4 @@
-import {API_ENDPOINT, ListingElement, ParentRefresh} from "@/views/project-manager-view/ProjectManagerView.tsx";
+import {API_ENDPOINT, ParentRefresh} from "@/views/project-manager-view/ProjectManagerView.tsx";
 import {FileCode} from "lucide-react";
 import {ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger} from "@/components/ui/context-menu.tsx";
 import {Delete} from "@/views/project-manager-view/Delete.tsx";
@@ -14,11 +14,17 @@ import {Skeleton} from "@/components/ui/skeleton.tsx";
 import {z} from "zod";
 import {useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
-import {Form, FormControl, FormField, FormItem, FormLabel} from "@/components/ui/form.tsx";
-import {Input} from "@/components/ui/input.tsx";
-import {FileElement} from "@/views/project-manager-view/FileElement.ts";
-import {DialogCloseButtons} from "@/views/project-manager-view/CreateDialog.tsx";
+import {Form, FormField} from "@/components/ui/form.tsx";
+import {File as IFile} from "@/views/project-manager-view/util/FileElement.tsx";
+import {DialogCloseButtons, TextInput} from "@/views/project-manager-view/util/FormComponents.tsx";
+import {ListingElement} from "@/views/project-manager-view/util/TreeComponents.tsx";
 
+/**
+ * Displays a {@link IFile File}
+ * @param name The name of the file
+ * @param id The id of the file
+ * @constructor
+ */
 export function File({name, id}: {name: string, id: string}) {
     const [open, setOpen] = useState(false)
     const [dialogContent, setDialogContent] = useState(<Skeleton className="h-5 mt-5" />)
@@ -36,7 +42,7 @@ export function File({name, id}: {name: string, id: string}) {
                 </ContextMenuTrigger>
                 <ContextMenuContent>
                     {FileEdit(id, dialogTrigger)}
-                    <Delete path={API_ENDPOINT + "/file/" + id} trigger={dialogTrigger}/>
+                    <Delete path={API_ENDPOINT + "/file/" + id} openDialog={dialogTrigger}/>
                 </ContextMenuContent>
             </ContextMenu>
             <DialogContent>
@@ -46,8 +52,6 @@ export function File({name, id}: {name: string, id: string}) {
     )
 }
 
-interface File extends FileElement {}
-
 function FileEdit(id: string, trigger: (element: Promise<JSX.Element>) => void) {
     const getDir = () => {
         return fetch(API_ENDPOINT + "/file/" + id, {
@@ -55,7 +59,7 @@ function FileEdit(id: string, trigger: (element: Promise<JSX.Element>) => void) 
         }).then((result) => result.json())
             .then((obj) => {
                 if (obj.type === "file") {
-                    return obj as File
+                    return obj as IFile
                 } else {
                     throw "Not a file"
                 }
@@ -81,7 +85,7 @@ function FileEdit(id: string, trigger: (element: Promise<JSX.Element>) => void) 
     )
 }
 
-function EditForm({file, reloadParent}: {file: File, reloadParent: () => void}) {
+function EditForm({file, reloadParent}: {file: IFile, reloadParent: () => void}) {
     const formSchema = z.object({
         name: z.string().min(1, {
             message: "Directory name must be at least 1 characters.",
@@ -116,12 +120,7 @@ function EditForm({file, reloadParent}: {file: File, reloadParent: () => void}) 
                     name="name"
                     control={form.control}
                     render={({field}) => (
-                        <FormItem className="pb-2">
-                            <FormLabel>Name</FormLabel>
-                            <FormControl>
-                                <Input placeholder="Enter a new name" {...field}/>
-                            </FormControl>
-                        </FormItem>
+                        <TextInput placeholder="Enter a new name" label="Name" field={field}/>
                     )}
                 />
                 <DialogCloseButtons submit="Save"/>

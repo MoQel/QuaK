@@ -1,12 +1,5 @@
-import {
-    DialogClose,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog.tsx";
-import {Button} from "@/components/ui/button.tsx";
-import {Form, FormControl, FormField, FormItem, FormLabel} from "@/components/ui/form.tsx";
-import {Input} from "@/components/ui/input.tsx";
+import {DialogHeader, DialogTitle,} from "@/components/ui/dialog.tsx";
+import {Form, FormField} from "@/components/ui/form.tsx";
 import {z} from "zod"
 import {useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
@@ -18,9 +11,16 @@ import {
     ContextMenuSubContent,
     ContextMenuSubTrigger
 } from "@/components/ui/context-menu";
+import {DialogCloseButtons, TextInput} from "@/views/project-manager-view/util/FormComponents.tsx";
 
-export function CreateDialog({id, trigger}: {id: string, trigger: (element: Promise<JSX.Element>) => void}) {
-    const dialog = (e: JSX.Element) => trigger(Promise.resolve(e))
+/**
+ * Provides a {@link ContextMenuItem} that allows for the creation of {@link FileElement FileElements}.
+ * @param id The id of the parent of the new element
+ * @param openDialog A function that opens a dialog and displays the given elements after their promise resolves.
+ * @constructor
+ */
+export function CreateDialog({id, openDialog}: {id: string, openDialog: (element: Promise<JSX.Element>) => void}) {
+    const dialog = (e: JSX.Element) => openDialog(Promise.resolve(e))
     return (
         <ContextMenuSub>
             <ContextMenuSubTrigger>New...</ContextMenuSubTrigger>
@@ -92,41 +92,20 @@ function CreateFile({parent}: {parent: string}) {
                     control={form.control}
                     name="name"
                     render={({field}) => (
-                        <FormItem className="pb-2">
-                            <FormLabel>Filename</FormLabel>
-                            <FormControl>
-                                <Input placeholder="new_file.txt" {...field}/>
-                            </FormControl>
-                        </FormItem>
+                        <TextInput placeholder="new_file.txt" label="Filename" field={field}/>
                     )}
                 />
                 <FormField
                     control={form.control}
                     name="contentType"
                     render={({field}) => (
-                        <FormItem className="pb-2">
-                            <FormLabel>Content-Type</FormLabel>
-                            <FormControl>
-                                <Input placeholder="application/json" {...field}/>
-                            </FormControl>
-                        </FormItem>
+                        <TextInput placeholder="application/json" label="Content-Type" field={field}/>
                     )}
                 />
                 <DialogCloseButtons/>
             </form>
         </Form>
     )
-}
-
-export function DialogCloseButtons({cancel = "Cancel", submit = "Submit"}: {cancel?: string, submit?: string}) {
-    return (<DialogFooter>
-        <DialogClose asChild>
-            <Button variant="outline">{cancel}</Button>
-        </DialogClose>
-        <DialogClose asChild>
-            <Button type="submit">{submit}</Button>
-        </DialogClose>
-    </DialogFooter>)
 }
 
 function CreateDirectory({parent}: {parent: string}) {
@@ -167,12 +146,7 @@ function CreateDirectory({parent}: {parent: string}) {
                     control={form.control}
                     name="name"
                     render={({field}) => (
-                        <FormItem className="pb-2">
-                            <FormLabel>Name of the directory</FormLabel>
-                            <FormControl>
-                                <Input placeholder="folder" {...field}/>
-                            </FormControl>
-                        </FormItem>
+                        <TextInput placeholder="folder" label="Name of the directory" field={field}/>
                     )}
                 />
                 <DialogCloseButtons/>

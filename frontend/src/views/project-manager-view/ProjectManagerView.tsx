@@ -1,60 +1,33 @@
 import {Card, CardContent} from "@/components/ui/card.tsx";
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader, DialogTitle,
-    DialogTrigger
-} from "@/components/ui/dialog.tsx";
+import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger} from "@/components/ui/dialog.tsx";
 import {Project} from "@/views/project-manager-view/Project.tsx";
 import {Button} from "@/components/ui/button.tsx";
-import {createContext, JSX, useEffect, useState} from "react";
-import {Form, FormControl, FormField, FormItem, FormLabel} from "@/components/ui/form.tsx";
+import {createContext, useEffect, useState} from "react";
+import {Form, FormField} from "@/components/ui/form.tsx";
 import {z} from "zod";
 import {useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
-import {Input} from "@/components/ui/input.tsx";
 import {Skeleton} from "@/components/ui/skeleton.tsx";
-import {DialogCloseButtons} from "@/views/project-manager-view/CreateDialog.tsx";
-import {sort} from "@/views/project-manager-view/FileElement.ts";
+import {Project as IProject, sort} from "@/views/project-manager-view/util/FileElement.tsx";
+import {DialogCloseButtons, TextInput} from "@/views/project-manager-view/util/FormComponents.tsx";
+import {Plus} from "lucide-react";
+import {Empty} from "@/views/project-manager-view/util/TreeComponents.tsx";
 
+/** This constant allows for overriding the API_ENDPOINT to use for requests to the backend */
 export const API_ENDPOINT = ""
 export const ParentRefresh = createContext(() => {})
 
-async function retrieveProjects() {
-    const response = await fetch(API_ENDPOINT + "/project/", {
-        method: "GET",
-    })
-
-    const projects = await response.json() as Project[]
-    const elements = [];
-    if (projects.length == 0) {
-        elements.push(<Empty/>)
-    } else {
-        for (const project of sort(projects)) {
-            elements.push(<Project name={project.name} id={project.id}/>)
-        }
-    }
-    return elements
-}
-
-export function Empty() {
-    return (<p className="text-center p-1 opacity-70 italic">Empty</p>)
-}
-
-export function ListingElement({text, icon}: {text: string, icon: JSX.Element}) {
-    return (<div className="flex self-center entry">
-        {<icon.type {...icon.props} className="mr-1 h-5 w-5 self-center"/>}
-        {text}
-    </div>)
-}
-
+/**
+ * Displays a tree-view of the projects inside a {@link Card}
+ * @constructor
+ */
 export function ProjectManagerView() {
     const [content, setContent] = useState([<Skeleton className="h-4"/>])
     const [reloaded, r] = useState(false)
     const reload = () => r(!reloaded)
 
     useEffect(() => {
-        retrieveProjects().then(setContent)
+        fetchProjects().then(setContent)
     }, [reloaded])
 
     return (
@@ -63,12 +36,29 @@ export function ProjectManagerView() {
                 <div className="flex-col">
                     <ParentRefresh value={reload}>
                         {content}
-                        <CreateProject reload={reload}/>
+                        <CreateProject reload={reload} key="NEW"/>
                     </ParentRefresh>
                 </div>
             </CardContent>
         </Card>
     )
+}
+
+async function fetchProjects() {
+    const response = await fetch(API_ENDPOINT + "/project/", {
+        method: "GET",
+    })
+
+    const projects = await response.json() as IProject[]
+    const elements = [];
+    if (projects.length == 0) {
+        elements.push(<Empty/>)
+    } else {
+        for (const project of sort(projects)) {
+            elements.push(<Project name={project.name} id={project.id} key={project.id}/>)
+        }
+    }
+    return elements
 }
 
 function CreateProject({reload}: {reload: () => void}) {
@@ -102,7 +92,7 @@ function CreateProject({reload}: {reload: () => void}) {
     return (
         <Dialog>
             <DialogTrigger asChild>
-                <Button className="w-full" variant="ghost">+</Button>
+                <Button className="w-full" variant="ghost"><Plus/></Button>
             </DialogTrigger>
             <DialogContent>
                 <DialogHeader>
@@ -114,12 +104,7 @@ function CreateProject({reload}: {reload: () => void}) {
                             control={form.control}
                             name="name"
                             render={({field}) => (
-                                <FormItem className="pb-4">
-                                    <FormLabel>Name of the Project</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="New Project" {...field}/>
-                                    </FormControl>
-                                </FormItem>
+                                <TextInput placeholder="New Project" label="Name of the Project" field={field}/>
                             )}
                         />
                         <DialogCloseButtons submit={"Save"}/>
