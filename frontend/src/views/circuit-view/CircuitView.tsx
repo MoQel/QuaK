@@ -5,14 +5,20 @@ import {Minus, Plus, Trash} from "lucide-react";
 import {CircuitState} from "@/type/quantum.tsx";
 import {useCallback, useState} from "react";
 import {quantumGates} from "@/views/circuit-view/InitCircuit.tsx";
+import {QuantumGate} from "@/views/library-view/QuantumGate.tsx";
 
 export function CircuitView() {
     const WIRE_LENGTH = 1000
 
+
     const [circuitState, setCircuitState] = useState<CircuitState>({
         qubits: 3,
-        steps: 20,
+        steps: 40,
     });
+
+    const [matrixState, setMatrixState] = useState<QuantumGate[][]>(
+        initializeMatrix(15, 60, quantumGates)
+    )
 
     const removeQubit = useCallback(() => {
         setCircuitState(prev => ({
@@ -33,8 +39,8 @@ export function CircuitView() {
             qubits: 1,
             steps: prev.steps,
         }));
+        setMatrixState(initializeMatrix(1, 0, []))
     }, []);
-
 
     return (
         <Card className="h-full overflow-scroll">
@@ -54,7 +60,7 @@ export function CircuitView() {
                     <div>
                         {Array.from({length: circuitState.qubits}).map((_, qubitIndex) => (
                             <QuantumWires
-                                gates={quantumGates.filter(gate => qubitIndex === gate.qubit)}
+                                gates={matrixState[qubitIndex] ?? []}
                                 qubitIndex={qubitIndex}
                                 length={WIRE_LENGTH}
                             />
@@ -65,4 +71,45 @@ export function CircuitView() {
             </CardContent>
         </Card>
     )
+}
+
+function initializeMatrix(
+    qubits: number,
+    steps: number,
+    gates: QuantumGate[]
+): QuantumGate[][] {
+    // Prepare empty matrix filled with dummy gates
+    const matrix: QuantumGate[][] = Array.from({ length: qubits }, (_, qubitIndex) =>
+        Array.from({ length: steps }, (_, stepIndex) => ({
+            id: `dummy-${qubitIndex}-${stepIndex}`,
+            type: 'DUMMY',
+            qubit: qubitIndex,
+        }))
+    );
+
+    // Keep track of next free step for each qubit
+    const nextStepPerQubit = new Array(qubits).fill(0);
+
+    // Loop through gates in order
+    for (let i = 0; i < gates.length; i++) {
+        const gate = gates[i];
+        const qubit = gate.qubit;
+
+        // Check qubit valid range
+        if (qubit < 0 || qubit >= qubits) continue;
+
+        const step = nextStepPerQubit[qubit];
+        if (step >= steps) {
+            // No more room in this qubit's timeline
+            continue;
+        }
+
+        // Place gate at next free step on that qubit
+        matrix[qubit][step] = { ...gate, id: `${gate.type}-${qubit}-${step}` };
+
+        // Increment next free step for that qubit
+        nextStepPerQubit[qubit]++;
+    }
+
+    return matrix;
 }

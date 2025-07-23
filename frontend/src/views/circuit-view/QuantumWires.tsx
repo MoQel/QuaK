@@ -28,7 +28,7 @@ export function QuantumWires({gates, qubitIndex, length}: QuantumWiresProps) {
 
                     {/* Actual quantum Gates */}
                     {gates.map((gate, index) => (
-                        <Badge key={index} className={`${styles.gate}`}>
+                        <Badge key={index} className={`${styles.gate} ${gate.type === 'DUMMY' ? 'invisible' : ''}`}>
                             {gate.type}
                         </Badge>
                     ))}

@@ -5,7 +5,7 @@ export const quantumGates: QuantumGate[] = [
     {
         id: 'hadamard',
         type: 'H',
-        qubit: 1,
+        qubit: 0,
     },
     {
         id: 'pauli-x',
