@@ -4,6 +4,7 @@ import {Button} from "@/components/ui/button.tsx";
 import {Minus, Plus, Trash} from "lucide-react";
 import {CircuitState} from "@/type/quantum.tsx";
 import {useCallback, useState} from "react";
+import {quantumGates} from "@/views/circuit-view/InitCircuit.tsx";
 
 export function CircuitView() {
     const WIRE_LENGTH = 1000
@@ -53,6 +54,7 @@ export function CircuitView() {
                     <div>
                         {Array.from({length: circuitState.qubits}).map((_, qubitIndex) => (
                             <QuantumWires
+                                gates={quantumGates.filter(gate => qubitIndex === gate.qubit)}
                                 qubitIndex={qubitIndex}
                                 length={WIRE_LENGTH}
                             />
