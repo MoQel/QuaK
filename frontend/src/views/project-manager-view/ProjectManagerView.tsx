@@ -1,5 +1,7 @@
 import {Card, CardContent} from "@/components/ui/card.tsx";
 
+export const API_ENDPOINT = ""
+
 export function ProjectManagerView() {
     return (
 
