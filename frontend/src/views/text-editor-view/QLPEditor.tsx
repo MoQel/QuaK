@@ -1,9 +1,9 @@
 import {Editor, Monaco, useMonaco} from "@monaco-editor/react";
-import {editor} from "monaco-editor"
 import {useEffect, useState} from "react";
 import {toast} from "sonner";
 import {Menu} from "@/views/text-editor-view/Menu.tsx";
 import {API_ENDPOINT} from "@/views/project-manager-view/ProjectManagerView.tsx";
+import {Language} from "@/views/text-editor-view/model/Language.ts";
 
 interface File {
     id: string,
@@ -12,10 +12,13 @@ interface File {
 
 function QLPEditor({file}: {file: File}) {
     const [value, setValue] = useState("# Loading...");
+    const [lang, setLang] = useState("python");
     toast(value)
 
-    const onMount = (editor: editor.IStandaloneCodeEditor, monaco: Monaco) => {
-        console.log(editor, monaco)
+    const onMount = (monaco: Monaco) => {
+        const lang = new Language("quarks")
+        lang.register(monaco)
+        setLang(lang.languageId)
     }
 
     const monaco = useMonaco();
@@ -36,6 +39,7 @@ function QLPEditor({file}: {file: File}) {
         <div className="h-full">
             <Editor
                 defaultLanguage="python"
+                language={lang}
                 theme="vs-dark"
                 value={value}
                 onChange={(value) => setValue(value || '')}
@@ -43,7 +47,7 @@ function QLPEditor({file}: {file: File}) {
                     minimap: {enabled: false},
                     wordWrap: 'on',
                 }}
-                onMount={onMount}
+                beforeMount={onMount}
             />
         </div>
     </div>;
