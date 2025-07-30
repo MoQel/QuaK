@@ -4,6 +4,7 @@ import {toast} from "sonner";
 import {Menu} from "@/views/text-editor-view/Menu.tsx";
 import {API_ENDPOINT} from "@/views/project-manager-view/ProjectManagerView.tsx";
 import {Language} from "@/views/text-editor-view/model/Language.ts";
+import {language as python} from "@/components/languages/python.ts";
 
 interface File {
     id: string,
@@ -13,12 +14,14 @@ interface File {
 function QLPEditor({file}: {file: File}) {
     const [value, setValue] = useState("# Loading...");
     const [lang, setLang] = useState("python");
+    const [theme, setTheme] = useState("vs-dark");
     toast(value)
 
     const onMount = (monaco: Monaco) => {
-        const lang = new Language("quarks")
+        const lang = new Language("qrisp", python)
         lang.register(monaco)
         setLang(lang.languageId)
+        setTheme(lang.themeId)
     }
 
     const monaco = useMonaco();
@@ -40,7 +43,7 @@ function QLPEditor({file}: {file: File}) {
             <Editor
                 defaultLanguage="python"
                 language={lang}
-                theme="vs-dark"
+                theme={theme}
                 value={value}
                 onChange={(value) => setValue(value || '')}
                 options={{
