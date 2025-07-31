@@ -12,13 +12,15 @@ export class Language {
     #tokenizer: {[name: string]: languages.IMonarchLanguageRule[]}
     #themeRules: editor.ITokenThemeRule[] = []
     #completionItems: CompletionStub[] = []
+    #name: string
 
-    constructor(id: string, base?: languages.IMonarchLanguage) {
+    constructor(id: string, base?: languages.IMonarchLanguage, name?: string) {
         this.#id = id
         this.themeId = `${id}Theme`
         this.languageId = `${id}`
         this.#base = base
         this.#tokenizer = base?.tokenizer || {}
+        this.#name = name === undefined ? "" : name
     }
 
     register(monaco: typeof import("monaco-editor")) {
@@ -100,5 +102,9 @@ export class Language {
 
     addSimpleCompletionItem(completion: CompletionStub) {
         this.#completionItems.push(completion)
+    }
+
+    getName() {
+        return this.#name.length == 0 ? this.#id : this.#name
     }
 }
