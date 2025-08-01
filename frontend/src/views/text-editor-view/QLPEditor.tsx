@@ -1,4 +1,4 @@
-import {Editor, Monaco, useMonaco} from "@monaco-editor/react";
+import {Editor, Monaco, loader} from "@monaco-editor/react";
 import {useEffect, useState} from "react";
 import {languages as l} from "monaco-editor";
 import {toast} from "sonner";
@@ -18,11 +18,15 @@ const languages = [
     new Language("python", python, "Python"),
 ]
 
+/**
+ * Component that displays a text-editor to edit the given file
+ * @param file The metadata of the file to be edited
+ * @constructor
+ */
 function QLPEditor({file}: {file: File}) {
     const [value, setValue] = useState("# Loading...");
     const [lang, setLang] = useState("python");
     const [theme, setTheme] = useState("vs-dark");
-    toast(value)
 
     const onMount = (monaco: Monaco) => {
         for (const language of languages) {
@@ -32,13 +36,19 @@ function QLPEditor({file}: {file: File}) {
         setTheme(languages[0].themeId)
     }
 
-    const monaco = useMonaco();
-
     const onSave = () => {
-        return fetch(`${API_ENDPOINT}/file/${file.id}/content`, {
+        const edit = loader.__getMonacoInstance()?.editor.getEditors().at(0)
+        if (edit === undefined) {
+            toast("Editor undefined, not saving")
+            return
+        }
+        fetch(`${API_ENDPOINT}/file/${file.id}/content`, {
             method: "PUT",
-            body: monaco?.editor.getEditors().at(0)?.getValue()
-        }).then(() => retrieveContent(file.id)).then(setValue)
+            body: edit.getValue()
+        })
+            .then(() => retrieveContent(file.id))
+            .then(setValue)
+            .then(() => toast("Saved successfully"))
     }
 
     useEffect(() => {

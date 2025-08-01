@@ -1,11 +1,23 @@
-/*eslint no-unassigned-vars: "error"*/
 import {editor, languages, Position} from "monaco-editor";
 
 type ThemeExtension = Omit<editor.ITokenThemeRule, 'token'>
 type CompletionStub = Omit<languages.CompletionItem, 'range'>
 
+/**
+ * A Language is a wrapper for <i>monaco-editor</i> language-extension-API.
+ *
+ * Useful links for language extension are:
+ * <ul>
+ *     <li><a href="https://microsoft.github.io/monaco-editor/monarch.html">monarch-tokenizer tutorial</a></li>
+ *     <li>
+ *         <a href="https://microsoft.github.io/monaco-editor/playground.html?source=v0.52.2#example-extending-language-services-custom-languages">
+ *         Custom Languages
+ *         </a>
+ *     </li>
+ * </ul>
+ */
 export class Language {
-    #id: string
+    id: string
     themeId: string
     languageId: string
     #base?: languages.IMonarchLanguage
@@ -14,8 +26,14 @@ export class Language {
     #completionItems: CompletionStub[] = []
     #name: string
 
+    /**
+     * Constructs a new language
+     * @param id The id of the language
+     * @param base The optional basis for this language to be an extension of
+     * @param name The (optional) name of the language
+     */
     constructor(id: string, base?: languages.IMonarchLanguage, name?: string) {
-        this.#id = id
+        this.id = id
         this.themeId = `${id}Theme`
         this.languageId = `${id}`
         this.#base = base
@@ -23,6 +41,11 @@ export class Language {
         this.#name = name === undefined ? "" : name
     }
 
+    /**
+     * Registers this language as an extension to the given monaco instance.
+     * This method should be called last, after the definition of the language
+     * @param monaco The monaco instance
+     */
     register(monaco: typeof import("monaco-editor")) {
         monaco.languages.register(this.#getMetadata())
         monaco.editor.defineTheme(this.themeId, this.#getTheme())
@@ -31,7 +54,7 @@ export class Language {
     }
 
     #getMetadata(): languages.ILanguageExtensionPoint {
-        return {id: this.#id}
+        return {id: this.id}
     }
 
     #getTheme(): editor.IStandaloneThemeData {
@@ -64,6 +87,13 @@ export class Language {
         }
     }
 
+    /**
+     * Adds a new token to the language
+     * @param category The category of the tokenizer to add this rule to, i.e. 'root'
+     * @param rule The rule itself
+     * @param theme An optional theme rule. Notice, that the field 'token' is not required.
+     *              Instead, the token-name gets automatically extracted from the 'rule'
+     */
     addTokenRule(category: string, rule: languages.IMonarchLanguageRule, theme?: ThemeExtension) {
         if (this.#tokenizer[category] === undefined) {
             this.#tokenizer[category] = []
@@ -100,11 +130,16 @@ export class Language {
         }
     }
 
+    /**
+     * Adds a contextless completion item to this language
+     * @param completion The completionItem without the field 'range', which will get added
+     *                   once the completion is called.
+     */
     addSimpleCompletionItem(completion: CompletionStub) {
         this.#completionItems.push(completion)
     }
 
     getName() {
-        return this.#name.length == 0 ? this.#id : this.#name
+        return this.#name.length == 0 ? this.id : this.#name
     }
 }

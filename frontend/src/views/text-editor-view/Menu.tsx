@@ -11,8 +11,20 @@ import {
 } from "@/components/ui/menubar.tsx";
 
 type saver = () => void;
-type language = {select: () => void, displayName: string, isSelected: boolean};
+type language = {
+    /** Hook to be called when the language is selected */
+    select: () => void,
+    displayName: string,
+    /** True, when the language is selcted */
+    isSelected: boolean
+};
 
+/**
+ * Component that displays a menubar at the top of the text-editor
+ * @param onSave Hook that gets called when a save should be triggered
+ * @param languages The languages that are selectable
+ * @constructor
+ */
 export function Menu({onSave, languages}: {onSave: saver, languages: language[]}) {
     return (
         <Menubar className="rounded-none">
@@ -30,7 +42,7 @@ export function Menu({onSave, languages}: {onSave: saver, languages: language[]}
                         <MenubarSubContent>
                             {
                                 languages.length > 0
-                                    ? formatLannguages(languages)
+                                    ? formatLanguages(languages)
                                     : <MenubarItem disabled>Empty</MenubarItem>
                             }
                         </MenubarSubContent>
@@ -41,11 +53,11 @@ export function Menu({onSave, languages}: {onSave: saver, languages: language[]}
     )
 }
 
-function formatLannguages(languages: language[]) {
+function formatLanguages(languages: language[]) {
     const elements = []
     for (const lang of languages) {
         elements.push(
-            <MenubarCheckboxItem onSelect={lang.select} checked={lang.isSelected}>
+            <MenubarCheckboxItem onSelect={lang.select} checked={lang.isSelected} key={lang.displayName}>
                 {lang.displayName}
             </MenubarCheckboxItem>
         )
