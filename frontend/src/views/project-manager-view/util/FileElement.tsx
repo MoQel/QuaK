@@ -13,11 +13,11 @@ export interface FileElementContainer extends FileElement {
     contents: Array<FileElement>
 }
 
-export interface Project extends FileElementContainer {}
+export type Project = FileElementContainer
 
-export interface Directory extends FileElementContainer {}
+export type Directory = FileElementContainer
 
-export interface File extends FileElement {}
+export type File = FileElement
 
 /**
  * Sorts a given array of {@link FileElement FileElements} into a predefined order.
