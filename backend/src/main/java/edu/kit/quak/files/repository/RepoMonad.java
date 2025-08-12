@@ -14,7 +14,7 @@ import org.springframework.data.repository.CrudRepository;
  */
 // We're using this monad to ensure type safety when finding and then
 // saving an element inside a repository
-public class RepoMonad<T extends FileElementContainer> {
+public class RepoMonad<T extends FileElementContainer<?>> {
     private final CrudRepository<T, String> repo;
 
     public RepoMonad(CrudRepository<T, String> repo) {
@@ -27,11 +27,12 @@ public class RepoMonad<T extends FileElementContainer> {
      * @param element The element to store
      * @throws IllegalArgumentException When {@code id} could not be resolved
      */
-    public void addAndSave(String id, FileElement<?> element) throws IllegalArgumentException {
+    public FileElementContainer<?> addAndSave(String id, FileElement<?> element) throws IllegalArgumentException {
         T container = repo.findById(id).orElseThrow(
                 () -> new IllegalArgumentException("Provided parent_id does not map to an existing element.")
         );
-        container.addElement(element);
+        element.setParent(container);
         repo.save(container);
+        return container;
     }
 }

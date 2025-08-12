@@ -1,0 +1,7 @@
+.entry {
+    text-align: start;
+}
+
+.entry:hover {
+    text-decoration: underline;
+}

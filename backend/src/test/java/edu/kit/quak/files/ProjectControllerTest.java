@@ -39,7 +39,9 @@ class ProjectControllerTest extends QuaKApplicationTests {
 
     @BeforeEach
     void setUp() {
-        projects.deleteAll();
+        for (Project project : projects.findAll()) {
+            savers.delete(project.getId());
+        }
     }
 
     @Test
@@ -130,8 +132,7 @@ class ProjectControllerTest extends QuaKApplicationTests {
     @Transactional
     void deleteProjectContent() throws Exception {
         Project toDelete = projects.save(new Project("toDelete"));
-        File inner = files.save(new File("Hello"));
-        toDelete.addElement(inner);
+        File inner = files.save(new File("Hello", toDelete));
         projects.save(toDelete);
 
         mockMvc.perform(
@@ -145,12 +146,10 @@ class ProjectControllerTest extends QuaKApplicationTests {
     @Transactional
     //We don't allow the content of a contained directory to be displayed
     void noRecursiveDirectoryContent() throws Exception {
-        File file = files.save(new File("Hi"));
-        Directory lower = new Directory("lower");
-        lower.addElement(file);
-        lower = directories.save(lower);
         Project main = new Project("main");
-        main.addElement(lower);
+        Directory lower = new Directory("lower", main);
+        File file = files.save(new File("Hi", lower));
+        lower = directories.save(lower);
         main = projects.save(main);
 
         mockMvc.perform(
@@ -168,12 +167,10 @@ class ProjectControllerTest extends QuaKApplicationTests {
     @Test
     @Transactional
     void projectOverviewContainsOnlyFirstLevelOfProjectContent() throws Exception {
-        File inner = files.save(new File("inner"));
-        Directory lower = new Directory("lower");
-        lower.addElement(inner);
-        lower = directories.save(lower);
         Project main = new Project("main");
-        main.addElement(lower);
+        Directory lower = new Directory("lower", main);
+        File inner = files.save(new File("inner", lower));
+        lower = directories.save(lower);
         main = projects.save(main);
 
         mockMvc.perform(

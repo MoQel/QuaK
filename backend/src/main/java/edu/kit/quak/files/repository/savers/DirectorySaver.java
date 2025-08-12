@@ -1,6 +1,7 @@
 package edu.kit.quak.files.repository.savers;
 
 import edu.kit.quak.files.model.Directory;
+import edu.kit.quak.files.model.FileElement;
 import edu.kit.quak.files.repository.DirectoryRepository;
 import edu.kit.quak.files.repository.RepoMonad;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,7 +39,7 @@ public class DirectorySaver implements FileElementSaver<Directory> {
     @Override
     public Directory saveNew(Directory element) {
         element.setId(null);
-        element.getContent().forEach(element::removeElement);
+        element.getElements().forEach(element::removeElement);
         return repository.save(element);
     }
 
@@ -59,9 +60,14 @@ public class DirectorySaver implements FileElementSaver<Directory> {
 
     @Override
     public void delete(String toDelete, Consumer<String> deleter) {
-        Optional<Directory> dir = repository.findById(toDelete);
-        dir.map(Directory::getContent)
-           .ifPresent(s -> s.forEach(e -> deleter.accept(e.getId())));
-        dir.ifPresent(repository::delete);
+        Directory delete = repository.findById(toDelete).orElseThrow(
+                () -> new IllegalArgumentException("Given id does not map to a directory")
+        );
+        for (FileElement<?> element : delete.getElements()) {
+            delete.removeElement(element);
+            deleter.accept(element.getId());
+        }
+        delete.getParent().ifPresent(e -> e.removeElement(delete));
+        repository.delete(delete);
     }
 }

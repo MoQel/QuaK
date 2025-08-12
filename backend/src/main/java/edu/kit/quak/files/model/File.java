@@ -29,8 +29,8 @@ public class File extends FileElement<File> {
 
     protected File() { }
 
-    public File(String name) {
-        super(name);
+    public File(String name, FileElementContainer<?> parent) {
+        super(name, parent);
         this.createdOn = Instant.now();
         this.lastAccess = Instant.now();
     }

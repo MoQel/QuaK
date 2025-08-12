@@ -14,9 +14,12 @@ function App() {
         <>
             <div className="flex flex-col h-screen px-[10px]">
                 <div className="flex flex-row h-2/3">
-                    <ProjectManagerView/>
                     <div className="flex flex-grow-[2] w-full">
                         <ResizablePanelGroup direction="horizontal">
+                            <ResizablePanel defaultSize={20}>
+                                <ProjectManagerView/>
+                            </ResizablePanel>
+                            <ResizableHandle withHandle/>
                             <ResizablePanel>
                                 <CircuitView/>
                             </ResizablePanel>
