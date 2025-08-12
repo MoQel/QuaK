@@ -22,7 +22,7 @@ export const ParentRefresh = createContext(() => {})
  * @constructor
  */
 export function ProjectManagerView() {
-    const [content, setContent] = useState([<Skeleton className="h-4"/>])
+    const [content, setContent] = useState([<Skeleton className="h-4" key="LOADING"/>])
     const [reloaded, r] = useState(false)
     const reload = () => r(!reloaded)
 
@@ -52,7 +52,7 @@ async function fetchProjects() {
     const projects = await response.json() as IProject[]
     const elements = [];
     if (projects.length == 0) {
-        elements.push(<Empty/>)
+        elements.push(<Empty key="empty"/>)
     } else {
         for (const project of sort(projects)) {
             elements.push(<Project name={project.name} id={project.id} key={project.id}/>)
