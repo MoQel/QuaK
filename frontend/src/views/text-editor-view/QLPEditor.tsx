@@ -1,6 +1,5 @@
 import {Editor, Monaco, loader} from "@monaco-editor/react";
 import {useEffect, useState} from "react";
-import {languages as l} from "monaco-editor";
 import {toast} from "sonner";
 import {Menu} from "@/views/text-editor-view/Menu.tsx";
 import {API_ENDPOINT} from "@/views/project-manager-view/ProjectManagerView.tsx";

@@ -9,6 +9,7 @@ import edu.kit.quak.files.repository.RepoMonad;
 import edu.kit.quak.files.repository.savers.FileElementSaver;
 import edu.kit.quak.files.repository.savers.FileElementSaversRepository;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.transaction.Transactional;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -56,11 +57,15 @@ public class FileController {
         final RepoMonad<?> dest = savers.getSaverForElementId(parent)
                                         .flatMap(FileElementSaver::getRepoMonad)
                                         .orElseThrow(() -> new ResponseStatusException(BAD_REQUEST, "No matching parent found"));
-        final FileElement<?> saved = savers.getSaverForTypeName(obj.getOrDefault(TYPE_FIELD, "").toString(), FILTER)
-                .map(s -> s.mapAndSaveNew(objectMapper, obj))
-                .orElseThrow(() -> new ResponseStatusException(BAD_REQUEST, "Given object type can not be saved under this endpoint"));
-        dest.addAndSave(parent, saved);
-        return saved;
+        return savers.getSaverForTypeName(obj.getOrDefault(TYPE_FIELD, "").toString(), FILTER)
+                     .map(s -> {
+                    try {
+                        return s.mapAndSaveNew(objectMapper, obj, element -> dest.addAndSave(parent, element));
+                    } catch (IllegalArgumentException e) {
+                        throw new ResponseStatusException(BAD_REQUEST, e.getMessage());
+                    }
+                })
+                     .orElseThrow(() -> new ResponseStatusException(BAD_REQUEST, "Given object type can not be saved under this endpoint"));
     }
 
     @GetMapping("/{fId}")
@@ -72,6 +77,7 @@ public class FileController {
     }
 
     @DeleteMapping("/{fId}")
+    @Transactional
     public void deleteFile(@PathVariable String fId) {
         try {
             savers.delete(fId, FILTER);
