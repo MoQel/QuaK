@@ -2,7 +2,7 @@ import {Card, CardContent} from "@/components/ui/card.tsx";
 import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger} from "@/components/ui/dialog.tsx";
 import {Project} from "@/views/project-manager-view/Project.tsx";
 import {Button} from "@/components/ui/button.tsx";
-import {createContext, useEffect, useState} from "react";
+import {Context, createContext, useEffect, useState} from "react";
 import {Form, FormField} from "@/components/ui/form.tsx";
 import {z} from "zod";
 import {useForm} from "react-hook-form";
@@ -12,16 +12,19 @@ import {Project as IProject, sort} from "@/views/project-manager-view/util/FileE
 import {DialogCloseButtons, TextInput} from "@/views/project-manager-view/util/FormComponents.tsx";
 import {Plus} from "lucide-react";
 import {Empty} from "@/views/project-manager-view/util/TreeComponents.tsx";
+import {File} from "@/views/project-manager-view/util/FileElement.tsx";
 
 /** This constant allows for overriding the API_ENDPOINT to use for requests to the backend */
 export const API_ENDPOINT = ""
 export const ParentRefresh = createContext(() => {})
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const FileSelect: Context<(file: File) => void> = createContext((_) => {})
 
 /**
  * Displays a tree-view of the projects inside a {@link Card}
  * @constructor
  */
-export function ProjectManagerView() {
+export function ProjectManagerView({onFileSelect}: {onFileSelect: (file: File) => void}) {
     const [content, setContent] = useState([<Skeleton className="h-4" key="LOADING"/>])
     const [reloaded, r] = useState(false)
     const reload = () => r(!reloaded)
@@ -34,10 +37,12 @@ export function ProjectManagerView() {
         <Card className="h-full">
             <CardContent className="overflow-auto">
                 <div className="flex-col">
-                    <ParentRefresh value={reload}>
-                        {content}
-                        <CreateProject reload={reload} key="NEW"/>
-                    </ParentRefresh>
+                    <FileSelect value={onFileSelect}>
+                        <ParentRefresh value={reload}>
+                            {content}
+                            <CreateProject reload={reload} key="NEW"/>
+                        </ParentRefresh>
+                    </FileSelect>
                 </div>
             </CardContent>
         </Card>

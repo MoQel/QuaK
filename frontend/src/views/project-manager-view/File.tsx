@@ -1,4 +1,4 @@
-import {API_ENDPOINT, ParentRefresh} from "@/views/project-manager-view/ProjectManagerView.tsx";
+import {API_ENDPOINT, FileSelect, ParentRefresh} from "@/views/project-manager-view/ProjectManagerView.tsx";
 import {FileCode} from "lucide-react";
 import {ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger} from "@/components/ui/context-menu.tsx";
 import {Delete} from "@/views/project-manager-view/Delete.tsx";
@@ -21,13 +21,14 @@ import {ListingElement} from "@/views/project-manager-view/util/TreeComponents.t
 
 /**
  * Displays a {@link IFile File}
- * @param name The name of the file
- * @param id The id of the file
+ * @param file The file-Element
  * @constructor
  */
-export function File({name, id}: {name: string, id: string}) {
+export function File(file: IFile) {
+    const {name, id} = file
     const [open, setOpen] = useState(false)
     const [dialogContent, setDialogContent] = useState(<Skeleton className="h-5 mt-5" />)
+    const choose = useContext(FileSelect)
 
     const dialogTrigger = (content: Promise<JSX.Element>) => {
         setOpen(true)
@@ -37,8 +38,8 @@ export function File({name, id}: {name: string, id: string}) {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <ContextMenu>
-                <ContextMenuTrigger>
-                    <ListingElement text={name} icon={<FileCode/>}/>
+                <ContextMenuTrigger onClick={() => choose(file)}>
+                        <ListingElement text={name} icon={<FileCode/>}/>
                 </ContextMenuTrigger>
                 <ContextMenuContent>
                     {FileEdit(id, dialogTrigger)}

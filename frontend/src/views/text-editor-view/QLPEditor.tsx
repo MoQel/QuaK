@@ -1,15 +1,11 @@
 import {Editor, Monaco, loader} from "@monaco-editor/react";
-import {useEffect, useState} from "react";
+import {RefObject, useEffect, useRef, useState} from "react";
+import {File} from "@/views/project-manager-view/util/FileElement.tsx"
 import {toast} from "sonner";
 import {Menu} from "@/views/text-editor-view/Menu.tsx";
 import {API_ENDPOINT} from "@/views/project-manager-view/ProjectManagerView.tsx";
 import {Language} from "@/views/text-editor-view/model/Language.ts";
 import {language as python} from "@/components/languages/python.ts";
-
-interface File {
-    id: string,
-    mimeType: string,
-}
 
 const languages = [
     //Default language
@@ -22,10 +18,11 @@ const languages = [
  * @param file The metadata of the file to be edited
  * @constructor
  */
-function QLPEditor({file}: {file: File}) {
-    const [value, setValue] = useState("# Loading...");
+function QLPEditor({file}: {file: File | undefined}) {
+    const [value, setValue] = useState("# No File Selected");
     const [lang, setLang] = useState("python");
     const [theme, setTheme] = useState("vs-dark");
+    const contentId: RefObject<string | undefined> = useRef(undefined)
 
     const onMount = (monaco: Monaco) => {
         for (const language of languages) {
@@ -35,23 +32,33 @@ function QLPEditor({file}: {file: File}) {
         setTheme(languages[0].themeId)
     }
 
-    const onSave = () => {
+    const onSave = (id: string | undefined) => {
+        if (!id)
+            return Promise.resolve()
         const edit = loader.__getMonacoInstance()?.editor.getEditors().at(0)
         if (edit === undefined) {
             toast("Editor undefined, not saving")
-            return
+            return Promise.resolve()
         }
-        fetch(`${API_ENDPOINT}/file/${file.id}/content`, {
+        return fetch(`${API_ENDPOINT}/file/${id}/content`, {
             method: "PUT",
             body: edit.getValue()
         })
-            .then(() => retrieveContent(file.id))
+            .then(() => retrieveContent(id))
             .then(setValue)
             .then(() => toast("Saved successfully"))
     }
 
     useEffect(() => {
-        retrieveContent(file.id).then(setValue)
+        if (contentId.current && contentId.current != file?.id) {
+            onSave(contentId.current)
+            if (file?.id) {
+                onSave(contentId.current).then(() => retrieveContent(file.id)).then(setValue)
+            }
+        } else if (file?.id) {
+            retrieveContent(file.id).then(setValue)
+        }
+        contentId.current = file?.id
     }, [file])
 
     const formatLanguages = (langs: Language[]) => {
@@ -66,7 +73,7 @@ function QLPEditor({file}: {file: File}) {
     }
 
     return <div className="h-full flex flex-col p-0">
-        <Menu onSave={onSave} languages={formatLanguages(languages)}/>
+        <Menu onSave={() => onSave(file?.id)} languages={formatLanguages(languages)}/>
         <div className="h-full">
             <Editor
                 defaultLanguage="python"
