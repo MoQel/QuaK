@@ -1,6 +1,9 @@
 import styles from "@/App.module.css";
 import {Badge} from "@/components/ui/badge"
 import {QuantumGate} from "@/views/library-view/QuantumGate.tsx";
+import {horizontalListSortingStrategy, SortableContext} from "@dnd-kit/sortable";
+import {Gate} from "@/views/Gate.tsx"
+import {useDroppable} from "@dnd-kit/core";
 
 type QuantumWiresProps = {
     gates: QuantumGate[];
@@ -9,10 +12,12 @@ type QuantumWiresProps = {
 };
 
 export function QuantumWires({gates, qubitIndex, length}: QuantumWiresProps) {
+    const { setNodeRef } = useDroppable({
+        id: qubitIndex,
+    })
 
     return (
-        <div className="flex items-center space-x-2 pb-5">
-
+        <div ref={setNodeRef} className="flex items-center space-x-2 pb-5">
             <div>
                 <Badge className="w-12 h-8 font-mono text-sm font-bold select-none">
                     |q{qubitIndex}&gt;
@@ -26,11 +31,11 @@ export function QuantumWires({gates, qubitIndex, length}: QuantumWiresProps) {
                     {/* Buffer element */}
                     <Badge className={`${styles.gate} invisible`}/>
                     {/* Actual quantum Gates */}
-                    {gates.map((gate, index) => (
-                        <Badge key={index} className={`${styles.gate} ${gate.type === 'DUMMY' ? 'invisible' : ''}`}>
-                            {gate.type}
-                        </Badge>
-                    ))}
+                    <SortableContext items={gates} strategy={horizontalListSortingStrategy}>
+                        {gates.map((gate, index) => (
+                            <Gate key={`${gate.type}-${qubitIndex}-${index}`} id={gate.id} type={gate.type}/>
+                        ))}
+                    </SortableContext>
                 </div>
             </div>
         </div>

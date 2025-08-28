@@ -1,7 +1,7 @@
-import {QuantumGate} from "@/views/library-view/QuantumGate.tsx";
+import {QuantumGatesInit} from "@/views/circuit-view/InitCircuit.tsx";
 
 
-export const quantumLibraryGates: QuantumGate[] = [
+export const quantumLibraryGates: QuantumGatesInit[] = [
     {
         id: 'hadamard',
         type: 'H',
