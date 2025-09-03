@@ -17,7 +17,9 @@ export type Project = FileElementContainer
 
 export type Directory = FileElementContainer
 
-export type File = FileElement
+export interface File extends FileElement {
+    contentType: string,
+}
 
 /**
  * Sorts a given array of {@link FileElement FileElements} into a predefined order.
@@ -60,9 +62,9 @@ export function sort(elements: FileElement[]) {
  */
 export function getElementForFileElement(object: FileElement) {
     if (object.type === "file") {
-        return (<File {...object} key = {object.id}/>)
+        return (<File {...object as File} key = {object.id}/>)
     } else if (object.type === "directory") {
-        return (<Directory {...object} key = {object.id}/>)
+        return (<Directory {...object as Directory} key = {object.id}/>)
     } else {
         return (<Project {...object}/>)
     }
