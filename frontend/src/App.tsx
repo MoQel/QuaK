@@ -5,11 +5,11 @@ import {GateLibraryView} from "@/views/library-view/GateLibraryView.tsx";
 import {CircuitView} from "@/views/circuit-view/CircuitView.tsx";
 import {TextEditorView} from "@/views/text-editor-view/TextEditorView.tsx";
 import {ProjectManagerView} from "@/views/project-manager-view/ProjectManagerView.tsx";
-import {closestCorners, DndContext, DragEndEvent} from "@dnd-kit/core";
+import {closestCorners, DndContext, DragEndEvent, DragOverEvent} from "@dnd-kit/core";
 import {QuantumGate} from "@/views/library-view/QuantumGate.tsx";
 import {quantumGates, type QuantumGatesInit} from "@/views/circuit-view/InitCircuit.tsx";
 import {arrayMove} from "@dnd-kit/sortable";
-import { v4 as uuidv4 } from "uuid";
+import {v4 as uuidv4} from "uuid";
 
 
 function App() {
@@ -21,27 +21,111 @@ function App() {
         initializeMatrix(INITIAL_QUBITS, GATE_CAPACITY, quantumGates)
     )
 
-    const findGate = (gateId: string) => {
+    /* Returns the gate object belonging to the gateId */
+    const findGate = (gateId: string): QuantumGate | undefined => {
         return matrixState.flat().find(gate => gate.id === gateId)
     }
 
+    /* Returns the qubit ID on which the gate resides */
+    const findQubit = (gateId: string) => {
+        for (let i = 0; i < matrixState.length; i++) {
+            if (matrixState[i].some(gate => gate.id === gateId)) {
+                return i
+            }
+        }
+        return -1
+    }
+
+    const findLastGate = (row: number) => {
+        for (let i = 0; i < matrixState[row].length; i++) {
+            if (matrixState[row][i].type === "DUMMY") return i - 1;
+        }
+        return -1
+    }
 
 
     useEffect(() => {
         document.documentElement.classList.add('dark');
     }, []);
 
+    const handleDragOver = (event: DragOverEvent) => {
+        const { active, over } = event;
+        if (!over) return;
+
+        const activeGateId = active.id as string;
+        const overGateId = over.id as string;
+
+        const activeGate = findGate(activeGateId);
+
+        const activeQubitId = findQubit(activeGateId);
+        const overQubitId = findQubit(overGateId);
+
+        //Guard: IDs ungültig
+        if (!activeQubitId || !overQubitId) return;
+
+        if (activeQubitId === overQubitId && activeGateId !== overGateId) return;
+
+        //Wenn gleiche Qubit → nichts tun (innerhalb macht DragEnd)
+        if (activeQubitId === overQubitId) return;
+
+        if (!activeGate || activeGate.type === "DUMMY") return;
+
+        setMatrixState((prev) => {
+            // Find source wire
+            const sourceRowIndex = prev.findIndex((row) =>
+                row.some((g) => g.id === activeGateId)
+            );
+            // If source wire does not exist, leave state as is
+            if (sourceRowIndex === -1) return prev;
+
+            const sourceRow = [...prev[sourceRowIndex]];
+            const gateIndex = sourceRow.findIndex((g) => g.id === activeGateId);
+            if (gateIndex === -1) return prev;
+
+            const [movedGate] = sourceRow.splice(gateIndex, 1);
+            console.log(movedGate.type)
+
+            // Ziel-Wire finden
+            const targetRowIndex = prev.findIndex((row) =>
+                row.some((g) => g.id === overGateId)
+            );
+            if (targetRowIndex === -1) return prev;
+
+            const targetRow = [...prev[targetRowIndex]];
+            const overIndex = targetRow.findIndex((g) => g.id === overGateId);
+
+            // Gate einfügen (z.B. vor overGate)
+            targetRow.splice(overIndex, 0, movedGate);
+
+            // Neues State zurückgeben
+            return prev.map((row, idx) => {
+                if (idx === sourceRowIndex) return sourceRow;
+                if (idx === targetRowIndex) return targetRow;
+                return row;
+            });
+        });
+
+        console.log(`Preview: ${findGate(activeGateId)?.type} von ${activeQubitId} zu ${overQubitId}`);
+    };
+
     const handleDragEnd = (event: DragEndEvent) => {
         const {active, over} = event;
 
         if (!over) return;
+
         const activeGateId = active.id as string
-        const overGateId = over.id as string;
+        const overGateId = over.id as string
+
+        const activeGate = findGate(activeGateId);
+        const overGate = findGate(overGateId);
+
+        if (!activeGate || !overGate) return;
+        if (activeGate.type === "DUMMY") return;
 
         console.log(`Dropped item ${activeGateId} on wire ${overGateId}`);
 
-        if (!(findGate(overGateId)?.type == 'DUMMY') && activeGateId !== overGateId) {
-            setMatrixState((prev) => {
+        if (activeGateId !== overGateId) {
+            setMatrixState((prev):QuantumGate[][] => {
                 // Find which row (wire) the active gate is in
                 const rowIndex = prev.findIndex((row) =>
                     row.some((g) => g.id === activeGateId)
@@ -50,9 +134,25 @@ function App() {
 
                 const row = prev[rowIndex];
                 const oldIndex = row.findIndex((g) => g.id === activeGateId);
+
+                if (overGate.type === "DUMMY") {
+                    console.log("DROPPED OVER DUMMY")
+                    const newRow =
+                        [
+                            ...row.slice(0, oldIndex - 1),
+                            ...row.slice(oldIndex + 1, findLastGate(rowIndex)),
+                            activeGate,
+                            ...row.slice(findLastGate(rowIndex), row.length - 1)
+                        ]
+                    console.log(newRow);
+                    return [
+                        ...prev.slice(0 , rowIndex),
+                        newRow,
+                        ...prev.slice(rowIndex + 1),
+                    ];
+                }
                 const newIndex = row.findIndex((g) => g.id === overGateId);
 
-                // Apply arrayMove only within that row
                 const newRow = arrayMove(row, oldIndex, newIndex);
 
                 // Return new state with updated row
@@ -66,7 +166,11 @@ function App() {
     }
     return (
         <>
-            <DndContext onDragEnd={handleDragEnd} collisionDetection={closestCorners}>
+            <DndContext
+                onDragEnd={handleDragEnd}
+                onDragOver={handleDragOver}
+                collisionDetection={closestCorners}
+            >
                 <div className="flex flex-col h-screen">
                     <div className="flex flex-row h-2/3">
                         <ProjectManagerView/>
