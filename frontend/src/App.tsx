@@ -5,7 +5,15 @@ import {GateLibraryView} from "@/views/library-view/GateLibraryView.tsx";
 import {CircuitView} from "@/views/circuit-view/CircuitView.tsx";
 import {TextEditorView} from "@/views/text-editor-view/TextEditorView.tsx";
 import {ProjectManagerView} from "@/views/project-manager-view/ProjectManagerView.tsx";
-import {closestCenter, DndContext, DragEndEvent, DragOverEvent, DragOverlay, DragStartEvent} from "@dnd-kit/core";
+import {
+    closestCenter,
+    DndContext,
+    DragEndEvent,
+    DragOverEvent,
+    DragOverlay,
+    DragStartEvent,
+    PointerSensor, useSensor, useSensors
+} from "@dnd-kit/core";
 import {QuantumGate} from "@/views/library-view/QuantumGate.tsx";
 import {quantumGates, type QuantumGatesInit} from "@/views/circuit-view/InitCircuit.tsx";
 import {v4 as uuidv4} from "uuid";
@@ -24,6 +32,12 @@ function App() {
     const [activeQubit, setActiveQubit] = useState<number>()
     const [activeGate, setActiveGate] = useState<QuantumGate>()
 
+    //Needed so that the gates are clickable and not immediately get into the drag state when clicked on
+    const sensors = useSensors(useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 1
+            }
+    }))
     /* Returns the gate object belonging to the gateId */
     const findGate = (gateId: string): QuantumGate | undefined => {
         return matrixState.flat().find(gate => gate.id === gateId)
@@ -80,6 +94,7 @@ function App() {
         const overGateId = over.id as string;
 
         if (activeGateId === overGateId) return;
+        if (!overGateId) return;
 
         setMatrixState((prev) => {
             const activeRow = findQubit(activeGateId);
@@ -114,6 +129,7 @@ function App() {
     return (
         <>
             <DndContext
+                sensors={sensors}
                 onDragEnd={handleDragEnd}
                 onDragOver={handleDragOver}
                 onDragStart={handleDragStart}
