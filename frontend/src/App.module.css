@@ -36,7 +36,24 @@
   background-repeat: no-repeat;
 }
 
-.gate {
+.gate, .gateDragging {
+  padding: 9px 11px;
+  border-radius: 4px;
+  margin-top: 0;
+  width: var(--gateWidth);
+  display: inline-block;
+  text-align: center;
+  font-family: var(--font-mono), monospace;
+  font-weight: bold;
+  user-select: none;
+  font-size: 20px;
+}
+
+.gateDragging {
+  opacity: 0.4;
+}
+
+.gateHover {
   padding: 9px 11px;
   border-radius: 4px;
   margin-top: 0;

@@ -5,11 +5,12 @@ import {GateLibraryView} from "@/views/library-view/GateLibraryView.tsx";
 import {CircuitView} from "@/views/circuit-view/CircuitView.tsx";
 import {TextEditorView} from "@/views/text-editor-view/TextEditorView.tsx";
 import {ProjectManagerView} from "@/views/project-manager-view/ProjectManagerView.tsx";
-import {closestCorners, DndContext, DragEndEvent, DragOverEvent} from "@dnd-kit/core";
+import {closestCenter, DndContext, DragEndEvent, DragOverEvent, DragOverlay, DragStartEvent} from "@dnd-kit/core";
 import {QuantumGate} from "@/views/library-view/QuantumGate.tsx";
 import {quantumGates, type QuantumGatesInit} from "@/views/circuit-view/InitCircuit.tsx";
-import {arrayMove} from "@dnd-kit/sortable";
 import {v4 as uuidv4} from "uuid";
+import {Gate} from "./views/Gate";
+import {createPortal} from "react-dom";
 
 
 function App() {
@@ -20,6 +21,8 @@ function App() {
     const [matrixState, setMatrixState] = useState<QuantumGate[][]>(
         initializeMatrix(INITIAL_QUBITS, GATE_CAPACITY, quantumGates)
     )
+    const [activeQubit, setActiveQubit] = useState<number>()
+    const [activeGate, setActiveGate] = useState<QuantumGate>()
 
     /* Returns the gate object belonging to the gateId */
     const findGate = (gateId: string): QuantumGate | undefined => {
@@ -48,128 +51,65 @@ function App() {
         document.documentElement.classList.add('dark');
     }, []);
 
+    const handleDragStart = (e: DragStartEvent) => {
+        console.log(`Start drag: ${e} ${findGate(e.active.id as string)}`);
+        const activeGate = findGate(e.active.id as string)
+        setActiveGate(activeGate)
+        return;
+    }
+
+
     const handleDragOver = (event: DragOverEvent) => {
+        const { active, over } = event;
+        if (!over) return;
+
+        // highlight target row or save temporary state
+        const overQubit = findQubit(over.id as string);
+        if (overQubit !== -1) {
+            setActiveQubit(overQubit);
+        }
+    };
+
+    const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
         if (!over) return;
 
         const activeGateId = active.id as string;
         const overGateId = over.id as string;
 
-        const activeGate = findGate(activeGateId);
-
-        const activeQubitId = findQubit(activeGateId);
-        const overQubitId = findQubit(overGateId);
-
-        //Guard: IDs ungültig
-        if (!activeQubitId || !overQubitId) return;
-
-        if (activeQubitId === overQubitId && activeGateId !== overGateId) return;
-
-        //Wenn gleiche Qubit → nichts tun (innerhalb macht DragEnd)
-        if (activeQubitId === overQubitId) return;
-
-        if (!activeGate || activeGate.type === "DUMMY") return;
+        if (activeGateId === overGateId) return;
 
         setMatrixState((prev) => {
-            // Find source wire
-            const sourceRowIndex = prev.findIndex((row) =>
-                row.some((g) => g.id === activeGateId)
-            );
-            // If source wire does not exist, leave state as is
-            if (sourceRowIndex === -1) return prev;
+            const activeRow = findQubit(activeGateId);
+            const overRow = findQubit(overGateId);
 
-            const sourceRow = [...prev[sourceRowIndex]];
-            const gateIndex = sourceRow.findIndex((g) => g.id === activeGateId);
-            if (gateIndex === -1) return prev;
+            if (activeRow === -1 || overRow === -1) {
+                console.warn("Gate not found in matrix", { activeGateId, overGateId });
+                return prev;
+            }
 
-            const [movedGate] = sourceRow.splice(gateIndex, 1);
-            console.log(movedGate.type)
+            const activeCol = prev[activeRow].findIndex(g => g.id === activeGateId);
+            const overCol = prev[overRow].findIndex(g => g.id === overGateId);
 
-            // Ziel-Wire finden
-            const targetRowIndex = prev.findIndex((row) =>
-                row.some((g) => g.id === overGateId)
-            );
-            if (targetRowIndex === -1) return prev;
+            if (activeCol === -1 || overCol === -1) return prev; // same safeguard
 
-            const targetRow = [...prev[targetRowIndex]];
-            const overIndex = targetRow.findIndex((g) => g.id === overGateId);
+            const newMatrix = prev.map(row => [...row]);
+            const [moved] = newMatrix[activeRow].splice(activeCol, 1);
+            newMatrix[overRow].splice(overCol, 0, moved);
 
-            // Gate einfügen (z.B. vor overGate)
-            targetRow.splice(overIndex, 0, movedGate);
-
-            // Neues State zurückgeben
-            return prev.map((row, idx) => {
-                if (idx === sourceRowIndex) return sourceRow;
-                if (idx === targetRowIndex) return targetRow;
-                return row;
-            });
+            return newMatrix;
         });
 
-        console.log(`Preview: ${findGate(activeGateId)?.type} von ${activeQubitId} zu ${overQubitId}`);
+        setActiveGate(undefined);
     };
 
-    const handleDragEnd = (event: DragEndEvent) => {
-        const {active, over} = event;
-
-        if (!over) return;
-
-        const activeGateId = active.id as string
-        const overGateId = over.id as string
-
-        const activeGate = findGate(activeGateId);
-        const overGate = findGate(overGateId);
-
-        if (!activeGate || !overGate) return;
-        if (activeGate.type === "DUMMY") return;
-
-        console.log(`Dropped item ${activeGateId} on wire ${overGateId}`);
-
-        if (activeGateId !== overGateId) {
-            setMatrixState((prev):QuantumGate[][] => {
-                // Find which row (wire) the active gate is in
-                const rowIndex = prev.findIndex((row) =>
-                    row.some((g) => g.id === activeGateId)
-                );
-                if (rowIndex === -1) return prev;
-
-                const row = prev[rowIndex];
-                const oldIndex = row.findIndex((g) => g.id === activeGateId);
-
-                if (overGate.type === "DUMMY") {
-                    console.log("DROPPED OVER DUMMY")
-                    const newRow =
-                        [
-                            ...row.slice(0, oldIndex - 1),
-                            ...row.slice(oldIndex + 1, findLastGate(rowIndex)),
-                            activeGate,
-                            ...row.slice(findLastGate(rowIndex), row.length - 1)
-                        ]
-                    console.log(newRow);
-                    return [
-                        ...prev.slice(0 , rowIndex),
-                        newRow,
-                        ...prev.slice(rowIndex + 1),
-                    ];
-                }
-                const newIndex = row.findIndex((g) => g.id === overGateId);
-
-                const newRow = arrayMove(row, oldIndex, newIndex);
-
-                // Return new state with updated row
-                return [
-                    ...prev.slice(0, rowIndex),
-                    newRow,
-                    ...prev.slice(rowIndex + 1),
-                ];
-            });
-        }
-    }
     return (
         <>
             <DndContext
                 onDragEnd={handleDragEnd}
                 onDragOver={handleDragOver}
-                collisionDetection={closestCorners}
+                onDragStart={handleDragStart}
+                collisionDetection={closestCenter}
             >
                 <div className="flex flex-col h-screen">
                     <div className="flex flex-row h-2/3">
@@ -202,14 +142,19 @@ function App() {
                         </Card>
                     </div>
                 </div>
+                {createPortal(
+                    <DragOverlay>
+                        {activeGate && (
+                            <Gate {...activeGate}></Gate>
+                        )}
+                    </DragOverlay>,
+                    document.body
+                )}
             </DndContext>
         </>
     )
 }
 
-function findQubit(gateId: string): QuantumGate {
-    return
-}
 
 function initializeMatrix(
     qubits: number,

@@ -15,7 +15,6 @@ export function QuantumWires({gates, qubitIndex, length}: QuantumWiresProps) {
     const { setNodeRef } = useDroppable({
         id: qubitIndex,
     })
-
     return (
         <div ref={setNodeRef} className="flex items-center space-x-2 pb-5">
             <div>
