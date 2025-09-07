@@ -39,11 +39,13 @@ function App() {
         return -1
     }
 
+    // Returns the last gate that is not a dummy gate
+    // If there are no dummy gates, return 0 (first index in array)
     const findLastGate = (row: number) => {
         for (let i = 0; i < matrixState[row].length; i++) {
             if (matrixState[row][i].type === "DUMMY") return i - 1;
         }
-        return -1
+        return 0
     }
 
 
@@ -95,8 +97,13 @@ function App() {
 
             const newMatrix = prev.map(row => [...row]);
             const [moved] = newMatrix[activeRow].splice(activeCol, 1);
-            newMatrix[overRow].splice(overCol, 0, moved);
 
+            if (findGate(overGateId)?.type === "DUMMY") {
+                newMatrix[overRow].splice(findLastGate(overRow), 0, moved);
+                return newMatrix;
+            }
+
+            newMatrix[overRow].splice(overCol, 0, moved);
             return newMatrix;
         });
 
