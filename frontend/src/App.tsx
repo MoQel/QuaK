@@ -31,7 +31,7 @@ function App() {
     )
     const [activeQubit, setActiveQubit] = useState<number>()
     const [activeGate, setActiveGate] = useState<QuantumGate>()
-
+    const [activeLibraryElement, setActiveLibraryElement] = useState<QuantumGate>()
     //Needed so that the gates are clickable and not immediately get into the drag state when clicked on
     const sensors = useSensors(useSensor(PointerSensor, {
             activationConstraint: {
@@ -70,7 +70,12 @@ function App() {
     const handleDragStart = (e: DragStartEvent) => {
         console.log(`Start drag: ${e} ${findGate(e.active.id as string)}`);
         const activeGate = findGate(e.active.id as string)
-        setActiveGate(activeGate)
+        if (e.active.id === "library"){
+            setActiveLibraryElement(activeGate)
+            console.log(activeGate?.id)
+        } else {
+            setActiveGate(activeGate)
+        }
         return;
     }
 
@@ -170,6 +175,9 @@ function App() {
                     <DragOverlay>
                         {activeGate && (
                             <Gate {...activeGate}></Gate>
+                        )}
+                        {activeLibraryElement && (
+                            <Gate {...activeLibraryElement}></Gate>
                         )}
                     </DragOverlay>,
                     document.body
