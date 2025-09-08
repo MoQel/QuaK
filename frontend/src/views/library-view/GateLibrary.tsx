@@ -1,4 +1,4 @@
-import {quantumLibraryGates} from "@/views/library-view/QuantumGates.tsx";
+import {quantumLibraryGates} from "@/views/library-view/InitLibrary.tsx";
 import {useDroppable} from "@dnd-kit/core";
 import {LibraryElement} from "@/views/library-view/LibraryElement.tsx";
 
