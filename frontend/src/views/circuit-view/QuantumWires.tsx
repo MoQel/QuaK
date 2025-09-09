@@ -1,9 +1,8 @@
 import styles from "@/App.module.css";
 import {Badge} from "@/components/ui/badge"
 import {QuantumGate} from "@/views/library-view/QuantumGate.tsx";
-import {horizontalListSortingStrategy, SortableContext} from "@dnd-kit/sortable";
+import {horizontalListSortingStrategy, SortableContext, useSortable} from "@dnd-kit/sortable";
 import {Gate} from "@/views/Gate.tsx"
-import {useDroppable} from "@dnd-kit/core";
 
 type QuantumWiresProps = {
     gates: QuantumGate[];
@@ -12,7 +11,7 @@ type QuantumWiresProps = {
 };
 
 export function QuantumWires({gates, qubitIndex, length}: QuantumWiresProps) {
-    const { setNodeRef } = useDroppable({
+    const { setNodeRef } = useSortable({
         id: qubitIndex,
     })
     return (

@@ -12,7 +12,9 @@ import {
     DragOverEvent,
     DragOverlay,
     DragStartEvent,
-    PointerSensor, useSensor, useSensors
+    PointerSensor,
+    useSensor,
+    useSensors
 } from "@dnd-kit/core";
 import {QuantumGate} from "@/views/library-view/QuantumGate.tsx";
 import {quantumGates, type QuantumGatesInit} from "@/views/circuit-view/InitCircuit.tsx";
@@ -34,9 +36,9 @@ function App() {
     const [activeLibraryElement, setActiveLibraryElement] = useState<QuantumGate>()
     //Needed so that the gates are clickable and not immediately get into the drag state when clicked on
     const sensors = useSensors(useSensor(PointerSensor, {
-            activationConstraint: {
-                distance: 1
-            }
+        activationConstraint: {
+            distance: 1
+        }
     }))
     /* Returns the gate object belonging to the gateId */
     const findGate = (gateId: string): QuantumGate | undefined => {
@@ -68,31 +70,33 @@ function App() {
     }, []);
 
     const handleDragStart = (e: DragStartEvent) => {
-        console.log(`Start drag: ${e} ${findGate(e.active.id as string)}`);
-        const activeGate = findGate(e.active.id as string)
-        if (e.active.id === "library"){
-            setActiveLibraryElement(activeGate)
-            console.log(activeGate?.id)
+        if (e.active.data.current?.source === "library" && e.active.data.current) {
+            const gate: QuantumGate = {
+                id: uuidv4(),
+                type: e.active.data.current?.type
+            }
+            setActiveLibraryElement(gate)
         } else {
-            setActiveGate(activeGate)
+            setActiveGate(findGate(e.active.id as string))
         }
         return;
     }
 
 
     const handleDragOver = (event: DragOverEvent) => {
-        const { active, over } = event;
+        const {over} = event
         if (!over) return;
-
         // highlight target row or save temporary state
-        const overQubit = findQubit(over.id as string);
+        const overQubit = findQubit(over.id as string)
         if (overQubit !== -1) {
+            console.log("THIS IS THE QUBIT INDEX: "+ overQubit)
             setActiveQubit(overQubit);
         }
+
     };
 
     const handleDragEnd = (event: DragEndEvent) => {
-        const { active, over } = event;
+        const {active, over} = event;
         if (!over) return;
 
         const activeGateId = active.id as string;
@@ -101,34 +105,55 @@ function App() {
         if (activeGateId === overGateId) return;
         if (!overGateId) return;
 
-        setMatrixState((prev) => {
-            const activeRow = findQubit(activeGateId);
-            const overRow = findQubit(overGateId);
 
-            if (activeRow === -1 || overRow === -1) {
-                console.warn("Gate not found in matrix", { activeGateId, overGateId });
-                return prev;
-            }
+        // Matrix update depending on whether it's a gate dragged from the library or within the circuit
+        if (activeLibraryElement) {
+            setMatrixState((prev) => {
+                const overRow = activeQubit;
+                if (overRow === undefined) return prev;
 
-            const activeCol = prev[activeRow].findIndex(g => g.id === activeGateId);
-            const overCol = prev[overRow].findIndex(g => g.id === overGateId);
+                const overCol = prev[overRow].findIndex(g => g.id === overGateId)
+                if (overCol === -1) return prev;
 
-            if (activeCol === -1 || overCol === -1) return prev; // same safeguard
+                const newMatrix = prev.map(row => [...row])
+                if (findGate(overGateId)?.type === "DUMMY") {
+                    // index of last Gate + 1, because the library element should be placed at the end
+                    newMatrix[overRow].splice(findLastGate(overRow) + 1, 0, activeLibraryElement)
+                    return newMatrix
+                }
 
-            const newMatrix = prev.map(row => [...row]);
-            const [moved] = newMatrix[activeRow].splice(activeCol, 1);
+                newMatrix[overRow].splice(overCol, 0, activeLibraryElement)
+                return newMatrix
+            })
+        } else {
+            setMatrixState((prev) => {
+                const activeRow = findQubit(activeGateId)
+                const overRow = activeQubit;
 
-            if (findGate(overGateId)?.type === "DUMMY") {
-                console.log(findLastGate(overRow));
-                newMatrix[overRow].splice(findLastGate(overRow), 0, moved);
-                return newMatrix;
-            }
+                if (activeRow === -1 || overRow === undefined) {
+                    return prev
+                }
 
-            newMatrix[overRow].splice(overCol, 0, moved);
-            return newMatrix;
-        });
+                const activeCol = prev[activeRow].findIndex(g => g.id === activeGateId)
+                const overCol = prev[overRow].findIndex(g => g.id === overGateId)
 
-        setActiveGate(undefined);
+                if (activeCol === -1 || overCol === -1) return prev; // same safeguard
+
+                const newMatrix = prev.map(row => [...row])
+                const [moved] = newMatrix[activeRow].splice(activeCol, 1)
+
+                if (findGate(overGateId)?.type === "DUMMY") {
+                    newMatrix[overRow].splice(findLastGate(overRow), 0, moved)
+                    return newMatrix
+                }
+
+                newMatrix[overRow].splice(overCol, 0, moved)
+                return newMatrix
+            });
+        }
+        setActiveGate(undefined)
+        setActiveLibraryElement(undefined)
+
     };
 
     return (

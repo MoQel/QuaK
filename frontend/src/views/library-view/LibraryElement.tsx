@@ -1,15 +1,20 @@
 import {Badge} from "@/components/ui/badge.tsx";
 import {QuantumGate} from "@/views/library-view/QuantumGate.tsx";
 import styles from "@/App.module.css";
-import {useSortable} from "@dnd-kit/sortable";
 import {CSS} from "@dnd-kit/utilities";
 import {Gate} from "@/views/Gate.tsx";
+import {useDraggable} from "@dnd-kit/core";
 
 
 export function LibraryElement({id, type}: QuantumGate) {
-    const {attributes, listeners, setNodeRef, transform, transition, isDragging} = useSortable({id})
+    const {attributes, listeners, setNodeRef, transform, isDragging} = useDraggable({
+        id: id,
+        data: {
+            source: "library",
+            type: type
+        }
+    })
     const style = {
-        transition,
         transform: CSS.Transform.toString(transform),
     }
     if (isDragging) {

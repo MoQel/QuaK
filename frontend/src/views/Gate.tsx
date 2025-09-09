@@ -6,7 +6,12 @@ import {CSS} from "@dnd-kit/utilities";
 
 
 export function Gate({id, type}: QuantumGate) {
-    const {attributes, listeners, setNodeRef, transform, transition, isDragging} = useSortable({id})
+    const {attributes, listeners, setNodeRef, transform, transition, isDragging} = useSortable({
+        id: id,
+        data: {
+            source: "circuit"
+        }
+    })
     const style = {
         transition,
         transform: CSS.Transform.toString(transform),
