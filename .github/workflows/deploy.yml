@@ -1,0 +1,48 @@
+name: Deploy
+on:
+  push:
+    branches: [ "development" ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # This depth is required by dokku later
+      # We first build the application so that the deployment doesn't need to build it
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4.7.1
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4.4.2
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+
+      - name: Build with Gradle Wrapper
+        run: cd backend && ./gradlew :bootJar
+
+      # Commiting the app so it will be deployed during push to dokku
+      - name: Commit artifact
+        id: commit
+        run: |
+          git add -f backend/build/libs/QuaK-0.0.1-SNAPSHOT.jar
+          git config user.name "Pipeline Runner"
+          git config user.email "<runner@example.com>"
+          git commit -m "Add build artifact [ONLY FOR PRODUCTION]"
+          echo "COMMIT_ID=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+      - name: Push to dokku
+        uses: dokku/github-action@v1.8.0
+        with:
+          branch: development
+          git_remote_url: ssh://dokku@${{ secrets.DEPLOYMENT_SERVER_ADDRESS }}/quak
+          ssh_private_key: ${{ secrets.DEPLOYMENT_SERVER_SSH_KEY }}
+          ci_commit: ${{ steps.commit.outputs.COMMIT_ID }}
+          # --force: Don't fail if someone else pushed a different history
+          # --no-verify: When testing the pipeline locally with act, we ignore local pre-push scripts
+          git_push_flags: '--force --no-verify'

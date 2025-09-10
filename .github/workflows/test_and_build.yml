@@ -62,31 +62,3 @@ jobs:
         with:
           name: Application
           path: backend/build/libs/*.jar
-  download:
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Get repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - uses: actions/download-artifact@v5
-        with:
-          name: Application
-          path: backend/build/libs/
-      - name: Commit artifact
-        id: commit
-        run: |
-          git add -f backend/build/libs/QuaK-0.0.1-SNAPSHOT.jar
-          git config user.name "Pipeline Runner"
-          git config user.email "<runner@example.com>"
-          git commit -m "Add build artifact [ONLY FOR PRODUCTION]"
-          echo "COMMIT_ID=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
-      - name: Push to dokku
-        uses: dokku/github-action@v1.8.0
-        with:
-          branch: development
-          git_remote_url: ssh://dokku@${{ secrets.DEPLOYMENT_SERVER_ADDRESS }}/quak
-          ssh_private_key: ${{ secrets.DEPLOYMENT_SERVER_SSH_KEY }}
-          ci_commit: ${{ steps.commit.outputs.COMMIT_ID }}
-          git_push_flags: '--force --no-verify'
