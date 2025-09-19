@@ -1,11 +1,12 @@
 import {Badge} from "@/components/ui/badge.tsx";
-import {QuantumGate} from "@/views/library-view/QuantumGate.tsx";
+import {GateIcons, QuantumGate} from "@/views/library-view/QuantumGate.tsx";
 import styles from "@/App.module.css";
 import {useSortable} from "@dnd-kit/sortable";
 import {CSS} from "@dnd-kit/utilities";
 
 
 export function Gate({id, type}: QuantumGate) {
+
     const {attributes, listeners, setNodeRef, transform, transition, isDragging} = useSortable({
         id: id,
         data: {
@@ -16,6 +17,8 @@ export function Gate({id, type}: QuantumGate) {
         transition,
         transform: CSS.Transform.toString(transform),
     }
+    const Icon = GateIcons[type]
+
     if (isDragging) {
         return (
             <div ref={setNodeRef}
@@ -33,9 +36,10 @@ export function Gate({id, type}: QuantumGate) {
              {...attributes}
              {...listeners}
              id={id}
-             style={style}>
-            <Badge className={`${styles.gate} ${type === 'DUMMY' ? 'invisible' : ''}`}>
-                {type}
+             style={style}
+        >
+            <Badge className={` ${styles.gate} ${type === 'DUMMY' ? 'invisible' : ''}`}>
+                <Icon/>
             </Badge>
         </div>
     )

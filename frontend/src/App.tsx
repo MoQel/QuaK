@@ -21,6 +21,7 @@ import {quantumGates, type QuantumGatesInit} from "@/views/circuit-view/InitCirc
 import {v4 as uuidv4} from "uuid";
 import {Gate} from "./views/Gate";
 import {createPortal} from "react-dom";
+import {LibraryElement} from "@/views/library-view/LibraryElement.tsx";
 
 
 function App() {
@@ -37,7 +38,7 @@ function App() {
     //Needed so that the gates are clickable and not immediately get into the drag state when clicked on
     const sensors = useSensors(useSensor(PointerSensor, {
         activationConstraint: {
-            distance: 1
+            distance: 0 // can be adjusted in the future
         }
     }))
     /* Returns the gate object belonging to the gateId */
@@ -70,6 +71,10 @@ function App() {
     }, []);
 
     const handleDragStart = (e: DragStartEvent) => {
+        if (findGate(e.active.id as string)?.type === "DUMMY") {
+            console.log("This is a dummy")
+            return;
+        }
         if (e.active.data.current?.source === "library" && e.active.data.current) {
             const gate: QuantumGate = {
                 id: uuidv4(),
@@ -104,7 +109,7 @@ function App() {
 
         if (activeGateId === overGateId) return;
         if (!overGateId) return;
-
+        if (findGate(activeGateId)?.type === "DUMMY") return;
 
         // Matrix update depending on whether it's a gate dragged from the library or within the circuit
         if (activeLibraryElement) {
@@ -119,6 +124,7 @@ function App() {
                 if (findGate(overGateId)?.type === "DUMMY") {
                     // index of last Gate + 1, because the library element should be placed at the end
                     newMatrix[overRow].splice(findLastGate(overRow) + 1, 0, activeLibraryElement)
+                    console.log("The placed index is: " + (findLastGate(overRow) + 1))
                     return newMatrix
                 }
 
@@ -202,7 +208,7 @@ function App() {
                             <Gate {...activeGate}></Gate>
                         )}
                         {activeLibraryElement && (
-                            <Gate {...activeLibraryElement}></Gate>
+                            <LibraryElement {...activeLibraryElement}></LibraryElement>
                         )}
                     </DragOverlay>,
                     document.body

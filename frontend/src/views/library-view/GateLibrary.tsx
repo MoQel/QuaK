@@ -1,18 +1,19 @@
 import {quantumLibraryGates} from "@/views/library-view/InitLibrary.tsx";
-import {useDroppable} from "@dnd-kit/core";
+import {useDraggable} from "@dnd-kit/core";
 import {LibraryElement} from "@/views/library-view/LibraryElement.tsx";
-
+import {horizontalListSortingStrategy, SortableContext} from "@dnd-kit/sortable";
 
 function GateLibrary() {
-    const {setNodeRef} = useDroppable({
+    const {setNodeRef} = useDraggable({
         id: "library",
     })
     return (
         <div ref={setNodeRef} className="space-x-3 flex">
-            {quantumLibraryGates.map((gate, index) => (
-                <LibraryElement key={`${gate.type}-${index}`} id={gate.id} type={gate.type}/>
-            ))}
-
+            <SortableContext items={quantumLibraryGates} strategy={horizontalListSortingStrategy}>
+                {quantumLibraryGates.map((gate, index) => (
+                    <LibraryElement key={`${gate.type}-${index}`} id={gate.id} type={gate.type}/>
+                ))}
+            </SortableContext>
         </div>
     )
 }
