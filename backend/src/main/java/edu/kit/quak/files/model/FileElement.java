@@ -1,5 +1,6 @@
 package edu.kit.quak.files.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
@@ -7,9 +8,12 @@ import edu.kit.quak.Savable;
 import edu.kit.quak.files.configuration.CustomIdGenerator;
 import edu.kit.quak.files.configuration.FileElementResolver;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.ManyToOne;
 
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * A FileElement is an element inside a {@link FileElementContainer container} or the container itself.
@@ -37,6 +41,10 @@ public abstract class FileElement<SELF extends FileElement<?>> implements Savabl
     @JsonProperty
     private String name;
 
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.EAGER)
+    private FileElementContainer<?> parent;
+
     /**
      * Similar to the HTTP's PATCH-method, this method allows for changing predefined
      * values of this object to the values of a modified object.
@@ -52,8 +60,16 @@ public abstract class FileElement<SELF extends FileElement<?>> implements Savabl
     /// Constructor used by the persistence implementation
     protected FileElement() { }
 
-    public FileElement(String name) {
+    public FileElement(String name, FileElementContainer<?> parent) {
         this.name = name;
+        this.parent = parent;
+        addToParent();
+    }
+
+    private void addToParent() {
+        if (parent != null) {
+            parent.addElement(this);
+        }
     }
 
     public String getName() {
@@ -74,6 +90,15 @@ public abstract class FileElement<SELF extends FileElement<?>> implements Savabl
         this.id = id;
     }
 
+    public void setParent(FileElementContainer<?> parent) {
+        this.parent = parent;
+        addToParent();
+    }
+
+    public Optional<FileElementContainer<?>> getParent() {
+        return Optional.ofNullable(parent);
+    }
+
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
@@ -83,6 +108,6 @@ public abstract class FileElement<SELF extends FileElement<?>> implements Savabl
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, name);
+        return Objects.hash(name, parent);
     }
 }

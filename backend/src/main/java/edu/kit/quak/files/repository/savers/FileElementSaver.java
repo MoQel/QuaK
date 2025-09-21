@@ -2,13 +2,16 @@ package edu.kit.quak.files.repository.savers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.kit.quak.files.model.FileElement;
+import edu.kit.quak.files.model.FileElementContainer;
 import edu.kit.quak.files.repository.RepoMonad;
+import jakarta.transaction.Transactional;
 import org.springframework.data.repository.CrudRepository;
 
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * A FileElementSaver handles saving of a {@link FileElement}.
@@ -60,10 +63,18 @@ public interface FileElementSaver<T extends FileElement<T>> {
      * @param mapper The mapper to map the {@code object} to type {@link T}
      * @param object The object to map
      * @return The newly saved element
+     * @throws IllegalArgumentException if the mapped element has an illegal state
      */
-    default T mapAndSaveNew(ObjectMapper mapper, Map<String, Object> object) {
+    default T mapAndSaveNew(ObjectMapper mapper, Map<String, Object> object) throws IllegalArgumentException {
         T element = mapper.convertValue(object, getRelatedClass());
         return saveNew(element);
+    }
+
+    default T mapAndSaveNew(ObjectMapper mapper, Map<String, Object> object, Function<FileElement<?>, FileElementContainer<?>> parentSaver) throws IllegalArgumentException {
+        T element = mapper.convertValue(object, getRelatedClass());
+        element = saveNew(element);
+        element.setParent(parentSaver.apply(element));
+        return getRepository().save(element);
     }
 
     /**
@@ -85,8 +96,9 @@ public interface FileElementSaver<T extends FileElement<T>> {
      * the implementing class
      * @param toDelete The ID of the element to delete
      * @param deleter A consumer which deletes a given ID from persistent storage
-     * @throws IllegalArgumentException If no element with ID {@code toDelete} could be found.
+     * @throws IllegalArgumentException May be thrown if no element with ID {@code toDelete} could be found.
      */
+    @Transactional
     default void delete(String toDelete, Consumer<String> deleter) throws IllegalArgumentException {
         getRepository().deleteById(toDelete);
     }
