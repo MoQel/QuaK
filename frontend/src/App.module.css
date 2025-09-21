@@ -2,6 +2,7 @@
   margin: 0 auto;
   text-align: center;
   --gateWidth : 20px;
+  --gateHeight : 35px;
   --colorBack: #2f2e2e;
   --colorFront: #1e1616;
 }
@@ -28,31 +29,43 @@
 }
 
 .lines {
+  height: 2px;
   background-size: 100% 2px;
-  background-image: linear-gradient(to right,
-  var(--color-amber-200) 0% 100%);
+  background-image: linear-gradient(to right, var(--color-white) 0% 100%);
   background-position-y: center;
   background-position-x: right;
   background-repeat: no-repeat;
 }
 
-.gate {
+.gate, .gate:hover, .gateDragging {
   padding: 9px 11px;
-  border-radius: 4px;
-  margin-top: 0px;
-  width: var(--gateWidth);
-  display: inline-block;
+  border-radius: 3px;
+  margin-top: 0;
+  box-sizing: border-box;
+  height: 40px;
+  width: 80px;
   text-align: center;
+  font-family: var(--font-mono), monospace;
+  font-weight: bold;
   user-select: none;
+  font-size: 20px;
+}
 
+.gateDragging {
+  opacity: 0.4;
+}
+
+.gate:hover {
+background-color: var(--color-gray-300);
 }
 
 .availableGateContainer {
   padding: 9px 11px;
   display: flex;
   grid-auto-flow: column;
-  min-width: 0;
-  min-height: 0;
+  min-width: 10px;
+  min-height: 10px;
   justify-content: space-evenly;
+  row-gap: 5px;
   flex-wrap: wrap;
 }

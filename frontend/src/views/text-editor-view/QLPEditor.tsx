@@ -13,82 +13,81 @@ const languages = [
     new Language("python", python, "Python"),
 ]
 
-/**
- * Component that displays a text-editor to edit the given file
- * @param file The metadata of the file to be edited
- * @constructor
- */
 function QLPEditor({file}: {file: File | undefined}) {
     const [value, setValue] = useState("# No File Selected");
     const [lang, setLang] = useState("python");
     const [theme, setTheme] = useState("vs-dark");
-    const contentId: RefObject<string | undefined> = useRef(undefined)
+    const contentId: RefObject<string | undefined> = useRef(undefined);
 
     const onMount = (monaco: Monaco) => {
         for (const language of languages) {
-            language.register(monaco)
+            language.register(monaco);
         }
-        setLang(languages[0].languageId)
-        setTheme(languages[0].themeId)
-    }
+        setLang(languages[0].languageId);
+        setTheme(languages[0].themeId);
+    };
 
     const onSave = (id: string | undefined) => {
-        if (!id)
-            return Promise.resolve()
-        const edit = loader.__getMonacoInstance()?.editor.getEditors().at(0)
-        if (edit === undefined) {
-            toast("Editor undefined, not saving")
-            return Promise.resolve()
+        if (!id) return Promise.resolve();
+        const edit = loader.__getMonacoInstance()?.editor.getEditors().at(0);
+        if (!edit) {
+            toast("Editor undefined, not saving");
+            return Promise.resolve();
         }
         return fetch(`${API_ENDPOINT}/file/${id}/content`, {
             method: "PUT",
-            body: edit.getValue()
+            body: edit.getValue(),
         })
             .then(() => retrieveContent(id))
             .then(setValue)
-            .then(() => toast("Saved successfully"))
-    }
+            .then(() => toast("Saved successfully"));
+    };
 
     useEffect(() => {
-        if (contentId.current && contentId.current != file?.id) {
-            onSave(contentId.current)
+        if (contentId.current && contentId.current !== file?.id) {
+            onSave(contentId.current);
             if (file?.id) {
-                onSave(contentId.current).then(() => retrieveContent(file.id)).then(setValue)
+                onSave(contentId.current).then(() => retrieveContent(file.id)).then(setValue);
             }
         } else if (file?.id) {
-            retrieveContent(file.id).then(setValue)
+            retrieveContent(file.id).then(setValue);
         }
-        contentId.current = file?.id
-    }, [file])
+        contentId.current = file?.id;
+    }, [file]);
 
     const formatLanguages = (langs: Language[]) => {
         return langs.map(l => ({
-            isSelected: (l.languageId === lang),
+            isSelected: l.languageId === lang,
             select: () => {
                 setLang(l.languageId);
-                setTheme(l.themeId)
+                setTheme(l.themeId);
+                toast("Language " + l.getName());
             },
-            displayName: l.getName()
-        }))
-    }
+            displayName: l.getName(),
+        }));
+    };
 
-    return <div className="h-full flex flex-col p-0">
-        <Menu onSave={() => onSave(file?.id)} languages={formatLanguages(languages)}/>
-        <div className="h-full">
-            <Editor
-                defaultLanguage="python"
-                language={lang}
-                theme={theme}
-                value={value}
-                onChange={(value) => setValue(value || '')}
-                options={{
-                    minimap: {enabled: false},
-                    wordWrap: 'on',
-                }}
-                beforeMount={onMount}
-            />
+    return (
+        <div className="h-full flex flex-col p-0">
+            <Menu onSave={() => onSave(file?.id)} languages={formatLanguages(languages)}/>
+            <div className="h-full">
+                <Editor
+                    defaultLanguage="python"
+                    language={lang}
+                    theme={theme}
+                    value={value}
+                    onChange={(value) => setValue(value || '')}
+                    options={{
+                        minimap: {enabled: false},
+                        wordWrap: 'on',
+                    }}
+                    beforeMount={onMount}
+                />
+            </div>
         </div>
-    </div>;
+    );
+}
+
 }
 
 function retrieveContent(id: string) {
