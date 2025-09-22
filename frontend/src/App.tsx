@@ -30,10 +30,9 @@ import {File} from "@/views/project-manager-view/util/FileElement.tsx";
 function App() {
 
     const INITIAL_QUBITS = 20
-    const GATE_CAPACITY = 60
 
     const [matrixState, setMatrixState] = useState<QuantumGate[][]>(
-        initializeMatrix(INITIAL_QUBITS, GATE_CAPACITY, quantumGates)
+        initializeMatrix(INITIAL_QUBITS, quantumGates)
     )
     const [activeQubit, setActiveQubit] = useState<number>()
     const [activeGate, setActiveGate] = useState<QuantumGate>()
@@ -214,46 +213,58 @@ return (
 )
 }
 
-
 function initializeMatrix(
-    qubits: number,
-    steps: number,
+    numberOfWires: number,
     gates: QuantumGatesInit[]
-): QuantumGate[][] {
-    // Prepare empty matrix filled with dummy gates
-    const matrix: QuantumGate[][] = Array.from({length: qubits}, (_, qubitIndex) =>
-        Array.from({length: steps}, (_, stepIndex) => ({
-            id: `dummy-${qubitIndex}-${stepIndex}`,
-            type: 'DUMMY',
-            qubit: qubitIndex,
-        }))
-    );
-
-    // Keep track of next free step for each qubit
-    const nextStepPerQubit = new Array(qubits).fill(0);
-
-    // Loop through gates in order
-    for (let i = 0; i < gates.length; i++) {
-        const gate = gates[i];
-        const qubit = gate.qubit;
-
-        // Check qubit valid range
-        if (qubit < 0 || qubit >= qubits) continue;
-
-        const step = nextStepPerQubit[qubit];
-        if (step >= steps) {
-            // No more room in this qubit's timeline
-            continue;
-        }
-
-        // Place gate at next free step on that qubit
-        matrix[qubit][step] = {...gate, id: uuidv4()};
-
-        // Increment next free step for that qubit
-        nextStepPerQubit[qubit]++;
+) : QuantumGate[][] {
+    const quantumWires : QuantumGate[][] = []
+    for (let i = 0; i < numberOfWires; i++) {
+        quantumWires[i] = []
     }
-
-    return matrix;
+    for (const gate of gates) {
+        quantumWires[gate.qubit].push({type: gate.type, id: uuidv4()})
+    }
+    return quantumWires
 }
+// function initializeMatrix(
+//     qubits: number,
+//     steps: number,
+//     gates: QuantumGatesInit[]
+// ): QuantumGate[][] {
+//     // Prepare empty matrix filled with dummy gates
+//     const matrix: QuantumGate[][] = Array.from({length: qubits}, (_, qubitIndex) =>
+//         Array.from({length: steps}, (_, stepIndex) => ({
+//             id: `dummy-${qubitIndex}-${stepIndex}`,
+//             type: 'DUMMY',
+//             qubit: qubitIndex,
+//         }))
+//     );
+//
+//     // Keep track of next free step for each qubit
+//     const nextStepPerQubit = new Array(qubits).fill(0);
+//
+//     // Loop through gates in order
+//     for (let i = 0; i < gates.length; i++) {
+//         const gate = gates[i];
+//         const qubit = gate.qubit;
+//
+//         // Check qubit valid range
+//         if (qubit < 0 || qubit >= qubits) continue;
+//
+//         const step = nextStepPerQubit[qubit];
+//         if (step >= steps) {
+//             // No more room in this qubit's timeline
+//             continue;
+//         }
+//
+//         // Place gate at next free step on that qubit
+//         matrix[qubit][step] = {...gate, id: uuidv4()};
+//
+//         // Increment next free step for that qubit
+//         nextStepPerQubit[qubit]++;
+//     }
+//
+//     return matrix;
+// }
 
 export default App
