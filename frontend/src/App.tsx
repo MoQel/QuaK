@@ -211,8 +211,9 @@ return (
         </DndContext>
         <Toaster/>
     </>
-)
+);
 }
+
 
 function initializeMatrix(
     numberOfWires: number,
@@ -227,45 +228,5 @@ function initializeMatrix(
     }
     return quantumWires
 }
-// function initializeMatrix(
-//     qubits: number,
-//     steps: number,
-//     gates: QuantumGatesInit[]
-// ): QuantumGate[][] {
-//     // Prepare empty matrix filled with dummy gates
-//     const matrix: QuantumGate[][] = Array.from({length: qubits}, (_, qubitIndex) =>
-//         Array.from({length: steps}, (_, stepIndex) => ({
-//             id: `dummy-${qubitIndex}-${stepIndex}`,
-//             type: 'DUMMY',
-//             qubit: qubitIndex,
-//         }))
-//     );
-//
-//     // Keep track of next free step for each qubit
-//     const nextStepPerQubit = new Array(qubits).fill(0);
-//
-//     // Loop through gates in order
-//     for (let i = 0; i < gates.length; i++) {
-//         const gate = gates[i];
-//         const qubit = gate.qubit;
-//
-//         // Check qubit valid range
-//         if (qubit < 0 || qubit >= qubits) continue;
-//
-//         const step = nextStepPerQubit[qubit];
-//         if (step >= steps) {
-//             // No more room in this qubit's timeline
-//             continue;
-//         }
-//
-//         // Place gate at next free step on that qubit
-//         matrix[qubit][step] = {...gate, id: uuidv4()};
-//
-//         // Increment next free step for that qubit
-//         nextStepPerQubit[qubit]++;
-//     }
-//
-//     return matrix;
-// }
 
 export default App

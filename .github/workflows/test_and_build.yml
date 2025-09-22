@@ -1,0 +1,58 @@
+# This workflow will build a Java project with Gradle and cache/restore any dependencies to improve the workflow execution time
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-gradle
+
+name: Java CI with Gradle
+
+on:
+  push:
+    branches:
+      - "development"
+  pull_request:
+    branches: [ "development" ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4.7.1
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4.4.2
+      - name: Run tests
+        run: cd backend && ./gradlew :test
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4.7.1
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4.4.2
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+
+      - name: Build with Gradle Wrapper
+        run: cd backend && ./gradlew :bootJar
+
+      - name: Upload built jar
+        uses: actions/upload-artifact@v4
+        with:
+          name: Application
+          path: backend/build/libs/*.jar
