@@ -1,12 +1,12 @@
-import { Dispatch, SetStateAction, useEffect, useState } from "react";
+import {Dispatch, SetStateAction, useEffect, useState} from "react";
 
 import {ResizableHandle, ResizablePanel, ResizablePanelGroup} from "@/components/ui/resizable.tsx";
-import {Card, CardContent} from "@/components/ui/card.tsx";
 import {GateLibraryView} from "@/views/library-view/GateLibraryView.tsx";
 import {CircuitView} from "@/views/circuit-view/CircuitView.tsx";
 import {TextEditorView} from "@/views/text-editor-view/TextEditorView.tsx";
 import {ProjectManagerView} from "@/views/project-manager-view/ProjectManagerView.tsx";
 import {ResultsView} from "@/views/results-view/ResultsView.tsx";
+import {InspectorView} from "@/views/inspector-view/InspectorView.tsx";
 import {
     closestCenter,
     DndContext,
@@ -72,154 +72,146 @@ function App() {
     useEffect(() => {
         document.documentElement.classList.add('dark');
     }, []);
-const [file, openFile]: [File, Dispatch<SetStateAction<File>>] = useState(undefined as unknown as File);
+    const [file, openFile]: [File, Dispatch<SetStateAction<File>>] = useState(undefined as unknown as File);
 
-const handleDragStart = (e: DragStartEvent) => {
-    if (findGate(e.active.id as string)?.type === "DUMMY") {
-        console.log("This is a dummy")
+    const handleDragStart = (e: DragStartEvent) => {
+        if (findGate(e.active.id as string)?.type === "DUMMY") {
+            console.log("This is a dummy")
+            return;
+        }
+        if (e.active.data.current?.source === "library" && e.active.data.current) {
+            const gate: QuantumGate = {
+                id: uuidv4(),
+                type: e.active.data.current?.type
+            }
+            setActiveLibraryElement(gate)
+        } else {
+            setActiveGate(findGate(e.active.id as string))
+        }
         return;
     }
-    if (e.active.data.current?.source === "library" && e.active.data.current) {
-        const gate: QuantumGate = {
-            id: uuidv4(),
-            type: e.active.data.current?.type
+
+    const handleDragOver = (event: DragOverEvent) => {
+        const {over} = event
+        if (!over) return;
+        const overQubit = findQubit(over.id as string)
+        if (overQubit !== -1) {
+            console.log("THIS IS THE QUBIT INDEX: " + overQubit)
+            setActiveQubit(overQubit);
         }
-        setActiveLibraryElement(gate)
-    } else {
-        setActiveGate(findGate(e.active.id as string))
-    }
-    return;
-}
+    };
 
-const handleDragOver = (event: DragOverEvent) => {
-    const {over} = event
-    if (!over) return;
-    const overQubit = findQubit(over.id as string)
-    if (overQubit !== -1) {
-        console.log("THIS IS THE QUBIT INDEX: "+ overQubit)
-        setActiveQubit(overQubit);
-    }
-};
+    const handleDragEnd = (event: DragEndEvent) => {
+        const {active, over} = event;
+        if (!over) return;
 
-const handleDragEnd = (event: DragEndEvent) => {
-    const {active, over} = event;
-    if (!over) return;
+        const activeGateId = active.id as string;
+        const overGateId = over.id as string;
 
-    const activeGateId = active.id as string;
-    const overGateId = over.id as string;
+        if (activeGateId === overGateId) return;
+        if (!overGateId) return;
+        if (findGate(activeGateId)?.type === "DUMMY") return;
 
-    if (activeGateId === overGateId) return;
-    if (!overGateId) return;
-    if (findGate(activeGateId)?.type === "DUMMY") return;
+        if (activeLibraryElement) {
+            setMatrixState((prev) => {
+                const overRow = activeQubit;
+                if (overRow === undefined) return prev;
 
-    if (activeLibraryElement) {
-        setMatrixState((prev) => {
-            const overRow = activeQubit;
-            if (overRow === undefined) return prev;
+                const overCol = prev[overRow].findIndex(g => g.id === overGateId)
+                if (overCol === -1) return prev;
 
-            const overCol = prev[overRow].findIndex(g => g.id === overGateId)
-            if (overCol === -1) return prev;
+                const newMatrix = prev.map(row => [...row])
+                if (findGate(overGateId)?.type === "DUMMY") {
+                    newMatrix[overRow].splice(findLastGate(overRow) + 1, 0, activeLibraryElement)
+                    console.log("The placed index is: " + (findLastGate(overRow) + 1))
+                    return newMatrix
+                }
 
-            const newMatrix = prev.map(row => [...row])
-            if (findGate(overGateId)?.type === "DUMMY") {
-                newMatrix[overRow].splice(findLastGate(overRow) + 1, 0, activeLibraryElement)
-                console.log("The placed index is: " + (findLastGate(overRow) + 1))
+                newMatrix[overRow].splice(overCol, 0, activeLibraryElement)
                 return newMatrix
-            }
+            })
+        } else {
+            setMatrixState((prev) => {
+                const activeRow = findQubit(activeGateId)
+                const overRow = activeQubit;
 
-            newMatrix[overRow].splice(overCol, 0, activeLibraryElement)
-            return newMatrix
-        })
-    } else {
-        setMatrixState((prev) => {
-            const activeRow = findQubit(activeGateId)
-            const overRow = activeQubit;
+                if (activeRow === -1 || overRow === undefined) {
+                    return prev
+                }
 
-            if (activeRow === -1 || overRow === undefined) {
-                return prev
-            }
+                const activeCol = prev[activeRow].findIndex(g => g.id === activeGateId)
+                const overCol = prev[overRow].findIndex(g => g.id === overGateId)
 
-            const activeCol = prev[activeRow].findIndex(g => g.id === activeGateId)
-            const overCol = prev[overRow].findIndex(g => g.id === overGateId)
+                if (activeCol === -1 || overCol === -1) return prev;
 
-            if (activeCol === -1 || overCol === -1) return prev;
+                const newMatrix = prev.map(row => [...row])
+                const [moved] = newMatrix[activeRow].splice(activeCol, 1)
 
-            const newMatrix = prev.map(row => [...row])
-            const [moved] = newMatrix[activeRow].splice(activeCol, 1)
+                if (findGate(overGateId)?.type === "DUMMY") {
+                    newMatrix[overRow].splice(findLastGate(overRow), 0, moved)
+                    return newMatrix
+                }
 
-            if (findGate(overGateId)?.type === "DUMMY") {
-                newMatrix[overRow].splice(findLastGate(overRow), 0, moved)
+                newMatrix[overRow].splice(overCol, 0, moved)
                 return newMatrix
-            }
+            });
+        }
+        setActiveGate(undefined)
+        setActiveLibraryElement(undefined)
+    };
 
-            newMatrix[overRow].splice(overCol, 0, moved)
-            return newMatrix
-        });
-    }
-    setActiveGate(undefined)
-    setActiveLibraryElement(undefined)
-};
-
-return (
-    <>
-        <DndContext
-            sensors={sensors}
-            onDragEnd={handleDragEnd}
-            onDragOver={handleDragOver}
-            onDragStart={handleDragStart}
-            collisionDetection={closestCenter}
-        >
-            <div className="flex flex-col h-screen px-[10px]">
-                <div className="flex flex-row h-2/3">
-                    <div className="flex flex-grow-[2] w-full">
-                        <ResizablePanelGroup direction="horizontal">
-                            <ResizablePanel defaultSize={20}>
-                                <ProjectManagerView onFileSelect={openFile}/>
-                            </ResizablePanel>
-                            <ResizableHandle withHandle/>
-                            <ResizablePanel>
-                                <CircuitView matrixState={matrixState} setMatrixState={setMatrixState}/>
-                            </ResizablePanel>
-                            <ResizableHandle withHandle/>
-                            <ResizablePanel className="flex-col h-full">
-                                <TextEditorView file={file}/>
-                            </ResizablePanel>
-                        </ResizablePanelGroup>
+    return (
+        <>
+            <DndContext
+                sensors={sensors}
+                onDragEnd={handleDragEnd}
+                onDragOver={handleDragOver}
+                onDragStart={handleDragStart}
+                collisionDetection={closestCenter}
+            >
+                <div className="flex flex-col h-screen px-[10px]">
+                    <div className="flex flex-row h-2/3">
+                        <div className="flex flex-grow-[2] w-full">
+                            <ResizablePanelGroup direction="horizontal">
+                                <ResizablePanel defaultSize={20}>
+                                    <ProjectManagerView onFileSelect={openFile}/>
+                                </ResizablePanel>
+                                <ResizableHandle withHandle/>
+                                <ResizablePanel>
+                                    <CircuitView matrixState={matrixState} setMatrixState={setMatrixState}/>
+                                </ResizablePanel>
+                                <ResizableHandle withHandle/>
+                                <ResizablePanel className="flex-col h-full">
+                                    <TextEditorView file={file}/>
+                                </ResizablePanel>
+                            </ResizablePanelGroup>
+                        </div>
+                    </div>
+                    <div className="flex flex-grow-[1] flex-row w-full">
+                        <GateLibraryView/>
+                        <ResultsView/>
+                        <InspectorView/>
                     </div>
                 </div>
-                <div className="flex flex-grow-[1] flex-row w-full">
-                    <GateLibraryView/>
-                    <Card className="w-full">
-                        <CardContent>
-                            inspector
-                        </CardContent>
-                    </Card>
-                    <Card className="w-full">
-                        <CardContent>
-                            <ResultsView/>
-                        </CardContent>
-                    </Card>
-                </div>
-            </div>
-            {createPortal(
-                <DragOverlay>
-                    {activeGate && <Gate {...activeGate}></Gate>}
-                    {activeLibraryElement && <LibraryElement {...activeLibraryElement}></LibraryElement>}
-                </DragOverlay>,
-                document.body
-            )}
-        </DndContext>
-        <Toaster/>
-    </>
-);
+                {createPortal(
+                    <DragOverlay>
+                        {activeGate && <Gate {...activeGate}></Gate>}
+                        {activeLibraryElement && <LibraryElement {...activeLibraryElement}></LibraryElement>}
+                    </DragOverlay>,
+                    document.body
+                )}
+            </DndContext>
+            <Toaster/>
+        </>
+    );
 }
 
 
 function initializeMatrix(
     numberOfWires: number,
     gates: QuantumGatesInit[]
-) : QuantumGate[][] {
-    const quantumWires : QuantumGate[][] = []
+): QuantumGate[][] {
+    const quantumWires: QuantumGate[][] = []
     for (let i = 0; i < numberOfWires; i++) {
         quantumWires[i] = []
     }
