@@ -40,7 +40,7 @@ function App() {
     const [activeLibraryElement, setActiveLibraryElement] = useState<QuantumGate>()
 
     const getMaxWireLength = () => {
-        return 1;
+        return 3;
     }
 
     //Needed so that the gates are clickable and not immediately get into the drag state when clicked on
