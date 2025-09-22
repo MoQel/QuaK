@@ -211,10 +211,7 @@ return (
         </DndContext>
         <Toaster/>
     </>
-);
-
-        </>
-    )
+)
 }
 
 

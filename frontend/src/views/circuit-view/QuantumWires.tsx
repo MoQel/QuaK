@@ -6,7 +6,7 @@ import {Gate} from "@/views/Gate.tsx"
 import {Button} from "@/components/ui/button"
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover"
 import {Input} from "@/components/ui/input.tsx";
-import {useState} from "react";
+import {ChangeEvent, useState} from "react";
 
 type QuantumWiresProps = {
     gates: QuantumGate[];
@@ -20,8 +20,17 @@ export function QuantumWires({gates, qubitIndex, length}: QuantumWiresProps) {
     })
 
     const [qubitName, setQubitName] = useState<string>(`q${qubitIndex}`)
+    const [tempName, setTempName] = useState<string>(qubitName)
     const maxLength = 4;
-    const isTooLong = qubitName.length > maxLength;
+    const isTooLong = tempName.length > maxLength;
+    const onNameChange = (e: ChangeEvent<HTMLInputElement>) => {
+        setTempName(e.target.value)
+    }
+    const onSave = () => {
+        if (tempName.length <= maxLength) {
+            setQubitName(tempName)
+        }
+    }
     return (
         <div ref={setNodeRef} className="flex items-center space-x-2 pb-5">
             <div>
@@ -32,17 +41,27 @@ export function QuantumWires({gates, qubitIndex, length}: QuantumWiresProps) {
                         </Button>
                     </PopoverTrigger>
                     <PopoverContent>
-                        <Input
-                            id="qubitName"
-                            value={qubitName}
-                            onChange={(e) => setQubitName(e.target.value)}
-                            className="font-mono"
-                        />
-                        {isTooLong && (
-                            <span className="text-red-500 text-xs">
-                                Name too long! Max {maxLength} characters.
-                            </span>
-                        )}
+                        <div className="flex flex-col space-y-2">
+                            <div className="flex flex-row space-x-2">
+                                <Input
+                                    id="qubitName"
+                                    value={tempName}
+                                    onChange={onNameChange}
+                                    className="font-mono"
+                                />
+                                <Button
+                                    onClick={onSave}
+                                    className="w-16 h-8 font-mono text-sm font-bold select-none"
+                                >
+                                    Save
+                                </Button>
+                            </div>
+                            {isTooLong && (
+                                <span className="text-red-500 text-xs">
+                                    Name too long! Max {maxLength} characters.
+                                </span>
+                            )}
+                        </div>
                     </PopoverContent>
                 </Popover>
             </div>
