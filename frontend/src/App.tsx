@@ -6,6 +6,7 @@ import {GateLibraryView} from "@/views/library-view/GateLibraryView.tsx";
 import {CircuitView} from "@/views/circuit-view/CircuitView.tsx";
 import {TextEditorView} from "@/views/text-editor-view/TextEditorView.tsx";
 import {ProjectManagerView} from "@/views/project-manager-view/ProjectManagerView.tsx";
+import {ResultsView} from "@/views/results-view/ResultsView.tsx";
 import {
     closestCenter,
     DndContext,
