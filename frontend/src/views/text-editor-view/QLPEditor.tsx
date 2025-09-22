@@ -88,8 +88,6 @@ function QLPEditor({file}: {file: File | undefined}) {
     );
 }
 
-}
-
 function retrieveContent(id: string) {
     return fetch(`${API_ENDPOINT}/file/${id}/content`, {
         method: "GET"
