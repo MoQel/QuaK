@@ -38,6 +38,11 @@ function App() {
     const [activeQubit, setActiveQubit] = useState<number>()
     const [activeGate, setActiveGate] = useState<QuantumGate>()
     const [activeLibraryElement, setActiveLibraryElement] = useState<QuantumGate>()
+
+    const getMaxWireLength = () => {
+        return 1;
+    }
+
     //Needed so that the gates are clickable and not immediately get into the drag state when clicked on
     const sensors = useSensors(useSensor(PointerSensor, {
         activationConstraint: {
@@ -178,7 +183,11 @@ return (
                             </ResizablePanel>
                             <ResizableHandle withHandle/>
                             <ResizablePanel>
-                                <CircuitView matrixState={matrixState} setMatrixState={setMatrixState}/>
+                                <CircuitView
+                                    matrixState={matrixState}
+                                    setMatrixState={setMatrixState}
+                                    maxWireLength={getMaxWireLength()}
+                                />
                             </ResizablePanel>
                             <ResizableHandle withHandle/>
                             <ResizablePanel className="flex-col h-full">

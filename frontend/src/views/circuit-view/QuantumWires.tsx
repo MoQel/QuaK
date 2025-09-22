@@ -1,5 +1,4 @@
 import styles from "@/App.module.css";
-import {Badge} from "@/components/ui/badge"
 import {QuantumGate} from "@/views/library-view/QuantumGate.tsx";
 import {horizontalListSortingStrategy, SortableContext, useSortable} from "@dnd-kit/sortable";
 import {Gate} from "@/views/Gate.tsx"
@@ -70,8 +69,6 @@ export function QuantumWires({gates, qubitIndex, length}: QuantumWiresProps) {
 
                 <div className={`${styles.lines} absolute top-1/2 w-full`}/>
                 <div className="flex items-center h-full space-x-3 pl-3 relative z-10">
-                    {/* Buffer element */}
-                    <Badge className={`${styles.gate} invisible`}/>
                     {/* Actual quantum Gates */}
                     <SortableContext items={gates} strategy={horizontalListSortingStrategy}>
                         {gates.map((gate, index) => (

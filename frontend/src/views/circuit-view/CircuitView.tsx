@@ -6,12 +6,13 @@ import {CircuitState} from "@/type/quantum.tsx";
 import {useCallback, useState} from "react";
 import {QuantumGate} from "@/views/library-view/QuantumGate.tsx";
 
-type QuantumGatesType = {
+type CircuitViewProps = {
     matrixState: QuantumGate[][];
     setMatrixState: (matrixState: QuantumGate[][]) => void;
+    maxWireLength: number
 }
 
-export function CircuitView({matrixState, setMatrixState}: QuantumGatesType) {
+export function CircuitView({matrixState, setMatrixState}: CircuitViewProps) {
     const GATE_CAPACITY_VISIBLE = 40
     const INITIAL_QUBITS_VISIBLE = 3
     const WIRE_LENGTH = GATE_CAPACITY_VISIBLE * 25
@@ -71,6 +72,7 @@ export function CircuitView({matrixState, setMatrixState}: QuantumGatesType) {
                         }
                     </div>
                 </div>
+                //TODO Indexing
             </CardContent>
         </Card>
     )
