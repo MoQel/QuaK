@@ -195,7 +195,7 @@ return (
                     </Card>
                     <Card className="w-full">
                         <CardContent>
-                            results
+                            <ResultsView/>
                         </CardContent>
                     </Card>
                 </div>
