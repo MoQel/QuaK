@@ -6,7 +6,6 @@ import {CircuitView} from "@/views/circuit-view/CircuitView.tsx";
 import {TextEditorView} from "@/views/text-editor-view/TextEditorView.tsx";
 import {ProjectManagerView} from "@/views/project-manager-view/ProjectManagerView.tsx";
 import {ResultsView} from "@/views/results-view/ResultsView.tsx";
-import {InspectorView} from "@/views/inspector-view/InspectorView.tsx";
 import {
     closestCenter,
     DndContext,
@@ -26,6 +25,7 @@ import {createPortal} from "react-dom";
 import {LibraryElement} from "@/views/library-view/LibraryElement.tsx";
 import {Toaster} from "@/components/ui/sonner.tsx";
 import {File} from "@/views/project-manager-view/util/FileElement.tsx";
+import {InspectorView} from "@/views/inspector-view/InspectorView.tsx";
 
 
 function App() {
@@ -163,46 +163,47 @@ function App() {
 
                 newMatrix[overRow].splice(overCol, 0, moved)
                 return newMatrix
-            }
+            });
+        }
+        setActiveGate(undefined)
+        setActiveLibraryElement(undefined)
+    };
 
-            newMatrix[overRow].splice(overCol, 0, moved)
-            return newMatrix
-        });
-    }
-    setActiveGate(undefined)
-    setActiveLibraryElement(undefined)
-};
-
-return (
-    <>
-        <DndContext
-            sensors={sensors}
-            onDragEnd={handleDragEnd}
-            onDragOver={handleDragOver}
-            onDragStart={handleDragStart}
-            collisionDetection={closestCenter}
-        >
-            <div className="flex flex-col h-screen px-[10px]">
-                <div className="flex flex-row h-2/3">
-                    <div className="flex flex-grow-[2] w-full">
-                        <ResizablePanelGroup direction="horizontal">
-                            <ResizablePanel defaultSize={20}>
-                                <ProjectManagerView onFileSelect={openFile}/>
-                            </ResizablePanel>
-                            <ResizableHandle withHandle/>
-                            <ResizablePanel>
-                                <CircuitView
-                                    matrixState={matrixState}
-                                    setMatrixState={setMatrixState}
-                                    maxWireLength={maxWireLength}
-                                />
-                            </ResizablePanel>
-                            <ResizableHandle withHandle/>
-                            <ResizablePanel className="flex-col h-full">
-                                <TextEditorView file={file}/>
-                            </ResizablePanel>
-                        </ResizablePanelGroup>
-
+    return (
+        <>
+            <DndContext
+                sensors={sensors}
+                onDragEnd={handleDragEnd}
+                onDragOver={handleDragOver}
+                onDragStart={handleDragStart}
+                collisionDetection={closestCenter}
+            >
+                <div className="flex flex-col h-screen px-[10px]">
+                    <div className="flex flex-row h-2/3">
+                        <div className="flex flex-grow-[2] w-full">
+                            <ResizablePanelGroup direction="horizontal">
+                                <ResizablePanel defaultSize={20}>
+                                    <ProjectManagerView onFileSelect={openFile}/>
+                                </ResizablePanel>
+                                <ResizableHandle withHandle/>
+                                <ResizablePanel>
+                                    <CircuitView
+                                        matrixState={matrixState}
+                                        setMatrixState={setMatrixState}
+                                        maxWireLength={maxWireLength}
+                                    />
+                                </ResizablePanel>
+                                <ResizableHandle withHandle/>
+                                <ResizablePanel className="flex-col h-full">
+                                    <TextEditorView file={file}/>
+                                </ResizablePanel>
+                            </ResizablePanelGroup>
+                        </div>
+                    </div>
+                    <div className="flex flex-grow-[1] flex-row w-full">
+                        <GateLibraryView/>
+                        <InspectorView/>
+                        <ResultsView/>
                     </div>
                 </div>
                 {createPortal(
