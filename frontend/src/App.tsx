@@ -192,7 +192,6 @@ function App() {
                                         use context provider that passes arguments to its children
                                     */}
                                     <matrixContext.Provider value={{matrixState, setMatrixState}}>
-                                        {/* TODO change this to adjust to provider (expand context with matrixstate)*/}
                                         <CircuitView
                                             maxWireLength={maxWireLength}
                                         />
