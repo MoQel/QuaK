@@ -26,7 +26,7 @@ import {LibraryElement} from "@/views/library-view/LibraryElement.tsx";
 import {Toaster} from "@/components/ui/sonner.tsx";
 import {File} from "@/views/project-manager-view/util/FileElement.tsx";
 import {InspectorView} from "@/views/inspector-view/InspectorView.tsx";
-
+import {setMatrixStateContext} from "./Context"
 
 function App() {
 
@@ -187,11 +187,17 @@ function App() {
                                 </ResizablePanel>
                                 <ResizableHandle withHandle/>
                                 <ResizablePanel>
-                                    <CircuitView
-                                        matrixState={matrixState}
-                                        setMatrixState={setMatrixState}
-                                        maxWireLength={maxWireLength}
-                                    />
+                                    {/*
+                                        To avoid prop drilling,
+                                        use context provider that passes removeWire to QuantumWire
+                                    */}
+                                    <setMatrixStateContext.Provider value={setMatrixState}>
+                                        <CircuitView
+                                            matrixState={matrixState}
+                                            setMatrixState={setMatrixState}
+                                            maxWireLength={maxWireLength}
+                                        />
+                                    </setMatrixStateContext.Provider>
                                 </ResizablePanel>
                                 <ResizableHandle withHandle/>
                                 <ResizablePanel className="flex-col h-full">

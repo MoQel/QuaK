@@ -5,7 +5,8 @@ import {Gate} from "@/views/Gate.tsx"
 import {Button} from "@/components/ui/button"
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover"
 import {Input} from "@/components/ui/input.tsx";
-import {ChangeEvent, useState} from "react";
+import {ChangeEvent, useContext, useState} from "react";
+import {setMatrixStateContext} from "@/Context.tsx";
 
 type QuantumWiresProps = {
     gates: QuantumGate[];
@@ -20,6 +21,7 @@ export function QuantumWires({gates, qubitIndex, length}: QuantumWiresProps) {
 
     const [qubitName, setQubitName] = useState<string>(`q${qubitIndex}`)
     const [tempName, setTempName] = useState<string>(qubitName)
+    const setMatrixState = useContext(setMatrixStateContext)
     const maxLength = 4;
     const isTooLong = tempName.length > maxLength;
     const onNameChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -29,6 +31,14 @@ export function QuantumWires({gates, qubitIndex, length}: QuantumWiresProps) {
         if (tempName.length <= maxLength) {
             setQubitName(tempName)
         }
+    }
+    const removeWire = () => {
+        if (!setMatrixState) return;
+
+        setMatrixState((prev) => {
+            // create a new array without the wire at qubitIndex
+            return prev.filter((_, index) => index !== qubitIndex);
+        });
     }
     return (
         <div ref={setNodeRef} className="flex items-center space-x-2 pb-5">
@@ -58,10 +68,17 @@ export function QuantumWires({gates, qubitIndex, length}: QuantumWiresProps) {
                                 </Button>
                             </div>
                             {isTooLong && (
-                                <span className="text-red-500 text-xs">
+                                <span className="self-start text-red-500 text-xs">
                                     Name too long! Max {maxLength} characters.
                                 </span>
                             )}
+                            <Button
+                                onClick={removeWire}
+                                variant="destructive"
+                                className="w-30 h-8 font-mono text-sm font-bold select-none"
+                            >
+                                Remove Wire
+                            </Button>
                         </div>
                     </PopoverContent>
                 </Popover>
