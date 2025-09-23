@@ -1,10 +1,15 @@
-#root {
+:root {
   margin: 0 auto;
   text-align: center;
-  --gateWidth : 20px;
-  --gateHeight : 35px;
+  --gateWidth : 80px;
+  --gateHeight : 40px;
+  --gateMargin : 5px;
   --colorBack: #2f2e2e;
   --colorFront: #1e1616;
+  --qubitWidth : var(--gateWidth);
+  --qubitHeight : var(--gateHeight);
+  --spacingBetweenGates: 3px;
+  --startOfFirstGate: 9px;
 }
 
 .main {
@@ -42,8 +47,8 @@
   border-radius: 3px;
   margin-top: 0;
   box-sizing: border-box;
-  height: 40px;
-  width: 80px;
+  height: var(--gateHeight);
+  width: var(--gateWidth);
   text-align: center;
   font-family: var(--font-mono), monospace;
   font-weight: bold;
@@ -59,6 +64,17 @@
 background-color: var(--color-gray-300);
 }
 
+.qubit {
+  width: var(--qubitWidth);
+  height: var(--qubitHeight);
+}
+
+.gateIndexSpacing {
+  margin-left: calc(var(--qubitWidth) + var(--startOfFirstGate));
+}
+.gateIndexSize {
+  width: calc(var(--gateWidth));
+}
 .availableGateContainer {
   padding: 9px 11px;
   display: flex;

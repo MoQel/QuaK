@@ -1,4 +1,4 @@
-import {Dispatch, SetStateAction, useEffect, useState} from "react";
+import {Dispatch, SetStateAction, useEffect, useMemo, useState} from "react";
 
 import {ResizableHandle, ResizablePanel, ResizablePanelGroup} from "@/components/ui/resizable.tsx";
 import {GateLibraryView} from "@/views/library-view/GateLibraryView.tsx";
@@ -6,7 +6,6 @@ import {CircuitView} from "@/views/circuit-view/CircuitView.tsx";
 import {TextEditorView} from "@/views/text-editor-view/TextEditorView.tsx";
 import {ProjectManagerView} from "@/views/project-manager-view/ProjectManagerView.tsx";
 import {ResultsView} from "@/views/results-view/ResultsView.tsx";
-import {InspectorView} from "@/views/inspector-view/InspectorView.tsx";
 import {
     closestCenter,
     DndContext,
@@ -26,6 +25,7 @@ import {createPortal} from "react-dom";
 import {LibraryElement} from "@/views/library-view/LibraryElement.tsx";
 import {Toaster} from "@/components/ui/sonner.tsx";
 import {File} from "@/views/project-manager-view/util/FileElement.tsx";
+import {InspectorView} from "@/views/inspector-view/InspectorView.tsx";
 
 
 function App() {
@@ -38,6 +38,15 @@ function App() {
     const [activeQubit, setActiveQubit] = useState<number>()
     const [activeGate, setActiveGate] = useState<QuantumGate>()
     const [activeLibraryElement, setActiveLibraryElement] = useState<QuantumGate>()
+
+    const maxWireLength = useMemo(() => {
+        let max = 0;
+        for (const wire of matrixState) {
+            max = Math.max(max, wire.length);
+        }
+        return max;
+    }, [matrixState]);
+
     //Needed so that the gates are clickable and not immediately get into the drag state when clicked on
     const sensors = useSensors(useSensor(PointerSensor, {
         activationConstraint: {
@@ -178,7 +187,11 @@ function App() {
                                 </ResizablePanel>
                                 <ResizableHandle withHandle/>
                                 <ResizablePanel>
-                                    <CircuitView matrixState={matrixState} setMatrixState={setMatrixState}/>
+                                    <CircuitView
+                                        matrixState={matrixState}
+                                        setMatrixState={setMatrixState}
+                                        maxWireLength={maxWireLength}
+                                    />
                                 </ResizablePanel>
                                 <ResizableHandle withHandle/>
                                 <ResizablePanel className="flex-col h-full">
@@ -189,8 +202,8 @@ function App() {
                     </div>
                     <div className="flex flex-grow-[1] flex-row w-full">
                         <GateLibraryView/>
-                        <ResultsView/>
                         <InspectorView/>
+                        <ResultsView/>
                     </div>
                 </div>
                 {createPortal(
