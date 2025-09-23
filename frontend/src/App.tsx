@@ -1,4 +1,4 @@
-import { Dispatch, SetStateAction, useEffect, useState } from "react";
+import {Dispatch, SetStateAction, useEffect, useMemo, useState} from "react";
 
 import {ResizableHandle, ResizablePanel, ResizablePanelGroup} from "@/components/ui/resizable.tsx";
 import {Card, CardContent} from "@/components/ui/card.tsx";
@@ -39,9 +39,13 @@ function App() {
     const [activeGate, setActiveGate] = useState<QuantumGate>()
     const [activeLibraryElement, setActiveLibraryElement] = useState<QuantumGate>()
 
-    const getMaxWireLength = () => {
-        return 10;
-    }
+    const getMaxWireLength = useMemo(() => {
+        let max = 0;
+        for (const wire of matrixState) {
+            max = Math.max(max, wire.length);
+        }
+        return max;
+    }, [matrixState]);
 
     //Needed so that the gates are clickable and not immediately get into the drag state when clicked on
     const sensors = useSensors(useSensor(PointerSensor, {
@@ -186,7 +190,7 @@ return (
                                 <CircuitView
                                     matrixState={matrixState}
                                     setMatrixState={setMatrixState}
-                                    maxWireLength={getMaxWireLength()}
+                                    maxWireLength={getMaxWireLength}
                                 />
                             </ResizablePanel>
                             <ResizableHandle withHandle/>

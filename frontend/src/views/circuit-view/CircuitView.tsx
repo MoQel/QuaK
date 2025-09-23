@@ -77,7 +77,7 @@ export function CircuitView({matrixState, setMatrixState, maxWireLength}: Circui
                     <div className={`${styles.gateIndexSpacing} font-mono text-sm flex justify-start flex-shrink-0`}>
                         {Array.from({length: maxWireLength}, (_, i) => (
                             <Fragment key={i}>
-                                <span className="text-gray-500 w-3">|</span>
+                                <span className="text-gray-500 w-3 shrink-0">|</span>
                                 <span
                                     className={`${styles.gateIndexSize} text-gray-500 inline-block center shrink-0`}
                                 >
