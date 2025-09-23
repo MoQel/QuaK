@@ -1,28 +1,29 @@
 import {Card, CardContent} from "@/components/ui/card.tsx";
-import {QuantumWires} from "@/views/circuit-view/QuantumWires.tsx";
+import {Qubit} from "@/views/circuit-view/Qubit.tsx";
 import {Button} from "@/components/ui/button.tsx";
 import {Minus, Plus, Trash} from "lucide-react";
 import {CircuitState} from "@/type/quantum.tsx";
 import {Fragment, useCallback, useState} from "react";
 import {QuantumGate} from "@/views/library-view/QuantumGate.tsx";
 import styles from "@/App.module.css";
-
+import {matrixContext} from "@/Context.tsx";
+import {useContext} from "react";
 
 type CircuitViewProps = {
-    matrixState: QuantumGate[][];
-    setMatrixState: (matrixState: QuantumGate[][]) => void;
     maxWireLength: number
 }
 
-export function CircuitView({matrixState, setMatrixState, maxWireLength}: CircuitViewProps) {
+export function CircuitView({maxWireLength}: CircuitViewProps) {
+    //TODO These are not needed anymore, safely remove them
     const GATE_CAPACITY_VISIBLE = 40
-    const INITIAL_QUBITS_VISIBLE = 3
+    const INITIAL_QUBITS_VISIBLE = 5
     const WIRE_LENGTH = GATE_CAPACITY_VISIBLE * 25
 
     const [circuitState, setCircuitState] = useState<CircuitState>({
         qubits: INITIAL_QUBITS_VISIBLE,
         steps: GATE_CAPACITY_VISIBLE,
     });
+    const matrix = useContext(matrixContext)
 
 
     const removeQubit = useCallback(() => {
@@ -37,6 +38,10 @@ export function CircuitView({matrixState, setMatrixState, maxWireLength}: Circui
             qubits: Math.min(prev.qubits + 1, 20),
             steps: prev.steps,
         }));
+        if (!matrix) return;
+        matrix.setMatrixState((prev: QuantumGate[][]): QuantumGate[][] => {
+            return [...prev, [] as QuantumGate[]];  // new wire (empty array) appended
+        });
     }, []);
 
     const resetCircuit = useCallback(() => {
@@ -44,7 +49,8 @@ export function CircuitView({matrixState, setMatrixState, maxWireLength}: Circui
             qubits: 1,
             steps: prev.steps,
         }));
-        setMatrixState([] as QuantumGate[][])
+        if (!matrix) return;
+        matrix.setMatrixState([] as QuantumGate[][])
     }, []);
 
     return (
@@ -66,9 +72,9 @@ export function CircuitView({matrixState, setMatrixState, maxWireLength}: Circui
                 {/* Wires container */}
                 <div className="flex-1 overflow-auto">
                     {Array.from({length: circuitState.qubits}).map((_, qubitIndex) => (
-                        <QuantumWires
+                        <Qubit
                             key={qubitIndex}
-                            gates={matrixState[qubitIndex] ?? []}
+                            gates={matrix?.matrixState[qubitIndex] ?? []}
                             qubitIndex={qubitIndex}
                             length={WIRE_LENGTH}
                         />

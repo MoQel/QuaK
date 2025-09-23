@@ -26,7 +26,7 @@ import {LibraryElement} from "@/views/library-view/LibraryElement.tsx";
 import {Toaster} from "@/components/ui/sonner.tsx";
 import {File} from "@/views/project-manager-view/util/FileElement.tsx";
 import {InspectorView} from "@/views/inspector-view/InspectorView.tsx";
-import {setMatrixStateContext} from "./Context"
+import {matrixContext} from "./Context"
 
 function App() {
 
@@ -189,15 +189,14 @@ function App() {
                                 <ResizablePanel>
                                     {/*
                                         To avoid prop drilling,
-                                        use context provider that passes removeWire to QuantumWire
+                                        use context provider that passes arguments to its children
                                     */}
-                                    <setMatrixStateContext.Provider value={setMatrixState}>
+                                    <matrixContext.Provider value={{matrixState, setMatrixState}}>
+                                        {/* TODO change this to adjust to provider (expand context with matrixstate)*/}
                                         <CircuitView
-                                            matrixState={matrixState}
-                                            setMatrixState={setMatrixState}
                                             maxWireLength={maxWireLength}
                                         />
-                                    </setMatrixStateContext.Provider>
+                                    </matrixContext.Provider>
                                 </ResizablePanel>
                                 <ResizableHandle withHandle/>
                                 <ResizablePanel className="flex-col h-full">
@@ -236,6 +235,10 @@ function initializeMatrix(
     }
     for (const gate of gates) {
         quantumWires[gate.qubit].push({type: gate.type, id: uuidv4()})
+    }
+
+    for (let i = 0; i < numberOfWires; i++) {
+        quantumWires[i].push({type: "DUMMY", id: uuidv4()})
     }
     return quantumWires
 }

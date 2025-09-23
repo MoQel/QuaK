@@ -6,7 +6,7 @@ import {Button} from "@/components/ui/button"
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover"
 import {Input} from "@/components/ui/input.tsx";
 import {ChangeEvent, useContext, useState} from "react";
-import {setMatrixStateContext} from "@/Context.tsx";
+import {matrixContext} from "@/Context.tsx";
 
 type QuantumWiresProps = {
     gates: QuantumGate[];
@@ -14,14 +14,14 @@ type QuantumWiresProps = {
     length: number;
 };
 
-export function QuantumWires({gates, qubitIndex, length}: QuantumWiresProps) {
+export function Qubit({gates, qubitIndex, length}: QuantumWiresProps) {
     const {setNodeRef} = useSortable({
         id: qubitIndex,
     })
 
     const [qubitName, setQubitName] = useState<string>(`q${qubitIndex}`)
     const [tempName, setTempName] = useState<string>(qubitName)
-    const setMatrixState = useContext(setMatrixStateContext)
+    const matrix = useContext(matrixContext)
     const maxLength = 4;
     const isTooLong = tempName.length > maxLength;
     const onNameChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -32,13 +32,14 @@ export function QuantumWires({gates, qubitIndex, length}: QuantumWiresProps) {
             setQubitName(tempName)
         }
     }
-    const removeWire = () => {
-        if (!setMatrixState) return;
+    const deleteQubit = () => {
+        if (!matrix) return;
 
-        setMatrixState((prev) => {
-            // create a new array without the wire at qubitIndex
+        matrix.setMatrixState((prev) => {
+            //Simple version of deletion, will get complicated with implementation of multi-gates
             return prev.filter((_, index) => index !== qubitIndex);
         });
+
     }
     return (
         <div ref={setNodeRef} className="flex items-center space-x-2 pb-5">
@@ -73,7 +74,7 @@ export function QuantumWires({gates, qubitIndex, length}: QuantumWiresProps) {
                                 </span>
                             )}
                             <Button
-                                onClick={removeWire}
+                                onClick={deleteQubit}
                                 variant="destructive"
                                 className="w-30 h-8 font-mono text-sm font-bold select-none"
                             >
