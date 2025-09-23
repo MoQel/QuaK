@@ -35,7 +35,9 @@ export function QuantumWires({gates, qubitIndex, length}: QuantumWiresProps) {
             <div>
                 <Popover>
                     <PopoverTrigger asChild>
-                        <Button className="w-12 h-8 font-mono text-sm font-bold select-none">
+                        <Button
+                            className={`${styles.qubit} font-mono text-sm font-bold select-none`}
+                        >
                             |{qubitName}&gt;
                         </Button>
                     </PopoverTrigger>

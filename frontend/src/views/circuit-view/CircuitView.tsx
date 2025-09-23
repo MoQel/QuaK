@@ -3,7 +3,6 @@ import {QuantumWires} from "@/views/circuit-view/QuantumWires.tsx";
 import {Button} from "@/components/ui/button.tsx";
 import {Minus, Plus, Trash} from "lucide-react";
 import {CircuitState} from "@/type/quantum.tsx";
-import {useCallback, useState} from "react";
 import {QuantumGate} from "@/views/library-view/QuantumGate.tsx";
 import React from "react";
 
