@@ -3,8 +3,10 @@ import {QuantumWires} from "@/views/circuit-view/QuantumWires.tsx";
 import {Button} from "@/components/ui/button.tsx";
 import {Minus, Plus, Trash} from "lucide-react";
 import {CircuitState} from "@/type/quantum.tsx";
+import {Fragment, useCallback, useState} from "react";
 import {QuantumGate} from "@/views/library-view/QuantumGate.tsx";
-import React from "react";
+import styles from "@/App.module.css";
+
 
 type CircuitViewProps = {
     matrixState: QuantumGate[][];
@@ -48,8 +50,7 @@ export function CircuitView({matrixState, setMatrixState, maxWireLength}: Circui
     return (
         <Card className="h-full overflow-hidden">
             <CardContent className="flex flex-col h-full">
-
-                {/* Buttons on top */}
+                {/* Buttons for adding, removing and resetting the circuit */}
                 <div className="pb-5 flex justify-end space-x-3">
                     <Button onClick={addQubit} size="icon" className="size-8">
                         <Plus/>
@@ -62,9 +63,9 @@ export function CircuitView({matrixState, setMatrixState, maxWireLength}: Circui
                     </Button>
                 </div>
 
-                {/* Wires container scrollable */}
+                {/* Wires container */}
                 <div className="flex-1 overflow-auto">
-                    {Array.from({ length: circuitState.qubits }).map((_, qubitIndex) => (
+                    {Array.from({length: circuitState.qubits}).map((_, qubitIndex) => (
                         <QuantumWires
                             key={qubitIndex}
                             gates={matrixState[qubitIndex] ?? []}
@@ -72,24 +73,24 @@ export function CircuitView({matrixState, setMatrixState, maxWireLength}: Circui
                             length={WIRE_LENGTH}
                         />
                     ))}
+                    {/* Gate Indexing of form: | 1 | 2 | ... */}
+                    <div className={`${styles.gateIndexSpacing} font-mono text-sm flex justify-start flex-shrink-0`}>
+                        {Array.from({length: maxWireLength}, (_, i) => (
+                            <Fragment key={i}>
+                                <span className="text-gray-500 w-3">|</span>
+                                <span
+                                    className={`${styles.gateIndexSize} text-gray-500 inline-block center shrink-0`}
+                                >
+                                {i + 1}
+                            </span>
+                            </Fragment>
+                        ))}
+                        <span className="text-gray-500">|</span>
+                    </div>
                 </div>
 
-                {/* Index row at the bottom */}
-                <div className="mt-2 font-mono text-sm flex justify-center flex-shrink-0">
-                    {Array.from({ length: maxWireLength }, (_, i) => (
-                        <React.Fragment key={i}>
-                            <span>|</span>
-                            <span
-                                style={{ display: "inline-block", width: "80px", textAlign: "center" }}
-                            >
-            {i + 1}
-          </span>
-                        </React.Fragment>
-                    ))}
-                    <span>|</span>
-                </div>
+
             </CardContent>
         </Card>
-
     )
 }
