@@ -39,7 +39,7 @@ function App() {
     const [activeGate, setActiveGate] = useState<QuantumGate>()
     const [activeLibraryElement, setActiveLibraryElement] = useState<QuantumGate>()
 
-    const getMaxWireLength = useMemo(() => {
+    const maxWireLength = useMemo(() => {
         let max = 0;
         for (const wire of matrixState) {
             max = Math.max(max, wire.length);
@@ -190,7 +190,7 @@ return (
                                 <CircuitView
                                     matrixState={matrixState}
                                     setMatrixState={setMatrixState}
-                                    maxWireLength={getMaxWireLength}
+                                    maxWireLength={maxWireLength}
                                 />
                             </ResizablePanel>
                             <ResizableHandle withHandle/>
