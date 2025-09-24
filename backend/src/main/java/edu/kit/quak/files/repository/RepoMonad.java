@@ -29,7 +29,7 @@ public class RepoMonad<T extends FileElementContainer<?>> {
      */
     public FileElementContainer<?> addAndSave(String id, FileElement<?> element) throws IllegalArgumentException {
         T container = repo.findById(id).orElseThrow(
-                () -> new IllegalArgumentException("Provided parent_id does not map to an existing element.")
+                () -> new IllegalArgumentException("Provided parent-id does not map to an existing element.")
         );
         element.setParent(container);
         repo.save(container);

@@ -67,7 +67,7 @@ class FileControllerTest extends QuaKApplicationTests {
                 post("/file/")
                         .content(sent.toString())
                         .contentType(JSON_CONTENT_TYPE)
-                        .header("parent_id", parent.getId())
+                        .header("parent-id", parent.getId())
                 ).andExpectAll(
                         status().isCreated(),
                         content().contentType(JSON_CONTENT_TYPE),
@@ -93,7 +93,7 @@ class FileControllerTest extends QuaKApplicationTests {
                 post("/file/")
                         .content(sent.toString())
                         .contentType(JSON_CONTENT_TYPE)
-                        .header("parent_id", parent.getId())
+                        .header("parent-id", parent.getId())
         ).andExpectAll(
                 status().isCreated(),
                 content().contentType(JSON_CONTENT_TYPE),
@@ -311,7 +311,7 @@ class FileControllerTest extends QuaKApplicationTests {
         File parent = files.save(new File("parent", null));
         mockMvc.perform(
                 get("/file/")
-                        .header("parent_id", parent.getId())
+                        .header("parent-id", parent.getId())
         ).andExpect(
                 status().is4xxClientError()
         );
@@ -363,7 +363,7 @@ class FileControllerTest extends QuaKApplicationTests {
 
         mockMvc.perform(
                 post("/file/")
-                    .header("parent_id", parent.getId())
+                    .header("parent-id", parent.getId())
                     .contentType(JSON_CONTENT_TYPE)
                     .content(toSend.toString())
         ).andExpectAll(
@@ -387,7 +387,7 @@ class FileControllerTest extends QuaKApplicationTests {
 
         MvcResult result = mockMvc.perform(
                 post("/file/")
-                        .header("parent_id", parent.getId())
+                        .header("parent-id", parent.getId())
                         .contentType(JSON_CONTENT_TYPE)
                         .content(toSend.toString())
         ).andExpectAll(
