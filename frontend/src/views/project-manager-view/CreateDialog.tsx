@@ -79,7 +79,7 @@ function CreateFile({parent}: {parent: string}) {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                'parent_id': parent
+                'parent-id': parent
             },
             body: JSON.stringify(body),
         }).then(reloadParent)
@@ -133,7 +133,7 @@ function CreateDirectory({parent}: {parent: string}) {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                'parent_id': parent
+                'parent-id': parent
             },
             body: JSON.stringify(body),
         }).then(reloadParent)

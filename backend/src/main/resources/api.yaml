@@ -165,7 +165,7 @@ paths:
         This will only create the metadata of the file.
         The content of a file is initialized as empty, similar to the touch command in unix.
       parameters:
-        - name: parent_id
+        - name: parent-id
           in: header
           required: true
           description: ID of the parent-container
