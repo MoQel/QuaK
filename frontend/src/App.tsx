@@ -26,7 +26,7 @@ import {LibraryElement} from "@/views/library-view/LibraryElement.tsx";
 import {Toaster} from "@/components/ui/sonner.tsx";
 import {File} from "@/views/project-manager-view/util/FileElement.tsx";
 import {InspectorView} from "@/views/inspector-view/InspectorView.tsx";
-
+import {matrixContext} from "./Context"
 
 function App() {
 
@@ -187,11 +187,15 @@ function App() {
                                 </ResizablePanel>
                                 <ResizableHandle withHandle/>
                                 <ResizablePanel>
-                                    <CircuitView
-                                        matrixState={matrixState}
-                                        setMatrixState={setMatrixState}
-                                        maxWireLength={maxWireLength}
-                                    />
+                                    {/*
+                                        To avoid prop drilling,
+                                        use context provider that passes arguments to its children
+                                    */}
+                                    <matrixContext.Provider value={{matrixState, setMatrixState}}>
+                                        <CircuitView
+                                            maxWireLength={maxWireLength}
+                                        />
+                                    </matrixContext.Provider>
                                 </ResizablePanel>
                                 <ResizableHandle withHandle/>
                                 <ResizablePanel className="flex-col h-full">
@@ -230,6 +234,10 @@ function initializeMatrix(
     }
     for (const gate of gates) {
         quantumWires[gate.qubit].push({type: gate.type, id: uuidv4()})
+    }
+
+    for (let i = 0; i < numberOfWires; i++) {
+        quantumWires[i].push({type: "DUMMY", id: uuidv4()})
     }
     return quantumWires
 }
