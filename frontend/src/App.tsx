@@ -28,6 +28,8 @@ import {File} from "@/views/project-manager-view/util/FileElement.tsx";
 import {InspectorView} from "@/views/inspector-view/InspectorView.tsx";
 import {matrixContext} from "./Context"
 
+
+
 function App() {
 
     const INITIAL_QUBITS = 20
@@ -108,6 +110,7 @@ function App() {
             console.log("THIS IS THE QUBIT INDEX: " + overQubit)
             setActiveQubit(overQubit);
         }
+        //TODO Move gate to other qubit while over it (was previously removed because of performance issues -> fixed)
     };
 
     const handleDragEnd = (event: DragEndEvent) => {
@@ -122,48 +125,9 @@ function App() {
         if (findGate(activeGateId)?.type === "DUMMY") return;
 
         if (activeLibraryElement) {
-            setMatrixState((prev) => {
-                const overRow = activeQubit;
-                if (overRow === undefined) return prev;
-
-                const overCol = prev[overRow].findIndex(g => g.id === overGateId)
-                if (overCol === -1) return prev;
-
-                const newMatrix = prev.map(row => [...row])
-                if (findGate(overGateId)?.type === "DUMMY") {
-                    newMatrix[overRow].splice(findLastGate(overRow) + 1, 0, activeLibraryElement)
-                    console.log("The placed index is: " + (findLastGate(overRow) + 1))
-                    return newMatrix
-                }
-
-                newMatrix[overRow].splice(overCol, 0, activeLibraryElement)
-                return newMatrix
-            })
+            moveLibraryGate(setMatrixState, activeQubit, overGateId, findGate, findLastGate, activeLibraryElement);
         } else {
-            setMatrixState((prev) => {
-                const activeRow = findQubit(activeGateId)
-                const overRow = activeQubit;
-
-                if (activeRow === -1 || overRow === undefined) {
-                    return prev
-                }
-
-                const activeCol = prev[activeRow].findIndex(g => g.id === activeGateId)
-                const overCol = prev[overRow].findIndex(g => g.id === overGateId)
-
-                if (activeCol === -1 || overCol === -1) return prev;
-
-                const newMatrix = prev.map(row => [...row])
-                const [moved] = newMatrix[activeRow].splice(activeCol, 1)
-
-                if (findGate(overGateId)?.type === "DUMMY") {
-                    newMatrix[overRow].splice(findLastGate(overRow), 0, moved)
-                    return newMatrix
-                }
-
-                newMatrix[overRow].splice(overCol, 0, moved)
-                return newMatrix
-            });
+            moveCircuitGate(setMatrixState, findQubit, activeGateId, activeQubit, overGateId, findGate, findLastGate);
         }
         setActiveGate(undefined)
         setActiveLibraryElement(undefined)
@@ -189,7 +153,7 @@ function App() {
                                 <ResizablePanel>
                                     {/*
                                         To avoid prop drilling,
-                                        use context provider that passes arguments to its children
+                                        use context provider that shares arguments to its children, without passing them
                                     */}
                                     <matrixContext.Provider value={{matrixState, setMatrixState}}>
                                         <CircuitView
@@ -241,5 +205,54 @@ function initializeMatrix(
     }
     return quantumWires
 }
+
+function moveLibraryGate(setMatrixState: (value: (((prevState: QuantumGate[][]) => QuantumGate[][]) | QuantumGate[][])) => void, activeQubit: number | undefined, overGateId: string, findGate: (gateId: string) => (QuantumGate | undefined), findLastGate: (row: number) => (number | number), activeLibraryElement: QuantumGate) {
+    setMatrixState((prev) => {
+        const overRow = activeQubit;
+        if (overRow === undefined) return prev;
+
+        const overCol = prev[overRow].findIndex(g => g.id === overGateId)
+        if (overCol === -1) return prev;
+
+        const newMatrix = prev.map(row => [...row])
+        if (findGate(overGateId)?.type === "DUMMY") {
+            newMatrix[overRow].splice(findLastGate(overRow), 0, activeLibraryElement)
+            console.log("The placed index is: " + (findLastGate(overRow) + 1))
+            return newMatrix
+        }
+
+        newMatrix[overRow].splice(overCol, 0, activeLibraryElement)
+        return newMatrix
+    })
+}
+
+function moveCircuitGate(setMatrixState: (value: (((prevState: QuantumGate[][]) => QuantumGate[][]) | QuantumGate[][])) => void, findQubit: (gateId: string) => (number | number), activeGateId: string, activeQubit: number | undefined, overGateId: string, findGate: (gateId: string) => (QuantumGate | undefined), findLastGate: (row: number) => (number | number)) {
+    setMatrixState((prev) => {
+        const activeRow = findQubit(activeGateId)
+        const overRow = activeQubit;
+
+        if (activeRow === -1 || overRow === undefined) {
+            return prev
+        }
+
+        const activeCol = prev[activeRow].findIndex(g => g.id === activeGateId)
+        const overCol = prev[overRow].findIndex(g => g.id === overGateId)
+
+        if (activeCol === -1 || overCol === -1) return prev;
+
+        const newMatrix = prev.map(row => [...row])
+        const [moved] = newMatrix[activeRow].splice(activeCol, 1)
+
+        if (findGate(overGateId)?.type === "DUMMY") {
+            newMatrix[overRow].splice(findLastGate(overRow), 0, moved)
+            return newMatrix
+        }
+
+        newMatrix[overRow].splice(overCol, 0, moved)
+        return newMatrix
+    });
+}
+
+
 
 export default App
