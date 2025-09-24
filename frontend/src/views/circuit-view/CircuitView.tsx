@@ -81,7 +81,7 @@ export function CircuitView({maxWireLength}: CircuitViewProps) {
                     ))}
                     {/* Gate Indexing of form: | 1 | 2 | ... */}
                     <div className={`${styles.gateIndexSpacing} font-mono text-sm flex justify-start flex-shrink-0`}>
-                        {Array.from({length: maxWireLength}, (_, i) => (
+                        {Array.from({length: maxWireLength - 1}, (_, i) => (
                             <Fragment key={i}>
                                 <span className="text-gray-500 w-3 shrink-0">|</span>
                                 <span
