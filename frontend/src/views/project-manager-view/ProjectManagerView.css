@@ -5,3 +5,8 @@
 .entry:hover {
     text-decoration: underline;
 }
+
+.entry .lucide, .create-project .lucide {
+    height: revert-layer;
+    width: revert-layer;
+}

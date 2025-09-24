@@ -96,7 +96,7 @@ function CreateProject({reload}: {reload: () => void}) {
 
     return (
         <Dialog>
-            <DialogTrigger asChild>
+            <DialogTrigger asChild className="create-project">
                 <Button className="w-full" variant="ghost"><Plus/></Button>
             </DialogTrigger>
             <DialogContent>
