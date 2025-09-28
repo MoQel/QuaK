@@ -53,7 +53,7 @@ public class FileController {
 
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping("/")
-    public FileElement<?> newFile(@RequestBody Map<String, Object> obj, @RequestHeader(name = "parent_id") String parent) {
+    public FileElement<?> newFile(@RequestBody Map<String, Object> obj, @RequestHeader(name = "parent-id") String parent) {
         final RepoMonad<?> dest = savers.getSaverForElementId(parent)
                                         .flatMap(FileElementSaver::getRepoMonad)
                                         .orElseThrow(() -> new ResponseStatusException(BAD_REQUEST, "No matching parent found"));
