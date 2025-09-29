@@ -38,6 +38,21 @@ export const quantumLibraryGates: QuantumGatesInit[] = [
         qubit: 1,
     },
     {
+        id: 'rx',
+        type: 'RX',
+        qubit: 1,
+    },
+    {
+        id: 'ry',
+        type: 'RY',
+        qubit: 1,
+    },
+    {
+        id: 'rz',
+        type: 'RZ',
+        qubit: 1,
+    },
+    {
         id: 'measure',
         type: 'MEASURE',
         qubit: 1,

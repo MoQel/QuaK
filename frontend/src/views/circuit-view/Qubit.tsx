@@ -1,7 +1,7 @@
 import styles from "@/App.module.css";
-import {QuantumGate} from "@/views/library-view/QuantumGate.tsx";
+import {QuantumGate} from "@/views/circuit-view/QuantumGate.tsx";
 import {horizontalListSortingStrategy, SortableContext, useSortable} from "@dnd-kit/sortable";
-import {Gate} from "@/views/Gate.tsx"
+import {Gate} from "@/views/circuit-view/Gate.tsx"
 import {Button} from "@/components/ui/button"
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover"
 import {Input} from "@/components/ui/input.tsx";

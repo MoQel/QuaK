@@ -17,10 +17,10 @@ import {
     useSensor,
     useSensors
 } from "@dnd-kit/core";
-import {QuantumGate} from "@/views/library-view/QuantumGate.tsx";
+import {QuantumGate} from "@/views/circuit-view/QuantumGate.tsx";
 import {quantumGates, type QuantumGatesInit} from "@/views/circuit-view/InitCircuit.tsx";
 import {v4 as uuidv4} from "uuid";
-import {Gate} from "./views/Gate";
+import {Gate} from "./views/circuit-view/Gate.tsx";
 import {createPortal} from "react-dom";
 import {LibraryElement} from "@/views/library-view/LibraryElement.tsx";
 import {Toaster} from "@/components/ui/sonner.tsx";
@@ -114,10 +114,8 @@ function App() {
         if (!over) return;
         const overQubit = findQubit(over.id as string)
         if (overQubit !== -1) {
-            console.log("THIS IS THE QUBIT INDEX: " + overQubit)
             setActiveQubit(overQubit);
         }
-        //TODO Move gate to other qubit while over it (was previously removed because of performance issues -> fixed)
     };
 
     const handleDragEnd = (event: DragEndEvent) => {
@@ -178,7 +176,7 @@ function App() {
                     <div className="flex flex-grow-[1] flex-row w-full">
                         <GateLibraryView/>
                         <InspectorView/>
-                        <ResultsView/>
+                        <ResultsView numberQubits={5}/>
                     </div>
                 </div>
                 {createPortal(
@@ -196,24 +194,24 @@ function App() {
 
 
 function initializeMatrix(
-    numberOfWires: number,
+    numberOfQubits: number,
     gates: QuantumGatesInit[]
 ): QuantumGate[][] {
     const quantumWires: QuantumGate[][] = []
-    for (let i = 0; i < numberOfWires; i++) {
+    for (let i = 0; i < numberOfQubits; i++) {
         quantumWires[i] = []
     }
     for (const gate of gates) {
         quantumWires[gate.qubit].push({type: gate.type, id: uuidv4()})
     }
 
-    for (let i = 0; i < numberOfWires; i++) {
+    for (let i = 0; i < numberOfQubits; i++) {
         quantumWires[i].push({type: "DUMMY", id: uuidv4()})
     }
     return quantumWires
 }
 
-function moveLibraryGate(setMatrixState: (value: (((prevState: QuantumGate[][]) => QuantumGate[][]) | QuantumGate[][])) => void, activeQubit: number | undefined, overGateId: string, findGate: (gateId: string) => (QuantumGate | undefined), findLastGate: (row: number) => (number | number), activeLibraryElement: QuantumGate) {
+function moveLibraryGate(setMatrixState: (value: (((prevState: QuantumGate[][]) => QuantumGate[][]) | QuantumGate[][])) => void, activeQubit: number | undefined, overGateId: string, findGate: (gateId: string) => (QuantumGate | undefined), findLastGate: (row: number) => (number), activeLibraryElement: QuantumGate) {
     setMatrixState((prev) => {
         const overRow = activeQubit;
         if (overRow === undefined) return prev;

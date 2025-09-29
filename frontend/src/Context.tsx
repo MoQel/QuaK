@@ -1,5 +1,5 @@
 import {createContext, Dispatch, SetStateAction} from "react";
-import {QuantumGate} from "@/views/library-view/QuantumGate.tsx";
+import {QuantumGate} from "@/views/circuit-view/QuantumGate.tsx";
 
 type MatrixStateContextType = {
     setMatrixState: Dispatch<SetStateAction<QuantumGate[][]>>;

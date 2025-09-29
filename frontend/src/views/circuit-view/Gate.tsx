@@ -1,5 +1,5 @@
 import {Badge} from "@/components/ui/badge.tsx";
-import {GateIcons, QuantumGate} from "@/views/library-view/QuantumGate.tsx";
+import {GateIcons, QuantumGate} from "@/views/circuit-view/QuantumGate.tsx";
 import styles from "@/App.module.css";
 import {useSortable} from "@dnd-kit/sortable";
 import {CSS} from "@dnd-kit/utilities";
