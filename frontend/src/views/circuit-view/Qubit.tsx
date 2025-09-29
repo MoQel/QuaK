@@ -1,5 +1,5 @@
 import styles from "@/App.module.css";
-import {QuantumGate} from "@/views/circuit-view/QuantumGate.tsx";
+import {QuantumGate} from "@/views/QuantumGate.tsx";
 import {horizontalListSortingStrategy, SortableContext, useSortable} from "@dnd-kit/sortable";
 import {Gate} from "@/views/circuit-view/Gate.tsx"
 import {Button} from "@/components/ui/button"

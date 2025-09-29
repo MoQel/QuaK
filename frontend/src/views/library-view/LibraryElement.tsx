@@ -1,5 +1,5 @@
 import {Badge} from "@/components/ui/badge.tsx";
-import {QuantumGate} from "@/views/circuit-view/QuantumGate.tsx";
+import {GateIcons, QuantumGate} from "@/views/QuantumGate.tsx";
 import styles from "@/App.module.css";
 import {useDraggable} from "@dnd-kit/core";
 
@@ -12,6 +12,7 @@ export function LibraryElement({id, type}: QuantumGate) {
             type: type
         }
     })
+    const Icon = GateIcons[type]
 
     return (
         <div ref={setNodeRef}
@@ -20,7 +21,7 @@ export function LibraryElement({id, type}: QuantumGate) {
              id={id}
         >
             <Badge className={styles.library}>
-                {type}
+                <Icon/>
             </Badge>
         </div>
     )

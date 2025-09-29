@@ -4,7 +4,7 @@ import {Button} from "@/components/ui/button.tsx";
 import {Minus, Plus, Trash} from "lucide-react";
 import {CircuitState} from "@/type/quantum.tsx";
 import {Fragment, useCallback, useState} from "react";
-import {QuantumGate} from "@/views/circuit-view/QuantumGate.tsx";
+import {QuantumGate} from "@/views/QuantumGate.tsx";
 import styles from "@/App.module.css";
 import {matrixContext} from "@/Context.tsx";
 import {useContext} from "react";

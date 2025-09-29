@@ -17,7 +17,7 @@ import {
     useSensor,
     useSensors
 } from "@dnd-kit/core";
-import {QuantumGate} from "@/views/circuit-view/QuantumGate.tsx";
+import {QuantumGate} from "@/views/QuantumGate.tsx";
 import {quantumGates, type QuantumGatesInit} from "@/views/circuit-view/InitCircuit.tsx";
 import {v4 as uuidv4} from "uuid";
 import {Gate} from "./views/circuit-view/Gate.tsx";
@@ -27,7 +27,6 @@ import {Toaster} from "@/components/ui/sonner.tsx";
 import {File} from "@/views/project-manager-view/util/FileElement.tsx";
 import {InspectorView} from "@/views/inspector-view/InspectorView.tsx";
 import {matrixContext} from "./Context"
-
 
 
 function App() {
@@ -138,6 +137,15 @@ function App() {
         setActiveLibraryElement(undefined)
     };
 
+    const removeGate = (gateId: string) => {
+        console.log("Remove gate")
+        setMatrixState((prev) =>
+            prev.map((row) =>
+                row.filter((gate) => gate.id !== gateId) // new array for each row
+            )
+        );
+    };
+
     return (
         <>
             <DndContext
@@ -160,7 +168,7 @@ function App() {
                                         To avoid prop drilling,
                                         use context provider that shares arguments to its children, without passing them
                                     */}
-                                    <matrixContext.Provider value={{matrixState, setMatrixState}}>
+                                    <matrixContext.Provider value={{matrixState, setMatrixState, removeGate}}>
                                         <CircuitView
                                             maxWireLength={maxQubitLength}
                                         />
@@ -257,7 +265,6 @@ function moveCircuitGate(setMatrixState: (value: (((prevState: QuantumGate[][]) 
         return newMatrix
     });
 }
-
 
 
 export default App

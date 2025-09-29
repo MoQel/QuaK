@@ -1,6 +1,6 @@
 import React from "react";
 import {CircleGauge} from "lucide-react";
-import {TextIcon} from "../TextIcon.tsx"
+import {TextIcon} from "./TextIcon.tsx"
 export type QuantumGate = {
     id: string,
     type: 'DUMMY' | 'H' | 'X' | 'Y' | 'Z' | 'CNOT' | 'S' | 'T' | 'RX' | 'RY' | 'RZ' | 'MEASURE'
