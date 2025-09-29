@@ -6,4 +6,9 @@ type MatrixStateContextType = {
     matrixState: QuantumGate[][];
 };
 
-export const matrixContext = createContext<MatrixStateContextType | null>(null);
+export const matrixContext = createContext<MatrixStateContextType>({
+    matrixState: [],
+    setMatrixState: () => {
+        throw new Error("matrixContext not initialized with a Provider");
+    },
+});

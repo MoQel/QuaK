@@ -33,7 +33,6 @@ export function Qubit({gates, qubitIndex, length}: QuantumWiresProps) {
         }
     }
     const deleteQubit = () => {
-        if (!matrix) return;
 
         matrix.setMatrixState((prev) => {
             //Simple version of deletion, will get complicated with implementation of multi-gates

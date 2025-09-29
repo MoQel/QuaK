@@ -19,39 +19,43 @@ export function CircuitView({maxWireLength}: CircuitViewProps) {
     const INITIAL_QUBITS_VISIBLE = 5
     const WIRE_LENGTH = GATE_CAPACITY_VISIBLE * 25
 
+
+    const matrix = useContext(matrixContext)
     const [circuitState, setCircuitState] = useState<CircuitState>({
         qubits: INITIAL_QUBITS_VISIBLE,
         steps: GATE_CAPACITY_VISIBLE,
     });
-    const matrix = useContext(matrixContext)
-
 
     const removeQubit = useCallback(() => {
         setCircuitState(prev => ({
             qubits: Math.max(prev.qubits - 1, 1),
             steps: prev.steps,
         }));
-    }, []);
+
+        matrix.setMatrixState((prev: QuantumGate[][]): QuantumGate[][] => {
+            // prevent removing the last qubit
+            if (prev.length <= 1) return prev;
+            return prev.slice(0, -1); // remove last qubit (wire)
+        });
+    }, [matrix]);
 
     const addQubit = useCallback(() => {
         setCircuitState(prev => ({
             qubits: Math.min(prev.qubits + 1, 20),
             steps: prev.steps,
         }));
-        if (!matrix) return;
         matrix.setMatrixState((prev: QuantumGate[][]): QuantumGate[][] => {
             return [...prev, [] as QuantumGate[]];  // new wire (empty array) appended
         });
-    }, []);
+    }, [matrix]);
 
     const resetCircuit = useCallback(() => {
         setCircuitState(prev => ({
             qubits: 1,
             steps: prev.steps,
         }));
-        if (!matrix) return;
         matrix.setMatrixState([] as QuantumGate[][])
-    }, []);
+    }, [matrix]);
 
     return (
         <Card className="h-full overflow-hidden">

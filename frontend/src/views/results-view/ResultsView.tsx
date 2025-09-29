@@ -1,34 +1,38 @@
-import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card.tsx";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card.tsx";
 import {
     ChartConfig,
     ChartContainer,
     ChartTooltip,
     ChartTooltipContent,
-} from "@/components/ui/chart"
-import { Bar, BarChart, CartesianGrid, XAxis } from "recharts"
-
-const chartData = [
-    { qubit: "q0", probability: 186 },
-    { qubit: "q1", probability: 305 },
-    { qubit: "q2", probability: 237 },
-    { qubit: "q3", probability: 73 },
-    { qubit: "q4", probability: 209 },
-]
+} from "@/components/ui/chart";
+import { Bar, BarChart, CartesianGrid, XAxis } from "recharts";
+import { useMemo } from "react";
 
 const chartConfig = {
     probability: {
         label: "Probability",
         color: "var(--chart-1)",
     },
-} satisfies ChartConfig
+} satisfies ChartConfig;
 
-export function ResultsView() {
+type ResultsViewProps = {
+    measurements?: number; //"?" because values are still not yet available
+    numberQubits: number;
+};
+
+export function ResultsView({ numberQubits }: ResultsViewProps) {
+    // Generate dummy data dynamically
+    const chartData = useMemo(() => {
+        return Array.from({ length: numberQubits }, (_, i) => ({
+            qubit: `q${i}`,
+            probability: Math.floor(Math.random() * 500) + 1, // random between 1–500
+        }));
+    }, [numberQubits]);
+
     return (
         <Card className="w-full">
             <CardHeader className="w-full">
-                <CardTitle>
-                    Results
-                </CardTitle>
+                <CardTitle>Results</CardTitle>
             </CardHeader>
             <CardContent>
                 <ChartContainer config={chartConfig}>
@@ -41,14 +45,11 @@ export function ResultsView() {
                             axisLine={false}
                             tickFormatter={(value) => value.slice(0, 3)}
                         />
-                        <ChartTooltip
-                            cursor={false}
-                            content={<ChartTooltipContent hideLabel />}
-                        />
+                        <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
                         <Bar dataKey="probability" fill="var(--color-probability)" radius={8} />
                     </BarChart>
                 </ChartContainer>
             </CardContent>
         </Card>
-    )
+    );
 }

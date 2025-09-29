@@ -41,7 +41,8 @@ function App() {
     const [activeGate, setActiveGate] = useState<QuantumGate>()
     const [activeLibraryElement, setActiveLibraryElement] = useState<QuantumGate>()
 
-    const maxWireLength = useMemo(() => {
+    //returns the number of gates of the qubit with the most gates
+    const maxQubitLength = useMemo(() => {
         let max = 0;
         for (const wire of matrixState) {
             max = Math.max(max, wire.length);
@@ -52,7 +53,7 @@ function App() {
     //Needed so that the gates are clickable and not immediately get into the drag state when clicked on
     const sensors = useSensors(useSensor(PointerSensor, {
         activationConstraint: {
-            distance: 0 // can be adjusted in the future
+            distance: 3 // can be adjusted in the future
         }
     }))
     /* Returns the gate object belonging to the gateId */
@@ -85,16 +86,22 @@ function App() {
     }, []);
     const [file, openFile]: [File, Dispatch<SetStateAction<File>>] = useState(undefined as unknown as File);
 
+    //Creates new gate based on the type of the library element
+    function createNewGate(e: DragStartEvent) {
+        const gate: QuantumGate = {
+            id: uuidv4(),
+            type: e.active.data.current?.type
+        }
+        return gate;
+    }
+
     const handleDragStart = (e: DragStartEvent) => {
         if (findGate(e.active.id as string)?.type === "DUMMY") {
             console.log("This is a dummy")
             return;
         }
         if (e.active.data.current?.source === "library" && e.active.data.current) {
-            const gate: QuantumGate = {
-                id: uuidv4(),
-                type: e.active.data.current?.type
-            }
+            const gate = createNewGate(e);
             setActiveLibraryElement(gate)
         } else {
             setActiveGate(findGate(e.active.id as string))
@@ -157,7 +164,7 @@ function App() {
                                     */}
                                     <matrixContext.Provider value={{matrixState, setMatrixState}}>
                                         <CircuitView
-                                            maxWireLength={maxWireLength}
+                                            maxWireLength={maxQubitLength}
                                         />
                                     </matrixContext.Provider>
                                 </ResizablePanel>
