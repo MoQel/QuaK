@@ -10,7 +10,7 @@ function GateLibrary() {
     return (
         <div
             ref={setNodeRef}
-            className="grid grid-cols-3 gap-4" // 👈 3 per row, with spacing
+            className="grid grid-cols-5 gap-4"
         >
             {quantumLibraryGates.map((gate, index) => (
                 <LibraryElement

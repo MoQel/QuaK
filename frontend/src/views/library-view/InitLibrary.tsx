@@ -28,6 +28,21 @@ export const quantumLibraryGates: QuantumGatesInit[] = [
         qubit: 2,
     },
     {
+        id: 'cz',
+        type: 'CZ',
+        qubit: 2,
+    },
+    {
+        id: 'swap',
+        type: 'SWAP',
+        qubit: 2,
+    },
+    {
+        id: 'CCX',
+        type: 'CCX',
+        qubit: 3,
+    },
+    {
         id: 's-gate',
         type: 'S',
         qubit: 1,
