@@ -54,7 +54,11 @@ export function CircuitView({maxWireLength}: CircuitViewProps) {
             qubits: 1,
             steps: prev.steps,
         }));
-        matrix.setMatrixState([] as QuantumGate[][])
+        matrix.setMatrixState((prev) =>
+            prev.map((row) =>
+                row.filter((gate) =>
+                    gate.type === "DUMMY"))
+        );
     }, [matrix]);
 
     return (
