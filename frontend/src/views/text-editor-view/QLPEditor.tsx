@@ -5,12 +5,15 @@ import {toast} from "sonner";
 import {Menu} from "@/views/text-editor-view/Menu.tsx";
 import {API_ENDPOINT} from "@/views/project-manager-view/ProjectManagerView.tsx";
 import {Language} from "@/views/text-editor-view/model/Language.ts";
-import {language as python} from "@/components/languages/python.ts";
+import {python} from "@/components/languages/python.ts";
+import {openqasm} from "@/components/languages/openqasm.ts";
+
 
 const languages = [
     //Default language
     new Language("qrisp", python, "Qrisp"),
     new Language("python", python, "Python"),
+    new Language("qasm", openqasm, "QASM"),
 ]
 
 function QLPEditor({file}: {file: File | undefined}) {
