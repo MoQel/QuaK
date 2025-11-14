@@ -61,11 +61,11 @@ function QLPEditor({file}: {file: File | undefined}) {
             }
 
             // Set new content
-            const content = await retrieveContent(file.id);
+            const content: string = await retrieveContent(file.id);
             setValue(content);
 
             // Set new language
-            const ext = (await retrieveFileExtension(file.id));
+            const ext: string = await retrieveFileExtension(file.id);
             setLang(getLanguageOrDefaultByExtension(ext));
 
             // Update reference
@@ -111,7 +111,7 @@ function getLanguageOrDefaultByExtension(ext: string): string {
     return match ? match.id : "txt"; // Default
 }
 
-function retrieveFileExtension(id: string) {
+function retrieveFileExtension(id: string): Promise<string> {
     return fetch(`${API_ENDPOINT}/file/${id}`, {method: "GET"})
         .then(r => r.json())
         .then((fileElement) => {
@@ -123,7 +123,7 @@ function retrieveFileExtension(id: string) {
         });
 }
 
-function retrieveContent(id: string) {
+function retrieveContent(id: string): Promise<string> {
     return fetch(`${API_ENDPOINT}/file/${id}/content`, {
         method: "GET"
     }).then(r => r.text())
