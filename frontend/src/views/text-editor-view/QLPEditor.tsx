@@ -8,6 +8,8 @@ import {Language} from "@/views/text-editor-view/model/Language.ts";
 import {python} from "@/components/languages/python.ts";
 import {openqasm} from "@/components/languages/openqasm.ts";
 
+const DEFAULT_VALUE = "No File Selected";
+const DEFAULT_LANG = "txt";
 
 const languages = [
     //Default language
@@ -17,9 +19,10 @@ const languages = [
 ]
 
 function QLPEditor({file}: {file: File | undefined}) {
-    const [value, setValue] = useState("# No File Selected");
-    const [lang, setLang] = useState("txt");
+    const [value, setValue] = useState(DEFAULT_VALUE);
+    const [lang, setLang] = useState(DEFAULT_LANG);
     const [theme, setTheme] = useState("vs-dark");
+    const [readOnly, setReadOnly] = useState<boolean>(true);
     const contentId: RefObject<string | undefined> = useRef(undefined);
 
     const onMount = (monaco: Monaco) => {
@@ -49,6 +52,9 @@ function QLPEditor({file}: {file: File | undefined}) {
     useEffect(() => {
         if (!file?.id) {
             contentId.current = undefined;
+            setValue(DEFAULT_VALUE);
+            setLang(DEFAULT_LANG);
+            setReadOnly(true);
             return;
         }
 
@@ -67,6 +73,9 @@ function QLPEditor({file}: {file: File | undefined}) {
             // Set new language
             const ext: string = await retrieveFileExtension(file.id);
             setLang(getLanguageOrDefaultByExtension(ext));
+
+            // Enable writing
+            setReadOnly(false);
 
             // Update reference
             contentId.current = file.id;
@@ -98,6 +107,7 @@ function QLPEditor({file}: {file: File | undefined}) {
                     options={{
                         minimap: {enabled: false},
                         wordWrap: 'on',
+                        readOnly: readOnly,
                     }}
                     beforeMount={onMount}
                 />
