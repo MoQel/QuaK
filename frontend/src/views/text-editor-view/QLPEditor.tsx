@@ -11,14 +11,14 @@ import {openqasm} from "@/components/languages/openqasm.ts";
 
 const languages = [
     //Default language
-    new Language("qrisp", python, "Qrisp"),
-    new Language("python", python, "Python"),
+    new Language("txt",undefined, "Text"),
+    new Language("py", python, "Python"),
     new Language("qasm", openqasm, "QASM"),
 ]
 
 function QLPEditor({file}: {file: File | undefined}) {
     const [value, setValue] = useState("# No File Selected");
-    const [lang, setLang] = useState("python");
+    const [lang, setLang] = useState("txt");
     const [theme, setTheme] = useState("vs-dark");
     const contentId: RefObject<string | undefined> = useRef(undefined);
 
@@ -47,15 +47,30 @@ function QLPEditor({file}: {file: File | undefined}) {
     };
 
     useEffect(() => {
-        if (contentId.current && contentId.current !== file?.id) {
-            onSave(contentId.current);
-            if (file?.id) {
-                onSave(contentId.current).then(() => retrieveContent(file.id)).then(setValue);
-            }
-        } else if (file?.id) {
-            retrieveContent(file.id).then(setValue);
+        if (!file?.id) {
+            contentId.current = undefined;
+            return;
         }
-        contentId.current = file?.id;
+
+        (async () => {
+            const prev = contentId.current;
+
+            // Save previous file before switching
+            if (prev && prev !== file.id) {
+                await onSave(prev);
+            }
+
+            // Set new content
+            const content = await retrieveContent(file.id);
+            setValue(content);
+
+            // Set new language
+            const ext = (await retrieveFileExtension(file.id));
+            setLang(getLanguageOrDefaultByExtension(ext));
+
+            // Update reference
+            contentId.current = file.id;
+        })();
     }, [file]);
 
     const formatLanguages = (langs: Language[]) => {
@@ -75,7 +90,7 @@ function QLPEditor({file}: {file: File | undefined}) {
             <Menu onSave={() => onSave(file?.id)} languages={formatLanguages(languages)}/>
             <div className="h-full">
                 <Editor
-                    defaultLanguage="python"
+                    defaultLanguage="txt"
                     language={lang}
                     theme={theme}
                     value={value}
@@ -89,6 +104,23 @@ function QLPEditor({file}: {file: File | undefined}) {
             </div>
         </div>
     );
+}
+
+function getLanguageOrDefaultByExtension(ext: string): string {
+    const match = languages.find(l => l.id === ext);
+    return match ? match.id : "txt"; // Default
+}
+
+function retrieveFileExtension(id: string) {
+    return fetch(`${API_ENDPOINT}/file/${id}`, {method: "GET"})
+        .then(r => r.json())
+        .then((fileElement) => {
+            const filename = fileElement.name;
+            if (!filename?.includes(".")) {
+                return "txt"; // fallback
+            }
+            return filename.substring(filename.lastIndexOf(".") + 1);
+        });
 }
 
 function retrieveContent(id: string) {
