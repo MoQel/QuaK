@@ -1,5 +1,5 @@
 import {languages} from "monaco-editor";
-export const python = <languages.IMonarchLanguage>{
+export const qrisp = <languages.IMonarchLanguage>{
     defaultToken: '',
     tokenPostfix: '.python',
 

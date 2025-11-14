@@ -18,27 +18,27 @@ type CompletionStub = Omit<languages.CompletionItem, 'range'>
  */
 export class Language {
     id: string
+    fileExtension: string
     themeId: string
     languageId: string
-    #base?: languages.IMonarchLanguage
+    base?: languages.IMonarchLanguage
     #tokenizer: {[name: string]: languages.IMonarchLanguageRule[]}
     #themeRules: editor.ITokenThemeRule[] = []
     #completionItems: CompletionStub[] = []
-    #name: string
 
     /**
      * Constructs a new language
      * @param id The id of the language
+     * @param fileExtension The file extension name of the language
      * @param base The optional basis for this language to be an extension of
-     * @param name The (optional) name of the language
      */
-    constructor(id: string, base?: languages.IMonarchLanguage, name?: string) {
+    constructor(id: string, fileExtension: string, base?: languages.IMonarchLanguage) {
         this.id = id
+        this.fileExtension = fileExtension
         this.themeId = `${id}Theme`
         this.languageId = `${id}`
-        this.#base = base
+        this.base = base
         this.#tokenizer = base?.tokenizer || {}
-        this.#name = name === undefined ? "" : name
     }
 
     /**
@@ -67,8 +67,8 @@ export class Language {
     }
 
     #getLanguage(): languages.IMonarchLanguage {
-        const lang = {...this.#base, tokenizer: this.#tokenizer}
-        console.log(lang, this.#base)
+        const lang = {...this.base, tokenizer: this.#tokenizer}
+        console.log(lang, this.base)
         return lang
     }
 
@@ -139,7 +139,7 @@ export class Language {
         this.#completionItems.push(completion)
     }
 
-    getName() {
-        return this.#name.length == 0 ? this.id : this.#name
+    getID() {
+        return this.id.length == 0 ? this.id : this.id
     }
 }
