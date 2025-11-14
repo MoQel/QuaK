@@ -49,3 +49,7 @@ We now want to set the GitHub-Secrets inside this repository:
   * This has the content of the private-key generated above
 
 Lastly, make sure that all relevant ports (e.g. 8080) are exposed to the outside world.
+
+### Using ANTLR-Generated Lexer and Parser from `.g4` Files
+* `cd /backend && gradlew clean build -PdownloadNode`
+* Mark backend/build/generated-src/main/antlr as Sources Root to resolve occuring problems with integrating Lexer and Parser files
