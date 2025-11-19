@@ -12,5 +12,8 @@ public interface FileElementRepositoryPort<T extends FileElement<?>> {
 
     boolean existsById(String id);
 
-    Optional<T> findByIdForDeletion(String id);
+    void deleteById(String id);
+
+    Class<T> getHandledClass();
+    String getHandledTypeIdentifier();
 }
