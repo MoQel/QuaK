@@ -1,23 +1,24 @@
 package edu.kit.quak.core.domain.filesystem;
 
 /**
+ * Domain POJO for Directory
  * A Directory is a container of FileElements inside a project.
  *
  * @author Henrik K
- */
-/**
- * Domain POJO for Directory
  */
 public class Directory extends FileElementContainer<Directory> {
 
     public static final String TYPE_IDENTIFIER = "directory";
     public static final char ID_PREFIX = 'd';
 
-    protected Directory() { }
+    protected Directory() {
+        super();
+    }
 
     public Directory(String name, FileElementContainer<?> parent) {
         super(name, parent);
     }
+
     @Override
     public void patch(Directory modified) throws IllegalArgumentException {
         if (modified.contents == null || modified.contents.isEmpty() || contents.containsAll(modified.contents) && modified.contents.containsAll(contents)) {

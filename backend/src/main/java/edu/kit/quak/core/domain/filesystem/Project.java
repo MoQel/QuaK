@@ -5,15 +5,13 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import jakarta.persistence.Entity;
 
 /**
+ * Domain POJO for Project
  * A project is a top level container of {@link FileElement}.
  *
  * @implNote Projects are in their core similar to a directory.
  * They are implemented in an own class to allow for different functionalities
  * later in development.
  * @author Henrik K
- */
-/**
- * Domain POJO for Project
  */
 public class Project extends FileElementContainer<Project> {
 

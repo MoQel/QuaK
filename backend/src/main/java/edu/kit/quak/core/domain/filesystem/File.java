@@ -17,21 +17,14 @@ public class File extends FileElement<File> {
     private String contentType = MediaType.ALL_VALUE;
     private byte[] content;
 
-    protected File() { }
+    protected File() {
+        super();
+    }
 
     public File(String name, FileElementContainer<?> parent) {
         super(name, parent);
         this.createdOn = Instant.now();
         this.lastAccess = Instant.now();
-        this.contentType = "application/octet-stream";
-    }
-
-    public void setLastAccessNow() {
-        setLastAccess(Instant.now());
-    }
-
-    public void setLastAccess(Instant lastAccess) {
-        this.lastAccess = lastAccess;
     }
 
     @Override
@@ -41,6 +34,7 @@ public class File extends FileElement<File> {
             this.lastAccess = modified.lastAccess;
     }
 
+    //region getter and setter
     @Override
     public String getTypeIdentifier() {
         return TYPE_IDENTIFIER;
@@ -51,13 +45,23 @@ public class File extends FileElement<File> {
         return ID_PREFIX + base.toString();
     }
 
+    public void setLastAccessNow() {
+        setLastAccess(Instant.now());
+    }
+
+    public void setLastAccess(Instant lastAccess) {
+        this.lastAccess = lastAccess;
+    }
+
     public String getContentType() { return contentType; }
+
     public void setContentType(String contentType) { this.contentType = contentType; }
 
     public byte[] getContent() { return content; }
     public void setContent(byte[] content) { this.content = content; }
 
     public Instant getLastAccess() { return lastAccess; }
+
     public Instant getCreatedOn() { return createdOn; }
-    public void setCreatedOn(Instant createdOn) { this.createdOn = createdOn; }
+    //endregion
 }

@@ -15,12 +15,10 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
+ * Domain POJO for FileElementContainer
  * A FileElementContainer is a container that holds {@link FileElement FileElements}.
  *
  * @author Henrik K
- */
-/**
- * Domain POJO for FileElementContainer
  */
 public abstract class FileElementContainer<SELF extends FileElementContainer<SELF>> extends FileElement<SELF> {
 
@@ -31,6 +29,7 @@ public abstract class FileElementContainer<SELF extends FileElementContainer<SEL
     }
 
     protected FileElementContainer() {
+        super();
     }
 
     /**
@@ -58,7 +57,7 @@ public abstract class FileElementContainer<SELF extends FileElementContainer<SEL
     /**
      * @return A defensive copy of the contained elements inside this container
      */
-    public Collection<FileElement<?>> getElements() {
+    public Set<FileElement<?>> getElements() {
         return Set.copyOf(contents);
     };
 }
