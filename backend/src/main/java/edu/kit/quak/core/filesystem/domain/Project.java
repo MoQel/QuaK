@@ -1,4 +1,4 @@
-package edu.kit.quak.core.domain.filesystem;
+package edu.kit.quak.core.filesystem.domain;
 
 /**
  * Domain POJO for Project

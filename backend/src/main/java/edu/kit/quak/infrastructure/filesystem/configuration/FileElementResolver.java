@@ -1,4 +1,4 @@
-package edu.kit.quak.infrastructure.configuration;
+package edu.kit.quak.infrastructure.filesystem.configuration;
 
 import com.fasterxml.jackson.databind.DatabindContext;
 import com.fasterxml.jackson.databind.JavaType;

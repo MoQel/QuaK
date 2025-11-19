@@ -1,10 +1,10 @@
-package edu.kit.quak.infrastructure.persistence.jpa.entity;
+package edu.kit.quak.infrastructure.filesystem.persistence.jpa.entity;
 
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSetter;
-import edu.kit.quak.infrastructure.configuration.DepthFilter;
+import edu.kit.quak.infrastructure.filesystem.configuration.DepthFilter;
 import jakarta.persistence.*;
 
 import java.util.*;

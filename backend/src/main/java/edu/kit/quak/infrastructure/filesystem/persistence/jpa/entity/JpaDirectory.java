@@ -1,7 +1,6 @@
-package edu.kit.quak.infrastructure.persistence.jpa.entity;
+package edu.kit.quak.infrastructure.filesystem.persistence.jpa.entity;
 
 import jakarta.persistence.*;
-import java.util.List;
 
 @Entity
 public class JpaDirectory extends JpaFileElementContainer<JpaDirectory> {

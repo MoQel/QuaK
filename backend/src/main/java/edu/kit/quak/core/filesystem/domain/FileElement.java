@@ -1,4 +1,4 @@
-package edu.kit.quak.core.domain.filesystem;
+package edu.kit.quak.core.filesystem.domain;
 
 import java.util.Objects;
 import java.util.Optional;

@@ -1,6 +1,6 @@
-package edu.kit.quak.core.ports.outgoing;
+package edu.kit.quak.core.filesystem.ports.outgoing;
 
-import edu.kit.quak.core.domain.filesystem.Directory;
+import edu.kit.quak.core.filesystem.domain.Directory;
 
 public interface DirectoryRepositoryPort extends FileElementRepositoryPort<Directory> {
 

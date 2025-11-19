@@ -1,4 +1,4 @@
-package edu.kit.quak.infrastructure.configuration;
+package edu.kit.quak.infrastructure.filesystem.configuration;
 
 import edu.kit.quak.files.model.FileElement;
 import org.hibernate.HibernateException;

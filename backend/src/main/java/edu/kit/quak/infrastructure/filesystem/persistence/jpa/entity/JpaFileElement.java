@@ -1,11 +1,11 @@
-package edu.kit.quak.infrastructure.persistence.jpa.entity;
+package edu.kit.quak.infrastructure.filesystem.persistence.jpa.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
 import edu.kit.quak.files.configuration.CustomIdGenerator;
-import edu.kit.quak.infrastructure.configuration.FileElementResolver;
+import edu.kit.quak.infrastructure.filesystem.configuration.FileElementResolver;
 import jakarta.persistence.*;
 
 /**

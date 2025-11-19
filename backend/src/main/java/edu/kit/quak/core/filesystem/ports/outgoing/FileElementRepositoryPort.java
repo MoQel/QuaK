@@ -1,6 +1,6 @@
-package edu.kit.quak.core.ports.outgoing;
+package edu.kit.quak.core.filesystem.ports.outgoing;
 
-import edu.kit.quak.core.domain.filesystem.FileElement;
+import edu.kit.quak.core.filesystem.domain.FileElement;
 
 import java.util.Optional;
 

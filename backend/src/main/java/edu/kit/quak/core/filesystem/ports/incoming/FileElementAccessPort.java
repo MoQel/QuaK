@@ -1,6 +1,6 @@
-package edu.kit.quak.core.ports.incoming;
+package edu.kit.quak.core.filesystem.ports.incoming;
 
-import edu.kit.quak.core.domain.filesystem.FileElement;
+import edu.kit.quak.core.filesystem.domain.FileElement;
 
 import java.util.Map;
 import java.util.function.BiFunction;
