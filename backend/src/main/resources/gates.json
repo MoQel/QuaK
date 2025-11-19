@@ -1,0 +1,100 @@
+[
+  {
+    "name": "Hadamard",
+    "symbol": "H",
+    "type": "Hadamard",
+    "description": "Hadamard gate (creates superposition).",
+    "qubitCount": 1
+  },
+  {
+    "name": "NOT",
+    "symbol": "X",
+    "type": "Classical",
+    "description": "Pauli-X gate (NOT gate).",
+    "qubitCount": 1
+  },
+  {
+    "name": "Pauli-Y",
+    "symbol": "Y",
+    "type": "Quantum",
+    "description": "Pauli-Y gate.",
+    "qubitCount": 1
+  },
+  {
+    "name": "Pauli-Z",
+    "symbol": "Z",
+    "type": "Quantum",
+    "description": "Pauli-Z gate.",
+    "qubitCount": 1
+  },
+  {
+    "name": "CNOT",
+    "symbol": "CNOT",
+    "type": "Classical",
+    "description": "Controlled-NOT gate.",
+    "qubitCount": 2
+  },
+  {
+    "name": "CZ",
+    "symbol": "CZ",
+    "type": "Quantum",
+    "description": "Controlled-Z gate.",
+    "qubitCount": 2
+  },
+  {
+    "name": "SWAP",
+    "symbol": "SWAP",
+    "type": "Classical",
+    "description": "Swap gate (swaps two qubits).",
+    "qubitCount": 2
+  },
+  {
+    "name": "Toffoli",
+    "symbol": "CCX",
+    "type": "Classical",
+    "description": "Toffoli gate (controlled-controlled-X).",
+    "qubitCount": 3
+  },
+  {
+    "name": "S-gate",
+    "symbol": "S",
+    "type": "Phase",
+    "description": "S gate (phase gate).",
+    "qubitCount": 1
+  },
+  {
+    "name": "T-gate",
+    "symbol": "T",
+    "type": "Phase",
+    "description": "T gate (pi/8 gate).",
+    "qubitCount": 1
+  },
+  {
+    "name": "RX",
+    "symbol": "RX",
+    "type": "Quantum",
+    "description": "Rotation around X axis.",
+    "qubitCount": 1
+  },
+  {
+    "name": "RY",
+    "symbol": "RY",
+    "type": "Quantum",
+    "description": "Rotation around Y axis.",
+    "qubitCount": 1
+  },
+  {
+    "name": "rz",
+    "symbol": "RZ",
+    "type": "Quantum",
+    "description": "Rotation around Z axis.",
+    "qubitCount": 1
+  },
+  {
+    "name": "Measure",
+    "symbol": "MEASURE",
+    "type": "Non-Unitary",
+    "description": "Measurement gate.",
+    "qubitCount": 1
+  }
+]
