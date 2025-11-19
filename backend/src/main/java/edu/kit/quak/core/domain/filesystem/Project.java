@@ -1,9 +1,5 @@
 package edu.kit.quak.core.domain.filesystem;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import jakarta.persistence.Entity;
-
 /**
  * Domain POJO for Project
  * A project is a top level container of {@link FileElement}.

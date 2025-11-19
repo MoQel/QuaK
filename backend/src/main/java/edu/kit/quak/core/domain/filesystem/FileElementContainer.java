@@ -1,15 +1,5 @@
 package edu.kit.quak.core.domain.filesystem;
 
-import com.fasterxml.jackson.annotation.JsonFilter;
-import com.fasterxml.jackson.annotation.JsonGetter;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonSetter;
-import edu.kit.quak.files.configuration.DepthFilter;
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.OneToMany;
-
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
