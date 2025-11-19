@@ -22,9 +22,9 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
         String name = ctx.Identifier().getText();
         OpenQASM3Parser.QubitTypeContext typeCtx = ctx.qubitType();
 
-        OpenQASM3Parser.DesignatorContext designator = typeCtx.designator();
+        OpenQASM3Parser.DesignatorContext designator = typeCtx.designator(); // e.g. '[1]'
         if (designator != null) {
-            int size = Integer.parseInt(designator.getText());
+            int size = Integer.parseInt(designator.expression().getText());
             for (int i = 0; i < size; i++) {
                 circuit.addQubit(new Qubit(name, i));
             }

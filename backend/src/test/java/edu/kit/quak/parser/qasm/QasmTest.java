@@ -1,5 +1,6 @@
 package edu.kit.quak.parser.qasm;
 
+import edu.kit.quak.circuiteditor.QasmCircuitVisitor;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.*;
 import org.junit.jupiter.api.Test;
@@ -57,12 +58,27 @@ class QasmTest {
             measure cout[0] -> ans[4];
         """;
 
-        CharStream input = CharStreams.fromString(qasmCode);
+        String qasmCode2 = """
+                // Qubit-Deklarationen
+                qubit[3] q;   // Array mit 3 Qubits
+                qubit r;      // Einzelqubit
+                
+                // Gate-Aufrufe
+                x q[0];       // Gate X auf q0
+                cx q[0], q[1]; // CNOT zwischen q0 und q1
+                gphase(pi) r; // GPHASE auf r
+                """;
+
+        CharStream input = CharStreams.fromString(qasmCode2);
         OpenQASM3Lexer lexer = new OpenQASM3Lexer(input);
         CommonTokenStream tokens = new CommonTokenStream(lexer);
         OpenQASM3Parser parser = new OpenQASM3Parser(tokens);
 
         ParseTree tree = parser.program();
-        System.out.println(tree.toStringTree(parser)); // Output of the AST
+        System.out.println(tree.toStringTree());
+
+        QasmCircuitVisitor visitor = new QasmCircuitVisitor();
+        visitor.visit(tree);
+        System.out.println(visitor.getCircuit());
     }
 }

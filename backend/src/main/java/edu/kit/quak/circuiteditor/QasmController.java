@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/qasm")
+@RequestMapping("/qasm")
 public class QasmController {
 
     private final QasmService service;
