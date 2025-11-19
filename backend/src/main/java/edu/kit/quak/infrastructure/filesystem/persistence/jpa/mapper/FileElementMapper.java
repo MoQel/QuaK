@@ -2,7 +2,6 @@ package edu.kit.quak.infrastructure.filesystem.persistence.jpa.mapper;
 
 
 import edu.kit.quak.core.filesystem.domain.*;
-import edu.kit.quak.infrastructure.filesystem.jpa.entity.*;
 import edu.kit.quak.infrastructure.filesystem.persistence.jpa.entity.*;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
