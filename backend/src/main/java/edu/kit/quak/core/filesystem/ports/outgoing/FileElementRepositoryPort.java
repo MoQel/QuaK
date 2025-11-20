@@ -1,19 +1,21 @@
 package edu.kit.quak.core.filesystem.ports.outgoing;
 
-import edu.kit.quak.core.filesystem.domain.FileElement;
+/**
+ * Port to manage FileElements (including File, Directory, Project) persistence.
+ * This interface is used by Application Services and implemented by a JPA Adapter.
+ */
+public interface FileElementRepositoryPort {
 
-import java.util.Optional;
-
-public interface FileElementRepositoryPort<T extends FileElement<?>> {
-
-    Optional<T> findById(String id);
-
-    T save(T element);
-
-    boolean existsById(String id);
-
+    /**
+     * Deletes a FileElement by its ID.
+     * @param id The ID of the element to delete.
+     */
     void deleteById(String id);
 
-    Class<T> getHandledClass();
-    String getHandledTypeIdentifier();
+    /**
+     * Search a FileElement by its ID.
+     * @param id The ID of the element to delete.
+     * @return Whether the element exists.
+     */
+    boolean existsById(String id);
 }
