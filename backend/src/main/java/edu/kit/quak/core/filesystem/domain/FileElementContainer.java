@@ -44,6 +44,10 @@ public abstract class FileElementContainer<SELF extends FileElementContainer<SEL
         return contents.addAll(elements);
     }
 
+    public Set<FileElement<?>> getContents() {
+        return contents;
+    }
+
     /**
      * @return A defensive copy of the contained elements inside this container
      */

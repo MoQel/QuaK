@@ -13,7 +13,7 @@ import java.util.*;
 public abstract class JpaFileElementContainer<SELF extends JpaFileElementContainer<SELF>> extends JpaFileElement<SELF> {
     
     @JsonIgnore
-    @OneToMany(orphanRemoval = true, cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "parent", orphanRemoval = true, cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     protected Set<JpaFileElement<?>> contents = new HashSet<>();
 
     public JpaFileElementContainer(String name, JpaFileElementContainer<?> parent) {
@@ -26,7 +26,15 @@ public abstract class JpaFileElementContainer<SELF extends JpaFileElementContain
 
     @JsonSetter("contents")
     public boolean addElements(Collection<JpaFileElement<?>> elements) {
+        for (JpaFileElement<?> element : elements) {
+            element.setParent(this);
+        }
         return contents.addAll(elements);
+    }
+
+    public void addElement(JpaFileElement<?> child) {
+        child.setParent(this);
+        contents.add(child);
     }
 
     @JsonGetter("contents")
@@ -41,5 +49,8 @@ public abstract class JpaFileElementContainer<SELF extends JpaFileElementContain
 
     public void setContents(Set<JpaFileElement<?>> contents) {
         this.contents = contents;
+        for (JpaFileElement<?> element : contents) {
+            element.setParent(this);
+        }
     }
 }

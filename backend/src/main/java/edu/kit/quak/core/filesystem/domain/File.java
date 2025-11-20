@@ -49,6 +49,7 @@ public class File extends FileElement<File> {
         setLastAccess(Instant.now());
     }
 
+    public Instant getLastAccess() { return lastAccess; }
     public void setLastAccess(Instant lastAccess) {
         this.lastAccess = lastAccess;
     }
@@ -60,8 +61,10 @@ public class File extends FileElement<File> {
     public byte[] getContent() { return content; }
     public void setContent(byte[] content) { this.content = content; }
 
-    public Instant getLastAccess() { return lastAccess; }
 
     public Instant getCreatedOn() { return createdOn; }
+    public void setCreatedOn(Instant now) {
+        this.createdOn = now;
+    }
     //endregion
 }
