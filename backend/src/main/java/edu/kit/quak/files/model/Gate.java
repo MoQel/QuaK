@@ -17,18 +17,24 @@ public class Gate {
     @JsonProperty
     private final int qubitCount;
 
-    //parameters list?
+    @JsonProperty
+    private final String symbol;
+
+
+//parameters list?
 
     @JsonCreator
     public Gate(@JsonProperty("name") String name,
                 @JsonProperty("type") String type,
                 @JsonProperty("description") String description,
-                @JsonProperty("qubitCount") int qubitCount
+                @JsonProperty("qubitCount") int qubitCount,
+                @JsonProperty("symbol") String symbol
     ) {
         this.name = name;
         this.type = type;
         this.description = description;
         this.qubitCount = qubitCount;
+        this.symbol = symbol;
 
     }
 
@@ -46,5 +52,9 @@ public class Gate {
 
     public int getQubitCount() {
         return qubitCount;
+    }
+
+    public String getSymbol() {
+        return symbol;
     }
 }
