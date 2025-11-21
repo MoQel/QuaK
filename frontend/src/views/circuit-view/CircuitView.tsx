@@ -1,19 +1,22 @@
 import {Card, CardContent} from "@/components/ui/card.tsx";
 import {Qubit} from "@/views/circuit-view/Qubit.tsx";
 import {Button} from "@/components/ui/button.tsx";
-import {Minus, Plus, Trash} from "lucide-react";
+import {Minus, Plus, RefreshCw, Trash} from "lucide-react";
 import {CircuitState} from "@/type/quantum.tsx";
 import {Fragment, useCallback, useState} from "react";
-import {QuantumGate} from "@/views/QuantumGate.tsx";
+import {gateMap, QuantumGate} from "@/views/QuantumGate.tsx";
 import styles from "@/App.module.css";
 import {matrixContext} from "@/Context.tsx";
 import {useContext} from "react";
+import {API_ENDPOINT} from "@/views/project-manager-view/ProjectManagerView.tsx";
+import {File} from "@/views/project-manager-view/util/FileElement.tsx";
 
 type CircuitViewProps = {
+    file: File,
     maxWireLength: number
 }
 
-export function CircuitView({maxWireLength}: CircuitViewProps) {
+export function CircuitView({file, maxWireLength}: CircuitViewProps) {
     //TODO These are not needed anymore, safely remove them
     const GATE_CAPACITY_VISIBLE = 40
     const INITIAL_QUBITS_VISIBLE = 5
@@ -61,6 +64,16 @@ export function CircuitView({maxWireLength}: CircuitViewProps) {
         );
     }, [matrix]);
 
+    const synchronize = useCallback(async () => {
+        if (file != null) {
+            const fileContent:string = await retrieveContent(file.id);
+            fetch(`${API_ENDPOINT}/qasm/parse`, {
+                method: "POST",
+                body: fileContent,
+            }).then(async r => convertJsonToCircuit(await r.json(), setCircuitState, matrix.setMatrixState));
+        }
+    }, [matrix]);
+
     return (
         <Card className="h-full overflow-hidden">
             <CardContent className="flex flex-col h-full">
@@ -74,6 +87,9 @@ export function CircuitView({maxWireLength}: CircuitViewProps) {
                     </Button>
                     <Button onClick={resetCircuit} size="icon" className="size-8">
                         <Trash/>
+                    </Button>
+                    <Button onClick={synchronize} size="icon" className="size-8">
+                        <RefreshCw/>
                     </Button>
                 </div>
 
@@ -107,4 +123,53 @@ export function CircuitView({maxWireLength}: CircuitViewProps) {
             </CardContent>
         </Card>
     )
+}
+
+function retrieveContent(id: string) {
+    return fetch(`${API_ENDPOINT}/file/${id}/content`, {
+        method: "GET"
+    }).then(r => r.text())
+}
+
+export function convertJsonToCircuit(
+    json: {
+        qubits: { name: string; index: number }[];
+        operations: { gateName: string; targetQubits: number[]; timeIndex: number | null }[];
+    },
+    setCircuitState: (cb: (prev: CircuitState) => CircuitState) => void,
+    setMatrixState: (cb: (prev: QuantumGate[][]) => QuantumGate[][]) => void
+) {
+
+    const qubitCount = json.qubits.length;
+
+    const steps = json.operations.length; // Simplified
+
+    setCircuitState(() => ({
+        qubits: qubitCount,
+        steps: steps
+    }));
+
+    setMatrixState(() => {
+        // Reset matrix
+        const grid: QuantumGate[][] = Array.from({ length: qubitCount }, () =>
+            Array.from({ length: steps }, () => ({
+                id: crypto.randomUUID(),
+                type: "DUMMY"
+            }))
+        );
+
+        // Insert operations
+        json.operations.forEach((op, stepIndex) => {
+            const type = gateMap[op.gateName.toLowerCase()] ?? "DUMMY";
+
+            op.targetQubits.forEach((wireIndex) => {
+                grid[wireIndex][stepIndex] = {
+                    id: crypto.randomUUID(),
+                    type: type
+                };
+            });
+        });
+
+        return grid;
+    });
 }

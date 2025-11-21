@@ -23,8 +23,8 @@ export const quantumLibraryGates: QuantumGatesInit[] = [
         qubit: 1,
     },
     {
-        id: 'cnot',
-        type: 'CNOT',
+        id: 'cx',
+        type: 'CX',
         qubit: 2,
     },
     {

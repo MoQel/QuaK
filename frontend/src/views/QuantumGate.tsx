@@ -1,9 +1,10 @@
 import React from "react";
 import {CircleGauge} from "lucide-react";
 import {TextIcon} from "./TextIcon.tsx"
+
 export type QuantumGate = {
     id: string,
-    type: 'DUMMY' | 'H' | 'X' | 'Y' | 'Z' | 'CNOT' | 'CCX' | 'CZ' | 'SWAP' | 'S' | 'T' | 'RX' | 'RY' | 'RZ' | 'MEASURE'
+    type: 'DUMMY' | 'H' | 'X' | 'Y' | 'Z' | 'CX' | 'CCX' | 'CZ' | 'SWAP' | 'S' | 'T' | 'RX' | 'RY' | 'RZ' | 'GPHASE' | 'MEASURE'
     matrix?: (number|string)[][]
 }
 
@@ -13,7 +14,7 @@ export const GateIcons: Record<QuantumGate["type"], React.ElementType> = {
     X: TextIcon("X"),
     Y: TextIcon("Y"),
     Z: TextIcon("Z"),
-    CNOT: TextIcon("CNOT"),
+    CX: TextIcon("CX"),
     CZ: TextIcon("CZ"),
     SWAP: TextIcon("SWAP"),
     CCX: TextIcon("CCX"),
@@ -22,5 +23,25 @@ export const GateIcons: Record<QuantumGate["type"], React.ElementType> = {
     RX: TextIcon("RX"),
     RY: TextIcon("RY"),
     RZ: TextIcon("RZ"),
+    GPHASE: TextIcon("GPHASE"),
     MEASURE: CircleGauge, // icon component, likewise TextIcons can be changed in the future
+};
+
+// Mapping: QASM gate name -> QuantumGate.type
+export const gateMap: Record<string, QuantumGate["type"]> = {
+    x: "X",
+    h: "H",
+    y: "Y",
+    z: "Z",
+    cx: "CX",
+    ccx: "CCX",
+    cz: "CZ",
+    swap: "SWAP",
+    s: "S",
+    t: "T",
+    rx: "RX",
+    ry: "RY",
+    rz: "RZ",
+    gphase: "GPHASE",
+    measure: "MEASURE"
 };

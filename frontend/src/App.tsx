@@ -170,6 +170,7 @@ function App() {
                                     */}
                                     <matrixContext.Provider value={{matrixState, setMatrixState, removeGate}}>
                                         <CircuitView
+                                            file={file}
                                             maxWireLength={maxQubitLength}
                                         />
                                     </matrixContext.Provider>
