@@ -52,7 +52,7 @@ export const Home: React.FC = () => {
   return (
     <div className="p-8 max-w-[1600px] mx-auto">
       <div className="mb-9">
-        <h1 className="text-4xl font-bold mb-5 bg-gradient-to-r from-blue-100 to-blue-500 bg-clip-text text-transparent leading-tight py-1">
+        <h1 className="text-4xl font-bold mb-5 bg-gradient-to-r from-white to-white bg-clip-text text-transparent leading-tight py-1">
           Projects
         </h1>
         <p className="text-lg text-muted-foreground">

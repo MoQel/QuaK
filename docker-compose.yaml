@@ -38,21 +38,6 @@ services:
       - quak-network
     restart: unless-stopped
 
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: quak-frontend
-    ports:
-      - "5173:5173"
-    depends_on:
-      - backend
-    environment:
-      VITE_API_URL: http://localhost:8080
-    networks:
-      - quak-network
-    restart: unless-stopped
-
 volumes:
   db:
 

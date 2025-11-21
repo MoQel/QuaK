@@ -65,7 +65,9 @@ public class SecurityConfig {
             )
             .logout(logout -> logout
                 .logoutUrl("/api/auth/logout")
-                .logoutSuccessUrl(frontendUrl)
+                .logoutSuccessHandler((request, response, authentication) -> {
+                    response.setStatus(jakarta.servlet.http.HttpServletResponse.SC_OK);
+                })
                 .invalidateHttpSession(true)
                 .deleteCookies("JSESSIONID")
                 .permitAll()

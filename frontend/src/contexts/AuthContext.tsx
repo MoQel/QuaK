@@ -75,9 +75,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                 credentials: 'include',
             });
             setUser(null);
-            window.location.href = '/login';
         } catch (error) {
             console.error('Logout failed:', error);
+        } finally {
+            // Reload the page to ensure all states are cleared
+            window.location.reload();
         }
     };
 
