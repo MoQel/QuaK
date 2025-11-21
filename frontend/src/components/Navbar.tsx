@@ -5,7 +5,7 @@ import { Home, User, Settings } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
   const location = useLocation();
-  
+
   // Determine active tab based on current path
   const getActiveTab = () => {
     if (location.pathname === '/' || location.pathname.startsWith('/home')) {
@@ -22,11 +22,11 @@ export const Navbar: React.FC = () => {
     <nav className="bg-background border-b border-border px-6 py-4 flex justify-between items-center sticky top-0 z-50">
       <div className="flex items-center gap-8">
         <Link to="/" className="flex items-center gap-2">
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-100 to-blue-500 bg-clip-text text-transparent">
             QuaK
           </h1>
         </Link>
-        
+
         <Tabs value={getActiveTab()} className="w-auto">
           <TabsList>
             <Link to="/">

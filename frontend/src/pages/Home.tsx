@@ -31,28 +31,28 @@ export const Home: React.FC = () => {
       <CardContent className="pt-6">
         <div className="flex flex-col gap-3">
           <div className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-400 to-blue-700 flex items-center justify-center">
               <FolderOpen className="w-5 h-5 text-white" />
             </div>
             <div className="font-medium text-lg flex-1">{name}</div>
           </div>
           <div className="text-sm text-muted-foreground">
             Last modified: 2 days ago
-          </div>
+          </div >
           <div className="mt-2">
             <Link to="/project">
               <Button className="w-full" variant="default">Open Project</Button>
             </Link>
           </div>
-        </div>
-      </CardContent>
+        </div >
+      </CardContent >
     </Card>
   );
 
   return (
     <div className="p-8 max-w-[1600px] mx-auto">
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold mb-3 bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">
+      <div className="mb-9">
+        <h1 className="text-4xl font-bold mb-5 bg-gradient-to-r from-blue-100 to-blue-500 bg-clip-text text-transparent leading-tight py-1">
           Projects
         </h1>
         <p className="text-lg text-muted-foreground">
@@ -64,13 +64,13 @@ export const Home: React.FC = () => {
         {/* Own Projects Section */}
         <Card className="border-2">
           <CardHeader>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+            <div className="flex items-start gap-3">
+              <div className="w-14 h-14 rounded-lg bg-blue-500/10 flex items-center justify-center">
                 <FolderOpen className="w-5 h-5 text-blue-500" />
               </div>
-              <div>
-                <CardTitle className="text-2xl">Own Projects</CardTitle>
-                <CardDescription>Projects you created and own</CardDescription>
+              <div className="flex-1">
+                <CardTitle className="text-2xl text-left">Own Projects</CardTitle>
+                <CardDescription className="text-left">Projects you created and own</CardDescription>
               </div>
             </div>
           </CardHeader>
@@ -96,13 +96,13 @@ export const Home: React.FC = () => {
         {/* Invited Projects Section */}
         <Card className="border-2">
           <CardHeader>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
+            <div className="flex items-start gap-3">
+              <div className="w-14 h-14 rounded-lg bg-purple-500/10 flex items-center justify-center">
                 <Users className="w-5 h-5 text-purple-500" />
               </div>
-              <div>
-                <CardTitle className="text-2xl">Invited Projects</CardTitle>
-                <CardDescription>Projects shared with you by collaborators</CardDescription>
+              <div className="flex-1">
+                <CardTitle className="text-2xl text-left">Invited Projects</CardTitle>
+                <CardDescription className="text-left">Projects shared with you by collaborators</CardDescription>
               </div>
             </div>
           </CardHeader>
@@ -124,7 +124,7 @@ export const Home: React.FC = () => {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </div >
   );
 };
 

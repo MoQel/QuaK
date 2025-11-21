@@ -29,7 +29,7 @@ export const Profile: React.FC = () => {
         <Card>
           <CardHeader>
             <div className="flex items-start gap-6">
-              <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+              <div className="w-24 h-24 bg-gradient-to-br from-blue-400 to-blue-700 rounded-full flex items-center justify-center">
                 <User className="w-12 h-12 text-white" />
               </div>
               <div className="flex-1">
