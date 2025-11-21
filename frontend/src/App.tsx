@@ -151,7 +151,7 @@ function App() {
                 onDragStart={handleDragStart}
                 collisionDetection={closestCenter}
             >
-                <div className="flex flex-col h-screen px-[10px]">
+                <div className="flex flex-col h-full px-[10px]">
                     <div className="flex flex-row h-2/3">
                         <div className="flex flex-grow-[2] w-full">
                             <ResizablePanelGroup direction="horizontal">

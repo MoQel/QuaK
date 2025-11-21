@@ -10,6 +10,8 @@ export const Navbar: React.FC = () => {
   const getActiveTab = () => {
     if (location.pathname === '/' || location.pathname.startsWith('/home')) {
       return 'home';
+    } else if (location.pathname.startsWith('/project')) {
+      return 'project';
     } else if (location.pathname.startsWith('/profile')) {
       return 'profile';
     } else if (location.pathname.startsWith('/settings')) {
