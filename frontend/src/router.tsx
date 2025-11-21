@@ -6,15 +6,27 @@ import Profile from './pages/Profile';
 import Settings from './pages/Settings';
 import NotFound from './pages/NotFound';
 import Layout from './components/Layout';
+import { AuthProvider } from './contexts/AuthContext';
+import { ProtectedRoute } from './components/ProtectedRoute';
 
 const routes: RouteObject[] = [
   {
     path: '/login',
-    element: <LogIn />,
+    element: (
+      <AuthProvider>
+        <LogIn />
+      </AuthProvider>
+    ),
   },
   {
     path: '/',
-    element: <Layout />,
+    element: (
+      <AuthProvider>
+        <ProtectedRoute>
+          <Layout />
+        </ProtectedRoute>
+      </AuthProvider>
+    ),
     children: [
       {
         index: true,
@@ -36,9 +48,14 @@ const routes: RouteObject[] = [
   },
   {
     path: '*',
-    element: <NotFound />,
+    element: (
+      <AuthProvider>
+        <NotFound />
+      </AuthProvider>
+    ),
   },
 ];
 
 export const router = createBrowserRouter(routes);
+
 
