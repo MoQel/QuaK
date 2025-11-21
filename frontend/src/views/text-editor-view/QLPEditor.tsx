@@ -5,26 +5,30 @@ import {toast} from "sonner";
 import {Menu} from "@/views/text-editor-view/Menu.tsx";
 import {API_ENDPOINT} from "@/views/project-manager-view/ProjectManagerView.tsx";
 import {Language} from "@/views/text-editor-view/model/Language.ts";
-import {language as python} from "@/components/languages/python.ts";
+import {qrisp} from "@/components/languages/qrisp.ts";
+import {openqasm} from "@/components/languages/openqasm.ts";
+
+const DEFAULT_VALUE = "No File Selected";
+const DEFAULT_LANG = "plaintext";
+const THEME = "vs-dark";
 
 const languages = [
-    //Default language
-    new Language("qrisp", python, "Qrisp"),
-    new Language("python", python, "Python"),
+    new Language("plaintext", "txt"),
+    new Language("python", "py"),
+    new Language("qrisp", "qrisp", qrisp),
+    new Language("qasm", "qasm", openqasm),
 ]
 
 function QLPEditor({file}: {file: File | undefined}) {
-    const [value, setValue] = useState("# No File Selected");
-    const [lang, setLang] = useState("python");
-    const [theme, setTheme] = useState("vs-dark");
+    const [value, setValue] = useState(DEFAULT_VALUE);
+    const [lang, setLang] = useState(DEFAULT_LANG);
+    const [readOnly, setReadOnly] = useState<boolean>(true);
     const contentId: RefObject<string | undefined> = useRef(undefined);
 
     const onMount = (monaco: Monaco) => {
         for (const language of languages) {
-            language.register(monaco);
+            if (language.base !== undefined) language.register(monaco);
         }
-        setLang(languages[0].languageId);
-        setTheme(languages[0].themeId);
     };
 
     const onSave = (id: string | undefined) => {
@@ -44,15 +48,36 @@ function QLPEditor({file}: {file: File | undefined}) {
     };
 
     useEffect(() => {
-        if (contentId.current && contentId.current !== file?.id) {
-            onSave(contentId.current);
-            if (file?.id) {
-                onSave(contentId.current).then(() => retrieveContent(file.id)).then(setValue);
-            }
-        } else if (file?.id) {
-            retrieveContent(file.id).then(setValue);
+        if (!file?.id) {
+            contentId.current = undefined;
+            setValue(DEFAULT_VALUE);
+            setLang(DEFAULT_LANG);
+            setReadOnly(true);
+            return;
         }
-        contentId.current = file?.id;
+
+        (async () => {
+            const prev = contentId.current;
+
+            // Save previous file before switching
+            if (prev && prev !== file.id) {
+                await onSave(prev);
+            }
+
+            // Set new content
+            const content: string = await retrieveContent(file.id);
+            setValue(content);
+
+            // Set new language
+            const ext: string = await retrieveFileExtension(file.id);
+            setLang(getLanguageOrDefaultByExtension(ext));
+
+            // Enable writing
+            setReadOnly(false);
+
+            // Update reference
+            contentId.current = file.id;
+        })();
     }, [file]);
 
     const formatLanguages = (langs: Language[]) => {
@@ -60,38 +85,54 @@ function QLPEditor({file}: {file: File | undefined}) {
             isSelected: l.languageId === lang,
             select: () => {
                 setLang(l.languageId);
-                setTheme(l.themeId);
-                toast("Language " + l.getName());
+                toast("Language " + l.getID().toUpperCase());
             },
-            displayName: l.getName(),
+            displayName: l.getID().toUpperCase(),
         }));
     };
+
+    function getLanguageOrDefaultByExtension(ext: string): string {
+        const match = languages.find(l => l.fileExtension === ext);
+        return match ? match.id : DEFAULT_LANG; // Default
+    }
+
+    function retrieveFileExtension(id: string): Promise<string> {
+        return fetch(`${API_ENDPOINT}/file/${id}`, {method: "GET"})
+            .then(r => r.json())
+            .then((fileElement) => {
+                const filename = fileElement.name;
+                if (!filename?.includes(".")) {
+                    return "txt"; // fallback
+                }
+                return filename.substring(filename.lastIndexOf(".") + 1);
+            });
+    }
+
+    function retrieveContent(id: string): Promise<string> {
+        return fetch(`${API_ENDPOINT}/file/${id}/content`, {
+            method: "GET"
+        }).then(r => r.text())
+    }
 
     return (
         <div className="h-full flex flex-col p-0">
             <Menu onSave={() => onSave(file?.id)} languages={formatLanguages(languages)}/>
             <div className="h-full">
                 <Editor
-                    defaultLanguage="python"
                     language={lang}
-                    theme={theme}
+                    theme={THEME}
                     value={value}
                     onChange={(value) => setValue(value || '')}
                     options={{
                         minimap: {enabled: false},
                         wordWrap: 'on',
+                        readOnly: readOnly,
                     }}
                     beforeMount={onMount}
                 />
             </div>
         </div>
     );
-}
-
-function retrieveContent(id: string) {
-    return fetch(`${API_ENDPOINT}/file/${id}/content`, {
-        method: "GET"
-    }).then(r => r.text())
 }
 
 export default QLPEditor;
