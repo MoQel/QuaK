@@ -28,7 +28,6 @@ import {File} from "@/views/project-manager-view/util/FileElement.tsx";
 import {InspectorView} from "@/views/inspector-view/InspectorView.tsx";
 import {matrixContext} from "./Context"
 
-
 function App() {
 
     const INITIAL_QUBITS = 20
@@ -55,6 +54,7 @@ function App() {
             distance: 3 // can be adjusted in the future
         }
     }))
+
     /* Returns the gate object belonging to the gateId */
     const findGate = (gateId: string): QuantumGate | undefined => {
         return matrixState.flat().find(gate => gate.id === gateId)
@@ -105,7 +105,6 @@ function App() {
         } else {
             setActiveGate(findGate(e.active.id as string))
         }
-        return;
     }
 
     const handleDragOver = (event: DragOverEvent) => {
@@ -200,7 +199,6 @@ function App() {
     );
 }
 
-
 function initializeMatrix(
     numberOfQubits: number,
     gates: QuantumGatesInit[]
@@ -209,8 +207,8 @@ function initializeMatrix(
     for (let i = 0; i < numberOfQubits; i++) {
         quantumWires[i] = []
     }
-    for (const gate of gates) {
-        quantumWires[gate.qubit].push({type: gate.type, id: uuidv4()})
+    for (let idx = 0; idx < gates.length; idx++) {
+        quantumWires[idx].push({type: gates[idx].type, id: uuidv4()})
     }
 
     for (let i = 0; i < numberOfQubits; i++) {

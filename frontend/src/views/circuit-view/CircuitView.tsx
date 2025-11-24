@@ -2,12 +2,11 @@ import {Card, CardContent} from "@/components/ui/card.tsx";
 import {Qubit} from "@/views/circuit-view/Qubit.tsx";
 import {Button} from "@/components/ui/button.tsx";
 import {Minus, Plus, Trash} from "lucide-react";
-import {CircuitState} from "@/type/quantum.tsx";
-import {Fragment, useCallback, useState} from "react";
-import {QuantumGate} from "@/views/QuantumGate.tsx";
+import {Fragment, useCallback} from "react";
 import styles from "@/App.module.css";
 import {matrixContext} from "@/Context.tsx";
 import {useContext} from "react";
+import {quantumGates} from "@/views/circuit-view/InitCircuit.tsx";
 
 type CircuitViewProps = {
     maxWireLength: number
@@ -16,17 +15,14 @@ type CircuitViewProps = {
 export function CircuitView({maxWireLength}: CircuitViewProps) {
     //TODO These are not needed anymore, safely remove them
     const GATE_CAPACITY_VISIBLE = 40
-    const INITIAL_QUBITS_VISIBLE = 5
+    //const INITIAL_QUBITS_VISIBLE = 5
     const WIRE_LENGTH = GATE_CAPACITY_VISIBLE * 25
 
 
     const matrix = useContext(matrixContext)
-    const [circuitState, setCircuitState] = useState<CircuitState>({
-        qubits: INITIAL_QUBITS_VISIBLE,
-        steps: GATE_CAPACITY_VISIBLE,
-    });
 
     const removeQubit = useCallback(() => {
+        /*
         setCircuitState(prev => ({
             qubits: Math.max(prev.qubits - 1, 1),
             steps: prev.steps,
@@ -37,9 +33,11 @@ export function CircuitView({maxWireLength}: CircuitViewProps) {
             if (prev.length <= 1) return prev;
             return prev.slice(0, -1); // remove last qubit (wire)
         });
+         */
     }, [matrix]);
 
     const addQubit = useCallback(() => {
+        /*
         setCircuitState(prev => ({
             qubits: Math.min(prev.qubits + 1, 20),
             steps: prev.steps,
@@ -47,9 +45,11 @@ export function CircuitView({maxWireLength}: CircuitViewProps) {
         matrix.setMatrixState((prev: QuantumGate[][]): QuantumGate[][] => {
             return [...prev, [] as QuantumGate[]];  // new wire (empty array) appended
         });
+         */
     }, [matrix]);
 
     const resetCircuit = useCallback(() => {
+        /*
         setCircuitState(prev => ({
             qubits: 1,
             steps: prev.steps,
@@ -59,6 +59,7 @@ export function CircuitView({maxWireLength}: CircuitViewProps) {
                 row.filter((gate) =>
                     gate.type === "DUMMY"))
         );
+         */
     }, [matrix]);
 
     return (
@@ -79,14 +80,19 @@ export function CircuitView({maxWireLength}: CircuitViewProps) {
 
                 {/* Wires container */}
                 <div className="flex-1 overflow-auto">
-                    {Array.from({length: circuitState.qubits}).map((_, qubitIndex) => (
-                        <Qubit
-                            key={qubitIndex}
-                            gates={matrix?.matrixState[qubitIndex] ?? []}
-                            qubitIndex={qubitIndex}
-                            length={WIRE_LENGTH}
-                        />
-                    ))}
+                    {
+                        [...new Set(quantumGates.map(initGate => initGate.qubit))].map((name, idx) => (
+                            <Qubit
+                                key={name}
+                                name={name}
+                                gates={quantumGates
+                                    .filter(initGate => initGate.qubit === name)
+                                    .map(({qubit, ...gate}) => gate)}
+                                qubitIndex={idx}
+                                length={WIRE_LENGTH}
+                            />
+                        ))
+                    }
                     {/* Gate Indexing of form: | 1 | 2 | ... */}
                     <div className={`${styles.gateIndexSpacing} font-mono text-sm flex justify-start flex-shrink-0`}>
                         {Array.from({length: maxWireLength - 1}, (_, i) => (

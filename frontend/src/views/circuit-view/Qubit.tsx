@@ -9,17 +9,18 @@ import {ChangeEvent, useContext, useState} from "react";
 import {matrixContext} from "@/Context.tsx";
 
 type QuantumWiresProps = {
+    name: string;
     gates: QuantumGate[];
     qubitIndex: number;
     length: number;
 };
 
-export function Qubit({gates, qubitIndex, length}: QuantumWiresProps) {
+export function Qubit({name, gates, qubitIndex, length}: QuantumWiresProps) {
     const {setNodeRef} = useSortable({
         id: qubitIndex,
     })
 
-    const [qubitName, setQubitName] = useState<string>(`q${qubitIndex}`)
+    const [qubitName, setQubitName] = useState<string>(name)
     const [tempName, setTempName] = useState<string>(qubitName)
     const matrix = useContext(matrixContext)
     const maxLength = 4;
