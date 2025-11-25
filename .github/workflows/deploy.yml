@@ -18,6 +18,7 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
+      #configures caching for gradle dependencies and sets env variables for better performance
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4.4.2
 

@@ -1,22 +1,36 @@
-import { quantumLibraryGates } from "@/views/library-view/InitLibrary.tsx";
-import { useDraggable } from "@dnd-kit/core";
 import { LibraryElement } from "@/views/library-view/LibraryElement.tsx";
+import {QuantumGate} from "@/views/QuantumGate.tsx";
+import {useEffect, useState} from "react";
+
+export async function fetchGates(): Promise<QuantumGate[]> {
+  const response = await fetch('/gates');
+  const data = await response.json();
+  return data;
+}
 
 function GateLibrary() {
-    const { setNodeRef } = useDraggable({
+    /*const { setNodeRef } = useDraggable({
         id: "library",
-    });
+    });*/
+    const [gates, setGates] = useState<QuantumGate[]>([]);
+      useEffect(() => {
+        fetchGates().then((data) => {
+          console.log("gates from API", data);
+          setGates(data);
+        });
+      }, []);
+
 
     return (
         <div
-            ref={setNodeRef}
+            /*ref={setNodeRef}*/
             className="grid grid-cols-5 gap-4"
         >
-            {quantumLibraryGates.map((gate, index) => (
+            {gates.map((gate, index) => (
                 <LibraryElement
-                    key={`${gate.type}-${index}`}
-                    id={gate.id}
-                    type={gate.type}
+                    key={`${gate.name}-${index}`}
+                    id={gate.name}
+                    type={gate.symbol}
                 />
             ))}
         </div>
