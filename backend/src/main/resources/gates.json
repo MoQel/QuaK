@@ -92,7 +92,7 @@
   },
   {
     "name": "Measure",
-    "symbol": "MEASURE",
+    "symbol": "M",
     "type": "Non-Unitary",
     "description": "Measurement gate.",
     "qubitCount": 1

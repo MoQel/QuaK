@@ -3,7 +3,26 @@ package edu.kit.quak.files.model;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+
+
 public class Gate {
+
+    public enum SYMBOL {
+        H,
+        X,
+        Y,
+        Z,
+        CNOT,
+        CZ,
+        SWAP,
+        CCX,
+        S,
+        T,
+        RX,
+        RY,
+        RZ,
+        M
+    }
 
     @JsonProperty
     private final String name;
@@ -18,7 +37,7 @@ public class Gate {
     private final int qubitCount;
 
     @JsonProperty
-    private final String symbol;
+    private final SYMBOL symbol;
 
 
 //parameters list?
@@ -28,7 +47,7 @@ public class Gate {
                 @JsonProperty("type") String type,
                 @JsonProperty("description") String description,
                 @JsonProperty("qubitCount") int qubitCount,
-                @JsonProperty("symbol") String symbol
+                @JsonProperty("symbol") SYMBOL symbol
     ) {
         this.name = name;
         this.type = type;
@@ -54,7 +73,7 @@ public class Gate {
         return qubitCount;
     }
 
-    public String getSymbol() {
+    public SYMBOL getSymbol() {
         return symbol;
     }
 }
