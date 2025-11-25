@@ -9,9 +9,6 @@ export async function fetchGates(): Promise<QuantumGate[]> {
 }
 
 function GateLibrary() {
-    /*const { setNodeRef } = useDraggable({
-        id: "library",
-    });*/
     const [gates, setGates] = useState<QuantumGate[]>([]);
       useEffect(() => {
         fetchGates().then((data) => {
