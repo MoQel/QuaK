@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 
 import org.springframework.security.test.context.support.WithMockUser;
 
@@ -56,7 +57,9 @@ class ProjectControllerTest extends QuaKApplicationTests {
         MvcResult result = mockMvc.perform(
                 post("/project")
                         .contentType(JSON_CONTENT_TYPE)
+                        .contentType(JSON_CONTENT_TYPE)
                         .content(project.toString())
+                        .with(csrf())
         ).andExpectAll(
                 status().isCreated(),
                 content().contentType(JSON_CONTENT_TYPE),
@@ -95,7 +98,9 @@ class ProjectControllerTest extends QuaKApplicationTests {
         mockMvc.perform(
                 patch("/project/"+toPatch.getId())
                         .contentType(JSON_CONTENT_TYPE)
+                        .contentType(JSON_CONTENT_TYPE)
                         .content(patch.toString())
+                        .with(csrf())
         ).andExpectAll(
                 status().isOk()
         );
@@ -116,7 +121,9 @@ class ProjectControllerTest extends QuaKApplicationTests {
         mockMvc.perform(
                 patch("/project/"+toPatch.getId())
                         .contentType(JSON_CONTENT_TYPE)
+                        .contentType(JSON_CONTENT_TYPE)
                         .content(patch.toString())
+                        .with(csrf())
         ).andExpectAll(
                 status().isBadRequest()
         );
@@ -126,7 +133,7 @@ class ProjectControllerTest extends QuaKApplicationTests {
     void deleteProject() throws Exception {
         Project toDelete = projects.save(new Project("toDelete"));
         mockMvc.perform(
-                delete("/project/" + toDelete.getId())
+                delete("/project/" + toDelete.getId()).with(csrf())
         ).andExpect(status().isOk());
         assertTrue(projects.findById(toDelete.getId()).isEmpty());
     }
@@ -139,7 +146,7 @@ class ProjectControllerTest extends QuaKApplicationTests {
         projects.save(toDelete);
 
         mockMvc.perform(
-                delete("/project/" + toDelete.getId())
+                delete("/project/" + toDelete.getId()).with(csrf())
         ).andExpect(status().isOk());
         assertEmpty(files.findById(inner.getId()));
         assertEmpty(projects.findById(toDelete.getId()));
