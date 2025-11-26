@@ -1,13 +1,13 @@
-import {Collapsible, CollapsibleContent, CollapsibleTrigger} from "@/components/ui/collapsible.tsx"
-import {JSX, useEffect, useState} from "react";
-import {CreateDialog} from "@/views/project-manager-view/CreateDialog.tsx";
-import {Skeleton} from "@/components/ui/skeleton.tsx";
-import {ParentRefresh} from "@/views/project-manager-view/ProjectManagerView.tsx";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible.tsx"
+import { JSX, useEffect, useState } from "react";
+import { CreateDialog } from "@/views/project-manager-view/CreateDialog.tsx";
+import { Skeleton } from "@/components/ui/skeleton.tsx";
+import { ParentRefresh } from "@/views/project-manager-view/ProjectManagerView.tsx";
 import "./ProjectManagerView.css"
-import {ContextMenu, ContextMenuContent, ContextMenuTrigger} from "@/components/ui/context-menu.tsx";
-import {Dialog, DialogContent} from "@/components/ui/dialog.tsx";
-import {Delete} from "@/views/project-manager-view/Delete.tsx";
-import {Empty, ListingElement} from "@/views/project-manager-view/util/TreeComponents.tsx";
+import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from "@/components/ui/context-menu.tsx";
+import { Dialog, DialogContent } from "@/components/ui/dialog.tsx";
+import { Delete } from "@/views/project-manager-view/Delete.tsx";
+import { Empty, ListingElement } from "@/views/project-manager-view/util/TreeComponents.tsx";
 
 /**
  * Provides an icon based on the given open-state of the container.
@@ -38,8 +38,8 @@ type ContentFetch = (id: string) => Promise<JSX.Element[]>;
  * @param deletePath The HTTP-path to request deletion of the element
  * @constructor
  */
-export function FileElementContainer({name, id, getContent, edit, icon, deletePath}:
-                    {name: string, id: string, getContent: ContentFetch, edit: Edit, icon: Icon, deletePath: string}) {
+export function FileElementContainer({ name, id, getContent, edit, icon, deletePath }:
+    { name: string, id: string, getContent: ContentFetch, edit: Edit, icon: Icon, deletePath: string }) {
     const [content, setContent] = useState([<Skeleton className="h-4" />])
     const [dialogContent, setDialogContent] = useState(<Skeleton className="h-5 mt-5" />)
     const [reloaded, r] = useState(false);
@@ -63,16 +63,16 @@ export function FileElementContainer({name, id, getContent, edit, icon, deletePa
                     <ContextMenuTrigger>
                         <div className="flex">
                             <CollapsibleTrigger className="flex-auto h-8 flex" onClick={reload}>
-                                <ListingElement text={name} icon={icon(collapsible)}/>
+                                <ListingElement text={name} icon={icon(collapsible)} />
                             </CollapsibleTrigger>
                         </div>
                     </ContextMenuTrigger>
                     <ContextMenuContent>
                         <ParentRefresh value={reload}>
-                            <CreateDialog id={id} openDialog={openDialog}/>
+                            <CreateDialog id={id} openDialog={openDialog} />
                             {edit(id, openDialog)}
                         </ParentRefresh>
-                        <Delete path={deletePath} openDialog={openDialog}/>
+                        <Delete endpoint={deletePath} openDialog={openDialog} />
                     </ContextMenuContent>
                 </ContextMenu>
                 <ParentRefresh value={reload}>
@@ -85,7 +85,7 @@ export function FileElementContainer({name, id, getContent, edit, icon, deletePa
             <CollapsibleContent>
                 <ParentRefresh value={reload}>
                     <div className="pl-2"><div className="pl-2 mb-1 mt-1 border-l-1 border-gray-500 border-opacity-50">
-                        {content.length === 0 ? [<Empty key="empty"/>] : content}
+                        {content.length === 0 ? [<Empty key="empty" />] : content}
                     </div></div>
                 </ParentRefresh>
             </CollapsibleContent>

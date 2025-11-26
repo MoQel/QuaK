@@ -19,13 +19,20 @@ export async function apiRequest<T>(
 ): Promise<T> {
     const url = `${API_BASE_URL}${endpoint}`;
 
+    // Get CSRF token from cookie
+    const csrfToken = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('XSRF-TOKEN='))
+        ?.split('=')[1];
+
     const defaultOptions: FetchOptions = {
         credentials: 'include', // Always include session cookie
+        ...options, // Spread options first so headers can be merged correctly below
         headers: {
             'Content-Type': 'application/json',
+            ...(csrfToken ? { 'X-XSRF-TOKEN': csrfToken } : {}),
             ...options.headers,
         },
-        ...options,
     };
 
     try {
@@ -44,7 +51,13 @@ export async function apiRequest<T>(
         }
 
         // Return parsed JSON
-        return await response.json();
+        // Return parsed JSON or text based on content type
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.indexOf("application/json") !== -1) {
+            return await response.json();
+        } else {
+            return await response.text() as unknown as T;
+        }
     } catch (error) {
         console.error('API request failed:', error);
         throw error;
@@ -65,12 +78,21 @@ export const api = {
             body: JSON.stringify(data),
         }),
 
-    put: <T>(endpoint: string, data?: unknown, options?: FetchOptions) =>
-        apiRequest<T>(endpoint, {
+    put: <T>(endpoint: string, data?: unknown, options?: FetchOptions) => {
+        const isString = typeof data === 'string';
+        const headers = { ...options?.headers } as Record<string, string>;
+
+        if (isString && !headers['Content-Type']) {
+            headers['Content-Type'] = 'text/plain';
+        }
+
+        return apiRequest<T>(endpoint, {
             ...options,
+            headers,
             method: 'PUT',
-            body: JSON.stringify(data),
-        }),
+            body: isString ? data as string : JSON.stringify(data),
+        });
+    },
 
     delete: <T>(endpoint: string, options?: FetchOptions) =>
         apiRequest<T>(endpoint, { ...options, method: 'DELETE' }),
