@@ -1,13 +1,13 @@
 import {Badge} from "@/components/ui/badge.tsx";
-import {GateIcons, QuantumGate} from "@/views/QuantumGate.tsx";
 import styles from "@/App.module.css";
 import {useSortable} from "@dnd-kit/sortable";
 import {CSS} from "@dnd-kit/utilities";
 import {useContext} from "react";
 import {matrixContext} from "@/Context.tsx";
+import {TextIcon} from "@/views/TextIcon.tsx"
+import {CircuitCell} from "@/App.tsx"
 
-
-export function Gate({id, type}: QuantumGate) {
+export function Gate({id, type}: CircuitCell) {
 
     const {attributes, listeners, setNodeRef, transform, transition, isDragging} = useSortable({
         id: id,
@@ -20,7 +20,7 @@ export function Gate({id, type}: QuantumGate) {
         transform: CSS.Transform.toString(transform),
     }
     const matrix = useContext(matrixContext)
-    const Icon = GateIcons[type]
+    const Icon = TextIcon(type)
 
     if (isDragging) {
         return (

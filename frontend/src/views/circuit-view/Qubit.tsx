@@ -1,5 +1,4 @@
 import styles from "@/App.module.css";
-import {QuantumGate} from "@/views/QuantumGate.tsx";
 import {horizontalListSortingStrategy, SortableContext, useSortable} from "@dnd-kit/sortable";
 import {Gate} from "@/views/circuit-view/Gate.tsx"
 import {Button} from "@/components/ui/button"
@@ -7,9 +6,10 @@ import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover"
 import {Input} from "@/components/ui/input.tsx";
 import {ChangeEvent, useContext, useState} from "react";
 import {matrixContext} from "@/Context.tsx";
+import {CircuitCell} from "@/App.tsx"
 
 type QuantumWiresProps = {
-    gates: QuantumGate[];
+    gates: CircuitCell[];
     qubitIndex: number;
     length: number;
 };
