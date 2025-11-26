@@ -1,11 +1,11 @@
-import {Dispatch, SetStateAction, useEffect, useMemo, useState} from "react";
+import { Dispatch, SetStateAction, useMemo, useState } from "react";
 
-import {ResizableHandle, ResizablePanel, ResizablePanelGroup} from "@/components/ui/resizable.tsx";
-import {GateLibraryView} from "@/views/library-view/GateLibraryView.tsx";
-import {CircuitView} from "@/views/circuit-view/CircuitView.tsx";
-import {TextEditorView} from "@/views/text-editor-view/TextEditorView.tsx";
-import {ProjectManagerView} from "@/views/project-manager-view/ProjectManagerView.tsx";
-import {ResultsView} from "@/views/results-view/ResultsView.tsx";
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable.tsx";
+import { GateLibraryView } from "@/views/library-view/GateLibraryView.tsx";
+import { CircuitView } from "@/views/circuit-view/CircuitView.tsx";
+import { TextEditorView } from "@/views/text-editor-view/TextEditorView.tsx";
+import { ProjectManagerView } from "@/views/project-manager-view/ProjectManagerView.tsx";
+import { ResultsView } from "@/views/results-view/ResultsView.tsx";
 import {
     closestCenter,
     DndContext,
@@ -34,7 +34,6 @@ import {matrixContext} from "./Context"
     };
 
 function App() {
-
     const INITIAL_QUBITS = 20
 
 
@@ -88,9 +87,6 @@ function App() {
     }
 
 
-    useEffect(() => {
-        document.documentElement.classList.add('dark');
-    }, []);
     const [file, openFile]: [File, Dispatch<SetStateAction<File>>] = useState(undefined as unknown as File);
 
     //Creates new gate based on the type of the library element
@@ -117,7 +113,7 @@ function App() {
     }
 
     const handleDragOver = (event: DragOverEvent) => {
-        const {over} = event
+        const { over } = event
         if (!over) return;
         const overQubit = findQubit(over.id as string)
         if (overQubit !== -1) {
@@ -126,7 +122,7 @@ function App() {
     };
 
     const handleDragEnd = (event: DragEndEvent) => {
-        const {active, over} = event;
+        const { active, over } = event;
         if (!over) return;
 
         const activeGateId = active.id as string;
@@ -163,36 +159,36 @@ function App() {
                 onDragStart={handleDragStart}
                 collisionDetection={closestCenter}
             >
-                <div className="flex flex-col h-screen px-[10px]">
+                <div className="flex flex-col h-full px-[10px]">
                     <div className="flex flex-row h-2/3">
                         <div className="flex flex-grow-[2] w-full">
                             <ResizablePanelGroup direction="horizontal">
                                 <ResizablePanel defaultSize={20}>
-                                    <ProjectManagerView onFileSelect={openFile}/>
+                                    <ProjectManagerView onFileSelect={openFile} />
                                 </ResizablePanel>
-                                <ResizableHandle withHandle/>
+                                <ResizableHandle withHandle />
                                 <ResizablePanel>
                                     {/*
                                         To avoid prop drilling,
                                         use context provider that shares arguments to its children, without passing them
                                     */}
-                                    <matrixContext.Provider value={{matrixState, setMatrixState, removeGate}}>
+                                    <matrixContext.Provider value={{ matrixState, setMatrixState, removeGate }}>
                                         <CircuitView
                                             maxWireLength={maxQubitLength}
                                         />
                                     </matrixContext.Provider>
                                 </ResizablePanel>
-                                <ResizableHandle withHandle/>
+                                <ResizableHandle withHandle />
                                 <ResizablePanel className="flex-col h-full">
-                                    <TextEditorView file={file}/>
+                                    <TextEditorView file={file} />
                                 </ResizablePanel>
                             </ResizablePanelGroup>
                         </div>
                     </div>
                     <div className="flex flex-grow-[1] flex-row w-full">
-                        <GateLibraryView/>
-                        <InspectorView/>
-                        <ResultsView numberQubits={5}/>
+                        <GateLibraryView />
+                        <InspectorView />
+                        <ResultsView numberQubits={5} />
                     </div>
                 </div>
                 {createPortal(
@@ -203,7 +199,7 @@ function App() {
                     document.body
                 )}
             </DndContext>
-            <Toaster/>
+            <Toaster />
         </>
     );
 }
@@ -221,7 +217,7 @@ function initializeMatrix(
     }
 
     for (let i = 0; i < numberOfQubits; i++) {
-        quantumWires[i].push({type: "DUMMY", id: uuidv4()})
+        quantumWires[i].push({ type: "DUMMY", id: uuidv4() })
     }
     return quantumWires
 }
