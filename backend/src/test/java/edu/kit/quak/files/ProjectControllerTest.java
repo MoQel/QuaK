@@ -77,7 +77,7 @@ class ProjectControllerTest extends QuaKApplicationTests {
         project.put("name", name);
 
         MvcResult result = mockMvc.perform(
-                post("/project")
+                post("/api/project")
                         .contentType(JSON_CONTENT_TYPE)
                         .contentType(JSON_CONTENT_TYPE)
                         .content(project.toString())
@@ -102,11 +102,11 @@ class ProjectControllerTest extends QuaKApplicationTests {
         };
 
         mockMvc.perform(
-                get("/project")
+                get("/api/project")
                 .with(auth())
         ).andExpectAll(matchers.apply("$[0]"));
         mockMvc.perform(
-                get("/project/" + id)
+                get("/api/project/" + id)
                 .with(auth())
         ).andExpectAll(matchers.apply("$"));
     }
@@ -123,7 +123,7 @@ class ProjectControllerTest extends QuaKApplicationTests {
         patch.put("name", name);
 
         mockMvc.perform(
-                patch("/project/"+toPatch.getId())
+                patch("/api/project/"+toPatch.getId())
                         .contentType(JSON_CONTENT_TYPE)
                         .contentType(JSON_CONTENT_TYPE)
                         .content(patch.toString())
@@ -149,7 +149,7 @@ class ProjectControllerTest extends QuaKApplicationTests {
         patch.set("contents", contents);
 
         mockMvc.perform(
-                patch("/project/"+toPatch.getId())
+                patch("/api/project/"+toPatch.getId())
                         .contentType(JSON_CONTENT_TYPE)
                         .contentType(JSON_CONTENT_TYPE)
                         .content(patch.toString())
@@ -166,7 +166,7 @@ class ProjectControllerTest extends QuaKApplicationTests {
         toDelete.setOwner(testUser);
         toDelete = projects.save(toDelete);
         mockMvc.perform(
-                delete("/project/" + toDelete.getId()).with(csrf()).with(auth())
+                delete("/api/project/" + toDelete.getId()).with(csrf()).with(auth())
         ).andExpect(status().isOk());
         assertTrue(projects.findById(toDelete.getId()).isEmpty());
     }
@@ -181,7 +181,7 @@ class ProjectControllerTest extends QuaKApplicationTests {
         projects.save(toDelete);
 
         mockMvc.perform(
-                delete("/project/" + toDelete.getId()).with(csrf()).with(auth())
+                delete("/api/project/" + toDelete.getId()).with(csrf()).with(auth())
         ).andExpect(status().isOk());
         assertEmpty(files.findById(inner.getId()));
         assertEmpty(projects.findById(toDelete.getId()));
@@ -199,7 +199,7 @@ class ProjectControllerTest extends QuaKApplicationTests {
         main = projects.save(main);
 
         mockMvc.perform(
-                get("/project/" + main.getId())
+                get("/api/project/" + main.getId())
                 .with(auth())
         ).andExpectAll(
                 status().isOk(),
@@ -222,7 +222,7 @@ class ProjectControllerTest extends QuaKApplicationTests {
         main = projects.save(main);
 
         mockMvc.perform(
-                get("/project/")
+                get("/api/project/")
                 .with(auth())
         ).andExpectAll(
                 status().isOk(),
@@ -235,7 +235,7 @@ class ProjectControllerTest extends QuaKApplicationTests {
 
         //Ensure that the normal view is correct
         mockMvc.perform(
-                get("/project/" + main.getId())
+                get("/api/project/" + main.getId())
                 .with(auth())
         ).andExpectAll(
                 status().isOk(),

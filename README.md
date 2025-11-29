@@ -21,6 +21,158 @@ If you wish to remove the custom nodejs install, run `gradlew :removeCustomNode`
 
 [gradle-node-plugin]: https://github.com/node-gradle/gradle-node-plugin
 
+## Build Commands
+
+The project provides several Gradle tasks optimized for different scenarios:
+
+### Testing (Fast - No Frontend Build)
+```bash
+cd backend
+./gradlew test
+```
+Runs backend tests **without** building the frontend (~3-5 seconds).
+
+### Development Build
+```bash
+cd backend
+./gradlew build
+```
+Builds the backend with frontend included for local testing.
+
+### Production Build
+```bash
+cd backend
+./gradlew buildProduction
+```
+Explicitly builds the backend **with** frontend bundled for production deployment.
+Creates a single JAR file in `backend/build/libs/` containing both backend and frontend.
+
+### Manual Control
+You can override the frontend build behavior with the `-PbuildFrontend` flag:
+```bash
+# Force frontend build
+./gradlew build -PbuildFrontend=true
+
+# Skip frontend build
+./gradlew build -PbuildFrontend=false
+```
+
+
+## Testing
+
+The project includes comprehensive testing for both backend and frontend.
+
+### Quick Start - Run All Tests
+
+**From project root:**
+```bash
+npm test
+```
+Runs backend and frontend tests **in parallel** (~5-10 seconds total).
+
+**From backend directory:**
+```bash
+cd backend
+./gradlew testAll
+```
+Runs both test suites via Gradle.
+
+### Backend Tests Only
+
+```bash
+cd backend
+./gradlew test
+```
+- **Framework:** JUnit 5 + Spring Boot Test
+- **Speed:** ~3-5 seconds
+- **Coverage:** Controllers, Services, Repositories
+- **Database:** H2 in-memory for tests
+
+### Frontend Tests Only
+
+```bash
+cd frontend
+npm test
+```
+- **Framework:** Vitest + React Testing Library
+- **Speed:** ~2-3 seconds
+- **Coverage:** Components, Hooks, Utils
+- **Environment:** jsdom (browser simulation)
+
+### Test Options
+
+#### Watch Mode (Frontend)
+```bash
+cd frontend
+npm run test:watch
+```
+Automatically re-runs tests on file changes.
+
+#### Test UI (Frontend)
+```bash
+cd frontend
+npm run test:ui
+```
+Opens interactive Vitest UI in browser.
+
+#### Coverage Reports
+```bash
+# Frontend coverage
+cd frontend
+npm run test:coverage
+
+# Backend coverage (if configured)
+cd backend
+./gradlew test jacocoTestReport
+```
+
+#### Sequential Testing (CI/CD)
+```bash
+cd backend
+./gradlew testAllSequential
+```
+Runs backend tests first, then frontend tests.
+
+### First Time Setup
+
+Install frontend test dependencies:
+```bash
+cd frontend
+npm install
+```
+
+### Writing Tests
+
+**Frontend test example** (`*.test.tsx`):
+```typescript
+import { describe, it, expect } from 'vitest'
+import { render, screen } from '@testing-library/react'
+import { MyComponent } from './MyComponent'
+
+describe('MyComponent', () => {
+  it('should render correctly', () => {
+    render(<MyComponent />)
+    expect(screen.getByText('Hello')).toBeInTheDocument()
+  })
+})
+```
+
+**Backend test example** (`*Test.java`):
+```java
+@SpringBootTest
+@AutoConfigureMockMvc
+class MyControllerTest {
+    @Autowired
+    private MockMvc mockMvc;
+    
+    @Test
+    void shouldReturnOk() throws Exception {
+        mockMvc.perform(get("/api/endpoint"))
+               .andExpect(status().isOk());
+    }
+}
+```
+
 ## Docker Workflows
 
 ### Development Workflow

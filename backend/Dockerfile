@@ -19,9 +19,9 @@ COPY frontend /frontend
 # Default to skipping frontend (Dev mode), set to false for Prod
 ARG SKIP_FRONTEND=true
 RUN if [ "$SKIP_FRONTEND" = "true" ]; then \
-    gradle cleanFrontendFiles bootJar --no-daemon -x getFrontend -x npm_run_build; \
+    gradle cleanFrontendFiles bootJar --no-daemon -PbuildFrontend=false; \
     else \
-    gradle bootJar --no-daemon; \
+    gradle bootJar --no-daemon -PbuildFrontend=true; \
     fi
 
 # Runtime stage

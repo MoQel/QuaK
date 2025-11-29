@@ -90,7 +90,7 @@ class FileControllerTest extends QuaKApplicationTests {
         JsonNode sent = getResource("file.json");
 
         mockMvc.perform(
-                post("/file/")
+                post("/api/file/")
                         .content(sent.toString())
                         .contentType(JSON_CONTENT_TYPE)
                         .contentType(JSON_CONTENT_TYPE)
@@ -119,7 +119,7 @@ class FileControllerTest extends QuaKApplicationTests {
         JsonNode sent = getResource("directory.json");
 
         mockMvc.perform(
-                post("/file/")
+                post("/api/file/")
                         .content(sent.toString())
                         .contentType(JSON_CONTENT_TYPE)
                         .contentType(JSON_CONTENT_TYPE)
@@ -141,7 +141,7 @@ class FileControllerTest extends QuaKApplicationTests {
     void retrieveFile() throws Exception {
         //Creating with parent so it has an owner
         File query = files.save(new File("Neu", parent));
-        mockMvc.perform(get("/file/"+query.getId()).with(auth()))
+        mockMvc.perform(get("/api/file/"+query.getId()).with(auth()))
                .andExpectAll(
                        status().isOk(),
                        jsonPath("$.id", is(query.getId())),
@@ -154,7 +154,7 @@ class FileControllerTest extends QuaKApplicationTests {
     void retrieveDirectory() throws Exception {
         //Creating with parent so it has an owner
         Directory query = directories.save(new Directory("Hi", parent));
-        mockMvc.perform(get("/file/"+query.getId()).with(auth()))
+        mockMvc.perform(get("/api/file/"+query.getId()).with(auth()))
                .andExpectAll(
                        status().isOk(),
                        jsonPath("$.id", is(query.getId())),
@@ -167,20 +167,20 @@ class FileControllerTest extends QuaKApplicationTests {
     @Test
     void deleteFile() throws Exception {
         File toDelete = files.save(new File("Fi", parent));
-        mockMvc.perform(delete("/file/" + toDelete.getId()).with(csrf()).with(auth()))
+        mockMvc.perform(delete("/api/file/" + toDelete.getId()).with(csrf()).with(auth()))
                 .andExpect(status().isOk());
         Assertions.assertTrue(files.findById(toDelete.getId()).isEmpty());
-        mockMvc.perform(get("/file/"+toDelete.getId()).with(auth()))
+        mockMvc.perform(get("/api/file/"+toDelete.getId()).with(auth()))
                 .andExpect(status().is4xxClientError());
     }
 
     @Test
     void deleteDirectory() throws Exception {
         Directory toDelete = directories.save(new Directory("toDelete", parent));
-        mockMvc.perform(delete("/file/" + toDelete.getId()).with(csrf()).with(auth()))
+        mockMvc.perform(delete("/api/file/" + toDelete.getId()).with(csrf()).with(auth()))
                 .andExpect(status().isOk());
         Assertions.assertTrue(directories.findById(toDelete.getId()).isEmpty());
-        mockMvc.perform(get("/file/"+toDelete.getId()).with(auth()))
+        mockMvc.perform(get("/api/file/"+toDelete.getId()).with(auth()))
                 .andExpect(status().is4xxClientError());
     }
 
@@ -194,7 +194,7 @@ class FileControllerTest extends QuaKApplicationTests {
         patch.put("lastAccess", Instant.now().plus(5, ChronoUnit.HOURS).getEpochSecond());
 
         mockMvc.perform(
-                patch("/file/" + toPatch.getId())
+                patch("/api/file/" + toPatch.getId())
                         .contentType(JSON_CONTENT_TYPE)
                         .contentType(JSON_CONTENT_TYPE)
                         .content(patch.toString())
@@ -219,7 +219,7 @@ class FileControllerTest extends QuaKApplicationTests {
         patch.put("name", name);
 
         mockMvc.perform(
-                patch("/file/" + toPatch.getId())
+                patch("/api/file/" + toPatch.getId())
                         .contentType(JSON_CONTENT_TYPE)
                         .contentType(JSON_CONTENT_TYPE)
                         .content(patch.toString())
@@ -242,7 +242,7 @@ class FileControllerTest extends QuaKApplicationTests {
         patch.set("contents", contents);
 
         mockMvc.perform(
-                patch("/file/" + toPatch.getId())
+                patch("/api/file/" + toPatch.getId())
                         .contentType(JSON_CONTENT_TYPE)
                         .contentType(JSON_CONTENT_TYPE)
                         .content(patch.toString())
@@ -266,7 +266,7 @@ class FileControllerTest extends QuaKApplicationTests {
         //since this is not directly an error/bug, we store the header
         //for later query.
         String contentHeader = mockMvc.perform(
-                put(String.format("/file/%s/content", file.getId()))
+                put(String.format("/api/file/%s/content", file.getId()))
                         .content(content)
                         .content(content)
                         .header("Content-Type", contentType)
@@ -277,7 +277,7 @@ class FileControllerTest extends QuaKApplicationTests {
         ).andReturn().getRequest().getHeader("Content-Type");
 
         mockMvc.perform(
-                get(String.format("/file/%s/content", file.getId())).with(auth())
+                get(String.format("/api/file/%s/content", file.getId())).with(auth())
         ).andExpectAll(
                 status().isOk(),
                 content().contentType(contentHeader),
@@ -285,7 +285,7 @@ class FileControllerTest extends QuaKApplicationTests {
         );
 
         mockMvc.perform(
-                get("/file/"+file.getId()).with(auth())
+                get("/api/file/"+file.getId()).with(auth())
         ).andExpectAll(
                 status().isOk(),
                 jsonPath("$.contentType", startsWith(contentType))
@@ -300,7 +300,7 @@ class FileControllerTest extends QuaKApplicationTests {
         new Random().nextBytes(bytes);
         File file = files.save(new File("Hi", parent));
         mockMvc.perform(
-                put(String.format("/file/%s/content", file.getId()))
+                put(String.format("/api/file/%s/content", file.getId()))
                         .content(bytes)
                         .content(bytes)
                         .contentType("*/*")
@@ -311,7 +311,7 @@ class FileControllerTest extends QuaKApplicationTests {
         );
 
         mockMvc.perform(
-                get(String.format("/file/%s/content", file.getId())).with(auth())
+                get(String.format("/api/file/%s/content", file.getId())).with(auth())
         ).andExpectAll(
                 status().isOk(),
                 content().bytes(bytes)
@@ -323,7 +323,7 @@ class FileControllerTest extends QuaKApplicationTests {
     void fileContentEmptyAfterCreation() throws Exception {
         File file = files.save(new File("Hi", parent));
         mockMvc.perform(
-                get(String.format("/file/%s/content", file.getId())).with(auth())
+                get(String.format("/api/file/%s/content", file.getId())).with(auth())
         ).andExpectAll(
                 status().isOk(),
                 jsonPath("$").doesNotExist()
@@ -335,7 +335,7 @@ class FileControllerTest extends QuaKApplicationTests {
     void failOnDirectoryContentEndpoint() throws Exception {
         Directory dir = directories.save(new Directory("dir", parent));
         mockMvc.perform(
-                get(String.format("/file/%s/content", dir.getElements())).with(auth())
+                get(String.format("/api/file/%s/content", dir.getElements())).with(auth())
         ).andExpect(
                 status().is4xxClientError()
         );
@@ -345,7 +345,7 @@ class FileControllerTest extends QuaKApplicationTests {
     void failOnSetDirectoryContent() throws Exception {
         Directory dir = directories.save(new Directory("dir", parent));
         mockMvc.perform(
-                put(String.format("/file/%s/content", dir.getElements()))
+                put(String.format("/api/file/%s/content", dir.getElements()))
                         .contentType("text/plain")
                         .contentType("text/plain")
                         .content("Hello World")
@@ -360,7 +360,7 @@ class FileControllerTest extends QuaKApplicationTests {
     void failOnAddFileToFile() throws Exception {
         File parent = files.save(new File("parent", this.parent));
         mockMvc.perform(
-                get("/file/")
+                get("/api/file/")
                         .header("parent-id", parent.getId())
                         .with(auth())
         ).andExpect(
@@ -379,7 +379,7 @@ class FileControllerTest extends QuaKApplicationTests {
         main = directories.save(main);
 
         mockMvc.perform(
-            get("/file/" + main.getId()).with(auth())
+            get("/api/file/" + main.getId()).with(auth())
         ).andExpectAll(
             status().isOk(),
             jsonPath("$.name", is(main.getName())),
@@ -391,7 +391,7 @@ class FileControllerTest extends QuaKApplicationTests {
 
         //Make sure `lower` has contents
         mockMvc.perform(
-            get("/file/" + lower.getId()).with(auth())
+            get("/api/file/" + lower.getId()).with(auth())
         ).andExpectAll(
             status().isOk(),
             jsonPath("$.contents[0].name", is(file.getName()))
@@ -404,7 +404,7 @@ class FileControllerTest extends QuaKApplicationTests {
         project.setOwner(testUser);
         project = projects.save(project);
         mockMvc.perform(
-                get("/file/"+project.getId()).with(auth())
+                get("/api/file/"+project.getId()).with(auth())
         ).andExpectAll(
                 status().isBadRequest()
         );
@@ -415,7 +415,7 @@ class FileControllerTest extends QuaKApplicationTests {
         JsonNode toSend = withoutField("createdOn", getResource("file.json"));
 
         mockMvc.perform(
-                post("/file/")
+                post("/api/file/")
                     .header("parent-id", parent.getId())
                     .contentType(JSON_CONTENT_TYPE)
                     .contentType(JSON_CONTENT_TYPE)
@@ -442,7 +442,7 @@ class FileControllerTest extends QuaKApplicationTests {
         JsonNode toSend = withoutField("lastAccess", getResource("file.json"));
 
         MvcResult result = mockMvc.perform(
-                post("/file/")
+                post("/api/file/")
                         .header("parent-id", parent.getId())
                         .contentType(JSON_CONTENT_TYPE)
                         .contentType(JSON_CONTENT_TYPE)
@@ -456,7 +456,7 @@ class FileControllerTest extends QuaKApplicationTests {
         JsonNode response = mapper.readTree(result.getResponse().getContentAsString());
 
         mockMvc.perform(
-                get("/file/"+response.get("id").asText()).with(auth())
+                get("/api/file/"+response.get("id").asText()).with(auth())
         ).andExpectAll(
                 status().isOk(),
                 jsonPath("$.lastAccess", notNullValue())
@@ -474,15 +474,15 @@ class FileControllerTest extends QuaKApplicationTests {
         directories.save(dir);
         projects.save(project);
 
-        mockMvc.perform(delete("/file/" + dir.getId()).with(csrf()).with(auth()))
+        mockMvc.perform(delete("/api/file/" + dir.getId()).with(csrf()).with(auth()))
                .andExpectAll(
                        status().isOk()
                );
 
-        mockMvc.perform(get("/file/" + dir.getId()).with(auth()))
+        mockMvc.perform(get("/api/file/" + dir.getId()).with(auth()))
                        .andExpectAll(status().is4xxClientError());
 
-        mockMvc.perform(get("/file/" + file.getId()).with(auth()))
+        mockMvc.perform(get("/api/file/" + file.getId()).with(auth()))
                .andExpectAll(status().is4xxClientError());
 
         assertFalse(projects.findById(project.getId()).orElseThrow().getElements().contains(dir));
@@ -497,7 +497,7 @@ class FileControllerTest extends QuaKApplicationTests {
     void deleteFileInProject() throws Exception {
         File file = files.save(new File("", parent));
 
-        mockMvc.perform(delete("/file/" + file.getId()).with(csrf()).with(auth()))
+        mockMvc.perform(delete("/api/file/" + file.getId()).with(csrf()).with(auth()))
                 .andExpectAll(status().isOk());
 
         assertTrue(files.findById(file.getId()).isEmpty());
@@ -513,7 +513,7 @@ class FileControllerTest extends QuaKApplicationTests {
     void deleteDirectoryInProject() throws Exception {
         Directory dir = directories.save(new Directory("", parent));
 
-        mockMvc.perform(delete("/file/" + dir.getId()).with(csrf()).with(auth()))
+        mockMvc.perform(delete("/api/file/" + dir.getId()).with(csrf()).with(auth()))
                 .andExpectAll(status().isOk());
 
         assertTrue(directories.findById(dir.getId()).isEmpty());
