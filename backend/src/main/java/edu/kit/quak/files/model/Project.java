@@ -48,4 +48,16 @@ public class Project extends FileElementContainer<Project> {
     public String generateId(Object base) {
         return ID_PREFIX + base.toString();
     }
+
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    @jakarta.persistence.ManyToOne
+    private edu.kit.quak.security.model.User owner;
+
+    public edu.kit.quak.security.model.User getOwner() {
+        return owner;
+    }
+
+    public void setOwner(edu.kit.quak.security.model.User owner) {
+        this.owner = owner;
+    }
 }

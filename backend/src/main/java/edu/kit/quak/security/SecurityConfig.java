@@ -42,7 +42,8 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
-                                                     OAuth2AuthorizationRequestResolver authorizationRequestResolver) throws Exception {
+                                                     OAuth2AuthorizationRequestResolver authorizationRequestResolver,
+                                                     AuthenticationSuccessHandler authenticationSuccessHandler) throws Exception {
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf
@@ -72,7 +73,7 @@ public class SecurityConfig {
                 .authorizationEndpoint(authorization -> authorization
                     .authorizationRequestResolver(authorizationRequestResolver)
                 )
-                .successHandler(authenticationSuccessHandler())
+                .successHandler(authenticationSuccessHandler)
             )
             .logout(logout -> logout
                 .logoutUrl("/api/auth/logout")
@@ -127,6 +128,7 @@ public class SecurityConfig {
             .additionalParameters(params -> {
                 params.put("code_challenge", codeChallenge);
                 params.put("code_challenge_method", "S256");
+                params.put("prompt", "select_account");
             })
             .attributes(attrs -> {
                 attrs.put("code_verifier", codeVerifier);
@@ -153,11 +155,21 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationSuccessHandler authenticationSuccessHandler() {
-        SimpleUrlAuthenticationSuccessHandler handler = new SimpleUrlAuthenticationSuccessHandler();
-        handler.setDefaultTargetUrl(frontendUrl + "/");
-        handler.setAlwaysUseDefaultTargetUrl(true);
-        return handler;
+    public AuthenticationSuccessHandler authenticationSuccessHandler(OidcUserSyncService oidcUserSyncService) {
+        SimpleUrlAuthenticationSuccessHandler delegate = new SimpleUrlAuthenticationSuccessHandler();
+        delegate.setDefaultTargetUrl(frontendUrl + "/");
+        delegate.setAlwaysUseDefaultTargetUrl(true);
+
+        return (request, response, authentication) -> {
+            if (authentication.getPrincipal() instanceof org.springframework.security.oauth2.core.oidc.user.OidcUser oidcUser) {
+                if (authentication instanceof org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken oauthToken) {
+                    String registrationId = oauthToken.getAuthorizedClientRegistrationId();
+                    edu.kit.quak.security.model.User user = oidcUserSyncService.syncUser(registrationId, oidcUser);
+                    request.getSession().setAttribute("userId", user.getId());
+                }
+            }
+            delegate.onAuthenticationSuccess(request, response, authentication);
+        };
     }
 
     @Bean

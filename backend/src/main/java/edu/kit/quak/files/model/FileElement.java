@@ -110,4 +110,15 @@ public abstract class FileElement<SELF extends FileElement<?>> implements Savabl
     public int hashCode() {
         return Objects.hash(name, parent);
     }
+
+    @JsonIgnore
+    public Project getProject() {
+        if (this instanceof Project) {
+            return (Project) this;
+        }
+        if (getParent().isPresent()) {
+            return getParent().get().getProject();
+        }
+        return null;
+    }
 }

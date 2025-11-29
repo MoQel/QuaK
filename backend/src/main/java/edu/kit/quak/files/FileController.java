@@ -4,13 +4,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.kit.quak.files.model.Directory;
 import edu.kit.quak.files.model.File;
 import edu.kit.quak.files.model.FileElement;
+import edu.kit.quak.files.model.Project;
 import edu.kit.quak.files.repository.FileRepository;
 import edu.kit.quak.files.repository.RepoMonad;
 import edu.kit.quak.files.repository.savers.FileElementSaver;
 import edu.kit.quak.files.repository.savers.FileElementSaversRepository;
+import edu.kit.quak.security.model.User;
+import edu.kit.quak.security.repository.UserRepository;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.Transactional;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -28,6 +34,7 @@ import java.util.Map;
 
 import static edu.kit.quak.files.model.FileElement.TYPE_FIELD;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.FORBIDDEN;
 
 /**
  * This controller handles all the calls to the {@code /file/} endpoint.
@@ -44,16 +51,46 @@ public class FileController {
     private final FileRepository files;
     private final ObjectMapper objectMapper;
     private final FileElementSaversRepository savers;
+    private final UserRepository users;
 
-    public FileController(FileRepository files, ObjectMapper objectMapper, FileElementSaversRepository savers) {
+    public FileController(FileRepository files, ObjectMapper objectMapper, FileElementSaversRepository savers, UserRepository users) {
         this.files = files;
         this.objectMapper = objectMapper;
         this.savers = savers;
+        this.users = users;
+    }
+
+    private User getUser(Authentication authentication) {
+        if (authentication instanceof OAuth2AuthenticationToken oauthToken && 
+            authentication.getPrincipal() instanceof OidcUser oidcUser) {
+            String registrationId = oauthToken.getAuthorizedClientRegistrationId();
+            String sub = oidcUser.getSubject();
+            return users.findByIssuerAndSub(registrationId, sub)
+                    .orElseThrow(() -> new ResponseStatusException(FORBIDDEN, "User not found"));
+        }
+        throw new ResponseStatusException(FORBIDDEN, "Not authenticated");
+    }
+
+    private void checkOwnership(FileElement<?> element, User user) {
+        Project project = element.getProject();
+        if (project == null || project.getOwner() == null || !project.getOwner().getId().equals(user.getId())) {
+            throw new ResponseStatusException(FORBIDDEN, "You do not own this file");
+        }
     }
 
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping("/")
-    public FileElement<?> newFile(@RequestBody Map<String, Object> obj, @RequestHeader(name = "parent-id") String parent) {
+    public FileElement<?> newFile(@RequestBody Map<String, Object> obj, @RequestHeader(name = "parent-id") String parent, Authentication authentication) {
+        User user = getUser(authentication);
+        
+        savers.getSaverForElementId(parent)
+              .map(FileElementSaver::getRepository)
+              .flatMap(repo -> repo.findById(parent))
+              .ifPresentOrElse(
+                  element -> checkOwnership(element, user),
+                  () -> { throw new ResponseStatusException(BAD_REQUEST, "No matching parent found"); }
+              );
+
         final RepoMonad<?> dest = savers.getSaverForElementId(parent)
                                         .flatMap(FileElementSaver::getRepoMonad)
                                         .orElseThrow(() -> new ResponseStatusException(BAD_REQUEST, "No matching parent found"));
@@ -69,16 +106,25 @@ public class FileController {
     }
 
     @GetMapping("/{fId}")
-    public FileElement<?> retrieveFile(@PathVariable String fId) {
-        return savers.getSaverForElementId(fId, FILTER)
+    public FileElement<?> retrieveFile(@PathVariable String fId, Authentication authentication) {
+        User user = getUser(authentication);
+        FileElement<?> element = savers.getSaverForElementId(fId, FILTER)
                 .map(FileElementSaver::getRepository)
                 .flatMap(repo -> repo.findById(fId))
                 .orElseThrow(() -> new ResponseStatusException(BAD_REQUEST, "No matching FileElement found for id"));
+        checkOwnership(element, user);
+        return element;
     }
 
     @DeleteMapping("/{fId}")
     @Transactional
-    public void deleteFile(@PathVariable String fId) {
+    public void deleteFile(@PathVariable String fId, Authentication authentication) {
+        User user = getUser(authentication);
+        savers.getSaverForElementId(fId, FILTER)
+              .map(FileElementSaver::getRepository)
+              .flatMap(repo -> repo.findById(fId))
+              .ifPresent(element -> checkOwnership(element, user));
+
         try {
             savers.delete(fId, FILTER);
         } catch (IllegalArgumentException e) {
@@ -87,7 +133,13 @@ public class FileController {
     }
 
     @PatchMapping("/{fId}")
-    public void patchFileElement(@PathVariable String fId, @RequestBody Map<String, Object> body) {
+    public void patchFileElement(@PathVariable String fId, @RequestBody Map<String, Object> body, Authentication authentication) {
+        User user = getUser(authentication);
+        savers.getSaverForElementId(fId, FILTER)
+              .map(FileElementSaver::getRepository)
+              .flatMap(repo -> repo.findById(fId))
+              .ifPresent(element -> checkOwnership(element, user));
+
         try {
             savers.getSaverForElementId(fId, FILTER)
                   .ifPresent(sav -> sav.patch(fId, (toPatch, clazz) -> {
@@ -100,20 +152,24 @@ public class FileController {
     }
 
     @GetMapping("/{fId}/content")
-    public byte[] getFileContent(@PathVariable String fId, HttpServletResponse response) {
+    public byte[] getFileContent(@PathVariable String fId, HttpServletResponse response, Authentication authentication) {
+        User user = getUser(authentication);
         File file = files.findById(fId).orElseThrow(
                 () -> new ResponseStatusException(BAD_REQUEST, "Given file-ID does not resolve to an existing file.")
         );
+        checkOwnership(file, user);
 
         response.setContentType(file.getContentType());
         return file.getContent();
     }
 
     @PutMapping("/{fId}/content")
-    public void setFileContent(@PathVariable String fId, @RequestBody byte[] content, @RequestHeader("Content-Type") String contentType) {
+    public void setFileContent(@PathVariable String fId, @RequestBody byte[] content, @RequestHeader("Content-Type") String contentType, Authentication authentication) {
+        User user = getUser(authentication);
         File file = files.findById(fId).orElseThrow(
                 () -> new ResponseStatusException(BAD_REQUEST, "Given file-ID does not resolve to an existing file.")
         );
+        checkOwnership(file, user);
 
         file.setContent(content);
         file.setContentType(contentType);

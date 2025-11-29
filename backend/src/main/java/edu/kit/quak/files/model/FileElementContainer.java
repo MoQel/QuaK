@@ -23,7 +23,7 @@ import java.util.Set;
 public abstract class FileElementContainer<SELF extends FileElementContainer<SELF>> extends FileElement<SELF> {
 
     @JsonIgnore
-    @OneToMany(orphanRemoval = true, cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @OneToMany(orphanRemoval = true, cascade = CascadeType.ALL, fetch = FetchType.EAGER, mappedBy = "parent")
     protected Set<FileElement<?>> contents = new HashSet<>();
 
     public FileElementContainer(String name, FileElementContainer<?> parent) {
