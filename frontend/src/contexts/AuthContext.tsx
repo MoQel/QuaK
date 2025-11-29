@@ -78,8 +78,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         } catch (error) {
             console.error('Logout failed:', error);
         } finally {
-            // Reload the page to ensure all states are cleared
-            window.location.reload();
+            // Redirect to home page to ensure all states are cleared
+            window.location.href = '/';
         }
     };
 

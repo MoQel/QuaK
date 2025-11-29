@@ -34,7 +34,7 @@ import static org.springframework.http.HttpStatus.FORBIDDEN;
  * @author Henrik K
  */
 @RestController
-@RequestMapping("/project")
+@RequestMapping("/api/project")
 public class ProjectController {
 
     private final ProjectRepository projects;

@@ -38,7 +38,7 @@ function QLPEditor({ file }: { file: File | undefined }) {
             toast("Editor undefined, not saving");
             return Promise.resolve();
         }
-        return api.put(`/file/${id}/content`, edit.getValue())
+        return api.put(`/api/file/${id}/content`, edit.getValue())
             .then(() => retrieveContent(id))
             .then(setValue)
             .then(() => toast("Saved successfully"));
@@ -94,7 +94,7 @@ function QLPEditor({ file }: { file: File | undefined }) {
     }
 
     function retrieveFileExtension(id: string): Promise<string> {
-        return api.get<any>(`/file/${id}`)
+        return api.get<any>(`/api/file/${id}`)
             .then((fileElement) => {
                 const filename = fileElement.name;
                 if (!filename?.includes(".")) {
@@ -105,7 +105,7 @@ function QLPEditor({ file }: { file: File | undefined }) {
     }
 
     function retrieveContent(id: string): Promise<string> {
-        return api.get<string>(`/file/${id}/content`, {
+        return api.get<string>(`/api/file/${id}/content`, {
             headers: {
                 'Accept': 'text/plain' // Ensure we get text back, though api.get expects JSON by default, we might need to adjust api.ts if this returns raw text
             }

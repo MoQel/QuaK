@@ -17,7 +17,7 @@ import { DialogCloseButtons } from "@/views/project-manager-view/util/FormCompon
 import { api } from "@/utils/api";
 
 async function fetchProjectContent(id: string) {
-    const project = await api.get<Project>("/project/" + id);
+    const project = await api.get<Project>("/api/project/" + id);
     const elements = [];
     for (const element of sort(project.contents)) {
         elements.push(getElementForFileElement(element))
@@ -33,12 +33,12 @@ async function fetchProjectContent(id: string) {
  */
 export function Project({ name, id }: { name: string, id: string }) {
     const icon = (open: boolean) => open ? <ChevronDown /> : <ChevronRight />;
-    return <FileElementContainer name={name} id={id} getContent={fetchProjectContent} edit={ProjectEdit} icon={icon} deletePath={"/project/" + id} />
+    return <FileElementContainer name={name} id={id} getContent={fetchProjectContent} edit={ProjectEdit} icon={icon} deletePath={"/api/project/" + id} />
 }
 
 function ProjectEdit(id: string, trigger: (element: Promise<JSX.Element>) => void) {
     const getProject = () => {
-        return api.get<Project>("/project/" + id);
+        return api.get<Project>("/api/project/" + id);
     }
 
     const reloadParent = useContext(ParentRefresh)
@@ -79,7 +79,7 @@ function EditForm({ project, reloadParent }: { project: Project, reloadParent: (
             ...values
         }
 
-        api.patch("/project/" + project.id, body).then(reloadParent)
+        api.patch("/api/project/" + project.id, body).then(reloadParent)
     }
     return (
         <Form {...form}>

@@ -76,7 +76,7 @@ function CreateFile({ parent }: { parent: string }) {
             ...values
         }
 
-        api.post("/file/", body, {
+        api.post("/api/file/", body, {
             headers: {
                 'parent-id': parent
             }
@@ -127,7 +127,7 @@ function CreateDirectory({ parent }: { parent: string }) {
             ...values
         }
 
-        api.post("/file/", body, {
+        api.post("/api/file/", body, {
             headers: {
                 'parent-id': parent
             }

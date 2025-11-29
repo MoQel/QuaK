@@ -50,7 +50,7 @@ export function ProjectManagerView({ onFileSelect }: { onFileSelect: (file: File
 
 async function fetchProjects() {
     try {
-        const projects = await api.get<IProject[]>("/project/");
+        const projects = await api.get<IProject[]>("/api/project/");
         const elements = [];
         if (projects.length == 0) {
             elements.push(<Empty key="empty" />)
@@ -85,7 +85,7 @@ function CreateProject({ reload }: { reload: () => void }) {
             ...values
         }
 
-        api.post("/project/", body).then(reload)
+        api.post("/api/project/", body).then(reload)
     }
 
     return (

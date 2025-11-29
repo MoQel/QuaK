@@ -43,7 +43,7 @@ import static org.springframework.http.HttpStatus.FORBIDDEN;
  * @author Henrik K
  */
 @RestController
-@RequestMapping("/file")
+@RequestMapping("/api/file")
 public class FileController {
 
     private static final Class<?>[] FILTER = {File.class, Directory.class};

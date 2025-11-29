@@ -29,7 +29,7 @@ import { api } from "@/utils/api";
  */
 export function Directory({ name, id }: { name: string, id: string }) {
     const icon = (open: boolean) => open ? <FolderOpen /> : <Folder />;
-    return <FileElementContainer name={name} id={id} getContent={fetchDirectoryContent} edit={DirectoryEdit} icon={icon} deletePath={"/file/" + id} />
+    return <FileElementContainer name={name} id={id} getContent={fetchDirectoryContent} edit={DirectoryEdit} icon={icon} deletePath={"/api/file/" + id} />
 }
 
 /**
@@ -40,7 +40,7 @@ export function Directory({ name, id }: { name: string, id: string }) {
  */
 function DirectoryEdit(id: string, openDialog: (element: Promise<JSX.Element>) => void) {
     const getDir = () => {
-        return api.get<IDirectory>("/file/" + id)
+        return api.get<IDirectory>("/api/file/" + id)
             .then((obj) => {
                 if (obj.type === "directory") {
                     return obj
@@ -89,7 +89,7 @@ function EditForm({ dir, reloadParent }: { dir: IDirectory, reloadParent: () => 
             ...values
         }
 
-        api.patch("/file/" + dir.id, body).then(reloadParent)
+        api.patch("/api/file/" + dir.id, body).then(reloadParent)
     }
     return (
         <Form {...form}>
@@ -108,7 +108,7 @@ function EditForm({ dir, reloadParent }: { dir: IDirectory, reloadParent: () => 
 }
 
 async function fetchDirectoryContent(id: string) {
-    const dir = await api.get<IDirectory>("/file/" + id);
+    const dir = await api.get<IDirectory>("/api/file/" + id);
     const elements = [];
     for (const element of sort(dir.contents)) {
         elements.push(getElementForFileElement(element))

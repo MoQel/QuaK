@@ -44,7 +44,7 @@ export function File(file: IFile) {
                 </ContextMenuTrigger>
                 <ContextMenuContent>
                     {FileEdit(id, dialogTrigger)}
-                    <Delete endpoint={"/file/" + id} openDialog={dialogTrigger} />
+                    <Delete endpoint={"/api/file/" + id} openDialog={dialogTrigger} />
                 </ContextMenuContent>
             </ContextMenu>
             <DialogContent>
@@ -56,7 +56,7 @@ export function File(file: IFile) {
 
 function FileEdit(id: string, trigger: (element: Promise<JSX.Element>) => void) {
     const getDir = () => {
-        return api.get<IFile>("/file/" + id)
+        return api.get<IFile>("/api/file/" + id)
             .then((obj) => {
                 if (obj.type === "file") {
                     return obj
@@ -105,7 +105,7 @@ function EditForm({ file, reloadParent }: { file: IFile, reloadParent: () => voi
             ...values
         }
 
-        api.patch("/file/" + file.id, body).then(reloadParent)
+        api.patch("/api/file/" + file.id, body).then(reloadParent)
     }
     return (
         <Form {...form}>
