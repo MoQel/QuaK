@@ -21,6 +21,40 @@ If you wish to remove the custom nodejs install, run `gradlew :removeCustomNode`
 
 [gradle-node-plugin]: https://github.com/node-gradle/gradle-node-plugin
 
+## Docker Workflows
+
+### Development Workflow
+For active development with hot-reloading:
+
+1.  **Start Backend & Database:**
+    ```bash
+    sudo docker compose -f docker-compose.dev.yaml up --build
+    ```
+    *   Runs the Spring Boot backend on port `8080`.
+    *   Runs MariaDB on port `3306`.
+    *   *Note:* The backend does **not** serve frontend files in this mode.
+
+2.  **Start Frontend:**
+    In a new terminal:
+    ```bash
+    cd frontend
+    npm run dev
+    ```
+    *   Runs the Vite dev server on port `5173`.
+    *   Proxies API requests to `localhost:8080`.
+    *   Access the app at `http://localhost:5173`.
+
+### Production Workflow
+To simulate the production environment (single deployment unit):
+
+1.  **Build & Run Everything:**
+    ```bash
+    sudo docker compose -f docker-compose.prod.yaml up --build
+    ```
+    *   Builds the frontend and bundles it inside the backend JAR.
+    *   Runs the backend on port `8080`.
+    *   Access the app at `http://localhost:8080`.
+
 ## Deployment
 
 The project will automatically be deployed when a change to the _development_-branch happens.

@@ -1,16 +1,28 @@
 # Build stage
 FROM gradle:8.5-jdk21-alpine AS builder
 
+# Install Node.js and npm (needed for frontend build)
+RUN apk add --no-cache nodejs npm
+
 WORKDIR /app
 
-# Copy gradle files
-COPY build.gradle settings.gradle node.gradle ./
+# Copy gradle files (expecting root build context)
+COPY backend/build.gradle backend/settings.gradle backend/node.gradle ./
 
 # Copy source code
-COPY src ./src
+COPY backend/src ./src
 
-# Build the application (skip frontend build as we handle it separately in docker-compose)
-RUN gradle bootJar --no-daemon -x getFrontend -x cleanFrontendFiles -x npm_run_build
+# Copy frontend source code (for prod build)
+COPY frontend /frontend
+
+# Build the application
+# Default to skipping frontend (Dev mode), set to false for Prod
+ARG SKIP_FRONTEND=true
+RUN if [ "$SKIP_FRONTEND" = "true" ]; then \
+    gradle cleanFrontendFiles bootJar --no-daemon -x getFrontend -x npm_run_build; \
+    else \
+    gradle bootJar --no-daemon; \
+    fi
 
 # Runtime stage
 FROM amazoncorretto:21-alpine3.21
