@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
-import edu.kit.quak.Savable;
+import edu.kit.quak.files.Savable;
 import edu.kit.quak.files.configuration.CustomIdGenerator;
 import edu.kit.quak.files.configuration.FileElementResolver;
 import jakarta.persistence.Entity;

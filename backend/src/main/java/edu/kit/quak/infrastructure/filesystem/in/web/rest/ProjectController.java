@@ -1,0 +1,65 @@
+package edu.kit.quak.infrastructure.filesystem.in.web.rest;
+
+import edu.kit.quak.infrastructure.filesystem.in.web.dto.ProjectRequest;
+import edu.kit.quak.core.filesystem.model.Project;
+import edu.kit.quak.application.filesystem.ports.incoming.ProjectServicePort;
+import edu.kit.quak.infrastructure.filesystem.in.web.dto.ProjectContentsResponse;
+import edu.kit.quak.infrastructure.filesystem.in.web.dto.ProjectDetailsResponse;
+import edu.kit.quak.infrastructure.filesystem.in.web.mapper.ProjectMapper;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/project")
+public class ProjectController {
+
+    private final ProjectServicePort service;
+    private final ProjectMapper mapper;
+
+    public ProjectController(ProjectServicePort service, ProjectMapper mapper) {
+        this.service = service;
+        this.mapper = mapper;
+    }
+
+    @GetMapping({"", "/"})
+    public List<ProjectDetailsResponse> getProjects() {
+        List<Project> projects = service.listProjects();
+        return mapper.toDetailsResponseList(projects);
+    }
+
+    @PostMapping({"", "/"})
+    @ResponseStatus(HttpStatus.CREATED)
+    public ProjectDetailsResponse createProject(@RequestBody ProjectRequest request) {
+        Project projectToCreate = mapper.toDomain(request);
+        Project createdProject = service.createProject(projectToCreate, null); // project has no parent
+        return mapper.toDetailsResponse(createdProject);
+    }
+
+    @GetMapping("/{pId}")
+    public ProjectContentsResponse retrieveProject(@PathVariable String pId) {
+        Project project =  service.retrieveProject(pId).orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Given id does not map to a project")
+        );
+        return mapper.toContentsResponse(project);
+    }
+
+    @DeleteMapping("/{pId}")
+    public void deleteProject(@PathVariable String pId) {
+        try {
+            service.removeProject(pId);
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+        }
+    }
+
+    @PatchMapping("/{pId}")
+    public ProjectDetailsResponse renameProject(@PathVariable String pId, @RequestBody ProjectRequest request) {
+
+        Project updatedProject = service.renameProject(pId, request.name())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found"));
+        return mapper.toDetailsResponse(updatedProject);
+    }
+}
