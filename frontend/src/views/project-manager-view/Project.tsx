@@ -2,25 +2,22 @@ import {
     DialogDescription,
     DialogHeader, DialogTitle
 } from "@/components/ui/dialog.tsx";
-import {FileElementContainer} from "@/views/project-manager-view/FileElementContainer.tsx";
-import {API_ENDPOINT, ParentRefresh} from "@/views/project-manager-view/ProjectManagerView.tsx";
-import {z} from "zod";
-import {useForm} from "react-hook-form";
-import {zodResolver} from "@hookform/resolvers/zod";
-import {Form, FormControl, FormField, FormItem, FormLabel} from "@/components/ui/form.tsx";
-import {Input} from "@/components/ui/input.tsx";
-import {JSX, useContext} from "react";
-import {ContextMenuItem} from "@/components/ui/context-menu.tsx";
-import {ChevronDown, ChevronRight} from "lucide-react";
-import {getElementForFileElement, type Project, sort} from "@/views/project-manager-view/util/FileElement.tsx";
-import {DialogCloseButtons} from "@/views/project-manager-view/util/FormComponents.tsx";
+import { FileElementContainer } from "@/views/project-manager-view/FileElementContainer.tsx";
+import { ParentRefresh } from "@/views/project-manager-view/ProjectManagerView.tsx";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form.tsx";
+import { Input } from "@/components/ui/input.tsx";
+import { JSX, useContext } from "react";
+import { ContextMenuItem } from "@/components/ui/context-menu.tsx";
+import { ChevronDown, ChevronRight } from "lucide-react";
+import { getElementForFileElement, type Project, sort } from "@/views/project-manager-view/util/FileElement.tsx";
+import { DialogCloseButtons } from "@/views/project-manager-view/util/FormComponents.tsx";
+import { api } from "@/utils/api";
 
-async function fetchProjectContent(id : string) {
-    const response = await fetch(API_ENDPOINT + "/project/" + id, {
-        method: "GET",
-    })
-
-    const project = await response.json() as Project
+async function fetchProjectContent(id: string) {
+    const project = await api.get<Project>("/project/" + id);
     const elements = [];
     for (const element of sort(project.contents)) {
         elements.push(getElementForFileElement(element))
@@ -34,16 +31,14 @@ async function fetchProjectContent(id : string) {
  * @param id The id of the project
  * @constructor
  */
-export function Project({name, id}: {name: string, id: string}) {
-    const icon = (open: boolean) => open ? <ChevronDown/> : <ChevronRight/>;
-    return <FileElementContainer name={name} id={id} getContent={fetchProjectContent} edit={ProjectEdit} icon={icon} deletePath={API_ENDPOINT + "/project/" + id}/>
+export function Project({ name, id }: { name: string, id: string }) {
+    const icon = (open: boolean) => open ? <ChevronDown /> : <ChevronRight />;
+    return <FileElementContainer name={name} id={id} getContent={fetchProjectContent} edit={ProjectEdit} icon={icon} deletePath={"/project/" + id} />
 }
 
 function ProjectEdit(id: string, trigger: (element: Promise<JSX.Element>) => void) {
     const getProject = () => {
-        return fetch(API_ENDPOINT + "/project/" + id, {
-            method: "GET"
-        }).then((result) => result.json() as unknown as Project)
+        return api.get<Project>("/project/" + id);
     }
 
     const reloadParent = useContext(ParentRefresh)
@@ -56,7 +51,7 @@ function ProjectEdit(id: string, trigger: (element: Promise<JSX.Element>) => voi
                         Edit Project with id <i>{id}</i>
                     </DialogDescription>
                 </DialogHeader>
-                <EditForm project={proj} reloadParent={reloadParent}/>
+                <EditForm project={proj} reloadParent={reloadParent} />
             </>))
     }
 
@@ -65,7 +60,7 @@ function ProjectEdit(id: string, trigger: (element: Promise<JSX.Element>) => voi
     )
 }
 
-function EditForm({project, reloadParent}: {project: Project, reloadParent: () => void}) {
+function EditForm({ project, reloadParent }: { project: Project, reloadParent: () => void }) {
     const formSchema = z.object({
         name: z.string().min(1, {
             message: "Project name must be at least 1 characters.",
@@ -84,13 +79,7 @@ function EditForm({project, reloadParent}: {project: Project, reloadParent: () =
             ...values
         }
 
-        fetch(API_ENDPOINT + "/project/" + project.id, {
-            method: "PATCH",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify(body),
-        }).then(reloadParent)
+        api.patch("/project/" + project.id, body).then(reloadParent)
     }
     return (
         <Form {...form}>
@@ -98,16 +87,16 @@ function EditForm({project, reloadParent}: {project: Project, reloadParent: () =
                 <FormField
                     name="name"
                     control={form.control}
-                    render={({field}) => (
+                    render={({ field }) => (
                         <FormItem className="pb-2">
                             <FormLabel>Name</FormLabel>
                             <FormControl>
-                                <Input placeholder="Enter a new name" {...field}/>
+                                <Input placeholder="Enter a new name" {...field} />
                             </FormControl>
                         </FormItem>
                     )}
                 />
-                <DialogCloseButtons submit={"Save"}/>
+                <DialogCloseButtons submit={"Save"} />
             </form>
         </Form>
     )

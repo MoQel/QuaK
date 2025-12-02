@@ -9,15 +9,19 @@ services:
     volumes:
       - db:/var/lib/data
     healthcheck:
-      test: ["CMD", "mariadb-admin", "ping", "-h", "localhost", "--password=hello"]
+      test: [ "CMD", "mariadb-admin", "ping", "-h", "localhost", "--password=hello" ]
       interval: 1m
       timeout: 5s
       start_period: 1m
       start_interval: 5s
+    networks:
+      - quak-network
 
-
-  app:
-    build: backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: quak-backend
     ports:
       - "8080:8080"
     depends_on:
@@ -28,6 +32,17 @@ services:
       SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.mariadb.jdbc.Driver
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: hello
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    env_file:
+      - ./backend/.env
+    networks:
+      - quak-network
+    restart: unless-stopped
 
 volumes:
   db:
+
+
+networks:
+  quak-network:
+    driver: bridge

@@ -1,33 +1,33 @@
-CMD ["http-server", "dist", "-p", "5173", "--cors"]
-# Serve the application
-
-EXPOSE 5173
-# Expose port
-
-COPY --from=builder /app/dist ./dist
-# Copy built files from builder stage
-
-RUN npm install -g http-server
-# Install a simple HTTP server to serve the built files
-
-WORKDIR /app
-
-FROM node:20-alpine
-# Production stage
-
-RUN npm run build
-# Build the application
-
-COPY . .
-# Copy source code
-
-RUN npm ci
-# Install dependencies
-
-COPY package.json package-lock.json ./
-# Copy package files
-
-WORKDIR /app
-
+# Build stage
 FROM node:20-alpine as builder
 
+WORKDIR /app
+
+# Copy package files
+COPY package.json package-lock.json ./
+
+# Install dependencies
+RUN npm ci
+
+# Copy source code
+COPY . .
+
+# Build the application
+RUN npm run build
+
+# Production stage
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install a simple HTTP server to serve the built files
+RUN npm install -g http-server
+
+# Copy built files from builder stage
+COPY --from=builder /app/dist ./dist
+
+# Expose port
+EXPOSE 5173
+
+# Serve the application
+CMD ["http-server", "dist", "-p", "5173", "--cors"]

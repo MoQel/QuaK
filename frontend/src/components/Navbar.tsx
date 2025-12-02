@@ -1,10 +1,12 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Home, User, Settings } from 'lucide-react';
+import { Home, User, Settings, LogOut } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 export const Navbar: React.FC = () => {
   const location = useLocation();
+  const { user, logout } = useAuth();
 
   // Determine active tab based on current path
   const getActiveTab = () => {
@@ -52,8 +54,35 @@ export const Navbar: React.FC = () => {
           </TabsList>
         </Tabs>
       </div>
+
+      {user && (
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            {user.picture && (
+              <img
+                src={user.picture}
+                alt={user.name}
+                className="w-9 h-9 rounded-full border-2 border-blue-500"
+              />
+            )}
+            <div className="flex flex-col">
+              <span className="text-sm font-medium text-foreground">{user.name}</span>
+              <span className="text-xs text-muted-foreground">{user.email}</span>
+            </div>
+          </div>
+
+          <button
+            onClick={logout}
+            className="flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg transition-colors duration-200"
+          >
+            <LogOut className="size-4" />
+            <span className="text-sm font-medium">Logout</span>
+          </button>
+        </div>
+      )}
     </nav>
   );
 };
 
 export default Navbar;
+

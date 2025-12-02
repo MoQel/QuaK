@@ -35,9 +35,13 @@ import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+
+import org.springframework.security.test.context.support.WithMockUser;
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@WithMockUser
 class FileControllerTest extends QuaKApplicationTests {
 
     public static final String JSON_CONTENT_TYPE = "application/json";
@@ -67,7 +71,9 @@ class FileControllerTest extends QuaKApplicationTests {
                 post("/file/")
                         .content(sent.toString())
                         .contentType(JSON_CONTENT_TYPE)
+                        .contentType(JSON_CONTENT_TYPE)
                         .header("parent-id", parent.getId())
+                        .with(csrf())
                 ).andExpectAll(
                         status().isCreated(),
                         content().contentType(JSON_CONTENT_TYPE),
@@ -93,7 +99,9 @@ class FileControllerTest extends QuaKApplicationTests {
                 post("/file/")
                         .content(sent.toString())
                         .contentType(JSON_CONTENT_TYPE)
+                        .contentType(JSON_CONTENT_TYPE)
                         .header("parent-id", parent.getId())
+                        .with(csrf())
         ).andExpectAll(
                 status().isCreated(),
                 content().contentType(JSON_CONTENT_TYPE),
@@ -135,7 +143,7 @@ class FileControllerTest extends QuaKApplicationTests {
     @Test
     void deleteFile() throws Exception {
         File toDelete = files.save(new File("Fi", null));
-        mockMvc.perform(delete("/file/" + toDelete.getId()))
+        mockMvc.perform(delete("/file/" + toDelete.getId()).with(csrf()))
                 .andExpect(status().isOk());
         Assertions.assertTrue(files.findById(toDelete.getId()).isEmpty());
         mockMvc.perform(get("/file/"+toDelete.getId()))
@@ -145,7 +153,7 @@ class FileControllerTest extends QuaKApplicationTests {
     @Test
     void deleteDirectory() throws Exception {
         Directory toDelete = directories.save(new Directory("toDelete", null));
-        mockMvc.perform(delete("/file/" + toDelete.getId()))
+        mockMvc.perform(delete("/file/" + toDelete.getId()).with(csrf()))
                .andExpect(status().isOk());
         Assertions.assertTrue(directories.findById(toDelete.getId()).isEmpty());
         mockMvc.perform(get("/file/"+toDelete.getId()))
@@ -164,7 +172,9 @@ class FileControllerTest extends QuaKApplicationTests {
         mockMvc.perform(
                 patch("/file/" + toPatch.getId())
                         .contentType(JSON_CONTENT_TYPE)
+                        .contentType(JSON_CONTENT_TYPE)
                         .content(patch.toString())
+                        .with(csrf())
                ).andExpect(status().isOk());
 
         File patched = files.findById(toPatch.getId()).orElseThrow();
@@ -186,7 +196,9 @@ class FileControllerTest extends QuaKApplicationTests {
         mockMvc.perform(
                 patch("/file/" + toPatch.getId())
                         .contentType(JSON_CONTENT_TYPE)
+                        .contentType(JSON_CONTENT_TYPE)
                         .content(patch.toString())
+                        .with(csrf())
         ).andExpect(status().isOk());
 
         Directory patched = directories.findById(toPatch.getId()).orElseThrow();
@@ -206,7 +218,9 @@ class FileControllerTest extends QuaKApplicationTests {
         mockMvc.perform(
                 patch("/file/" + toPatch.getId())
                         .contentType(JSON_CONTENT_TYPE)
+                        .contentType(JSON_CONTENT_TYPE)
                         .content(patch.toString())
+                        .with(csrf())
         ).andExpect(status().isBadRequest());
 
         Directory patched = directories.findById(toPatch.getId()).orElseThrow();
@@ -227,7 +241,9 @@ class FileControllerTest extends QuaKApplicationTests {
         String contentHeader = mockMvc.perform(
                 put(String.format("/file/%s/content", file.getId()))
                         .content(content)
+                        .content(content)
                         .header("Content-Type", contentType)
+                        .with(csrf())
         ).andExpect(
                 status().isOk()
         ).andReturn().getRequest().getHeader("Content-Type");
@@ -258,7 +274,9 @@ class FileControllerTest extends QuaKApplicationTests {
         mockMvc.perform(
                 put(String.format("/file/%s/content", file.getId()))
                         .content(bytes)
+                        .content(bytes)
                         .contentType("*/*")
+                        .with(csrf())
         ).andExpect(
                 status().isOk()
         );
@@ -300,7 +318,9 @@ class FileControllerTest extends QuaKApplicationTests {
         mockMvc.perform(
                 put(String.format("/file/%s/content", dir.getElements()))
                         .contentType("text/plain")
+                        .contentType("text/plain")
                         .content("Hello World")
+                        .with(csrf())
         ).andExpect(
                 status().is4xxClientError()
         );
@@ -365,7 +385,9 @@ class FileControllerTest extends QuaKApplicationTests {
                 post("/file/")
                     .header("parent-id", parent.getId())
                     .contentType(JSON_CONTENT_TYPE)
+                    .contentType(JSON_CONTENT_TYPE)
                     .content(toSend.toString())
+                    .with(csrf())
         ).andExpectAll(
                 status().isBadRequest()
         );
@@ -389,7 +411,9 @@ class FileControllerTest extends QuaKApplicationTests {
                 post("/file/")
                         .header("parent-id", parent.getId())
                         .contentType(JSON_CONTENT_TYPE)
+                        .contentType(JSON_CONTENT_TYPE)
                         .content(toSend.toString())
+                        .with(csrf())
         ).andExpectAll(
                 status().isCreated()
         ).andReturn();
@@ -413,7 +437,7 @@ class FileControllerTest extends QuaKApplicationTests {
         directories.save(dir);
         projects.save(project);
 
-        mockMvc.perform(delete("/file/" + dir.getId()))
+        mockMvc.perform(delete("/file/" + dir.getId()).with(csrf()))
                .andExpectAll(
                        status().isOk()
                );
@@ -436,7 +460,7 @@ class FileControllerTest extends QuaKApplicationTests {
     void deleteFileInProject() throws Exception {
         File file = files.save(new File("", parent));
 
-        mockMvc.perform(delete("/file/" + file.getId()))
+        mockMvc.perform(delete("/file/" + file.getId()).with(csrf()))
                 .andExpectAll(status().isOk());
 
         assertTrue(files.findById(file.getId()).isEmpty());
@@ -452,7 +476,7 @@ class FileControllerTest extends QuaKApplicationTests {
     void deleteDirectoryInProject() throws Exception {
         Directory dir = directories.save(new Directory("", parent));
 
-        mockMvc.perform(delete("/file/" + dir.getId()))
+        mockMvc.perform(delete("/file/" + dir.getId()).with(csrf()))
                .andExpectAll(status().isOk());
 
         assertTrue(directories.findById(dir.getId()).isEmpty());

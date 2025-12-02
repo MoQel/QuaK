@@ -1,7 +1,7 @@
-import {API_ENDPOINT, FileSelect, ParentRefresh} from "@/views/project-manager-view/ProjectManagerView.tsx";
-import {FileCode} from "lucide-react";
-import {ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger} from "@/components/ui/context-menu.tsx";
-import {Delete} from "@/views/project-manager-view/Delete.tsx";
+import { FileSelect, ParentRefresh } from "@/views/project-manager-view/ProjectManagerView.tsx";
+import { FileCode } from "lucide-react";
+import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "@/components/ui/context-menu.tsx";
+import { Delete } from "@/views/project-manager-view/Delete.tsx";
 import {
     Dialog,
     DialogContent,
@@ -9,15 +9,16 @@ import {
     DialogHeader,
     DialogTitle
 } from "@/components/ui/dialog.tsx";
-import {JSX, useContext, useState} from "react";
-import {Skeleton} from "@/components/ui/skeleton.tsx";
-import {z} from "zod";
-import {useForm} from "react-hook-form";
-import {zodResolver} from "@hookform/resolvers/zod";
-import {Form, FormField} from "@/components/ui/form.tsx";
-import {File as IFile} from "@/views/project-manager-view/util/FileElement.tsx";
-import {DialogCloseButtons, TextInput} from "@/views/project-manager-view/util/FormComponents.tsx";
-import {ListingElement} from "@/views/project-manager-view/util/TreeComponents.tsx";
+import { JSX, useContext, useState } from "react";
+import { Skeleton } from "@/components/ui/skeleton.tsx";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Form, FormField } from "@/components/ui/form.tsx";
+import { File as IFile } from "@/views/project-manager-view/util/FileElement.tsx";
+import { DialogCloseButtons, TextInput } from "@/views/project-manager-view/util/FormComponents.tsx";
+import { ListingElement } from "@/views/project-manager-view/util/TreeComponents.tsx";
+import { api } from "@/utils/api";
 
 /**
  * Displays a {@link IFile File}
@@ -25,7 +26,7 @@ import {ListingElement} from "@/views/project-manager-view/util/TreeComponents.t
  * @constructor
  */
 export function File(file: IFile) {
-    const {name, id} = file
+    const { name, id } = file
     const [open, setOpen] = useState(false)
     const [dialogContent, setDialogContent] = useState(<Skeleton className="h-5 mt-5" />)
     const choose = useContext(FileSelect)
@@ -39,11 +40,11 @@ export function File(file: IFile) {
         <Dialog open={open} onOpenChange={setOpen}>
             <ContextMenu>
                 <ContextMenuTrigger onClick={() => choose(file)}>
-                        <ListingElement text={name} icon={<FileCode/>}/>
+                    <ListingElement text={name} icon={<FileCode />} />
                 </ContextMenuTrigger>
                 <ContextMenuContent>
                     {FileEdit(id, dialogTrigger)}
-                    <Delete path={API_ENDPOINT + "/file/" + id} openDialog={dialogTrigger}/>
+                    <Delete endpoint={"/file/" + id} openDialog={dialogTrigger} />
                 </ContextMenuContent>
             </ContextMenu>
             <DialogContent>
@@ -55,12 +56,10 @@ export function File(file: IFile) {
 
 function FileEdit(id: string, trigger: (element: Promise<JSX.Element>) => void) {
     const getDir = () => {
-        return fetch(API_ENDPOINT + "/file/" + id, {
-            method: "GET"
-        }).then((result) => result.json())
+        return api.get<IFile>("/file/" + id)
             .then((obj) => {
                 if (obj.type === "file") {
-                    return obj as IFile
+                    return obj
                 } else {
                     throw "Not a file"
                 }
@@ -77,7 +76,7 @@ function FileEdit(id: string, trigger: (element: Promise<JSX.Element>) => void) 
                         Edit file with id <i>{id}</i>.
                     </DialogDescription>
                 </DialogHeader>
-                <EditForm file={file} reloadParent={reloadParent}/>
+                <EditForm file={file} reloadParent={reloadParent} />
             </>))
     }
 
@@ -86,7 +85,7 @@ function FileEdit(id: string, trigger: (element: Promise<JSX.Element>) => void) 
     )
 }
 
-function EditForm({file, reloadParent}: {file: IFile, reloadParent: () => void}) {
+function EditForm({ file, reloadParent }: { file: IFile, reloadParent: () => void }) {
     const formSchema = z.object({
         name: z.string().min(1, {
             message: "Directory name must be at least 1 characters.",
@@ -106,13 +105,7 @@ function EditForm({file, reloadParent}: {file: IFile, reloadParent: () => void})
             ...values
         }
 
-        fetch(API_ENDPOINT + "/file/" + file.id, {
-            method: "PATCH",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify(body),
-        }).then(reloadParent)
+        api.patch("/file/" + file.id, body).then(reloadParent)
     }
     return (
         <Form {...form}>
@@ -120,11 +113,11 @@ function EditForm({file, reloadParent}: {file: IFile, reloadParent: () => void})
                 <FormField
                     name="name"
                     control={form.control}
-                    render={({field}) => (
-                        <TextInput placeholder="Enter a new name" label="Name" field={field}/>
+                    render={({ field }) => (
+                        <TextInput placeholder="Enter a new name" label="Name" field={field} />
                     )}
                 />
-                <DialogCloseButtons submit="Save"/>
+                <DialogCloseButtons submit="Save" />
             </form>
         </Form>
     )
