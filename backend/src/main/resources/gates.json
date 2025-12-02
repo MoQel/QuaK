@@ -84,7 +84,7 @@
     "qubitCount": 1
   },
   {
-    "name": "rz",
+    "name": "RZ",
     "symbol": "RZ",
     "type": "Quantum",
     "description": "Rotation around Z axis.",
