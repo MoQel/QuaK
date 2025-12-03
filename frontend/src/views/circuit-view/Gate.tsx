@@ -9,7 +9,7 @@ import {matrixContext} from "@/Context.tsx";
 
 export function Gate({id, type}: QuantumGate) {
 
-    const {attributes, listeners, setNodeRef, transform, transition, isDragging} = useSortable({
+    const {attributes, listeners, setNodeRef, transform, transition} = useSortable({
         id: id,
         data: {
             source: "circuit"
@@ -22,18 +22,17 @@ export function Gate({id, type}: QuantumGate) {
     const matrix = useContext(matrixContext)
     const Icon = GateIcons[type]
 
-    if (isDragging) {
-        return (
-            <div ref={setNodeRef}
-                 {...attributes}
-                 {...listeners}
-                 id={id}
-                 style={style}>
-                <Badge className={`${styles.gateDragging} ${type === 'DUMMY' ? 'invisible' : ''}`}>
-                </Badge>
-            </div>
-        )
-    }
+    const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
+        e.dataTransfer.setData(
+            "application/json",
+            JSON.stringify({
+                source: "circuit_editor",
+                id,
+                type
+            })
+        );
+    };
+
     return (
         <div ref={setNodeRef}
              {...attributes}
@@ -41,6 +40,8 @@ export function Gate({id, type}: QuantumGate) {
              id={id}
              style={style}
              onClick={() => matrix.removeGate(id)}
+             draggable
+             onDragStart={handleDragStart}
         >
             <Badge className={` ${styles.gate} ${type === 'DUMMY' ? 'invisible' : ''}`}>
                 <Icon/>

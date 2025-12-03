@@ -5,24 +5,23 @@ import {Gate} from "@/views/circuit-view/Gate.tsx"
 import {Button} from "@/components/ui/button"
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover"
 import {Input} from "@/components/ui/input.tsx";
-import {ChangeEvent, useContext, useState} from "react";
-import {matrixContext} from "@/Context.tsx";
+import {ChangeEvent, useState} from "react";
+import {API_ENDPOINT} from "@/views/project-manager-view/ProjectManagerView.tsx";
 
 type QuantumWiresProps = {
     name: string;
-    gates: QuantumGate[];
+    initGates: QuantumGate[];
     qubitIndex: number;
-    length: number;
 };
 
-export function Qubit({name, gates, qubitIndex, length}: QuantumWiresProps) {
+export function Qubit({name, initGates, qubitIndex}: Readonly<QuantumWiresProps>) {
     const {setNodeRef} = useSortable({
         id: qubitIndex,
     })
 
     const [qubitName, setQubitName] = useState<string>(name)
     const [tempName, setTempName] = useState<string>(qubitName)
-    const matrix = useContext(matrixContext)
+    const [gates, setGates] = useState<QuantumGate[]>(initGates)
     const maxLength = 4;
     const isTooLong = tempName.length > maxLength;
     const onNameChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -33,14 +32,46 @@ export function Qubit({name, gates, qubitIndex, length}: QuantumWiresProps) {
             setQubitName(tempName)
         }
     }
-    const deleteQubit = () => {
+    // TODO: Implement when backend API is ready
+    const deleteQubit = () => {}
 
-        matrix.setMatrixState((prev) => {
-            //Simple version of deletion, will get complicated with implementation of multi-gates
-            return prev.filter((_, index) => index !== qubitIndex);
-        });
+    const handleDrop = async (e: React.DragEvent, qubitIndex: number, position: number) => {
+        e.preventDefault();
+        const gateJson = e.dataTransfer.getData("application/json");
+        if (!gateJson) return;
 
-    }
+        const gate = JSON.parse(gateJson);
+
+        const payload = {
+            ...gate,
+            qubitIndex,
+            position,
+        };
+        try {
+            //TODO: Adapt to correct API point, when backend API is ready
+            const res = await fetch(`${API_ENDPOINT}/circuit/gate`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            });
+
+            const json = await res.json();
+
+            const filteredGates:QuantumGate[] = json
+                .filter((g: any) => g.qubit === name)
+                .map(({ qubit, ...gate }: { qubit: string } & QuantumGate) => gate);
+
+            setGates(filteredGates);
+            //TODO: Also recalculate maxWireLength in CircuitView
+        } catch (err) {
+            console.error("Drop failed:", err);
+        }
+    };
+
+    const allowDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+    };
+
     return (
         <div ref={setNodeRef} className="flex items-center space-x-2 pb-5">
             <div>
@@ -85,15 +116,28 @@ export function Qubit({name, gates, qubitIndex, length}: QuantumWiresProps) {
                 </Popover>
             </div>
 
-            <div className="relative" style={{width: `${length}px`, height: "40px"}}>
+            <div className="relative w-full" style={{height: "40px"}}>
 
                 <div className={`${styles.lines} absolute top-1/2 w-full`}/>
                 <div className="flex items-center h-full space-x-3 pl-3 relative z-10">
                     {/* Actual quantum Gates */}
                     <SortableContext items={gates} strategy={horizontalListSortingStrategy}>
                         {gates.map((gate, index) => (
-                            <Gate key={`${gate.type}-${qubitIndex}-${index}`} id={gate.id} type={gate.type}/>
+                            <div
+                                key={`${gate.type}-${qubitIndex}-${index}-div`}
+                                onDragOver={allowDrop}
+                                onDrop={(e) => handleDrop(e, qubitIndex, index)}
+                            >
+                                <Gate key={`${gate.type}-${qubitIndex}-${index}`} id={gate.id} type={gate.type}/>
+                            </div>
                         ))}
+                        <div
+                            key={`dummy-${qubitIndex}-div`}
+                            onDragOver={allowDrop}
+                            onDrop={(e) => handleDrop(e, qubitIndex, gates.length)}
+                        >
+                            <Gate key={`dummy-${qubitIndex}`} id={`dummy-${qubitIndex}-id`} type={'DUMMY'}/>
+                        </div>
                     </SortableContext>
                 </div>
             </div>
