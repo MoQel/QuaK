@@ -1,8 +1,19 @@
-# Build stage
-FROM gradle:8.5-jdk21-alpine AS builder
+# Build stage - use Debian-based image for better multi-arch support
+FROM eclipse-temurin:21-jdk-jammy AS builder
 
-# Install Node.js and npm (needed for frontend build)
-RUN apk add --no-cache nodejs npm
+# Install Gradle, Node.js and npm
+RUN apt-get update && \
+    apt-get install -y wget unzip curl && \
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y nodejs && \
+    wget https://services.gradle.org/distributions/gradle-8.5-bin.zip && \
+    unzip gradle-8.5-bin.zip && \
+    mv gradle-8.5 /opt/gradle && \
+    rm gradle-8.5-bin.zip && \
+    rm -rf /var/lib/apt/lists/*
+
+ENV GRADLE_HOME=/opt/gradle
+ENV PATH=$PATH:$GRADLE_HOME/bin
 
 WORKDIR /app
 
@@ -24,8 +35,8 @@ RUN if [ "$SKIP_FRONTEND" = "true" ]; then \
     gradle bootJar --no-daemon -PbuildFrontend=true; \
     fi
 
-# Runtime stage
-FROM amazoncorretto:21-alpine3.21
+# Runtime stage - use Debian-based for consistency
+FROM eclipse-temurin:21-jre-jammy
 
 WORKDIR /app
 
