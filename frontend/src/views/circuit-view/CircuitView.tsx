@@ -4,10 +4,10 @@ import {Button} from "@/components/ui/button.tsx";
 import {Minus, Plus, Trash} from "lucide-react";
 import {CircuitState} from "@/type/quantum.tsx";
 import {Fragment, useCallback, useState} from "react";
-import {QuantumGate} from "@/views/QuantumGate.tsx";
 import styles from "@/App.module.css";
 import {matrixContext} from "@/Context.tsx";
 import {useContext} from "react";
+import {CircuitCell} from "@/App.tsx"
 
 type CircuitViewProps = {
     maxWireLength: number
@@ -32,7 +32,7 @@ export function CircuitView({maxWireLength}: CircuitViewProps) {
             steps: prev.steps,
         }));
 
-        matrix.setMatrixState((prev: QuantumGate[][]): QuantumGate[][] => {
+        matrix.setMatrixState((prev: CircuitCell[][]): CircuitCell[][] => {
             // prevent removing the last qubit
             if (prev.length <= 1) return prev;
             return prev.slice(0, -1); // remove last qubit (wire)
@@ -44,8 +44,8 @@ export function CircuitView({maxWireLength}: CircuitViewProps) {
             qubits: Math.min(prev.qubits + 1, 20),
             steps: prev.steps,
         }));
-        matrix.setMatrixState((prev: QuantumGate[][]): QuantumGate[][] => {
-            return [...prev, [] as QuantumGate[]];  // new wire (empty array) appended
+        matrix.setMatrixState((prev: CircuitCell[][]): CircuitCell[][] => {
+            return [...prev, [] as CircuitCell[]];  // new wire (empty array) appended
         });
     }, [matrix]);
 

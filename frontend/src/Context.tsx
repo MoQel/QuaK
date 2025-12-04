@@ -1,9 +1,9 @@
 import { createContext, Dispatch, SetStateAction } from "react";
-import { QuantumGate } from "@/views/QuantumGate.tsx";
+import type { CircuitCell } from "./App"; // or better: from a shared types file
 
 type MatrixStateContextType = {
-    setMatrixState: Dispatch<SetStateAction<QuantumGate[][]>>;
-    matrixState: QuantumGate[][];
+    setMatrixState: Dispatch<SetStateAction<CircuitCell[][]>>;
+    matrixState: CircuitCell[][];
     removeGate: (gateId: string) => void; // 👈 added
 };
 

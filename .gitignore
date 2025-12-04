@@ -1,1 +1,9 @@
 **/.idea/
+.env
+
+# OS Junk files
+.DS_Store
+Thumbs.db
+
+# Global dependencies
+node_modules/

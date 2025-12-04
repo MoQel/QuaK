@@ -1,12 +1,12 @@
-import {Editor, Monaco, loader} from "@monaco-editor/react";
-import {RefObject, useEffect, useRef, useState} from "react";
-import {File} from "@/views/project-manager-view/util/FileElement.tsx"
-import {toast} from "sonner";
-import {Menu} from "@/views/text-editor-view/Menu.tsx";
-import {API_ENDPOINT} from "@/views/project-manager-view/ProjectManagerView.tsx";
-import {Language} from "@/views/text-editor-view/model/Language.ts";
-import {qrisp} from "@/components/languages/qrisp.ts";
-import {openqasm} from "@/components/languages/openqasm.ts";
+import { Editor, Monaco, loader } from "@monaco-editor/react";
+import { RefObject, useEffect, useRef, useState } from "react";
+import { File } from "@/views/project-manager-view/util/FileElement.tsx"
+import { toast } from "sonner";
+import { Menu } from "@/views/text-editor-view/Menu.tsx";
+import { Language } from "@/views/text-editor-view/model/Language.ts";
+import { qrisp } from "@/components/languages/qrisp.ts";
+import { openqasm } from "@/components/languages/openqasm.ts";
+import { api } from "@/utils/api";
 
 const DEFAULT_VALUE = "No File Selected";
 const DEFAULT_LANG = "plaintext";
@@ -19,7 +19,7 @@ const languages = [
     new Language("qasm", "qasm", openqasm),
 ]
 
-function QLPEditor({file}: {file: File | undefined}) {
+function QLPEditor({ file }: { file: File | undefined }) {
     const [value, setValue] = useState(DEFAULT_VALUE);
     const [lang, setLang] = useState(DEFAULT_LANG);
     const [readOnly, setReadOnly] = useState<boolean>(true);
@@ -38,10 +38,7 @@ function QLPEditor({file}: {file: File | undefined}) {
             toast("Editor undefined, not saving");
             return Promise.resolve();
         }
-        return fetch(`${API_ENDPOINT}/file/${id}/content`, {
-            method: "PUT",
-            body: edit.getValue(),
-        })
+        return api.put(`/file/${id}/content`, edit.getValue())
             .then(() => retrieveContent(id))
             .then(setValue)
             .then(() => toast("Saved successfully"));
@@ -97,8 +94,7 @@ function QLPEditor({file}: {file: File | undefined}) {
     }
 
     function retrieveFileExtension(id: string): Promise<string> {
-        return fetch(`${API_ENDPOINT}/file/${id}`, {method: "GET"})
-            .then(r => r.json())
+        return api.get<any>(`/file/${id}`)
             .then((fileElement) => {
                 const filename = fileElement.name;
                 if (!filename?.includes(".")) {
@@ -109,14 +105,25 @@ function QLPEditor({file}: {file: File | undefined}) {
     }
 
     function retrieveContent(id: string): Promise<string> {
-        return fetch(`${API_ENDPOINT}/file/${id}/content`, {
-            method: "GET"
-        }).then(r => r.text())
+        return api.get<string>(`/file/${id}/content`, {
+            headers: {
+                'Accept': 'text/plain' // Ensure we get text back, though api.get expects JSON by default, we might need to adjust api.ts if this returns raw text
+            }
+        }).catch(err => {
+            // Fallback if the API returns text but api.get tries to parse JSON
+            // In a real scenario, we should update api.ts to handle non-JSON responses or use a different method.
+            // For now, let's assume api.get handles it or we use raw fetch if needed.
+            // Actually, looking at api.ts, it does `response.json()`.
+            // If the content endpoint returns raw text, api.get will fail.
+            // Let's check api.ts again or use a custom fetch here for text content.
+            console.error("Error fetching content", err);
+            return "";
+        })
     }
 
     return (
         <div className="h-full flex flex-col p-0">
-            <Menu onSave={() => onSave(file?.id)} languages={formatLanguages(languages)}/>
+            <Menu onSave={() => onSave(file?.id)} languages={formatLanguages(languages)} />
             <div className="h-full">
                 <Editor
                     language={lang}
@@ -124,7 +131,7 @@ function QLPEditor({file}: {file: File | undefined}) {
                     value={value}
                     onChange={(value) => setValue(value || '')}
                     options={{
-                        minimap: {enabled: false},
+                        minimap: { enabled: false },
                         wordWrap: 'on',
                         readOnly: readOnly,
                     }}

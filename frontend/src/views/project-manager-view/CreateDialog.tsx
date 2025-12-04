@@ -1,17 +1,18 @@
-import {DialogHeader, DialogTitle,} from "@/components/ui/dialog.tsx";
-import {Form, FormField} from "@/components/ui/form.tsx";
-import {z} from "zod"
-import {useForm} from "react-hook-form";
-import {zodResolver} from "@hookform/resolvers/zod";
-import {API_ENDPOINT, ParentRefresh} from "@/views/project-manager-view/ProjectManagerView.tsx";
-import {JSX, useContext} from "react";
+import { DialogHeader, DialogTitle, } from "@/components/ui/dialog.tsx";
+import { Form, FormField } from "@/components/ui/form.tsx";
+import { z } from "zod"
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { ParentRefresh } from "@/views/project-manager-view/ProjectManagerView.tsx";
+import { JSX, useContext } from "react";
 import {
     ContextMenuItem,
     ContextMenuSub,
     ContextMenuSubContent,
     ContextMenuSubTrigger
 } from "@/components/ui/context-menu";
-import {DialogCloseButtons, TextInput} from "@/views/project-manager-view/util/FormComponents.tsx";
+import { DialogCloseButtons, TextInput } from "@/views/project-manager-view/util/FormComponents.tsx";
+import { api } from "@/utils/api";
 
 /**
  * Provides a {@link ContextMenuItem} that allows for the creation of {@link FileElement FileElements}.
@@ -19,7 +20,7 @@ import {DialogCloseButtons, TextInput} from "@/views/project-manager-view/util/F
  * @param openDialog A function that opens a dialog and displays the given elements after their promise resolves.
  * @constructor
  */
-export function CreateDialog({id, openDialog}: {id: string, openDialog: (element: Promise<JSX.Element>) => void}) {
+export function CreateDialog({ id, openDialog }: { id: string, openDialog: (element: Promise<JSX.Element>) => void }) {
     const dialog = (e: JSX.Element) => openDialog(Promise.resolve(e))
     return (
         <ContextMenuSub>
@@ -30,7 +31,7 @@ export function CreateDialog({id, openDialog}: {id: string, openDialog: (element
                         <DialogHeader>
                             <DialogTitle>Create a new file</DialogTitle>
                         </DialogHeader>
-                        <CreateFile parent={id}/>
+                        <CreateFile parent={id} />
                     </>
                 )}>
                     File
@@ -40,7 +41,7 @@ export function CreateDialog({id, openDialog}: {id: string, openDialog: (element
                         <DialogHeader>
                             <DialogTitle>Create a new Directory</DialogTitle>
                         </DialogHeader>
-                        <CreateDirectory parent={id}/>
+                        <CreateDirectory parent={id} />
                     </>
                 )}>
                     Directory
@@ -50,7 +51,7 @@ export function CreateDialog({id, openDialog}: {id: string, openDialog: (element
     )
 }
 
-function CreateFile({parent}: {parent: string}) {
+function CreateFile({ parent }: { parent: string }) {
     const reloadParent = useContext(ParentRefresh)
 
     const formSchema = z.object({
@@ -75,13 +76,10 @@ function CreateFile({parent}: {parent: string}) {
             ...values
         }
 
-        fetch(API_ENDPOINT + "/file/", {
-            method: "POST",
+        api.post("/file/", body, {
             headers: {
-                "Content-Type": "application/json",
                 'parent-id': parent
-            },
-            body: JSON.stringify(body),
+            }
         }).then(reloadParent)
     }
 
@@ -91,24 +89,24 @@ function CreateFile({parent}: {parent: string}) {
                 <FormField
                     control={form.control}
                     name="name"
-                    render={({field}) => (
-                        <TextInput placeholder="new_file.txt" label="Filename" field={field}/>
+                    render={({ field }) => (
+                        <TextInput placeholder="new_file.txt" label="Filename" field={field} />
                     )}
                 />
                 <FormField
                     control={form.control}
                     name="contentType"
-                    render={({field}) => (
-                        <TextInput placeholder="application/json" label="Content-Type" field={field}/>
+                    render={({ field }) => (
+                        <TextInput placeholder="application/json" label="Content-Type" field={field} />
                     )}
                 />
-                <DialogCloseButtons/>
+                <DialogCloseButtons />
             </form>
         </Form>
     )
 }
 
-function CreateDirectory({parent}: {parent: string}) {
+function CreateDirectory({ parent }: { parent: string }) {
     const reloadParent = useContext(ParentRefresh)
     const formSchema = z.object({
         name: z.string().min(1, {
@@ -129,13 +127,10 @@ function CreateDirectory({parent}: {parent: string}) {
             ...values
         }
 
-        fetch(API_ENDPOINT + "/file/", {
-            method: "POST",
+        api.post("/file/", body, {
             headers: {
-                "Content-Type": "application/json",
                 'parent-id': parent
-            },
-            body: JSON.stringify(body),
+            }
         }).then(reloadParent)
     }
 
@@ -145,11 +140,11 @@ function CreateDirectory({parent}: {parent: string}) {
                 <FormField
                     control={form.control}
                     name="name"
-                    render={({field}) => (
-                        <TextInput placeholder="folder" label="Name of the directory" field={field}/>
+                    render={({ field }) => (
+                        <TextInput placeholder="folder" label="Name of the directory" field={field} />
                     )}
                 />
-                <DialogCloseButtons/>
+                <DialogCloseButtons />
             </form>
         </Form>
     )

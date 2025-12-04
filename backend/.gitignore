@@ -1,3 +1,7 @@
+# Environment Variables
+.env
+.env.local
+
 HELP.md
 .gradle
 build/
@@ -6,6 +10,10 @@ build/
 !**/src/test/**/build/
 /src/main/resources/static/*
 !/src/main/resources/static/.gitkeep
+
+### Environment Variables ###
+.env
+.env.local
 
 ### STS ###
 .apt_generated
@@ -37,3 +45,4 @@ out/
 
 ### VS Code ###
 .vscode/
+

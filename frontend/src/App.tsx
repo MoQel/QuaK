@@ -1,11 +1,11 @@
-import {Dispatch, SetStateAction, useEffect, useMemo, useState} from "react";
+import { Dispatch, SetStateAction, useMemo, useState } from "react";
 
-import {ResizableHandle, ResizablePanel, ResizablePanelGroup} from "@/components/ui/resizable.tsx";
-import {GateLibraryView} from "@/views/library-view/GateLibraryView.tsx";
-import {CircuitView} from "@/views/circuit-view/CircuitView.tsx";
-import {TextEditorView} from "@/views/text-editor-view/TextEditorView.tsx";
-import {ProjectManagerView} from "@/views/project-manager-view/ProjectManagerView.tsx";
-import {ResultsView} from "@/views/results-view/ResultsView.tsx";
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable.tsx";
+import { GateLibraryView } from "@/views/library-view/GateLibraryView.tsx";
+import { CircuitView } from "@/views/circuit-view/CircuitView.tsx";
+import { TextEditorView } from "@/views/text-editor-view/TextEditorView.tsx";
+import { ProjectManagerView } from "@/views/project-manager-view/ProjectManagerView.tsx";
+import { ResultsView } from "@/views/results-view/ResultsView.tsx";
 import {
     closestCenter,
     DndContext,
@@ -17,7 +17,6 @@ import {
     useSensor,
     useSensors
 } from "@dnd-kit/core";
-import {QuantumGate} from "@/views/QuantumGate.tsx";
 import {quantumGates, type QuantumGatesInit} from "@/views/circuit-view/InitCircuit.tsx";
 import {v4 as uuidv4} from "uuid";
 import {Gate} from "./views/circuit-view/Gate.tsx";
@@ -28,17 +27,25 @@ import {File} from "@/views/project-manager-view/util/FileElement.tsx";
 import {InspectorView} from "@/views/inspector-view/InspectorView.tsx";
 import {matrixContext} from "./Context"
 
+    //temporarily object for circuit gates:
+    export type CircuitCell = {
+      type: string;  // Symbol from QuantumGate
+      id: string;
+    };
 
 function App() {
-
     const INITIAL_QUBITS = 20
 
-    const [matrixState, setMatrixState] = useState<QuantumGate[][]>(
+
+
+    const [matrixState, setMatrixState] = useState<CircuitCell[][]>(
         initializeMatrix(INITIAL_QUBITS, quantumGates)
     )
     const [activeQubit, setActiveQubit] = useState<number>()
-    const [activeGate, setActiveGate] = useState<QuantumGate>()
-    const [activeLibraryElement, setActiveLibraryElement] = useState<QuantumGate>()
+    const [activeGate, setActiveGate] = useState<CircuitCell>()
+    const [activeLibraryElement, setActiveLibraryElement] = useState<CircuitCell>()
+
+
 
     //returns the number of gates of the qubit with the most gates
     const maxQubitLength = useMemo(() => {
@@ -56,7 +63,7 @@ function App() {
         }
     }))
     /* Returns the gate object belonging to the gateId */
-    const findGate = (gateId: string): QuantumGate | undefined => {
+    const findGate = (gateId: string): CircuitCell  | undefined => {
         return matrixState.flat().find(gate => gate.id === gateId)
     }
 
@@ -80,14 +87,11 @@ function App() {
     }
 
 
-    useEffect(() => {
-        document.documentElement.classList.add('dark');
-    }, []);
     const [file, openFile]: [File, Dispatch<SetStateAction<File>>] = useState(undefined as unknown as File);
 
     //Creates new gate based on the type of the library element
     function createNewGate(e: DragStartEvent) {
-        const gate: QuantumGate = {
+        const gate: CircuitCell = {
             id: uuidv4(),
             type: e.active.data.current?.type
         }
@@ -109,7 +113,7 @@ function App() {
     }
 
     const handleDragOver = (event: DragOverEvent) => {
-        const {over} = event
+        const { over } = event
         if (!over) return;
         const overQubit = findQubit(over.id as string)
         if (overQubit !== -1) {
@@ -118,7 +122,7 @@ function App() {
     };
 
     const handleDragEnd = (event: DragEndEvent) => {
-        const {active, over} = event;
+        const { active, over } = event;
         if (!over) return;
 
         const activeGateId = active.id as string;
@@ -155,36 +159,36 @@ function App() {
                 onDragStart={handleDragStart}
                 collisionDetection={closestCenter}
             >
-                <div className="flex flex-col h-screen px-[10px]">
+                <div className="flex flex-col h-full px-[10px]">
                     <div className="flex flex-row h-2/3">
                         <div className="flex flex-grow-[2] w-full">
                             <ResizablePanelGroup direction="horizontal">
                                 <ResizablePanel defaultSize={20}>
-                                    <ProjectManagerView onFileSelect={openFile}/>
+                                    <ProjectManagerView onFileSelect={openFile} />
                                 </ResizablePanel>
-                                <ResizableHandle withHandle/>
+                                <ResizableHandle withHandle />
                                 <ResizablePanel>
                                     {/*
                                         To avoid prop drilling,
                                         use context provider that shares arguments to its children, without passing them
                                     */}
-                                    <matrixContext.Provider value={{matrixState, setMatrixState, removeGate}}>
+                                    <matrixContext.Provider value={{ matrixState, setMatrixState, removeGate }}>
                                         <CircuitView
                                             maxWireLength={maxQubitLength}
                                         />
                                     </matrixContext.Provider>
                                 </ResizablePanel>
-                                <ResizableHandle withHandle/>
+                                <ResizableHandle withHandle />
                                 <ResizablePanel className="flex-col h-full">
-                                    <TextEditorView file={file}/>
+                                    <TextEditorView file={file} />
                                 </ResizablePanel>
                             </ResizablePanelGroup>
                         </div>
                     </div>
                     <div className="flex flex-grow-[1] flex-row w-full">
-                        <GateLibraryView/>
-                        <InspectorView/>
-                        <ResultsView numberQubits={5}/>
+                        <GateLibraryView />
+                        <InspectorView />
+                        <ResultsView numberQubits={5} />
                     </div>
                 </div>
                 {createPortal(
@@ -195,31 +199,30 @@ function App() {
                     document.body
                 )}
             </DndContext>
-            <Toaster/>
+            <Toaster />
         </>
     );
 }
 
-
 function initializeMatrix(
     numberOfQubits: number,
     gates: QuantumGatesInit[]
-): QuantumGate[][] {
-    const quantumWires: QuantumGate[][] = []
+): CircuitCell[][] {
+    const quantumWires: CircuitCell[][] = []
     for (let i = 0; i < numberOfQubits; i++) {
         quantumWires[i] = []
     }
     for (const gate of gates) {
-        quantumWires[gate.qubit].push({type: gate.type, id: uuidv4()})
+        quantumWires[gate.qubit].push({type: gate.symbol, id: uuidv4()})
     }
 
     for (let i = 0; i < numberOfQubits; i++) {
-        quantumWires[i].push({type: "DUMMY", id: uuidv4()})
+        quantumWires[i].push({ type: "DUMMY", id: uuidv4() })
     }
     return quantumWires
 }
 
-function moveLibraryGate(setMatrixState: (value: (((prevState: QuantumGate[][]) => QuantumGate[][]) | QuantumGate[][])) => void, activeQubit: number | undefined, overGateId: string, findGate: (gateId: string) => (QuantumGate | undefined), findLastGate: (row: number) => (number), activeLibraryElement: QuantumGate) {
+function moveLibraryGate(setMatrixState: (value: (((prevState: CircuitCell[][]) => CircuitCell[][]) | CircuitCell[][])) => void, activeQubit: number | undefined, overGateId: string, findGate: (gateId: string) => (CircuitCell | undefined), findLastGate: (row: number) => (number), activeLibraryElement: CircuitCell) {
     setMatrixState((prev) => {
         const overRow = activeQubit;
         if (overRow === undefined) return prev;
@@ -239,7 +242,7 @@ function moveLibraryGate(setMatrixState: (value: (((prevState: QuantumGate[][]) 
     })
 }
 
-function moveCircuitGate(setMatrixState: (value: (((prevState: QuantumGate[][]) => QuantumGate[][]) | QuantumGate[][])) => void, findQubit: (gateId: string) => (number | number), activeGateId: string, activeQubit: number | undefined, overGateId: string, findGate: (gateId: string) => (QuantumGate | undefined), findLastGate: (row: number) => (number | number)) {
+function moveCircuitGate(setMatrixState: (value: (((prevState: CircuitCell[][]) => CircuitCell[][]) | CircuitCell[][])) => void, findQubit: (gateId: string) => (number | number), activeGateId: string, activeQubit: number | undefined, overGateId: string, findGate: (gateId: string) => (CircuitCell | undefined), findLastGate: (row: number) => (number | number)) {
     setMatrixState((prev) => {
         const activeRow = findQubit(activeGateId)
         const overRow = activeQubit;

@@ -11,3 +11,8 @@ This project is a web-based Quantum IDE designed to support intuitive quantum pr
     Multidirectional Sync – any change in the code updates the circuit, etc.
 
 The goal is to bridge textual and visual quantum programming, making development easier for both beginners and experts.
+
+## Development
+
+For linting use this command.
+`npm run lint`
