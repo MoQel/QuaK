@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
@@ -35,6 +36,7 @@ import java.util.function.Consumer;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 public class SecurityConfig {
 
     @Value("${app.frontend.url}")
@@ -86,6 +88,11 @@ public class SecurityConfig {
             )
             .exceptionHandling(exception -> exception
                 .authenticationEntryPoint(new org.springframework.security.web.authentication.HttpStatusEntryPoint(org.springframework.http.HttpStatus.UNAUTHORIZED))
+                .accessDeniedHandler((request, response, accessDeniedException) -> {
+                    response.setStatus(org.springframework.http.HttpStatus.FORBIDDEN.value());
+                    response.setContentType("application/json");
+                    response.getWriter().write("{\"error\":\"Access Denied\",\"message\":\"" + accessDeniedException.getMessage() + "\"}");
+                })
             );
 
         return http.build();
@@ -155,7 +162,8 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationSuccessHandler authenticationSuccessHandler(OidcUserSyncService oidcUserSyncService) {
+    public AuthenticationSuccessHandler authenticationSuccessHandler(
+            edu.kit.quak.application.filesystem.service.OidcUserSyncService oidcUserSyncService) {
         SimpleUrlAuthenticationSuccessHandler delegate = new SimpleUrlAuthenticationSuccessHandler();
         delegate.setDefaultTargetUrl(frontendUrl + "/");
         delegate.setAlwaysUseDefaultTargetUrl(true);
@@ -164,7 +172,7 @@ public class SecurityConfig {
             if (authentication.getPrincipal() instanceof org.springframework.security.oauth2.core.oidc.user.OidcUser oidcUser) {
                 if (authentication instanceof org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken oauthToken) {
                     String registrationId = oauthToken.getAuthorizedClientRegistrationId();
-                    edu.kit.quak.security.model.User user = oidcUserSyncService.syncUser(registrationId, oidcUser);
+                    edu.kit.quak.core.filesystem.model.User user = oidcUserSyncService.syncUser(registrationId, oidcUser);
                     request.getSession().setAttribute("userId", user.getId());
                 }
             }

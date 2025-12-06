@@ -1,4 +1,4 @@
-package edu.kit.quak.security.model;
+package edu.kit.quak.core.filesystem.model;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

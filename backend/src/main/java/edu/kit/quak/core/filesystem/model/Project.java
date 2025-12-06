@@ -1,4 +1,4 @@
-package edu.kit.quak.files.model;
+package edu.kit.quak.core.filesystem.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
@@ -49,15 +49,20 @@ public class Project extends FileElementContainer<Project> {
         return ID_PREFIX + base.toString();
     }
 
+    @Override
+    public java.util.Optional<Project> findProject() {
+        return java.util.Optional.of(this);
+    }
+
     @com.fasterxml.jackson.annotation.JsonIgnore
     @jakarta.persistence.ManyToOne
-    private edu.kit.quak.security.model.User owner;
+    private edu.kit.quak.core.filesystem.model.User owner;
 
-    public edu.kit.quak.security.model.User getOwner() {
+    public edu.kit.quak.core.filesystem.model.User getOwner() {
         return owner;
     }
 
-    public void setOwner(edu.kit.quak.security.model.User owner) {
+    public void setOwner(edu.kit.quak.core.filesystem.model.User owner) {
         this.owner = owner;
     }
 }

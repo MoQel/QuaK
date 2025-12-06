@@ -1,6 +1,8 @@
 package edu.kit.quak.files.model;
 
 import edu.kit.quak.QuaKApplicationTests;
+import edu.kit.quak.core.filesystem.model.File;
+import edu.kit.quak.core.filesystem.model.Project;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;

@@ -1,4 +1,4 @@
-package edu.kit.quak.files.model;
+package edu.kit.quak.core.filesystem.model;
 
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonGetter;
@@ -63,5 +63,10 @@ public abstract class FileElementContainer<SELF extends FileElementContainer<SEL
     @JsonFilter(DepthFilter.FILTER_NAME)
     public Collection<FileElement<?>> getElements() {
         return new HashSet<>(contents);
-    };
+    }
+
+    @Override
+    public java.util.Optional<Project> findProject() {
+        return getParent().flatMap(FileElement::findProject);
+    }
 }

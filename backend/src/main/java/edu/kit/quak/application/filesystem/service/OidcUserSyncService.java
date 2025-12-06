@@ -1,6 +1,6 @@
-package edu.kit.quak.security;
+package edu.kit.quak.application.filesystem.service;
 
-import edu.kit.quak.security.model.User;
+import edu.kit.quak.core.filesystem.model.User;
 import edu.kit.quak.security.repository.UserRepository;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.stereotype.Service;
@@ -8,6 +8,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 
+/**
+ * Service for synchronizing OIDC user information with the database.
+ * This service is called after successful OAuth2 login to ensure user data is up-to-date.
+ *
+ * @author QuaK Team
+ */
 @Service
 public class OidcUserSyncService {
 

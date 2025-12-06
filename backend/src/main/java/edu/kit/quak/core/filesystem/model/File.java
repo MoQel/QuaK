@@ -1,4 +1,4 @@
-package edu.kit.quak.files.model;
+package edu.kit.quak.core.filesystem.model;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -92,5 +92,10 @@ public class File extends FileElement<File> {
     @JsonGetter("createdOn")
     private long getCreatedOnLong() {
         return createdOn.getEpochSecond();
+    }
+
+    @Override
+    public java.util.Optional<Project> findProject() {
+        return getParent().flatMap(FileElement::findProject);
     }
 }

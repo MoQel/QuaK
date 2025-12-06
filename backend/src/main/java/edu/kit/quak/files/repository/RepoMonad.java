@@ -1,7 +1,7 @@
 package edu.kit.quak.files.repository;
 
-import edu.kit.quak.files.model.FileElement;
-import edu.kit.quak.files.model.FileElementContainer;
+import edu.kit.quak.core.filesystem.model.FileElement;
+import edu.kit.quak.core.filesystem.model.FileElementContainer;
 import org.springframework.data.repository.CrudRepository;
 
 /**

@@ -1,6 +1,6 @@
 package edu.kit.quak.files.repository.savers;
 
-import edu.kit.quak.files.model.Project;
+import edu.kit.quak.core.filesystem.model.Project;
 import edu.kit.quak.files.repository.ProjectRepository;
 import edu.kit.quak.files.repository.RepoMonad;
 import org.springframework.beans.factory.annotation.Autowired;

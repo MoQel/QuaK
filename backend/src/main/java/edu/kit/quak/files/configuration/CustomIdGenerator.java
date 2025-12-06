@@ -1,6 +1,6 @@
 package edu.kit.quak.files.configuration;
 
-import edu.kit.quak.files.model.FileElement;
+import edu.kit.quak.core.filesystem.model.FileElement;
 import org.hibernate.HibernateException;
 import org.hibernate.MappingException;
 import org.hibernate.annotations.IdGeneratorType;

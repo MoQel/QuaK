@@ -1,8 +1,8 @@
 package edu.kit.quak.files.repository.savers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import edu.kit.quak.files.model.FileElement;
-import edu.kit.quak.files.model.FileElementContainer;
+import edu.kit.quak.core.filesystem.model.FileElement;
+import edu.kit.quak.core.filesystem.model.FileElementContainer;
 import edu.kit.quak.files.repository.RepoMonad;
 import jakarta.transaction.Transactional;
 import org.springframework.data.repository.CrudRepository;

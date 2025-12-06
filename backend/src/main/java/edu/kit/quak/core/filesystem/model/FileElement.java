@@ -1,4 +1,4 @@
-package edu.kit.quak.files.model;
+package edu.kit.quak.core.filesystem.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -99,6 +99,15 @@ public abstract class FileElement<SELF extends FileElement<?>> implements Savabl
         return Optional.ofNullable(parent);
     }
 
+    /**
+     * Finds the root project for this file element.
+     * This method is implemented polymorphically by subclasses.
+     *
+     * @return The project this element belongs to, or empty if not associated with a project
+     */
+    @JsonIgnore
+    public abstract Optional<Project> findProject();
+
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
@@ -109,16 +118,5 @@ public abstract class FileElement<SELF extends FileElement<?>> implements Savabl
     @Override
     public int hashCode() {
         return Objects.hash(name, parent);
-    }
-
-    @JsonIgnore
-    public Project getProject() {
-        if (this instanceof Project) {
-            return (Project) this;
-        }
-        if (getParent().isPresent()) {
-            return getParent().get().getProject();
-        }
-        return null;
     }
 }

@@ -1,7 +1,7 @@
 package edu.kit.quak.files.repository.savers;
 
-import edu.kit.quak.files.model.Directory;
-import edu.kit.quak.files.model.FileElement;
+import edu.kit.quak.core.filesystem.model.Directory;
+import edu.kit.quak.core.filesystem.model.FileElement;
 import edu.kit.quak.files.repository.DirectoryRepository;
 import edu.kit.quak.files.repository.RepoMonad;
 import org.springframework.beans.factory.annotation.Autowired;

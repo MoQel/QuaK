@@ -1,6 +1,6 @@
 package edu.kit.quak.files.repository.savers;
 
-import edu.kit.quak.files.model.File;
+import edu.kit.quak.core.filesystem.model.File;
 import edu.kit.quak.files.repository.FileRepository;
 import edu.kit.quak.files.repository.RepoMonad;
 import jakarta.persistence.EntityManager;

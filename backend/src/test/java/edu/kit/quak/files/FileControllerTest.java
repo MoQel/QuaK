@@ -5,9 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import edu.kit.quak.QuaKApplicationTests;
-import edu.kit.quak.files.model.Directory;
-import edu.kit.quak.files.model.File;
-import edu.kit.quak.files.model.Project;
+import edu.kit.quak.core.filesystem.model.Directory;
+import edu.kit.quak.core.filesystem.model.File;
+import edu.kit.quak.core.filesystem.model.Project;
 import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -37,7 +37,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 
-import edu.kit.quak.security.model.User;
+import edu.kit.quak.core.filesystem.model.User;
 import edu.kit.quak.security.repository.UserRepository;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.oidcLogin;
 
