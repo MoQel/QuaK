@@ -34,7 +34,7 @@ public class ProjectRestAdapter {
     @ResponseStatus(HttpStatus.CREATED)
     public ProjectDetailsResponse createProject(@RequestBody ProjectRequest request) {
         Project projectToCreate = mapper.toDomain(request);
-        Project createdProject = service.createProject(projectToCreate, null); // project has no parent
+        Project createdProject = service.createProject(projectToCreate); // project has no parent
         return mapper.toDetailsResponse(createdProject);
     }
 

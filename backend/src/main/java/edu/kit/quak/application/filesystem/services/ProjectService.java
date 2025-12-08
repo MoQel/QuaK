@@ -1,9 +1,8 @@
 package edu.kit.quak.application.filesystem.services;
 
-import edu.kit.quak.core.filesystem.model.FileElement;
-import edu.kit.quak.core.filesystem.model.Project;
 import edu.kit.quak.application.filesystem.ports.in.ProjectServicePort;
 import edu.kit.quak.application.filesystem.ports.out.ProjectRepositoryPort;
+import edu.kit.quak.core.filesystem.model.Project;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -18,15 +17,17 @@ public class ProjectService implements ProjectServicePort {
         this.repository = repository;
     }
 
-    // TODO: parentId?
     @Override
-    public Project createProject(Project container, String parentId) {
+    public Project createProject(Project container) {
         return repository.save(container);
     }
 
     @Override
     public Optional<Project> renameProject(String pId, String newName ) {
-        return Optional.empty();
+        Project project = repository.findById(pId)
+                .orElseThrow(() -> new IllegalArgumentException("Project not found with ID" + pId));
+        project.rename(newName);
+        return Optional.ofNullable(repository.save(project));
     }
 
     @Override
@@ -42,10 +43,5 @@ public class ProjectService implements ProjectServicePort {
     @Override
     public List<Project> listProjects() {
         return repository.getAllProjects();
-    }
-
-    @Override
-    public List<FileElement<?>> listImmediateChildren(String containerId) {
-        return repository.findImmediateChildren(containerId);
     }
 }
