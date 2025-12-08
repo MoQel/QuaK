@@ -1,7 +1,8 @@
 package edu.kit.quak.infrastructure.filesystem.in.web.rest.dto;
 
-public record DirectoryDetailsResponse(
-        String id,
-        String name,
-        String type
-) implements FileElementDto { }
+public class DirectoryDetailsResponse extends FileElementDto {
+
+    public DirectoryDetailsResponse(String id, String name, String type) {
+        super(id, name, type);
+    }
+}

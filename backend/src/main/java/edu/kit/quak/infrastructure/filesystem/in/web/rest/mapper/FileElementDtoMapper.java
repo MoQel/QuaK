@@ -1,23 +1,43 @@
 package edu.kit.quak.infrastructure.filesystem.in.web.rest.mapper;
 
-import edu.kit.quak.infrastructure.filesystem.in.web.rest.dto.DirectoryDetailsResponse;
-import edu.kit.quak.infrastructure.filesystem.in.web.rest.dto.FileDetailsResponse;
-import edu.kit.quak.infrastructure.filesystem.in.web.rest.dto.FileElementDto;
-import edu.kit.quak.infrastructure.filesystem.in.web.rest.dto.ProjectDetailsResponse;
 import edu.kit.quak.core.filesystem.model.Directory;
 import edu.kit.quak.core.filesystem.model.File;
 import edu.kit.quak.core.filesystem.model.FileElement;
-import edu.kit.quak.core.filesystem.model.Project;
+import edu.kit.quak.infrastructure.filesystem.in.web.rest.dto.FileElementDto;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingConstants;
-import org.mapstruct.SubclassMapping;
+import org.springframework.beans.factory.annotation.Autowired;
 
-@Mapper(componentModel = MappingConstants.ComponentModel.SPRING)
-public interface FileElementDtoMapper {
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
-    // Check runtime type of element from Set<FileElement<?>> returned as contents in directory and project
-    @SubclassMapping(source = File.class, target = FileDetailsResponse.class)
-    @SubclassMapping(source = Directory.class, target = DirectoryDetailsResponse.class)
-    @SubclassMapping(source = Project.class, target = ProjectDetailsResponse.class)
-    FileElementDto toDto(FileElement<?> element);
+@Mapper(componentModel = MappingConstants.ComponentModel.SPRING, uses = {FileDtoMapper.class, DirectoryDtoMapper.class})
+public abstract class FileElementDtoMapper {
+
+    @Autowired
+    protected FileDtoMapper fileMapper;
+
+    @Autowired
+    protected DirectoryDtoMapper directoryMapper;
+
+    public FileElementDto toDto(FileElement<?> element) {
+        if (element instanceof File file) {
+            return fileMapper.toDetailsResponse(file); // oder @Autowired Mapper, wenn Spring
+        } else if (element instanceof Directory dir) {
+            return directoryMapper.toDetailsResponse(dir);
+        } else {
+            throw new IllegalArgumentException("Unknown FileElement type: " + element.getClass());
+        }
+    }
+
+
+    public List<FileElementDto> mapSetToList(Set<FileElement<?>> set) {
+        if (set == null) {
+            return null;
+        }
+        return set.stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
+    }
 }
