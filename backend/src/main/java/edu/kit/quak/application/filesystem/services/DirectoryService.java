@@ -1,40 +1,64 @@
 package edu.kit.quak.application.filesystem.services;
 
+import edu.kit.quak.application.filesystem.delegator.FileElementContainerRepositoryDelegator;
 import edu.kit.quak.application.filesystem.ports.in.DirectoryServicePort;
-import edu.kit.quak.core.filesystem.model.Directory;
-import edu.kit.quak.core.filesystem.model.FileElement;
 import edu.kit.quak.application.filesystem.ports.out.DirectoryRepositoryPort;
+import edu.kit.quak.core.filesystem.model.Directory;
+import edu.kit.quak.core.filesystem.model.FileElementContainer;
+import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
 import java.util.Optional;
 
 @Service
 public class DirectoryService implements DirectoryServicePort {
 
     private final DirectoryRepositoryPort repository;
-    public DirectoryService(DirectoryRepositoryPort repository) { this.repository = repository; }
+    private final FileElementContainerRepositoryDelegator delegator;
+    public DirectoryService(DirectoryRepositoryPort repository, FileElementContainerRepositoryDelegator delegator) {
+        this.repository = repository;
+        this.delegator = delegator;
+    }
 
     @Override
+    @Transactional
     public Directory createDirectory(Directory container, String parentId) {
-        return repository.save(container);
+        FileElementContainer<?> parent = delegator.findContainerById(parentId)
+                .orElseThrow(() -> new IllegalArgumentException("Parent not found with ID" + parentId));
+        // Creates bidirectional relationshipt
+        container.setParent(parent);
+        // Orchestrate container through aggregate root
+        delegator.save(parent);
+        return container;
     }
 
     @Override
+    @Transactional
     public Optional<Directory> renameDirectory(String dId, String newName) {
-        return Optional.empty();
+        Directory directory = repository.findById(dId)
+                .orElseThrow(() -> new IllegalArgumentException("Directory not found with ID" + dId));
+
+        FileElementContainer<?> parent = directory.getParent()
+                .orElseThrow(() -> new IllegalArgumentException("Directory has no parent corrupt state"));
+
+        parent.renameChild(directory, newName);
+        delegator.save(parent);
+        return Optional.of(directory);
     }
 
     @Override
-    public void removeDirectory(String id) { repository.deleteById(id); }
+    @Transactional
+    public void removeDirectory(String dId) {
+        Directory directory = repository.findById(dId)
+                .orElseThrow(() -> new IllegalArgumentException("Directory not found with ID: " + dId));
+        FileElementContainer<?> parent = directory.getParent()
+                .orElseThrow(() -> new IllegalArgumentException("Directory has no parent corrupt state"));
+        parent.removeElement(directory);
+        delegator.save(parent);
+    }
 
     @Override
     public Optional<Directory> retrieveDirectory(String id) {
         return repository.findById(id);
-    }
-
-    @Override
-    public List<FileElement<?>> listImmediateChildren(String containerId) {
-        return repository.findImmediateChildren(containerId);
     }
 }

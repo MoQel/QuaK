@@ -59,8 +59,7 @@ public class FileService implements FileServicePort {
         FileElementContainer<?> parent = file.getParent()
                 .orElseThrow(() -> new IllegalStateException("File has no parent — corrupt state"));
 
-        file.rename(newName);
-
+        parent.renameChild(file, newName);
         delegator.save(parent);
         return Optional.of(file);
     }
