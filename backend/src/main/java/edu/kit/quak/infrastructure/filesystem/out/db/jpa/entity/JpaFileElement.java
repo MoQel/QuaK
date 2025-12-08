@@ -4,9 +4,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
-import edu.kit.quak.files.configuration.CustomIdGenerator;
 import edu.kit.quak.infrastructure.filesystem.out.db.jpa.configuration.FileElementResolver;
 import jakarta.persistence.*;
+import org.hibernate.annotations.UuidGenerator;
 
 /**
  * JPA Entity for Storage
@@ -25,14 +25,16 @@ public abstract class JpaFileElement<SELF extends JpaFileElement<?>> {
 
     @JsonProperty
     @Id
-    @CustomIdGenerator.FileElementId
+    @GeneratedValue
+    @UuidGenerator
     private String id;
 
     @JsonProperty
     private String name;
 
     @JsonIgnore
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn
     private JpaFileElementContainer<?> parent;
 
     protected JpaFileElement() { }
@@ -52,5 +54,4 @@ public abstract class JpaFileElement<SELF extends JpaFileElement<?>> {
 
     @JsonProperty(TYPE_FIELD)
     public abstract String getTypeIdentifier();
-    public abstract String generateId(Object base);
 }

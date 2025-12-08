@@ -41,7 +41,8 @@ public abstract class FileElement<SELF extends FileElement<?>> {
     public void setId(String id) { this.id = id; }
 
     public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
+    protected void setName(String name) { this.name = name; }
+    public void rename(String name) { this.name = name; }
 
     public Optional<FileElementContainer<?>> getParent() {
         return Optional.ofNullable(parent);
@@ -52,7 +53,6 @@ public abstract class FileElement<SELF extends FileElement<?>> {
     }
 
     public abstract String getTypeIdentifier();
-    public abstract String generateId(Object base);
     public abstract char getIdPrefix();
     //endregion
 

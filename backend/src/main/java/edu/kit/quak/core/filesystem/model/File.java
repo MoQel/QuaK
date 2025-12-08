@@ -41,11 +41,6 @@ public class File extends FileElement<File> {
     @Override
     public char getIdPrefix() { return ID_PREFIX; }
 
-    @Override
-    public String generateId(Object base) {
-        return ID_PREFIX + base.toString();
-    }
-
     public void setLastAccessNow() {
         setLastAccess(Instant.now());
     }

@@ -33,9 +33,6 @@ public class Project extends FileElementContainer<Project> {
     public String getTypeIdentifier() {
         return TYPE_IDENTIFIER;
     }
-
     @Override
-    public String generateId(Object base) {
-        return ID_PREFIX + base.toString();
-    }
+    public char getIdPrefix() { return ID_PREFIX; }
 }

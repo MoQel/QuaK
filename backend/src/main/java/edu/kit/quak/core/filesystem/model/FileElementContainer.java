@@ -1,6 +1,5 @@
 package edu.kit.quak.core.filesystem.model;
 
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -39,14 +38,14 @@ public abstract class FileElementContainer<SELF extends FileElementContainer<SEL
         contents.add(element);
     }
 
-    public Set<FileElement<?>> getContents() {
-        return contents;
+    public void renameChild(FileElement<?> element, String newName) {
+        if (!contents.contains(element)) {
+            throw new IllegalArgumentException("Element does not belong to this container");
+        }
+        element.rename(newName);
     }
 
-    /**
-     * @return A defensive copy of the contained elements inside this container
-     */
-    public Set<FileElement<?>> getElements() {
-        return Set.copyOf(contents);
+    public Set<FileElement<?>> getContents() {
+        return contents;
     }
 }

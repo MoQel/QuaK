@@ -13,7 +13,7 @@ import java.util.*;
 public abstract class JpaFileElementContainer<SELF extends JpaFileElementContainer<SELF>> extends JpaFileElement<SELF> {
     
     @JsonIgnore
-    @OneToMany(mappedBy = "parent", orphanRemoval = true, cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "parent", orphanRemoval = true, cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     protected Set<JpaFileElement<?>> contents = new HashSet<>();
 
     public JpaFileElementContainer(String name, JpaFileElementContainer<?> parent) {

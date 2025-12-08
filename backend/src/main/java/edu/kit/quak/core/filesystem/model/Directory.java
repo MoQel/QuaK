@@ -34,7 +34,5 @@ public class Directory extends FileElementContainer<Directory> {
     }
 
     @Override
-    public String generateId(Object base) {
-        return ID_PREFIX + base.toString();
-    }
+    public char getIdPrefix() { return ID_PREFIX; }
 }
