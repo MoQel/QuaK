@@ -7,12 +7,6 @@ package edu.kit.quak.application.filesystem.ports.out;
 public interface FileElementRepositoryPort {
 
     /**
-     * Deletes a FileElement by its ID.
-     * @param id The ID of the element to delete.
-     */
-    void deleteById(String id);
-
-    /**
      * Search a FileElement by its ID.
      * @param id The ID of the element to delete.
      * @return Whether the element exists.

@@ -11,14 +11,4 @@ public interface FileRepositoryPort extends FileElementRepositoryPort {
      * @return The domain object, if found.
      */
     Optional<File> findById(String fId);
-
-    /**
-     * Saves or updates a File and returns the saved instance.
-     *
-     * @param element The domain object to save.
-     * @return The saved domain object.
-     */
-    File save(File element);
-
-    Optional<File> rename(String fId, String newName);
 }

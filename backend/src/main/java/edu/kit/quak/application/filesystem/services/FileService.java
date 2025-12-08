@@ -1,6 +1,7 @@
 package edu.kit.quak.application.filesystem.services;
 
 import edu.kit.quak.application.filesystem.delegator.FileElementContainerRepositoryDelegator;
+import edu.kit.quak.application.filesystem.ports.out.FileContentRepositoryPort;
 import edu.kit.quak.core.filesystem.model.File;
 import edu.kit.quak.core.filesystem.model.FileElementContainer;
 import edu.kit.quak.application.filesystem.ports.in.FileServicePort;
@@ -14,10 +15,12 @@ import java.util.Optional;
 public class FileService implements FileServicePort {
 
     private final FileRepositoryPort repository;
+    private final FileContentRepositoryPort contentRepository;
     private final FileElementContainerRepositoryDelegator delegator;
 
-    public FileService(FileRepositoryPort repository, FileElementContainerRepositoryDelegator delegator) {
+    public FileService(FileRepositoryPort repository, FileContentRepositoryPort contentRepository, FileElementContainerRepositoryDelegator delegator) {
         this.repository = repository;
+        this.contentRepository = contentRepository;
         this.delegator = delegator;
     }
 
@@ -28,7 +31,8 @@ public class FileService implements FileServicePort {
         FileElementContainer<?> parent = delegator.findContainerById(parentId)
                 .orElseThrow(() -> new IllegalArgumentException("Parent not found with ID" + parentId));
         element.setParent(parent);
-        return repository.save(element);
+        delegator.save(parent);
+        return element;
     }
     // endregion Create
 
@@ -39,9 +43,9 @@ public class FileService implements FileServicePort {
     }
 
     @Override
-    public Optional<byte[]> getFileContent(String fileId) {
-        return retrieveFile(fileId)
-                .map(File::getContent);
+    @Transactional
+    public Optional<byte[]> getFileContent(String fId) {
+        return contentRepository.loadContent(fId);
     }
     // endregion Retrieve
 
@@ -49,7 +53,16 @@ public class FileService implements FileServicePort {
     @Override
     @Transactional
     public Optional<File> renameFile(String fId, String newName) {
-        return repository.rename(fId, newName);
+        File file = repository.findById(fId)
+                .orElseThrow(() -> new IllegalArgumentException("File not found with ID" + fId));
+
+        FileElementContainer<?> parent = file.getParent()
+                .orElseThrow(() -> new IllegalStateException("File has no parent — corrupt state"));
+
+        file.rename(newName);
+
+        delegator.save(parent);
+        return Optional.of(file);
     }
 
     @Override
@@ -57,10 +70,15 @@ public class FileService implements FileServicePort {
     public void setFileContent(String fileId, byte[] content, String contentType) {
         File file = retrieveFile(fileId)
                 .orElseThrow(() -> new IllegalArgumentException("File not found with ID: " + fileId));
-        file.setContent(content);
-        file.setContentType(contentType);
+
+        FileElementContainer<?> parent = file.getParent()
+                .orElseThrow(() -> new IllegalStateException("File has no parent — corrupt state"));
+
         file.setLastAccessNow();
-        repository.save(file);
+        file.setContentType(contentType);  // domain state
+
+        contentRepository.saveContent(file.getId(), content);
+        delegator.save(parent);
     }
     // endregion Update
 
@@ -74,6 +92,7 @@ public class FileService implements FileServicePort {
                         .orElseThrow(() -> new IllegalArgumentException("File has no parent corrupt state"));
         parent.removeElement(file);
         delegator.save(parent);
+        contentRepository.deleteContent(fId);
     }
     // endregion Delete
 }

@@ -50,6 +50,11 @@ public class File extends FileElement<File> {
         setLastAccess(Instant.now());
     }
 
+    public void rename(String newName) {
+        setName(newName);
+        setLastAccessNow();
+    }
+
     public Instant getLastAccess() { return lastAccess; }
     public void setLastAccess(Instant lastAccess) {
         this.lastAccess = lastAccess;

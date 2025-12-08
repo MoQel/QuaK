@@ -25,23 +25,18 @@ public abstract class FileElementContainer<SELF extends FileElementContainer<SEL
     /**
      * Removes the given element from this container
      * @param element The element to remove
-     * @return {@code true} if this set contained the specified element
      */
-    public boolean removeElement(FileElement<?> element) {
-        return contents.remove(element);
+    public void removeElement(FileElement<?> element) {
+        element.setParent(null);
+        contents.remove(element);
     }
 
     /**
      * Adds the given {@code element} to this container
      * @param element The element to add
-     * @return {@code true} if this set did not already contain the specified element
      */
-    public boolean addElement(FileElement<?> element) {
-        return contents.add(element);
-    }
-
-    public boolean addElements(Collection<FileElement<?>> elements) {
-        return contents.addAll(elements);
+    public void addElement(FileElement<?> element) {
+        contents.add(element);
     }
 
     public Set<FileElement<?>> getContents() {
