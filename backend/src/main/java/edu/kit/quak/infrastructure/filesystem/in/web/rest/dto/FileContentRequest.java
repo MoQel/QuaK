@@ -1,6 +1,6 @@
 package edu.kit.quak.infrastructure.filesystem.in.web.rest.dto;
 
-public record FileContentDto(
+public record FileContentRequest(
         byte[] content,
         String contentType
 ) {}

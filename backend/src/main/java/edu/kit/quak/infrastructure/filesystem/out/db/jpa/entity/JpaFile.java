@@ -1,10 +1,8 @@
 package edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Lob;
 
 import java.time.Instant;
 
@@ -26,10 +24,6 @@ public class JpaFile extends JpaFileElement<JpaFile> {
 
     @JsonProperty
     private String contentType;
-
-    @Lob
-    @JsonIgnore
-    private byte[] content;
 
     protected JpaFile() {
         super();
@@ -56,8 +50,6 @@ public class JpaFile extends JpaFileElement<JpaFile> {
     //region getter and setter
     public String getContentType() { return contentType; }
     public void setContentType(String contentType) { this.contentType = contentType; }
-    public byte[] getContent() { return content; }
-    public void setContent(byte[] content) { this.content = content; }
     public Instant getLastAccess() { return lastAccess; }
     public void setLastAccess(Instant lastAccess) { this.lastAccess = lastAccess; }
     public Instant getCreatedOn() { return createdOn; }

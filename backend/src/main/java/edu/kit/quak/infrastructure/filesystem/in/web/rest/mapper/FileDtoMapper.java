@@ -1,9 +1,9 @@
 package edu.kit.quak.infrastructure.filesystem.in.web.rest.mapper;
 
-import edu.kit.quak.infrastructure.filesystem.in.web.rest.dto.CreateFileRequest;
-import edu.kit.quak.infrastructure.filesystem.in.web.rest.dto.FileContentDto;
-import edu.kit.quak.infrastructure.filesystem.in.web.rest.dto.FileDetailsResponse;
 import edu.kit.quak.core.filesystem.model.File;
+import edu.kit.quak.infrastructure.filesystem.in.web.rest.dto.CreateFileRequest;
+import edu.kit.quak.infrastructure.filesystem.in.web.rest.dto.FileContentResponse;
+import edu.kit.quak.infrastructure.filesystem.in.web.rest.dto.FileDetailsResponse;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
@@ -20,5 +20,5 @@ public interface FileDtoMapper {
     @Mapping(target = "type", source = "domain.typeIdentifier")
     FileDetailsResponse toDetailsResponse(File domain);
 
-    FileContentDto toContentResponse(File domain);
+    FileContentResponse toContentResponse(byte[] content);
 }

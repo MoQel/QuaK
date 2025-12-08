@@ -15,7 +15,6 @@ public class File extends FileElement<File> {
     private Instant lastAccess;
     private Instant createdOn;
     private String contentType = MediaType.ALL_VALUE;
-    private byte[] content;
 
     protected File() {
         super();
@@ -39,6 +38,8 @@ public class File extends FileElement<File> {
     public String getTypeIdentifier() {
         return TYPE_IDENTIFIER;
     }
+    @Override
+    public char getIdPrefix() { return ID_PREFIX; }
 
     @Override
     public String generateId(Object base) {
@@ -57,9 +58,6 @@ public class File extends FileElement<File> {
     public String getContentType() { return contentType; }
 
     public void setContentType(String contentType) { this.contentType = contentType; }
-
-    public byte[] getContent() { return content; }
-    public void setContent(byte[] content) { this.content = content; }
 
 
     public Instant getCreatedOn() { return createdOn; }

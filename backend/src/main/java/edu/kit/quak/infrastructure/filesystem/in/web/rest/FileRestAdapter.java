@@ -1,9 +1,6 @@
 package edu.kit.quak.infrastructure.filesystem.in.web.rest;
 
-import edu.kit.quak.infrastructure.filesystem.in.web.rest.dto.CreateFileRequest;
-import edu.kit.quak.infrastructure.filesystem.in.web.rest.dto.FileContentDto;
-import edu.kit.quak.infrastructure.filesystem.in.web.rest.dto.FileDetailsResponse;
-import edu.kit.quak.infrastructure.filesystem.in.web.rest.dto.RenameFileRequest;
+import edu.kit.quak.infrastructure.filesystem.in.web.rest.dto.*;
 import edu.kit.quak.infrastructure.filesystem.in.web.rest.mapper.FileDtoMapper;
 import edu.kit.quak.core.filesystem.model.File;
 import edu.kit.quak.application.filesystem.ports.in.FileServicePort;
@@ -62,15 +59,15 @@ public class FileRestAdapter {
     }
 
     @GetMapping("/{fId}/content")
-    public FileContentDto getFileContent(@PathVariable String fId) {
-        File file = service.retrieveFile(fId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "File not found"));
-        return mapper.toContentResponse(file);
+    public FileContentResponse getFileContent(@PathVariable String fId) {
+        byte[] content = service.getFileContent(fId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No content found for file id: " + fId));
+        return mapper.toContentResponse(content);
     }
 
     @PutMapping("/{fId}/content")
     public void setFileContent(@PathVariable String fId,
-                               @RequestBody FileContentDto fileContent) {
+                               @RequestBody FileContentRequest fileContent) {
         try {
             service.setFileContent(fId, fileContent.content(), fileContent.contentType());
         } catch (Exception e) {
