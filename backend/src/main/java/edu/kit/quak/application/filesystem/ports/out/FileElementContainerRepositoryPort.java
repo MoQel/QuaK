@@ -19,11 +19,22 @@ public interface FileElementContainerRepositoryPort<T extends FileElementContain
     /**
      * Finds a FileElementContainer by its ID.
      * @param id The ID of the container.
-     * @return The domain object, if found.
+     * @return The FileElementContainer domain object, if found.
      */
     Optional<FileElementContainer<?>> findContainerById(String id);
 
+    /**
+     * Finds a Project or Directory by its ID.
+     * @param id The ID of the container.
+     * @return The Project or Directory domain object, if found.
+     */
+    Optional<T> findById(String id);
+
     T save(T container);
 
-    Optional<T> findById(String id);
+    /**
+     * Deletes a FileElementContainer by its ID.
+     * @param id The ID of the element to delete.
+     */
+    void deleteById(String id);
 }

@@ -53,6 +53,7 @@ public abstract class FileElement<SELF extends FileElement<?>> {
 
     public abstract String getTypeIdentifier();
     public abstract String generateId(Object base);
+    public abstract char getIdPrefix();
     //endregion
 
     @Override
