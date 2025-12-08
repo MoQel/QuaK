@@ -26,13 +26,6 @@ public class File extends FileElement<File> {
         this.lastAccess = createdOn;
     }
 
-    @Override
-    public void patch(File modified) {
-        super.patch(modified);
-        if (modified.lastAccess != null && modified.lastAccess.isAfter(lastAccess))
-            this.lastAccess = modified.lastAccess;
-    }
-
     //region getter and setter
     @Override
     public String getTypeIdentifier() {

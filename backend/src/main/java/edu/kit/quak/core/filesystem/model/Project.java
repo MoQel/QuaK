@@ -21,15 +21,6 @@ public class Project extends FileElementContainer<Project> {
     }
 
     @Override
-    public void patch(Project modified) throws IllegalArgumentException {
-        if (modified.contents == null || modified.contents.isEmpty() || contents.containsAll(modified.contents) && modified.contents.containsAll(contents)) {
-            super.patch(modified);
-        } else {
-            throw new IllegalArgumentException("Cant patch contents. Use the appropriate method");
-        }
-    }
-
-    @Override
     public String getTypeIdentifier() {
         return TYPE_IDENTIFIER;
     }

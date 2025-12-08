@@ -8,12 +8,12 @@ import java.util.Optional;
  * A FileElement is an element inside a {@link FileElementContainer container} or the container itself.
  * The idea behind this class is the concept of files and directories as they are found inside a POSIX filesystem.
  *
- * @param <SELF> The type used by the implementing classes in the method {@link #patch(FileElement)}
+ * @param <SELF> The type used by the implementing classes in the method
  * @author Henrik K
  */
 public abstract class FileElement<SELF extends FileElement<?>> {
 
-    public static final String TYPE_FIELD = "type";
+    public static final String TYPE_FIELD = "fileElement";
     private String id;
     private String name;
     private FileElementContainer<?> parent;
@@ -32,10 +32,6 @@ public abstract class FileElement<SELF extends FileElement<?>> {
         }
     }
 
-    public void patch(SELF modified) throws IllegalArgumentException {
-        if (modified.getName() != null) this.name = modified.getName();
-    }
-
     //region getter and setter
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
@@ -47,9 +43,18 @@ public abstract class FileElement<SELF extends FileElement<?>> {
     public Optional<FileElementContainer<?>> getParent() {
         return Optional.ofNullable(parent);
     }
-    public void setParent(FileElementContainer<?> parent) {
-        this.parent = parent;
-        addToParent();
+
+    public void setParent(FileElementContainer<?> newParent) {
+        if (newParent == this) {
+            throw new IllegalArgumentException("An element cannot be its own parent");
+        }
+        if (this.parent != null && newParent != this.parent) {
+            this.parent.contents.remove(this);
+        }
+        this.parent = newParent;
+        if (newParent != null) {
+            newParent.addElement(this);
+        }
     }
 
     public abstract String getTypeIdentifier();
