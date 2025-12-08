@@ -3,8 +3,6 @@ package edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
-import edu.kit.quak.infrastructure.filesystem.out.db.jpa.configuration.FileElementResolver;
 import jakarta.persistence.*;
 import org.hibernate.annotations.UuidGenerator;
 
@@ -18,7 +16,6 @@ import org.hibernate.annotations.UuidGenerator;
         include = JsonTypeInfo.As.EXISTING_PROPERTY,
         property = JpaFileElement.TYPE_FIELD
 )
-@JsonTypeIdResolver(FileElementResolver.class)
 public abstract class JpaFileElement<SELF extends JpaFileElement<?>> {
 
     public static final String TYPE_FIELD = "type";

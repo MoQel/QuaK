@@ -1,6 +1,6 @@
 package edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Entity;
 
 @Entity
 public class JpaDirectory extends JpaFileElementContainer<JpaDirectory> {
@@ -19,10 +19,5 @@ public class JpaDirectory extends JpaFileElementContainer<JpaDirectory> {
     @Override
     public String getTypeIdentifier() {
         return TYPE_IDENTIFIER;
-    }
-
-    @Override
-    public String generateId(Object base) {
-        return ID_PREFIX + base.toString();
     }
 }

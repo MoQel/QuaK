@@ -1,4 +1,4 @@
-package edu.kit.quak.infrastructure.filesystem.configuration;
+package edu.kit.quak.infrastructure.filesystem.out.db.jpa.configuration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;

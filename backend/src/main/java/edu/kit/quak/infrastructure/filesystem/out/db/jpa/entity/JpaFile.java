@@ -42,11 +42,6 @@ public class JpaFile extends JpaFileElement<JpaFile> {
         return TYPE_IDENTIFIER;
     }
 
-    @Override
-    public String generateId(Object base) {
-        return ID_PREFIX + base.toString();
-    }
-
     //region getter and setter
     public String getContentType() { return contentType; }
     public void setContentType(String contentType) { this.contentType = contentType; }

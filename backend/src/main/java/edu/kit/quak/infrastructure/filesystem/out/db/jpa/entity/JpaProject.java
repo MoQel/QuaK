@@ -26,9 +26,4 @@ public class JpaProject extends JpaFileElementContainer<JpaProject> {
     public String getTypeIdentifier() {
         return TYPE_IDENTIFIER;
     }
-
-    @Override
-    public String generateId(Object base) {
-        return ID_PREFIX + base.toString();
-    }
 }
