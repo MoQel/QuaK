@@ -1,6 +1,5 @@
 package edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity;
 
-import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.Entity;
 
@@ -49,15 +48,5 @@ public class JpaFile extends JpaFileElement<JpaFile> {
     public void setLastAccess(Instant lastAccess) { this.lastAccess = lastAccess; }
     public Instant getCreatedOn() { return createdOn; }
     public void setCreatedOn(Instant createdOn) { this.createdOn = createdOn; }
-
-    @JsonGetter("lastAccess")
-    private long getLastAccessLong() {
-        return lastAccess != null ? lastAccess.getEpochSecond() : 0;
-    }
-
-    @JsonGetter("createdOn")
-    private long getCreatedOnLong() {
-        return createdOn != null ? createdOn.getEpochSecond() : 0;
-    }
     //endregion
 }

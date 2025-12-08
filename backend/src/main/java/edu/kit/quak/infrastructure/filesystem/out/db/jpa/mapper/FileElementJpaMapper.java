@@ -1,77 +1,82 @@
 package edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper;
 
 
-import edu.kit.quak.core.filesystem.model.*;
-import edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity.*;
+import edu.kit.quak.core.filesystem.model.Directory;
+import edu.kit.quak.core.filesystem.model.File;
+import edu.kit.quak.core.filesystem.model.FileElement;
+import edu.kit.quak.core.filesystem.model.Project;
+import edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity.JpaDirectory;
+import edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity.JpaFile;
+import edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity.JpaFileElement;
+import edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity.JpaProject;
 import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
-import org.mapstruct.Named;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@Mapper(componentModel = MappingConstants.ComponentModel.SPRING) // Mapper as Spring Bean
+@Mapper(componentModel = MappingConstants.ComponentModel.SPRING)
 public abstract class FileElementJpaMapper {
-    // --- Domain -> JPA Entity ---
 
-    // Basic method: Requires subclasses to implement the specific mappings or MapStruct to derive them.
-    // ignore 'parent' relationship logic, as it should be managed by the adapters.
-    @Mapping(target = "parent", ignore = true)
-    public abstract JpaFileElement<?> toJpaEntity(FileElement<?> domain);
+    @Autowired
+    @Lazy
+    protected FileJpaMapper fileMapper;
 
-    @Mapping(target = "parent", ignore = true)
-    public abstract JpaFile toJpaEntity(File domain);
+    @Autowired
+    @Lazy
+    protected DirectoryJpaMapper directoryMapper;
 
-    @Mapping(target = "parent", ignore = true)
-    @Mapping(target = "contents", source = "contents", qualifiedByName = "mapDomainSetToJpaSet")
-    public abstract JpaFileElementContainer<?> toJpaEntity(FileElementContainer<?> domain);
+    @Autowired
+    @Lazy
+    protected ProjectJpaMapper projectMapper;
 
-    // Specific methods for concrete container types
-    @Mapping(target = "parent", ignore = true)
-    @Mapping(target = "contents", source = "contents", qualifiedByName = "mapDomainSetToJpaSet")
-    public abstract JpaProject toJpaEntity(Project domain);
+    // Map polymorph FileElement<?>
+    public JpaFileElement<?> toJpaEntity(FileElement<?> domain) {
+        if (domain instanceof File f) {
+            return fileMapper.toJpaEntity(f);
 
-    @Mapping(target = "parent", ignore = true)
-    @Mapping(target = "contents", source = "contents", qualifiedByName = "mapDomainSetToJpaSet")
-    public abstract JpaDirectory toJpaEntity(Directory domain);
+        } else if (domain instanceof Directory d) {
+            return directoryMapper.toJpaEntity(d);
 
+        } else if (domain instanceof Project p) {
+            return projectMapper.toJpaEntity(p);
+        }
 
-    // --- JPA Entity -> Domain ---
+        throw new IllegalArgumentException(
+                "Unknown FileElement subtype: " + domain.getClass()
+        );
+    }
 
-    @Mapping(target = "parent", ignore = true)
-    public abstract FileElement<?> toDomainEntity(JpaFileElement<?> jpaEntity);
+    public FileElement<?> toDomainEntity(JpaFileElement<?> jpa) {
+        if (jpa instanceof JpaFile f) {
+            return fileMapper.toDomainEntity(f);
 
-    @Mapping(target = "parent", ignore = true)
-    @Mapping(target = "contents", source = "contents", qualifiedByName = "mapJpaSetToDomainSet")
-    public abstract FileElementContainer<?> toDomainEntity(JpaFileElementContainer<?> jpaEntity);
+        } else if (jpa instanceof JpaDirectory d) {
+            return directoryMapper.toDomainEntity(d);
 
-    @Mapping(target = "parent", ignore = true)
-    public abstract File toDomainEntity(JpaFile jpaEntity);
+        } else if (jpa instanceof JpaProject p) {
+            return projectMapper.toDomainEntity(p);
+        }
 
-    @Mapping(target = "parent", ignore = true)
-    public abstract Project toDomainEntity(JpaProject jpaEntity);
+        throw new IllegalArgumentException(
+                "Unknown JpaFileElement subtype: " + jpa.getClass()
+        );
+    }
 
-    @Mapping(target = "parent", ignore = true)
-    public abstract Directory toDomainEntity(JpaDirectory jpaEntity);
-
-    // convert polymorphic lists
-    public abstract List<FileElement<?>> toDomainList(List<JpaFileElement<?>> jpaEntities);
-
-    @Named("mapDomainSetToJpaSet")
-    public Set<JpaFileElement<?>> mapDomainSetToJpaSet(Set<FileElement<?>> domainSet) {
+    // Map Set required for contents
+    public Set<JpaFileElement<?>> toJpaSet(Set<FileElement<?>> domainSet) {
         if (domainSet == null) return null;
         return domainSet.stream()
-                .map(this::toJpaEntity)        // relies on polymorphic dispatch to concrete mapper methods
+                .map(this::toJpaEntity)
                 .collect(Collectors.toSet());
     }
 
-    @Named("mapJpaSetToDomainSet")
-    public Set<FileElement<?>> mapJpaSetToDomainSet(Set<JpaFileElement<?>> jpaSet) {
+    public Set<FileElement<?>> toDomainSet(Set<JpaFileElement<?>> jpaSet) {
         if (jpaSet == null) return null;
         return jpaSet.stream()
-                .map(this::toDomainEntity)     // relies on polymorphic dispatch
+                .map(this::toDomainEntity)
                 .collect(Collectors.toSet());
     }
 }
