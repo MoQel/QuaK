@@ -43,7 +43,7 @@ export function Gate({id, type}: QuantumGate) {
              draggable
              onDragStart={handleDragStart}
         >
-            <Badge className={` ${styles.gate} ${type === 'DUMMY' ? 'invisible' : ''}`}>
+            <Badge className={` ${styles.gate} ${type === 'PLACEHOLDER' ? 'opacity-60' : ''}`}>
                 <Icon/>
             </Badge>
         </div>

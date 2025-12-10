@@ -1,12 +1,12 @@
 import styles from "@/App.module.css";
 import {QuantumGate} from "@/views/QuantumGate.tsx";
-import {horizontalListSortingStrategy, SortableContext, useSortable} from "@dnd-kit/sortable";
 import {Gate} from "@/views/circuit-view/Gate.tsx"
 import {Button} from "@/components/ui/button"
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover"
 import {Input} from "@/components/ui/input.tsx";
 import {ChangeEvent, useState} from "react";
 import {API_ENDPOINT} from "@/views/project-manager-view/ProjectManagerView.tsx";
+import React from "react";
 
 type QuantumWiresProps = {
     name: string;
@@ -15,28 +15,32 @@ type QuantumWiresProps = {
 };
 
 export function Qubit({name, initGates, qubitIndex}: Readonly<QuantumWiresProps>) {
-    const {setNodeRef} = useSortable({
-        id: qubitIndex,
-    })
-
     const [qubitName, setQubitName] = useState<string>(name)
     const [tempName, setTempName] = useState<string>(qubitName)
     const [gates, setGates] = useState<QuantumGate[]>(initGates)
+
+    const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+
     const maxLength = 4;
     const isTooLong = tempName.length > maxLength;
+
     const onNameChange = (e: ChangeEvent<HTMLInputElement>) => {
         setTempName(e.target.value)
     }
+
     const onSave = () => {
         if (tempName.length <= maxLength) {
             setQubitName(tempName)
         }
     }
+
     // TODO: Implement when backend API is ready
     const deleteQubit = () => {}
 
     const handleDrop = async (e: React.DragEvent, qubitIndex: number, position: number) => {
         e.preventDefault();
+        setHoverIndex(null);
+
         const gateJson = e.dataTransfer.getData("application/json");
         if (!gateJson) return;
 
@@ -73,7 +77,7 @@ export function Qubit({name, initGates, qubitIndex}: Readonly<QuantumWiresProps>
     };
 
     return (
-        <div ref={setNodeRef} className="flex items-center space-x-2 pb-5">
+        <div className="flex items-center py-3">
             <div>
                 <Popover>
                     <PopoverTrigger asChild>
@@ -116,29 +120,57 @@ export function Qubit({name, initGates, qubitIndex}: Readonly<QuantumWiresProps>
                 </Popover>
             </div>
 
-            <div className="relative w-full" style={{height: "40px"}}>
+            <div className={`${styles.qubitWireSpacing} relative h-full w-full`}>
 
                 <div className={`${styles.lines} absolute top-1/2 w-full`}/>
-                <div className="flex items-center h-full space-x-3 pl-3 relative z-10">
-                    {/* Actual quantum Gates */}
-                    <SortableContext items={gates} strategy={horizontalListSortingStrategy}>
-                        {gates.map((gate, index) => (
+                <div className="flex items-center h-full w-full relative z-10">
+                {/* Actual quantum Gates */}
+                    {gates.map((gate, index) => (
+                        <React.Fragment key={`frag-${qubitIndex}-${index}`}>
+                            {/* Dropzone before every Gate */}
                             <div
-                                key={`${gate.type}-${qubitIndex}-${index}-div`}
+                                className={`self-stretch ${styles.dropzoneSpacing}`}
                                 onDragOver={allowDrop}
+                                onDragEnter={() => setHoverIndex(index)}
+                                onDragLeave={(e) => {
+                                    const rt = e.relatedTarget as Node | null;
+                                    if (!rt || !e.currentTarget.contains(rt)) {
+                                        setHoverIndex(null);
+                                    }
+                                }}
                                 onDrop={(e) => handleDrop(e, qubitIndex, index)}
                             >
-                                <Gate key={`${gate.type}-${qubitIndex}-${index}`} id={gate.id} type={gate.type}/>
+                                {hoverIndex === index && (
+                                    <div className={styles.dropZonePlaceHolderMargin}>
+                                        <Gate key="placeholder" id="placeholder" type="PLACEHOLDER" />
+                                    </div>
+                                )}
                             </div>
-                        ))}
-                        <div
-                            key={`dummy-${qubitIndex}-div`}
-                            onDragOver={allowDrop}
-                            onDrop={(e) => handleDrop(e, qubitIndex, gates.length)}
-                        >
-                            <Gate key={`dummy-${qubitIndex}`} id={`dummy-${qubitIndex}-id`} type={'DUMMY'}/>
-                        </div>
-                    </SortableContext>
+
+                            {/* Actual Gate */}
+                            <Gate key={`${gate.type}-${qubitIndex}-${index}`} id={gate.id} type={gate.type} />
+                        </React.Fragment>
+                    ))}
+
+                    {/* Dropzone after last Gate */}
+                    <div
+                        className="self-stretch grow flex justify-start"
+                        onDragOver={allowDrop}
+                        onDragEnter={() => setHoverIndex(gates.length)}
+                        onDragLeave={(e) => {
+                            const rt = e.relatedTarget as Node | null;
+                            if (!rt || !e.currentTarget.contains(rt)) {
+                                setHoverIndex(null);
+                            }
+                        }}
+                        onDrop={(e) => handleDrop(e, qubitIndex, gates.length)}
+                    >
+                        {hoverIndex === gates.length && (
+                            <div className={styles.dropZoneLastPlaceHolderMargin}>
+                                <Gate key="placeholder" id="placeholder" type="PLACEHOLDER" />
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>

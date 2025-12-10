@@ -50,18 +50,16 @@ export function CircuitView() {
                         ))
                     }
                     {/* Gate Indexing of form: | 1 | 2 | ... */}
-                    <div className={`${styles.gateIndexSpacing} font-mono text-sm flex justify-start flex-shrink-0`}>
+                    <div className={`${styles.gateIndexSpacing} flex font-mono text-sm border-l border-gray-500`}>
                         {Array.from({length: maxWireLength}, (_, i) => (
                             <Fragment key={i}>
-                                <span className="text-gray-500 w-3 shrink-0">|</span>
                                 <span
-                                    className={`${styles.gateIndexSize} text-gray-500 inline-block center shrink-0`}
+                                    className={`${styles.gateIndexSize} text-gray-500 justify-center border-r border-gray-500`}
                                 >
-                                {i + 1}
-                            </span>
+                                    {i + 1}
+                                </span>
                             </Fragment>
                         ))}
-                        <span className="text-gray-500">|</span>
                     </div>
                 </div>
             </CardContent>

@@ -3,12 +3,12 @@ import {CircleGauge} from "lucide-react";
 import {TextIcon} from "./TextIcon.tsx"
 export type QuantumGate = {
     id: string,
-    type: 'DUMMY' | 'H' | 'X' | 'Y' | 'Z' | 'CNOT' | 'CCX' | 'CZ' | 'SWAP' | 'S' | 'T' | 'RX' | 'RY' | 'RZ' | 'MEASURE'
+    type: 'PLACEHOLDER' | 'H' | 'X' | 'Y' | 'Z' | 'CNOT' | 'CCX' | 'CZ' | 'SWAP' | 'S' | 'T' | 'RX' | 'RY' | 'RZ' | 'MEASURE'
     matrix?: (number|string)[][]
 }
 
 export const GateIcons: Record<QuantumGate["type"], React.ElementType> = {
-    DUMMY: TextIcon("dummy"),
+    PLACEHOLDER: TextIcon(""),
     H: TextIcon("H"),
     X: TextIcon("X"),
     Y: TextIcon("Y"),
