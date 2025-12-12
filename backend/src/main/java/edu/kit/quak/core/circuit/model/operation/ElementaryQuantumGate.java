@@ -1,9 +1,20 @@
 package edu.kit.quak.core.circuit.model.operation;
 
 public class ElementaryQuantumGate extends QuantumOperation {
+    private final ElementaryQuantumGateType type;
+
     private double theta;
     private double phi;
     private double lambda;
+
+    public ElementaryQuantumGate(ElementaryQuantumGateType type) {
+        super();
+        this.type = type;
+    }
+
+    public ElementaryQuantumGateType getType() {
+        return type;
+    }
 
     public double getTheta() { return theta; }
     public void setTheta(double theta) { this.theta = theta; }

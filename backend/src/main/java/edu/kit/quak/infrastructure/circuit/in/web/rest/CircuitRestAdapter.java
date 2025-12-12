@@ -21,6 +21,13 @@ public class CircuitRestAdapter {
         this.mapper = mapper;
     }
 
+    @PostMapping("/init")
+    @ResponseStatus(HttpStatus.CREATED)
+    public CircuitResponse initCircuit() {
+        QuantumCircuit quantumCircuit = service.initCircuit();
+        return mapper.toResponse(quantumCircuit);
+    }
+
     @PostMapping("/qubit/add")
     @ResponseStatus(HttpStatus.CREATED)
     public CircuitResponse addQubit() {

@@ -1,8 +1,9 @@
 package edu.kit.quak.core.circuit.model.operation;
 
-public abstract class QuantumOperation {
-    private boolean inverseForm;
+import edu.kit.quak.core.circuit.model.ElementWithId;
 
-    public boolean isInverseForm() { return inverseForm; }
-    public void setInverseForm(boolean inverseForm) { this.inverseForm = inverseForm; }
+public abstract class QuantumOperation extends ElementWithId {
+    protected QuantumOperation() {
+        super();
+    }
 }

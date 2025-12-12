@@ -1,15 +1,13 @@
 /**
- * This package implements the structural and operational concepts of the quantum
- * circuit metamodel proposed by Gemeinhardt et al. (2024),
+ * This package implements the quantum circuit metamodel proposed by Gemeinhardt et al. (2024),
  * "A Model-Driven Framework for Composition-Based Quantum Circuit Design".
  * <p>
- * The architecture of this project follows the layered and compositional
- * design principles described in the metamodel, including:
+ * The architecture is only based on the metamodel and does not fully adopt every aspect of it.
+ * Aspects, that have been adopted, include:
  * <ul>
- *   <li>Quantum circuits composed of ordered layers</li>
- *   <li>Selectors for qubit addressing</li>
+ *   <li>Quantum circuits</li>
+ *   <li>Classical and quantum registers</li>
  *   <li>Elementary and composite quantum operations</li>
- *   <li>Classical control and measurement structures</li>
  * </ul>
  *
  * Reference:
