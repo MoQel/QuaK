@@ -3,6 +3,11 @@ package edu.kit.quak.files;
 import edu.kit.quak.files.model.Project;
 import edu.kit.quak.files.repository.ProjectRepository;
 import edu.kit.quak.files.repository.savers.FileElementSaversRepository;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.transaction.Transactional;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -29,6 +34,7 @@ import static org.springframework.http.HttpStatus.BAD_REQUEST;
  */
 @RestController
 @RequestMapping("/project")
+@Tag(name = "Projects", description = "Project management operations")
 public class ProjectController {
 
     private final ProjectRepository projects;

@@ -3,6 +3,7 @@ package edu.kit.quak.security;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
@@ -35,6 +36,7 @@ import java.util.function.Consumer;
 
 @Configuration
 @EnableWebSecurity
+@Profile("!dev") // This config is NOT active when 'dev' profile is enabled
 public class SecurityConfig {
 
     @Value("${app.frontend.url}")
@@ -42,50 +44,52 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
-                                                     OAuth2AuthorizationRequestResolver authorizationRequestResolver) throws Exception {
+            OAuth2AuthorizationRequestResolver authorizationRequestResolver) throws Exception {
         http
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .csrf(csrf -> csrf
-                .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-                .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
-                .ignoringRequestMatchers("/api/auth/**", "/login/**", "/oauth2/**")
-            )
-            .addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class)
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers(
-                    "/",
-                    "/login/**",
-                    "/oauth2/**",
-                    "/api/auth/status",
-                    "/error",
-                    "/*.js",
-                    "/*.css",
-                    "/*.html",
-                    "/*.ico",
-                    "/*.png",
-                    "/*.jpg",
-                    "/assets/**"
-                ).permitAll()
-                .anyRequest().authenticated()
-            )
-            .oauth2Login(oauth2 -> oauth2
-                .authorizationEndpoint(authorization -> authorization
-                    .authorizationRequestResolver(authorizationRequestResolver)
-                )
-                .successHandler(authenticationSuccessHandler())
-            )
-            .logout(logout -> logout
-                .logoutUrl("/api/auth/logout")
-                .logoutSuccessHandler((request, response, authentication) -> {
-                    response.setStatus(jakarta.servlet.http.HttpServletResponse.SC_OK);
-                })
-                .invalidateHttpSession(true)
-                .deleteCookies("JSESSIONID")
-                .permitAll()
-            )
-            .exceptionHandling(exception -> exception
-                .authenticationEntryPoint(new org.springframework.security.web.authentication.HttpStatusEntryPoint(org.springframework.http.HttpStatus.UNAUTHORIZED))
-            );
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .csrf(csrf -> csrf
+                        .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                        .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
+                        .ignoringRequestMatchers("/api/auth/**", "/login/**", "/oauth2/**"))
+                .addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class)
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(
+                                "/",
+                                "/login/**",
+                                "/oauth2/**",
+                                "/api/auth/status",
+                                "/error",
+                                "/*.js",
+                                "/*.css",
+                                "/*.html",
+                                "/*.ico",
+                                "/*.png",
+                                "/*.jpg",
+                                "/assets/**",
+                                // OpenAPI / Swagger endpoints
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/api-docs/**",
+                                "/api-docs.yaml",
+                                "/v3/api-docs/**")
+                        .permitAll()
+                        .anyRequest().authenticated())
+                .oauth2Login(oauth2 -> oauth2
+                        .authorizationEndpoint(authorization -> authorization
+                                .authorizationRequestResolver(authorizationRequestResolver))
+                        .successHandler(authenticationSuccessHandler()))
+                .logout(logout -> logout
+                        .logoutUrl("/api/auth/logout")
+                        .logoutSuccessHandler((request, response, authentication) -> {
+                            response.setStatus(jakarta.servlet.http.HttpServletResponse.SC_OK);
+                        })
+                        .invalidateHttpSession(true)
+                        .deleteCookies("JSESSIONID")
+                        .permitAll())
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(
+                                new org.springframework.security.web.authentication.HttpStatusEntryPoint(
+                                        org.springframework.http.HttpStatus.UNAUTHORIZED)));
 
         return http.build();
     }
@@ -93,51 +97,50 @@ public class SecurityConfig {
     @Bean
     public OAuth2AuthorizationRequestResolver authorizationRequestResolver(
             ClientRegistrationRepository clientRegistrationRepository) {
-        
-        DefaultOAuth2AuthorizationRequestResolver defaultResolver = 
-            new DefaultOAuth2AuthorizationRequestResolver(
+
+        DefaultOAuth2AuthorizationRequestResolver defaultResolver = new DefaultOAuth2AuthorizationRequestResolver(
                 clientRegistrationRepository, "/oauth2/authorization");
 
         return new OAuth2AuthorizationRequestResolver() {
             @Override
             public OAuth2AuthorizationRequest resolve(jakarta.servlet.http.HttpServletRequest request) {
                 OAuth2AuthorizationRequest authorizationRequest = defaultResolver.resolve(request);
-                return authorizationRequest != null ? 
-                    customizeAuthorizationRequest(authorizationRequest) : null;
+                return authorizationRequest != null ? customizeAuthorizationRequest(authorizationRequest) : null;
             }
 
             @Override
-            public OAuth2AuthorizationRequest resolve(jakarta.servlet.http.HttpServletRequest request, String clientRegistrationId) {
-                OAuth2AuthorizationRequest authorizationRequest = defaultResolver.resolve(request, clientRegistrationId);
-                return authorizationRequest != null ? 
-                    customizeAuthorizationRequest(authorizationRequest) : null;
+            public OAuth2AuthorizationRequest resolve(jakarta.servlet.http.HttpServletRequest request,
+                    String clientRegistrationId) {
+                OAuth2AuthorizationRequest authorizationRequest = defaultResolver.resolve(request,
+                        clientRegistrationId);
+                return authorizationRequest != null ? customizeAuthorizationRequest(authorizationRequest) : null;
             }
         };
     }
 
     private OAuth2AuthorizationRequest customizeAuthorizationRequest(
             OAuth2AuthorizationRequest authorizationRequest) {
-        
+
         // Generate PKCE code verifier and challenge
         String codeVerifier = generateCodeVerifier();
         String codeChallenge = generateCodeChallenge(codeVerifier);
 
         return OAuth2AuthorizationRequest
-            .from(authorizationRequest)
-            .additionalParameters(params -> {
-                params.put("code_challenge", codeChallenge);
-                params.put("code_challenge_method", "S256");
-            })
-            .attributes(attrs -> {
-                attrs.put("code_verifier", codeVerifier);
-            })
-            .build();
+                .from(authorizationRequest)
+                .additionalParameters(params -> {
+                    params.put("code_challenge", codeChallenge);
+                    params.put("code_challenge_method", "S256");
+                })
+                .attributes(attrs -> {
+                    attrs.put("code_verifier", codeVerifier);
+                })
+                .build();
     }
 
     private String generateCodeVerifier() {
         return Base64.getUrlEncoder()
-            .withoutPadding()
-            .encodeToString(UUID.randomUUID().toString().getBytes());
+                .withoutPadding()
+                .encodeToString(UUID.randomUUID().toString().getBytes());
     }
 
     private String generateCodeChallenge(String codeVerifier) {
@@ -145,8 +148,8 @@ public class SecurityConfig {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] hash = digest.digest(codeVerifier.getBytes());
             return Base64.getUrlEncoder()
-                .withoutPadding()
-                .encodeToString(hash);
+                    .withoutPadding()
+                    .encodeToString(hash);
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("Failed to generate code challenge", e);
         }
@@ -167,7 +170,7 @@ public class SecurityConfig {
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
-        
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
@@ -176,7 +179,8 @@ public class SecurityConfig {
     private static class CsrfCookieFilter extends OncePerRequestFilter {
 
         @Override
-        protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+        protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
+                FilterChain filterChain)
                 throws ServletException, IOException {
             CsrfToken csrfToken = (CsrfToken) request.getAttribute(CsrfToken.class.getName());
             if (csrfToken != null) {

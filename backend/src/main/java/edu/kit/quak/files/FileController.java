@@ -8,6 +8,11 @@ import edu.kit.quak.files.repository.FileRepository;
 import edu.kit.quak.files.repository.RepoMonad;
 import edu.kit.quak.files.repository.savers.FileElementSaver;
 import edu.kit.quak.files.repository.savers.FileElementSaversRepository;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.Transactional;
 import org.springframework.http.HttpStatus;
@@ -37,6 +42,7 @@ import static org.springframework.http.HttpStatus.BAD_REQUEST;
  */
 @RestController
 @RequestMapping("/file")
+@Tag(name = "Files", description = "File and directory management operations")
 public class FileController {
 
     private static final Class<?>[] FILTER = {File.class, Directory.class};
