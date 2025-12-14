@@ -2,6 +2,8 @@ services:
   database:
     image: "mariadb:latest"
     restart: always
+    ports:
+      - "3306:3306"
     environment:
       MARIADB_ROOT_PASSWORD: hello
       MYSQL_DATABASE: quak
