@@ -19,8 +19,10 @@ services:
 
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
+      args:
+        SKIP_FRONTEND: "false"
     container_name: quak-backend
     ports:
       - "8080:8080"
@@ -32,23 +34,10 @@ services:
       SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.mariadb.jdbc.Driver
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: hello
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      FRONTEND_URL: http://localhost:8080
     env_file:
       - ./backend/.env
-    networks:
-      - quak-network
-    restart: unless-stopped
-
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: quak-frontend
-    ports:
-      - "5173:5173"
-    depends_on:
-      - backend
-    environment:
-      VITE_API_URL: http://localhost:8080
     networks:
       - quak-network
     restart: unless-stopped
