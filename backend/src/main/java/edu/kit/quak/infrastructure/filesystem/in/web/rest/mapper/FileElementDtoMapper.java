@@ -7,6 +7,7 @@ import edu.kit.quak.infrastructure.filesystem.in.web.rest.dto.FileElementDto;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingConstants;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 
 import java.util.List;
 import java.util.Set;
@@ -16,9 +17,11 @@ import java.util.stream.Collectors;
 public abstract class FileElementDtoMapper {
 
     @Autowired
+    @Lazy
     protected FileDtoMapper fileMapper;
 
     @Autowired
+    @Lazy
     protected DirectoryDtoMapper directoryMapper;
 
     public FileElementDto toDto(FileElement<?> element) {
