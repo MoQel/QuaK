@@ -44,7 +44,9 @@ public class FileElementContainerRepositoryDelegator {
 
             // Build Prefix → Repo mapping
             try {
-                char prefix = ((FileElementContainer<?>) entityType.getDeclaredConstructor().newInstance()).getIdPrefix();
+                var constructor = entityType.getDeclaredConstructor();
+                constructor.setAccessible(true);
+                char prefix = ((FileElementContainer<?>) constructor.newInstance()).getIdPrefix();
 
                 if (repoByPrefix.put(prefix, repo) != null) {
                     throw new IllegalStateException(
