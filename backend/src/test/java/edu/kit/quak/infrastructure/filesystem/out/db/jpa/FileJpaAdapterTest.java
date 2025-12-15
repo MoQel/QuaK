@@ -7,6 +7,7 @@ import edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper.DirectoryJpaMapp
 import edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper.FileElementJpaMapperImpl;
 import edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper.FileJpaMapperImpl;
 import edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper.ProjectJpaMapperImpl;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -38,6 +39,7 @@ class FileJpaAdapterTest {
     private ProjectJpaAdapter projectAdapter;
 
     @Test
+    @Tag("integration")
     void findById_returnsFile_whenExists() {
         Project project = projectAdapter.save(new Project("Project_FileTest"));
         Directory dir = new Directory("Dir", project);
@@ -63,6 +65,7 @@ class FileJpaAdapterTest {
     }
 
     @Test
+    @Tag("integration")
     void existsById_returnsTrue_whenFileExists() {
         // Arrange
         Project p = projectAdapter.save(new Project("P_Exist"));
