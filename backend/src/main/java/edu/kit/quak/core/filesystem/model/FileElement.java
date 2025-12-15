@@ -1,6 +1,5 @@
 package edu.kit.quak.core.filesystem.model;
 
-import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -62,17 +61,15 @@ public abstract class FileElement<SELF extends FileElement<?>> {
     //endregion
 
     @Override
-    public boolean equals(Object o) {
+    public final boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (!(o instanceof FileElement<?> other)) return false;
 
-        FileElement<?> that = (FileElement<?>) o;
-        return Objects.equals(id, that.id) &&
-               Objects.equals(name, that.name);
+        return id != null && id.equals(other.getId());
     }
 
     @Override
-    public int hashCode() {
-        return Objects.hash(name, parent);
+    public final int hashCode() {
+        return FileElement.class.hashCode();
     }
 }

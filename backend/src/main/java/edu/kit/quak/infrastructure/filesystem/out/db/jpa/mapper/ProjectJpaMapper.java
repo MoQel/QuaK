@@ -1,17 +1,23 @@
 package edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper;
 
+import edu.kit.quak.core.filesystem.model.FileElement;
 import edu.kit.quak.core.filesystem.model.Project;
 import edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity.JpaProject;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.MappingConstants;
+import org.mapstruct.*;
 
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING, uses = {FileElementJpaMapper.class})
-public interface ProjectJpaMapper {
+public abstract class ProjectJpaMapper {
     @Mapping(target = "parent", ignore = true)
     @Mapping(target = "contents", source = "contents")
-    JpaProject toJpaEntity(Project domain);
+    public abstract JpaProject toJpaEntity(Project domain);
 
     @Mapping(target = "parent", ignore = true)
-    Project toDomainEntity(JpaProject jpaEntity);
+   public abstract Project toDomainEntity(JpaProject jpaEntity);
+
+    @AfterMapping
+    protected void linkChildren(@MappingTarget Project project) {
+        for (FileElement<?> child : project.getContents()) {
+            child.setParent(project);
+        }
+    }
 }
