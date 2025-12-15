@@ -14,6 +14,11 @@ public abstract class DirectoryJpaMapper {
     @Mapping(target = "parent", ignore = true)
     public abstract Directory toDomainEntity(JpaDirectory jpaEntity);
 
+    @Named("shallow")
+    @Mapping(target = "parent", ignore = true)
+    @Mapping(target = "contents", ignore = true)
+    public abstract Directory toDomainEntityShallow(JpaDirectory jpaEntity);
+
     @AfterMapping
     protected void linkChildren(@MappingTarget Directory dir) {
         for (FileElement<?> child : dir.getContents()) {

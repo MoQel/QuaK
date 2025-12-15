@@ -1,16 +1,39 @@
 package edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper;
 
 import edu.kit.quak.core.filesystem.model.File;
+import edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity.JpaDirectory;
 import edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity.JpaFile;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.MappingConstants;
+import edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity.JpaProject;
+import org.mapstruct.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 
-@Mapper(componentModel = MappingConstants.ComponentModel.SPRING, uses = {FileElementJpaMapper.class})
-public interface FileJpaMapper {
-    @Mapping(target = "parent", ignore = true)
-    JpaFile toJpaEntity(File domain);
+@Mapper(componentModel = MappingConstants.ComponentModel.SPRING,
+        uses = {DirectoryJpaMapper.class, ProjectJpaMapper.class})
+public abstract class FileJpaMapper {
+
+    @Autowired
+    @Lazy
+    protected DirectoryJpaMapper directoryMapper;
+
+    @Autowired
+    @Lazy
+    protected ProjectJpaMapper projectMapper;
 
     @Mapping(target = "parent", ignore = true)
-    File toDomainEntity(JpaFile jpaEntity);
+    public abstract JpaFile toJpaEntity(File domain);
+
+    @Mapping(target = "parent", ignore = true)
+    public abstract File toDomainEntity(JpaFile jpaEntity);
+
+    @AfterMapping
+    protected void mapParent(@MappingTarget File domain, JpaFile jpa) {
+        switch (jpa.getParent()) {
+            case JpaDirectory dir -> domain.setParent(directoryMapper.toDomainEntityShallow(dir));
+            case JpaProject proj -> domain.setParent(projectMapper.toDomainEntityShallow(proj));
+            case null, default -> {
+            }
+        }
+
+    }
 }

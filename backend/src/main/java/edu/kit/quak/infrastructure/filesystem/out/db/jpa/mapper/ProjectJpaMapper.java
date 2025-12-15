@@ -14,6 +14,11 @@ public abstract class ProjectJpaMapper {
     @Mapping(target = "parent", ignore = true)
    public abstract Project toDomainEntity(JpaProject jpaEntity);
 
+    @Named("shallow")
+    @Mapping(target = "parent", ignore = true)
+    @Mapping(target = "contents", ignore = true)
+    public abstract Project toDomainEntityShallow(JpaProject jpaEntity);
+
     @AfterMapping
     protected void linkChildren(@MappingTarget Project project) {
         for (FileElement<?> child : project.getContents()) {
