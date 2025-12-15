@@ -86,18 +86,6 @@ class FileElementDomainTest {
 
     @Test
     @Tag("unit")
-    void addingElementTwiceDoesNotCreateDuplicates() {
-        Directory dir = new Directory("Dir", null);
-        File file = new File("File1", dir);
-
-        // No duplicate on second parent assignment
-        file.setParent(dir);
-
-        assertEquals(1, dir.getContents().size());
-    }
-
-    @Test
-    @Tag("unit")
     void removingAndReAddingWorks() {
         Directory dir = new Directory("Dir", null);
         File file = new File("File1", dir);
@@ -105,7 +93,7 @@ class FileElementDomainTest {
         dir.removeElement(file);
         assertTrue(file.getParent().isEmpty());
 
-        file.setParent(dir);
+        file.addToParent(dir);
         assertEquals(dir, file.getParent().orElseThrow());
         assertTrue(dir.getContents().contains(file));
     }
@@ -129,7 +117,7 @@ class FileElementDomainTest {
     @Tag("unit")
     void parentCannotBeSelf() {
         Directory dir = new Directory("Dir", null);
-        assertThrows(IllegalArgumentException.class, () -> dir.setParent(dir));
+        assertThrows(IllegalArgumentException.class, () -> dir.addToParent(dir));
     }
 
     @Test
@@ -140,10 +128,29 @@ class FileElementDomainTest {
         Directory d2 = new Directory("D2", root);
         File f = new File("F", d1);
 
-        f.setParent(d2);
+        f.addToParent(d2);
 
         assertFalse(d1.getContents().contains(f));
         assertTrue(d2.getContents().contains(f));
         assertEquals(d2, f.getParent().orElseThrow());
+    }
+
+    @Test
+    @Tag("unit")
+    void cannotAddDuplicateNameToContainer() {
+        Directory dir = new Directory("Root", null);
+        new File("Config.txt", dir);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> new File("Config.txt", dir));
+
+        assertTrue(ex.getMessage().contains("already exists"), "Exception message should mention duplication");
+
+        Directory otherDir = new Directory("Other", null);
+        File conflictFile = new File("Config.txt", otherDir);
+
+        assertThrows(IllegalArgumentException.class, () -> conflictFile.addToParent(dir));
+
+        assertEquals(otherDir, conflictFile.getParent().orElseThrow());
+        assertFalse(dir.getContents().contains(conflictFile));
     }
 }

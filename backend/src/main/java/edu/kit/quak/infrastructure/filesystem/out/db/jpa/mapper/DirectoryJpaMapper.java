@@ -26,7 +26,7 @@ public abstract class DirectoryJpaMapper {
     @AfterMapping
     protected void linkChildren(@MappingTarget Directory dir) {
         for (FileElement<?> child : dir.getContents()) {
-            child.setParent(dir);
+            child.addToParent(dir);
         }
     }
 }

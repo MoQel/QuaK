@@ -39,6 +39,7 @@ class FileServiceTest {
         File file = new File("test.txt", null);
 
         when(delegator.findContainerById("p-1")).thenReturn(Optional.of(parent));
+        when(delegator.save(parent)).thenReturn(parent);
 
         // Act
         service.createFile(file, "p-1");

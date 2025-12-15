@@ -30,9 +30,17 @@ public class FileService implements FileServicePort {
     public File createFile(File element, String parentId) {
         FileElementContainer<?> parent = delegator.findContainerById(parentId)
                 .orElseThrow(() -> new IllegalArgumentException("Parent not found with ID" + parentId));
-        element.setParent(parent);
-        delegator.save(parent);
-        return element;
+
+        element.addToParent(parent);
+
+        FileElementContainer<?> savedParent = delegator.save(parent);
+
+        return savedParent.getContents().stream()
+                .filter(child -> child instanceof File)
+                .map(child -> (File) child)
+                .filter(f -> f.getName().equals(element.getName()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("Saved child File not found - unexpected behavior DB/Mapping inconsisty?"));
     }
     // endregion Create
 

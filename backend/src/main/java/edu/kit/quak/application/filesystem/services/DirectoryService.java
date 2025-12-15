@@ -25,11 +25,18 @@ public class DirectoryService implements DirectoryServicePort {
     public Directory createDirectory(Directory container, String parentId) {
         FileElementContainer<?> parent = delegator.findContainerById(parentId)
                 .orElseThrow(() -> new IllegalArgumentException("Parent not found with ID" + parentId));
+
         // Creates bidirectional relationshipt
-        container.setParent(parent);
+        container.addToParent(parent);
         // Orchestrate container through aggregate root
-        delegator.save(parent);
-        return container;
+        FileElementContainer<?> savedParent = delegator.save(parent);
+
+        return savedParent.getContents().stream()
+                .filter(child -> child instanceof Directory)
+                .map(child -> (Directory) child)
+                .filter(f -> f.getName().equals(container.getName()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("Saved child Directory not found - unexpected behavior DB/Mapping inconsisty?"));
     }
 
     @Override

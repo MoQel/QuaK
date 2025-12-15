@@ -26,7 +26,7 @@ public abstract class ProjectJpaMapper {
     @AfterMapping
     protected void linkChildren(@MappingTarget Project project) {
         for (FileElement<?> child : project.getContents()) {
-            child.setParent(project);
+            child.addToParent(project);
         }
     }
 }

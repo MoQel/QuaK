@@ -26,7 +26,7 @@ public abstract class FileElementContainer<SELF extends FileElementContainer<SEL
      * @param element The element to remove
      */
     public void removeElement(FileElement<?> element) {
-        element.setParent(null);
+        element.addToParent(null);
         contents.remove(element);
     }
 

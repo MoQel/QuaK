@@ -31,8 +31,8 @@ public abstract class FileJpaMapper {
     @AfterMapping
     protected void mapParent(@MappingTarget File domain, JpaFile jpa) {
         switch (jpa.getParent()) {
-            case JpaDirectory dir -> domain.setParent(directoryMapper.toDomainEntityShallow(dir));
-            case JpaProject proj -> domain.setParent(projectMapper.toDomainEntityShallow(proj));
+            case JpaDirectory dir -> domain.addToParent(directoryMapper.toDomainEntityShallow(dir));
+            case JpaProject proj -> domain.addToParent(projectMapper.toDomainEntityShallow(proj));
             case null, default -> {
             }
         }

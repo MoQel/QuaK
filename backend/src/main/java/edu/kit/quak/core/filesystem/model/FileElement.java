@@ -21,14 +21,7 @@ public abstract class FileElement<SELF extends FileElement<?>> {
 
     public FileElement(String name, FileElementContainer<?> parent) {
         this.name = name;
-        this.parent = parent;
-        addToParent();
-    }
-
-    private void addToParent() {
-        if (parent != null) {
-            parent.addElement(this);
-        }
+        addToParent(parent);
     }
 
     //region getter and setter
@@ -43,16 +36,23 @@ public abstract class FileElement<SELF extends FileElement<?>> {
         return Optional.ofNullable(parent);
     }
 
-    public void setParent(FileElementContainer<?> newParent) {
+    public void addToParent(FileElementContainer<?> newParent) {
         if (newParent == this) {
             throw new IllegalArgumentException("An element cannot be its own parent");
         }
         if (this.parent != null && newParent != this.parent) {
             this.parent.contents.remove(this);
         }
+        if (newParent != null &&
+                newParent.getContents().stream().filter(existing -> existing != this)
+                .anyMatch(existing -> existing.getName().equals(this.getName()))) {
+            throw new IllegalArgumentException(
+                    "An element with the name '" + this.getName() + "' already exists in '" + newParent.getName() + "'"
+            );
+        }
         this.parent = newParent;
-        if (newParent != null) {
-            newParent.addElement(this);
+        if (this.parent != null) {
+            this.parent.addElement(this);
         }
     }
 

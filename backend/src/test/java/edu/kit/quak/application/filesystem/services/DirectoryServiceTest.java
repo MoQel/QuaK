@@ -38,6 +38,7 @@ class DirectoryServiceTest {
         Directory newDir = new Directory("NewDir", null);
 
         when(delegator.findContainerById(parentId)).thenReturn(Optional.of(parent));
+        when(delegator.save(parent)).thenReturn(parent);
 
         // Act
         service.createDirectory(newDir, parentId);
