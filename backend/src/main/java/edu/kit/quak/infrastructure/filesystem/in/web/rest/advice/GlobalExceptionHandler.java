@@ -5,14 +5,13 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
 // RFC-7807
 @RestControllerAdvice
-public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
+public class GlobalExceptionHandler {
 
     // Catches Validation errors -> 400 Bad Request
     @ExceptionHandler(MethodArgumentNotValidException.class)
