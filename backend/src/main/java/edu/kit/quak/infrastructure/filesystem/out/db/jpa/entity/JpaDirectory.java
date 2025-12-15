@@ -12,7 +12,7 @@ public class JpaDirectory extends JpaFileElementContainer<JpaDirectory> {
         super();
     }
 
-    public JpaDirectory(String name, JpaDirectory parent) {
+    public JpaDirectory(String name, JpaFileElementContainer<?> parent) {
         super(name, parent);
     }
 

@@ -65,4 +65,12 @@ tasks.named("bootRun") {
 
 tasks.named('test') {
 	useJUnitPlatform()
+	// Configure Mockito as Java Agent to solve Warning of dynamic loading (self-attaching)
+	doFirst {
+		def mockitoFile = classpath.files.find { it.name.contains('mockito-core') }
+
+		if (mockitoFile) {
+			jvmArgs("-javaagent:${mockitoFile.absolutePath}")
+		}
+	}
 }
