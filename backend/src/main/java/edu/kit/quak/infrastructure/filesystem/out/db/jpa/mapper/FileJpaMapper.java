@@ -9,7 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING,
-        uses = {DirectoryJpaMapper.class, ProjectJpaMapper.class})
+        uses = {DirectoryJpaMapper.class, ProjectJpaMapper.class, FileElementJpaMapper.class})
 public abstract class FileJpaMapper {
 
     @Autowired
@@ -20,9 +20,11 @@ public abstract class FileJpaMapper {
     @Lazy
     protected ProjectJpaMapper projectMapper;
 
+    @Mapping(target = "id", source = "id", qualifiedByName = "removePrefix")
     @Mapping(target = "parent", ignore = true)
     public abstract JpaFile toJpaEntity(File domain);
 
+    @Mapping(target = "id", source = "id", qualifiedByName = "addFilePrefix")
     @Mapping(target = "parent", ignore = true)
     public abstract File toDomainEntity(JpaFile jpaEntity);
 

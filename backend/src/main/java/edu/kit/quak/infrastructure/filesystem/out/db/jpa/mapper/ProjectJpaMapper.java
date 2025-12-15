@@ -7,14 +7,18 @@ import org.mapstruct.*;
 
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING, uses = {FileElementJpaMapper.class})
 public abstract class ProjectJpaMapper {
+
+    @Mapping(target = "id", source = "id", qualifiedByName = "removePrefix")
     @Mapping(target = "parent", ignore = true)
     @Mapping(target = "contents", source = "contents")
     public abstract JpaProject toJpaEntity(Project domain);
 
+    @Mapping(target = "id", source = "id", qualifiedByName = "addProjectPrefix")
     @Mapping(target = "parent", ignore = true)
-   public abstract Project toDomainEntity(JpaProject jpaEntity);
+    public abstract Project toDomainEntity(JpaProject jpaEntity);
 
     @Named("shallow")
+    @Mapping(target = "id", source = "id", qualifiedByName = "addProjectPrefix")
     @Mapping(target = "parent", ignore = true)
     @Mapping(target = "contents", ignore = true)
     public abstract Project toDomainEntityShallow(JpaProject jpaEntity);

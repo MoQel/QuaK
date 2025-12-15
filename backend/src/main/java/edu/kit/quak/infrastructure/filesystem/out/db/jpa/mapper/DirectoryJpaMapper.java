@@ -7,13 +7,17 @@ import org.mapstruct.*;
 
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING, uses = {FileElementJpaMapper.class})
 public abstract class DirectoryJpaMapper {
+
+    @Mapping(target = "id", source = "id", qualifiedByName = "removePrefix")
     @Mapping(target = "parent", ignore = true)
     @Mapping(target = "contents", source = "contents")
     public abstract JpaDirectory toJpaEntity(Directory domain);
 
+    @Mapping(target = "id", source = "id", qualifiedByName = "addDirectoryPrefix")
     @Mapping(target = "parent", ignore = true)
     public abstract Directory toDomainEntity(JpaDirectory jpaEntity);
 
+    @Mapping(target = "id", source = "id", qualifiedByName = "addDirectoryPrefix")
     @Named("shallow")
     @Mapping(target = "parent", ignore = true)
     @Mapping(target = "contents", ignore = true)
