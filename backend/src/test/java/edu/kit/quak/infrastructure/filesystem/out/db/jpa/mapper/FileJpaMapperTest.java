@@ -5,6 +5,7 @@ import edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity.JpaFile;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -15,6 +16,18 @@ class FileJpaMapperTest {
     @BeforeEach
     void setup() {
         mapper = Mappers.getMapper(FileJpaMapper.class);
+
+        DirectoryJpaMapper directoryMapper = Mappers.getMapper(DirectoryJpaMapper.class);
+        ProjectJpaMapper projectMapper = Mappers.getMapper(ProjectJpaMapper.class);
+        FileElementJpaMapper elementMapper = Mappers.getMapper(FileElementJpaMapper.class);
+
+        ReflectionTestUtils.setField(mapper, "directoryMapper", directoryMapper);
+        ReflectionTestUtils.setField(mapper, "projectMapper", projectMapper);
+
+        ReflectionTestUtils.setField(mapper, "fileElementJpaMapper", elementMapper);
+
+        ReflectionTestUtils.setField(directoryMapper, "fileElementJpaMapper", elementMapper);
+        ReflectionTestUtils.setField(projectMapper, "fileElementJpaMapper", elementMapper);
     }
 
     @Test

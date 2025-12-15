@@ -3,6 +3,7 @@ package edu.kit.quak.infrastructure.filesystem.out.db.jpa;
 import edu.kit.quak.application.filesystem.ports.out.ProjectRepositoryPort;
 import edu.kit.quak.core.filesystem.model.Project;
 import edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity.JpaProject;
+import edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper.FileElementJpaMapper;
 import edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper.ProjectJpaMapper;
 import edu.kit.quak.infrastructure.filesystem.out.db.jpa.repository.SpringDataProjectRepository;
 import org.springframework.stereotype.Repository;
@@ -15,15 +16,18 @@ public class ProjectJpaAdapter implements ProjectRepositoryPort {
 
     public final SpringDataProjectRepository repository;
     private final ProjectJpaMapper projectMapper;
+    private final FileElementJpaMapper elementMapper;
 
-    ProjectJpaAdapter(SpringDataProjectRepository repository, ProjectJpaMapper projectMapper) {
+    ProjectJpaAdapter(SpringDataProjectRepository repository, ProjectJpaMapper projectMapper, FileElementJpaMapper elementMapper) {
         this.repository = repository;
         this.projectMapper = projectMapper;
+        this.elementMapper = elementMapper;
     }
 
     @Override
-    public Optional<Project> findById(String id) {
-        return repository.findById(id)
+    public Optional<Project> findById(String pId) {
+        String dbId = elementMapper.removePrefix(pId);
+        return repository.findById(dbId)
                 .map(projectMapper::toDomainEntity);
     }
 
@@ -41,12 +45,14 @@ public class ProjectJpaAdapter implements ProjectRepositoryPort {
     }
 
     @Override
-    public void deleteById(String id) {
-        repository.deleteById(id);
+    public void deleteById(String pId) {
+        String dbId = elementMapper.removePrefix(pId);
+        repository.deleteById(dbId);
     }
 
     @Override
-    public boolean existsById(String id) {
-        return repository.existsById(id);
+    public boolean existsById(String pId) {
+        String dbId = elementMapper.removePrefix(pId);
+        return repository.existsById(dbId);
     }
 }
