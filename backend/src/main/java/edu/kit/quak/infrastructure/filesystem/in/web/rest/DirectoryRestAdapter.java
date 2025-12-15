@@ -31,8 +31,8 @@ public class DirectoryRestAdapter {
 
     @GetMapping("/{dId}")
     public DirectoryContentsResponse retrieveDirectory(@PathVariable String dId) {
-        Directory dir =  service.retrieveDirectory(dId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Directory not found"));
+        Directory dir =  service.retrieveDirectory(dId);
+
         return mapper.toContentsResponse(dir);
     }
 
@@ -47,8 +47,7 @@ public class DirectoryRestAdapter {
 
     @PatchMapping("/{dId}")
     public DirectoryDetailsResponse renameDirectory(@PathVariable String dId, @RequestBody DirectoryRequest request) {
-        Directory updatedDirectory = service.renameDirectory(dId, request.name())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Directory not found"));
+        Directory updatedDirectory = service.renameDirectory(dId, request.name());
         return mapper.toDetailsResponse(updatedDirectory);
     }
 }

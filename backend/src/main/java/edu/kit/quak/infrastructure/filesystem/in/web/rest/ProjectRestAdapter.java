@@ -1,14 +1,13 @@
 package edu.kit.quak.infrastructure.filesystem.in.web.rest;
 
-import edu.kit.quak.infrastructure.filesystem.in.web.rest.dto.ProjectRequest;
-import edu.kit.quak.core.filesystem.model.Project;
 import edu.kit.quak.application.filesystem.ports.in.ProjectServicePort;
+import edu.kit.quak.core.filesystem.model.Project;
 import edu.kit.quak.infrastructure.filesystem.in.web.rest.dto.ProjectContentsResponse;
 import edu.kit.quak.infrastructure.filesystem.in.web.rest.dto.ProjectDetailsResponse;
+import edu.kit.quak.infrastructure.filesystem.in.web.rest.dto.ProjectRequest;
 import edu.kit.quak.infrastructure.filesystem.in.web.rest.mapper.ProjectDtoMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -40,26 +39,18 @@ public class ProjectRestAdapter {
 
     @GetMapping("/{pId}")
     public ProjectContentsResponse retrieveProject(@PathVariable String pId) {
-        Project project =  service.retrieveProject(pId).orElseThrow(
-                () -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Given id does not map to a project")
-        );
+        Project project =  service.retrieveProject(pId);
         return mapper.toContentsResponse(project);
     }
 
     @DeleteMapping("/{pId}")
     public void deleteProject(@PathVariable String pId) {
-        try {
-            service.removeProject(pId);
-        } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
-        }
+        service.removeProject(pId);
     }
 
     @PatchMapping("/{pId}")
     public ProjectDetailsResponse renameProject(@PathVariable String pId, @RequestBody ProjectRequest request) {
-
-        Project updatedProject = service.renameProject(pId, request.name())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found"));
+        Project updatedProject = service.renameProject(pId, request.name());
         return mapper.toDetailsResponse(updatedProject);
     }
 }

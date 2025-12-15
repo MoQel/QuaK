@@ -9,7 +9,7 @@ import edu.kit.quak.application.filesystem.ports.out.FileRepositoryPort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Optional;
+import java.util.NoSuchElementException;
 
 @Service
 public class FileService implements FileServicePort {
@@ -38,21 +38,21 @@ public class FileService implements FileServicePort {
 
     // region Read
     @Override
-    public Optional<File> retrieveFile(String id) {
-        return repository.findById(id);
+    public File retrieveFile(String id) {
+        return repository.findById(id).orElseThrow(NoSuchElementException::new);
     }
 
     @Override
     @Transactional
-    public Optional<byte[]> getFileContent(String fId) {
-        return contentRepository.loadContent(fId);
+    public byte[] getFileContent(String fId) {
+        return contentRepository.loadContent(fId).orElseThrow(NoSuchElementException::new);
     }
     // endregion Retrieve
 
     // region Update
     @Override
     @Transactional
-    public Optional<File> renameFile(String fId, String newName) {
+    public File renameFile(String fId, String newName) {
         File file = repository.findById(fId)
                 .orElseThrow(() -> new IllegalArgumentException("File not found with ID" + fId));
 
@@ -61,14 +61,13 @@ public class FileService implements FileServicePort {
 
         parent.renameChild(file, newName);
         delegator.save(parent);
-        return Optional.of(file);
+        return file;
     }
 
     @Override
     @Transactional
     public void setFileContent(String fileId, byte[] content, String contentType) {
-        File file = retrieveFile(fileId)
-                .orElseThrow(() -> new IllegalArgumentException("File not found with ID: " + fileId));
+        File file = retrieveFile(fileId);
 
         FileElementContainer<?> parent = file.getParent()
                 .orElseThrow(() -> new IllegalStateException("File has no parent — corrupt state"));

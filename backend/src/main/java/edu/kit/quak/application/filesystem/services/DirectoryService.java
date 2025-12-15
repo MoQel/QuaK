@@ -8,7 +8,7 @@ import edu.kit.quak.core.filesystem.model.FileElementContainer;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
+import java.util.NoSuchElementException;
 
 @Service
 public class DirectoryService implements DirectoryServicePort {
@@ -34,7 +34,7 @@ public class DirectoryService implements DirectoryServicePort {
 
     @Override
     @Transactional
-    public Optional<Directory> renameDirectory(String dId, String newName) {
+    public Directory renameDirectory(String dId, String newName) {
         Directory directory = repository.findById(dId)
                 .orElseThrow(() -> new IllegalArgumentException("Directory not found with ID" + dId));
 
@@ -43,7 +43,7 @@ public class DirectoryService implements DirectoryServicePort {
 
         parent.renameChild(directory, newName);
         delegator.save(parent);
-        return Optional.of(directory);
+        return directory;
     }
 
     @Override
@@ -58,7 +58,7 @@ public class DirectoryService implements DirectoryServicePort {
     }
 
     @Override
-    public Optional<Directory> retrieveDirectory(String id) {
-        return repository.findById(id);
+    public Directory retrieveDirectory(String id) {
+        return repository.findById(id).orElseThrow(NoSuchElementException::new);
     }
 }

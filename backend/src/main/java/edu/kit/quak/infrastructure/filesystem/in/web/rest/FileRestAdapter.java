@@ -1,15 +1,13 @@
 package edu.kit.quak.infrastructure.filesystem.in.web.rest;
 
+import edu.kit.quak.application.filesystem.ports.in.FileServicePort;
+import edu.kit.quak.core.filesystem.model.File;
 import edu.kit.quak.infrastructure.filesystem.in.web.rest.dto.*;
 import edu.kit.quak.infrastructure.filesystem.in.web.rest.mapper.FileDtoMapper;
-import edu.kit.quak.core.filesystem.model.File;
-import edu.kit.quak.application.filesystem.ports.in.FileServicePort;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
-// TODO: Error Messages und werfen von errors überprüfen anpassen oder wie in OpenApi yaml
 @RestController
 @RequestMapping("/file")
 public class FileRestAdapter {
@@ -35,43 +33,32 @@ public class FileRestAdapter {
 
     @GetMapping("/{fId}")
     public FileDetailsResponse retrieveFile(@PathVariable String fId) {
-        File domainFile = service.retrieveFile(fId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "File not found"));
+        File domainFile = service.retrieveFile(fId);
         return mapper.toDetailsResponse(domainFile);
     }
 
     @DeleteMapping("/{fId}")
     public void deleteFile(@PathVariable String fId) {
-        try {
-            service.removeFile(fId);
-        } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
-        }
+        service.removeFile(fId);
     }
 
     @PatchMapping("/{fId}")
     public FileDetailsResponse renameFile(
             @PathVariable String fId,
             @RequestBody RenameFileRequest request) {
-        File updatedFile = service.renameFile(fId, request.name())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "File not found"));
+        File updatedFile = service.renameFile(fId, request.name());
         return mapper.toDetailsResponse(updatedFile);
     }
 
     @GetMapping("/{fId}/content")
     public FileContentResponse getFileContent(@PathVariable String fId) {
-        byte[] content = service.getFileContent(fId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No content found for file id: " + fId));
+        byte[] content = service.getFileContent(fId);
         return mapper.toContentResponse(content);
     }
 
     @PutMapping("/{fId}/content")
     public void setFileContent(@PathVariable String fId,
                                @RequestBody FileContentRequest fileContent) {
-        try {
-            service.setFileContent(fId, fileContent.content(), fileContent.contentType());
-        } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
-        }
+        service.setFileContent(fId, fileContent.content(), fileContent.contentType());
     }
 }

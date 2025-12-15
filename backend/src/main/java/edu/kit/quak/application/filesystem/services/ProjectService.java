@@ -3,10 +3,11 @@ package edu.kit.quak.application.filesystem.services;
 import edu.kit.quak.application.filesystem.ports.in.ProjectServicePort;
 import edu.kit.quak.application.filesystem.ports.out.ProjectRepositoryPort;
 import edu.kit.quak.core.filesystem.model.Project;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class ProjectService implements ProjectServicePort {
@@ -23,11 +24,11 @@ public class ProjectService implements ProjectServicePort {
     }
 
     @Override
-    public Optional<Project> renameProject(String pId, String newName ) {
+    public Project renameProject(String pId, String newName ) {
         Project project = repository.findById(pId)
                 .orElseThrow(() -> new IllegalArgumentException("Project not found with ID" + pId));
         project.rename(newName);
-        return Optional.ofNullable(repository.save(project));
+        return repository.save(project);
     }
 
     @Override
@@ -36,8 +37,10 @@ public class ProjectService implements ProjectServicePort {
     }
 
     @Override
-    public Optional<Project> retrieveProject(String id) {
-        return repository.findById(id);
+    public Project retrieveProject(String id) {
+        return repository.findById(id).orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Given id does not map to a project")
+        );
     }
 
     @Override
