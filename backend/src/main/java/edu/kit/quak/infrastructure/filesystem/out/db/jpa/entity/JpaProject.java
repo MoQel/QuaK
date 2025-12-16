@@ -1,29 +1,14 @@
 package edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
 
 @Entity
-@JsonTypeInfo(
-        use = JsonTypeInfo.Id.NONE
-)
+@DiscriminatorValue("project")
 public class JpaProject extends JpaFileElementContainer<JpaProject> {
-
-    public static final String TYPE_IDENTIFIER = "project";
-    public static final char ID_PREFIX = 'p';
-
-    protected JpaProject() {
-        super();
-    }
+    public JpaProject() { super(); }
 
     public JpaProject(String name) {
         super(name, null);
-    }
-
-    @Override
-    @JsonIgnore
-    public String getTypeIdentifier() {
-        return TYPE_IDENTIFIER;
     }
 }

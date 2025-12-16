@@ -1,12 +1,11 @@
 package edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity;
 
+import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
 
 @Entity
+@DiscriminatorValue("directory")
 public class JpaDirectory extends JpaFileElementContainer<JpaDirectory> {
-
-    public static final String TYPE_IDENTIFIER = "directory";
-    public static final char ID_PREFIX = 'd';
 
     protected JpaDirectory() {
         super();
@@ -14,10 +13,5 @@ public class JpaDirectory extends JpaFileElementContainer<JpaDirectory> {
 
     public JpaDirectory(String name, JpaFileElementContainer<?> parent) {
         super(name, parent);
-    }
-
-    @Override
-    public String getTypeIdentifier() {
-        return TYPE_IDENTIFIER;
     }
 }

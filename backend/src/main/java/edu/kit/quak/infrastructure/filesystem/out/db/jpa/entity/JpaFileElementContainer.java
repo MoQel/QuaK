@@ -1,6 +1,5 @@
 package edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -12,16 +11,15 @@ import java.util.Set;
 @Entity
 public abstract class JpaFileElementContainer<SELF extends JpaFileElementContainer<SELF>> extends JpaFileElement<SELF> {
     
-    @JsonIgnore
     @OneToMany(mappedBy = "parent", orphanRemoval = true, cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     protected Set<JpaFileElement<?>> contents = new HashSet<>();
 
-    public JpaFileElementContainer(String name, JpaFileElementContainer<?> parent) {
-        super(name, parent);
-    }
-
     protected JpaFileElementContainer() {
         super();
+    }
+
+    public JpaFileElementContainer(String name, JpaFileElementContainer<?> parent) {
+        super(name, parent);
     }
 
     public Set<JpaFileElement<?>> getContents() {

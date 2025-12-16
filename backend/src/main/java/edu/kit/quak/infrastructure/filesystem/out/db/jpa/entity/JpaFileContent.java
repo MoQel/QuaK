@@ -1,5 +1,6 @@
 package edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Lob;
@@ -9,6 +10,7 @@ public class JpaFileContent {
 
     // One to One foreign key to File
     @Id
+    @Column(name = "file_id", nullable = false, updatable = false)
     private String fileId;
 
     @Lob
