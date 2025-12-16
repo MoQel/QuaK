@@ -9,10 +9,13 @@ import { Bar, BarChart, CartesianGrid, XAxis } from "recharts";
 import { useMemo } from "react";
 
 const chartConfig = {
-    probability: {
-        label: "Probability",
-        color: "var(--chart-1)",
+  probability: {
+    label: "Probability",
+    theme: {
+      light: "hsl(220 80% 56%)",
+      dark: "hsl(220 80% 65%)",
     },
+  },
 } satisfies ChartConfig;
 
 type ResultsViewProps = {

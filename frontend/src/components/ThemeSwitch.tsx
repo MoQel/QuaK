@@ -26,9 +26,9 @@ export default function ThemeSwitch({ onToggle }: ThemeSwitchProps) {
       "
     >
       {isDark ? (
-        <Moon className="absolute right-5 w-2 h-2 text-gray-700 pointer-events-none" />
+        <Moon className="absolute right-7 w-5 h-5 text-gray-700 pointer-events-none" />
       ) : (
-        <Sun className="absolute left-5 w-2 h-2 text-yellow-500 pointer-events-none" />
+        <Sun className="absolute left-7 w-5 h-5 text-yellow-500 pointer-events-none" />
       )}
 
       {/* Thumb */}
