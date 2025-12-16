@@ -11,9 +11,10 @@ import org.mapstruct.MappingConstants;
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING, uses = {FileElementDtoMapper.class})
 public interface DirectoryDtoMapper {
 
-    @Mapping(target = "parent", ignore = true)
+    @Mapping(target = "parentId", ignore = true)
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "contents", ignore = true)
+    @Mapping(target = "lastAccess", ignore = true)
     Directory toDomain(DirectoryRequest domain);
 
     @Mapping(target = "type", source = "domain.typeIdentifier")

@@ -13,9 +13,10 @@ import java.util.List;
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING, uses = {FileElementDtoMapper.class})
 public interface ProjectDtoMapper {
 
-    @Mapping(target = "parent", ignore = true)
     @Mapping(target = "id", ignore = true)
+    @Mapping(target = "parentId", ignore = true)
     @Mapping(target = "contents", ignore = true)
+    @Mapping(target = "lastAccess", ignore = true)
     Project toDomain(ProjectRequest domain);
 
     @Mapping(target = "type", source = "domain.typeIdentifier")
