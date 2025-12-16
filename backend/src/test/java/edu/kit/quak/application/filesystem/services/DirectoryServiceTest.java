@@ -55,7 +55,7 @@ class DirectoryServiceTest {
         Directory newDir = new Directory("NewDir", null);
         when(delegator.findContainerById("missing")).thenReturn(Optional.empty());
 
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(IllegalStateException.class,
                 () -> service.createDirectory(newDir, "missing"));
     }
 
@@ -64,17 +64,23 @@ class DirectoryServiceTest {
     void renameDirectory_renamesAndSavesParent() {
         // Arrange
         String dirId = "dir-1";
+        String parentId = "p-1";
+
         Project parent = new Project("Root");
-        Directory dir = new Directory("OldName", parent); // Bidirectional link set by constructor
+        parent.setId(parentId);
+
+        Directory dir = new Directory("OldName", parent);
+        dir.setId(dirId);
 
         when(repository.findById(dirId)).thenReturn(Optional.of(dir));
+        when(delegator.findContainerById(parentId)).thenReturn(Optional.of(parent));
 
         // Act
         service.renameDirectory(dirId, "NewName");
 
         // Assert
         assertEquals("NewName", dir.getName());
-        verify(delegator).save(parent); // Persistence via parent
+        verify(delegator).save(parent);
     }
 
     @Test
@@ -82,16 +88,22 @@ class DirectoryServiceTest {
     void removeDirectory_removesFromParentAndSaves() {
         // Arrange
         String dirId = "dir-1";
+        String parentId = "p-1";
+
         Project parent = new Project("Root");
+        parent.setId(parentId);
+
         Directory dir = new Directory("ToDel", parent);
+        dir.setId(dirId);
 
         when(repository.findById(dirId)).thenReturn(Optional.of(dir));
+        when(delegator.findContainerById(parentId)).thenReturn(Optional.of(parent));
 
         // Act
         service.removeDirectory(dirId);
 
         // Assert
-        assertFalse(parent.getContents().contains(dir)); // Removed from domain
-        verify(delegator).save(parent); // Persisted
+        assertFalse(parent.getContents().contains(dir));
+        verify(delegator).save(parent);
     }
 }

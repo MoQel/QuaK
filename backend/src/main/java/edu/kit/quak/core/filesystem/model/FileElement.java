@@ -36,6 +36,10 @@ public abstract class FileElement<SELF extends FileElement<?>> {
         return Optional.ofNullable(parent);
     }
 
+    public String getParentId() {
+        return getParent().map(FileElementContainer::getId).orElse(null);
+    }
+
     public void addToParent(FileElementContainer<?> newParent) {
         if (newParent == this) {
             throw new IllegalArgumentException("An element cannot be its own parent");

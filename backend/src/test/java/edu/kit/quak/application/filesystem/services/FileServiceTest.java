@@ -55,21 +55,24 @@ class FileServiceTest {
     void setFileContent_updatesMetadataAndSavesContent() {
         // Arrange
         String fileId = "f-1";
-        Project parent = new Project("P");
-        File file = new File("test.txt", parent); // Parent is crucial
-        byte[] content = "Hello".getBytes();
+        String parentId = "p-1";
 
+        Project parent = new Project("P");
+        parent.setId(parentId);
+
+        File file = new File("test.txt", parent);
         file.setId(fileId);
 
         when(repository.findById(fileId)).thenReturn(Optional.of(file));
+        when(delegator.findContainerById(parentId)).thenReturn(Optional.of(parent));
 
         // Act
-        service.setFileContent(fileId, content, "text/plain");
+        service.setFileContent(fileId, "Hello".getBytes(), "text/plain");
 
         // Assert
-        assertEquals("text/plain", file.getContentType()); // Domain state updated
-        verify(contentRepository).saveContent(fileId, content); // Content saved
-        verify(delegator).save(parent); // Metadata saved (lastAccess changed)
+        assertEquals("text/plain", file.getContentType());
+        verify(contentRepository).saveContent(fileId, "Hello".getBytes());
+        verify(delegator).save(parent);
     }
 
     @Test
@@ -77,20 +80,24 @@ class FileServiceTest {
     void removeFile_deletesMetadataAndContent() {
         // Arrange
         String fileId = "f-1";
-        Project parent = new Project("P");
-        File file = new File("del.txt", parent);
+        String parentId = "p-1";
 
+        Project parent = new Project("P");
+        parent.setId(parentId);
+
+        File file = new File("del.txt", parent);
         file.setId(fileId);
 
         when(repository.findById(fileId)).thenReturn(Optional.of(file));
+        when(delegator.findContainerById(parentId)).thenReturn(Optional.of(parent));
 
         // Act
         service.removeFile(fileId);
 
         // Assert
-        assertFalse(parent.getContents().contains(file)); // Removed from domain list
-        verify(delegator).save(parent); // Parent saved (Metadata)
-        verify(contentRepository).deleteContent(fileId); // Blob deleted
+        assertFalse(parent.getContents().contains(file));
+        verify(delegator).save(parent);
+        verify(contentRepository).deleteContent(fileId);
     }
 
     @Test

@@ -1,14 +1,13 @@
 package edu.kit.quak.infrastructure.filesystem.in.web.rest;
 
+import edu.kit.quak.application.filesystem.ports.in.DirectoryServicePort;
+import edu.kit.quak.core.filesystem.model.Directory;
 import edu.kit.quak.infrastructure.filesystem.in.web.rest.dto.DirectoryContentsResponse;
 import edu.kit.quak.infrastructure.filesystem.in.web.rest.dto.DirectoryDetailsResponse;
 import edu.kit.quak.infrastructure.filesystem.in.web.rest.dto.DirectoryRequest;
 import edu.kit.quak.infrastructure.filesystem.in.web.rest.mapper.DirectoryDtoMapper;
-import edu.kit.quak.core.filesystem.model.Directory;
-import edu.kit.quak.application.filesystem.ports.in.DirectoryServicePort;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/directory")
@@ -38,11 +37,7 @@ public class DirectoryRestAdapter {
 
     @DeleteMapping("/{dId}")
     public void deleteDirectory(@PathVariable String dId) {
-        try {
-            service.removeDirectory(dId);
-        } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
-        }
+        service.removeDirectory(dId);
     }
 
     @PatchMapping("/{dId}")

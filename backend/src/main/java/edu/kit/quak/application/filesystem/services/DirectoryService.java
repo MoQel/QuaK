@@ -20,11 +20,12 @@ public class DirectoryService implements DirectoryServicePort {
         this.delegator = delegator;
     }
 
+    // region Create
+
     @Override
     @Transactional
     public Directory createDirectory(Directory container, String parentId) {
-        FileElementContainer<?> parent = delegator.findContainerById(parentId)
-                .orElseThrow(() -> new IllegalArgumentException("Parent not found with ID" + parentId));
+        FileElementContainer<?> parent = getParentById(parentId);
 
         // Creates bidirectional relationshipt
         container.addToParent(parent);
@@ -39,33 +40,50 @@ public class DirectoryService implements DirectoryServicePort {
                 .orElseThrow(() -> new IllegalStateException("Saved child Directory not found - unexpected behavior DB/Mapping inconsisty?"));
     }
 
+    // endregion Create
+
+    // region Read
+
+    @Override
+    public Directory retrieveDirectory(String id) {
+        return repository.findById(id).orElseThrow(NoSuchElementException::new);
+    }
+
+    // endregion Read
+
+    // region Update
+
     @Override
     @Transactional
     public Directory renameDirectory(String dId, String newName) {
-        Directory directory = repository.findById(dId)
-                .orElseThrow(() -> new IllegalArgumentException("Directory not found with ID" + dId));
-
-        FileElementContainer<?> parent = directory.getParent()
-                .orElseThrow(() -> new IllegalArgumentException("Directory has no parent corrupt state"));
+        Directory directory = retrieveDirectory(dId);
+        FileElementContainer<?> parent = getParentById(directory.getParentId());
 
         parent.renameChild(directory, newName);
         delegator.save(parent);
         return directory;
     }
 
+    // endregion Update
+
+    // region Delete
+
     @Override
     @Transactional
     public void removeDirectory(String dId) {
-        Directory directory = repository.findById(dId)
-                .orElseThrow(() -> new IllegalArgumentException("Directory not found with ID: " + dId));
-        FileElementContainer<?> parent = directory.getParent()
-                .orElseThrow(() -> new IllegalArgumentException("Directory has no parent corrupt state"));
+        Directory directory = retrieveDirectory(dId);
+        FileElementContainer<?> parent = getParentById(directory.getParentId());
+
         parent.removeElement(directory);
         delegator.save(parent);
     }
 
-    @Override
-    public Directory retrieveDirectory(String id) {
-        return repository.findById(id).orElseThrow(NoSuchElementException::new);
+    // endregion Delete
+
+    // Get the fresh parent (important due to shallow copies of mappers)
+    private FileElementContainer<?> getParentById(String parentId) {
+        if (parentId == null) throw new IllegalStateException("Directory has no parent corrupt state");
+        return delegator.findContainerById(parentId)
+                .orElseThrow(() -> new IllegalStateException("Parent not found with ID" + parentId));
     }
 }

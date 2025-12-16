@@ -1,11 +1,11 @@
 package edu.kit.quak.application.filesystem.services;
 
 import edu.kit.quak.application.filesystem.delegator.FileElementContainerRepositoryDelegator;
+import edu.kit.quak.application.filesystem.ports.in.FileServicePort;
 import edu.kit.quak.application.filesystem.ports.out.FileContentRepositoryPort;
+import edu.kit.quak.application.filesystem.ports.out.FileRepositoryPort;
 import edu.kit.quak.core.filesystem.model.File;
 import edu.kit.quak.core.filesystem.model.FileElementContainer;
-import edu.kit.quak.application.filesystem.ports.in.FileServicePort;
-import edu.kit.quak.application.filesystem.ports.out.FileRepositoryPort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,8 +28,7 @@ public class FileService implements FileServicePort {
     @Override
     @Transactional
     public File createFile(File element, String parentId) {
-        FileElementContainer<?> parent = delegator.findContainerById(parentId)
-                .orElseThrow(() -> new IllegalArgumentException("Parent not found with ID" + parentId));
+        FileElementContainer<?> parent = getParentById(parentId);
 
         element.addToParent(parent);
 
@@ -61,11 +60,8 @@ public class FileService implements FileServicePort {
     @Override
     @Transactional
     public File renameFile(String fId, String newName) {
-        File file = repository.findById(fId)
-                .orElseThrow(() -> new IllegalArgumentException("File not found with ID" + fId));
-
-        FileElementContainer<?> parent = file.getParent()
-                .orElseThrow(() -> new IllegalStateException("File has no parent — corrupt state"));
+        File file = retrieveFile(fId);
+        FileElementContainer<?> parent = getParentById(file.getParentId());
 
         parent.renameChild(file, newName);
         delegator.save(parent);
@@ -74,11 +70,10 @@ public class FileService implements FileServicePort {
 
     @Override
     @Transactional
-    public void setFileContent(String fileId, byte[] content, String contentType) {
-        File file = retrieveFile(fileId);
+    public void setFileContent(String fId, byte[] content, String contentType) {
+        File file = retrieveFile(fId);
 
-        FileElementContainer<?> parent = file.getParent()
-                .orElseThrow(() -> new IllegalStateException("File has no parent — corrupt state"));
+        FileElementContainer<?> parent = getParentById(file.getParentId());
 
         file.setLastAccessNow();
         file.setContentType(contentType);  // domain state
@@ -92,13 +87,18 @@ public class FileService implements FileServicePort {
     @Override
     @Transactional
     public void removeFile(String fId) {
-        File file = repository.findById(fId)
-                .orElseThrow(() -> new IllegalArgumentException("File not found with ID: " + fId));
-        FileElementContainer<?> parent = file.getParent()
-                        .orElseThrow(() -> new IllegalArgumentException("File has no parent corrupt state"));
+        File file = retrieveFile(fId);
+        FileElementContainer<?> parent = getParentById(file.getParentId());
         parent.removeElement(file);
         delegator.save(parent);
         contentRepository.deleteContent(fId);
     }
     // endregion Delete
+
+    // Get the fresh parent (important due to shallow copies of mappers)
+    private FileElementContainer<?> getParentById(String parentId) {
+        if (parentId == null) throw new IllegalStateException("File has no parent corrupt state");
+        return delegator.findContainerById(parentId)
+                .orElseThrow(() -> new IllegalStateException("Parent not found with ID" + parentId));
+    }
 }
