@@ -47,8 +47,10 @@ class DirectoryJpaAdapterTest {
         Project project = new Project("P");
         Project savedProject = projectAdapter.save(project);
 
-        Directory dir = new Directory("Dir", savedProject);
-        new File("File.txt", dir);
+        Directory dir = new Directory("Dir", savedProject.getId());
+        File file = new File("File.txt", dir.getId());
+
+        dir.addChild(file);
 
 
         Directory saved = adapter.save(dir);
@@ -67,8 +69,7 @@ class DirectoryJpaAdapterTest {
         assertEquals("File.txt", child.getName());
 
         // check parent
-        assertTrue(child.getParent().isPresent());
-        assertEquals(d, child.getParent().get());
+        assertEquals(d.getId(), child.getParentId());
     }
 
     @Test
@@ -84,13 +85,16 @@ class DirectoryJpaAdapterTest {
     @Tag("integration")
     void updateDirectory_removesFile_whenRemovedFromList() {
         Directory dir = new Directory("UpdateDir", null);
-        new File("DeleteMe.txt", dir);
+        File file = new File("DeleteMe.txt", dir.getId());
+
+        dir.addChild(file);
+
         Directory saved = adapter.save(dir);
 
         Directory loaded = adapter.findById(saved.getId()).orElseThrow();
         FileElement<?> fileToRemove = loaded.getContents().iterator().next();
 
-        loaded.removeElement(fileToRemove);
+        loaded.removeChild(fileToRemove);
 
         adapter.save(loaded);
 

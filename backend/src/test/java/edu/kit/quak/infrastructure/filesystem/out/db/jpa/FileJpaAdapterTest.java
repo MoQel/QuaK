@@ -42,8 +42,10 @@ class FileJpaAdapterTest {
     @Tag("integration")
     void findById_returnsFile_whenExists() {
         Project project = projectAdapter.save(new Project("Project_FileTest"));
-        Directory dir = new Directory("Dir", project);
-        new File("TestFile.txt", dir);
+        Directory dir = new Directory("Dir", project.getId());
+        File file = new File("TestFile.txt", dir.getId());
+
+        dir.addChild(file);
 
         Directory savedDir = directoryAdapter.save(dir);
 
@@ -60,8 +62,7 @@ class FileJpaAdapterTest {
         assertTrue(loaded.isPresent());
         assertEquals("TestFile.txt", loaded.get().getName());
 
-        assertTrue(loaded.get().getParent().isPresent());
-        assertEquals(savedDir.getId(), loaded.get().getParent().get().getId());
+        assertEquals(savedDir.getId(), loaded.get().getParentId());
     }
 
     @Test
@@ -69,8 +70,11 @@ class FileJpaAdapterTest {
     void existsById_returnsTrue_whenFileExists() {
         // Arrange
         Project p = projectAdapter.save(new Project("P_Exist"));
-        Directory d = new Directory("D", p);
-        new File("Exists.txt", d);
+        Directory d = new Directory("D", p.getId());
+        File file = new File("Exists.txt", d.getId());
+
+        p.addChild(d);
+        d.addChild(file);
 
         Directory savedDir = directoryAdapter.save(d);
         String fileId = savedDir.getContents().iterator().next().getId();

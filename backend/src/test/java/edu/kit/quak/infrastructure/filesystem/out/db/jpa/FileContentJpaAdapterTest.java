@@ -43,8 +43,10 @@ class FileContentJpaAdapterTest {
     @BeforeEach
     void setupMetadata() {
         Project p = projectAdapter.save(new Project("ContentProject"));
-        Directory d = directoryAdapter.save(new Directory("ContentDir", p));
-        new File("Data.bin", d);
+        Directory d = directoryAdapter.save(new Directory("ContentDir", p.getId()));
+        File file = new File("Data.bin", d.getId());
+        p.addChild(d);
+        d.addChild(file);
 
         Directory savedDir = directoryAdapter.save(d);
 

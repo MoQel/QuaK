@@ -3,9 +3,10 @@ package edu.kit.quak.infrastructure.filesystem.out.db.jpa;
 import edu.kit.quak.application.filesystem.ports.out.DirectoryRepositoryPort;
 import edu.kit.quak.core.filesystem.model.Directory;
 import edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity.JpaDirectory;
+import edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity.JpaFileElementContainer;
 import edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper.DirectoryJpaMapper;
-import edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper.FileElementJpaMapper;
 import edu.kit.quak.infrastructure.filesystem.out.db.jpa.repository.SpringDataDirectoryRepository;
+import edu.kit.quak.infrastructure.filesystem.out.db.jpa.repository.SpringDataFileElementContainerRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -14,19 +15,18 @@ import java.util.Optional;
 public class DirectoryJpaAdapter implements DirectoryRepositoryPort {
 
     SpringDataDirectoryRepository directoryRepository;
+    SpringDataFileElementContainerRepository parentRepository;
     DirectoryJpaMapper directoryMapper;
-    FileElementJpaMapper elementMapper;
 
-    public DirectoryJpaAdapter(SpringDataDirectoryRepository directoryRepository, DirectoryJpaMapper directoryMapper, FileElementJpaMapper elementMapper) {
+    public DirectoryJpaAdapter(SpringDataDirectoryRepository directoryRepository, DirectoryJpaMapper directoryMapper, SpringDataFileElementContainerRepository parentRepository) {
         this.directoryRepository = directoryRepository;
         this.directoryMapper = directoryMapper;
-        this.elementMapper = elementMapper;
+        this.parentRepository = parentRepository;
     }
 
     @Override
     public Optional<Directory> findById(String dId) {
-        String dbId = elementMapper.removePrefix(dId);
-        return directoryRepository.findById(dbId)
+        return directoryRepository.findById(dId)
                 .map(directoryMapper::toDomainEntity);
     }
 
@@ -34,12 +34,18 @@ public class DirectoryJpaAdapter implements DirectoryRepositoryPort {
     @Override
     public Directory save(Directory container) {
         JpaDirectory jpaDirectory = directoryMapper.toJpaEntity(container);
+        // We need to set the parent of container manually because it is ignored by the mapping
+        // else we would lose the bidirectional behavior in the db
+        if (container.getParentId() != null) {
+            JpaFileElementContainer<?> parent = parentRepository.findById(container.getParentId())
+                    .orElseThrow(() -> new IllegalArgumentException("Parent not found: " + container.getParentId()));
+            jpaDirectory.setParent(parent);
+        }
         return directoryMapper.toDomainEntity(directoryRepository.save(jpaDirectory));
     }
 
     @Override
     public boolean existsById(String dId) {
-        String dbId = elementMapper.removePrefix(dId);
-        return directoryRepository.existsById(dbId);
+        return directoryRepository.existsById(dId);
     }
 }

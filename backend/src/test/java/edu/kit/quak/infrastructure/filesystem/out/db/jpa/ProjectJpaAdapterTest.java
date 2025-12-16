@@ -39,8 +39,11 @@ public class ProjectJpaAdapterTest {
     @Tag("integration")
     void saveAndFindById_withContents() {
         Project project = new Project("ProjectA");
-        Directory dir = new Directory("Dir", project);
-        File file = new File("File.txt", dir);
+        Directory dir = new Directory("Dir", project.getId());
+        File file = new File("File.txt", dir.getId());
+
+        project.addChild(dir);
+        dir.addChild(file);
 
         Project saved = adapter.save(project);
 
@@ -58,8 +61,7 @@ public class ProjectJpaAdapterTest {
         assertEquals("Dir", loadedDir.getName());
 
         // Test parent
-        assertTrue(loadedDir.getParent().isPresent());
-        assertEquals(p, loadedDir.getParent().get());
+        assertEquals(p.getId(), loadedDir.getParentId());
 
         // Test child elements
         Directory d = (Directory) loadedDir;
@@ -104,13 +106,15 @@ public class ProjectJpaAdapterTest {
     @Tag("integration")
     void removingDirectoryFromProjectDeletesIt() {
         Project project = new Project("P");
-        Directory dir = new Directory("Dir", project);
+        Directory dir = new Directory("Dir", project.getId());
+
+        project.addChild(dir);
 
         Project saved = adapter.save(project);
         Project loaded = adapter.findById(saved.getId()).orElseThrow();
 
         Directory loadedDir = (Directory) loaded.getContents().iterator().next();
-        loaded.removeElement(loadedDir);
+        loaded.removeChild(loadedDir);
 
         adapter.save(loaded);
 
