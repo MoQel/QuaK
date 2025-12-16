@@ -11,7 +11,6 @@ import edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity.JpaFileElement;
 import edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity.JpaProject;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingConstants;
-import org.mapstruct.Named;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 
@@ -20,10 +19,6 @@ import java.util.stream.Collectors;
 
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING)
 public abstract class FileElementJpaMapper {
-    private static final char PREFIX_PROJECT = 'p';
-    private static final char PREFIX_DIRECTORY = 'd';
-    private static final char PREFIX_FILE = 'f';
-
     @Autowired
     @Lazy
     protected FileJpaMapper fileMapper;
@@ -82,46 +77,5 @@ public abstract class FileElementJpaMapper {
         return jpaSet.stream()
                 .map(this::toDomainEntity)
                 .collect(Collectors.toSet());
-    }
-
-    /**
-     * From DB (UUID string) -> Domain (prefix string)
-     * Used, for example, by JpaProject -> Project
-     */
-    @Named("addProjectPrefix")
-    public String addProjectPrefix(String uuid) {
-        return addPrefix(uuid, PREFIX_PROJECT);
-    }
-
-    @Named("addDirectoryPrefix")
-    public String addDirectoryPrefix(String uuid) {
-        return addPrefix(uuid, PREFIX_DIRECTORY);
-    }
-
-    @Named("addFilePrefix")
-    public String addFilePrefix(String uuid) {
-        return addPrefix(uuid, PREFIX_FILE);
-    }
-
-    /**
-     * From domain (prefix string) -> DB (UUID string)
-     * Removes the prefix before saving/searching
-     */
-    @Named("removePrefix")
-    public String removePrefix(String domainId) {
-        if (domainId == null || domainId.length() < 2) {
-            return domainId; // Oder null, je nach Anforderung
-        }
-
-        if (domainId.indexOf('-') == 1) {
-            return domainId.substring(2);
-        }
-
-        return domainId.substring(1);
-    }
-
-    private String addPrefix(String uuid, char prefix) {
-        if (uuid == null) return null;
-        return prefix + "-" + uuid;
     }
 }

@@ -34,16 +34,15 @@ class ProjectJpaMapperTest {
     @BeforeEach
     void setup() throws Exception {
         mapper = Mappers.getMapper(ProjectJpaMapper.class);
-
         TestUtil.setField(mapper, "fileElementJpaMapper", elementMapper);
     }
 
     @Test
-    void domainToJpaProject() {
+    void domainToJpaEntity() {
         // Arrange
         Project p = new Project("P");
-        new Directory("Dir", p);
-        new File("F", p);
+        new Directory("Dir", p.getId());
+        new File("F", p.getId());
 
         JpaDirectory mockJpaDir = new JpaDirectory("Dir_JPA", null);
         JpaFile mockJpaFile = new JpaFile("F_JPA", null);
@@ -63,7 +62,7 @@ class ProjectJpaMapperTest {
     }
 
     @Test
-    void jpaToDomainProject() {
+    void jpaToDomainEntity() {
         // Arrange
         JpaProject jpa = new JpaProject("P");
         JpaDirectory d = new JpaDirectory("Dir", jpa);
@@ -72,8 +71,8 @@ class ProjectJpaMapperTest {
         Set<JpaFileElement<?>> jpaContents = Set.of(d, f);
         jpa.setContents(jpaContents);
 
-        Directory mockDomainDir = new Directory("Dir_Domain", null);
-        File mockDomainFile = new File("F_Domain", null);
+        Directory mockDomainDir = new Directory("Dir_Domain", "p-mock");
+        File mockDomainFile = new File("F_Domain", "d-mock");
         Set<FileElement<?>> mockDomainContents = Set.of(mockDomainDir, mockDomainFile);
 
         when(elementMapper.toDomainSet(anySet())).thenReturn(mockDomainContents);

@@ -1,13 +1,14 @@
 package edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper;
 
 import edu.kit.quak.core.filesystem.model.File;
+import edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity.JpaDirectory;
 import edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity.JpaFile;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class FileJpaMapperTest {
 
@@ -16,38 +17,40 @@ class FileJpaMapperTest {
     @BeforeEach
     void setup() {
         mapper = Mappers.getMapper(FileJpaMapper.class);
-
-        DirectoryJpaMapper directoryMapper = Mappers.getMapper(DirectoryJpaMapper.class);
-        ProjectJpaMapper projectMapper = Mappers.getMapper(ProjectJpaMapper.class);
-        FileElementJpaMapper elementMapper = Mappers.getMapper(FileElementJpaMapper.class);
-
-        ReflectionTestUtils.setField(mapper, "directoryMapper", directoryMapper);
-        ReflectionTestUtils.setField(mapper, "projectMapper", projectMapper);
-
-        ReflectionTestUtils.setField(mapper, "fileElementJpaMapper", elementMapper);
-
-        ReflectionTestUtils.setField(directoryMapper, "fileElementJpaMapper", elementMapper);
-        ReflectionTestUtils.setField(projectMapper, "fileElementJpaMapper", elementMapper);
     }
 
     @Test
-    void domainToJpaFile() {
-        File file = new File("hello.txt", null);
+    void domainToJpaEntity_ShouldIgnoreParent() {
+        // Arrange
+        String parentId = "d-123";
+        File file = new File("hello.txt", parentId);
 
+        // Act
         JpaFile jpa = mapper.toJpaEntity(file);
 
+        // Assert
         assertEquals("hello.txt", jpa.getName());
-        assertEquals(file.getContentType(), jpa.getContentType());
+        assertNull(jpa.getParent());
+        assertEquals(file.getId(), jpa.getId());
     }
 
     @Test
-    void jpaToDomainFile() {
-        JpaFile jpa = new JpaFile("A.txt", null);
-        jpa.setContentType("text/plain");
+    void jpaToDomainEntity_ShouldMapParentId() {
+        // Arrange
+        JpaDirectory parent = new JpaDirectory("dir", null);
+        parent.setId("d-parent-1");
 
+        JpaFile jpa = new JpaFile("A.txt", null); // Constructor might set parent to null initially
+        jpa.setParent(parent); // Set parent relationship
+        jpa.setContentType("text/plain");
+        jpa.setId("f-file-1");
+
+        // Act
         File domain = mapper.toDomainEntity(jpa);
 
+        // Assert
         assertEquals("A.txt", domain.getName());
         assertEquals("text/plain", domain.getContentType());
+        assertEquals("d-parent-1", domain.getParentId());
     }
 }

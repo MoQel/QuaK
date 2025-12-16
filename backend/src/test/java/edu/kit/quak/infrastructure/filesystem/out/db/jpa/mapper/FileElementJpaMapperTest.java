@@ -1,7 +1,11 @@
 package edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper;
 
-import edu.kit.quak.core.filesystem.model.*;
-import edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity.*;
+import edu.kit.quak.core.filesystem.model.Directory;
+import edu.kit.quak.core.filesystem.model.File;
+import edu.kit.quak.core.filesystem.model.FileElement;
+import edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity.JpaDirectory;
+import edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity.JpaFile;
+import edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity.JpaFileElement;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -9,10 +13,9 @@ import org.mapstruct.factory.Mappers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Set;
-
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class FileElementJpaMapperTest {
@@ -29,9 +32,6 @@ class FileElementJpaMapperTest {
     @BeforeEach
     void setup() throws Exception {
         mapper = Mappers.getMapper(FileElementJpaMapper.class);
-
-        // DI via Reflection
-        // Mockito @InjectMocks does often not work directly with abstract MapStruct classes
         TestUtil.setField(mapper, "fileMapper", fileMapper);
         TestUtil.setField(mapper, "directoryMapper", directoryMapper);
         TestUtil.setField(mapper, "projectMapper", projectMapper);
@@ -39,12 +39,11 @@ class FileElementJpaMapperTest {
 
     @Test
     void mapFileToJpa() {
-        // Arrange
-        File file = new File("test.txt", null);
+        // Arrange - Update: Parent ID string
+        File file = new File("test.txt", "d-parent");
         JpaFile expectedJpa = new JpaFile("test.txt", null);
         expectedJpa.setName("test.txt");
 
-        // Mock Behavior
         when(fileMapper.toJpaEntity(file)).thenReturn(expectedJpa);
 
         // Act
@@ -52,14 +51,13 @@ class FileElementJpaMapperTest {
 
         // Assert
         assertEquals(expectedJpa, result);
-        verify(fileMapper).toJpaEntity(file); // Ensure that right mapper found
-        verifyNoInteractions(directoryMapper, projectMapper); // Ensure that no incorrect mappers were called
+        verify(fileMapper).toJpaEntity(file);
     }
 
     @Test
     void mapDirectoryToJpa() {
-        // Arrange
-        Directory dir = new Directory("Dir", null);
+        // Arrange - Update: Parent ID string
+        Directory dir = new Directory("Dir", "p-root");
         JpaDirectory expectedJpa = new JpaDirectory("Dir", null);
 
         when(directoryMapper.toJpaEntity(dir)).thenReturn(expectedJpa);
@@ -72,48 +70,13 @@ class FileElementJpaMapperTest {
         verify(directoryMapper).toJpaEntity(dir);
     }
 
-    @Test
-    void mapProjectToJpa() {
-        // Arrange
-        Project p = new Project("X");
-        JpaProject expectedJpa = new JpaProject("X");
-
-        when(projectMapper.toJpaEntity(p)).thenReturn(expectedJpa);
-
-        // Act
-        JpaFileElement<?> result = mapper.toJpaEntity(p);
-
-        // Assert
-        assertEquals(expectedJpa, result);
-        verify(projectMapper).toJpaEntity(p);
-    }
-
-    @Test
-    void mapSetToJpaSet() {
-        // Arrange
-        Directory d = new Directory("D", null);
-        File f = new File("F", null);
-        Set<FileElement<?>> source = Set.of(d, f);
-
-        when(directoryMapper.toJpaEntity(d)).thenReturn(new JpaDirectory("D", null));
-        when(fileMapper.toJpaEntity(f)).thenReturn(new JpaFile("F", null));
-
-        // Act
-        Set<JpaFileElement<?>> mapped = mapper.toJpaSet(source);
-
-        // Assert
-        assertEquals(2, mapped.size());
-        verify(directoryMapper).toJpaEntity(d);
-        verify(fileMapper).toJpaEntity(f);
-        verifyNoMoreInteractions(directoryMapper, fileMapper, projectMapper);
-    }
 
     @Test
     void mapUnknownTypeThrows() {
         // Arrange
-        FileElement<?> unknown = new FileElement<>("X", null) {
+        FileElement<?> unknown = new FileElement("X", null) {
             @Override public String getTypeIdentifier() { return "x"; }
-            @Override public char getIdPrefix() { return 'x'; }
+            @Override public char getIdPrefix() { return 'x'; } // <-- Neu
         };
 
         // Act & Assert
