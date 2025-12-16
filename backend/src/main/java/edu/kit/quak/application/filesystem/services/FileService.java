@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.NoSuchElementException;
+import java.util.function.Consumer;
 
 @Service
 public class FileService implements FileServicePort {
@@ -29,17 +30,9 @@ public class FileService implements FileServicePort {
     @Transactional
     public File createFile(File element, String parentId) {
         FileElementContainer<?> parent = getParentById(parentId);
-
-        element.addToParent(parent);
-
+        parent.addChild(element);
         FileElementContainer<?> savedParent = delegator.save(parent);
-
-        return savedParent.getContents().stream()
-                .filter(child -> child instanceof File)
-                .map(child -> (File) child)
-                .filter(f -> f.getName().equals(element.getName()))
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("Saved child File not found - unexpected behavior DB/Mapping inconsisty?"));
+        return findFileInParent(savedParent, element.getId());
     }
     // endregion Create
 
@@ -52,6 +45,9 @@ public class FileService implements FileServicePort {
     @Override
     @Transactional
     public byte[] getFileContent(String fId) {
+        if (!repository.existsById(fId)) {
+            throw new NoSuchElementException("File not found: " + fId);
+        }
         return contentRepository.loadContent(fId).orElseThrow(NoSuchElementException::new);
     }
     // endregion Retrieve
@@ -60,26 +56,18 @@ public class FileService implements FileServicePort {
     @Override
     @Transactional
     public File renameFile(String fId, String newName) {
-        File file = retrieveFile(fId);
-        FileElementContainer<?> parent = getParentById(file.getParentId());
-
-        parent.renameChild(file, newName);
-        delegator.save(parent);
-        return file;
+        return modifyFileInParent(fId, file -> file.rename(newName));
     }
 
     @Override
     @Transactional
     public void setFileContent(String fId, byte[] content, String contentType) {
-        File file = retrieveFile(fId);
-
-        FileElementContainer<?> parent = getParentById(file.getParentId());
-
-        file.setLastAccessNow();
-        file.setContentType(contentType);  // domain state
-
-        contentRepository.saveContent(file.getId(), content);
-        delegator.save(parent);
+        modifyFileInParent(fId, file -> {
+            file.setLastAccessNow();
+            file.setContentType(contentType);
+        });
+        // Store content blob seperate
+        contentRepository.saveContent(fId, content);
     }
     // endregion Update
 
@@ -89,7 +77,7 @@ public class FileService implements FileServicePort {
     public void removeFile(String fId) {
         File file = retrieveFile(fId);
         FileElementContainer<?> parent = getParentById(file.getParentId());
-        parent.removeElement(file);
+        parent.removeChild(file);
         delegator.save(parent);
         contentRepository.deleteContent(fId);
     }
@@ -100,5 +88,31 @@ public class FileService implements FileServicePort {
         if (parentId == null) throw new IllegalStateException("File has no parent corrupt state");
         return delegator.findContainerById(parentId)
                 .orElseThrow(() -> new IllegalStateException("Parent not found with ID" + parentId));
+    }
+
+    private File findFileInParent(FileElementContainer<?> parent, String fileId) {
+        return parent.getContents().stream()
+                .filter(c -> c.getId().equals(fileId))
+                .filter(c -> c instanceof File)
+                .map(c -> (File) c)
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("File not found in parent container (ID: " + fileId + ")"));
+    }
+
+    private File modifyFileInParent(String fileId, Consumer<File> modifier) {
+        File tempFile = retrieveFile(fileId);
+        FileElementContainer<?> parent = getParentById(tempFile.getParentId());
+
+        // Finding the “real” child in the context of the parents
+        File childInParent = findFileInParent(parent, fileId);
+
+        // Apply changes
+        modifier.accept(childInParent);
+
+        // Save changes through parent
+        FileElementContainer<?> savedParent = delegator.save(parent);
+
+        // Return updated child
+        return findFileInParent(savedParent, fileId);
     }
 }

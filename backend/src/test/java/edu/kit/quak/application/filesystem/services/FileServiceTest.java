@@ -35,18 +35,22 @@ class FileServiceTest {
     @Tag("unit")
     void createFile_linksToParentAndSaves() {
         // Arrange
+        String parentId = "p-1";
         Project parent = new Project("P");
-        File file = new File("test.txt", null);
+        parent.setId(parentId);
 
-        when(delegator.findContainerById("p-1")).thenReturn(Optional.of(parent));
+        File file = new File("test.txt", parentId);
+        file.setId("f-new");
+
+        when(delegator.findContainerById(parentId)).thenReturn(Optional.of(parent));
         when(delegator.save(parent)).thenReturn(parent);
 
         // Act
-        service.createFile(file, "p-1");
+        File result = service.createFile(file, parentId);
 
         // Assert
-        assertTrue(file.getParent().isPresent());
-        assertEquals(parent, file.getParent().get());
+        assertTrue(parent.getContents().contains(result));
+        assertEquals(parentId, result.getParentId());
         verify(delegator).save(parent);
     }
 
@@ -60,11 +64,14 @@ class FileServiceTest {
         Project parent = new Project("P");
         parent.setId(parentId);
 
-        File file = new File("test.txt", parent);
+        File file = new File("test.txt", parentId);
         file.setId(fileId);
+
+        parent.addChild(file);
 
         when(repository.findById(fileId)).thenReturn(Optional.of(file));
         when(delegator.findContainerById(parentId)).thenReturn(Optional.of(parent));
+        when(delegator.save(parent)).thenAnswer(invocation -> invocation.getArgument(0));
 
         // Act
         service.setFileContent(fileId, "Hello".getBytes(), "text/plain");
@@ -85,8 +92,10 @@ class FileServiceTest {
         Project parent = new Project("P");
         parent.setId(parentId);
 
-        File file = new File("del.txt", parent);
+        File file = new File("del.txt", parentId);
         file.setId(fileId);
+
+        parent.addChild(file);
 
         when(repository.findById(fileId)).thenReturn(Optional.of(file));
         when(delegator.findContainerById(parentId)).thenReturn(Optional.of(parent));
@@ -103,8 +112,9 @@ class FileServiceTest {
     @Test
     @Tag("unit")
     void renameFile_throws_whenCorruptState() {
-        // Scenario: File found in DB but has no parent (Data inconsistency)
-        File orphanFile = new File("Orphan", null); // No parent!
+        File orphanFile = new File("Orphan", null);
+        orphanFile.setId("f-1");
+
         when(repository.findById("f-1")).thenReturn(Optional.of(orphanFile));
 
         assertThrows(IllegalStateException.class,

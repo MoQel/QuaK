@@ -32,10 +32,12 @@ class DirectoryServiceTest {
     @Tag("unit")
     void createDirectory_savesParent() {
         // Arrange
-        String parentId = "parent-123";
+        String parentId = "p-1";
         Project parent = new Project("RootProject");
         parent.setId(parentId);
-        Directory newDir = new Directory("NewDir", null);
+
+        Directory newDir = new Directory("NewDir", parentId);
+        newDir.setId("d-new");
 
         when(delegator.findContainerById(parentId)).thenReturn(Optional.of(parent));
         when(delegator.save(parent)).thenReturn(parent);
@@ -44,18 +46,18 @@ class DirectoryServiceTest {
         service.createDirectory(newDir, parentId);
 
         // Assert
-        assertTrue(newDir.getParent().isPresent());
-        assertEquals(parent, newDir.getParent().get()); // Parent link set
-        verify(delegator).save(parent); // Verify save was called on Aggregate Root
+        assertTrue(parent.getContents().contains(newDir));
+        assertEquals(parentId, newDir.getParentId());
+        verify(delegator).save(parent);
     }
 
     @Test
     @Tag("unit")
     void createDirectory_throws_whenParentNotFound() {
-        Directory newDir = new Directory("NewDir", null);
+        Directory newDir = new Directory("NewDir", "missing");
         when(delegator.findContainerById("missing")).thenReturn(Optional.empty());
 
-        assertThrows(IllegalStateException.class,
+        assertThrows(IllegalStateException.class, // oder IllegalArgumentException, je nach Service-Impl
                 () -> service.createDirectory(newDir, "missing"));
     }
 
@@ -67,13 +69,18 @@ class DirectoryServiceTest {
         String parentId = "p-1";
 
         Project parent = new Project("Root");
+        // ID setzen via Reflection oder wenn Setter vorhanden (abhängig von deiner Implementierung)
         parent.setId(parentId);
 
-        Directory dir = new Directory("OldName", parent);
+        Directory dir = new Directory("OldName", parentId);
         dir.setId(dirId);
+
+        parent.addChild(dir);
 
         when(repository.findById(dirId)).thenReturn(Optional.of(dir));
         when(delegator.findContainerById(parentId)).thenReturn(Optional.of(parent));
+
+        when(delegator.save(parent)).thenAnswer(invocation -> invocation.getArgument(0));
 
         // Act
         service.renameDirectory(dirId, "NewName");
@@ -93,8 +100,10 @@ class DirectoryServiceTest {
         Project parent = new Project("Root");
         parent.setId(parentId);
 
-        Directory dir = new Directory("ToDel", parent);
+        Directory dir = new Directory("ToDel", parentId);
         dir.setId(dirId);
+
+        parent.addChild(dir);
 
         when(repository.findById(dirId)).thenReturn(Optional.of(dir));
         when(delegator.findContainerById(parentId)).thenReturn(Optional.of(parent));
