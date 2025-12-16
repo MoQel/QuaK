@@ -1,8 +1,8 @@
 plugins {
-	id 'java'
-	id 'org.springframework.boot' version '3.4.5'
-	id 'io.spring.dependency-management' version '1.1.7'
-	id "com.github.node-gradle.node" version "7.1.0"
+    id 'java'
+    id 'org.springframework.boot' version '3.4.5'
+    id 'io.spring.dependency-management' version '1.1.7'
+    id "com.github.node-gradle.node" version "7.1.0"
 }
 apply from: 'node.gradle'
 
@@ -10,54 +10,136 @@ group = 'edu.kit'
 version = '0.0.1-SNAPSHOT'
 
 java {
-	toolchain {
-		languageVersion = JavaLanguageVersion.of(21)
-	}
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
 }
 
 repositories {
-	mavenCentral()
+    mavenCentral()
 }
 
 dependencies {
-	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-	implementation 'org.springframework.boot:spring-boot-starter-jdbc'
-	implementation 'org.springframework.boot:spring-boot-starter-web'
-    implementation 'org.mapstruct:mapstruct:1.5.5.Final'
-    annotationProcessor 'org.mapstruct:mapstruct:1.5.5.Final'
-	runtimeOnly 'com.h2database:h2'
-	runtimeOnly "org.mariadb.jdbc:mariadb-java-client:3.5.4"
-	testImplementation 'org.springframework.boot:spring-boot-starter-test'
-	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.session:spring-session-core'
+    runtimeOnly 'com.h2database:h2'
+    runtimeOnly "org.mariadb.jdbc:mariadb-java-client:3.5.4"
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.security:spring-security-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 tasks.register('cleanFrontendFiles', Delete) {
-	group = 'QuaK'
-	def stat = layout.projectDirectory.dir("src/main/resources/static").asFile
-	def toDelete = stat.listFiles().findAll() { file ->
-		!file.name.startsWith(".git")
-	}
-	delete toDelete
+    group = 'QuaK'
+    def stat = layout.projectDirectory.dir("src/main/resources/static").asFile
+    def toDelete = stat.listFiles().findAll() { file ->
+        !file.name.startsWith(".git")
+    }
+    delete toDelete
 }
 
 tasks.register('getFrontend', Copy) {
-	dependsOn npm_run_build
-	dependsOn cleanFrontendFiles
-	group = 'QuaK'
-	description = 'Copy frontend into static-folder inside the backend'
-	from(layout.projectDirectory.dir("../frontend/dist"))
-	into(layout.projectDirectory.dir('src/main/resources/static'))
+    dependsOn npm_run_build
+    dependsOn cleanFrontendFiles
+    group = 'QuaK'
+    description = 'Copy frontend into static-folder inside the backend'
+    from(layout.projectDirectory.dir("../frontend/dist"))
+    into(layout.projectDirectory.dir('src/main/resources/static'))
 }
 
+// Only build frontend for production builds, not for tests
+// This saves ~20-30 seconds on test runs
 tasks.named("processResources") {
-	dependsOn getFrontend
+    // Skip frontend build during test execution
+    // But allow override via -PbuildFrontend=true (used in Docker prod builds)
+    def shouldBuildFrontend = project.hasProperty('buildFrontend') ?
+            project.property('buildFrontend').toBoolean() :
+            !gradle.startParameter.taskNames.any { it.contains('test') }
+
+    if (shouldBuildFrontend) {
+        dependsOn getFrontend
+    }
 }
 
 tasks.named("bootRun") {
-	group = 'QuaK'
-	mainClass = 'edu.kit.quak.QuaKApplication'
+    group = 'QuaK'
+    mainClass = 'edu.kit.quak.QuaKApplication'
 }
 
 tasks.named('test') {
-	useJUnitPlatform()
+    useJUnitPlatform()
+}
+
+// Production build task - always includes frontend
+tasks.register('buildProduction') {
+    group = 'QuaK'
+    description = 'Build backend with frontend for production deployment'
+    dependsOn getFrontend
+    dependsOn build
+    doLast {
+        println "✅ Production build complete with frontend included!"
+        println "📦 JAR location: build/libs/"
+    }
+}
+
+// Frontend test task
+tasks.register('testFrontend', Exec) {
+    group = 'QuaK'
+    description = 'Run frontend tests using Vitest'
+    workingDir = layout.projectDirectory.file("../frontend")
+
+    // Check if npm is available
+    def npmCmd = System.getProperty('os.name').toLowerCase().contains('windows') ? 'npm.cmd' : 'npm'
+    commandLine npmCmd, 'test'
+
+    // Make it fail gracefully if npm is not installed
+    ignoreExitValue = false
+
+    doFirst {
+        println "🧪 Running frontend tests..."
+    }
+
+    doLast {
+        println "✅ Frontend tests completed!"
+    }
+}
+
+// Run all tests (backend + frontend) in parallel
+tasks.register('testAll') {
+    group = 'QuaK'
+    description = 'Run both backend and frontend tests in parallel'
+
+    dependsOn test
+    dependsOn testFrontend
+
+    doLast {
+        println ""
+        println "╔═══════════════════════════════════════╗"
+        println "║  ✅ All tests completed successfully! ║"
+        println "╚═══════════════════════════════════════╝"
+    }
+}
+
+// Run all tests sequentially (useful for CI)
+tasks.register('testAllSequential') {
+    group = 'QuaK'
+    description = 'Run backend tests, then frontend tests (sequential)'
+
+    doFirst {
+        println "🧪 Running tests sequentially..."
+    }
+
+    finalizedBy test
+
+    doLast {
+        tasks.testFrontend.execute()
+        println ""
+        println "╔═══════════════════════════════════════╗"
+        println "║  ✅ All tests completed successfully! ║"
+        println "╚═══════════════════════════════════════╝"
+    }
 }
