@@ -45,7 +45,7 @@
   --radius: 0.625rem;
 
   --background: hsl(0 0% 100%);
-  --foreground: hsl(0 0% 0%);
+  --foreground: hsl(0 0% 40%);
 
   --card: hsl(0 0% 100%);
   --card-foreground: hsl(0 0% 0%);
@@ -62,7 +62,7 @@
   --muted: hsl(0 0% 100%);
   --muted-foreground: hsl(0 0% 0%);
 
-  --accent: hsl(0 0% 100%);
+  --accent: hsl(0 0% 95%);
   --accent-foreground: hsl(0 0% 0%);
 
   --destructive: hsl(0 84% 60%);
@@ -95,7 +95,7 @@
   --secondary-foreground: hsl(0 0% 98%);
   --muted: hsl(0 0% 22%);
   --muted-foreground: hsl(0 0% 65%);
-  --accent: hsl(0 0% 0%);
+  --accent: hsl(0 0% 10%);
   --accent-foreground: hsl(0 0% 98%);
   --destructive: hsl(0 72% 50%);
   --border: hsl(0 0% 100% / 10%);
@@ -109,7 +109,6 @@
   --sidebar-accent-foreground: hsl(0 0% 98%);
   --sidebar-border: hsl(0 0% 100% / 10%);
   --sidebar-ring: hsl(0 0% 55%);
-  --probability: hsl(0 0% 100%); /*temporary for the bars in the results*/
 }
 
 

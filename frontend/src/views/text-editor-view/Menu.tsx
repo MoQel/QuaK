@@ -27,7 +27,7 @@ type language = {
  */
 export function Menu({onSave, languages}: {onSave: saver, languages: language[]}) {
     return (
-        <Menubar className="rounded-none">
+        <Menubar className="rounded-none bg-foreground-light">
             <MenubarMenu>
                 <MenubarTrigger>File</MenubarTrigger>
                 <MenubarContent>

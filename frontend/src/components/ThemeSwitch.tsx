@@ -21,14 +21,14 @@ export default function ThemeSwitch({ onToggle }: ThemeSwitchProps) {
       className="
         relative flex items-center
         w-14 h-7 rounded-full
-        bg-gray-300
+        bg-gray-100
         p-1
       "
     >
       {isDark ? (
-        <Moon className="absolute right-7 w-5 h-5 text-gray-700 pointer-events-none" />
+        <Sun className="absolute right-7 w-5 h-5 text-orange-300 pointer-events-none" />
       ) : (
-        <Sun className="absolute left-7 w-5 h-5 text-yellow-500 pointer-events-none" />
+        <Moon className="absolute left-7 w-5 h-5 text-gray-700 pointer-events-none" />
       )}
 
       {/* Thumb */}

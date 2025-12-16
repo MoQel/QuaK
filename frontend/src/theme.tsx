@@ -9,7 +9,7 @@ const KEY = "theme";
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>(() => {
     const saved = localStorage.getItem(KEY) as Theme | null;
-    return saved ?? "dark"; // since your app is currently dark by default
+    return saved ?? "dark";
   });
 
   useEffect(() => {

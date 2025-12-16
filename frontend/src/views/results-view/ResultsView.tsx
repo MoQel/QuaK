@@ -40,7 +40,7 @@ export function ResultsView({ numberQubits }: ResultsViewProps) {
             <CardContent>
                 <ChartContainer config={chartConfig}>
                     <BarChart accessibilityLayer data={chartData}>
-                        <CartesianGrid vertical={false} />
+                        <CartesianGrid vertical={false} stroke="var(--color-foreground)" strokeOpacity={0.4} />
                         <XAxis
                             dataKey="qubit"
                             tickLine={false}
