@@ -1,5 +1,6 @@
 package edu.kit.quak.core.filesystem.model;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -9,43 +10,47 @@ import java.util.Set;
  *
  * @author Henrik K
  */
-public abstract class FileElementContainer<SELF extends FileElementContainer<SELF>> extends FileElement<SELF> {
+public abstract class FileElementContainer<T extends FileElementContainer<T>> extends FileElement<T> {
 
     protected Set<FileElement<?>> contents = new HashSet<>();
 
-    public FileElementContainer(String name, FileElementContainer<?> parent) {
-        super(name, parent);
+    public FileElementContainer(String name, String parentId) {
+        super(name, parentId);
     }
 
     protected FileElementContainer() {
         super();
     }
 
-    /**
-     * Removes the given element from this container
-     * @param element The element to remove
-     */
-    public void removeElement(FileElement<?> element) {
-        element.addToParent(null);
-        contents.remove(element);
-    }
-
-    /**
-     * Adds the given {@code element} to this container
-     * @param element The element to add
-     */
-    public void addElement(FileElement<?> element) {
-        contents.add(element);
-    }
-
-    public void renameChild(FileElement<?> element, String newName) {
-        if (!contents.contains(element)) {
-            throw new IllegalArgumentException("Element does not belong to this container");
-        }
-        element.rename(newName);
-    }
-
     public Set<FileElement<?>> getContents() {
-        return contents;
+        return Collections.unmodifiableSet(contents);
+    }
+    public void setContents(Set<FileElement<?>> contents) { this.contents = contents; }
+
+    public void addChild(FileElement<?> child) {
+        // No duplicate names within one parent
+        if (hasChildWithName(child.getName())) {
+            throw new IllegalArgumentException(
+                    "An element with the name '" + child.getName() + "' already exists in '" + this.getName() + "'"
+            );
+        }
+        this.contents.add(child);
+
+        child.setParentId(this.getId());
+    }
+
+    public void removeChild(FileElement<?> child) {
+        this.contents.remove(child);
+        // Delete aggregate reference
+        if (child.getParentId() != null && child.getParentId().equals(this.getId())) {
+            child.setParentId(null);
+        }
+    }
+
+    // Case-insensitive
+    private boolean hasChildWithName(String name) {
+        return contents.stream()
+                // Child will find itself make sure it is not added yet
+                .anyMatch(existing -> existing.getName().equalsIgnoreCase(name));
     }
 }

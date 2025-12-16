@@ -15,8 +15,8 @@ public class Directory extends FileElementContainer<Directory> {
         super();
     }
 
-    public Directory(String name, FileElementContainer<?> parent) {
-        super(name, parent);
+    public Directory(String name, String parentId) {
+        super(name, parentId);
     }
 
     @Override
