@@ -5,10 +5,7 @@ import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.CircuitResponse;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.CircuitDtoMapper;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/circuit")
@@ -28,10 +25,16 @@ public class CircuitRestAdapter {
         return mapper.toResponse(quantumCircuit);
     }
 
-    @PostMapping("/qubit/add")
+    @GetMapping("/{id}")
+    public CircuitResponse getCircuit(@PathVariable String id) {
+        QuantumCircuit quantumCircuit = service.getCircuit(id);
+        return mapper.toResponse(quantumCircuit);
+    }
+
+    @PostMapping("/qubit/add/{id}")
     @ResponseStatus(HttpStatus.CREATED)
-    public CircuitResponse addQubit() {
-        QuantumCircuit quantumCircuit = service.addQubit();
+    public CircuitResponse addQubit(@PathVariable String id) {
+        QuantumCircuit quantumCircuit = service.addQubit(id);
         return mapper.toResponse(quantumCircuit);
     }
 }

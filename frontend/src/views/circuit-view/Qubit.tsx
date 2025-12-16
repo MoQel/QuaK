@@ -1,23 +1,22 @@
 import styles from "@/App.module.css";
-import {QuantumGate} from "@/views/QuantumGate.tsx";
 import {Gate} from "@/views/circuit-view/Gate.tsx"
 import {Button} from "@/components/ui/button"
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover"
 import {Input} from "@/components/ui/input.tsx";
 import {ChangeEvent, useState} from "react";
-import {API_ENDPOINT} from "@/views/project-manager-view/ProjectManagerView.tsx";
 import React from "react";
+import {GateResponse} from "@/utils/api/dto/circuit.ts";
 
 type QuantumWiresProps = {
     name: string;
-    initGates: QuantumGate[];
+    initGates: GateResponse[];
     qubitIndex: number;
 };
 
 export function Qubit({name, initGates, qubitIndex}: Readonly<QuantumWiresProps>) {
     const [qubitName, setQubitName] = useState<string>(name)
     const [tempName, setTempName] = useState<string>(qubitName)
-    const [gates, setGates] = useState<QuantumGate[]>(initGates)
+    const [gates, setGates] = useState<GateResponse[]>(initGates)
 
     const [hoverIndex, setHoverIndex] = useState<number | null>(null);
 
@@ -53,19 +52,7 @@ export function Qubit({name, initGates, qubitIndex}: Readonly<QuantumWiresProps>
         };
         try {
             //TODO: Adapt to correct API point, when backend API is ready
-            const res = await fetch(`${API_ENDPOINT}/circuit/gate`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload),
-            });
 
-            const json = await res.json();
-
-            const filteredGates:QuantumGate[] = json
-                .filter((g: any) => g.qubit === name)
-                .map(({ qubit, ...gate }: { qubit: string } & QuantumGate) => gate);
-
-            setGates(filteredGates);
             //TODO: Also recalculate maxWireLength in CircuitView
         } catch (err) {
             console.error("Drop failed:", err);

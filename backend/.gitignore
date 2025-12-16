@@ -7,6 +7,10 @@ build/
 /src/main/resources/static/*
 !/src/main/resources/static/.gitkeep
 
+### Environment Variables ###
+.env
+.env.local
+
 ### STS ###
 .apt_generated
 .classpath

@@ -1,0 +1,8 @@
+**/node_modules
+**/build
+**/dist
+**/out
+.git
+.idea
+.vscode
+.DS_Store

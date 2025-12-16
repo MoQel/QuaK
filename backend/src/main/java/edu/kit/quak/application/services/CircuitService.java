@@ -22,8 +22,13 @@ public class CircuitService implements CircuitServicePort {
     }
 
     @Override
-    public QuantumCircuit addQubit() {
-        QuantumCircuit circuit = repository.findCircuitById("id").orElseThrow(EntityNotFoundException::new);
+    public QuantumCircuit getCircuit(String id) {
+        return repository.findCircuitById(id).orElseThrow(EntityNotFoundException::new);
+    }
+
+    @Override
+    public QuantumCircuit addQubit(String id) {
+        QuantumCircuit circuit = getCircuit(id);
         circuit.addRegister();
         repository.save(circuit);
         return circuit;

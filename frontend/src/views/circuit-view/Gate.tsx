@@ -1,13 +1,11 @@
 import {Badge} from "@/components/ui/badge.tsx";
-import {GateIcons, QuantumGate} from "@/views/QuantumGate.tsx";
 import styles from "@/App.module.css";
 import {useSortable} from "@dnd-kit/sortable";
 import {CSS} from "@dnd-kit/utilities";
-import {useContext} from "react";
-import {matrixContext} from "@/Context.tsx";
+import {GateIcons} from "@/utils/GateIcons.ts";
+import {GateResponse} from "@/utils/api/dto/circuit.ts";
 
-
-export function Gate({id, type}: QuantumGate) {
+export function Gate({id, type}: GateResponse) {
 
     const {attributes, listeners, setNodeRef, transform, transition} = useSortable({
         id: id,
@@ -19,7 +17,6 @@ export function Gate({id, type}: QuantumGate) {
         transition,
         transform: CSS.Transform.toString(transform),
     }
-    const matrix = useContext(matrixContext)
     const Icon = GateIcons[type]
 
     const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
@@ -39,7 +36,7 @@ export function Gate({id, type}: QuantumGate) {
              {...listeners}
              id={id}
              style={style}
-             onClick={() => matrix.removeGate(id)}
+             onClick={() => null}
              draggable
              onDragStart={handleDragStart}
         >

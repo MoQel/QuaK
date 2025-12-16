@@ -1,8 +1,9 @@
 import { Badge } from "@/components/ui/badge.tsx";
-import { GateIcons, QuantumGate } from "@/views/QuantumGate.tsx";
 import styles from "@/App.module.css";
+import {GateIcons} from "@/utils/GateIcons.ts";
+import { GateResponse } from "@/utils/api/dto/circuit";
 
-export function LibraryElement({ id, type }: Readonly<QuantumGate>) {
+export function LibraryElement({ id, type }: Readonly<GateResponse>) {
     const Icon = GateIcons[type];
 
     const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {

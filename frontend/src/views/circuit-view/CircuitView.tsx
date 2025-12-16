@@ -1,28 +1,39 @@
 import {Card, CardContent} from "@/components/ui/card.tsx";
 import {Button} from "@/components/ui/button.tsx";
-import {Minus, Plus, Trash} from "lucide-react";
-import {Fragment, useCallback} from "react";
-import {quantumGates} from "@/views/circuit-view/InitCircuit.tsx";
+import {CircuitBoard, Minus, Plus, Trash} from "lucide-react";
+import {Fragment, useCallback, useState} from "react";
 import styles from "@/App.module.css";
 import {Qubit} from "@/views/circuit-view/Qubit.tsx";
+import {api} from "@/utils/api/api.ts";
+import {CircuitResponse, QubitResponse} from "@/utils/api/dto/circuit.ts";
 
 export function CircuitView() {
-    // TODO: Replace quantumGates with API response
-    const qubitNames = [...new Set(quantumGates.map(g => g.qubit))];
+    const [circuit, setCircuit] = useState<CircuitResponse | null>(null);
 
     const maxWireLength = Math.max(
-        ...Object.values(
-            quantumGates.reduce(
-                (m, { qubit }) => (m[qubit] = (m[qubit] ?? 0) + 1, m),
-                {} as Record<string, number>
-            )
-        )
+        ...(circuit?.qubits.map(qubit => qubit.gates.length)) ?? [0]
     );
 
-    // TODO: Implement when there is an API in the backend
-    const addQubit = useCallback(() => {}, []);
-    const removeQubit = useCallback(() => {}, []);
-    const resetCircuit = useCallback(() => {}, []);
+    const fetchCircuit = useCallback(async () => {
+        if (circuit == null) {
+            setCircuit(await api.post<CircuitResponse>('/circuit/init'));
+        } else {
+            setCircuit(await api.get<CircuitResponse>(`/circuit/${circuit.id}`));
+        }
+    }, [circuit]);
+
+    const addQubit = useCallback(async () => {
+        if (circuit != null) {
+            setCircuit(await api.post<CircuitResponse>(`/circuit/qubit/add/${circuit.id}`));
+        }
+    }, [circuit]);
+
+    // TODO: Implement when API is ready
+    const removeQubit = useCallback(async () => {}, [circuit]);
+
+    const resetCircuit = useCallback(async () => {
+        setCircuit(await api.post<CircuitResponse>('/circuit/init'));
+    }, [circuit]);
 
     return (
         <Card className="h-full overflow-hidden">
@@ -30,6 +41,7 @@ export function CircuitView() {
 
                 {/* Buttons */}
                 <div className="pb-5 flex justify-end space-x-3">
+                    <Button onClick={fetchCircuit} size="icon" className="size-8"><CircuitBoard/></Button>
                     <Button onClick={addQubit} size="icon" className="size-8"><Plus/></Button>
                     <Button onClick={removeQubit} size="icon" className="size-8"><Minus/></Button>
                     <Button onClick={resetCircuit} size="icon" className="size-8"><Trash/></Button>
@@ -38,13 +50,11 @@ export function CircuitView() {
                 {/* Wires container */}
                 <div className="flex-1 overflow-auto">
                     {
-                        qubitNames.map((name, idx) => (
+                        circuit?.qubits.map((qubit: QubitResponse, idx) => (
                             <Qubit
-                                key={name}
-                                name={name}
-                                initGates={quantumGates
-                                    .filter(initGate => initGate.qubit === name)
-                                    .map(({qubit, ...gate}) => gate)}
+                                key={qubit.name}
+                                name={qubit.name}
+                                initGates={qubit.gates}
                                 qubitIndex={idx}
                             />
                         ))
