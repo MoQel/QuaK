@@ -11,7 +11,7 @@ export default function ThemeSwitch({ onToggle }: ThemeSwitchProps) {
 
   const handleClick = () => {
     toggleTheme();
-    onToggle?.(!isDark); // after toggle, it becomes the opposite
+    onToggle?.(!isDark);
   };
 
   return (

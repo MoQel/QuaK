@@ -1,7 +1,11 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 
 type Theme = "dark" | "light";
-type ThemeCtx = { theme: Theme; toggleTheme: () => void };
+type ThemeCtx = {
+  theme: Theme;
+  setTheme: (theme: Theme) => void;
+  toggleTheme: () => void;
+};
 
 const ThemeContext = createContext<ThemeCtx | null>(null);
 const KEY = "theme";
@@ -21,7 +25,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <ThemeContext.Provider
-      value={{ theme, toggleTheme: () => setTheme(t => (t === "dark" ? "light" : "dark")) }}
+      value={{ theme, setTheme, toggleTheme: () => setTheme(t => (t === "dark" ? "light" : "dark")) }}
     >
       {children}
     </ThemeContext.Provider>
