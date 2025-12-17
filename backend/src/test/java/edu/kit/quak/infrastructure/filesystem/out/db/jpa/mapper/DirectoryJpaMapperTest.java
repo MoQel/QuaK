@@ -7,11 +7,10 @@ import edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity.JpaDirectory;
 import edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity.JpaFile;
 import edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity.JpaFileElement;
 import edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity.JpaProject;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mapstruct.factory.Mappers;
-import org.mockito.Mock;
+import org.mockito.InjectMocks;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Set;
@@ -24,16 +23,12 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class DirectoryJpaMapperTest {
 
-    private DirectoryJpaMapper mapper;
+    @InjectMocks
+    private DirectoryJpaMapperImpl mapper;
 
-    @Mock
-    private FileElementJpaMapper elementMapper;
+    @Spy
+    private FileElementJpaMapperImpl elementMapper;
 
-    @BeforeEach
-    void setup() throws Exception {
-        mapper = Mappers.getMapper(DirectoryJpaMapper.class);
-        TestUtil.setField(mapper, "fileElementJpaMapper", elementMapper);
-    }
 
     @Test
     void domainToJpaEntity_ShouldIgnoreParent_AndMapContents() {

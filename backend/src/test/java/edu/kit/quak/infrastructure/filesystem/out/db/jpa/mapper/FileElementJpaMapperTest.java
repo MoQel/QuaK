@@ -6,36 +6,27 @@ import edu.kit.quak.core.filesystem.model.FileElement;
 import edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity.JpaDirectory;
 import edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity.JpaFile;
 import edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity.JpaFileElement;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mapstruct.factory.Mappers;
-import org.mockito.Mock;
+import org.mockito.InjectMocks;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class FileElementJpaMapperTest {
 
-    private FileElementJpaMapper mapper;
+    @InjectMocks
+    private FileElementJpaMapperImpl mapper;
 
-    @Mock
-    private FileJpaMapper fileMapper;
-    @Mock
-    private DirectoryJpaMapper directoryMapper;
-    @Mock
-    private ProjectJpaMapper projectMapper;
-
-    @BeforeEach
-    void setup() throws Exception {
-        mapper = Mappers.getMapper(FileElementJpaMapper.class);
-        TestUtil.setField(mapper, "fileMapper", fileMapper);
-        TestUtil.setField(mapper, "directoryMapper", directoryMapper);
-        TestUtil.setField(mapper, "projectMapper", projectMapper);
-    }
+    @Spy
+    private FileJpaMapperImpl fileMapper;
+    @Spy
+    private DirectoryJpaMapperImpl directoryMapper;
+    @Spy
+    private ProjectJpaMapperImpl projectMapper;
 
     @Test
     void mapFileToJpa() {
@@ -60,7 +51,7 @@ class FileElementJpaMapperTest {
         Directory dir = new Directory("Dir", "p-root");
         JpaDirectory expectedJpa = new JpaDirectory("Dir", null);
 
-        when(directoryMapper.toJpaEntity(dir)).thenReturn(expectedJpa);
+        doReturn(expectedJpa).when(directoryMapper).toJpaEntity(dir);
 
         // Act
         JpaFileElement<?> result = mapper.toJpaEntity(dir);

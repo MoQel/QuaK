@@ -8,11 +8,10 @@ import edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity.JpaDirectory;
 import edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity.JpaFile;
 import edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity.JpaFileElement;
 import edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity.JpaProject;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mapstruct.factory.Mappers;
-import org.mockito.Mock;
+import org.mockito.InjectMocks;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Set;
@@ -26,16 +25,11 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class ProjectJpaMapperTest {
 
-    private ProjectJpaMapper mapper;
+    @InjectMocks
+    private ProjectJpaMapperImpl mapper;
 
-    @Mock
-    private FileElementJpaMapper elementMapper;
-
-    @BeforeEach
-    void setup() throws Exception {
-        mapper = Mappers.getMapper(ProjectJpaMapper.class);
-        TestUtil.setField(mapper, "fileElementJpaMapper", elementMapper);
-    }
+    @Spy
+    private FileElementJpaMapperImpl elementMapper;
 
     @Test
     void domainToJpaEntity() {

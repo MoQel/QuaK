@@ -3,21 +3,23 @@ package edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper;
 import edu.kit.quak.core.filesystem.model.File;
 import edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity.JpaDirectory;
 import edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity.JpaFile;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mapstruct.factory.Mappers;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Spy;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+@ExtendWith(MockitoExtension.class)
 class FileJpaMapperTest {
 
-    private FileJpaMapper mapper;
+    @InjectMocks
+    private FileJpaMapperImpl mapper;
 
-    @BeforeEach
-    void setup() {
-        mapper = Mappers.getMapper(FileJpaMapper.class);
-    }
+    @Spy
+    private FileElementJpaMapperImpl fileElementJpaMapper;
 
     @Test
     void domainToJpaEntity_ShouldIgnoreParent() {
