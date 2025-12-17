@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Home, User, Settings, LogOut } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import ThemeSwitch from "@/components/ThemeSwitch";
 
 export const Navbar: React.FC = () => {
   const location = useLocation();
@@ -57,6 +58,7 @@ export const Navbar: React.FC = () => {
 
       {user && (
         <div className="flex items-center gap-4">
+         <ThemeSwitch />
           <div className="flex items-center gap-3">
             {user.picture && (
               <img
