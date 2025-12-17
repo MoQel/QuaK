@@ -36,6 +36,23 @@ function QLPEditor({ file }: { file: File | undefined }) {
         }
     };
 
+    function encodeContent(str: string): string {
+        try {
+            // 1. String zu UTF-8 Bytes wandeln
+            const bytes = new TextEncoder().encode(str);
+            // 2. Bytes zu Binary String wandeln (für btoa)
+            let binary = '';
+            for (let i = 0; i < bytes.length; i++) {
+                binary += String.fromCharCode(bytes[i]);
+            }
+            // 3. Base64 codieren
+            return btoa(binary);
+        } catch (e) {
+            console.error("Failed to encode content", e);
+            throw e;
+        }
+    }
+
     const onSave = (id: string | undefined) => {
         if (!id) return Promise.resolve();
         const edit = loader.__getMonacoInstance()?.editor.getEditors().at(0);
@@ -44,9 +61,11 @@ function QLPEditor({ file }: { file: File | undefined }) {
             return Promise.resolve();
         }
 
+        const encodedContent = encodeContent(edit.getValue());
+
         // TODO: Make use of ContentType
         const body: FileContentRequest = {
-            content: edit.getValue(),
+            content: encodedContent,
             contentType: "text/plain"
         }
 
