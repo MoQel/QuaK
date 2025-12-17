@@ -1,8 +1,42 @@
-**/node_modules
-**/build
-**/dist
-**/out
-.git
-.idea
-.vscode
+# Node.js dependencies - IMPORTANT: exclude to avoid cross-platform issues
+**/node_modules/
+
+# Build outputs
+**/dist/
+**/build/
+frontend/dist/
+backend/build/
+
+# IDE and editor files
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+
+# Environment files
+**/.env
+**/.env.local
+**/.env.*.local
+
+# Git
+.git/
+.gitignore
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
 .DS_Store
+Thumbs.db
+
+# Testing
+**/coverage/
+
+# Documentation
+*.md
+!README.md
+
+# Cache
+**/.cache/

@@ -1,7 +1,7 @@
-import {QuantumGate} from "@/views/QuantumGate.tsx";
+import {GateResponse} from "@/utils/api/dto/circuit.ts";
 
-export type QuantumGatesInit = QuantumGate & {
-    qubit : string
+export type QuantumGatesInit = GateResponse & {
+    qubit : number
 }
 
 export const quantumGates: QuantumGatesInit[] = [
@@ -9,51 +9,51 @@ export const quantumGates: QuantumGatesInit[] = [
     {
         id: 'hadamard',
         type: 'H',
-        qubit: 'q0',
+        qubit: 0,
     },
     {
         id: 'pauli-x',
         type: 'X',
-        qubit: 'q1',
+        qubit: 1,
     },
     {
         id: 'pauli-y',
         type: 'Y',
-        qubit: 'q1',
+        qubit: 1,
     },
     {
         id: 'pauli-z',
         type: 'Z',
-        qubit: 'q1',
+        qubit: 1,
     },
     {
         id: 'pauli-y',
         type: 'Y',
-        qubit: 'q2',
+        qubit: 2,
     },
     {
         id: 'pauli-z',
         type: 'Z',
-        qubit: 'q2',
+        qubit: 2,
     },
     {
         id: 'pauli-y',
         type: 'Y',
-        qubit: 'q3',
+        qubit: 3,
     },
     {
         id: 'pauli-z',
         type: 'Z',
-        qubit: 'q3',
+        qubit: 3,
     },
     {
         id: 'hadamard',
         type: 'H',
-        qubit: 'q3',
+        qubit: 3,
     },
     {
         id: 'pauli-x',
         type: 'X',
-        qubit: 'q3',
+        qubit: 3,
     },
 ]

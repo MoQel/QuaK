@@ -16,7 +16,7 @@ type QuantumWiresProps = {
 export function Qubit({name, initGates, qubitIndex}: Readonly<QuantumWiresProps>) {
     const [qubitName, setQubitName] = useState<string>(name)
     const [tempName, setTempName] = useState<string>(qubitName)
-    const [gates, setGates] = useState<GateResponse[]>(initGates)
+    const gates = initGates //TODO: Add setGates Method
 
     const [hoverIndex, setHoverIndex] = useState<number | null>(null);
 
@@ -50,6 +50,7 @@ export function Qubit({name, initGates, qubitIndex}: Readonly<QuantumWiresProps>
             qubitIndex,
             position,
         };
+        console.log(payload);
         try {
             //TODO: Adapt to correct API point, when backend API is ready
 

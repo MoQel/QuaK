@@ -1,9 +1,9 @@
 import React from "react";
 import {TextIcon} from "@/views/TextIcon.tsx";
 import {CircleGauge} from "lucide-react";
-import {QuantumGate} from "@/views/QuantumGate.tsx";
+import {GateResponse} from "@/utils/api/dto/circuit.ts";
 
-export const GateIcons: Record<QuantumGate["type"], React.ElementType> = {
+export const GateIcons: Record<GateResponse["type"], React.ElementType> = {
     PLACEHOLDER: TextIcon(""),
     H: TextIcon("H"),
     X: TextIcon("X"),
