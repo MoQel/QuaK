@@ -1,4 +1,4 @@
-import {GateResponse} from "@/utils/api/dto/circuit.ts";
+import {GateResponse} from "@/api/dto/circuit.ts";
 
 export type QuantumGatesInit = GateResponse & {
     qubit : number

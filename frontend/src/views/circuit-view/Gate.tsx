@@ -3,7 +3,7 @@ import styles from "@/App.module.css";
 import {useSortable} from "@dnd-kit/sortable";
 import {CSS} from "@dnd-kit/utilities";
 import {GateIcons} from "@/utils/GateIcons.ts";
-import {GateResponse} from "@/utils/api/dto/circuit.ts";
+import {GateResponse} from "@/api/dto/circuit.ts";
 
 export function Gate({id, type}: GateResponse) {
 

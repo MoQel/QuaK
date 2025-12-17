@@ -4,8 +4,8 @@ import {CircuitBoard, Minus, Plus, Trash} from "lucide-react";
 import {Fragment, useCallback, useState} from "react";
 import styles from "@/App.module.css";
 import {Qubit} from "@/views/circuit-view/Qubit.tsx";
-import {api} from "@/utils/api/api.ts";
-import {CircuitResponse, QubitResponse} from "@/utils/api/dto/circuit.ts";
+import {api} from "@/api/api.ts";
+import {CircuitResponse, QubitResponse} from "@/api/dto/circuit.ts";
 
 export function CircuitView() {
     const [circuit, setCircuit] = useState<CircuitResponse | null>(null);

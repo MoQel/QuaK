@@ -5,7 +5,7 @@ import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover"
 import {Input} from "@/components/ui/input.tsx";
 import {ChangeEvent, useState} from "react";
 import React from "react";
-import {GateResponse} from "@/utils/api/dto/circuit.ts";
+import {GateResponse} from "@/api/dto/circuit.ts";
 
 type QuantumWiresProps = {
     name: string;

@@ -1,7 +1,7 @@
 import React from "react";
 import {TextIcon} from "@/views/TextIcon.tsx";
 import {CircleGauge} from "lucide-react";
-import {GateResponse} from "@/utils/api/dto/circuit.ts";
+import {GateResponse} from "@/api/dto/circuit.ts";
 
 export const GateIcons: Record<GateResponse["type"], React.ElementType> = {
     PLACEHOLDER: TextIcon(""),
