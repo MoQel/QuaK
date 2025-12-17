@@ -6,8 +6,9 @@ import { Menu } from "@/views/text-editor-view/Menu.tsx";
 import { Language } from "@/views/text-editor-view/model/Language.ts";
 import { qrisp } from "@/components/languages/qrisp.ts";
 import { openqasm } from "@/components/languages/openqasm.ts";
-import { api } from "@/utils/api";
+import { api } from "@/api/api.ts";
 import { useTheme } from "@/theme";
+import {FileContentRequest, FileContentResponse, FileDetailsResponse} from "@/api/dto/filesystem.ts";
 
 const DEFAULT_VALUE = "No File Selected";
 const DEFAULT_LANG = "plaintext";
@@ -42,7 +43,14 @@ function QLPEditor({ file }: { file: File | undefined }) {
             toast("Editor undefined, not saving");
             return Promise.resolve();
         }
-        return api.put(`/file/${id}/content`, edit.getValue())
+
+        // TODO: Make use of ContentType
+        const body: FileContentRequest = {
+            content: edit.getValue(),
+            contentType: "text/plain"
+        }
+
+        return api.put(`/file/${id}/content`, body)
             .then(() => retrieveContent(id))
             .then(setValue)
             .then(() => toast("Saved successfully"));
@@ -97,8 +105,9 @@ function QLPEditor({ file }: { file: File | undefined }) {
         return match ? match.id : DEFAULT_LANG; // Default
     }
 
+    // TODO: extract file extension from contentType
     function retrieveFileExtension(id: string): Promise<string> {
-        return api.get<any>(`/file/${id}`)
+        return api.get<FileDetailsResponse>(`/file/${id}`)
             .then((fileElement) => {
                 const filename = fileElement.name;
                 if (!filename?.includes(".")) {
@@ -109,20 +118,24 @@ function QLPEditor({ file }: { file: File | undefined }) {
     }
 
     function retrieveContent(id: string): Promise<string> {
-        return api.get<string>(`/file/${id}/content`, {
-            headers: {
-                'Accept': 'text/plain' // Ensure we get text back, though api.get expects JSON by default, we might need to adjust api.ts if this returns raw text
-            }
-        }).catch(err => {
-            // Fallback if the API returns text but api.get tries to parse JSON
-            // In a real scenario, we should update api.ts to handle non-JSON responses or use a different method.
-            // For now, let's assume api.get handles it or we use raw fetch if needed.
-            // Actually, looking at api.ts, it does `response.json()`.
-            // If the content endpoint returns raw text, api.get will fail.
-            // Let's check api.ts again or use a custom fetch here for text content.
-            console.error("Error fetching content", err);
-            return "";
-        })
+        return api.get<FileContentResponse>(`/file/${id}/content`)
+            .then(response => {
+                try {
+                    const binaryString = atob(response.content);
+                    const bytes = new Uint8Array(binaryString.length);
+                    for (let i = 0; i < binaryString.length; i++) {
+                        bytes[i] = binaryString.charCodeAt(i);
+                    }
+                    return new TextDecoder().decode(bytes);
+                } catch (e) {
+                    console.error("Failed to decode file content", e);
+                    return ""; // oder Fehler werfen
+                }
+            })
+            .catch(err => {
+                console.error("Error fetching content", err);
+                return "";
+            });
     }
 
     return (

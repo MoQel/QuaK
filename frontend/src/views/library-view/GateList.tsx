@@ -1,6 +1,6 @@
 import {QuantumGate} from "@/views/QuantumGate.tsx";
 import {useEffect, useState, useMemo} from "react";
-import { api } from "@/utils/api";
+import { api } from "@/api/api.ts";
 import { LibraryElement } from "@/views/library-view/LibraryElement.tsx";
 
 function GateList() {

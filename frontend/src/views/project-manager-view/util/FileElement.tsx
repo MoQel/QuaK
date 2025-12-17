@@ -2,6 +2,12 @@ import {FileElementContainer} from "@/views/project-manager-view/FileElementCont
 import {File} from "@/views/project-manager-view/File.tsx";
 import {Directory} from "@/views/project-manager-view/Directory.tsx";
 import {Project} from "@/views/project-manager-view/Project.tsx";
+import {
+    DirectoryContentsResponse,
+    FileDetailsResponse,
+    FileElementDto,
+    ProjectContentsResponse
+} from "@/api/dto/filesystem.ts";
 
 export interface FileElement {
     id: string,
@@ -26,46 +32,51 @@ export interface File extends FileElement {
  * Elements get sorted in respect to type and name.
  * @param elements The elements to sort
  */
-export function sort(elements: FileElement[]) {
+export function sort(elements: FileElementDto[]) {
     return elements.sort((a, b) => {
-        if (a.type === undefined) {
-            if (b.type !== undefined) {
-                //an existing type has more value
-                return -1
-            }
-        } else {
-            if (b.type === undefined) {
-                //an existing type has more value
-                return 1
-            } else {
-                //sort using the type-name
-                const comp = a.type.toLowerCase().localeCompare(b.type.toLowerCase())
-                if (comp !== 0) {
-                    return comp
-                }
-            }
+        const typeA = a.type || "z";
+        const typeB = b.type || "z";
+
+        const score = (type: string) => {
+            if (type === "directory") return 1;
+            if (type === "file") return 2;
+            return 3;
+        };
+
+        const scoreA = score(typeA);
+        const scoreB = score(typeB);
+
+        if (scoreA !== scoreB) {
+            return scoreA - scoreB;
         }
-        try {
-            //type-name is equal: sort by actual name
-            return a.name.toLowerCase().localeCompare(b.name.toLowerCase())
-        } catch (error) {
-            //In case on of the name-properties is undefined
-            console.error(error)
-            return 0;
+
+        const nameA = a.name || "";
+        const nameB = b.name || "";
+
+        const nameComparison = nameA.localeCompare(nameB, undefined, { sensitivity: 'base' });
+
+        if (nameComparison !== 0) {
+            return nameComparison;
         }
-    })
+
+        const dateA = a.createdOn || "";
+        const dateB = b.createdOn || "";
+
+        return dateA.localeCompare(dateB);
+    });
 }
 
 /**
  * Parses a given {@link FileElement} into a {@link JSX.Element}
  * @param object The object to parse
  */
-export function getElementForFileElement(object: FileElement) {
+
+export function getElementForFileElement(object: FileElementDto) {
     if (object.type === "file") {
-        return (<File {...object as File} key = {object.id}/>)
+        return (<File {...object as unknown as FileDetailsResponse} key={object.id}/>)
     } else if (object.type === "directory") {
-        return (<Directory {...object as Directory} key = {object.id}/>)
+        return (<Directory {...object as unknown as DirectoryContentsResponse} key={object.id}/>)
     } else {
-        return (<Project {...object}/>)
+        return (<Project {...object as unknown as ProjectContentsResponse} key={object.id}/>) // ID als Key ist wichtig!
     }
 }

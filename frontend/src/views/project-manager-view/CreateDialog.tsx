@@ -12,7 +12,11 @@ import {
     ContextMenuSubTrigger
 } from "@/components/ui/context-menu";
 import { DialogCloseButtons, TextInput } from "@/views/project-manager-view/util/FormComponents.tsx";
-import { api } from "@/utils/api";
+import { api } from "@/api/api.ts";
+import {
+    CreateFileRequest,
+    DirectoryRequest
+} from "@/api/dto/filesystem";
 
 /**
  * Provides a {@link ContextMenuItem} that allows for the creation of {@link FileElement FileElements}.
@@ -70,10 +74,9 @@ function CreateFile({ parent }: { parent: string }) {
     })
 
     const onSubmit = (values: z.infer<typeof formSchema>) => {
-        const body = {
-            type: "file",
-            createdOn: Math.round(Date.now().valueOf() / 1000),
-            ...values
+        const body: CreateFileRequest = {
+            name: values.name,
+            contentType: "text/plain" // TODO: Issue
         }
 
         api.post("/file/", body, {
@@ -122,12 +125,11 @@ function CreateDirectory({ parent }: { parent: string }) {
     })
 
     const onSubmit = (values: z.infer<typeof formSchema>) => {
-        const body = {
-            type: "directory",
-            ...values
+        const body: DirectoryRequest = {
+            name: values.name
         }
 
-        api.post("/file/", body, {
+        api.post("/directory/", body, {
             headers: {
                 'parent-id': parent
             }
