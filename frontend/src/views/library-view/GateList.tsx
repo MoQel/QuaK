@@ -1,16 +1,18 @@
 import {QuantumGate} from "@/views/QuantumGate.tsx";
 import {useEffect, useState, useMemo} from "react";
-import { fetchGates } from "@/views/library-view/GateLibrary.tsx";
+import { api } from "@/utils/api";
 import { LibraryElement } from "@/views/library-view/LibraryElement.tsx";
 
 function GateList() {
   const [gates, setGates] = useState<QuantumGate[]>([]);
 
   useEffect(() => {
-    fetchGates().then((data) => {
-      console.log("gates from API", data);
-      setGates(data);
-    });
+    api.get<QuantumGate[]>("/gates")
+      .then((data) => {
+        console.log("gates from API", data);
+        setGates(data);
+      })
+      .catch((e) => console.error("Failed to fetch gates:", e));
   }, []);
 
   // Group and sort by type and then by name
