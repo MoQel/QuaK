@@ -54,8 +54,13 @@ tasks.register('getFrontend', Copy) {
 	into(layout.projectDirectory.dir('src/main/resources/static'))
 }
 
+// Only build frontend when explicitly requested via -PbuildFrontend=true
+def shouldBuildFrontend = project.hasProperty('buildFrontend') && project.property('buildFrontend') == 'true'
+
 tasks.named("processResources") {
-	dependsOn getFrontend
+	if (shouldBuildFrontend) {
+		dependsOn getFrontend
+	}
 }
 
 tasks.named("bootRun") {

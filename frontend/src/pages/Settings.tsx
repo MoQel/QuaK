@@ -4,8 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { useTheme } from "@/theme";
 
 export const Settings: React.FC = () => {
+  const { theme, setTheme } = useTheme();
+  const isDark = theme === "dark";
   return (
     <div className="p-8 max-w-4xl mx-auto">
       <h1 className="text-4xl font-bold mb-6">Settings</h1>
@@ -43,7 +46,8 @@ export const Settings: React.FC = () => {
               </div>
               <input
                 type="checkbox"
-                defaultChecked
+                checked={isDark}
+                onChange={(e) => setTheme(e.target.checked ? "dark" : "light")}
                 className="h-4 w-4 rounded border-gray-300"
               />
             </div>

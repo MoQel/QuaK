@@ -1,6 +1,7 @@
 import { LibraryElement } from "@/views/library-view/LibraryElement.tsx";
 import {QuantumGate} from "@/views/QuantumGate.tsx";
 import {useEffect, useState} from "react";
+import { api } from "@/utils/api"; // adjust path to where api.ts lives
 
 export async function fetchGates(): Promise<QuantumGate[]> {
   const response = await fetch('/gates');
@@ -11,11 +12,13 @@ export async function fetchGates(): Promise<QuantumGate[]> {
 function GateLibrary() {
     const [gates, setGates] = useState<QuantumGate[]>([]);
       useEffect(() => {
-        fetchGates().then((data) => {
-          console.log("gates from API", data);
-          setGates(data);
-        });
-      }, []);
+          api.get<QuantumGate[]>("/gates")
+            .then((data) => {
+              console.log("gates from API", data);
+              setGates(data);
+            })
+            .catch((e) => console.error("Failed to fetch gates:", e));
+        }, []);
 
 
     return (

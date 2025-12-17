@@ -7,10 +7,12 @@ import { Language } from "@/views/text-editor-view/model/Language.ts";
 import { qrisp } from "@/components/languages/qrisp.ts";
 import { openqasm } from "@/components/languages/openqasm.ts";
 import { api } from "@/utils/api";
+import { useTheme } from "@/theme";
 
 const DEFAULT_VALUE = "No File Selected";
 const DEFAULT_LANG = "plaintext";
-const THEME = "vs-dark";
+
+
 
 const languages = [
     new Language("plaintext", "txt"),
@@ -24,6 +26,8 @@ function QLPEditor({ file }: { file: File | undefined }) {
     const [lang, setLang] = useState(DEFAULT_LANG);
     const [readOnly, setReadOnly] = useState<boolean>(true);
     const contentId: RefObject<string | undefined> = useRef(undefined);
+    const { theme } = useTheme();
+    const monacoTheme = theme === "dark" ? "vs-dark" : "vs-light";
 
     const onMount = (monaco: Monaco) => {
         for (const language of languages) {
@@ -127,7 +131,7 @@ function QLPEditor({ file }: { file: File | undefined }) {
             <div className="h-full">
                 <Editor
                     language={lang}
-                    theme={THEME}
+                    theme={monacoTheme}
                     value={value}
                     onChange={(value) => setValue(value || '')}
                     options={{
