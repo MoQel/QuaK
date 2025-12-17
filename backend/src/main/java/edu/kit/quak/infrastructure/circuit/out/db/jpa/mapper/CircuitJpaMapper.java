@@ -6,7 +6,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.MappingConstants;
 
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING,
-        uses = { RegisterMapper.class })
+        uses = { RegisterJpaMapper.class })
 public interface CircuitJpaMapper {
     JpaQuantumCircuit toEntity(QuantumCircuit domain);
 

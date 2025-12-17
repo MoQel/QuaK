@@ -18,12 +18,4 @@ public class JpaQubit {
     public void setId(String id) {
         this.id = id;
     }
-
-    public JpaQuantumRegister getRegister() {
-        return register;
-    }
-
-    public void setRegister(JpaQuantumRegister register) {
-        this.register = register;
-    }
 }

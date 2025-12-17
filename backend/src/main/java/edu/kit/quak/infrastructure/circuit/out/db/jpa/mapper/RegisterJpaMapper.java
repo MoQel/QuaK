@@ -9,7 +9,7 @@ import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
 
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING)
-public interface RegisterMapper {
+public interface RegisterJpaMapper {
     @Mapping(target = "circuit", ignore = true)
     JpaQuantumRegister toEntity(QuantumRegister domain);
 

@@ -7,7 +7,7 @@ import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
 
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING)
-public interface OperationMapper {
+public interface OperationJpaMapper {
     @Mapping(target = "qubit", ignore = true)
     JpaElementaryQuantumGate toEntity(ElementaryQuantumGate domain);
 

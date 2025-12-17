@@ -11,12 +11,8 @@ public class JpaQuantumRegister extends JpaRegister {
     @OneToMany(mappedBy = "register", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<JpaQubit> qubits = new ArrayList<>();
 
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
+    public void setQubits(List<JpaQubit> qubits) {
+        this.qubits = qubits;
     }
 
     public List<JpaQubit> getQubits() {
