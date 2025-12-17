@@ -1,25 +1,29 @@
 package edu.kit.quak.infrastructure.circuit.out.db.jpa.mapper;
 
+import edu.kit.quak.core.circuit.model.operation.ElementaryQuantumGate;
+import edu.kit.quak.core.circuit.model.operation.ElementaryQuantumGateType;
 import edu.kit.quak.core.circuit.model.register.QuantumRegister;
+import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.operation.JpaElementaryQuantumGate;
 import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.register.JpaQuantumRegister;
 import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.register.JpaQubit;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mapstruct.factory.Mappers;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Spy;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
-public class RegisterJpaMapperTest {
+@ExtendWith(MockitoExtension.class)
+class RegisterJpaMapperTest {
 
-    private RegisterJpaMapper mapper;
+    @Spy
+    private OperationJpaMapperImpl operationJpaMapper;
 
-    @BeforeEach
-    void setup() {
-        mapper = Mappers.getMapper(RegisterJpaMapper.class);
-    }
+    @InjectMocks
+    private RegisterJpaMapperImpl mapper;
 
     @Test
     void domainToEntity() {
@@ -27,12 +31,15 @@ public class RegisterJpaMapperTest {
         QuantumRegister domain = new QuantumRegister("name");
         domain.addQubit();
 
+        ElementaryQuantumGate gate = new ElementaryQuantumGate(ElementaryQuantumGateType.CNOT);
+        domain.getQubits().getFirst().addOperation(gate);
+
         // Act
-        JpaQuantumRegister entity = mapper.toEntity(domain);
+        JpaQuantumRegister entity = (JpaQuantumRegister) mapper.toEntity(domain);
 
         // Assert
+        assertNotNull(entity);
         assertEquals("name", entity.getName());
-
         assertNotNull(entity.getQubits());
         assertEquals(1, entity.getQubits().size());
     }
@@ -40,19 +47,22 @@ public class RegisterJpaMapperTest {
     @Test
     void entityToDomain() {
         // Arrange
+        JpaElementaryQuantumGate jpaGate = new JpaElementaryQuantumGate();
+        jpaGate.setType(ElementaryQuantumGateType.CNOT);
+
         JpaQubit jpaQubit = new JpaQubit();
-        jpaQubit.setId("id");
+        jpaQubit.setOperations(List.of(jpaGate));
 
         JpaQuantumRegister entity = new JpaQuantumRegister();
         entity.setName("name");
         entity.setQubits(List.of(jpaQubit));
 
         // Act
-        QuantumRegister domain = mapper.toDomain(entity);
+        QuantumRegister domain = (QuantumRegister) mapper.toDomain(entity);
 
         // Assert
+        assertNotNull(domain);
         assertEquals("name", domain.getName());
-
         assertNotNull(domain.getQubits());
         assertEquals(1, domain.getQubits().size());
     }

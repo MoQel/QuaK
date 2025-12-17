@@ -1,15 +1,18 @@
 package edu.kit.quak.infrastructure.circuit.out.db.jpa.mapper;
 
 import edu.kit.quak.core.circuit.model.operation.ElementaryQuantumGate;
+import edu.kit.quak.core.circuit.model.operation.QuantumOperation;
 import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.operation.JpaElementaryQuantumGate;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.MappingConstants;
+import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.operation.JpaQuantumOperation;
+import org.mapstruct.*;
 
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING)
 public interface OperationJpaMapper {
-    @Mapping(target = "qubit", ignore = true)
-    JpaElementaryQuantumGate toEntity(ElementaryQuantumGate domain);
+    @BeanMapping(subclassExhaustiveStrategy = SubclassExhaustiveStrategy.RUNTIME_EXCEPTION)
+    @SubclassMapping(source = ElementaryQuantumGate.class, target = JpaElementaryQuantumGate.class)
+    JpaQuantumOperation toEntity(QuantumOperation domain);
 
-    ElementaryQuantumGate toDomain(JpaElementaryQuantumGate entity);
+    @BeanMapping(subclassExhaustiveStrategy = SubclassExhaustiveStrategy.RUNTIME_EXCEPTION)
+    @SubclassMapping(source = JpaElementaryQuantumGate.class, target = ElementaryQuantumGate.class)
+    QuantumOperation toDomain(JpaQuantumOperation entity);
 }

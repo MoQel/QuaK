@@ -6,8 +6,6 @@ import java.util.List;
 
 @Entity
 public class JpaQuantumRegister extends JpaRegister {
-    private String name;
-
     @OneToMany(mappedBy = "register", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<JpaQubit> qubits = new ArrayList<>();
 

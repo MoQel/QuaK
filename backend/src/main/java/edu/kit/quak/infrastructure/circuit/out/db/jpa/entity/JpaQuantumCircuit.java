@@ -13,4 +13,8 @@ public class JpaQuantumCircuit extends JpaElementWithId{
     public List<JpaRegister> getRegisters() {
         return registers;
     }
+
+    public void setRegisters(List<JpaRegister> registers) {
+        this.registers = registers;
+    }
 }

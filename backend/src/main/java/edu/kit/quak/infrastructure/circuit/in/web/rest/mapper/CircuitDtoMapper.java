@@ -8,6 +8,7 @@ import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.CircuitResponse;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.GateResponse;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.QubitResponse;
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
 
 import java.util.List;
@@ -25,6 +26,7 @@ public abstract class CircuitDtoMapper {
 
     abstract CircuitResponse toResponse(String id, List<Qubit> qubits);
 
+    @Mapping(target = "gates", source = "operations")
     abstract QubitResponse toResponse(Qubit qubit);
 
     abstract GateResponse toResponse(ElementaryQuantumGate gate);
