@@ -3,11 +3,19 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --color-bg-dark: var(--bg-dark);
+  --color-bg: var(--bg);
+  --color-bg-light: var(--bg-light);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-border: var(--border);
+  --color-highlight: var(--highlight);
+
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
-  --color-background: var(--background);
+  --color-background: var(--bg-dark);
   --color-foreground: var(--foreground);
   --color-probability: var(--probability);
   --color-card: var(--card);
@@ -41,7 +49,7 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
-:root {
+/*:root {
   --radius: 0.625rem;
 
   --background: hsl(0 0% 100%);
@@ -79,37 +87,22 @@
   --sidebar-accent-foreground: hsl(0 0% 12%);
   --sidebar-border: hsl(0 0% 90%);
   --sidebar-ring: hsl(0 0% 70%);
-  --probability: hsl(220 80% 56%); /* temporary for the bars in the results*/
+  --probability: hsl(220 80% 56%); /* temporary for the bars in the results
+}*/
+
+.dark{
+    --bg-dark: hsl(0 0% 0%);
+    --bg: hsl(0 0% 20%);
+    --bg-light: hsl(0 0% 30%);
+    --text: hsl(0 0% 95%);
+    --text-muted: hsl(0 0% 70%);
+    --border: hsl(0 0 30%);
+    --border-muted: hsl(300 0% 18%);
+    --highlight: hsl(0 0% 50%);
+    --destructive: hsl(0 72% 50%);
+
 }
 
-.dark {
-  --background: hsl(0 0% 0%);
-  --foreground: hsl(0 0% 90%);
-  --card: hsl(0 0% 5%);
-  --card-foreground: hsl(0 0% 98%);
-  --popover: hsl(0 0% 16%);
-  --popover-foreground: hsl(0 0% 98%);
-  --primary: hsl(0 0% 90%);
-  --primary-foreground: hsl(0 0% 5%);
-  --secondary: hsl(0 0% 22%);
-  --secondary-foreground: hsl(0 0% 98%);
-  --muted: hsl(0 0% 22%);
-  --muted-foreground: hsl(0 0% 65%);
-  --accent: hsl(0 0% 10%);
-  --accent-foreground: hsl(0 0% 98%);
-  --destructive: hsl(0 72% 50%);
-  --border: hsl(0 0% 100% / 10%);
-  --input: hsl(0 0% 100% / 15%);
-  --ring: hsl(0 0% 55%);
-  --sidebar: hsl(0 0% 16%);
-  --sidebar-foreground: hsl(0 0% 98%);
-  --sidebar-primary: hsl(220 80% 60%);
-  --sidebar-primary-foreground: hsl(0 0% 98%);
-  --sidebar-accent: hsl(0 0% 22%);
-  --sidebar-accent-foreground: hsl(0 0% 98%);
-  --sidebar-border: hsl(0 0% 100% / 10%);
-  --sidebar-ring: hsl(0 0% 55%);
-}
 
 
 
