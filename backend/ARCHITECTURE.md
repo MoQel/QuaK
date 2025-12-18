@@ -26,3 +26,32 @@ The [`use cases`](https://github.com/MoQel/QuaK/tree/development/backend/src/mai
 [`Persistence Adapters`](https://github.com/MoQel/QuaK/tree/development/backend/src/main/java/edu/kit/quak/infrastructure/out/db/jpa) implement these [`output ports`](https://github.com/MoQel/QuaK/tree/development/backend/src/main/java/edu/kit/quak/application/filesystem/ports/out), allowing the infrastructure to be swapped or replaced without affecting the core business logic, ensuring high maintainability, testability, and flexibility.
 
 <img src="assets/hexagonal_architecture.png" alt="drawing"/>
+
+#### `infrastructure/{domain}/in/web/rest`
+
+Defines the web adapters and therefore the entry points of the application.
+Communication between frontend and backend is done via Data Transfer Objects (DTOs).
+The subpackage infrastructure/{domain}/in/web/rest/mapper contains mappers that translate
+between DTOs and domain POJOs.
+
+#### `application/{domain}/ports/in`
+
+Defines the input ports of the application.
+These ports are implemented by services located in application/{domain}/services.
+The services represent the use cases and encapsulate the business rules.
+
+#### `application/{domain}/ports/out`
+
+Defines the output ports used by application services to interact with external systems
+(e.g. persistence, file access, configuration sources).
+
+#### `core/{domain}/model`
+
+Contains the domain model expressed as pure POJOs.
+Domain entities have no dependencies on application or infrastructure layers.
+
+##### `infrastructure/{domain}/out/db/jpa`
+
+Defines the persistence adapters using JPA, including entities and repositories.
+JpaMappers map between domain POJOs and JPA entities, keeping persistence concerns
+decoupled from the domain model.
