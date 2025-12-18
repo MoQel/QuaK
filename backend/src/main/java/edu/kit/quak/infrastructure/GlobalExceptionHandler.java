@@ -1,4 +1,4 @@
-package edu.kit.quak.infrastructure.filesystem.in.web.rest.advice;
+package edu.kit.quak.infrastructure;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
+// TODO: Seperate between global Exceptions (500 or Validation errors) and package specific errors (filesystem, circuit...)
 // RFC-7807
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -36,7 +37,7 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
-    // Catches "Corrupt State" amd Configuration errors -> 500 Internal Server Error
+    // Catches "Corrupt State" and Configuration errors -> 500 Internal Server Error
     @ExceptionHandler(IllegalStateException.class)
     public ProblemDetail handleIllegalState(IllegalStateException ex) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage());
