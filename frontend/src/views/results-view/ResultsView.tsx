@@ -12,8 +12,8 @@ const chartConfig = {
   probability: {
     label: "Probability",
     theme: {
-      light: "hsl(220 80% 56%)",
-      dark: "hsl(220 80% 65%)",
+      light: "hsl(0 0% 90%)",
+      dark: "hsl(0 0% 0%)",
     },
   },
 } satisfies ChartConfig;
@@ -40,7 +40,7 @@ export function ResultsView({ numberQubits }: ResultsViewProps) {
             <CardContent>
                 <ChartContainer config={chartConfig}>
                     <BarChart accessibilityLayer data={chartData}>
-                        <CartesianGrid vertical={false} stroke="var(--color-foreground)" strokeOpacity={0.4} />
+                        <CartesianGrid vertical={false} stroke="var(--color-bg-light)" strokeOpacity={0.4} />
                         <XAxis
                             dataKey="qubit"
                             tickLine={false}
@@ -49,7 +49,7 @@ export function ResultsView({ numberQubits }: ResultsViewProps) {
                             tickFormatter={(value) => value.slice(0, 3)}
                         />
                         <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
-                        <Bar dataKey="probability" fill="var(--color-probability)" radius={8} />
+                        <Bar dataKey="probability" fill="hsl(220 80% 56%)" radius={8} />
                     </BarChart>
                 </ChartContainer>
             </CardContent>

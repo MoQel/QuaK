@@ -68,14 +68,14 @@ export const Navbar: React.FC = () => {
               />
             )}
             <div className="flex flex-col">
-              <span className="text-sm font-medium text-foreground">{user.name}</span>
-              <span className="text-xs text-muted-foreground">{user.email}</span>
+              <span className="text-sm font-medium text-text">{user.name}</span>
+              <span className="text-xs text-text-muted">{user.email}</span>
             </div>
           </div>
 
           <button
             onClick={logout}
-            className="flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg transition-colors duration-200"
+            className="flex items-center gap-2 px-4 py-2 bg-red-500/30 hover:bg-red-500/40 text-red-500 rounded-lg transition-colors duration-200"
           >
             <LogOut className="size-4" />
             <span className="text-sm font-medium">Logout</span>
