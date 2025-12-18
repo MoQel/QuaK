@@ -1,9 +1,11 @@
 package edu.kit.quak.infrastructure;
 
+import edu.kit.quak.application.library.exceptions.GateNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.NoSuchElementException;
@@ -50,6 +52,15 @@ public class GlobalExceptionHandler {
     public ProblemDetail handleNotFound(NoSuchElementException ex) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
         problem.setTitle("Resource Not Found");
+        return problem;
+    }
+
+    // TODO: Seperate library related and filesystem related exceptions
+    @ExceptionHandler(GateNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND) // 404
+    public ProblemDetail handleGateNotFound(GateNotFoundException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        problem.setTitle("Gate Not Found");
         return problem;
     }
 
