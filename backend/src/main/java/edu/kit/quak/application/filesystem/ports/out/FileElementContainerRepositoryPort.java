@@ -4,7 +4,23 @@ import edu.kit.quak.core.filesystem.model.FileElementContainer;
 
 import java.util.Optional;
 
+/**
+ * Repository port for {@link FileElementContainer} aggregates.
+ * <p>
+ * Each implementation is responsible for exactly one container type and
+ * must declare the ID prefix it manages. The prefix is used to route
+ * persistence operations to the correct repository.
+ *
+ * @param <T> the concrete container aggregate type
+ */
 public interface FileElementContainerRepositoryPort<T extends FileElementContainer<?>> extends FileElementRepositoryPort {
+
+    /**
+     * Returns the unique ID prefix handled by this repository.
+     *
+     * @return the ID prefix
+     */
+    char idPrefix();
 
     /**
      * Finds a Project or Directory by its ID.

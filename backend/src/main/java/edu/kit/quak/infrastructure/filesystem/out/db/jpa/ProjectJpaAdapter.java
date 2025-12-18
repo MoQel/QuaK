@@ -22,6 +22,11 @@ public class ProjectJpaAdapter implements ProjectRepositoryPort {
     }
 
     @Override
+    public char idPrefix() {
+        return Project.ID_PREFIX;
+    }
+
+    @Override
     public Optional<Project> findById(String pId) {
         return repository.findById(pId)
                 .map(projectMapper::toDomainEntity);

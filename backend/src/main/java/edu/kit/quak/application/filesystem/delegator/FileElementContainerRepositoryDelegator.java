@@ -1,82 +1,38 @@
 package edu.kit.quak.application.filesystem.delegator;
 
-import edu.kit.quak.application.filesystem.ports.out.FileElementContainerRepositoryPort;
 import edu.kit.quak.core.filesystem.model.FileElementContainer;
-import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.GenericTypeResolver;
 import org.springframework.stereotype.Component;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
+/**
+ * Routes repository operations for polymorphic {@link FileElementContainer} types.
+ * <p>
+ * Resolves the appropriate repository via the {@link FileElementContainerRepositoryRegistry}
+ * based on the ID prefix. This centralizes persistence orchestration and shields
+ * application services from routing logic.
+ * </p>
+ */
 @Component
 public class FileElementContainerRepositoryDelegator {
 
-    private final Map<Class<?>, FileElementContainerRepositoryPort<?>> repoByType = new HashMap<>();
-    private final Map<Character, FileElementContainerRepositoryPort<?>> repoByPrefix = new HashMap<>();
+    private final FileElementContainerRepositoryRegistry registry;
 
     @Autowired
-    public FileElementContainerRepositoryDelegator(List<FileElementContainerRepositoryPort<?>> repositories) {
-
-        for (FileElementContainerRepositoryPort<?> repo : repositories) {
-
-            Class<?> targetClass = AopUtils.getTargetClass(repo);
-
-            // Generic type extraction (Project, Directory, File, ...)
-            Class<?> entityType = GenericTypeResolver.resolveTypeArgument(
-                    targetClass,
-                    FileElementContainerRepositoryPort.class
-            );
-
-            if (entityType == null) {
-                throw new IllegalStateException(
-                        "Could not resolve generic type for repository: " + repo.getClass()
-                );
-            }
-
-            // Build Class → Repo mapping
-            if (repoByType.put(entityType, repo) != null) {
-                throw new IllegalStateException("Duplicate repository for type " + entityType.getName());
-            }
-
-            // Build Prefix → Repo mapping
-            try {
-                var constructor = entityType.getDeclaredConstructor();
-                constructor.setAccessible(true);
-                char prefix = ((FileElementContainer<?>) constructor.newInstance()).getIdPrefix();
-
-                if (repoByPrefix.put(prefix, repo) != null) {
-                    throw new IllegalStateException(
-                            "Duplicate ID prefix '" + prefix + "' for repositories!"
-                    );
-                }
-
-            } catch (Exception e) {
-                throw new IllegalStateException(
-                        "Could not instantiate container class " + entityType.getName() +
-                                " to determine ID prefix.", e
-                );
-            }
-        }
+    public FileElementContainerRepositoryDelegator(FileElementContainerRepositoryRegistry registry) {
+        this.registry = registry;
     }
 
-    @SuppressWarnings("unchecked")
     public <T extends FileElementContainer<?>> T save(T container) {
         if (container == null) return null;
 
-        FileElementContainerRepositoryPort<T> repo =
-                (FileElementContainerRepositoryPort<T>) repoByType.get(container.getClass());
+        char prefix = container.getIdPrefix();
 
-        if (repo == null) {
-            throw new IllegalArgumentException(
-                    "No repository registered for type " + container.getClass().getName()
-            );
-        }
-
-        return repo.save(container);
+        // Use registry to find the matching repository
+        return registry.<T>getRepository(prefix)
+                .map(repo -> repo.save(container))
+                .orElseThrow(() -> new IllegalArgumentException("No repo for prefix: " + prefix));
     }
 
     public Optional<FileElementContainer<?>> findContainerById(String id) {
@@ -84,12 +40,8 @@ public class FileElementContainerRepositoryDelegator {
 
         char prefix = id.charAt(0);
 
-        FileElementContainerRepositoryPort<?> repo = repoByPrefix.get(prefix);
-
-        if (repo == null) {
-            return Optional.empty(); // No repo for this prefix
-        }
-
-        return repo.findById(id).map(c -> (FileElementContainer<?>) c);
+        // Resolve repo by prefix and delegate findById call
+        return registry.getRepository(prefix)
+                .flatMap(repo -> repo.findById(id).map(c -> (FileElementContainer<?>) c));
     }
 }

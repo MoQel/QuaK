@@ -25,6 +25,11 @@ public class DirectoryJpaAdapter implements DirectoryRepositoryPort {
     }
 
     @Override
+    public char idPrefix() {
+        return Directory.ID_PREFIX;
+    }
+
+    @Override
     public Optional<Directory> findById(String dId) {
         return directoryRepository.findById(dId)
                 .map(directoryMapper::toDomainEntity);
