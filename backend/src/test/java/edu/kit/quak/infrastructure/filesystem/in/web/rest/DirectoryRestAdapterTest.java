@@ -51,7 +51,7 @@ class DirectoryRestAdapterTest {
 
         mockMvc.perform(post("/directory/")
                         .with(csrf())
-                        .header("parent-id", "p-1")
+                        .header(ApiConstants.HEADER_PARENT_ID, "p-1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json))
                 .andExpect(status().isCreated())

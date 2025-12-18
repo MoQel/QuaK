@@ -24,7 +24,7 @@ public class FileRestAdapter {
     @ResponseStatus(HttpStatus.CREATED)
     public FileDetailsResponse createFile(
             @RequestBody @Valid CreateFileRequest request, // Triggers the Spring Validation
-            @RequestHeader(name = "parent-id") String parentId
+            @RequestHeader(name = ApiConstants.HEADER_PARENT_ID) String parentId
     ) {
         File fileToCreate = mapper.toDomain(request);
         File createdFile = service.createFile(fileToCreate, parentId);

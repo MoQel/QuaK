@@ -59,7 +59,7 @@ class FileRestAdapterTest {
 
         mockMvc.perform(post("/file/")
                         .with(csrf())
-                        .header("parent-id", "d-1")
+                        .header(ApiConstants.HEADER_PARENT_ID, "d-1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(jsonRequest))
                 .andExpect(status().isCreated())
@@ -81,7 +81,7 @@ class FileRestAdapterTest {
 
         mockMvc.perform(post("/file/")
                         .with(csrf())
-                        .header("parent-id", "d-1")
+                        .header(ApiConstants.HEADER_PARENT_ID, "d-1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(jsonRequest))
                 .andExpect(status().isBadRequest())

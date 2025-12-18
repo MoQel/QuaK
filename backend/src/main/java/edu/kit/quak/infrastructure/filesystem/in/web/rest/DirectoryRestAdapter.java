@@ -22,7 +22,7 @@ public class DirectoryRestAdapter {
 
     @PostMapping("/")
     @ResponseStatus(HttpStatus.CREATED)
-    public DirectoryDetailsResponse createDirectory(@RequestBody DirectoryRequest request, @RequestHeader(name = "parent-id") String parentId) {
+    public DirectoryDetailsResponse createDirectory(@RequestBody DirectoryRequest request, @RequestHeader(name = ApiConstants.HEADER_PARENT_ID) String parentId) {
         Directory directoryToCreate = mapper.toDomain(request);
         Directory createdDirectory = service.createDirectory(directoryToCreate, parentId);
         return mapper.toDetailsResponse(createdDirectory);

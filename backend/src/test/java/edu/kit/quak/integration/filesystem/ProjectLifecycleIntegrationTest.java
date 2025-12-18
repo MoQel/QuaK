@@ -1,6 +1,7 @@
 package edu.kit.quak.integration.filesystem;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import edu.kit.quak.infrastructure.filesystem.in.web.rest.ApiConstants;
 import edu.kit.quak.infrastructure.filesystem.in.web.rest.dto.DirectoryDetailsResponse;
 import edu.kit.quak.infrastructure.filesystem.in.web.rest.dto.FileDetailsResponse;
 import edu.kit.quak.infrastructure.filesystem.in.web.rest.dto.ProjectDetailsResponse;
@@ -65,7 +66,7 @@ class ProjectLifecycleIntegrationTest {
 
         MvcResult dirResult = mockMvc.perform(post("/directory/")
                         .with(csrf())
-                        .header("parent-id", this.projectId)
+                        .header(ApiConstants.HEADER_PARENT_ID, this.projectId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(dirJson))
                 .andExpect(status().isCreated())
@@ -87,7 +88,7 @@ class ProjectLifecycleIntegrationTest {
 
         MvcResult fileResult = mockMvc.perform(post("/file/")
                         .with(csrf())
-                        .header("parent-id", this.dirId)
+                        .header(ApiConstants.HEADER_PARENT_ID, this.dirId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(fileJson))
                 .andExpect(status().isCreated())
@@ -156,7 +157,7 @@ class ProjectLifecycleIntegrationTest {
 
         mockMvc.perform(post("/file/")
                         .with(csrf())
-                        .header("parent-id", this.dirId)
+                        .header(ApiConstants.HEADER_PARENT_ID, this.dirId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(duplicateFileJson))
                 .andExpect(status().isBadRequest())
@@ -200,7 +201,7 @@ class ProjectLifecycleIntegrationTest {
 
         MvcResult result = mockMvc.perform(post("/directory/")
                         .with(csrf())
-                        .header("parent-id", this.dirId)
+                        .header(ApiConstants.HEADER_PARENT_ID, this.dirId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(subDirJson))
                 .andExpect(status().isCreated())
@@ -217,7 +218,7 @@ class ProjectLifecycleIntegrationTest {
 
         mockMvc.perform(post("/file/")
                         .with(csrf())
-                        .header("parent-id", subDir.getId())
+                        .header(ApiConstants.HEADER_PARENT_ID, subDir.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(deepFileJson))
                 .andExpect(status().isCreated());
