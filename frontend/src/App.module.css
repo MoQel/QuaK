@@ -54,6 +54,7 @@
   font-weight: bold;
   user-select: none;
   font-size: 20px;
+  cursor: default;
 }
 
 .gate, .gate:hover, .gateDragging {
