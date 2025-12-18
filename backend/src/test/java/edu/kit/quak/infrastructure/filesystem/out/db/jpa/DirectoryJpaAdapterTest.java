@@ -8,8 +8,7 @@ import edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper.DirectoryJpaMapp
 import edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper.FileElementJpaMapperImpl;
 import edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper.FileJpaMapperImpl;
 import edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper.ProjectJpaMapperImpl;
-import edu.kit.quak.infrastructure.filesystem.out.db.jpa.repository.SpringDataDirectoryRepository;
-import org.junit.jupiter.api.Tag;
+import edu.kit.quak.shared.tags.IntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -20,6 +19,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@IntegrationTest
 @DataJpaTest
 @Import({
         DirectoryJpaAdapter.class,
@@ -36,13 +36,9 @@ class DirectoryJpaAdapterTest {
     private DirectoryJpaAdapter adapter;
 
     @Autowired
-    private SpringDataDirectoryRepository repository;
-
-    @Autowired
     private ProjectJpaAdapter projectAdapter;
 
     @Test
-    @Tag("integration")
     void saveAndFindDirectory_withFiles() {
         Project project = new Project("P");
         Project savedProject = projectAdapter.save(project);
@@ -73,7 +69,6 @@ class DirectoryJpaAdapterTest {
     }
 
     @Test
-    @Tag("integration")
     void existsById_returnsCorrectValue() {
         Directory saved = adapter.save(new Directory("Dir", null));
 
@@ -82,7 +77,6 @@ class DirectoryJpaAdapterTest {
     }
 
     @Test
-    @Tag("integration")
     void updateDirectory_removesFile_whenRemovedFromList() {
         Directory dir = new Directory("UpdateDir", null);
         File file = new File("DeleteMe.txt", dir.getId());

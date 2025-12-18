@@ -5,7 +5,7 @@ import edu.kit.quak.application.filesystem.ports.out.FileContentRepositoryPort;
 import edu.kit.quak.application.filesystem.ports.out.FileRepositoryPort;
 import edu.kit.quak.core.filesystem.model.File;
 import edu.kit.quak.core.filesystem.model.Project;
-import org.junit.jupiter.api.Tag;
+import edu.kit.quak.shared.tags.UnitTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -18,6 +18,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@UnitTest
 @ExtendWith(MockitoExtension.class)
 class FileServiceTest {
 
@@ -32,7 +33,6 @@ class FileServiceTest {
     private FileService service;
 
     @Test
-    @Tag("unit")
     void createFile_linksToParentAndSaves() {
         // Arrange
         String parentId = "p-1";
@@ -55,7 +55,6 @@ class FileServiceTest {
     }
 
     @Test
-    @Tag("unit")
     void setFileContent_updatesMetadataAndSavesContent() {
         // Arrange
         String fileId = "f-1";
@@ -83,7 +82,6 @@ class FileServiceTest {
     }
 
     @Test
-    @Tag("unit")
     void removeFile_deletesMetadataAndContent() {
         // Arrange
         String fileId = "f-1";
@@ -110,7 +108,6 @@ class FileServiceTest {
     }
 
     @Test
-    @Tag("unit")
     void renameFile_throws_whenCorruptState() {
         File orphanFile = new File("Orphan", null);
         orphanFile.setId("f-1");

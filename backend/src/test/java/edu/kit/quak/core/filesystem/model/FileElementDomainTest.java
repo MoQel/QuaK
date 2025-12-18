@@ -1,6 +1,6 @@
 package edu.kit.quak.core.filesystem.model;
 
-import org.junit.jupiter.api.Tag;
+import edu.kit.quak.shared.tags.UnitTest;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -8,10 +8,10 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@UnitTest
 class FileElementDomainTest {
 
     @Test
-    @Tag("unit")
     void elementsHaveCorrectIdPrefixes() {
         Project p = new Project("TestProject");
         assertTrue(p.getId().startsWith("p-"), "Project ID should start with 'p-'");
@@ -24,7 +24,6 @@ class FileElementDomainTest {
     }
 
     @Test
-    @Tag("unit")
     void projectAddAndRemoveDirectory() {
         // Arrange
         Project project = new Project("MyProject");
@@ -45,7 +44,6 @@ class FileElementDomainTest {
     }
 
     @Test
-    @Tag("unit")
     void directoryAddAndRemoveFile() {
         // Arrange
         Project project = new Project("P");
@@ -67,7 +65,6 @@ class FileElementDomainTest {
     }
 
     @Test
-    @Tag("unit")
     void fileRenameUpdatesLastAccess() throws InterruptedException {
         String dummyParentId = "d-" + UUID.randomUUID();
         File file = new File("OldName", dummyParentId);
@@ -82,7 +79,6 @@ class FileElementDomainTest {
     }
 
     @Test
-    @Tag("unit")
     void projectAddMultipleDirectoriesAndFiles() {
         // Arrange
         Project project = new Project("Proj");
@@ -109,7 +105,6 @@ class FileElementDomainTest {
     }
 
     @Test
-    @Tag("unit")
     void movingElementBetweenContainersWorks() {
         Project root = new Project("Root");
         Directory sourceDir = new Directory("Source", root.getId());
@@ -135,7 +130,6 @@ class FileElementDomainTest {
     }
 
     @Test
-    @Tag("unit")
     void cannotAddDuplicateNameToContainer() {
         Directory dir = new Directory("Root", "p-1");
         File f1 = new File("Config.txt", dir.getId());

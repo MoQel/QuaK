@@ -7,8 +7,8 @@ import edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper.DirectoryJpaMapp
 import edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper.FileElementJpaMapperImpl;
 import edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper.FileJpaMapperImpl;
 import edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper.ProjectJpaMapperImpl;
+import edu.kit.quak.shared.tags.IntegrationTest;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -18,6 +18,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@IntegrationTest
 @DataJpaTest
 @Import({
         FileContentJpaAdapter.class,
@@ -35,6 +36,7 @@ class FileContentJpaAdapterTest {
 
     @Autowired
     private ProjectJpaAdapter projectAdapter;
+
     @Autowired
     private DirectoryJpaAdapter directoryAdapter;
 
@@ -54,7 +56,6 @@ class FileContentJpaAdapterTest {
     }
 
     @Test
-    @Tag("integration")
     void saveAndLoadContent_success() {
         byte[] data = "Hello World".getBytes();
 
@@ -68,7 +69,6 @@ class FileContentJpaAdapterTest {
     }
 
     @Test
-    @Tag("integration")
     void saveContent_throws_whenMetadataMissing() {
         assertThrows(IllegalArgumentException.class, () ->
                 contentAdapter.saveContent("invalid-id", new byte[]{1, 2, 3})
@@ -76,7 +76,6 @@ class FileContentJpaAdapterTest {
     }
 
     @Test
-    @Tag("integration")
     void updateContent_overwritesExistingData() {
         byte[] dataV1 = "Version 1".getBytes();
         contentAdapter.saveContent(validFileId, dataV1);
@@ -90,7 +89,6 @@ class FileContentJpaAdapterTest {
     }
 
     @Test
-    @Tag("integration")
     void deleteContent_removesData() {
         // Arrange
         contentAdapter.saveContent(validFileId, "To Delete".getBytes());
@@ -104,7 +102,6 @@ class FileContentJpaAdapterTest {
     }
 
     @Test
-    @Tag("integration")
     void loadContent_returnsEmpty_whenNoContentExists() {
         Optional<byte[]> result = contentAdapter.loadContent(validFileId);
 

@@ -2,7 +2,7 @@ package edu.kit.quak.application.filesystem.services;
 
 import edu.kit.quak.application.filesystem.ports.out.ProjectRepositoryPort;
 import edu.kit.quak.core.filesystem.model.Project;
-import org.junit.jupiter.api.Tag;
+import edu.kit.quak.shared.tags.UnitTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -18,6 +18,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@UnitTest
 @ExtendWith(MockitoExtension.class)
 class ProjectServiceTest {
 
@@ -28,7 +29,6 @@ class ProjectServiceTest {
     private ProjectService service;
 
     @Test
-    @Tag("unit")
     void createProject_delegatesToRepo() {
         Project p = new Project("P1");
         service.createProject(p);
@@ -36,7 +36,6 @@ class ProjectServiceTest {
     }
 
     @Test
-    @Tag("unit")
     void renameProject_updatesNameAndSaves() {
         // Arrange
         Project p = new Project("Old");
@@ -51,7 +50,6 @@ class ProjectServiceTest {
     }
 
     @Test
-    @Tag("unit")
     void renameProject_throws_whenNotFound() {
         when(repository.findById(anyString())).thenReturn(Optional.empty());
 

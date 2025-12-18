@@ -8,6 +8,7 @@ import edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity.JpaDirectory;
 import edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity.JpaFile;
 import edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity.JpaFileElement;
 import edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity.JpaProject;
+import edu.kit.quak.shared.tags.UnitTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -22,6 +23,7 @@ import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@UnitTest
 @ExtendWith(MockitoExtension.class)
 class ProjectJpaMapperTest {
 

@@ -4,7 +4,7 @@ import edu.kit.quak.application.filesystem.delegator.FileElementContainerReposit
 import edu.kit.quak.application.filesystem.ports.out.DirectoryRepositoryPort;
 import edu.kit.quak.core.filesystem.model.Directory;
 import edu.kit.quak.core.filesystem.model.Project;
-import org.junit.jupiter.api.Tag;
+import edu.kit.quak.shared.tags.UnitTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -17,6 +17,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@UnitTest
 @ExtendWith(MockitoExtension.class)
 class DirectoryServiceTest {
 
@@ -29,7 +30,6 @@ class DirectoryServiceTest {
     private DirectoryService service;
 
     @Test
-    @Tag("unit")
     void createDirectory_savesParent() {
         // Arrange
         String parentId = "p-1";
@@ -52,24 +52,21 @@ class DirectoryServiceTest {
     }
 
     @Test
-    @Tag("unit")
     void createDirectory_throws_whenParentNotFound() {
         Directory newDir = new Directory("NewDir", "missing");
         when(delegator.findContainerById("missing")).thenReturn(Optional.empty());
 
-        assertThrows(IllegalStateException.class, // oder IllegalArgumentException, je nach Service-Impl
+        assertThrows(IllegalStateException.class,
                 () -> service.createDirectory(newDir, "missing"));
     }
 
     @Test
-    @Tag("unit")
     void renameDirectory_renamesAndSavesParent() {
         // Arrange
         String dirId = "dir-1";
         String parentId = "p-1";
 
         Project parent = new Project("Root");
-        // ID setzen via Reflection oder wenn Setter vorhanden (abhängig von deiner Implementierung)
         parent.setId(parentId);
 
         Directory dir = new Directory("OldName", parentId);
@@ -91,7 +88,6 @@ class DirectoryServiceTest {
     }
 
     @Test
-    @Tag("unit")
     void removeDirectory_removesFromParentAndSaves() {
         // Arrange
         String dirId = "dir-1";

@@ -3,6 +3,7 @@ package edu.kit.quak.application.filesystem.delegator;
 import edu.kit.quak.application.filesystem.ports.out.FileElementContainerRepositoryPort;
 import edu.kit.quak.core.filesystem.model.FileElementContainer;
 import edu.kit.quak.core.filesystem.model.Project;
+import edu.kit.quak.shared.tags.UnitTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -15,6 +16,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@UnitTest
 @ExtendWith(MockitoExtension.class)
 class FileElementContainerRepositoryDelegatorTest {
 
@@ -36,10 +38,7 @@ class FileElementContainerRepositoryDelegatorTest {
     void save_routesByPrefix() {
         Project project = new Project("Test"); // Prefix 'p'
 
-        // Mockito cannot handle the generic type <T> in getRepository at compile time,
-        // so we cast to raw Optional to satisfy the compiler. This is safe because
-        // the test ensures the prefix matches the correct repository type.
-        when(registry.getRepository('p')).thenReturn((Optional) Optional.of(projectRepo));
+        doReturn(Optional.of(projectRepo)).when(registry).getRepository('p');
         when(projectRepo.save(project)).thenReturn(project);
 
         Project result = delegator.save(project);
@@ -55,10 +54,8 @@ class FileElementContainerRepositoryDelegatorTest {
         String id = "p-unique-id";
         Project project = new Project("Test");
 
-        // Mockito cannot handle the generic type <T> in getRepository at compile time,
-        // so we cast to raw Optional to satisfy the compiler. This is safe because
-        // the test ensures the prefix matches the correct repository type.
-        when(registry.getRepository('p')).thenReturn((Optional) Optional.of(projectRepo));
+        // Use doReturn to handle generics safely without raw casts
+        doReturn(Optional.of(projectRepo)).when(registry).getRepository('p');
         when(projectRepo.findById(id)).thenReturn(Optional.of(project));
 
         Optional<FileElementContainer<?>> result = delegator.findContainerById(id);

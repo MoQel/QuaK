@@ -6,6 +6,7 @@ import edu.kit.quak.infrastructure.filesystem.in.web.rest.mapper.DirectoryDtoMap
 import edu.kit.quak.infrastructure.filesystem.in.web.rest.mapper.FileDtoMapperImpl;
 import edu.kit.quak.infrastructure.filesystem.in.web.rest.mapper.FileElementDtoMapperImpl;
 import edu.kit.quak.infrastructure.filesystem.in.web.rest.mapper.ProjectDtoMapperImpl;
+import edu.kit.quak.shared.tags.IntegrationTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +27,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+@IntegrationTest
 @WebMvcTest(ProjectRestAdapter.class)
 @Import({
         ProjectDtoMapperImpl.class,

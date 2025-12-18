@@ -79,3 +79,33 @@ tasks.named('test') {
 		}
 	}
 }
+
+// Task for fast Unit Tests
+tasks.register('unitTest', Test) {
+	description = 'Runs unit tests.'
+	group = 'verification'
+
+	testClassesDirs = sourceSets.test.output.classesDirs
+	classpath = sourceSets.test.runtimeClasspath
+
+	useJUnitPlatform {
+		includeTags 'unit'
+	}
+	// Optional: Fail fast
+	failFast = true
+}
+
+// Task for slower Integration Tests
+tasks.register('integrationTest', Test) {
+	description = 'Runs integration tests.'
+	group = 'verification'
+
+	testClassesDirs = sourceSets.test.output.classesDirs
+	classpath = sourceSets.test.runtimeClasspath
+
+	useJUnitPlatform {
+		includeTags 'integration'
+	}
+	// More storage for Integration Tests
+	maxHeapSize = '1G'
+}

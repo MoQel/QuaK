@@ -1,6 +1,7 @@
 package edu.kit.quak.application.filesystem.delegator;
 
 import edu.kit.quak.application.filesystem.ports.out.FileElementContainerRepositoryPort;
+import edu.kit.quak.shared.tags.UnitTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -12,6 +13,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
 
+@UnitTest
 @ExtendWith(MockitoExtension.class)
 class FileElementContainerRepositoryRegistryTest {
 

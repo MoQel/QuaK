@@ -5,6 +5,7 @@ import edu.kit.quak.infrastructure.filesystem.in.web.rest.ApiConstants;
 import edu.kit.quak.infrastructure.filesystem.in.web.rest.dto.DirectoryDetailsResponse;
 import edu.kit.quak.infrastructure.filesystem.in.web.rest.dto.FileDetailsResponse;
 import edu.kit.quak.infrastructure.filesystem.in.web.rest.dto.ProjectDetailsResponse;
+import edu.kit.quak.shared.tags.IntegrationTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
@@ -23,6 +24,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+@IntegrationTest
 @SpringBootTest
 @AutoConfigureMockMvc
 @Transactional

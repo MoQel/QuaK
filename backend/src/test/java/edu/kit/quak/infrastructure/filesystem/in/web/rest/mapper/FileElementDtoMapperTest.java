@@ -3,22 +3,30 @@ package edu.kit.quak.infrastructure.filesystem.in.web.rest.mapper;
 import edu.kit.quak.core.filesystem.model.Directory;
 import edu.kit.quak.core.filesystem.model.File;
 import edu.kit.quak.infrastructure.filesystem.in.web.rest.dto.FileElementDto;
+import edu.kit.quak.shared.tags.UnitTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Spy;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-// Minimal Spring setup to inject dependencies into the abstract mapper
-
-@SpringBootTest(classes = FileElementDtoMapperTest.MapperTestConfig.class)
+@UnitTest
+@ExtendWith(MockitoExtension.class)
 class FileElementDtoMapperTest {
 
-    @Autowired
-    FileElementDtoMapper mapper;
+    @Spy
+    FileDtoMapperImpl fileMapper;
+
+    @Spy
+    DirectoryDtoMapperImpl directoryMapper;
+
+    @InjectMocks
+    FileElementDtoMapperImpl mapper;
 
     @Test
     @DisplayName("Should map File entity to FileDetailsResponse")

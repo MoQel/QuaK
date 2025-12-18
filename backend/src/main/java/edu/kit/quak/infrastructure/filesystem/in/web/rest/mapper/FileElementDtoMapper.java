@@ -26,7 +26,7 @@ public abstract class FileElementDtoMapper {
 
     public FileElementDto toDto(FileElement<?> element) {
         if (element instanceof File file) {
-            return fileMapper.toDetailsResponse(file); // oder @Autowired Mapper, wenn Spring
+            return fileMapper.toDetailsResponse(file);
         } else if (element instanceof Directory dir) {
             return directoryMapper.toDetailsResponse(dir);
         } else {

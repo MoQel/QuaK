@@ -4,20 +4,23 @@ import edu.kit.quak.core.filesystem.model.Directory;
 import edu.kit.quak.core.filesystem.model.File;
 import edu.kit.quak.core.filesystem.model.FileElement;
 import edu.kit.quak.core.filesystem.model.Project;
-import edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper.*;
-import edu.kit.quak.infrastructure.filesystem.out.db.jpa.repository.SpringDataProjectRepository;
-import org.junit.jupiter.api.Tag;
+import edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper.DirectoryJpaMapperImpl;
+import edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper.FileElementJpaMapperImpl;
+import edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper.FileJpaMapperImpl;
+import edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper.ProjectJpaMapperImpl;
+import edu.kit.quak.shared.tags.IntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Optional;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@IntegrationTest
 @DataJpaTest
 @Import({
         ProjectJpaAdapter.class,
@@ -32,11 +35,7 @@ public class ProjectJpaAdapterTest {
     @Autowired
     private ProjectJpaAdapter adapter;
 
-    @Autowired
-    private SpringDataProjectRepository repository;
-
     @Test
-    @Tag("integration")
     void saveAndFindById_withContents() {
         Project project = new Project("ProjectA");
         Directory dir = new Directory("Dir", project.getId());
@@ -70,7 +69,6 @@ public class ProjectJpaAdapterTest {
     }
 
     @Test
-    @Tag("integration")
     void getAllProjects_returnsAllPersistedProjects() {
         adapter.save(new Project("P1"));
         adapter.save(new Project("P2"));
@@ -83,7 +81,6 @@ public class ProjectJpaAdapterTest {
     }
 
     @Test
-    @Tag("integration")
     void existsById_returnsTrueWhenProjectExists() {
         Project saved = adapter.save(new Project("Exists"));
 
@@ -92,7 +89,6 @@ public class ProjectJpaAdapterTest {
     }
 
     @Test
-    @Tag("integration")
     void deleteById_removesProjectFromDatabase() {
         Project saved = adapter.save(new Project("DeleteMe"));
 
@@ -103,7 +99,6 @@ public class ProjectJpaAdapterTest {
     }
 
     @Test
-    @Tag("integration")
     void removingDirectoryFromProjectDeletesIt() {
         Project project = new Project("P");
         Directory dir = new Directory("Dir", project.getId());
