@@ -8,6 +8,7 @@ import {
     FileElementDto,
     ProjectContentsResponse
 } from "@/api/dto/filesystem.ts";
+import { orderBy } from "lodash";
 
 export interface FileElement {
     id: string,
@@ -28,42 +29,18 @@ export interface File extends FileElement {
 }
 
 /**
- * Sorts a given array of {@link FileElement FileElements} into a predefined order.
- * Elements get sorted in respect to type and name.
- * @param elements The elements to sort
+ * Sorts file elements:
+ * 1. Directories first, then Files, then Projects
+ * 2. Alphabetically by name (case-insensitive)
+ * 3. By creation date
  */
 export function sort(elements: FileElementDto[]) {
-    return elements.sort((a, b) => {
-        const typeA = a.type || "z";
-        const typeB = b.type || "z";
-
-        const score = (type: string) => {
-            if (type === "directory") return 1;
-            if (type === "file") return 2;
-            return 3;
-        };
-
-        const scoreA = score(typeA);
-        const scoreB = score(typeB);
-
-        if (scoreA !== scoreB) {
-            return scoreA - scoreB;
-        }
-
-        const nameA = a.name || "";
-        const nameB = b.name || "";
-
-        const nameComparison = nameA.localeCompare(nameB, undefined, { sensitivity: 'base' });
-
-        if (nameComparison !== 0) {
-            return nameComparison;
-        }
-
-        const dateA = a.createdOn || "";
-        const dateB = b.createdOn || "";
-
-        return dateA.localeCompare(dateB);
-    });
+    return orderBy(elements, [
+        (el) => ({ "directory": 1, "file": 2 }[el.type || ""] || 3),
+        (el) => el.name?.toLowerCase(),
+        // Fallback
+        "createdOn"
+    ], ["asc", "asc", "asc"]);
 }
 
 /**
