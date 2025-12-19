@@ -10,6 +10,8 @@ import { api } from "@/api/api.ts";
 import { useTheme } from "@/theme";
 import {FileContentRequest, FileContentResponse, FileDetailsResponse} from "@/api/dto/filesystem.ts";
 
+import { Base64 } from 'js-base64';
+
 const DEFAULT_VALUE = "No File Selected";
 const DEFAULT_LANG = "plaintext";
 
@@ -37,20 +39,7 @@ function QLPEditor({ file }: { file: File | undefined }) {
     };
 
     function encodeContent(str: string): string {
-        try {
-            // 1. Convert string to UTF-8 bytes
-            const bytes = new TextEncoder().encode(str);
-            // 2. Convert bytes to binary string (for btoa)
-            let binary = '';
-            for (let i = 0; i < bytes.length; i++) {
-                binary += String.fromCharCode(bytes[i]);
-            }
-            // 3. Base64 encoding
-            return btoa(binary);
-        } catch (e) {
-            console.error("Failed to encode content", e);
-            throw e;
-        }
+        return Base64.encode(str);
     }
 
     const onSave = (id: string | undefined) => {
