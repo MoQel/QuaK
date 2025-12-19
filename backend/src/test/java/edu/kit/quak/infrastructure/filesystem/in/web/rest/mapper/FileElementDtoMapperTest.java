@@ -10,8 +10,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -49,9 +47,4 @@ class FileElementDtoMapperTest {
         assertThat(result.getType()).isEqualTo("directory");
         assertThat(result.getName()).isEqualTo("docs");
     }
-
-    // Configuration to pick up the MapStruct generated implementations
-    @Configuration
-    @ComponentScan(basePackageClasses = FileElementDtoMapper.class)
-    static class MapperTestConfig {}
 }
