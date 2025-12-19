@@ -47,7 +47,6 @@ export function GateLibraryView() {
 
             <CardContent>
                 <div className={styles.availableGateContainer}>
-                    {/* Daten als Prop weitergeben */}
                     {boxMode && <GateLibrary gates={gates}/>}
                     {!(boxMode) && <GateList gates={gates}/>}
                 </div>

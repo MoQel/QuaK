@@ -13,8 +13,7 @@ function GateList({ gates }: GateListProps) {
         const groups: Record<string, QuantumGate[]> = {};
 
         for (const gate of gates) {
-            // Fallback, falls das Backend kein 'type' Feld liefert (Feldname ggf. anpassen!)
-            const type = gate.type || "Other";
+            const type = gate.type;
             if (!groups[type]) {
                 groups[type] = [];
             }

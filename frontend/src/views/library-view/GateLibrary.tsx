@@ -12,7 +12,7 @@ function GateLibrary({ gates }: GateLibraryProps) {
                 <LibraryElement
                     key={`${gate.name}-${index}`}
                     id={gate.name}
-                    type={gate.symbol} // Nutzung des Symbols für die Darstellung
+                    type={gate.symbol}
                 />
             ))}
         </div>
