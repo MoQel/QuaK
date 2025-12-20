@@ -1,16 +1,16 @@
-import { Editor, Monaco, loader } from "@monaco-editor/react";
-import { RefObject, useEffect, useRef, useState } from "react";
-import { File } from "@/views/project-manager-view/util/FileElement.tsx"
-import { toast } from "sonner";
-import { Menu } from "@/views/text-editor-view/Menu.tsx";
-import { Language } from "@/views/text-editor-view/model/Language.ts";
-import { qrisp } from "@/components/languages/qrisp.ts";
-import { openqasm } from "@/components/languages/openqasm.ts";
-import { api } from "@/api/api.ts";
-import { useTheme } from "@/theme";
+import {Editor, loader, Monaco} from "@monaco-editor/react";
+import {RefObject, useEffect, useRef, useState} from "react";
+import {File} from "@/views/project-manager-view/util/FileElement.tsx"
+import {toast} from "sonner";
+import {Menu} from "@/views/text-editor-view/Menu.tsx";
+import {Language} from "@/views/text-editor-view/model/Language.ts";
+import {qrisp} from "@/components/languages/qrisp.ts";
+import {openqasm} from "@/components/languages/openqasm.ts";
+import {api} from "@/api/api.ts";
+import {useTheme} from "@/theme";
 import {FileContentRequest, FileContentResponse, FileDetailsResponse} from "@/api/dto/filesystem.ts";
 
-import { Base64 } from 'js-base64';
+import {Base64} from 'js-base64';
 
 const DEFAULT_VALUE = "No File Selected";
 const DEFAULT_LANG = "plaintext";
@@ -38,10 +38,6 @@ function QLPEditor({ file }: { file: File | undefined }) {
         }
     };
 
-    function encodeContent(str: string): string {
-        return Base64.encode(str);
-    }
-
     const onSave = (id: string | undefined) => {
         if (!id) return Promise.resolve();
         const edit = loader.__getMonacoInstance()?.editor.getEditors().at(0);
@@ -50,7 +46,7 @@ function QLPEditor({ file }: { file: File | undefined }) {
             return Promise.resolve();
         }
 
-        const encodedContent = encodeContent(edit.getValue());
+        const encodedContent = Base64.encode(edit.getValue());
 
         // TODO: Make use of ContentType
         const body: FileContentRequest = {
