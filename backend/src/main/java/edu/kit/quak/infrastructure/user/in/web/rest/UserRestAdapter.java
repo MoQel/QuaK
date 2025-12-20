@@ -4,6 +4,7 @@ import edu.kit.quak.application.user.ports.in.UserServicePort;
 import edu.kit.quak.core.user.model.User;
 import edu.kit.quak.infrastructure.user.in.web.rest.dto.UserResponse;
 import edu.kit.quak.infrastructure.user.in.web.rest.mapper.UserDtoMapper;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,7 +21,7 @@ public class UserRestAdapter {
     private final UserServicePort userService;
     private final UserDtoMapper userDtoMapper;
 
-    public UserRestAdapter(UserServicePort userService, UserDtoMapper userDtoMapper) {
+    public UserRestAdapter(@Qualifier("newUserService") UserServicePort userService, UserDtoMapper userDtoMapper) {
         this.userService = userService;
         this.userDtoMapper = userDtoMapper;
     }
