@@ -1,7 +1,7 @@
 import {Card, CardContent} from "@/components/ui/card.tsx";
 import {Button} from "@/components/ui/button.tsx";
-import {CircuitBoard, Minus, Plus, Trash} from "lucide-react";
-import {Fragment, useCallback, useState} from "react";
+import {Minus, Plus, Trash} from "lucide-react";
+import {Fragment, useCallback, useEffect, useState} from "react";
 import styles from "@/App.module.css";
 import {Qubit} from "@/views/circuit-view/Qubit.tsx";
 import {api} from "@/api/api.ts";
@@ -14,13 +14,17 @@ export function CircuitView() {
         ...(circuit?.qubits.map(qubit => qubit.gates.length)) ?? [0]
     );
 
-    const fetchCircuit = useCallback(async () => {
+    useEffect(() => {
+        fetchCircuit().then(setCircuit);
+    }, [])
+
+    async function fetchCircuit() {
         if (circuit == null) {
-            setCircuit(await api.post<CircuitResponse>('/circuit/init'));
+            return await api.post<CircuitResponse>('/circuit/init')
         } else {
-            setCircuit(await api.get<CircuitResponse>(`/circuit/${circuit.id}`));
+            return await api.get<CircuitResponse>(`/circuit/${circuit.id}`)
         }
-    }, [circuit]);
+    }
 
     const addQubit = useCallback(async () => {
         if (circuit != null) {
@@ -41,7 +45,6 @@ export function CircuitView() {
 
                 {/* Buttons */}
                 <div className="pb-5 flex justify-end space-x-3">
-                    <Button onClick={fetchCircuit} size="icon" className="size-8"><CircuitBoard/></Button>
                     <Button onClick={addQubit} size="icon" className="size-8"><Plus/></Button>
                     <Button onClick={removeQubit} size="icon" className="size-8"><Minus/></Button>
                     <Button onClick={resetCircuit} size="icon" className="size-8"><Trash/></Button>
