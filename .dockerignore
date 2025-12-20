@@ -1,7 +1,9 @@
 **/node_modules
 **/build
 **/dist
-**/out
+# Exclude 'out' only at root level or in backend, not in src directories
+/out
+backend/out
 .git
 .idea
 .vscode

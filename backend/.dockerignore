@@ -2,7 +2,7 @@
 build/
 .gradle/
 bin/
-out/
+/out/
 
 # IDE
 .idea/
