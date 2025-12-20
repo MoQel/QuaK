@@ -1,3 +1,7 @@
+# Environment Variables
+.env
+.env.local
+
 # Logs
 logs
 *.log
@@ -8,9 +12,15 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+package-lock.json
 dist
 dist-ssr
 *.local
+
+# Environment Variables
+.env
+.env.local
+.env.production
 
 # Editor directories and files
 .vscode/*
@@ -22,3 +32,4 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+

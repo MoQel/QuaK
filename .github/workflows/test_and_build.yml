@@ -50,9 +50,9 @@ jobs:
 
       - name: Build with Gradle Wrapper
         run: cd backend && ./gradlew :bootJar
-
-      - name: Upload built jar
-        uses: actions/upload-artifact@v4
-        with:
-          name: Application
-          path: backend/build/libs/*.jar
+        
+      # - name: Upload built jar
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: Application
+      #     path: backend/build/libs/*.jar

@@ -57,9 +57,9 @@ tasks.register('getFrontend', Copy) {
 def shouldBuildFrontend = project.hasProperty('buildFrontend') && project.property('buildFrontend') == 'true'
 
 tasks.named("processResources") {
-    if (shouldBuildFrontend) {
-        dependsOn getFrontend
-    }
+	if (shouldBuildFrontend) {
+		dependsOn getFrontend
+	}
 }
 
 tasks.named("bootRun") {
