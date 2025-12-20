@@ -13,7 +13,7 @@ import { DialogCloseButtons, TextInput } from "@/views/project-manager-view/util
 import { Plus } from "lucide-react";
 import { Empty } from "@/views/project-manager-view/util/TreeComponents.tsx";
 import { File } from "@/views/project-manager-view/util/FileElement.tsx";
-import { api } from "@/utils/api";
+import { api } from "@/api/api";
 
 export const ParentRefresh = createContext(() => { })
 // eslint-disable-next-line @typescript-eslint/no-unused-vars

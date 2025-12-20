@@ -6,7 +6,7 @@ import { Menu } from "@/views/text-editor-view/Menu.tsx";
 import { Language } from "@/views/text-editor-view/model/Language.ts";
 import { qrisp } from "@/components/languages/qrisp.ts";
 import { openqasm } from "@/components/languages/openqasm.ts";
-import { api } from "@/utils/api";
+import { api } from "@/api/api";
 import { useTheme } from "@/theme";
 
 const DEFAULT_VALUE = "No File Selected";

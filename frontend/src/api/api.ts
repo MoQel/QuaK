@@ -3,23 +3,6 @@
  * All requests automatically include session cookies
  */
 
-/**
- * Example usage:
- * 
- * // GET request
- * const projects = await api.get<Project[]>('/api/projects');
- * 
- * // POST request
- * const newProject = await api.post<Project>('/api/projects', { name: 'My Project' });
- * 
- * // PUT request
- * const updated = await api.put<Project>('/api/projects/123', { name: 'Updated Name' });
- * 
- * // DELETE request
- * await api.delete('/api/projects/123');
- */
-
-
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 interface FetchOptions extends RequestInit {
@@ -37,17 +20,17 @@ export async function apiRequest<T>(
     const url = `${API_BASE_URL}${endpoint}`;
 
     // Get CSRF token from cookie
-    // const csrfToken = document.cookie
-    //     .split('; ')
-    //     .find(row => row.startsWith('XSRF-TOKEN='))
-    //     ?.split('=')[1];
+    const csrfToken = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('XSRF-TOKEN='))
+        ?.split('=')[1];
 
     const defaultOptions: FetchOptions = {
-        //credentials: 'include', // Always include session cookie
+        credentials: 'include', // Always include session cookie
         ...options, // Spread options first so headers can be merged correctly below
         headers: {
             'Content-Type': 'application/json',
-            //...(csrfToken ? { 'X-XSRF-TOKEN': csrfToken } : {}),
+            ...(csrfToken ? { 'X-XSRF-TOKEN': csrfToken } : {}),
             ...options.headers,
         },
     };
@@ -70,7 +53,7 @@ export async function apiRequest<T>(
         // Return parsed JSON
         // Return parsed JSON or text based on content type
         const contentType = response.headers.get("content-type");
-        if (contentType && contentType.includes("application/json")) {
+        if (contentType && contentType.indexOf("application/json") !== -1) {
             return await response.json();
         } else {
             return await response.text() as unknown as T;
@@ -122,3 +105,18 @@ export const api = {
         }),
 };
 
+/**
+ * Example usage:
+ *
+ * // GET request
+ * const projects = await api.get<Project[]>('/api/projects');
+ *
+ * // POST request
+ * const newProject = await api.post<Project>('/api/projects', { name: 'My Project' });
+ *
+ * // PUT request
+ * const updated = await api.put<Project>('/api/projects/123', { name: 'Updated Name' });
+ *
+ * // DELETE request
+ * await api.delete('/api/projects/123');
+ */

@@ -1,4 +1,4 @@
-import { QuantumGate } from "@/views/QuantumGate.tsx";
+import { QuantumGate } from "@/views/QuantumGate.ts.tsx";
 
 export type QuantumGatesInit = QuantumGate & {
   qubit: number;

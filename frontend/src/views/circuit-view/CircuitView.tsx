@@ -26,11 +26,11 @@ export function CircuitView() {
         }
     }
 
-    const addQubit = useCallback(async () => {
+    const addQubit = async () => {
         if (circuit != null) {
             setCircuit(await api.post<CircuitResponse>(`/circuit/qubit/add/${circuit.id}`));
         }
-    }, [circuit]);
+    }
 
     // TODO: Implement when API is ready
     const removeQubit = useCallback(async () => {}, [circuit]);

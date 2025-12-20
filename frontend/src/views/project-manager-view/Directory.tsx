@@ -19,7 +19,7 @@ import {
 } from "@/views/project-manager-view/util/FileElement.tsx";
 
 import { DialogCloseButtons, TextInput } from "@/views/project-manager-view/util/FormComponents.tsx";
-import { api } from "@/utils/api";
+import { api } from "@/api/api";
 
 /**
  * Displays a {@link IDirectory Directory}

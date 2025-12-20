@@ -1,12 +1,11 @@
-import { LibraryElement } from "@/views/library-view/LibraryElement.tsx";
-import {QuantumGate} from "@/views/QuantumGate.tsx";
+import {LibraryElement} from "@/views/library-view/LibraryElement.tsx";
+import {QuantumGate} from "@/views/library-view/QuantumGate.ts";
 import {useEffect, useState} from "react";
-import { api } from "@/utils/api"; // adjust path to where api.ts lives
+import {api} from "@/api/api";
 
 export async function fetchGates(): Promise<QuantumGate[]> {
   const response = await fetch('/gates');
-  const data = await response.json();
-  return data;
+  return await response.json();
 }
 
 function GateLibrary() {

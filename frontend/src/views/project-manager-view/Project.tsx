@@ -14,7 +14,7 @@ import { ContextMenuItem } from "@/components/ui/context-menu.tsx";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { getElementForFileElement, type Project, sort } from "@/views/project-manager-view/util/FileElement.tsx";
 import { DialogCloseButtons } from "@/views/project-manager-view/util/FormComponents.tsx";
-import { api } from "@/utils/api";
+import { api } from "@/api/api";
 
 async function fetchProjectContent(id: string) {
     const project = await api.get<Project>("/project/" + id);

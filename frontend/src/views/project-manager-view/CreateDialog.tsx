@@ -12,7 +12,7 @@ import {
     ContextMenuSubTrigger
 } from "@/components/ui/context-menu";
 import { DialogCloseButtons, TextInput } from "@/views/project-manager-view/util/FormComponents.tsx";
-import { api } from "@/utils/api";
+import { api } from "@/api/api";
 
 /**
  * Provides a {@link ContextMenuItem} that allows for the creation of {@link FileElement FileElements}.

@@ -18,7 +18,7 @@ import { Form, FormField } from "@/components/ui/form.tsx";
 import { File as IFile } from "@/views/project-manager-view/util/FileElement.tsx";
 import { DialogCloseButtons, TextInput } from "@/views/project-manager-view/util/FormComponents.tsx";
 import { ListingElement } from "@/views/project-manager-view/util/TreeComponents.tsx";
-import { api } from "@/utils/api";
+import { api } from "@/api/api";
 
 /**
  * Displays a {@link IFile File}
