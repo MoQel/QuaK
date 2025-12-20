@@ -4,11 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class QuantumRegister extends Register {
-    private final List<Qubit> qubits;
+    private final List<Qubit> qubits = new ArrayList<>();
 
     public QuantumRegister(String name) {
         super(name);
-        qubits = new ArrayList<>();
     }
 
     public List<Qubit> getQubits() {

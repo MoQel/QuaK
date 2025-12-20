@@ -7,11 +7,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class QuantumCircuit extends ElementWithId {
-    private final List<Register> registers;
+    private final List<Register> registers = new ArrayList<>();
 
     public QuantumCircuit() {
         super();
-        registers = new ArrayList<>();
     }
 
     public List<Register> getRegisters() { return registers; }

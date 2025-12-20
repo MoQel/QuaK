@@ -7,11 +7,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Qubit extends ElementWithId {
-    private final List<QuantumOperation> operations;
+    private final List<QuantumOperation> operations = new ArrayList<>();
 
     public Qubit() {
         super();
-        operations = new ArrayList<>();
     }
 
     public void addOperation(QuantumOperation operation) {

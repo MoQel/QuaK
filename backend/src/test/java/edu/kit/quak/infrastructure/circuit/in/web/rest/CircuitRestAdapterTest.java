@@ -74,6 +74,9 @@ class CircuitRestAdapterTest {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.qubits").exists())
-                .andExpect(jsonPath("$.qubits").isNotEmpty());
+                .andExpect(jsonPath("$.qubits").isArray())
+                .andExpect(jsonPath("$.qubits[0].name").exists())
+                .andExpect(jsonPath("$.qubits[0].name").value("q0"))
+                .andExpect(jsonPath("$.qubits[0].gates").isArray());
     }
 }

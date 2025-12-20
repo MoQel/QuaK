@@ -6,4 +6,10 @@ public record QubitResponse(
         String name,
         List<GateResponse> gates
 ) {
+    // Ensure 'gates' is not null
+    public QubitResponse {
+        if (gates == null) {
+            gates = List.of();
+        }
+    }
 }

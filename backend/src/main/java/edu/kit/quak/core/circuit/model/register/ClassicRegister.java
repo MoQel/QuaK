@@ -4,11 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ClassicRegister extends Register {
-    private final List<Boolean> bits;
+    private final List<Boolean> bits = new ArrayList<>();
 
     public ClassicRegister(String name) {
         super(name);
-        bits = new ArrayList<>();
     }
 
     public List<Boolean> getBits() {
