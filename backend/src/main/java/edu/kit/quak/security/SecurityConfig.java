@@ -163,7 +163,7 @@ public class SecurityConfig {
 
     @Bean
     public AuthenticationSuccessHandler authenticationSuccessHandler(
-            edu.kit.quak.application.filesystem.service.OidcUserSyncService oidcUserSyncService) {
+            edu.kit.quak.application.user.ports.in.OidcSyncServicePort oidcUserSyncService) {
         SimpleUrlAuthenticationSuccessHandler delegate = new SimpleUrlAuthenticationSuccessHandler();
         delegate.setDefaultTargetUrl(frontendUrl + "/");
         delegate.setAlwaysUseDefaultTargetUrl(true);
@@ -172,7 +172,7 @@ public class SecurityConfig {
             if (authentication.getPrincipal() instanceof org.springframework.security.oauth2.core.oidc.user.OidcUser oidcUser) {
                 if (authentication instanceof org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken oauthToken) {
                     String registrationId = oauthToken.getAuthorizedClientRegistrationId();
-                    edu.kit.quak.core.filesystem.model.User user = oidcUserSyncService.syncUser(registrationId, oidcUser);
+                    edu.kit.quak.core.user.model.User user = oidcUserSyncService.syncUser(registrationId, oidcUser);
                     request.getSession().setAttribute("userId", user.getId());
                 }
             }

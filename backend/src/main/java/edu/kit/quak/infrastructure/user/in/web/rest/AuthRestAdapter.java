@@ -1,24 +1,22 @@
-package edu.kit.quak.infrastructure.web.rest;
+package edu.kit.quak.infrastructure.user.in.web.rest;
 
-import edu.kit.quak.application.filesystem.service.AuthService;
+import edu.kit.quak.application.user.ports.in.AuthServicePort;
+import jakarta.servlet.http.HttpSession;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.servlet.http.HttpSession;
 import java.util.Map;
 
 /**
- * REST controller for authentication-related endpoints.
- * Delegates business logic to AuthService.
- *
- * @author QuaK Team
+ * REST adapter for authentication-related endpoints.
  */
 @RestController
 @RequestMapping("/api/auth")
-public class AuthController {
+public class AuthRestAdapter {
 
-    private final AuthService authService;
+    private final AuthServicePort authService;
 
-    public AuthController(AuthService authService) {
+    public AuthRestAdapter(@Qualifier("newAuthService") AuthServicePort authService) {
         this.authService = authService;
     }
 
