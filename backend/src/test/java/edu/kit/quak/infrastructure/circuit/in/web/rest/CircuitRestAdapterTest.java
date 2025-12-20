@@ -35,7 +35,7 @@ class CircuitRestAdapterTest {
     @Test
     void initCircuit_ShouldReturnCreated() throws Exception {
         // Arrange
-        QuantumCircuit circuit = new QuantumCircuit(); // ID wird im Konstruktor generiert
+        QuantumCircuit circuit = new QuantumCircuit();
         given(circuitServicePort.initCircuit()).willReturn(circuit);
 
         // Act & Assert
@@ -52,12 +52,28 @@ class CircuitRestAdapterTest {
         // Arrange
         String circuitId = "test-id";
         QuantumCircuit circuit = new QuantumCircuit();
-        // Hier ggf. ID via Reflection setzen, falls kein Setter existiert
         given(circuitServicePort.getCircuit(circuitId)).willReturn(circuit);
 
         // Act & Assert
         mockMvc.perform(get("/circuit/{id}", circuitId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").exists());
+    }
+
+    @Test
+    void addQubit_ShouldPersistQubitAndLinkToRegister() throws Exception {
+        // Arrange
+        String circuitId = "test-id";
+        QuantumCircuit circuit = new QuantumCircuit();
+        circuit.addRegister();
+        given(circuitServicePort.addQubit(circuitId)).willReturn(circuit);
+
+        // Act & Assert
+        mockMvc.perform(post("/circuit/qubit/add/{id}", circuitId)
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.qubits").exists())
+                .andExpect(jsonPath("$.qubits").isNotEmpty());
     }
 }
