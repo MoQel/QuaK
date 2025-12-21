@@ -24,8 +24,18 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-jdbc'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	
+	// Lombok - must be declared before MapStruct for proper annotation processor ordering
+	compileOnly 'org.projectlombok:lombok:1.18.30'
+	annotationProcessor 'org.projectlombok:lombok:1.18.30'
+	testCompileOnly 'org.projectlombok:lombok:1.18.30'
+	testAnnotationProcessor 'org.projectlombok:lombok:1.18.30'
+	
+	// MapStruct with Lombok binding
 	implementation 'org.mapstruct:mapstruct:1.5.5.Final'
+	annotationProcessor 'org.projectlombok:lombok-mapstruct-binding:0.2.0'
 	annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.5.Final'
+	
 	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'org.springframework.session:spring-session-core'
@@ -54,18 +64,77 @@ tasks.register('getFrontend', Copy) {
 	into(layout.projectDirectory.dir('src/main/resources/static'))
 }
 
+tasks.register('prepareDevStatic') {
+	group = 'QuaK'
+	description = 'Ensures 8080 serves a placeholder instead of stale frontend files during development'
+	
+	doLast {
+		def staticDir = file("src/main/resources/static")
+		if (!staticDir.exists()) staticDir.mkdirs()
+		
+		// Delete stale files
+		staticDir.listFiles().each { f ->
+			if (f.name != ".gitkeep") {
+				if (f.isDirectory()) f.deleteDir()
+				else f.delete()
+			}
+		}
+		
+		// Create placeholder
+		def placeholder = file("src/main/resources/static/index.html")
+		placeholder.text = """
+<!DOCTYPE html>
+<html>
+<head>
+    <title>QuaK - Backend Dev Mode</title>
+    <style>
+        body { font-family: -apple-system, system-ui, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background-color: #0f172a; color: white; }
+        .card { background: #1e293b; padding: 3rem; border-radius: 1rem; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); text-align: center; border: 1px solid #334155; max-width: 500px; }
+        h1 { color: #38bdf8; margin-bottom: 1rem; font-size: 2.25rem; }
+        p { color: #94a3b8; line-height: 1.6; margin-bottom: 1.5rem; font-size: 1.125rem; }
+        .btn { display: inline-block; padding: 0.75rem 1.5rem; background: #0284c7; color: white; text-decoration: none; border-radius: 0.5rem; font-weight: 600; transition: background 0.2s; }
+        .btn:hover { background: #0369a1; }
+        .cmd { background: #000; padding: 0.5rem; border-radius: 0.25rem; font-family: monospace; color: #10b981; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Backend is Ready!</h1>
+        <p>You are accessing the <strong>API Port (8080)</strong>. The full frontend is not served here during development.</p>
+        <p>Please start the frontend in another terminal:</p>
+        <div style="margin-bottom: 2rem;"><span class="cmd">cd frontend && npm run dev</span></div>
+        <a href="http://localhost:5173" class="btn">Open App on Port 5173</a>
+    </div>
+</body>
+</html>
+""".trim()
+	}
+}
+
 // Only build frontend when explicitly requested via -PbuildFrontend=true
 def shouldBuildFrontend = project.hasProperty('buildFrontend') && project.property('buildFrontend') == 'true'
 
 tasks.named("processResources") {
 	if (shouldBuildFrontend) {
 		dependsOn getFrontend
+	} else {
+		dependsOn prepareDevStatic
 	}
 }
 
 tasks.named("bootRun") {
 	group = 'QuaK'
 	mainClass = 'edu.kit.quak.QuaKApplication'
+
+	// Load environment variables from .env file for local development
+	if (file(".env").exists()) {
+		file(".env").readLines().each { line ->
+			if (line.trim() && !line.startsWith("#") && line.contains("=")) {
+				def parts = line.split("=", 2)
+				environment parts[0].trim(), parts[1].trim()
+			}
+		}
+	}
 }
 
 tasks.named('test') {

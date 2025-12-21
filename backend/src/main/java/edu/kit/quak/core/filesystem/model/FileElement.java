@@ -1,16 +1,23 @@
 package edu.kit.quak.core.filesystem.model;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import java.time.Instant;
 import java.util.UUID;
 
 /**
  * Domain POJO for FileElement
- * A FileElement is an element inside a {@link FileElementContainer container} or the container itself.
- * The idea behind this class is the concept of files and directories as they are found inside a POSIX filesystem.
+ * A FileElement is an element inside a {@link FileElementContainer container}
+ * or the container itself.
+ * The idea behind this class is the concept of files and directories as they
+ * are found inside a POSIX filesystem.
  *
  * @param <T> The type used by the implementing classes in the method
  * @author Henrik K
  */
+@Getter
+@Setter
 public abstract class FileElement<T extends FileElement<T>> {
 
     private String id;
@@ -20,7 +27,11 @@ public abstract class FileElement<T extends FileElement<T>> {
     private String parentId;
 
     // Frameworks only
-    protected FileElement() { }
+    protected FileElement() {
+        this.id = getIdPrefix() + "-" + UUID.randomUUID();
+        this.createdOn = Instant.now();
+        this.lastAccess = Instant.now();
+    }
 
     public FileElement(String name, String parentId) {
         this.id = getIdPrefix() + "-" + UUID.randomUUID(); // ID generated in Domain (Best Practice)
@@ -30,11 +41,13 @@ public abstract class FileElement<T extends FileElement<T>> {
         this.lastAccess = Instant.now();
     }
 
-    //region getter and setter
-    public String getId() { return id; }
-    public void setId(String id) { this.id = id; }
-
-    public String getName() { return name; }
+    /**
+     * Renames this element and updates the lastAccess timestamp.
+     * For business logic, prefer this method over {@link #setName(String)}.
+     * 
+     * @param newName the new name for this element
+     * @throws IllegalArgumentException if the name is null or blank
+     */
     public void rename(String newName) {
         if (newName == null || newName.isBlank()) {
             throw new IllegalArgumentException("Name cannot be empty");
@@ -43,34 +56,20 @@ public abstract class FileElement<T extends FileElement<T>> {
         this.lastAccess = Instant.now();
     }
 
-    public String getParentId() {
-        return parentId;
-    }
-    public void setParentId(String parentId) {
-        this.parentId = parentId;
-    }
-
-    protected void setCreatedOn(Instant createdOn) { this.createdOn = createdOn; }
-    public Instant getCreatedOn() {
-        return createdOn;
-    }
-
-    public Instant getLastAccess() {
-        return lastAccess;
-    }
-    public void setLastAccess(Instant lastAccess) { this.lastAccess = lastAccess; }
     public void setLastAccessNow() {
         this.lastAccess = Instant.now();
     }
 
     public abstract String getTypeIdentifier();
+
     public abstract char getIdPrefix();
-    //endregion
 
     @Override
     public final boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof FileElement<?> other)) return false;
+        if (this == o)
+            return true;
+        if (!(o instanceof FileElement<?> other))
+            return false;
         return id != null && id.equals(other.getId());
     }
 

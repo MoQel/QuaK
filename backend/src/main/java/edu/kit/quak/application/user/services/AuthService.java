@@ -1,7 +1,6 @@
 package edu.kit.quak.application.user.services;
 
 import edu.kit.quak.application.user.ports.in.AuthServicePort;
-import jakarta.servlet.http.HttpSession;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.core.user.OAuth2User;
@@ -21,12 +20,12 @@ public class AuthService implements AuthServicePort {
     public Map<String, Object> getAuthenticationStatus() {
         Map<String, Object> response = new HashMap<>();
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        
-        if (authentication != null && authentication.isAuthenticated() 
-            && !"anonymousUser".equals(authentication.getPrincipal())) {
-            
+
+        if (authentication != null && authentication.isAuthenticated()
+                && !"anonymousUser".equals(authentication.getPrincipal())) {
+
             response.put("authenticated", true);
-            
+
             if (authentication.getPrincipal() instanceof OAuth2User user) {
                 Map<String, Object> userInfo = new HashMap<>();
                 userInfo.put("email", user.getAttribute("email"));
@@ -37,14 +36,14 @@ public class AuthService implements AuthServicePort {
         } else {
             response.put("authenticated", false);
         }
-        
+
         return response;
     }
 
     @Override
     public Map<String, Object> getAuthenticatedUserInfo() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        
+
         if (authentication != null && authentication.getPrincipal() instanceof OAuth2User user) {
             Map<String, Object> userInfo = new HashMap<>();
             userInfo.put("email", user.getAttribute("email"));
@@ -53,15 +52,16 @@ public class AuthService implements AuthServicePort {
             userInfo.put("sub", user.getAttribute("sub"));
             return userInfo;
         }
-        
+
         throw new RuntimeException("User not authenticated");
     }
 
     @Override
-    public Map<String, String> logout(HttpSession session) {
-        session.invalidate();
+    public Map<String, String> logout(String sessionId) {
+        // Clear the security context
+        // Note: Actual session invalidation is handled by the infrastructure adapter
         SecurityContextHolder.clearContext();
-        
+
         Map<String, String> response = new HashMap<>();
         response.put("message", "Logged out successfully");
         return response;

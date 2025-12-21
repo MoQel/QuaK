@@ -9,6 +9,8 @@ import java.util.Map;
 
 /**
  * REST adapter for authentication-related endpoints.
+ * Handles HTTP-specific concerns and delegates business logic to the
+ * application layer.
  */
 @RestController
 @RequestMapping("/api/auth")
@@ -32,6 +34,15 @@ public class AuthRestAdapter {
 
     @PostMapping("/logout")
     public Map<String, String> logout(HttpSession session) {
-        return authService.logout(session);
+        // Extract sessionId for business logic
+        String sessionId = session.getId();
+
+        // Call application service
+        Map<String, String> response = authService.logout(sessionId);
+
+        // Handle infrastructure concern: invalidate the HTTP session
+        session.invalidate();
+
+        return response;
     }
 }

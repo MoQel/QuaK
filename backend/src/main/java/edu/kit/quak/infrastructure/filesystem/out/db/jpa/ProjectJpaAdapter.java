@@ -9,11 +9,12 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
 public class ProjectJpaAdapter implements ProjectRepositoryPort {
 
-    public final SpringDataProjectRepository repository;
+    private final SpringDataProjectRepository repository;
     private final ProjectJpaMapper projectMapper;
 
     ProjectJpaAdapter(SpringDataProjectRepository repository, ProjectJpaMapper projectMapper) {
@@ -40,8 +41,8 @@ public class ProjectJpaAdapter implements ProjectRepositoryPort {
     }
 
     @Override
-    public List<Project> getAllProjects() {
-        return repository.findAll()
+    public List<Project> getProjectsByOwnerId(UUID ownerId) {
+        return repository.findAllByOwnerId(ownerId)
                 .stream().map(projectMapper::toDomainEntity)
                 .toList();
     }

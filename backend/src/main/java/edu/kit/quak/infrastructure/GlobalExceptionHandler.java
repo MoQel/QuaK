@@ -1,6 +1,8 @@
 package edu.kit.quak.infrastructure;
 
+import edu.kit.quak.application.filesystem.exceptions.AccessDeniedException;
 import edu.kit.quak.application.library.exceptions.GateNotFoundException;
+import edu.kit.quak.application.user.exceptions.UserNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -11,8 +13,10 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
-// TODO: Seperate between global Exceptions (500 or Validation errors) and package specific errors (filesystem, circuit...)
-// RFC-7807
+/**
+ * Global exception handler that translates domain exceptions to HTTP responses.
+ * Follows RFC-7807 Problem Details for HTTP APIs.
+ */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -55,6 +59,24 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
+    // Catches user authentication failures -> 401 Unauthorized
+    @ExceptionHandler(UserNotFoundException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    public ProblemDetail handleUserNotFound(UserNotFoundException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());
+        problem.setTitle("Unauthorized");
+        return problem;
+    }
+
+    // Catches authorization/ownership failures -> 403 Forbidden
+    @ExceptionHandler(AccessDeniedException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public ProblemDetail handleAccessDenied(AccessDeniedException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
+        problem.setTitle("Access Denied");
+        return problem;
+    }
+
     // TODO: Seperate library related and filesystem related exceptions
     @ExceptionHandler(GateNotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND) // 404
@@ -68,7 +90,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ProblemDetail handleGeneralError(Exception ex) {
         // TODO: Introduce Logging! (Log.error(ex))
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred.");
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR,
+                "An unexpected error occurred.");
         problem.setTitle("Internal Error");
         return problem;
     }
