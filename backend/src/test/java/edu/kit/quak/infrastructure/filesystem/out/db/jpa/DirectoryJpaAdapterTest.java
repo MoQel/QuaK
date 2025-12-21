@@ -4,10 +4,6 @@ import edu.kit.quak.core.filesystem.model.Directory;
 import edu.kit.quak.core.filesystem.model.File;
 import edu.kit.quak.core.filesystem.model.FileElement;
 import edu.kit.quak.core.filesystem.model.Project;
-import edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper.DirectoryJpaMapperImpl;
-import edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper.FileElementJpaMapperImpl;
-import edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper.FileJpaMapperImpl;
-import edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper.ProjectJpaMapperImpl;
 import edu.kit.quak.shared.tags.IntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,13 +17,10 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @IntegrationTest
 @DataJpaTest
+@org.springframework.context.annotation.ComponentScan(basePackages = "edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper")
 @Import({
         DirectoryJpaAdapter.class,
-        ProjectJpaAdapter.class,
-        DirectoryJpaMapperImpl.class,
-        FileJpaMapperImpl.class,
-        ProjectJpaMapperImpl.class,
-        FileElementJpaMapperImpl.class
+        ProjectJpaAdapter.class
 })
 @Transactional
 class DirectoryJpaAdapterTest {
@@ -47,7 +40,6 @@ class DirectoryJpaAdapterTest {
         File file = new File("File.txt", dir.getId());
 
         dir.addChild(file);
-
 
         Directory saved = adapter.save(dir);
 

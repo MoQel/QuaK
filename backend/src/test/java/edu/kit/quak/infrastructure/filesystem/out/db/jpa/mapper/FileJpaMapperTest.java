@@ -4,10 +4,10 @@ import edu.kit.quak.core.filesystem.model.File;
 import edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity.JpaDirectory;
 import edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity.JpaFile;
 import edu.kit.quak.shared.tags.UnitTest;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Spy;
+import org.mapstruct.factory.Mappers;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -17,11 +17,12 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 @ExtendWith(MockitoExtension.class)
 class FileJpaMapperTest {
 
-    @InjectMocks
-    private FileJpaMapperImpl mapper;
+    private FileJpaMapper mapper;
 
-    @Spy
-    private FileElementJpaMapperImpl fileElementJpaMapper;
+    @BeforeEach
+    void setUp() {
+        mapper = Mappers.getMapper(FileJpaMapper.class);
+    }
 
     @Test
     void domainToJpaEntity_ShouldIgnoreParent() {

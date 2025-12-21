@@ -1,6 +1,5 @@
 package edu.kit.quak.application.user.services;
 
-import jakarta.servlet.http.HttpSession;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -29,8 +28,7 @@ class AuthServiceTest {
     @InjectMocks
     private AuthService authService;
 
-    @Mock
-    private HttpSession mockSession;
+    private static final String TEST_SESSION_ID = "test-session-123";
 
     @BeforeEach
     void setUp() {
@@ -88,7 +86,7 @@ class AuthServiceTest {
 
             assertTrue((Boolean) result.get("authenticated"));
             assertNotNull(result.get("user"));
-            
+
             @SuppressWarnings("unchecked")
             Map<String, Object> userInfo = (Map<String, Object>) result.get("user");
             assertEquals("test@example.com", userInfo.get("email"));
@@ -131,7 +129,7 @@ class AuthServiceTest {
             when(context.getAuthentication()).thenReturn(null);
             SecurityContextHolder.setContext(context);
 
-            assertThrows(RuntimeException.class, 
+            assertThrows(RuntimeException.class,
                     () -> authService.getAuthenticatedUserInfo());
         }
 
@@ -144,7 +142,7 @@ class AuthServiceTest {
             when(auth.getPrincipal()).thenReturn("notOAuth2User");
             SecurityContextHolder.setContext(context);
 
-            assertThrows(RuntimeException.class, 
+            assertThrows(RuntimeException.class,
                     () -> authService.getAuthenticatedUserInfo());
         }
     }
@@ -154,17 +152,16 @@ class AuthServiceTest {
     class LogoutTests {
 
         @Test
-        @DisplayName("Should invalidate session and clear security context")
-        void logout_invalidatesSessionAndClearsContext() {
+        @DisplayName("Should clear security context")
+        void logout_clearsSecurityContext() {
             // Set up a security context
             SecurityContext context = mock(SecurityContext.class);
             SecurityContextHolder.setContext(context);
 
-            Map<String, String> result = authService.logout(mockSession);
+            Map<String, String> result = authService.logout(TEST_SESSION_ID);
 
-            verify(mockSession).invalidate();
             assertEquals("Logged out successfully", result.get("message"));
-            
+
             // Verify security context was cleared
             assertNull(SecurityContextHolder.getContext().getAuthentication());
         }
@@ -172,7 +169,7 @@ class AuthServiceTest {
         @Test
         @DisplayName("Should return success message on logout")
         void logout_returnsSuccessMessage() {
-            Map<String, String> result = authService.logout(mockSession);
+            Map<String, String> result = authService.logout(TEST_SESSION_ID);
 
             assertNotNull(result);
             assertEquals("Logged out successfully", result.get("message"));

@@ -2,16 +2,12 @@ package edu.kit.quak.infrastructure.filesystem.in.web.rest;
 
 import edu.kit.quak.application.filesystem.ports.in.DirectoryServicePort;
 import edu.kit.quak.core.filesystem.model.Directory;
-import edu.kit.quak.infrastructure.filesystem.in.web.rest.mapper.DirectoryDtoMapperImpl;
-import edu.kit.quak.infrastructure.filesystem.in.web.rest.mapper.FileDtoMapperImpl;
-import edu.kit.quak.infrastructure.filesystem.in.web.rest.mapper.FileElementDtoMapperImpl;
-import edu.kit.quak.infrastructure.filesystem.in.web.rest.mapper.ProjectDtoMapperImpl;
+import edu.kit.quak.infrastructure.filesystem.in.web.rest.mapper.DirectoryDtoMapper;
 import edu.kit.quak.shared.tags.IntegrationTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -28,7 +24,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @IntegrationTest
 @WebMvcTest(DirectoryRestAdapter.class)
-@Import({DirectoryDtoMapperImpl.class, FileElementDtoMapperImpl.class, FileDtoMapperImpl.class, ProjectDtoMapperImpl.class})
+@org.springframework.context.annotation.ComponentScan(basePackageClasses = { DirectoryDtoMapper.class })
 @WithMockUser(username = "tester", roles = "USER") // <--- Simulates logged-in user
 class DirectoryRestAdapterTest {
 
@@ -48,14 +44,14 @@ class DirectoryRestAdapterTest {
                 .thenReturn(createdDir);
 
         String json = """
-            { "name": "NewDir" }
-            """;
+                { "name": "NewDir" }
+                """;
 
-        mockMvc.perform(post("/directory/")
-                        .with(csrf())
-                        .header(ApiConstants.HEADER_PARENT_ID, "p-1")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(json))
+        mockMvc.perform(post("/api/directory/")
+                .with(csrf())
+                .header(ApiConstants.HEADER_PARENT_ID, "p-1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value("d-123"));
     }
@@ -68,7 +64,7 @@ class DirectoryRestAdapterTest {
 
         when(directoryService.retrieveDirectory("d-123")).thenReturn(dir);
 
-        mockMvc.perform(get("/directory/d-123"))
+        mockMvc.perform(get("/api/directory/d-123"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value("d-123"));
     }
@@ -76,8 +72,8 @@ class DirectoryRestAdapterTest {
     @Test
     @DisplayName("DELETE /directory/{id} calls service")
     void deleteDirectory() throws Exception {
-        mockMvc.perform(delete("/directory/d-123")
-                        .with(csrf()))
+        mockMvc.perform(delete("/api/directory/d-123")
+                .with(csrf()))
                 .andExpect(status().isOk());
 
         verify(directoryService).removeDirectory("d-123");
@@ -93,13 +89,13 @@ class DirectoryRestAdapterTest {
                 .thenReturn(updated);
 
         String json = """
-            { "name": "Renamed" }
-            """;
+                { "name": "Renamed" }
+                """;
 
-        mockMvc.perform(patch("/directory/d-123")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(json))
+        mockMvc.perform(patch("/api/directory/d-123")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("Renamed"));
     }

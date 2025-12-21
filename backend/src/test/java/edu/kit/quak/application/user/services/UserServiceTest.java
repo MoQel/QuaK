@@ -1,7 +1,9 @@
 package edu.kit.quak.application.user.services;
 
 import edu.kit.quak.application.user.ports.out.UserRepositoryPort;
+import edu.kit.quak.core.user.model.AuthenticatedUser;
 import edu.kit.quak.core.user.model.User;
+import edu.kit.quak.test.helpers.AuthTestHelper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -10,9 +12,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
-import org.springframework.security.oauth2.core.oidc.user.OidcUser;
-import org.springframework.web.server.ResponseStatusException;
+import edu.kit.quak.application.user.exceptions.UserNotFoundException;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -114,17 +114,12 @@ class UserServiceTest {
         @DisplayName("Should return user when authenticated user exists in database")
         void getAuthenticatedUser_existingUser_returnsUser() {
             // Arrange
-            OAuth2AuthenticationToken authToken = mock(OAuth2AuthenticationToken.class);
-            OidcUser oidcUser = mock(OidcUser.class);
-
-            when(authToken.getPrincipal()).thenReturn(oidcUser);
-            when(authToken.getAuthorizedClientRegistrationId()).thenReturn("google");
-            when(oidcUser.getSubject()).thenReturn("test-sub-123");
+            AuthenticatedUser authenticatedUser = new AuthenticatedUser(null, "google", "test-sub-123");
             when(userRepository.findByIssuerAndSub("google", "test-sub-123"))
                     .thenReturn(Optional.of(testUser));
 
             // Act
-            User result = userService.getAuthenticatedUser(authToken);
+            User result = userService.getAuthenticatedUser(authenticatedUser);
 
             // Assert
             assertNotNull(result);
@@ -133,21 +128,18 @@ class UserServiceTest {
         }
 
         @Test
-        @DisplayName("Should throw ResponseStatusException when user not found")
+        @DisplayName("Should throw UserNotFoundException when user not found")
         void getAuthenticatedUser_userNotFound_throwsException() {
             // Arrange
-            OAuth2AuthenticationToken authToken = mock(OAuth2AuthenticationToken.class);
-            OidcUser oidcUser = mock(OidcUser.class);
-
-            when(authToken.getPrincipal()).thenReturn(oidcUser);
-            when(authToken.getAuthorizedClientRegistrationId()).thenReturn("google");
-            when(oidcUser.getSubject()).thenReturn("unknown-sub");
+            AuthenticatedUser authenticatedUser = new AuthenticatedUser(null, "google", "unknown-sub");
             when(userRepository.findByIssuerAndSub("google", "unknown-sub"))
                     .thenReturn(Optional.empty());
 
             // Act & Assert
-            assertThrows(ResponseStatusException.class, 
-                    () -> userService.getAuthenticatedUser(authToken));
+            UserNotFoundException exception = assertThrows(UserNotFoundException.class,
+                    () -> userService.getAuthenticatedUser(authenticatedUser));
+            assertTrue(exception.getMessage().contains("google"));
+            assertTrue(exception.getMessage().contains("unknown-sub"));
         }
     }
 }

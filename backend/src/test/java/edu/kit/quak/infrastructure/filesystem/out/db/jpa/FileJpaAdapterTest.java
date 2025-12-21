@@ -3,10 +3,6 @@ package edu.kit.quak.infrastructure.filesystem.out.db.jpa;
 import edu.kit.quak.core.filesystem.model.Directory;
 import edu.kit.quak.core.filesystem.model.File;
 import edu.kit.quak.core.filesystem.model.Project;
-import edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper.DirectoryJpaMapperImpl;
-import edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper.FileElementJpaMapperImpl;
-import edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper.FileJpaMapperImpl;
-import edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper.ProjectJpaMapperImpl;
 import edu.kit.quak.shared.tags.IntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,14 +15,11 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @IntegrationTest
 @DataJpaTest
+@org.springframework.context.annotation.ComponentScan(basePackages = "edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper")
 @Import({
         FileJpaAdapter.class,
         DirectoryJpaAdapter.class,
-        ProjectJpaAdapter.class,
-        FileJpaMapperImpl.class,
-        DirectoryJpaMapperImpl.class,
-        ProjectJpaMapperImpl.class,
-        FileElementJpaMapperImpl.class
+        ProjectJpaAdapter.class
 })
 class FileJpaAdapterTest {
 

@@ -4,12 +4,13 @@ import edu.kit.quak.core.filesystem.model.Directory;
 import edu.kit.quak.core.filesystem.model.File;
 import edu.kit.quak.infrastructure.filesystem.in.web.rest.dto.FileElementDto;
 import edu.kit.quak.shared.tags.UnitTest;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Spy;
+import org.mapstruct.factory.Mappers;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -17,14 +18,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ExtendWith(MockitoExtension.class)
 class FileElementDtoMapperTest {
 
-    @Spy
-    FileDtoMapperImpl fileMapper;
+    private FileElementDtoMapper mapper;
 
-    @Spy
-    DirectoryDtoMapperImpl directoryMapper;
+    @BeforeEach
+    void setUp() {
+        // Use MapStruct's Mappers factory to get implementations without naming them
+        mapper = Mappers.getMapper(FileElementDtoMapper.class);
+        FileDtoMapper fileMapper = Mappers.getMapper(FileDtoMapper.class);
+        DirectoryDtoMapper directoryMapper = Mappers.getMapper(DirectoryDtoMapper.class);
 
-    @InjectMocks
-    FileElementDtoMapperImpl mapper;
+        // Manually inject dependencies since we are in a unit test (no Spring)
+        ReflectionTestUtils.setField(mapper, "fileMapper", fileMapper);
+        ReflectionTestUtils.setField(mapper, "directoryMapper", directoryMapper);
+    }
 
     @Test
     @DisplayName("Should map File entity to FileDetailsResponse")

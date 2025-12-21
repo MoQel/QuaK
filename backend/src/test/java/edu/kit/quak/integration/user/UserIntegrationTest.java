@@ -1,7 +1,7 @@
 package edu.kit.quak.integration.user;
 
-import edu.kit.quak.core.filesystem.model.User;
-import edu.kit.quak.security.repository.UserRepository;
+import edu.kit.quak.infrastructure.user.out.db.jpa.entity.JpaUser;
+import edu.kit.quak.infrastructure.user.out.db.jpa.repository.SpringDataUserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -29,18 +29,19 @@ class UserIntegrationTest {
     private MockMvc mockMvc;
 
     @Autowired
-    private UserRepository userRepository;
+    private SpringDataUserRepository userRepository;
 
-    private User testUser;
+    private JpaUser testUser;
 
     @BeforeEach
     void setUp() {
         // Create a test user if not exists
-        // The oidcLogin() mock uses "test" as the registration ID by default in our tests
+        // The oidcLogin() mock uses "test" as the registration ID by default in our
+        // tests
         testUser = userRepository.findByIssuerAndSub("test", "test-sub")
                 .orElseGet(() -> {
-                    User user = new User();
-                    user.setIssuer("test");  // Match the test's OIDC mock registration ID
+                    JpaUser user = new JpaUser();
+                    user.setIssuer("test"); // Match the test's OIDC mock registration ID
                     user.setSub("test-sub");
                     user.setEmail("test@example.com");
                     user.setName("Test User");
@@ -59,7 +60,8 @@ class UserIntegrationTest {
                 .clientRegistration(org.springframework.security.oauth2.client.registration.ClientRegistration
                         .withRegistrationId("test")
                         .clientId("test-client-id")
-                        .authorizationGrantType(org.springframework.security.oauth2.core.AuthorizationGrantType.AUTHORIZATION_CODE)
+                        .authorizationGrantType(
+                                org.springframework.security.oauth2.core.AuthorizationGrantType.AUTHORIZATION_CODE)
                         .redirectUri("http://localhost/callback")
                         .authorizationUri("http://localhost/authorize")
                         .tokenUri("http://localhost/token")
@@ -135,8 +137,8 @@ class UserIntegrationTest {
         @DisplayName("Should successfully logout authenticated user")
         void logout_authenticated_success() throws Exception {
             mockMvc.perform(post("/api/auth/logout")
-                            .with(csrf())
-                            .with(authenticatedUser()))
+                    .with(csrf())
+                    .with(authenticatedUser()))
                     .andExpect(status().isOk());
         }
 

@@ -4,10 +4,6 @@ import edu.kit.quak.core.filesystem.model.Directory;
 import edu.kit.quak.core.filesystem.model.File;
 import edu.kit.quak.core.filesystem.model.FileElement;
 import edu.kit.quak.core.filesystem.model.Project;
-import edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper.DirectoryJpaMapperImpl;
-import edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper.FileElementJpaMapperImpl;
-import edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper.FileJpaMapperImpl;
-import edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper.ProjectJpaMapperImpl;
 import edu.kit.quak.shared.tags.IntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,17 +13,15 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @IntegrationTest
 @DataJpaTest
+@org.springframework.context.annotation.ComponentScan(basePackages = "edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper")
 @Import({
-        ProjectJpaAdapter.class,
-        ProjectJpaMapperImpl.class,
-        DirectoryJpaMapperImpl.class,
-        FileJpaMapperImpl.class,
-        FileElementJpaMapperImpl.class
+        ProjectJpaAdapter.class
 })
 @Transactional
 public class ProjectJpaAdapterTest {
@@ -69,15 +63,31 @@ public class ProjectJpaAdapterTest {
     }
 
     @Test
-    void getAllProjects_returnsAllPersistedProjects() {
-        adapter.save(new Project("P1"));
-        adapter.save(new Project("P2"));
+    void getProjectsByOwnerId_returnsOnlyOwnedProjects() {
+        UUID user1Id = UUID.randomUUID();
+        UUID user2Id = UUID.randomUUID();
 
-        List<Project> projects = adapter.getAllProjects();
+        Project p1 = new Project("User1-Project1", user1Id);
+        Project p2 = new Project("User1-Project2", user1Id);
+        Project p3 = new Project("User2-Project1", user2Id);
 
-        assertEquals(2, projects.size());
-        assertTrue(projects.stream().anyMatch(p -> p.getName().equals("P1")));
-        assertTrue(projects.stream().anyMatch(p -> p.getName().equals("P2")));
+        adapter.save(p1);
+        adapter.save(p2);
+        adapter.save(p3);
+
+        // User 1 should only see their 2 projects
+        List<Project> user1Projects = adapter.getProjectsByOwnerId(user1Id);
+        assertEquals(2, user1Projects.size());
+        assertTrue(user1Projects.stream().allMatch(p -> p.getOwnerId().equals(user1Id)));
+
+        // User 2 should only see their 1 project
+        List<Project> user2Projects = adapter.getProjectsByOwnerId(user2Id);
+        assertEquals(1, user2Projects.size());
+        assertEquals(user2Id, user2Projects.get(0).getOwnerId());
+
+        // Non-existent user should see no projects
+        List<Project> noProjects = adapter.getProjectsByOwnerId(UUID.randomUUID());
+        assertTrue(noProjects.isEmpty());
     }
 
     @Test
@@ -95,7 +105,6 @@ public class ProjectJpaAdapterTest {
         adapter.deleteById(saved.getId());
 
         assertFalse(adapter.existsById(saved.getId()));
-        assertTrue(adapter.getAllProjects().isEmpty());
     }
 
     @Test
