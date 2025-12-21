@@ -10,7 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/directory")
+@RequestMapping("/api/directory")
 public class DirectoryRestAdapter {
     private final DirectoryServicePort service;
     private final DirectoryDtoMapper mapper;

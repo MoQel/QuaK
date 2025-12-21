@@ -109,3 +109,73 @@ tasks.register('integrationTest', Test) {
 	// More storage for Integration Tests
 	maxHeapSize = '1G'
 }
+
+// Production build task - always includes frontend
+tasks.register('buildProduction') {
+	group = 'QuaK'
+	description = 'Build backend with frontend for production deployment'
+	dependsOn getFrontend
+	dependsOn build
+	doLast {
+		println "✅ Production build complete with frontend included!"
+		println "📦 JAR location: build/libs/"
+	}
+}
+
+// Frontend test task
+tasks.register('testFrontend', Exec) {
+	group = 'QuaK'
+	description = 'Run frontend tests using Vitest'
+	workingDir = layout.projectDirectory.file("../frontend")
+	
+	// Check if npm is available
+	def npmCmd = System.getProperty('os.name').toLowerCase().contains('windows') ? 'npm.cmd' : 'npm'
+	commandLine npmCmd, 'test'
+	
+	// Make it fail gracefully if npm is not installed
+	ignoreExitValue = false
+	
+	doFirst {
+		println "🧪 Running frontend tests..."
+	}
+	
+	doLast {
+		println "✅ Frontend tests completed!"
+	}
+}
+
+// Run all tests (backend + frontend) in parallel
+tasks.register('testAll') {
+	group = 'QuaK'
+	description = 'Run both backend and frontend tests in parallel'
+	
+	dependsOn test
+	dependsOn testFrontend
+	
+	doLast {
+		println ""
+		println "╔═══════════════════════════════════════╗"
+		println "║  ✅ All tests completed successfully! ║"
+		println "╚═══════════════════════════════════════╝"
+	}
+}
+
+// Run all tests sequentially (useful for CI)
+tasks.register('testAllSequential') {
+	group = 'QuaK'
+	description = 'Run backend tests, then frontend tests (sequential)'
+	
+	doFirst {
+		println "🧪 Running tests sequentially..."
+	}
+	
+	finalizedBy test
+	
+	doLast {
+		tasks.testFrontend.execute()
+		println ""
+		println "╔═══════════════════════════════════════╗"
+		println "║  ✅ All tests completed successfully! ║"
+		println "╚═══════════════════════════════════════╝"
+	}
+}

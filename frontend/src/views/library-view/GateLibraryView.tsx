@@ -1,14 +1,14 @@
-import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card.tsx";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card.tsx";
 import styles from "@/App.module.css";
 import GateLibrary from "@/views/library-view/GateLibrary.tsx";
 import { Button } from "@/components/ui/button"
-import { List,  LayoutGrid } from "lucide-react";
+import { List, LayoutGrid } from "lucide-react";
 import GateList from "@/views/library-view/GateList.tsx";
-import {useEffect, useState} from 'react';
-import {QuantumGate} from "@/views/QuantumGate.tsx";
-import {api} from "@/api/api.ts";
-import {GateResponseDto} from "@/api/dto/library.ts";
-import {GateMapper} from "@/api/mapper/GateMapper.ts";
+import { useEffect, useState } from 'react';
+import { QuantumGate } from "@/views/QuantumGate.tsx";
+import { api } from "@/api/api.ts";
+import { GateResponseDto } from "@/api/dto/library.ts";
+import { GateMapper } from "@/api/mapper/GateMapper.ts";
 
 export function GateLibraryView() {
 
@@ -17,7 +17,7 @@ export function GateLibraryView() {
 
     // Load Data centralized (Single Source of Truth)
     useEffect(() => {
-        api.get<GateResponseDto[]>("/gates")
+        api.get<GateResponseDto[]>("/api/gates")
             .then((dtos) => {
                 const domainGates = GateMapper.toDomainList(dtos);
                 setGates(domainGates);
@@ -41,14 +41,14 @@ export function GateLibraryView() {
                     className="absolute right-5"
                 >
                     {boxMode && <List />}
-                    {!(boxMode) && <LayoutGrid/>}
+                    {!(boxMode) && <LayoutGrid />}
                 </Button>
             </CardHeader>
 
             <CardContent>
                 <div className={styles.availableGateContainer}>
-                    {boxMode && <GateLibrary gates={gates}/>}
-                    {!(boxMode) && <GateList gates={gates}/>}
+                    {boxMode && <GateLibrary gates={gates} />}
+                    {!(boxMode) && <GateList gates={gates} />}
                 </div>
             </CardContent>
         </Card>

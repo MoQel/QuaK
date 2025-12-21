@@ -20,7 +20,7 @@ import {
 
 import { DialogCloseButtons, TextInput } from "@/views/project-manager-view/util/FormComponents.tsx";
 import { api } from "@/api/api.ts";
-import {DirectoryContentsResponse, DirectoryRequest} from "@/api/dto/filesystem.ts";
+import { DirectoryContentsResponse, DirectoryRequest } from "@/api/dto/filesystem.ts";
 
 /**
  * Displays a {@link IDirectory Directory}
@@ -30,7 +30,7 @@ import {DirectoryContentsResponse, DirectoryRequest} from "@/api/dto/filesystem.
  */
 export function Directory({ name, id }: { name: string, id: string }) {
     const icon = (open: boolean) => open ? <FolderOpen /> : <Folder />;
-    return <FileElementContainer name={name} id={id} getContent={fetchDirectoryContent} edit={DirectoryEdit} icon={icon} deletePath={"/directory/" + id} />
+    return <FileElementContainer name={name} id={id} getContent={fetchDirectoryContent} edit={DirectoryEdit} icon={icon} deletePath={"/api/directory/" + id} />
 }
 
 /**
@@ -41,7 +41,7 @@ export function Directory({ name, id }: { name: string, id: string }) {
  */
 function DirectoryEdit(id: string, openDialog: (element: Promise<JSX.Element>) => void) {
     const getDir = () => {
-        return api.get<DirectoryContentsResponse>("/directory/" + id);
+        return api.get<DirectoryContentsResponse>("/api/directory/" + id);
     }
 
     const reloadParent = useContext(ParentRefresh)
@@ -82,7 +82,7 @@ function EditForm({ dir, reloadParent }: { dir: IDirectory, reloadParent: () => 
             name: values.name
         }
 
-        api.patch("/directory/" + dir.id, body).then(reloadParent)
+        api.patch("/api/directory/" + dir.id, body).then(reloadParent)
     }
     return (
         <Form {...form}>
@@ -101,7 +101,7 @@ function EditForm({ dir, reloadParent }: { dir: IDirectory, reloadParent: () => 
 }
 
 async function fetchDirectoryContent(id: string) {
-    const dir = await api.get<DirectoryContentsResponse>("/directory/" + id);
+    const dir = await api.get<DirectoryContentsResponse>("/api/directory/" + id);
     const elements = [];
     if (dir.contents) {
         for (const element of sort(dir.contents)) {
