@@ -16,6 +16,7 @@ public interface ProjectDtoMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "parentId", ignore = true)
     @Mapping(target = "contents", ignore = true)
+    @Mapping(target = "createdOn", ignore = true)
     @Mapping(target = "lastAccess", ignore = true)
     @Mapping(target = "ownerId", ignore = true) // Set by service layer from auth context
     Project toDomain(ProjectRequest domain);
