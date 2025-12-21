@@ -1,16 +1,26 @@
 # Build stage - use Debian-based image for better multi-arch support
 FROM eclipse-temurin:21-jdk-jammy AS builder
 
-# Install Gradle, Node.js and npm
+# Build argument to control frontend build (default: skip frontend for dev)
+ARG SKIP_FRONTEND=true
+
+# Install Gradle (always needed)
 RUN apt-get update && \
-    apt-get install -y wget unzip curl && \
-    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
-    apt-get install -y nodejs && \
+    apt-get install -y wget unzip && \
     wget https://services.gradle.org/distributions/gradle-8.5-bin.zip && \
     unzip gradle-8.5-bin.zip && \
     mv gradle-8.5 /opt/gradle && \
     rm gradle-8.5-bin.zip && \
     rm -rf /var/lib/apt/lists/*
+
+# Install Node.js only when building frontend (prod mode)
+RUN if [ "$SKIP_FRONTEND" = "false" ]; then \
+    apt-get update && \
+    apt-get install -y curl && \
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y nodejs && \
+    rm -rf /var/lib/apt/lists/*; \
+    fi
 
 ENV GRADLE_HOME=/opt/gradle
 ENV PATH=$PATH:$GRADLE_HOME/bin
@@ -23,14 +33,15 @@ COPY backend/build.gradle backend/settings.gradle backend/node.gradle ./
 # Copy source code
 COPY backend/src ./src
 
-# Copy frontend source code (for prod build)
+# Copy frontend source code only for prod build
+RUN mkdir -p /frontend
 COPY frontend /frontend
 
 # Build the application
-# Default to skipping frontend (Dev mode), set to false for Prod
-ARG SKIP_FRONTEND=true
+# Dev mode: only build backend JAR (no frontend operations at all)
+# Prod mode: build frontend and include in JAR
 RUN if [ "$SKIP_FRONTEND" = "true" ]; then \
-    gradle cleanFrontendFiles bootJar --no-daemon -PbuildFrontend=false; \
+    gradle bootJar --no-daemon -PbuildFrontend=false; \
     else \
     gradle bootJar --no-daemon -PbuildFrontend=true; \
     fi
