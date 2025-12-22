@@ -8,17 +8,17 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
 
-@Mapper(componentModel = MappingConstants.ComponentModel.SPRING, uses = {FileElementDtoMapper.class})
+@Mapper(componentModel = MappingConstants.ComponentModel.SPRING, uses = { FileElementDtoMapper.class })
 public interface FileDtoMapper {
 
     @Mapping(target = "id", ignore = true) // ID created in domain
     @Mapping(target = "parentId", ignore = true) // ParentId set in application
     @Mapping(target = "createdOn", ignore = true)
-    @Mapping(target = "lastAccess",ignore = true)
+    @Mapping(target = "lastAccess", ignore = true)
     File toDomain(CreateFileRequest request);
 
-    @Mapping(target = "type", source = "domain.typeIdentifier")
-    FileDetailsResponse toDetailsResponse(File domain);
+    @Mapping(target = "type", source = "typeIdentifier")
+    FileDetailsResponse toDetailsResponse(File file);
 
     FileContentResponse toContentResponse(byte[] content);
 }

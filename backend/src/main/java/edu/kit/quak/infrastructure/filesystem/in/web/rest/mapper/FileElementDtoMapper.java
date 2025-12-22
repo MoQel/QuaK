@@ -4,17 +4,16 @@ import edu.kit.quak.core.filesystem.model.Directory;
 import edu.kit.quak.core.filesystem.model.File;
 import edu.kit.quak.core.filesystem.model.FileElement;
 import edu.kit.quak.infrastructure.filesystem.in.web.rest.dto.FileElementDto;
-import org.mapstruct.Mapper;
-import org.mapstruct.MappingConstants;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@Mapper(componentModel = MappingConstants.ComponentModel.SPRING, uses = {FileDtoMapper.class, DirectoryDtoMapper.class})
-public abstract class FileElementDtoMapper {
+@Component
+public class FileElementDtoMapper {
 
     @Autowired
     @Lazy
@@ -33,7 +32,6 @@ public abstract class FileElementDtoMapper {
             throw new IllegalArgumentException("Unknown FileElement type: " + element.getClass());
         }
     }
-
 
     public List<FileElementDto> mapSetToList(Set<FileElement<?>> set) {
         if (set == null) {

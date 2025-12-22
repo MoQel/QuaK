@@ -19,14 +19,14 @@ public interface ProjectDtoMapper {
     @Mapping(target = "createdOn", ignore = true)
     @Mapping(target = "lastAccess", ignore = true)
     @Mapping(target = "ownerId", ignore = true) // Set by service layer from auth context
-    Project toDomain(ProjectRequest domain);
+    Project toDomain(ProjectRequest request);
 
-    @Mapping(target = "type", source = "domain.typeIdentifier")
-    ProjectDetailsResponse toDetailsResponse(Project domain);
+    @Mapping(target = "type", source = "typeIdentifier")
+    ProjectDetailsResponse toDetailsResponse(Project project);
 
-    @Mapping(target = "type", source = "domain.typeIdentifier")
-    @Mapping(target = "contents", source = "domain.contents")
-    ProjectContentsResponse toContentsResponse(Project domain);
+    @Mapping(target = "type", source = "typeIdentifier")
+    @Mapping(target = "contents", source = "contents")
+    ProjectContentsResponse toContentsResponse(Project project);
 
-    List<ProjectDetailsResponse> toDetailsResponseList(List<Project> domains);
+    List<ProjectDetailsResponse> toDetailsResponseList(List<Project> projects);
 }
