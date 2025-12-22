@@ -33,7 +33,7 @@ This ensures a consistent environment and supports hot-reloading.
 
 ### Hybrid Workflow (Debugger-Friendly)
 
-**Recommended for backend development.** This allows you to run the backend in your IDE with a debugger while using Docker for the database.
+**Recommended for backend development.** This allows you to run the backend in your IDE or via terminal with a debugger while using Docker for the database.
 
 1. **Start Database:**
 
@@ -41,15 +41,16 @@ This ensures a consistent environment and supports hot-reloading.
     docker compose -f docker-compose.dev.yaml up -d database
     ```
 
-2. **Start Backend:**
-    Run the `QuaKApplication` in your IDE or via command line:
+2. **Start Backend (with Debugging):**
+    You can run the backend in debug mode via terminal. It will listen on port **5005** for a debugger while the API remains on **8080**.
 
     ```bash
     cd backend
-    ./gradlew bootRun
+    ./gradlew bootRun -PjvmArgs="-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"
     ```
 
-    *Note:* This setup loads environment variables from `backend/.env`.
+    * **Port 8080:** Standard Web/API (Frontend stays connected).
+    * **Port 5005:** Debugging (Connect your IDE here via "Remote JVM Debug").
 
 3. **Start Frontend:**
 

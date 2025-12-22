@@ -74,6 +74,6 @@ public abstract class FileElement<T extends FileElement<T>> {
 
     @Override
     public final int hashCode() {
-        return FileElement.class.hashCode();
+        return getId() != null ? getId().hashCode() : 0;
     }
 }

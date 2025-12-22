@@ -7,15 +7,17 @@ import edu.kit.quak.application.filesystem.ports.out.FileContentRepositoryPort;
 import edu.kit.quak.application.filesystem.ports.out.FileRepositoryPort;
 import edu.kit.quak.core.filesystem.model.File;
 import edu.kit.quak.core.filesystem.model.FileElementContainer;
-import edu.kit.quak.core.filesystem.model.Project;
 import edu.kit.quak.core.user.model.User;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.NoSuchElementException;
+import java.util.UUID;
 import java.util.function.Consumer;
 
 @Service
+@Slf4j
 public class FileService implements FileServicePort {
 
     private final FileRepositoryPort repository;
@@ -34,6 +36,7 @@ public class FileService implements FileServicePort {
     @Override
     @Transactional
     public File createFile(File element, String parentId, User user) {
+        log.info("Creating file '{}' in parent '{}' for user '{}'", element.getName(), parentId, user.getId());
         verifyOwnershipByParentId(parentId, user);
 
         FileElementContainer<?> parent = getParentById(parentId);
@@ -46,6 +49,7 @@ public class FileService implements FileServicePort {
     // region Read
     @Override
     public File retrieveFile(String id, User user) {
+        log.debug("Retrieving file '{}' for user '{}'", id, user.getId());
         File file = repository.findById(id).orElseThrow(NoSuchElementException::new);
         verifyOwnershipByParentId(file.getParentId(), user);
         return file;
@@ -54,6 +58,7 @@ public class FileService implements FileServicePort {
     @Override
     @Transactional
     public byte[] getFileContent(String fId, User user) {
+        log.debug("Retrieving content for file '{}'", fId);
         File file = repository.findById(fId)
                 .orElseThrow(() -> new NoSuchElementException("File not found: " + fId));
         verifyOwnershipByParentId(file.getParentId(), user);
@@ -65,6 +70,7 @@ public class FileService implements FileServicePort {
     @Override
     @Transactional
     public File renameFile(String fId, String newName, User user) {
+        log.info("Renaming file '{}' to '{}' for user '{}'", fId, newName, user.getId());
         File file = repository.findById(fId).orElseThrow(NoSuchElementException::new);
         verifyOwnershipByParentId(file.getParentId(), user);
         return modifyFileInParent(fId, f -> f.rename(newName));
@@ -73,6 +79,7 @@ public class FileService implements FileServicePort {
     @Override
     @Transactional
     public void setFileContent(String fId, byte[] content, String contentType, User user) {
+        log.info("Updating content for file '{}'", fId);
         File file = repository.findById(fId).orElseThrow(NoSuchElementException::new);
         verifyOwnershipByParentId(file.getParentId(), user);
 
@@ -89,6 +96,7 @@ public class FileService implements FileServicePort {
     @Override
     @Transactional
     public void removeFile(String fId, User user) {
+        log.info("Removing file '{}' for user '{}'", fId, user.getId());
         File file = retrieveFileWithoutAuth(fId);
         verifyOwnershipByParentId(file.getParentId(), user);
 
@@ -107,8 +115,9 @@ public class FileService implements FileServicePort {
     }
 
     /**
-     * Verifies that the given user owns the project containing the file/directory
-     * by traversing up the parent chain until reaching the root project.
+     * Verifies that the given user owns the project containing the file/directory.
+     * Uses a single efficient database query with recursive CTE to find the root
+     * project's owner, avoiding N+1 queries when traversing deep hierarchies.
      * 
      * @param parentId the ID of the parent container
      * @param user     the user to verify ownership for
@@ -119,26 +128,16 @@ public class FileService implements FileServicePort {
             throw new IllegalStateException("Cannot verify ownership: element has no parent");
         }
 
-        // Traverse up the parent chain to find the root project
-        String currentParentId = parentId;
-        while (currentParentId != null) {
-            final String idForError = currentParentId;
-            FileElementContainer<?> container = delegator.findContainerById(currentParentId)
-                    .orElseThrow(() -> new IllegalStateException("Parent not found with ID: " + idForError));
+        // Use efficient single-query ownership lookup
+        UUID projectOwnerId = delegator.findProjectOwnerIdByElementId(parentId)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Could not find root project for element with parent ID: " + parentId));
 
-            if (container instanceof Project project) {
-                // Found the root project, verify ownership
-                if (project.getOwnerId() == null || !project.getOwnerId().equals(user.getId())) {
-                    throw new AccessDeniedException("file", parentId);
-                }
-                return; // Ownership verified
-            }
-
-            // Move up to the parent
-            currentParentId = container.getParentId();
+        if (!projectOwnerId.equals(user.getId())) {
+            log.warn("Access denied: User '{}' is not owner of project '{}' (file parent: '{}')",
+                    user.getId(), projectOwnerId, parentId);
+            throw new AccessDeniedException("file", parentId);
         }
-
-        throw new IllegalStateException("Could not find root project for element with parent ID: " + parentId);
     }
 
     // Get the fresh parent (important due to shallow copies of mappers)

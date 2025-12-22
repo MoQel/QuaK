@@ -16,4 +16,15 @@ public interface UserServicePort {
     Optional<User> findById(UUID id);
 
     Optional<User> findByIssuerAndSub(String issuer, String sub);
+
+    /**
+     * Efficiently retrieves only the authenticated user's UUID without loading the
+     * full entity.
+     * Use this when only the user ID is needed (e.g., for ownership verification).
+     * 
+     * @param authenticatedUser The authenticated user's claims
+     * @return The user's UUID
+     * @throws UserNotFoundException if user doesn't exist
+     */
+    UUID getAuthenticatedUserId(AuthenticatedUser authenticatedUser);
 }

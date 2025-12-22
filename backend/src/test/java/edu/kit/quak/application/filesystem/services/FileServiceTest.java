@@ -57,6 +57,8 @@ class FileServiceTest {
         File file = new File("test.txt", parentId);
         file.setId("f-new");
 
+        // Mock the efficient ownership check
+        when(delegator.findProjectOwnerIdByElementId(parentId)).thenReturn(Optional.of(testUserId));
         when(delegator.findContainerById(parentId)).thenReturn(Optional.of(parent));
         when(delegator.save(parent)).thenReturn(parent);
 
@@ -84,6 +86,8 @@ class FileServiceTest {
         parent.addChild(file);
 
         when(repository.findById(fileId)).thenReturn(Optional.of(file));
+        // Mock the efficient ownership check
+        when(delegator.findProjectOwnerIdByElementId(parentId)).thenReturn(Optional.of(testUserId));
         when(delegator.findContainerById(parentId)).thenReturn(Optional.of(parent));
         when(delegator.save(parent)).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -111,6 +115,8 @@ class FileServiceTest {
         parent.addChild(file);
 
         when(repository.findById(fileId)).thenReturn(Optional.of(file));
+        // Mock the efficient ownership check
+        when(delegator.findProjectOwnerIdByElementId(parentId)).thenReturn(Optional.of(testUserId));
         when(delegator.findContainerById(parentId)).thenReturn(Optional.of(parent));
 
         // Act

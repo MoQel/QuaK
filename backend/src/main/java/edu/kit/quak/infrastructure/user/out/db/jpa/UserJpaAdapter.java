@@ -46,4 +46,9 @@ public class UserJpaAdapter implements UserRepositoryPort {
     public void deleteById(UUID id) {
         repository.deleteById(id);
     }
+
+    @Override
+    public Optional<UUID> findIdByIssuerAndSub(String issuer, String sub) {
+        return repository.findIdByIssuerAndSub(issuer, sub);
+    }
 }

@@ -36,28 +36,60 @@ public abstract class JpaFileElement<SELF extends JpaFileElement<?>> {
         this.parent = parent;
     }
 
-    protected JpaFileElement() { }
+    protected JpaFileElement() {
+    }
 
-    public String getId() { return id; }
-    public void setId(String id) { this.id = id; }
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
-    public Instant getCreatedOn() { return createdOn; }
-    public void setCreatedOn(Instant createdOn) { this.createdOn = createdOn; }
-    public Instant getLastAccess() { return lastAccess; }
-    public void setLastAccess(Instant lastAccess) { this.lastAccess = lastAccess; }
-    public JpaFileElementContainer<?> getParent() { return parent; }
-    public void setParent(JpaFileElementContainer<?> parent) { this.parent = parent; }
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public Instant getCreatedOn() {
+        return createdOn;
+    }
+
+    public void setCreatedOn(Instant createdOn) {
+        this.createdOn = createdOn;
+    }
+
+    public Instant getLastAccess() {
+        return lastAccess;
+    }
+
+    public void setLastAccess(Instant lastAccess) {
+        this.lastAccess = lastAccess;
+    }
+
+    public JpaFileElementContainer<?> getParent() {
+        return parent;
+    }
+
+    public void setParent(JpaFileElementContainer<?> parent) {
+        this.parent = parent;
+    }
 
     @Override
     public final boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof JpaFileElement<?> that)) return false;
+        if (this == o)
+            return true;
+        if (!(o instanceof JpaFileElement<?> that))
+            return false;
         return getId() != null && getId().equals(that.getId());
     }
 
     @Override
     public final int hashCode() {
-        return JpaFileElement.class.hashCode();
+        return getId() != null ? getId().hashCode() : 0;
     }
 }

@@ -54,6 +54,8 @@ class DirectoryServiceTest {
         Directory newDir = new Directory("NewDir", parentId);
         newDir.setId("d-new");
 
+        // Mock the efficient ownership check
+        when(delegator.findProjectOwnerIdByElementId(parentId)).thenReturn(Optional.of(testUserId));
         when(delegator.findContainerById(parentId)).thenReturn(Optional.of(parent));
         when(delegator.save(parent)).thenReturn(parent);
 
@@ -70,7 +72,8 @@ class DirectoryServiceTest {
     void createDirectory_throws_whenParentNotFound() {
         Directory newDir = new Directory("NewDir", "missing");
 
-        when(delegator.findContainerById("missing")).thenReturn(Optional.empty());
+        // Mock the ownership check to succeed, but container lookup fails
+        when(delegator.findProjectOwnerIdByElementId("missing")).thenReturn(Optional.empty());
 
         assertThrows(IllegalStateException.class,
                 () -> service.createDirectory(newDir, "missing", testUser));
@@ -91,6 +94,8 @@ class DirectoryServiceTest {
         parent.addChild(dir);
 
         when(repository.findById(dirId)).thenReturn(Optional.of(dir));
+        // Mock the efficient ownership check
+        when(delegator.findProjectOwnerIdByElementId(parentId)).thenReturn(Optional.of(testUserId));
         when(delegator.findContainerById(parentId)).thenReturn(Optional.of(parent));
 
         when(delegator.save(parent)).thenAnswer(invocation -> invocation.getArgument(0));
@@ -118,6 +123,8 @@ class DirectoryServiceTest {
         parent.addChild(dir);
 
         when(repository.findById(dirId)).thenReturn(Optional.of(dir));
+        // Mock the efficient ownership check
+        when(delegator.findProjectOwnerIdByElementId(parentId)).thenReturn(Optional.of(testUserId));
         when(delegator.findContainerById(parentId)).thenReturn(Optional.of(parent));
 
         // Act

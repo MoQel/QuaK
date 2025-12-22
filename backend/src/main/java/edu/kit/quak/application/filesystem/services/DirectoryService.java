@@ -6,15 +6,17 @@ import edu.kit.quak.application.filesystem.ports.in.DirectoryServicePort;
 import edu.kit.quak.application.filesystem.ports.out.DirectoryRepositoryPort;
 import edu.kit.quak.core.filesystem.model.Directory;
 import edu.kit.quak.core.filesystem.model.FileElementContainer;
-import edu.kit.quak.core.filesystem.model.Project;
 import edu.kit.quak.core.user.model.User;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.util.NoSuchElementException;
+import java.util.UUID;
 import java.util.function.Consumer;
 
 @Service
+@Slf4j
 public class DirectoryService implements DirectoryServicePort {
 
     private final DirectoryRepositoryPort repository;
@@ -30,6 +32,7 @@ public class DirectoryService implements DirectoryServicePort {
     @Override
     @Transactional
     public Directory createDirectory(Directory container, String parentId, User user) {
+        log.info("Creating directory '{}' in parent '{}' for user '{}'", container.getName(), parentId, user.getId());
         verifyOwnershipByParentId(parentId, user);
 
         FileElementContainer<?> parent = getParentById(parentId);
@@ -42,6 +45,7 @@ public class DirectoryService implements DirectoryServicePort {
     // region Read
     @Override
     public Directory retrieveDirectory(String id, User user) {
+        log.debug("Retrieving directory '{}' for user '{}'", id, user.getId());
         Directory directory = repository.findById(id).orElseThrow(NoSuchElementException::new);
         verifyOwnershipByParentId(directory.getParentId(), user);
         return directory;
@@ -52,6 +56,7 @@ public class DirectoryService implements DirectoryServicePort {
     @Override
     @Transactional
     public Directory renameDirectory(String dId, String newName, User user) {
+        log.info("Renaming directory '{}' to '{}' for user '{}'", dId, newName, user.getId());
         Directory directory = repository.findById(dId).orElseThrow(NoSuchElementException::new);
         verifyOwnershipByParentId(directory.getParentId(), user);
         return modifyDirectoryInParent(dId, d -> d.rename(newName));
@@ -62,6 +67,7 @@ public class DirectoryService implements DirectoryServicePort {
     @Override
     @Transactional
     public void removeDirectory(String dId, User user) {
+        log.info("Removing directory '{}' for user '{}'", dId, user.getId());
         Directory directory = retrieveDirectoryWithoutAuth(dId);
         verifyOwnershipByParentId(directory.getParentId(), user);
 
@@ -79,8 +85,9 @@ public class DirectoryService implements DirectoryServicePort {
     }
 
     /**
-     * Verifies that the given user owns the project containing the file/directory
-     * by traversing up the parent chain until reaching the root project.
+     * Verifies that the given user owns the project containing the file/directory.
+     * Uses a single efficient database query with recursive CTE to find the root
+     * project's owner, avoiding N+1 queries when traversing deep hierarchies.
      * 
      * @param parentId the ID of the parent container
      * @param user     the user to verify ownership for
@@ -91,26 +98,16 @@ public class DirectoryService implements DirectoryServicePort {
             throw new IllegalStateException("Cannot verify ownership: element has no parent");
         }
 
-        // Traverse up the parent chain to find the root project
-        String currentParentId = parentId;
-        while (currentParentId != null) {
-            final String idForError = currentParentId;
-            FileElementContainer<?> container = delegator.findContainerById(currentParentId)
-                    .orElseThrow(() -> new IllegalStateException("Parent not found with ID: " + idForError));
+        // Use efficient single-query ownership lookup
+        UUID projectOwnerId = delegator.findProjectOwnerIdByElementId(parentId)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Could not find root project for element with parent ID: " + parentId));
 
-            if (container instanceof Project project) {
-                // Found the root project, verify ownership
-                if (project.getOwnerId() == null || !project.getOwnerId().equals(user.getId())) {
-                    throw new AccessDeniedException("directory", parentId);
-                }
-                return; // Ownership verified
-            }
-
-            // Move up to the parent
-            currentParentId = container.getParentId();
+        if (!projectOwnerId.equals(user.getId())) {
+            log.warn("Access denied: User '{}' is not owner of project '{}' (directory parent: '{}')",
+                    user.getId(), projectOwnerId, parentId);
+            throw new AccessDeniedException("directory", parentId);
         }
-
-        throw new IllegalStateException("Could not find root project for element with parent ID: " + parentId);
     }
 
     // Get the fresh parent (important due to shallow copies of mappers)

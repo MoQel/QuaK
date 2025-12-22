@@ -5,6 +5,7 @@ import edu.kit.quak.application.filesystem.ports.in.ProjectServicePort;
 import edu.kit.quak.application.filesystem.ports.out.ProjectRepositoryPort;
 import edu.kit.quak.core.filesystem.model.Project;
 import edu.kit.quak.core.user.model.User;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,6 +14,7 @@ import java.util.NoSuchElementException;
 
 @Service
 @Transactional
+@Slf4j
 public class ProjectService implements ProjectServicePort {
 
     private final ProjectRepositoryPort repository;
@@ -23,12 +25,14 @@ public class ProjectService implements ProjectServicePort {
 
     @Override
     public Project createProject(Project project, User user) {
+        log.info("Creating project '{}' for user '{}'", project.getName(), user.getId());
         project.setOwnerId(user.getId());
         return repository.save(project);
     }
 
     @Override
     public Project renameProject(String pId, String newName, User user) {
+        log.info("Renaming project '{}' to '{}' for user '{}'", pId, newName, user.getId());
         Project project = repository.findById(pId)
                 .orElseThrow(NoSuchElementException::new);
 
@@ -40,6 +44,7 @@ public class ProjectService implements ProjectServicePort {
 
     @Override
     public void removeProject(String id, User user) {
+        log.info("Removing project '{}' for user '{}'", id, user.getId());
         Project project = repository.findById(id)
                 .orElseThrow(NoSuchElementException::new);
 
@@ -50,6 +55,7 @@ public class ProjectService implements ProjectServicePort {
 
     @Override
     public Project retrieveProject(String id, User user) {
+        log.debug("Retrieving project '{}' for user '{}'", id, user.getId());
         Project project = repository.findById(id)
                 .orElseThrow(NoSuchElementException::new);
 
@@ -60,6 +66,7 @@ public class ProjectService implements ProjectServicePort {
 
     @Override
     public List<Project> listProjects(User user) {
+        log.debug("Listing projects for user '{}'", user.getId());
         return repository.getProjectsByOwnerId(user.getId());
     }
 
@@ -70,6 +77,7 @@ public class ProjectService implements ProjectServicePort {
      */
     private void verifyOwnership(Project project, User user) {
         if (project.getOwnerId() == null || !project.getOwnerId().equals(user.getId())) {
+            log.warn("Access denied: User '{}' does not own project '{}'", user.getId(), project.getId());
             throw new AccessDeniedException("project", project.getId());
         }
     }
