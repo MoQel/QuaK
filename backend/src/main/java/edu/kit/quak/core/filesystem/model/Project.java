@@ -1,5 +1,8 @@
 package edu.kit.quak.core.filesystem.model;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import java.util.UUID;
 
 /**
@@ -12,6 +15,8 @@ import java.util.UUID;
  *           later in development.
  * @author Henrik K
  */
+@Getter
+@Setter
 public class Project extends FileElementContainer<Project> {
 
     public static final String TYPE_IDENTIFIER = "project";
@@ -33,14 +38,6 @@ public class Project extends FileElementContainer<Project> {
 
     public Project(String name, UUID ownerId) {
         super(name, null);
-        this.ownerId = ownerId;
-    }
-
-    public UUID getOwnerId() {
-        return ownerId;
-    }
-
-    public void setOwnerId(UUID ownerId) {
         this.ownerId = ownerId;
     }
 

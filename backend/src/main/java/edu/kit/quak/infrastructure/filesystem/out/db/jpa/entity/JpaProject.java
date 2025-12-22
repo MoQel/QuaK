@@ -3,11 +3,15 @@ package edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity;
 import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.UUID;
 
 @Entity
 @DiscriminatorValue("project")
+@Getter
+@Setter
 public class JpaProject extends JpaFileElementContainer<JpaProject> {
 
     /**
@@ -28,14 +32,6 @@ public class JpaProject extends JpaFileElementContainer<JpaProject> {
 
     public JpaProject(String name, UUID ownerId) {
         super(name, null);
-        this.ownerId = ownerId;
-    }
-
-    public UUID getOwnerId() {
-        return ownerId;
-    }
-
-    public void setOwnerId(UUID ownerId) {
         this.ownerId = ownerId;
     }
 }
