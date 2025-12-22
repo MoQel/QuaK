@@ -71,10 +71,9 @@ public class DirectoryJpaAdapter implements DirectoryRepositoryPort {
             return (UUID) value;
         } else if (value instanceof byte[]) {
             // H2 returns UUID as byte array
-            return java.nio.ByteBuffer.wrap((byte[]) value).getLong() > 0
-                    ? new UUID(java.nio.ByteBuffer.wrap((byte[]) value).getLong(),
-                            java.nio.ByteBuffer.wrap((byte[]) value, 8, 8).getLong())
-                    : null;
+            byte[] bytes = (byte[]) value;
+            java.nio.ByteBuffer bb = java.nio.ByteBuffer.wrap(bytes);
+            return new UUID(bb.getLong(), bb.getLong());
         } else if (value instanceof String) {
             return UUID.fromString((String) value);
         }
