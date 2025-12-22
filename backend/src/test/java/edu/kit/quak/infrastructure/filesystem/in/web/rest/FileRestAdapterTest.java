@@ -1,9 +1,14 @@
 package edu.kit.quak.infrastructure.filesystem.in.web.rest;
 
 import edu.kit.quak.application.filesystem.ports.in.FileServicePort;
+import edu.kit.quak.application.user.ports.in.UserServicePort;
 import edu.kit.quak.core.filesystem.model.File;
+import edu.kit.quak.core.user.model.AuthenticatedUser;
+import edu.kit.quak.core.user.model.User;
 import edu.kit.quak.infrastructure.filesystem.in.web.rest.mapper.FileDtoMapper;
+import edu.kit.quak.infrastructure.user.in.web.rest.mapper.AuthenticationMapper;
 import edu.kit.quak.shared.tags.IntegrationTest;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +17,8 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+
+import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -28,135 +35,152 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WithMockUser(username = "tester", roles = "USER") // Simulates logged-in user
 class FileRestAdapterTest {
 
-    @Autowired
-    MockMvc mockMvc;
+        @Autowired
+        MockMvc mockMvc;
 
-    @MockitoBean
-    FileServicePort fileService;
+        @MockitoBean
+        FileServicePort fileService;
 
-    @Test
-    @DisplayName("POST /file/ creates file successfully (check validation & CSRF)")
-    void createFile_success() throws Exception {
-        File createdFile = new File("test.txt", null);
-        createdFile.setId("f-123");
+        @MockitoBean
+        UserServicePort userService;
 
-        when(fileService.createFile(any(File.class), eq("d-1")))
-                .thenReturn(createdFile);
+        @MockitoBean
+        AuthenticationMapper authenticationMapper;
 
-        String jsonRequest = """
-                {
-                    "name": "test.txt",
-                    "contentType": "text/plain"
-                }
-                """;
+        private User testUser;
 
-        mockMvc.perform(post("/api/file/")
-                .with(csrf())
-                .header(ApiConstants.HEADER_PARENT_ID, "d-1")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(jsonRequest))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").value("f-123"))
-                .andExpect(jsonPath("$.name").value("test.txt"))
-                .andExpect(jsonPath("$.type").value("file"));
-    }
+        @BeforeEach
+        void setUp() {
+                AuthenticatedUser testAuthUser = new AuthenticatedUser(UUID.randomUUID(), "github", "tester");
+                testUser = new User(testAuthUser.userId(), testAuthUser.issuer(), testAuthUser.subject());
 
-    @Test
-    @DisplayName("POST /file/ returns 400 on invalid content-type format")
-    void createFile_validationError() throws Exception {
-        // “invalid-type” does not match the regex in the DTO
-        String jsonRequest = """
-                {
-                    "name": "test.txt",
-                    "contentType": "invalid-type"
-                }
-                """;
+                when(authenticationMapper.toDomain(any())).thenReturn(testAuthUser);
+                when(userService.getAuthenticatedUser(any(AuthenticatedUser.class))).thenReturn(testUser);
+        }
 
-        mockMvc.perform(post("/api/file/")
-                .with(csrf())
-                .header(ApiConstants.HEADER_PARENT_ID, "d-1")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(jsonRequest))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.title").exists())
-                .andExpect(jsonPath("$.status").value(400));
-    }
+        @Test
+        @DisplayName("POST /file/ creates file successfully (check validation & CSRF)")
+        void createFile_success() throws Exception {
+                File createdFile = new File("test.txt", null);
+                createdFile.setId("f-123");
 
-    @Test
-    @DisplayName("GET /file/{id} returns file details")
-    void retrieveFile_success() throws Exception {
-        File file = new File("image.png", null);
-        file.setId("f-555");
-        // file.setContentType("image/png"); // Falls dein Mock das braucht
+                when(fileService.createFile(any(File.class), eq("d-1"), any(User.class)))
+                                .thenReturn(createdFile);
 
-        when(fileService.retrieveFile("f-555")).thenReturn(file);
+                String jsonRequest = """
+                                {
+                                    "name": "test.txt",
+                                    "contentType": "text/plain"
+                                }
+                                """;
 
-        mockMvc.perform(get("/api/file/f-555"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value("f-555"))
-                .andExpect(jsonPath("$.name").value("image.png"));
-    }
+                mockMvc.perform(post("/api/file/")
+                                .with(csrf())
+                                .header(ApiConstants.HEADER_PARENT_ID, "d-1")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(jsonRequest))
+                                .andExpect(status().isCreated())
+                                .andExpect(jsonPath("$.id").value("f-123"))
+                                .andExpect(jsonPath("$.name").value("test.txt"))
+                                .andExpect(jsonPath("$.type").value("file"));
+        }
 
-    @Test
-    @DisplayName("DELETE /file/{id} removes file")
-    void deleteFile_success() throws Exception {
-        mockMvc.perform(delete("/api/file/f-123")
-                .with(csrf()))
-                .andExpect(status().isOk());
+        @Test
+        @DisplayName("POST /file/ returns 400 on invalid content-type format")
+        void createFile_validationError() throws Exception {
+                // "invalid-type" does not match the regex in the DTO
+                String jsonRequest = """
+                                {
+                                    "name": "test.txt",
+                                    "contentType": "invalid-type"
+                                }
+                                """;
 
-        verify(fileService).removeFile("f-123");
-    }
+                mockMvc.perform(post("/api/file/")
+                                .with(csrf())
+                                .header(ApiConstants.HEADER_PARENT_ID, "d-1")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(jsonRequest))
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.title").exists())
+                                .andExpect(jsonPath("$.status").value(400));
+        }
 
-    @Test
-    @DisplayName("PATCH /file/{id} renames file")
-    void renameFile_success() throws Exception {
-        File updatedFile = new File("renamed.txt", null);
-        updatedFile.setId("f-123");
+        @Test
+        @DisplayName("GET /file/{id} returns file details")
+        void retrieveFile_success() throws Exception {
+                File file = new File("image.png", null);
+                file.setId("f-555");
 
-        when(fileService.renameFile("f-123", "renamed.txt"))
-                .thenReturn(updatedFile);
+                when(fileService.retrieveFile(eq("f-555"), any(User.class))).thenReturn(file);
 
-        String jsonRequest = """
-                { "name": "renamed.txt" }
-                """;
+                mockMvc.perform(get("/api/file/f-555"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.id").value("f-555"))
+                                .andExpect(jsonPath("$.name").value("image.png"));
+        }
 
-        mockMvc.perform(patch("/api/file/f-123")
-                .with(csrf())
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(jsonRequest))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("renamed.txt"));
-    }
+        @Test
+        @DisplayName("DELETE /file/{id} removes file")
+        void deleteFile_success() throws Exception {
+                mockMvc.perform(delete("/api/file/f-123")
+                                .with(csrf()))
+                                .andExpect(status().isOk());
 
-    @Test
-    @DisplayName("GET /file/{id}/content returns byte array (Base64 in JSON)")
-    void getFileContent_success() throws Exception {
-        byte[] content = "Hello World".getBytes();
-        when(fileService.getFileContent("f-123")).thenReturn(content);
+                verify(fileService).removeFile(eq("f-123"), any(User.class));
+        }
 
-        mockMvc.perform(get("/api/file/f-123/content"))
-                .andExpect(status().isOk())
-                // Jackson automatically serializes byte[] as a Base64 string
-                .andExpect(jsonPath("$.content").isNotEmpty());
-    }
+        @Test
+        @DisplayName("PATCH /file/{id} renames file")
+        void renameFile_success() throws Exception {
+                File updatedFile = new File("renamed.txt", null);
+                updatedFile.setId("f-123");
 
-    @Test
-    @DisplayName("PUT /file/{id}/content updates content")
-    void setFileContent_success() throws Exception {
-        // "SGVsbG8=" ist Base64 für "Hello"
-        String jsonRequest = """
-                {
-                    "content": "SGVsbG8=",\s
-                    "contentType": "text/plain"
-                }
-                """;
+                when(fileService.renameFile(eq("f-123"), eq("renamed.txt"), any(User.class)))
+                                .thenReturn(updatedFile);
 
-        mockMvc.perform(put("/api/file/f-123/content")
-                .with(csrf())
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(jsonRequest))
-                .andExpect(status().isOk());
+                String jsonRequest = """
+                                { "name": "renamed.txt" }
+                                """;
 
-        verify(fileService).setFileContent(eq("f-123"), any(byte[].class), eq("text/plain"));
-    }
+                mockMvc.perform(patch("/api/file/f-123")
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(jsonRequest))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.name").value("renamed.txt"));
+        }
+
+        @Test
+        @DisplayName("GET /file/{id}/content returns byte array (Base64 in JSON)")
+        void getFileContent_success() throws Exception {
+                byte[] content = "Hello World".getBytes();
+                when(fileService.getFileContent(eq("f-123"), any(User.class))).thenReturn(content);
+
+                mockMvc.perform(get("/api/file/f-123/content"))
+                                .andExpect(status().isOk())
+                                // Jackson automatically serializes byte[] as a Base64 string
+                                .andExpect(jsonPath("$.content").isNotEmpty());
+        }
+
+        @Test
+        @DisplayName("PUT /file/{id}/content updates content")
+        void setFileContent_success() throws Exception {
+                // "SGVsbG8=" ist Base64 für "Hello"
+                String jsonRequest = """
+                                {
+                                    "content": "SGVsbG8=",
+                                    "contentType": "text/plain"
+                                }
+                                """;
+
+                mockMvc.perform(put("/api/file/f-123/content")
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(jsonRequest))
+                                .andExpect(status().isOk());
+
+                verify(fileService).setFileContent(eq("f-123"), any(byte[].class), eq("text/plain"),
+                                any(User.class));
+        }
 }

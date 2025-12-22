@@ -1,12 +1,9 @@
 package edu.kit.quak.application.filesystem.services;
 
 import edu.kit.quak.application.filesystem.ports.out.ProjectRepositoryPort;
-import edu.kit.quak.application.user.ports.in.UserServicePort;
 import edu.kit.quak.core.filesystem.model.Project;
-import edu.kit.quak.core.user.model.AuthenticatedUser;
 import edu.kit.quak.core.user.model.User;
 import edu.kit.quak.shared.tags.UnitTest;
-import edu.kit.quak.test.helpers.AuthTestHelper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,28 +28,22 @@ class ProjectServiceTest {
     @Mock
     private ProjectRepositoryPort repository;
 
-    @Mock
-    private UserServicePort userService;
-
     private ProjectService service;
     private User testUser;
-    private AuthenticatedUser authenticatedUser;
 
     @BeforeEach
     void setUp() {
-        service = new ProjectService(repository, userService);
+        service = new ProjectService(repository);
         testUser = new User();
         testUser.setId(UUID.randomUUID());
-        authenticatedUser = AuthTestHelper.createAuthenticatedUser(testUser.getId());
     }
 
     @Test
     void createProject_delegatesToRepo() {
-        when(userService.getAuthenticatedUser(authenticatedUser)).thenReturn(testUser);
         when(repository.save(any(Project.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         Project p = new Project("P1");
-        Project result = service.createProject(p, authenticatedUser);
+        Project result = service.createProject(p, testUser);
 
         assertEquals(testUser.getId(), result.getOwnerId());
         verify(repository).save(p);
@@ -62,12 +53,11 @@ class ProjectServiceTest {
     void renameProject_updatesNameAndSaves() {
         // Arrange
         Project p = new Project("Old", testUser.getId());
-        when(userService.getAuthenticatedUser(authenticatedUser)).thenReturn(testUser);
         when(repository.findById("1")).thenReturn(Optional.of(p));
         when(repository.save(any(Project.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // Act
-        service.renameProject("1", "New", authenticatedUser);
+        service.renameProject("1", "New", testUser);
 
         // Assert
         assertEquals("New", p.getName());
@@ -76,10 +66,9 @@ class ProjectServiceTest {
 
     @Test
     void renameProject_throws_whenNotFound() {
-        when(userService.getAuthenticatedUser(authenticatedUser)).thenReturn(testUser);
         when(repository.findById(anyString())).thenReturn(Optional.empty());
 
         assertThrows(NoSuchElementException.class,
-                () -> service.renameProject("99", "New", authenticatedUser));
+                () -> service.renameProject("99", "New", testUser));
     }
 }

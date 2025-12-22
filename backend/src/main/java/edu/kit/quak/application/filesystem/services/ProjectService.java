@@ -3,36 +3,32 @@ package edu.kit.quak.application.filesystem.services;
 import edu.kit.quak.application.filesystem.exceptions.AccessDeniedException;
 import edu.kit.quak.application.filesystem.ports.in.ProjectServicePort;
 import edu.kit.quak.application.filesystem.ports.out.ProjectRepositoryPort;
-import edu.kit.quak.application.user.ports.in.UserServicePort;
 import edu.kit.quak.core.filesystem.model.Project;
-import edu.kit.quak.core.user.model.AuthenticatedUser;
 import edu.kit.quak.core.user.model.User;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.NoSuchElementException;
 
 @Service
+@Transactional
 public class ProjectService implements ProjectServicePort {
 
     private final ProjectRepositoryPort repository;
-    private final UserServicePort userService;
 
-    public ProjectService(ProjectRepositoryPort repository, UserServicePort userService) {
+    public ProjectService(ProjectRepositoryPort repository) {
         this.repository = repository;
-        this.userService = userService;
     }
 
     @Override
-    public Project createProject(Project project, AuthenticatedUser authenticatedUser) {
-        User user = userService.getAuthenticatedUser(authenticatedUser);
+    public Project createProject(Project project, User user) {
         project.setOwnerId(user.getId());
         return repository.save(project);
     }
 
     @Override
-    public Project renameProject(String pId, String newName, AuthenticatedUser authenticatedUser) {
-        User user = userService.getAuthenticatedUser(authenticatedUser);
+    public Project renameProject(String pId, String newName, User user) {
         Project project = repository.findById(pId)
                 .orElseThrow(NoSuchElementException::new);
 
@@ -43,8 +39,7 @@ public class ProjectService implements ProjectServicePort {
     }
 
     @Override
-    public void removeProject(String id, AuthenticatedUser authenticatedUser) {
-        User user = userService.getAuthenticatedUser(authenticatedUser);
+    public void removeProject(String id, User user) {
         Project project = repository.findById(id)
                 .orElseThrow(NoSuchElementException::new);
 
@@ -54,8 +49,7 @@ public class ProjectService implements ProjectServicePort {
     }
 
     @Override
-    public Project retrieveProject(String id, AuthenticatedUser authenticatedUser) {
-        User user = userService.getAuthenticatedUser(authenticatedUser);
+    public Project retrieveProject(String id, User user) {
         Project project = repository.findById(id)
                 .orElseThrow(NoSuchElementException::new);
 
@@ -65,8 +59,7 @@ public class ProjectService implements ProjectServicePort {
     }
 
     @Override
-    public List<Project> listProjects(AuthenticatedUser authenticatedUser) {
-        User user = userService.getAuthenticatedUser(authenticatedUser);
+    public List<Project> listProjects(User user) {
         return repository.getProjectsByOwnerId(user.getId());
     }
 
