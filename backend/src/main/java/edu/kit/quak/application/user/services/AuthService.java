@@ -1,38 +1,32 @@
 package edu.kit.quak.application.user.services;
 
 import edu.kit.quak.application.user.ports.in.AuthServicePort;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.core.user.OAuth2User;
+import edu.kit.quak.core.user.model.AuthenticatedUser;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Service for authentication-related business logic.
  * Handles auth status checks, user info retrieval, and logout operations.
+ * 
+ * This service is framework-agnostic and works only with domain concepts.
+ * The infrastructure layer (AuthRestAdapter) is responsible for extracting
+ * authentication information from the framework and passing it here.
  */
-@Service("newAuthService")
+@Service
 public class AuthService implements AuthServicePort {
 
     @Override
-    public Map<String, Object> getAuthenticationStatus() {
+    public Map<String, Object> getAuthenticationStatus(Optional<AuthenticatedUser> authenticatedUser,
+            Optional<Map<String, Object>> userInfo) {
         Map<String, Object> response = new HashMap<>();
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        if (authentication != null && authentication.isAuthenticated()
-                && !"anonymousUser".equals(authentication.getPrincipal())) {
-
+        if (authenticatedUser.isPresent()) {
             response.put("authenticated", true);
-
-            if (authentication.getPrincipal() instanceof OAuth2User user) {
-                Map<String, Object> userInfo = new HashMap<>();
-                userInfo.put("email", user.getAttribute("email"));
-                userInfo.put("name", user.getAttribute("name"));
-                userInfo.put("picture", user.getAttribute("picture"));
-                response.put("user", userInfo);
-            }
+            userInfo.ifPresent(info -> response.put("user", info));
         } else {
             response.put("authenticated", false);
         }
@@ -41,26 +35,18 @@ public class AuthService implements AuthServicePort {
     }
 
     @Override
-    public Map<String, Object> getAuthenticatedUserInfo() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        if (authentication != null && authentication.getPrincipal() instanceof OAuth2User user) {
-            Map<String, Object> userInfo = new HashMap<>();
-            userInfo.put("email", user.getAttribute("email"));
-            userInfo.put("name", user.getAttribute("name"));
-            userInfo.put("picture", user.getAttribute("picture"));
-            userInfo.put("sub", user.getAttribute("sub"));
-            return userInfo;
+    public Map<String, Object> getAuthenticatedUserInfo(AuthenticatedUser authenticatedUser,
+            Map<String, Object> userInfo) {
+        if (authenticatedUser == null) {
+            throw new IllegalStateException("User not authenticated");
         }
-
-        throw new RuntimeException("User not authenticated");
+        return new HashMap<>(userInfo);
     }
 
     @Override
     public Map<String, String> logout(String sessionId) {
-        // Clear the security context
-        // Note: Actual session invalidation is handled by the infrastructure adapter
-        SecurityContextHolder.clearContext();
+        // Business logic for logout can be added here if needed
+        // (e.g., audit logging, cleanup operations)
 
         Map<String, String> response = new HashMap<>();
         response.put("message", "Logged out successfully");

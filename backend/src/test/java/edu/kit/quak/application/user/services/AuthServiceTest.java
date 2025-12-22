@@ -1,39 +1,37 @@
 package edu.kit.quak.application.user.services;
 
+import edu.kit.quak.core.user.model.AuthenticatedUser;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.core.user.OAuth2User;
 
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 /**
  * Unit tests for AuthService.
  * Tests authentication status, user info retrieval, and logout functionality.
+ * 
+ * Note: These tests are framework-agnostic since the refactored AuthService
+ * works only with domain concepts (AuthenticatedUser) and not Spring Security.
  */
-@ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
 
-    @InjectMocks
     private AuthService authService;
 
     private static final String TEST_SESSION_ID = "test-session-123";
+    private static final UUID TEST_USER_ID = UUID.randomUUID();
+    private static final String TEST_ISSUER = "google";
+    private static final String TEST_SUBJECT = "sub-123";
 
     @BeforeEach
     void setUp() {
-        // Clear security context before each test
-        SecurityContextHolder.clearContext();
+        authService = new AuthService();
     }
 
     @Nested
@@ -41,57 +39,50 @@ class AuthServiceTest {
     class GetAuthenticationStatusTests {
 
         @Test
-        @DisplayName("Should return authenticated=false when no authentication")
+        @DisplayName("Should return authenticated=false when no authenticated user")
         void getAuthenticationStatus_noAuth_returnsFalse() {
-            SecurityContext context = mock(SecurityContext.class);
-            when(context.getAuthentication()).thenReturn(null);
-            SecurityContextHolder.setContext(context);
-
-            Map<String, Object> result = authService.getAuthenticationStatus();
+            Map<String, Object> result = authService.getAuthenticationStatus(
+                    Optional.empty(),
+                    Optional.empty());
 
             assertFalse((Boolean) result.get("authenticated"));
+            assertNull(result.get("user"));
         }
 
         @Test
-        @DisplayName("Should return authenticated=false for anonymous user")
-        void getAuthenticationStatus_anonymousUser_returnsFalse() {
-            SecurityContext context = mock(SecurityContext.class);
-            Authentication auth = mock(Authentication.class);
-            when(context.getAuthentication()).thenReturn(auth);
-            when(auth.isAuthenticated()).thenReturn(true);
-            when(auth.getPrincipal()).thenReturn("anonymousUser");
-            SecurityContextHolder.setContext(context);
+        @DisplayName("Should return authenticated=true with user info for authenticated user")
+        void getAuthenticationStatus_authenticatedUser_returnsTrueWithUserInfo() {
+            AuthenticatedUser authenticatedUser = new AuthenticatedUser(
+                    TEST_USER_ID, TEST_ISSUER, TEST_SUBJECT);
 
-            Map<String, Object> result = authService.getAuthenticationStatus();
+            Map<String, Object> userInfo = createUserInfo();
 
-            assertFalse((Boolean) result.get("authenticated"));
-        }
-
-        @Test
-        @DisplayName("Should return authenticated=true with user info for OAuth2 user")
-        void getAuthenticationStatus_oauth2User_returnsTrueWithUserInfo() {
-            SecurityContext context = mock(SecurityContext.class);
-            Authentication auth = mock(Authentication.class);
-            OAuth2User oauth2User = mock(OAuth2User.class);
-
-            when(context.getAuthentication()).thenReturn(auth);
-            when(auth.isAuthenticated()).thenReturn(true);
-            when(auth.getPrincipal()).thenReturn(oauth2User);
-            when(oauth2User.getAttribute("email")).thenReturn("test@example.com");
-            when(oauth2User.getAttribute("name")).thenReturn("Test User");
-            when(oauth2User.getAttribute("picture")).thenReturn("https://example.com/pic.jpg");
-            SecurityContextHolder.setContext(context);
-
-            Map<String, Object> result = authService.getAuthenticationStatus();
+            Map<String, Object> result = authService.getAuthenticationStatus(
+                    Optional.of(authenticatedUser),
+                    Optional.of(userInfo));
 
             assertTrue((Boolean) result.get("authenticated"));
             assertNotNull(result.get("user"));
 
             @SuppressWarnings("unchecked")
-            Map<String, Object> userInfo = (Map<String, Object>) result.get("user");
-            assertEquals("test@example.com", userInfo.get("email"));
-            assertEquals("Test User", userInfo.get("name"));
-            assertEquals("https://example.com/pic.jpg", userInfo.get("picture"));
+            Map<String, Object> returnedUserInfo = (Map<String, Object>) result.get("user");
+            assertEquals("test@example.com", returnedUserInfo.get("email"));
+            assertEquals("Test User", returnedUserInfo.get("name"));
+            assertEquals("https://example.com/pic.jpg", returnedUserInfo.get("picture"));
+        }
+
+        @Test
+        @DisplayName("Should return authenticated=true without user info when not provided")
+        void getAuthenticationStatus_authenticatedWithoutUserInfo_returnsTrueWithoutUserInfo() {
+            AuthenticatedUser authenticatedUser = new AuthenticatedUser(
+                    TEST_USER_ID, TEST_ISSUER, TEST_SUBJECT);
+
+            Map<String, Object> result = authService.getAuthenticationStatus(
+                    Optional.of(authenticatedUser),
+                    Optional.empty());
+
+            assertTrue((Boolean) result.get("authenticated"));
+            assertNull(result.get("user"));
         }
     }
 
@@ -100,21 +91,15 @@ class AuthServiceTest {
     class GetAuthenticatedUserInfoTests {
 
         @Test
-        @DisplayName("Should return user info for OAuth2 user")
-        void getAuthenticatedUserInfo_oauth2User_returnsUserInfo() {
-            SecurityContext context = mock(SecurityContext.class);
-            Authentication auth = mock(Authentication.class);
-            OAuth2User oauth2User = mock(OAuth2User.class);
+        @DisplayName("Should return user info for authenticated user")
+        void getAuthenticatedUserInfo_authenticatedUser_returnsUserInfo() {
+            AuthenticatedUser authenticatedUser = new AuthenticatedUser(
+                    TEST_USER_ID, TEST_ISSUER, TEST_SUBJECT);
+            Map<String, Object> userInfo = createUserInfoWithSub();
 
-            when(context.getAuthentication()).thenReturn(auth);
-            when(auth.getPrincipal()).thenReturn(oauth2User);
-            when(oauth2User.getAttribute("email")).thenReturn("test@example.com");
-            when(oauth2User.getAttribute("name")).thenReturn("Test User");
-            when(oauth2User.getAttribute("picture")).thenReturn("https://example.com/pic.jpg");
-            when(oauth2User.getAttribute("sub")).thenReturn("sub-123");
-            SecurityContextHolder.setContext(context);
-
-            Map<String, Object> result = authService.getAuthenticatedUserInfo();
+            Map<String, Object> result = authService.getAuthenticatedUserInfo(
+                    authenticatedUser,
+                    userInfo);
 
             assertEquals("test@example.com", result.get("email"));
             assertEquals("Test User", result.get("name"));
@@ -123,48 +108,18 @@ class AuthServiceTest {
         }
 
         @Test
-        @DisplayName("Should throw exception when not authenticated")
-        void getAuthenticatedUserInfo_notAuthenticated_throwsException() {
-            SecurityContext context = mock(SecurityContext.class);
-            when(context.getAuthentication()).thenReturn(null);
-            SecurityContextHolder.setContext(context);
+        @DisplayName("Should throw exception when authenticated user is null")
+        void getAuthenticatedUserInfo_nullUser_throwsException() {
+            Map<String, Object> userInfo = createUserInfoWithSub();
 
-            assertThrows(RuntimeException.class,
-                    () -> authService.getAuthenticatedUserInfo());
-        }
-
-        @Test
-        @DisplayName("Should throw exception when principal is not OAuth2User")
-        void getAuthenticatedUserInfo_nonOAuth2Principal_throwsException() {
-            SecurityContext context = mock(SecurityContext.class);
-            Authentication auth = mock(Authentication.class);
-            when(context.getAuthentication()).thenReturn(auth);
-            when(auth.getPrincipal()).thenReturn("notOAuth2User");
-            SecurityContextHolder.setContext(context);
-
-            assertThrows(RuntimeException.class,
-                    () -> authService.getAuthenticatedUserInfo());
+            assertThrows(IllegalStateException.class,
+                    () -> authService.getAuthenticatedUserInfo(null, userInfo));
         }
     }
 
     @Nested
     @DisplayName("logout Tests")
     class LogoutTests {
-
-        @Test
-        @DisplayName("Should clear security context")
-        void logout_clearsSecurityContext() {
-            // Set up a security context
-            SecurityContext context = mock(SecurityContext.class);
-            SecurityContextHolder.setContext(context);
-
-            Map<String, String> result = authService.logout(TEST_SESSION_ID);
-
-            assertEquals("Logged out successfully", result.get("message"));
-
-            // Verify security context was cleared
-            assertNull(SecurityContextHolder.getContext().getAuthentication());
-        }
 
         @Test
         @DisplayName("Should return success message on logout")
@@ -174,5 +129,28 @@ class AuthServiceTest {
             assertNotNull(result);
             assertEquals("Logged out successfully", result.get("message"));
         }
+
+        @Test
+        @DisplayName("Should handle null session ID gracefully")
+        void logout_nullSessionId_returnsSuccessMessage() {
+            Map<String, String> result = authService.logout(null);
+
+            assertNotNull(result);
+            assertEquals("Logged out successfully", result.get("message"));
+        }
+    }
+
+    private Map<String, Object> createUserInfo() {
+        Map<String, Object> userInfo = new HashMap<>();
+        userInfo.put("email", "test@example.com");
+        userInfo.put("name", "Test User");
+        userInfo.put("picture", "https://example.com/pic.jpg");
+        return userInfo;
+    }
+
+    private Map<String, Object> createUserInfoWithSub() {
+        Map<String, Object> userInfo = createUserInfo();
+        userInfo.put("sub", "sub-123");
+        return userInfo;
     }
 }

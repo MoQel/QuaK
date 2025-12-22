@@ -9,9 +9,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Service for synchronizing OIDC user information with the database.
- * This service is called after successful OAuth2 login to ensure user data is up-to-date.
+ * This service is called after successful OAuth2 login to ensure user data is
+ * up-to-date.
  */
-@Service("newOidcUserSyncService")
+@Service
 public class OidcUserSyncService implements OidcSyncServicePort {
 
     private final UserRepositoryPort userRepository;
@@ -35,26 +36,24 @@ public class OidcUserSyncService implements OidcSyncServicePort {
 
     private User updateUser(User user, OidcUser oidcUser) {
         user.updateFromOidc(
-            oidcUser.getEmail(),
-            oidcUser.getEmailVerified(),
-            oidcUser.getFullName(),
-            oidcUser.getGivenName(),
-            oidcUser.getFamilyName(),
-            oidcUser.getPicture()
-        );
+                oidcUser.getEmail(),
+                oidcUser.getEmailVerified(),
+                oidcUser.getFullName(),
+                oidcUser.getGivenName(),
+                oidcUser.getFamilyName(),
+                oidcUser.getPicture());
         return userRepository.save(user);
     }
 
     private User createUser(String issuer, String sub, OidcUser oidcUser) {
         User user = User.createFromOidc(
-            issuer, sub,
-            oidcUser.getEmail(),
-            oidcUser.getEmailVerified(),
-            oidcUser.getFullName(),
-            oidcUser.getGivenName(),
-            oidcUser.getFamilyName(),
-            oidcUser.getPicture()
-        );
+                issuer, sub,
+                oidcUser.getEmail(),
+                oidcUser.getEmailVerified(),
+                oidcUser.getFullName(),
+                oidcUser.getGivenName(),
+                oidcUser.getFamilyName(),
+                oidcUser.getPicture());
         return userRepository.save(user);
     }
 }
