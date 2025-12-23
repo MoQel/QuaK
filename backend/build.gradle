@@ -23,6 +23,9 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-jdbc'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	implementation 'org.mapstruct:mapstruct:1.5.5.Final'
+	annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.5.Final'
 	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'org.springframework.session:spring-session-core'
@@ -67,4 +70,42 @@ tasks.named("bootRun") {
 
 tasks.named('test') {
 	useJUnitPlatform()
+	// Configure Mockito as Java Agent to solve Warning of dynamic loading (self-attaching)
+	doFirst {
+		def mockitoFile = classpath.files.find { it.name.contains('mockito-core') }
+
+		if (mockitoFile) {
+			jvmArgs("-javaagent:${mockitoFile.absolutePath}")
+		}
+	}
+}
+
+// Task for fast Unit Tests
+tasks.register('unitTest', Test) {
+	description = 'Runs unit tests.'
+	group = 'verification'
+
+	testClassesDirs = sourceSets.test.output.classesDirs
+	classpath = sourceSets.test.runtimeClasspath
+
+	useJUnitPlatform {
+		includeTags 'unit'
+	}
+	// Optional: Fail fast
+	failFast = true
+}
+
+// Task for slower Integration Tests
+tasks.register('integrationTest', Test) {
+	description = 'Runs integration tests.'
+	group = 'verification'
+
+	testClassesDirs = sourceSets.test.output.classesDirs
+	classpath = sourceSets.test.runtimeClasspath
+
+	useJUnitPlatform {
+		includeTags 'integration'
+	}
+	// More storage for Integration Tests
+	maxHeapSize = '1G'
 }

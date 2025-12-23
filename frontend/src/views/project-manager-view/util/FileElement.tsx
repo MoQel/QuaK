@@ -2,6 +2,13 @@ import {FileElementContainer} from "@/views/project-manager-view/FileElementCont
 import {File} from "@/views/project-manager-view/File.tsx";
 import {Directory} from "@/views/project-manager-view/Directory.tsx";
 import {Project} from "@/views/project-manager-view/Project.tsx";
+import {
+    DirectoryContentsResponse,
+    FileDetailsResponse,
+    FileElementDto,
+    ProjectContentsResponse
+} from "@/api/dto/filesystem.ts";
+import { orderBy } from "lodash";
 
 export interface FileElement {
     id: string,
@@ -22,50 +29,31 @@ export interface File extends FileElement {
 }
 
 /**
- * Sorts a given array of {@link FileElement FileElements} into a predefined order.
- * Elements get sorted in respect to type and name.
- * @param elements The elements to sort
+ * Sorts file elements:
+ * 1. Directories first, then Files, then Projects
+ * 2. Alphabetically by name (case-insensitive)
+ * 3. By creation date
  */
-export function sort(elements: FileElement[]) {
-    return elements.sort((a, b) => {
-        if (a.type === undefined) {
-            if (b.type !== undefined) {
-                //an existing type has more value
-                return -1
-            }
-        } else {
-            if (b.type === undefined) {
-                //an existing type has more value
-                return 1
-            } else {
-                //sort using the type-name
-                const comp = a.type.toLowerCase().localeCompare(b.type.toLowerCase())
-                if (comp !== 0) {
-                    return comp
-                }
-            }
-        }
-        try {
-            //type-name is equal: sort by actual name
-            return a.name.toLowerCase().localeCompare(b.name.toLowerCase())
-        } catch (error) {
-            //In case on of the name-properties is undefined
-            console.error(error)
-            return 0;
-        }
-    })
+export function sort(elements: FileElementDto[]) {
+    return orderBy(elements, [
+        (el) => ({ "directory": 1, "file": 2 }[el.type || ""] || 3),
+        (el) => el.name?.toLowerCase(),
+        // Fallback
+        "createdOn"
+    ], ["asc", "asc", "asc"]);
 }
 
 /**
  * Parses a given {@link FileElement} into a {@link JSX.Element}
  * @param object The object to parse
  */
-export function getElementForFileElement(object: FileElement) {
+
+export function getElementForFileElement(object: FileElementDto) {
     if (object.type === "file") {
-        return (<File {...object as File} key = {object.id}/>)
+        return (<File {...object as unknown as FileDetailsResponse} key={object.id}/>)
     } else if (object.type === "directory") {
-        return (<Directory {...object as Directory} key = {object.id}/>)
+        return (<Directory {...object as unknown as DirectoryContentsResponse} key={object.id}/>)
     } else {
-        return (<Project {...object}/>)
+        return (<Project {...object as unknown as ProjectContentsResponse} key={object.id}/>) // ID als Key ist wichtig!
     }
 }
