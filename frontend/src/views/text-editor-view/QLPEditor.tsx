@@ -56,8 +56,14 @@ function QLPEditor({ file }: { file: File | undefined }) {
 
         return api.put(`/file/${id}/content`, body)
             .then(() => retrieveContent(id))
-            .then(setValue)
-            .then(() => toast("Saved successfully"));
+            .then((newContent) => {
+                if (newContent === null) {
+                    toast.error("Error reloading content after save");
+                } else {
+                    setValue(newContent);
+                    toast("Saved successfully");
+                }
+            });
     };
 
     useEffect(() => {
@@ -78,8 +84,13 @@ function QLPEditor({ file }: { file: File | undefined }) {
             }
 
             // Set new content
-            const content: string = await retrieveContent(file.id);
-            setValue(content);
+            const content = await retrieveContent(file.id);
+            if (content === null) {
+                toast.error(`Couldn't load file ${file.name}`);
+                setValue("Error loading file.");
+            } else {
+                setValue(content);
+            }
 
             // Set new language
             const ext: string = await retrieveFileExtension(file.id);
@@ -121,25 +132,14 @@ function QLPEditor({ file }: { file: File | undefined }) {
             });
     }
 
-    function retrieveContent(id: string): Promise<string> {
-        return api.get<FileContentResponse>(`/file/${id}/content`)
-            .then(response => {
-                try {
-                    const binaryString = atob(response.content);
-                    const bytes = new Uint8Array(binaryString.length);
-                    for (let i = 0; i < binaryString.length; i++) {
-                        bytes[i] = binaryString.charCodeAt(i);
-                    }
-                    return new TextDecoder().decode(bytes);
-                } catch (e) {
-                    console.error("Failed to decode file content", e);
-                    return ""; // oder Fehler werfen
-                }
-            })
-            .catch(err => {
-                console.error("Error fetching content", err);
-                return "";
-            });
+    async function retrieveContent(id: string): Promise<string | null> {
+        try {
+            const response = await api.get<FileContentResponse>(`/file/${id}/content`);
+            return Base64.decode(response.content);
+        } catch (error) {
+            console.error(`Failed to retrieve content for file ${id}`, error);
+            return null;
+        }
     }
 
     return (
