@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
+@DiscriminatorValue("QUANTUM")
 public class JpaQuantumRegister extends JpaRegister {
     @OneToMany(mappedBy = "register", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<JpaQubit> qubits = new ArrayList<>();

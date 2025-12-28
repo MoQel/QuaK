@@ -10,9 +10,11 @@ import org.mapstruct.*;
 public interface OperationJpaMapper {
     @BeanMapping(subclassExhaustiveStrategy = SubclassExhaustiveStrategy.RUNTIME_EXCEPTION)
     @SubclassMapping(source = ElementaryQuantumGate.class, target = JpaElementaryQuantumGate.class)
+    @Mapping(target = "id", source = "id")
     JpaQuantumOperation toEntity(QuantumOperation domain);
 
     @BeanMapping(subclassExhaustiveStrategy = SubclassExhaustiveStrategy.RUNTIME_EXCEPTION)
     @SubclassMapping(source = JpaElementaryQuantumGate.class, target = ElementaryQuantumGate.class)
+    @Mapping(target = "id", source = "id")
     QuantumOperation toDomain(JpaQuantumOperation entity);
 }

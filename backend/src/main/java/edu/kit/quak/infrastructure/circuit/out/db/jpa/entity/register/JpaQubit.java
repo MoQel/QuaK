@@ -10,9 +10,10 @@ import java.util.List;
 @Entity
 public class JpaQubit extends JpaElementWithId {
     @ManyToOne
+    @JoinColumn(name = "register_id", referencedColumnName = "id")
     private JpaQuantumRegister register;
 
-    @OneToMany
+    @OneToMany(mappedBy = "qubit")
     private List<JpaQuantumOperation> operations = new ArrayList<>();
 
     public List<JpaQuantumOperation> getOperations() {
@@ -21,5 +22,13 @@ public class JpaQubit extends JpaElementWithId {
 
     public void setOperations(List<JpaQuantumOperation> operations) {
         this.operations = operations;
+    }
+
+    public JpaQuantumRegister getRegister() {
+        return register;
+    }
+
+    public void setRegister(JpaQuantumRegister register) {
+        this.register = register;
     }
 }

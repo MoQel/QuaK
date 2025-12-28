@@ -28,16 +28,20 @@ class CircuitJpaAdapterTest {
     void saveAndFindCircuit_ShouldPersistData() {
         // Arrange
         QuantumCircuit domainCircuit = new QuantumCircuit();
-        String id = domainCircuit.getId();
+        String circuitId = domainCircuit.getId();
+        domainCircuit.addRegister();
+        String registerId = domainCircuit.getRegisters().getFirst().getId();
 
         // Act
         jpaAdapter.save(domainCircuit);
-        Optional<QuantumCircuit> found = jpaAdapter.findCircuitById(id);
+        Optional<QuantumCircuit> found = jpaAdapter.findCircuitById(circuitId);
 
         // Assert
         assertThat(found).isPresent();
-        assertThat(found.get().getId()).isEqualTo(id);
-        assertThat(springRepository.findById(id)).isPresent();
+        assertThat(found.get().getId()).isEqualTo(circuitId);
+        assertThat(found.get().getRegisters()).hasSize(1);
+        assertThat(found.get().getRegisters().getFirst().getId()).isEqualTo(registerId);
+        assertThat(springRepository.findById(circuitId)).isPresent();
     }
 
     @Test

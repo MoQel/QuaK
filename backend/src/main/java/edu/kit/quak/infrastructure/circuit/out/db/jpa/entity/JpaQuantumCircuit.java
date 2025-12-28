@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-public class JpaQuantumCircuit extends JpaElementWithId{
+public class JpaQuantumCircuit extends JpaElementWithId {
     @OneToMany(mappedBy = "circuit", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<JpaRegister> registers = new ArrayList<>();
 

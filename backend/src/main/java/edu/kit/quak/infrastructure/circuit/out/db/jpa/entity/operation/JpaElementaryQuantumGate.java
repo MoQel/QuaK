@@ -4,8 +4,11 @@ import edu.kit.quak.core.circuit.model.operation.ElementaryQuantumGateType;
 import jakarta.persistence.*;
 
 @Entity
+@DiscriminatorValue("ELEMENTARY_GATE")
 public class JpaElementaryQuantumGate extends JpaQuantumOperation {
+    @Enumerated(EnumType.STRING)
     private ElementaryQuantumGateType type;
+
     private double theta;
     private double phi;
     private double lambda;

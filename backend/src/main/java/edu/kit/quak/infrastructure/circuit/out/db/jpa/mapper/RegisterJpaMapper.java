@@ -15,10 +15,21 @@ public interface RegisterJpaMapper {
     @BeanMapping(subclassExhaustiveStrategy = SubclassExhaustiveStrategy.RUNTIME_EXCEPTION)
     @SubclassMapping(source = QuantumRegister.class, target = JpaQuantumRegister.class)
     @SubclassMapping(source = ClassicRegister.class, target = JpaClassicRegister.class)
+    @Mapping(target = "id", source = "id")
     JpaRegister toEntity(Register domain);
 
     @BeanMapping(subclassExhaustiveStrategy = SubclassExhaustiveStrategy.RUNTIME_EXCEPTION)
     @SubclassMapping(source = JpaQuantumRegister.class, target = QuantumRegister.class)
     @SubclassMapping(source = JpaClassicRegister.class, target = ClassicRegister.class)
+    @Mapping(target = "id", source = "id")
     Register toDomain(JpaRegister entity);
+
+    @AfterMapping
+    default void linkQubits(@MappingTarget JpaRegister entity) {
+        if (entity instanceof JpaQuantumRegister quantumRegister) {
+            if (quantumRegister.getQubits() != null) {
+                quantumRegister.getQubits().forEach(qubit -> qubit.setRegister(quantumRegister));
+            }
+        }
+    }
 }
