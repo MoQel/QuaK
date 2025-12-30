@@ -8,6 +8,7 @@ import java.util.List;
 @Entity
 public class JpaQuantumCircuit extends JpaElementWithId {
     @OneToMany(mappedBy = "circuit", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderColumn(name = "position")
     private List<JpaRegister> registers = new ArrayList<>();
 
     public List<JpaRegister> getRegisters() {

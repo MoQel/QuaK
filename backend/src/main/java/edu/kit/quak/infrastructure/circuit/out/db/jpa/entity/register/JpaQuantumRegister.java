@@ -8,6 +8,7 @@ import java.util.List;
 @DiscriminatorValue("QUANTUM")
 public class JpaQuantumRegister extends JpaRegister {
     @OneToMany(mappedBy = "register", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderColumn(name = "position")
     private List<JpaQubit> qubits = new ArrayList<>();
 
     public void setQubits(List<JpaQubit> qubits) {

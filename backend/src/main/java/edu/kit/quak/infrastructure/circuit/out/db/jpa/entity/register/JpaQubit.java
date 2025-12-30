@@ -14,6 +14,7 @@ public class JpaQubit extends JpaElementWithId {
     private JpaQuantumRegister register;
 
     @OneToMany(mappedBy = "qubit")
+    @OrderColumn(name = "position")
     private List<JpaQuantumOperation> operations = new ArrayList<>();
 
     public List<JpaQuantumOperation> getOperations() {
