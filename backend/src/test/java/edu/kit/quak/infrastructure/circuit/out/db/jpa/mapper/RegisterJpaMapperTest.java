@@ -1,9 +1,6 @@
 package edu.kit.quak.infrastructure.circuit.out.db.jpa.mapper;
 
-import edu.kit.quak.core.circuit.model.operation.ElementaryQuantumGate;
-import edu.kit.quak.core.circuit.model.operation.ElementaryQuantumGateType;
 import edu.kit.quak.core.circuit.model.register.QuantumRegister;
-import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.operation.JpaElementaryQuantumGate;
 import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.register.JpaQuantumRegister;
 import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.register.JpaQubit;
 import org.junit.jupiter.api.Test;
@@ -14,13 +11,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @ExtendWith(MockitoExtension.class)
 class RegisterJpaMapperTest {
-
     @Spy
-    private OperationJpaMapperImpl operationJpaMapper;
+    private QubitJpaMapperImpl qubitJpaMapper;
 
     @InjectMocks
     private RegisterJpaMapperImpl mapper;
@@ -31,9 +28,6 @@ class RegisterJpaMapperTest {
         QuantumRegister domain = new QuantumRegister("name");
         domain.addQubit();
 
-        ElementaryQuantumGate gate = new ElementaryQuantumGate(ElementaryQuantumGateType.CNOT);
-        domain.getQubits().getFirst().addOperation(gate);
-
         // Act
         JpaQuantumRegister entity = (JpaQuantumRegister) mapper.toEntity(domain);
 
@@ -42,19 +36,15 @@ class RegisterJpaMapperTest {
         assertEquals("name", entity.getName());
         assertNotNull(entity.getQubits());
         assertEquals(1, entity.getQubits().size());
+        assertEquals(entity, entity.getQubits().getFirst().getRegister()); //AfterMapping
     }
 
     @Test
     void entityToDomain() {
         // Arrange
-        JpaElementaryQuantumGate jpaGate = new JpaElementaryQuantumGate();
-        jpaGate.setType(ElementaryQuantumGateType.CNOT);
-
-        JpaQubit jpaQubit = new JpaQubit();
-        jpaQubit.setOperations(List.of(jpaGate));
-
         JpaQuantumRegister entity = new JpaQuantumRegister();
         entity.setName("name");
+        JpaQubit jpaQubit = new JpaQubit();
         entity.setQubits(List.of(jpaQubit));
 
         // Act

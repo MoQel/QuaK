@@ -20,7 +20,7 @@ export function CircuitView() {
 
     async function fetchCircuit() {
         if (circuit == null) {
-            return await api.post<CircuitResponse>('/circuit/init')
+            return await api.post<CircuitResponse>('/circuit')
         } else {
             return await api.get<CircuitResponse>(`/circuit/${circuit.id}`)
         }
@@ -28,15 +28,25 @@ export function CircuitView() {
 
     const addQubit = async () => {
         if (circuit != null) {
-            setCircuit(await api.post<CircuitResponse>(`/circuit/qubit/add/${circuit.id}`));
+            setCircuit(await api.post<CircuitResponse>(`/circuit/${circuit.id}/qubit`));
         }
     }
 
-    // TODO: Implement when API is ready
-    const removeQubit = useCallback(async () => {}, [circuit]);
+    const deleteQubit = async () => {
+        if (circuit != null) {
+            const lastQubit: QubitResponse | undefined = circuit.qubits.at(-1);
+            if (lastQubit) {
+                const qubitId = lastQubit.id;
+                setCircuit(await api.delete<CircuitResponse>(`/circuit/${circuit.id}/qubit/${qubitId}`));
+            }
+        }
+    }
 
     const resetCircuit = useCallback(async () => {
-        setCircuit(await api.post<CircuitResponse>('/circuit/init'));
+        if (circuit != null) {
+            await api.delete<CircuitResponse>(`/circuit/${circuit.id}`);
+            setCircuit(await api.post<CircuitResponse>('/circuit'));
+        }
     }, [circuit]);
 
     return (
@@ -46,7 +56,7 @@ export function CircuitView() {
                 {/* Buttons */}
                 <div className="pb-5 flex justify-end space-x-3">
                     <Button onClick={addQubit} size="icon" className="size-8"><Plus/></Button>
-                    <Button onClick={removeQubit} size="icon" className="size-8"><Minus/></Button>
+                    <Button onClick={deleteQubit} size="icon" className="size-8"><Minus/></Button>
                     <Button onClick={resetCircuit} size="icon" className="size-8"><Trash/></Button>
                 </div>
 

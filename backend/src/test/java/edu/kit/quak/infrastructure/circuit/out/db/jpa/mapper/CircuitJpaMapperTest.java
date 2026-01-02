@@ -17,7 +17,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @ExtendWith(MockitoExtension.class)
 class CircuitJpaMapperTest {
-
     @Spy
     private RegisterJpaMapperImpl registerJpaMapper;
 
@@ -28,8 +27,8 @@ class CircuitJpaMapperTest {
     void domainToEntity() {
         // Arrange
         QuantumCircuit domain = new QuantumCircuit();
-        domain.addRegister();
-        domain.addRegister();
+        domain.addQuantumRegister();
+        domain.addQuantumRegister();
 
         // Act
         JpaQuantumCircuit entity = mapper.toEntity(domain);
@@ -39,6 +38,7 @@ class CircuitJpaMapperTest {
         assertEquals(2, entity.getRegisters().size());
         for (int idx = 0; idx <  entity.getRegisters().size(); idx++) {
             assertEquals(String.format("q%d", idx), entity.getRegisters().get(idx).getName());
+            assertEquals(entity, entity.getRegisters().get(idx).getCircuit()); //AfterMapping
         }
     }
 

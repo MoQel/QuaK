@@ -18,23 +18,35 @@ public class CircuitRestAdapter {
         this.mapper = mapper;
     }
 
-    @PostMapping("/init")
+    @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public CircuitResponse initCircuit() {
-        QuantumCircuit quantumCircuit = service.initCircuit();
+    public CircuitResponse init() {
+        QuantumCircuit quantumCircuit = service.init();
         return mapper.toResponse(quantumCircuit);
     }
 
-    @GetMapping("/{id}")
-    public CircuitResponse getCircuit(@PathVariable String id) {
-        QuantumCircuit quantumCircuit = service.getCircuit(id);
+    @GetMapping("/{circuitId}")
+    public CircuitResponse get(@PathVariable String circuitId) {
+        QuantumCircuit quantumCircuit = service.get(circuitId);
         return mapper.toResponse(quantumCircuit);
     }
 
-    @PostMapping("/qubit/add/{id}")
+    @DeleteMapping("/{circuitId}")
+    public void delete(@PathVariable String circuitId) {
+        service.delete(circuitId);
+    }
+
+    @PostMapping("/{circuitId}/qubit")
     @ResponseStatus(HttpStatus.CREATED)
-    public CircuitResponse addQubit(@PathVariable String id) {
-        QuantumCircuit quantumCircuit = service.addQubit(id);
+    public CircuitResponse addQubit(@PathVariable String circuitId) {
+        QuantumCircuit quantumCircuit = service.addQubit(circuitId);
+        return mapper.toResponse(quantumCircuit);
+    }
+
+    @DeleteMapping("/{circuitId}/qubit/{registerId}")
+    public CircuitResponse deleteQubit(@PathVariable String circuitId,
+                                       @PathVariable String registerId) {
+        QuantumCircuit quantumCircuit = service.deleteQubit(circuitId, registerId);
         return mapper.toResponse(quantumCircuit);
     }
 }

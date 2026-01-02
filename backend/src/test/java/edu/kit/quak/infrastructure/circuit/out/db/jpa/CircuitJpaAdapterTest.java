@@ -1,8 +1,12 @@
 package edu.kit.quak.infrastructure.circuit.out.db.jpa;
 
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
+import edu.kit.quak.core.circuit.model.register.QuantumRegister;
+import edu.kit.quak.core.circuit.model.register.Qubit;
+import edu.kit.quak.core.circuit.model.register.Register;
 import edu.kit.quak.infrastructure.circuit.out.db.jpa.mapper.CircuitJpaMapperImpl;
 import edu.kit.quak.infrastructure.circuit.out.db.jpa.mapper.OperationJpaMapperImpl;
+import edu.kit.quak.infrastructure.circuit.out.db.jpa.mapper.QubitJpaMapperImpl;
 import edu.kit.quak.infrastructure.circuit.out.db.jpa.mapper.RegisterJpaMapperImpl;
 import edu.kit.quak.infrastructure.circuit.out.db.jpa.repository.SpringDataJpaCircuitRepository;
 import org.junit.jupiter.api.Test;
@@ -15,9 +19,12 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
-@Import({CircuitJpaAdapter.class, CircuitJpaMapperImpl.class, OperationJpaMapperImpl.class, RegisterJpaMapperImpl.class})
+@Import({CircuitJpaAdapter.class,
+        CircuitJpaMapperImpl.class,
+        RegisterJpaMapperImpl.class,
+        QubitJpaMapperImpl.class,
+        OperationJpaMapperImpl.class})
 class CircuitJpaAdapterTest {
-
     @Autowired
     private CircuitJpaAdapter jpaAdapter;
 
@@ -29,25 +36,39 @@ class CircuitJpaAdapterTest {
         // Arrange
         QuantumCircuit domainCircuit = new QuantumCircuit();
         String circuitId = domainCircuit.getId();
-        domainCircuit.addRegister();
-        String registerId = domainCircuit.getRegisters().getFirst().getId();
+        QuantumRegister register = domainCircuit.addQuantumRegister();
+        String registerId = register.getId();
+        Qubit qubit = register.addQubit();
+        String qubitId = qubit.getId();
 
         // Act
         jpaAdapter.save(domainCircuit);
-        Optional<QuantumCircuit> found = jpaAdapter.findCircuitById(circuitId);
+        Optional<QuantumCircuit> found = jpaAdapter.findById(circuitId);
 
         // Assert
         assertThat(found).isPresent();
-        assertThat(found.get().getId()).isEqualTo(circuitId);
-        assertThat(found.get().getRegisters()).hasSize(1);
-        assertThat(found.get().getRegisters().getFirst().getId()).isEqualTo(registerId);
+
+        QuantumCircuit foundCircuit = found.get();
+        assertThat(foundCircuit.getId()).isEqualTo(circuitId);
+        assertThat(foundCircuit.getRegisters()).hasSize(1);
+
+        Register foundRegister = foundCircuit.getRegisters().getFirst();
+        assertThat(foundRegister.getId()).isEqualTo(registerId);
+        assertThat(foundRegister).isInstanceOf(QuantumRegister.class);
+
+        QuantumRegister foundQuantumRegister = (QuantumRegister) foundRegister;
+        assertThat(foundQuantumRegister.getQubits()).hasSize(1);
+
+        Qubit foundQubit = foundQuantumRegister.getQubits().getFirst();
+        assertThat(foundQubit.getId()).isEqualTo(qubitId);
+
         assertThat(springRepository.findById(circuitId)).isPresent();
     }
 
     @Test
     void findCircuitById_ShouldReturnEmpty_WhenNotFound() {
         // Act
-        Optional<QuantumCircuit> found = jpaAdapter.findCircuitById("non-existent");
+        Optional<QuantumCircuit> found = jpaAdapter.findById("non-existent");
 
         // Assert
         assertThat(found).isEmpty();

@@ -14,7 +14,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(MockitoExtension.class)
 class OperationJpaMapperTest {
-
     @InjectMocks
     private OperationJpaMapperImpl mapper;
 

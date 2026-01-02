@@ -13,10 +13,22 @@ public class QuantumCircuit extends ElementWithId {
         super();
     }
 
-    public List<Register> getRegisters() { return registers; }
-    public void addRegister() {
+    public List<Register> getRegisters() {
+        return registers;
+    }
+
+    public QuantumRegister addQuantumRegister() {
         QuantumRegister register = new QuantumRegister(String.format("q%d", registers.size()));
-        register.addQubit();
         registers.add(register);
+        return register;
+    }
+
+    public void deleteQuantumRegister(String registerId) {
+        for (Register register : registers) {
+            if (register.getId().equals(registerId)) {
+                registers.remove(register);
+                return;
+            }
+        }
     }
 }

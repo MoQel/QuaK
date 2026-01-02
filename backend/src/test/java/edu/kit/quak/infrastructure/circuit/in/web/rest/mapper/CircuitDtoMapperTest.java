@@ -1,6 +1,7 @@
 package edu.kit.quak.infrastructure.circuit.in.web.rest.mapper;
 
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
+import edu.kit.quak.core.circuit.model.register.QuantumRegister;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.CircuitResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,8 +28,10 @@ class CircuitDtoMapperTest {
     void toResponse() {
         // Arrange
         QuantumCircuit circuit = new QuantumCircuit();
-        circuit.addRegister();
-        circuit.addRegister();
+        QuantumRegister register1 = circuit.addQuantumRegister();
+        register1.addQubit();
+        QuantumRegister register2 = circuit.addQuantumRegister();
+        register2.addQubit();
 
         // Act
         CircuitResponse response = mapper.toResponse(circuit);

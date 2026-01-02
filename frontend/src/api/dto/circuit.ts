@@ -4,6 +4,7 @@ export interface CircuitResponse {
 }
 
 export interface QubitResponse {
+    id: string;
     name: string;
     gates: GateResponse[];
 }

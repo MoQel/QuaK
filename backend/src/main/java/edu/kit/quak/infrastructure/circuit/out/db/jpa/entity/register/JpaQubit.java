@@ -13,7 +13,7 @@ public class JpaQubit extends JpaElementWithId {
     @JoinColumn(name = "register_id", referencedColumnName = "id")
     private JpaQuantumRegister register;
 
-    @OneToMany(mappedBy = "qubit")
+    @OneToMany(mappedBy = "qubit", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderColumn(name = "position")
     private List<JpaQuantumOperation> operations = new ArrayList<>();
 

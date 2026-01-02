@@ -2,6 +2,7 @@ package edu.kit.quak.infrastructure.circuit.in.web.rest;
 
 import edu.kit.quak.application.ports.in.CircuitServicePort;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
+import edu.kit.quak.core.circuit.model.register.QuantumRegister;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.CircuitDtoMapperImpl;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.GateDtoMapperImpl;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.QubitDtoMapperImpl;
@@ -16,8 +17,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.BDDMockito.given;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -36,10 +36,10 @@ class CircuitRestAdapterTest {
     void initCircuit_ShouldReturnCreated() throws Exception {
         // Arrange
         QuantumCircuit circuit = new QuantumCircuit();
-        given(circuitServicePort.initCircuit()).willReturn(circuit);
+        given(circuitServicePort.init()).willReturn(circuit);
 
         // Act & Assert
-        mockMvc.perform(post("/circuit/init")
+        mockMvc.perform(post("/circuit")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isCreated())
@@ -52,10 +52,10 @@ class CircuitRestAdapterTest {
         // Arrange
         String circuitId = "test-id";
         QuantumCircuit circuit = new QuantumCircuit();
-        given(circuitServicePort.getCircuit(circuitId)).willReturn(circuit);
+        given(circuitServicePort.get(circuitId)).willReturn(circuit);
 
         // Act & Assert
-        mockMvc.perform(get("/circuit/{id}", circuitId))
+        mockMvc.perform(get("/circuit/{circuitId}", circuitId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").exists());
     }
@@ -65,11 +65,12 @@ class CircuitRestAdapterTest {
         // Arrange
         String circuitId = "test-id";
         QuantumCircuit circuit = new QuantumCircuit();
-        circuit.addRegister();
+        QuantumRegister register = circuit.addQuantumRegister();
+        register.addQubit();
         given(circuitServicePort.addQubit(circuitId)).willReturn(circuit);
 
         // Act & Assert
-        mockMvc.perform(post("/circuit/qubit/add/{id}", circuitId)
+        mockMvc.perform(post("/circuit/{circuitId}/qubit", circuitId)
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isCreated())
@@ -78,5 +79,21 @@ class CircuitRestAdapterTest {
                 .andExpect(jsonPath("$.qubits[0].name").exists())
                 .andExpect(jsonPath("$.qubits[0].name").value("q0"))
                 .andExpect(jsonPath("$.qubits[0].gates").isArray());
+    }
+
+    @Test
+    void deleteQubit_ShouldReturnUpdatedCircuit() throws Exception {
+        // Arrange
+        String circuitId = "circuit-123";
+        String qubitId = "qubit-456";
+        QuantumCircuit updatedCircuit = new QuantumCircuit();
+        given(circuitServicePort.deleteQubit(circuitId, qubitId)).willReturn(updatedCircuit);
+
+        // Act & Assert
+        mockMvc.perform(delete("/circuit/{circuitId}/qubit/{qubitId}", circuitId, qubitId)
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(updatedCircuit.getId()));
     }
 }

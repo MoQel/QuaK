@@ -14,7 +14,9 @@ public class QuantumRegister extends Register {
         return qubits;
     }
 
-    public void addQubit() {
-        qubits.add(new Qubit());
+    public Qubit addQubit() {
+        Qubit qubit = new Qubit();
+        qubits.add(qubit);
+        return qubit;
     }
 }
