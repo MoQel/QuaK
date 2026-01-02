@@ -3,17 +3,17 @@ import {Gate} from "@/views/circuit-view/Gate.tsx"
 import {Button} from "@/components/ui/button"
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover"
 import {Input} from "@/components/ui/input.tsx";
-import {ChangeEvent, useState} from "react";
-import React from "react";
+import {ChangeEvent, Fragment, useState} from "react";
 import {GateResponse} from "@/api/dto/circuit.ts";
 
 type QuantumWiresProps = {
     name: string;
     initGates: GateResponse[];
     qubitIndex: number;
+    onDelete: () => void;
 };
 
-export function Qubit({name, initGates, qubitIndex}: Readonly<QuantumWiresProps>) {
+export function Qubit({name, initGates, qubitIndex, onDelete}: Readonly<QuantumWiresProps>) {
     const [qubitName, setQubitName] = useState<string>(name)
     const [tempName, setTempName] = useState<string>(qubitName)
     const gates = initGates //TODO: Add setGates Method
@@ -32,9 +32,6 @@ export function Qubit({name, initGates, qubitIndex}: Readonly<QuantumWiresProps>
             setQubitName(tempName)
         }
     }
-
-    // TODO: Implement when backend API is ready
-    const deleteQubit = () => {}
 
     const handleDrop = async (e: React.DragEvent, qubitIndex: number, position: number) => {
         e.preventDefault();
@@ -97,7 +94,7 @@ export function Qubit({name, initGates, qubitIndex}: Readonly<QuantumWiresProps>
                                 </span>
                             )}
                             <Button
-                                onClick={deleteQubit}
+                                onClick={onDelete}
                                 variant="destructive"
                                 className="w-30 h-8 font-mono text-sm font-bold select-none"
                             >
@@ -114,7 +111,7 @@ export function Qubit({name, initGates, qubitIndex}: Readonly<QuantumWiresProps>
                 <div className="flex items-center h-full w-full relative z-10">
                 {/* Actual quantum Gates */}
                     {gates.map((gate, index) => (
-                        <React.Fragment key={`frag-${qubitIndex}-${index}`}>
+                        <Fragment key={`frag-${qubitIndex}-${index}`}>
                             {/* Dropzone before every Gate */}
                             <div
                                 className={`self-stretch ${styles.dropzoneSpacing}`}
@@ -137,7 +134,7 @@ export function Qubit({name, initGates, qubitIndex}: Readonly<QuantumWiresProps>
 
                             {/* Actual Gate */}
                             <Gate key={`${gate.type}-${qubitIndex}-${index}`} id={gate.id} type={gate.type} />
-                        </React.Fragment>
+                        </Fragment>
                     ))}
 
                     {/* Dropzone after last Gate */}

@@ -32,12 +32,17 @@ export function CircuitView() {
         }
     }
 
-    const deleteQubit = async () => {
+    const deleteQubit = async (qubitId: string) => {
+        if (circuit != null) {
+            setCircuit(await api.delete<CircuitResponse>(`/circuit/${circuit.id}/qubit/${qubitId}`));
+        }
+    }
+
+    const deleteLastQubit = async () => {
         if (circuit != null) {
             const lastQubit: QubitResponse | undefined = circuit.qubits.at(-1);
             if (lastQubit) {
-                const qubitId = lastQubit.id;
-                setCircuit(await api.delete<CircuitResponse>(`/circuit/${circuit.id}/qubit/${qubitId}`));
+                await deleteQubit(lastQubit.id);
             }
         }
     }
@@ -56,7 +61,7 @@ export function CircuitView() {
                 {/* Buttons */}
                 <div className="pb-5 flex justify-end space-x-3">
                     <Button onClick={addQubit} size="icon" className="size-8"><Plus/></Button>
-                    <Button onClick={deleteQubit} size="icon" className="size-8"><Minus/></Button>
+                    <Button onClick={deleteLastQubit} size="icon" className="size-8"><Minus/></Button>
                     <Button onClick={resetCircuit} size="icon" className="size-8"><Trash/></Button>
                 </div>
 
@@ -65,10 +70,11 @@ export function CircuitView() {
                     {
                         circuit?.qubits.map((qubit: QubitResponse, idx) => (
                             <Qubit
-                                key={qubit.name}
+                                key={qubit.id}
                                 name={qubit.name}
                                 initGates={qubit.gates}
                                 qubitIndex={idx}
+                                onDelete={() => deleteQubit(qubit.id)}
                             />
                         ))
                     }

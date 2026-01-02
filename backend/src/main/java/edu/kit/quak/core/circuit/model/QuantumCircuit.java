@@ -7,6 +7,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class QuantumCircuit extends ElementWithId {
+    public static final String REGISTER_PREFIX = "q";
+
     private final List<Register> registers = new ArrayList<>();
 
     public QuantumCircuit() {
@@ -18,7 +20,14 @@ public class QuantumCircuit extends ElementWithId {
     }
 
     public QuantumRegister addQuantumRegister() {
-        QuantumRegister register = new QuantumRegister(String.format("q%d", registers.size()));
+        int nextIndex = registers.stream()
+                .map(Register::getName)
+                .filter(name -> name.startsWith(REGISTER_PREFIX))
+                .map(name -> name.substring(REGISTER_PREFIX.length()))
+                .mapToInt(Integer::parseInt)
+                .max()
+                .orElse(-1) + 1;
+        QuantumRegister register = new QuantumRegister(REGISTER_PREFIX + nextIndex);
         registers.add(register);
         return register;
     }
