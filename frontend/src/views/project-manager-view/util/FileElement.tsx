@@ -14,6 +14,8 @@ export interface FileElement {
     id: string,
     name: string,
     type: string,
+    createdOn: string,
+    lastAccess: string,
 }
 
 export interface FileElementContainer extends FileElement {
@@ -54,6 +56,6 @@ export function getElementForFileElement(object: FileElementDto) {
     } else if (object.type === "directory") {
         return (<Directory {...object as unknown as DirectoryContentsResponse} key={object.id}/>)
     } else {
-        return (<Project {...object as unknown as ProjectContentsResponse} key={object.id}/>) // ID als Key ist wichtig!
+        return (<Project {...object as unknown as ProjectContentsResponse} key={object.id}/>)
     }
 }
