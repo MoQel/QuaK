@@ -13,11 +13,12 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @IntegrationTest
@@ -35,12 +36,23 @@ class GateRestAdapterTest {
     @Test
     void getGate_returns200AndDto() throws Exception {
         // Arrange
-        Gate gate = new Gate("X", "Pauli-X", "Bit-Flip", 1, Gate.SYMBOL.X);
-        when(gateService.getGateByName("X")).thenReturn(Optional.of(gate));
+        Gate gate = new Gate(
+                "x",          // id
+                "X",             // name
+                "Pauli",         // type
+                "Bit-Flip",      // description
+                1,               // qubitCount
+                "X",             // symbol
+                List.of(),       // parameters
+                null             // inspectorInfo
+        );
+
+        when(gateService.getGateById("x")).thenReturn(Optional.of(gate));
 
         // Act & Assert
-        mockMvc.perform(get("/gates/X"))
+        mockMvc.perform(get("/gates/x"))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value("x"))
                 .andExpect(jsonPath("$.name").value("X"))
                 .andExpect(jsonPath("$.symbol").value("X"));
     }
@@ -48,7 +60,7 @@ class GateRestAdapterTest {
     @Test
     void getGate_returns404_whenNotFound() throws Exception {
         // Arrange
-        when(gateService.getGateByName("GibtsNicht")).thenReturn(Optional.empty());
+        when(gateService.getGateById("GibtsNicht")).thenReturn(Optional.empty());
 
         // Act & Assert
         mockMvc.perform(get("/gates/GibtsNicht"))

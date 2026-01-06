@@ -6,5 +6,5 @@ import java.util.Optional;
 
 public interface GateRepositoryPort {
     List<Gate> findAllGates();
-    Optional<Gate> findGateByName(String name);
+    Optional<Gate> findGateById(String id);
 }

@@ -42,9 +42,9 @@ public class JsonGateRepositoryAdapter implements GateRepositoryPort {
     }
 
     @Override
-    public Optional<Gate> findGateByName(String name) {
+    public Optional<Gate> findGateById(String id) {
         return cachedGates.stream()
-                .filter(g -> g.name().equalsIgnoreCase(name))
+                .filter(g -> g.id().equals(id))
                 .findFirst();
     }
 
@@ -67,14 +67,62 @@ public class JsonGateRepositoryAdapter implements GateRepositoryPort {
     }
 
     private record JsonGateDto(
+            @JsonProperty("id") String id,
             @JsonProperty("name") String name,
+            @JsonProperty("symbol") String symbol,
             @JsonProperty("type") String type,
             @JsonProperty("description") String description,
             @JsonProperty("qubitCount") int qubitCount,
-            @JsonProperty("symbol") Gate.SYMBOL symbol
+            @JsonProperty("parameters") List<String> parameters,
+            @JsonProperty("inspectorInfo") JsonInspectorInfoDto inspectorInfo
     ) {
         Gate toDomain() {
-            return new Gate(name, type, description, qubitCount, symbol);
+            return new Gate(
+                    id,
+                    name,
+                    type,
+                    description,
+                    qubitCount,
+                    symbol,
+                    parameters != null ? parameters : Collections.emptyList(),
+                    inspectorInfo != null ? inspectorInfo.toDomain() : null
+            );
+        }
+    }
+
+    private record JsonInspectorInfoDto(
+            @JsonProperty("operatorDefinition") String operatorDefinition,
+            @JsonProperty("truthTable") List<JsonTruthTableEntryDto> truthTable,
+            @JsonProperty("matrix") JsonMatrixDto matrix
+    ) {
+        Gate.InspectorInfo toDomain() {
+            return new Gate.InspectorInfo(
+                    operatorDefinition,
+                    truthTable != null ? truthTable.stream()
+                            .map(JsonTruthTableEntryDto::toDomain)
+                            .toList() : Collections.emptyList(),
+                    matrix != null ? matrix.toDomain() : null
+            );
+        }
+    }
+
+    private record JsonTruthTableEntryDto(
+            @JsonProperty("input") String input,
+            @JsonProperty("output") String output
+    ) {
+        Gate.TruthTableEntry toDomain() {
+            return new Gate.TruthTableEntry(input, output);
+        }
+    }
+
+    private record JsonMatrixDto(
+            @JsonProperty("display") String display,
+            @JsonProperty("rows") int rows,
+            @JsonProperty("cols") int cols,
+            @JsonProperty("computable") List<List<String>> computable
+    ) {
+        Gate.MatrixInfo toDomain() {
+            return new Gate.MatrixInfo(display, rows, cols, computable);
         }
     }
 }
