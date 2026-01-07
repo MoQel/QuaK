@@ -187,7 +187,7 @@ function App() {
                     </div>
                     <div className="flex flex-grow-[1] flex-row w-full">
                         <GateLibraryView onGateSelect={setSelectedGate} />
-                        <InspectorView gate={selectedGate} />
+                        <InspectorView gate={selectedGate} onClear={() => setSelectedGate(undefined)} />
                         <ResultsView numberQubits={5} />
                     </div>
                 </div>
