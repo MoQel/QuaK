@@ -5,12 +5,16 @@ import { Button } from "@/components/ui/button"
 import { List,  LayoutGrid } from "lucide-react";
 import GateList from "@/views/library-view/GateList.tsx";
 import {useEffect, useState} from 'react';
-import {QuantumGate} from "@/views/QuantumGate.tsx";
+import {QuantumGate} from "@/views/library-view/QuantumGate.ts";
 import {api} from "@/api/api.ts";
 import {GateResponseDto} from "@/api/dto/library.ts";
 import {GateMapper} from "@/api/mapper/GateMapper.ts";
 
-export function GateLibraryView() {
+interface GateLibraryViewProps {
+    onGateSelect?: (gate: QuantumGate) => void;
+}
+
+export function GateLibraryView({ onGateSelect }: GateLibraryViewProps) {
 
     const [boxMode, setBoxMode] = useState(true);
     const [gates, setGates] = useState<QuantumGate[]>([]);
@@ -24,6 +28,13 @@ export function GateLibraryView() {
             })
             .catch((e) => console.error("Failed to fetch gates:", e));
     }, []);
+
+    const handleGateClick = (gate: QuantumGate) => {
+        if (onGateSelect) {
+            onGateSelect(gate);
+        }
+        console.log("Gate clicked:", gate.name); // Debugging
+    };
 
     return (
         <Card className="w-full relative">
@@ -47,8 +58,8 @@ export function GateLibraryView() {
 
             <CardContent>
                 <div className={styles.availableGateContainer}>
-                    {boxMode && <GateLibrary gates={gates}/>}
-                    {!(boxMode) && <GateList gates={gates}/>}
+                    {boxMode && <GateLibrary gates={gates} onGateClick={handleGateClick}/>}
+                    {!(boxMode) && <GateList gates={gates} onGateClick={handleGateClick}/>}
                 </div>
             </CardContent>
         </Card>

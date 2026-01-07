@@ -265,6 +265,7 @@
     "type": "Rotation",
     "description": "Parametric rotation around the X-axis by a given angle θ.",
     "qubitCount": 1,
+    "parameters": ["theta"],
     "inspectorInfo": {
       "operatorDefinition": "R_x(\\theta) = e^{-i\\frac{\\theta}{2} X}",
       "truthTable": [
@@ -289,6 +290,7 @@
     "type": "Rotation",
     "description": "Parametric rotation around the Y-axis by a given angle θ.",
     "qubitCount": 1,
+    "parameters": ["theta"],
     "inspectorInfo": {
       "operatorDefinition": "R_y(\\theta) = e^{-i\\frac{\\theta}{2} Y}",
       "truthTable": [
@@ -313,6 +315,7 @@
     "type": "Rotation",
     "description": "Parametric rotation around the Z-axis by a given angle θ.",
     "qubitCount": 1,
+    "parameters": ["theta"],
     "inspectorInfo": {
       "operatorDefinition": "R_z(\\theta) = e^{-i\\frac{\\theta}{2} Z}",
       "truthTable": [

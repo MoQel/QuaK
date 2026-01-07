@@ -14,6 +14,8 @@ export interface FileElement {
     id: string,
     name: string,
     type: string,
+    createdOn: string,
+    lastAccess: string,
 }
 
 export interface FileElementContainer extends FileElement {
