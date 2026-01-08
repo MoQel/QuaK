@@ -89,7 +89,7 @@ public class GlobalExceptionHandler {
     // Fallback -> 500 Internal Server Error
     @ExceptionHandler(Exception.class)
     public ProblemDetail handleGeneralError(Exception ex) {
-        // TODO: Introduce Logging! (Log.error(ex))
+        ex.printStackTrace(); // Simple fallback logging
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR,
                 "An unexpected error occurred.");
         problem.setTitle("Internal Error");

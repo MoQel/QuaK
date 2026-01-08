@@ -6,7 +6,8 @@ import jakarta.persistence.Entity;
 
 /**
  * JPA entity for persisting File domain objects.
- * This lives in the infrastructure layer and maps directly to the database schema.
+ * This lives in the infrastructure layer and maps directly to the database
+ * schema.
  */
 @Entity
 @DiscriminatorValue("file")
@@ -23,6 +24,11 @@ public class JpaFile extends JpaFileElement<JpaFile> {
         super(name, parent);
     }
 
-    public String getContentType() { return contentType; }
-    public void setContentType(String contentType) { this.contentType = contentType; }
+    public String getContentType() {
+        return contentType;
+    }
+
+    public void setContentType(String contentType) {
+        this.contentType = contentType;
+    }
 }

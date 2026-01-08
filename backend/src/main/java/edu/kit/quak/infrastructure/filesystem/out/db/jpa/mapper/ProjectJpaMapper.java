@@ -16,7 +16,7 @@ public abstract class ProjectJpaMapper {
     public abstract JpaProject toJpaEntity(Project domain);
 
     @Mapping(target = "id", source = "id")
-    @Mapping(target = "parentId", source = "parent.id")
+    @Mapping(target = "parentId", ignore = true) // Projects are top-level and have no parent
     @Mapping(target = "ownerId", source = "ownerId")
     public abstract Project toDomainEntity(JpaProject jpaEntity);
 }

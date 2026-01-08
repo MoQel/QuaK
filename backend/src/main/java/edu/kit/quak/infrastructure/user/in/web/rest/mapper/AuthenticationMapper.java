@@ -19,15 +19,26 @@ public class AuthenticationMapper {
      * 
      * @param authentication Spring Security authentication object
      * @return Domain model representing the authenticated user
-     * @throws IllegalArgumentException if authentication is not OAuth2/OIDC based
+     * @throws edu.kit.quak.application.user.exceptions.UserNotFoundException if
+     *                                                                        authentication
+     *                                                                        is not
+     *                                                                        OAuth2/OIDC
+     *                                                                        based
      */
     public AuthenticatedUser toDomain(Authentication authentication) {
+        if (authentication == null) {
+            throw new edu.kit.quak.application.user.exceptions.UserNotFoundException(
+                    "No authentication found", "User is not authenticated");
+        }
+
         if (!(authentication instanceof OAuth2AuthenticationToken oauthToken)) {
-            throw new IllegalArgumentException("Authentication must be OAuth2AuthenticationToken");
+            throw new edu.kit.quak.application.user.exceptions.UserNotFoundException(
+                    "Invalid authentication type", "Expected OAuth2 authentication");
         }
 
         if (!(authentication.getPrincipal() instanceof OidcUser oidcUser)) {
-            throw new IllegalArgumentException("Principal must be OidcUser");
+            throw new edu.kit.quak.application.user.exceptions.UserNotFoundException(
+                    "Invalid principal type", "Expected OIDC user");
         }
 
         String issuer = oauthToken.getAuthorizedClientRegistrationId();
