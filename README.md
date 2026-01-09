@@ -1,4 +1,10 @@
-# QuaK
+# QuaK IDE
+
+[![License](https://img.shields.io/github/license/MoQel/QuaK)](LICENSE) 
+[![CI](https://img.shields.io/github/actions/workflow/status/MoQel/QuaK/test_and_build.yml?label=CI)](https://github.com/MoQel/QuaK/actions/workflows/test_and_build.yml)
+[![Deploy](https://img.shields.io/github/actions/workflow/status/MoQel/QuaK/deploy.yml?label=deploy)](https://github.com/MoQel/QuaK/actions/workflows/deploy.yml)
+
+## About
 
 This repository contains the source code for the Quantum Kit (QuaK) Web IDE.
 
