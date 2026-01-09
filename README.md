@@ -1,5 +1,7 @@
 # QuaK
 
+This repository contains the source code for the Quantum Kit (QuaK) Web IDE.
+
 ## Docker Workflows
 
 ### Development Workflow (Recommended)
