@@ -14,6 +14,7 @@ function GateLibrary({ gates, onGateClick }: GateLibraryProps) {
                     key={`${gate.id}-${index}`}
                     id={gate.id}
                     type={gate.symbol}
+                    matrix={gate.inspectorInfo?.matrix?.display}
                     onClick={() => onGateClick(gate)}
                 />
             ))}
