@@ -67,7 +67,7 @@ public record Gate(
             if (!computable.isEmpty()) {
                 if (computable.size() != rows) {
                     throw new IllegalArgumentException(
-                        "MatrixInfo rows field (%d) does not match computable matrix size (%d)"
+                        "MatrixInfo dimension mismatch: expected %d rows but computable matrix has %d rows"
                             .formatted(rows, computable.size())
                     );
                 }
@@ -76,7 +76,7 @@ public record Gate(
                     List<String> row = computable.get(i);
                     if (row.size() != cols) {
                         throw new IllegalArgumentException(
-                            "MatrixInfo cols field (%d) does not match row %d size (%d)"
+                            "MatrixInfo dimension mismatch: expected %d cols but row %d has %d elements"
                                 .formatted(cols, i, row.size())
                         );
                     }
