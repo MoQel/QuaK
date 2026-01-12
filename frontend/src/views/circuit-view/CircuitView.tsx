@@ -5,7 +5,13 @@ import {Fragment, useEffect, useState} from "react";
 import styles from "@/App.module.css";
 import {Qubit} from "@/views/circuit-view/Qubit.tsx";
 import {api} from "@/api/api.ts";
-import {AddGateRequest, CircuitResponse, MoveGateRequest, RegisterResponse} from "@/api/dto/circuit.ts";
+import {
+    AddGateRequest,
+    ChangeQubitNameRequest,
+    CircuitResponse,
+    MoveGateRequest,
+    RegisterResponse
+} from "@/api/dto/circuit.ts";
 
 export function CircuitView() {
     const [circuit, setCircuit] = useState<CircuitResponse | null>(null);
@@ -29,6 +35,12 @@ export function CircuitView() {
     const addQubit = async () => {
         if (circuit != null) {
             setCircuit(await api.post<CircuitResponse>(`/circuit/${circuit.id}/qubit`));
+        }
+    }
+
+    const changeQubitName = async (payload: ChangeQubitNameRequest) => {
+        if (circuit != null) {
+            setCircuit(await api.patch<CircuitResponse>(`/circuit/${circuit.id}/qubit`, payload));
         }
     }
 
@@ -89,9 +101,11 @@ export function CircuitView() {
                         circuit?.registers.map((reg: RegisterResponse, idx) => (
                             <Qubit
                                 key={reg.qubits.at(0)?.id}
+                                id={reg.qubits.at(0)?.id ?? ""}
                                 name={reg.name}
                                 gates={reg.qubits.at(0)?.gates ?? []}
                                 qubitIndex={idx}
+                                onNameChange={changeQubitName}
                                 onDelete={() => deleteQubit(reg.qubits.at(0)?.id ?? "")}
                                 onGateAdd={addGate}
                                 onGateMove={moveGate}

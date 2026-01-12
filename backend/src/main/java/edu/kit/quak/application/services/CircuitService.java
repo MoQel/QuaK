@@ -50,6 +50,24 @@ public class CircuitService implements CircuitServicePort {
     }
 
     @Override
+    public QuantumCircuit changeQubitName(String circuitId, String qubitId, String name) {
+        QuantumCircuit circuit = get(circuitId);
+        for (Register register : circuit.getRegisters()) {
+            if (register instanceof QuantumRegister quantumRegister) {
+                Optional<Qubit> found = quantumRegister.getQubits().stream()
+                        .filter(qubit -> qubit.getId().equals(qubitId))
+                        .findFirst();
+                if (found.isPresent()) {
+                    register.setName(name);
+                    break;
+                }
+            }
+        }
+        repository.save(circuit);
+        return circuit;
+    }
+
+    @Override
     public QuantumCircuit deleteQubit(String circuitId, String registerId) {
         QuantumCircuit circuit = get(circuitId);
         circuit.deleteQuantumRegister(registerId);

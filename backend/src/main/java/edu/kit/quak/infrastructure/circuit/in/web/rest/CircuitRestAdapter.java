@@ -4,6 +4,7 @@ import edu.kit.quak.application.ports.in.CircuitServicePort;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.core.circuit.model.operation.ElementaryQuantumGateType;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.AddGateRequest;
+import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.ChangeQubitNameRequest;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.CircuitResponse;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.MoveGateRequest;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.CircuitDtoMapper;
@@ -43,6 +44,14 @@ public class CircuitRestAdapter {
     @ResponseStatus(HttpStatus.CREATED)
     public CircuitResponse addQubit(@PathVariable String circuitId) {
         QuantumCircuit circuit = service.addQubit(circuitId);
+        return mapper.toResponse(circuit);
+    }
+
+    @PatchMapping("/{circuitId}/qubit")
+    @ResponseStatus(HttpStatus.CREATED)
+    public CircuitResponse changeQubitName(@PathVariable String circuitId,
+                                           @RequestBody ChangeQubitNameRequest request) {
+        QuantumCircuit circuit = service.changeQubitName(circuitId, request.id(), request.name());
         return mapper.toResponse(circuit);
     }
 

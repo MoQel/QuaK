@@ -3,38 +3,45 @@ import {Gate} from "@/views/circuit-view/Gate.tsx"
 import {Button} from "@/components/ui/button"
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover"
 import {Input} from "@/components/ui/input.tsx";
-import {ChangeEvent, Fragment, useState} from "react";
-import {AddGateRequest, GateResponse, MoveGateRequest} from "@/api/dto/circuit.ts";
+import React, {Fragment, useState} from "react";
+import {AddGateRequest, ChangeQubitNameRequest, GateResponse, MoveGateRequest} from "@/api/dto/circuit.ts";
 
 type QuantumWiresProps = {
+    id: string;
     name: string;
     gates: GateResponse[];
     qubitIndex: number;
+    onNameChange: (payload: ChangeQubitNameRequest) => void;
     onDelete: () => void;
     onGateAdd: (payload: AddGateRequest) => void;
     onGateMove: (payload: MoveGateRequest) => void;
     onGateDelete: (id: string) => void;
 };
 
-export function Qubit({name, gates, qubitIndex, onDelete, onGateAdd, onGateMove, onGateDelete}: Readonly<QuantumWiresProps>) {
-    const [qubitName, setQubitName] = useState<string>(name)
-    const [tempName, setTempName] = useState<string>(qubitName)
+export function Qubit({id, name, gates, qubitIndex, onNameChange, onDelete, onGateAdd, onGateMove, onGateDelete}: Readonly<QuantumWiresProps>) {
+    const [tempName, setTempName] = useState<string>(name);
     const [hoverIndex, setHoverIndex] = useState<number | null>(null);
     const [draggingGateId, setDraggingGateId] = useState<string | null>(null);
+    const [isPopoverOpen, setIsPopoverOpen] = useState(false);
 
     const visibleGates = gates.filter(g => g.id !== draggingGateId);
 
-    const maxLength = 4;
-    const isTooLong = tempName.length > maxLength;
+    const maxQubitNameLength = 4;
 
-    const onNameChange = (e: ChangeEvent<HTMLInputElement>) => {
-        setTempName(e.target.value)
+    const onNameInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.value.length <= maxQubitNameLength) {
+            setTempName(e.target.value);
+        }
     }
 
-    const onSave = () => {
-        if (tempName.length <= maxLength) {
-            setQubitName(tempName)
+    const onSave = (e: React.FormEvent) => {
+        e.preventDefault();
+        const payload: ChangeQubitNameRequest = {
+            id: id,
+            name: tempName
         }
+        onNameChange(payload);
+        setIsPopoverOpen(false);
     }
 
     const handleDrop = async (e: React.DragEvent, qubitIdx: number, positionIdx: number) => {
@@ -69,47 +76,41 @@ export function Qubit({name, gates, qubitIndex, onDelete, onGateAdd, onGateMove,
 
     return (
         <div className="flex items-center py-3">
-            <div>
-                <Popover>
-                    <PopoverTrigger asChild>
-                        <Button
-                            className={`${styles.qubit} font-mono text-sm font-bold select-none`}
-                        >
-                            |{qubitName}&gt;
-                        </Button>
-                    </PopoverTrigger>
-                    <PopoverContent>
-                        <div className="flex flex-col space-y-2">
-                            <div className="flex flex-row space-x-2">
-                                <Input
-                                    id="qubitName"
-                                    value={tempName}
-                                    onChange={onNameChange}
-                                    className="font-mono"
-                                />
-                                <Button
-                                    onClick={onSave}
-                                    className="w-16 h-8 font-mono text-sm font-bold select-none"
-                                >
-                                    Save
-                                </Button>
-                            </div>
-                            {isTooLong && (
-                                <span className="self-start text-red-500 text-xs">
-                                    Name too long! Max {maxLength} characters.
-                                </span>
-                            )}
+            <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+                <PopoverTrigger asChild>
+                    <Button
+                        className={`${styles.qubit} font-mono text-sm font-bold select-none`}
+                    >
+                        |{name}&gt;
+                    </Button>
+                </PopoverTrigger>
+                <PopoverContent>
+                    <form onSubmit={onSave} className="flex flex-col space-y-2">
+                        <div className="flex flex-row space-x-2">
+                            <Input
+                                id="qubitName"
+                                value={tempName}
+                                onChange={onNameInputChange}
+                                className="font-mono"
+                            />
                             <Button
-                                onClick={onDelete}
-                                variant="destructive"
-                                className="w-30 h-8 font-mono text-sm font-bold select-none"
+                                type="submit"
+                                className="w-16 h-8 font-mono text-sm font-bold select-none"
                             >
-                                Remove Wire
+                                Save
                             </Button>
                         </div>
-                    </PopoverContent>
-                </Popover>
-            </div>
+                        <Button
+                            type="button"
+                            onClick={onDelete}
+                            variant="destructive"
+                            className="w-30 h-8 font-mono text-sm font-bold select-none"
+                        >
+                            Remove Wire
+                        </Button>
+                    </form>
+                </PopoverContent>
+            </Popover>
 
             <div className={`${styles.qubitWireSpacing} relative flex-grow self-stretch`}>
 

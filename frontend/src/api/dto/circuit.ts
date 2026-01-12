@@ -21,6 +21,11 @@ export interface GateResponse {
     type: GateType;
 }
 
+export interface ChangeQubitNameRequest {
+    id: string;
+    name: string;
+}
+
 export interface AddGateRequest {
     type: GateType;
     toQubitIdx: number;

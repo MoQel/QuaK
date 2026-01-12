@@ -3,7 +3,7 @@ package edu.kit.quak.core.circuit.model.register;
 import edu.kit.quak.core.circuit.model.ElementWithId;
 
 public abstract class Register extends ElementWithId {
-    protected final String name;
+    protected String name;
 
     protected Register(String name) {
         super();
@@ -12,5 +12,9 @@ public abstract class Register extends ElementWithId {
 
     public String getName() {
         return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 }
