@@ -7,8 +7,6 @@ import org.mapstruct.*;
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING,
         uses = { GateDtoMapper.class })
 public interface QubitDtoMapper {
-
-    @Mapping(target = "gates", source = "qubit.operations")
-    @Mapping(target = "name", source = "registerName")
-    QubitResponse toResponse(Qubit qubit, String registerName);
+    @Mapping(target = "gates", source = "operations")
+    QubitResponse toResponse(Qubit qubit);
 }

@@ -8,11 +8,11 @@ import jakarta.persistence.*;
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "register_type", discriminatorType = DiscriminatorType.STRING)
 public abstract class JpaRegister extends JpaElementWithId {
-    private String name;
+    protected String name;
 
     @ManyToOne
     @JoinColumn(name = "circuit_id", referencedColumnName = "id")
-    private JpaQuantumCircuit circuit;
+    protected JpaQuantumCircuit circuit;
 
     public void setName(String name) {
         this.name = name;

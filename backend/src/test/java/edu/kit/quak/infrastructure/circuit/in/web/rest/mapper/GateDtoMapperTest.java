@@ -13,7 +13,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @ExtendWith(MockitoExtension.class)
 class GateDtoMapperTest {
-
     @InjectMocks
     private GateDtoMapperImpl mapper;
 
@@ -28,6 +27,6 @@ class GateDtoMapperTest {
         // Assert
         assertNotNull(response);
         assertEquals(gate.getId(), response.id());
-        assertEquals("X", response.type());
+        assertEquals(ElementaryQuantumGateType.X.name(), response.type());
     }
 }

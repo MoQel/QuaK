@@ -1,48 +1,58 @@
 import {Badge} from "@/components/ui/badge.tsx";
 import styles from "@/App.module.css";
-import {useSortable} from "@dnd-kit/sortable";
-import {CSS} from "@dnd-kit/utilities";
 import {GateIcons} from "@/utils/GateIcons.ts";
 import {GateResponse} from "@/api/dto/circuit.ts";
+import {useRef} from 'react'
 
-export function Gate({id, type}: GateResponse) {
+interface GateProps extends GateResponse {
+    onDragStart?: (id: string) => void;
+    onDragEnd?: () => void;
+    onDelete?: () => void;
+}
 
-    const {attributes, listeners, setNodeRef, transform, transition} = useSortable({
-        id: id,
-        data: {
-            source: "circuit"
-        }
-    })
-    const style = {
-        transition,
-        transform: CSS.Transform.toString(transform),
-    }
-    const Icon = GateIcons[type]
+export function Gate({ id, type, onDragStart, onDragEnd, onDelete }: GateProps) {
+    const Icon = GateIcons[type];
+    const isDraggingRef = useRef(false);
 
     const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
-        e.dataTransfer.setData(
-            "application/json",
-            JSON.stringify({
-                source: "circuit_editor",
-                id,
-                type
-            })
-        );
+        isDraggingRef.current = true;
+        e.dataTransfer.setData("application/json", JSON.stringify({ id }));
+        e.dataTransfer.effectAllowed = "move";
+
+        // Timeout of 1 frame to prevent drag cancellation by allowing the browser to
+        // capture the "drag image" before React removes the element from the DOM.
+        setTimeout(() => {
+            onDragStart?.(id);
+        }, 0);
+    };
+
+    const handleDragEnd = () => {
+        onDragEnd?.();
+
+        // Wait 100ms to avoid 'phantom clicks' by browser causing a delete request.
+        setTimeout(() => {
+            isDraggingRef.current = false;
+        }, 100);
+    };
+
+    const handleClick = () => {
+        if (isDraggingRef.current) {
+            return;
+        }
+        onDelete?.();
     };
 
     return (
-        <div ref={setNodeRef}
-             {...attributes}
-             {...listeners}
-             id={id}
-             style={style}
-             onClick={() => null}
-             draggable
-             onDragStart={handleDragStart}
+        <div
+            draggable={type !== 'PLACEHOLDER'}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+            onClick={handleClick}
+            className="cursor-grab active:cursor-grabbing"
         >
-            <Badge className={` ${styles.gate} ${type === 'PLACEHOLDER' ? 'opacity-60' : ''}`}>
-                <Icon/>
+            <Badge className={`${styles.gate} ${type === 'PLACEHOLDER' ? 'opacity-60' : ''}`}>
+                <Icon />
             </Badge>
         </div>
-    )
+    );
 }

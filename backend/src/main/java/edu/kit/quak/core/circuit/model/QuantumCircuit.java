@@ -40,4 +40,12 @@ public class QuantumCircuit extends ElementWithId {
             }
         }
     }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("QuantumCircuit(id=").append(id).append(")\n");
+        registers.forEach(reg -> sb.append("  ").append(reg.toString().replace("\n", "\n  ")).append("\n"));
+        return sb.toString().trim();
+    }
 }

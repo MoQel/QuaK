@@ -19,4 +19,12 @@ public class QuantumRegister extends Register {
         qubits.add(qubit);
         return qubit;
     }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("QuantumRegister: ").append(getName());
+        qubits.forEach(q -> sb.append("\n    ").append(q.toString().replace("\n", "\n    ")));
+        return sb.toString();
+    }
 }

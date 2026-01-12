@@ -4,21 +4,25 @@ import {Button} from "@/components/ui/button"
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover"
 import {Input} from "@/components/ui/input.tsx";
 import {ChangeEvent, Fragment, useState} from "react";
-import {GateResponse} from "@/api/dto/circuit.ts";
+import {AddGateRequest, GateResponse, MoveGateRequest} from "@/api/dto/circuit.ts";
 
 type QuantumWiresProps = {
     name: string;
-    initGates: GateResponse[];
+    gates: GateResponse[];
     qubitIndex: number;
     onDelete: () => void;
+    onGateAdd: (payload: AddGateRequest) => void;
+    onGateMove: (payload: MoveGateRequest) => void;
+    onGateDelete: (id: string) => void;
 };
 
-export function Qubit({name, initGates, qubitIndex, onDelete}: Readonly<QuantumWiresProps>) {
+export function Qubit({name, gates, qubitIndex, onDelete, onGateAdd, onGateMove, onGateDelete}: Readonly<QuantumWiresProps>) {
     const [qubitName, setQubitName] = useState<string>(name)
     const [tempName, setTempName] = useState<string>(qubitName)
-    const gates = initGates //TODO: Add setGates Method
-
     const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+    const [draggingGateId, setDraggingGateId] = useState<string | null>(null);
+
+    const visibleGates = gates.filter(g => g.id !== draggingGateId);
 
     const maxLength = 4;
     const isTooLong = tempName.length > maxLength;
@@ -33,27 +37,29 @@ export function Qubit({name, initGates, qubitIndex, onDelete}: Readonly<QuantumW
         }
     }
 
-    const handleDrop = async (e: React.DragEvent, qubitIndex: number, position: number) => {
+    const handleDrop = async (e: React.DragEvent, qubitIdx: number, positionIdx: number) => {
         e.preventDefault();
         setHoverIndex(null);
+        setDraggingGateId(null);
 
         const gateJson = e.dataTransfer.getData("application/json");
         if (!gateJson) return;
 
         const gate = JSON.parse(gateJson);
-
-        const payload = {
-            ...gate,
-            qubitIndex,
-            position,
-        };
-        console.log(payload);
-        try {
-            //TODO: Adapt to correct API point, when backend API is ready
-
-            //TODO: Also recalculate maxWireLength in CircuitView
-        } catch (err) {
-            console.error("Drop failed:", err);
+        if (e.dataTransfer.effectAllowed == "copy") {
+            const payload: AddGateRequest = {
+                type: gate.type,
+                toQubitIdx: qubitIdx,
+                toPositionIdx: positionIdx
+            }
+            onGateAdd(payload);
+        } else if (e.dataTransfer.effectAllowed == "move") {
+            const payload: MoveGateRequest = {
+                id: gate.id,
+                toQubitIdx: qubitIdx,
+                toPositionIdx: positionIdx
+            }
+            onGateMove(payload);
         }
     };
 
@@ -105,12 +111,12 @@ export function Qubit({name, initGates, qubitIndex, onDelete}: Readonly<QuantumW
                 </Popover>
             </div>
 
-            <div className={`${styles.qubitWireSpacing} relative h-full w-full`}>
+            <div className={`${styles.qubitWireSpacing} relative flex-grow self-stretch`}>
 
                 <div className={`${styles.lines} absolute top-1/2 w-full`}/>
                 <div className="flex items-center h-full w-full relative z-10">
                 {/* Actual quantum Gates */}
-                    {gates.map((gate, index) => (
+                    {visibleGates.map((gate, index) => (
                         <Fragment key={`frag-${qubitIndex}-${index}`}>
                             {/* Dropzone before every Gate */}
                             <div
@@ -133,7 +139,12 @@ export function Qubit({name, initGates, qubitIndex, onDelete}: Readonly<QuantumW
                             </div>
 
                             {/* Actual Gate */}
-                            <Gate key={`${gate.type}-${qubitIndex}-${index}`} id={gate.id} type={gate.type} />
+                            <Gate key={`${gate.type}-${qubitIndex}-${index}`}
+                                  id={gate.id}
+                                  type={gate.type}
+                                  onDragStart={(id) => setDraggingGateId(id)}
+                                  onDragEnd={() => setDraggingGateId(null)}
+                                  onDelete={() => onGateDelete(gate.id)}/>
                         </Fragment>
                     ))}
 

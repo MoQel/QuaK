@@ -2,8 +2,9 @@ package edu.kit.quak.infrastructure.circuit.in.web.rest.dto;
 
 import java.util.List;
 
-public record CircuitResponse(
+public record RegisterResponse(
         String id,
-        List<RegisterResponse> registers
+        String name,
+        List<QubitResponse> qubits
 ) {
 }

@@ -10,7 +10,7 @@ import jakarta.persistence.*;
 public abstract class JpaQuantumOperation extends JpaElementWithId {
     @ManyToOne
     @JoinColumn(name = "qubit_id", referencedColumnName = "id")
-    private JpaQubit qubit;
+    protected JpaQubit qubit;
 
     public JpaQubit getQubit() {
         return qubit;

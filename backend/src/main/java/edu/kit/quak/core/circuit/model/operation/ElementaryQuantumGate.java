@@ -24,4 +24,9 @@ public class ElementaryQuantumGate extends QuantumOperation {
 
     public double getLambda() { return lambda; }
     public void setLambda(double lambda) { this.lambda = lambda; }
+
+    @Override
+    public String toString() {
+        return String.format("[Gate: %s (id=%s)]", getType(), getId());
+    }
 }

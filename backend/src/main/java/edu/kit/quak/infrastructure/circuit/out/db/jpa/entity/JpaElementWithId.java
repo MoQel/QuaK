@@ -6,7 +6,7 @@ import jakarta.persistence.MappedSuperclass;
 @MappedSuperclass
 public abstract class JpaElementWithId {
     @Id
-    private String id;
+    protected String id;
 
     public String getId() {
         return id;

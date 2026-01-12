@@ -7,7 +7,6 @@ import org.mapstruct.*;
 
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING)
 public interface GateDtoMapper {
-
     @BeanMapping(subclassExhaustiveStrategy = SubclassExhaustiveStrategy.RUNTIME_EXCEPTION)
     @SubclassMapping(source = ElementaryQuantumGate.class, target = GateResponse.class)
     GateResponse toResponse(QuantumOperation operation);

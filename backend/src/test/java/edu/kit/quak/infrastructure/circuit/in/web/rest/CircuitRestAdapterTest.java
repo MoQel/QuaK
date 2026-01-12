@@ -2,10 +2,14 @@ package edu.kit.quak.infrastructure.circuit.in.web.rest;
 
 import edu.kit.quak.application.ports.in.CircuitServicePort;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
+import edu.kit.quak.core.circuit.model.operation.ElementaryQuantumGate;
+import edu.kit.quak.core.circuit.model.operation.ElementaryQuantumGateType;
 import edu.kit.quak.core.circuit.model.register.QuantumRegister;
+import edu.kit.quak.core.circuit.model.register.Qubit;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.CircuitDtoMapperImpl;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.GateDtoMapperImpl;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.QubitDtoMapperImpl;
+import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.RegisterDtoMapperImpl;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -22,10 +26,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(CircuitRestAdapter.class)
-@Import({CircuitDtoMapperImpl.class, QubitDtoMapperImpl.class, GateDtoMapperImpl.class})
+@Import({CircuitDtoMapperImpl.class, RegisterDtoMapperImpl.class,QubitDtoMapperImpl.class, GateDtoMapperImpl.class})
 @WithMockUser(username = "tester", roles = "USER")
 class CircuitRestAdapterTest {
-
     @Autowired
     private MockMvc mockMvc;
 
@@ -44,7 +47,9 @@ class CircuitRestAdapterTest {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(circuit.getId()))
-                .andExpect(jsonPath("$.qubits").isArray());
+                .andExpect(jsonPath("$.registers").exists())
+                .andExpect(jsonPath("$.registers").isArray())
+                .andExpect(jsonPath("$.registers").isEmpty());
     }
 
     @Test
@@ -61,7 +66,7 @@ class CircuitRestAdapterTest {
     }
 
     @Test
-    void addQubit_ShouldPersistQubitAndLinkToRegister() throws Exception {
+    void addQubit_ShouldReturnCreated() throws Exception {
         // Arrange
         String circuitId = "test-id";
         QuantumCircuit circuit = new QuantumCircuit();
@@ -74,11 +79,13 @@ class CircuitRestAdapterTest {
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.qubits").exists())
-                .andExpect(jsonPath("$.qubits").isArray())
-                .andExpect(jsonPath("$.qubits[0].name").exists())
-                .andExpect(jsonPath("$.qubits[0].name").value("q0"))
-                .andExpect(jsonPath("$.qubits[0].gates").isArray());
+                .andExpect(jsonPath("$.registers").exists())
+                .andExpect(jsonPath("$.registers").isArray())
+                .andExpect(jsonPath("$.registers[0].name").exists())
+                .andExpect(jsonPath("$.registers[0].name").value("q0"))
+                .andExpect(jsonPath("$.registers[0].qubits").exists())
+                .andExpect(jsonPath("$.registers[0].qubits").isArray())
+                .andExpect(jsonPath("$.registers[0].qubits[0].gates").isArray());
     }
 
     @Test
@@ -95,5 +102,38 @@ class CircuitRestAdapterTest {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(updatedCircuit.getId()));
+    }
+
+    @Test
+    void addGate_ShouldReturnCreated() throws Exception {
+        // Arrange
+        String circuitId = "test-id";
+        QuantumCircuit circuit = new QuantumCircuit();
+        QuantumRegister register = circuit.addQuantumRegister();
+        Qubit qubit = register.addQubit();
+        qubit.addOperation(new ElementaryQuantumGate(ElementaryQuantumGateType.CNOT));
+        given(circuitServicePort.addGate(circuitId, ElementaryQuantumGateType.CNOT, 0, 0)).willReturn(circuit);
+        String payload = """
+                {
+                    "type": "CNOT",
+                    "toQubitIdx": 0,
+                    "toPositionIdx": 0
+                }
+                """;
+
+        // Act & Assert
+        mockMvc.perform(post("/circuit/{circuitId}/gate", circuitId)
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.registers").exists())
+                .andExpect(jsonPath("$.registers").isArray())
+                .andExpect(jsonPath("$.registers[0].qubits").isArray())
+                .andExpect(jsonPath("$.registers[0].qubits").exists())
+                .andExpect(jsonPath("$.registers[0].qubits").isArray())
+                .andExpect(jsonPath("$.registers[0].qubits[0].gates").isArray())
+                .andExpect(jsonPath("$.registers[0].qubits[0].gates[0]").exists())
+                .andExpect(jsonPath("$.registers[0].qubits[0].gates[0].type").value("CNOT"));
     }
 }
