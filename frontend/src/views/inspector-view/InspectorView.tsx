@@ -20,6 +20,33 @@ interface InspectorViewProps {
     onClear?: () => void;
 }
 
+// Safe LaTeX rendering components with error handling
+function SafeBlockMath({ math }: { math: string }) {
+    try {
+        return <BlockMath math={math} />;
+    } catch (error) {
+        console.error('LaTeX rendering error:', error);
+        return (
+            <div className="text-destructive text-xs">
+                Error rendering LaTeX: {math}
+            </div>
+        );
+    }
+}
+
+function SafeInlineMath({ math }: { math: string }) {
+    try {
+        return <InlineMath math={math} />;
+    } catch (error) {
+        console.error('LaTeX rendering error:', error);
+        return (
+            <span className="text-destructive text-xs">
+                Error: {math}
+            </span>
+        );
+    }
+}
+
 function InspectorViewComponent( {gate, onClear}: InspectorViewProps) {
     // Case 1: nothing selected
     if (!gate) {
@@ -80,7 +107,7 @@ function InspectorViewComponent( {gate, onClear}: InspectorViewProps) {
                         <div>
                             <h4 className="font-semibold text-xs uppercase tracking-wider mb-2 text-muted-foreground">Definition</h4>
                             <div className="bg-muted/30 p-3 rounded-md overflow-x-auto text-sm border border-border/50">
-                                <BlockMath math={info.operatorDefinition} />
+                                <SafeBlockMath math={info.operatorDefinition} />
                             </div>
                         </div>
                     )}
@@ -110,7 +137,7 @@ function InspectorViewComponent( {gate, onClear}: InspectorViewProps) {
                             </div>
 
                             <div className="bg-muted/30 p-3 rounded-md overflow-x-auto text-sm border border-border/50">
-                                <BlockMath math={info.matrix.display} />
+                                <SafeBlockMath math={info.matrix.display} />
                             </div>
                         </div>
                     )}
@@ -131,10 +158,10 @@ function InspectorViewComponent( {gate, onClear}: InspectorViewProps) {
                                     {info.truthTable.map((row, idx) => (
                                         <tr key={idx} className="hover:bg-muted/20 transition-colors">
                                             <td className="px-3 py-2 font-mono text-xs">
-                                                <InlineMath math={row.input} />
+                                                <SafeInlineMath math={row.input} />
                                             </td>
                                             <td className="px-3 py-2 text-right font-mono text-xs">
-                                                <InlineMath math={row.output} />
+                                                <SafeInlineMath math={row.output} />
                                             </td>
                                         </tr>
                                     ))}
@@ -144,10 +171,10 @@ function InspectorViewComponent( {gate, onClear}: InspectorViewProps) {
                         </div>
                     )}
 
-                    {/* Parameter */}
+                    {/* Parameters */}
                     {gate.parameters && gate.parameters.length > 0 && (
                         <div>
-                            <h4 className="font-semibold text-xs uppercase tracking-wider mb-2 text-muted-foreground">Parameter</h4>
+                            <h4 className="font-semibold text-xs uppercase tracking-wider mb-2 text-muted-foreground">Parameters</h4>
                             <div className="flex flex-wrap gap-2">
                                 {gate.parameters.map(param => (
                                     <span key={param} className="px-2 py-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-mono rounded border border-blue-500/20">
