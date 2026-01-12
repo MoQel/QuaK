@@ -61,9 +61,9 @@ class JsonGateRepositoryAdapterTest {
     }
 
     @Test
-    void findGateByName_isCaseInsensitive() {
+    void findGateById() {
         // Act
-        Optional<Gate> result = adapter.findGateById("hadamard");
+        Optional<Gate> result = adapter.findGateById("h");
 
         // Assert
         assertTrue(result.isPresent());
