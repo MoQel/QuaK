@@ -12,7 +12,6 @@ import { Info } from "lucide-react";
 import {
     Tooltip,
     TooltipContent,
-    TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip";
 
@@ -31,8 +30,8 @@ function InspectorViewComponent( {gate, onClear}: InspectorViewProps) {
                 </CardHeader>
                 <CardContent className="flex flex-col items-center justify-center h-[50vh] text-muted-foreground text-sm italic">
                     <Microscope className="w-12 h-12 mb-4 opacity-20" />
-                    <p>Wähle ein Gate aus der Library</p>
-                    <p>oder dem Circuit aus.</p>
+                    <p>Select a gate from the Library</p>
+                    <p>or out of the Circuit.</p>
                 </CardContent>
             </Card>
         );
@@ -64,7 +63,7 @@ function InspectorViewComponent( {gate, onClear}: InspectorViewProps) {
                             size="icon"
                             className="h-8 w-8 -mr-2 -mt-2 text-muted-foreground hover:text-foreground"
                             onClick={onClear}
-                            title="Inspector leeren"
+                            title="Clear inspector"
                         >
                             <X className="w-4 h-4" />
                         </Button>
@@ -96,19 +95,17 @@ function InspectorViewComponent( {gate, onClear}: InspectorViewProps) {
 
                                 {/* Info Tooltip - Multi-Qubit Gates (>= 4 lines) */}
                                 {info.matrix.rows >= 4 && (
-                                    <TooltipProvider>
-                                        <Tooltip delayDuration={300}>
-                                            <TooltipTrigger asChild>
-                                                <Info className="w-3.5 h-3.5 text-muted-foreground/70 hover:text-foreground cursor-help transition-colors" />
-                                            </TooltipTrigger>
-                                            <TooltipContent side="right">
-                                                <p className="text-xs">
-                                                    Convention: <strong>Big Endian</strong><br/>
-                                                    (Highest value qubit left/top)
-                                                </p>
-                                            </TooltipContent>
-                                        </Tooltip>
-                                    </TooltipProvider>
+                                    <Tooltip delayDuration={300}>
+                                        <TooltipTrigger asChild>
+                                            <Info className="w-3.5 h-3.5 text-muted-foreground/70 hover:text-foreground cursor-help transition-colors" />
+                                        </TooltipTrigger>
+                                        <TooltipContent side="right">
+                                            <p className="text-xs">
+                                                Convention: <strong>Big Endian</strong><br/>
+                                                (Highest value qubit left/top)
+                                            </p>
+                                        </TooltipContent>
+                                    </Tooltip>
                                 )}
                             </div>
 

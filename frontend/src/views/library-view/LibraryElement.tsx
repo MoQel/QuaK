@@ -5,7 +5,6 @@ import {useDraggable} from "@dnd-kit/core";
 import {
     Tooltip,
     TooltipContent,
-    TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { BlockMath } from 'react-katex';
@@ -50,25 +49,22 @@ export function LibraryElement({id, type, onClick, matrix}: LibraryElementProps)
     }
 
     return (
-        <TooltipProvider>
-            {/* delayDuration controls hover time in milliseconds (e.g. 700ms) */}
-            <Tooltip delayDuration={DELAY_DURATION}>
-                <TooltipTrigger asChild>
-                    {gateBadge}
-                </TooltipTrigger>
+        <Tooltip delayDuration={DELAY_DURATION}>
+            <TooltipTrigger asChild>
+                {gateBadge}
+            </TooltipTrigger>
 
-                <TooltipContent
-                    side="right"
-                    className="bg-popover text-popover-foreground border shadow-xl p-3 min-w-[150px] z-[9999]"
-                >
-                    <div className="text-xs text-muted-foreground mb-2 text-center font-semibold">
-                        Matrix Representation
-                    </div>
-                    <div className="overflow-x-auto flex justify-center">
-                        <BlockMath math={matrix} />
-                    </div>
-                </TooltipContent>
-            </Tooltip>
-        </TooltipProvider>
+            <TooltipContent
+                side="right"
+                className="bg-popover text-popover-foreground border shadow-xl p-3 min-w-[150px] z-[9999]"
+            >
+                <div className="text-xs text-muted-foreground mb-2 text-center font-semibold">
+                    Matrix Representation
+                </div>
+                <div className="overflow-x-auto flex justify-center">
+                    <BlockMath math={matrix} />
+                </div>
+            </TooltipContent>
+        </Tooltip>
     )
 }

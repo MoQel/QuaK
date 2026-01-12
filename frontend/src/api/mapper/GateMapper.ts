@@ -32,7 +32,7 @@ function mapInspectorInfo(dto?: InspectorInfoDto): InspectorInfo {
     }
     return {
         operatorDefinition: dto.operatorDefinition,
-        truthTable: dto.truthTable.map(t => ({ input: t.input, output: t.output })),
+        truthTable: dto.truthTable?.map(t => ({ input: t.input, output: t.output })) || [],
         matrix: mapMatrixInfo(dto.matrix)
     };
 }

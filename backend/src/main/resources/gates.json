@@ -350,7 +350,7 @@
         "display": "\\text{Projection Operators (Non-Unitary)}",
         "rows": 0,
         "cols": 0,
-        "computable": null
+        "computable": []
       }
     }
   }

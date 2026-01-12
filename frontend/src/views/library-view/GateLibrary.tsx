@@ -9,9 +9,9 @@ interface GateLibraryProps {
 function GateLibrary({ gates, onGateClick }: GateLibraryProps) {
     return (
         <div className="grid grid-cols-5 gap-4">
-            {gates.map((gate, index) => (
+        {gates.map((gate: QuantumGate) => (
                 <LibraryElement
-                    key={`${gate.id}-${index}`}
+                    key={`${gate.id}`}
                     id={gate.id}
                     type={gate.symbol}
                     matrix={gate.inspectorInfo?.matrix?.display}

@@ -82,7 +82,7 @@ function GateList({ gates, onGateClick }: GateListProps) {
                                             alignItems: "center",
                                         }}
                                     >
-                                        <LibraryElement id={gate.name} type={gate.symbol} onClick={() => onGateClick(gate)} />
+                                        <LibraryElement id={gate.id} type={gate.symbol} onClick={() => onGateClick(gate)} />
                                     </div>
 
                                     <div style={{ textAlign: "left" }}>

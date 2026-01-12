@@ -33,7 +33,6 @@ export function GateLibraryView({ onGateSelect }: GateLibraryViewProps) {
         if (onGateSelect) {
             onGateSelect(gate);
         }
-        console.log("Gate clicked:", gate.name); // Debugging
     };
 
     return (
