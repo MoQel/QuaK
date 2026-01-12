@@ -8,6 +8,14 @@ import 'katex/dist/katex.min.css';
 // Icons
 import { X, Microscope } from "lucide-react";
 
+import { Info } from "lucide-react";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
+
 interface InspectorViewProps {
     gate: QuantumGate | undefined;
     onClear?: () => void;
@@ -35,7 +43,6 @@ function InspectorViewComponent( {gate, onClear}: InspectorViewProps) {
 
     return (
         <Card className="w-full h-full border-l rounded-none flex flex-col">
-            {/* Header fixiert oben */}
             <CardHeader className="pb-2 border-b bg-card z-10 shrink-0">
                 <div className="flex items-start justify-between gap-2">
                     <div className="flex flex-col gap-1">
@@ -66,7 +73,6 @@ function InspectorViewComponent( {gate, onClear}: InspectorViewProps) {
             </CardHeader>
 
             {/* Scrollable Content Area */}
-            {/* flex-1 min-h-0 ist wichtig für Scrollen in Flex-Containern */}
             <div className="flex-1 min-h-0 overflow-y-auto">
                 <CardContent className="space-y-6 pt-6">
 
@@ -83,9 +89,29 @@ function InspectorViewComponent( {gate, onClear}: InspectorViewProps) {
                     {/* Matrix */}
                     {info?.matrix && (
                         <div>
-                            <h4 className="font-semibold text-xs uppercase tracking-wider mb-2 text-muted-foreground">
-                                Unitäre Matrix ({info.matrix.rows}x{info.matrix.cols})
-                            </h4>
+                            <div className="flex items-center gap-2 mb-2">
+                                <h4 className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">
+                                    Unitary Matrix ({info.matrix.rows}x{info.matrix.cols})
+                                </h4>
+
+                                {/* Info Tooltip - Multi-Qubit Gates (>= 4 lines) */}
+                                {info.matrix.rows >= 4 && (
+                                    <TooltipProvider>
+                                        <Tooltip delayDuration={300}>
+                                            <TooltipTrigger asChild>
+                                                <Info className="w-3.5 h-3.5 text-muted-foreground/70 hover:text-foreground cursor-help transition-colors" />
+                                            </TooltipTrigger>
+                                            <TooltipContent side="right">
+                                                <p className="text-xs">
+                                                    Convention: <strong>Big Endian</strong><br/>
+                                                    (Highest value qubit left/top)
+                                                </p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                )}
+                            </div>
+
                             <div className="bg-muted/30 p-3 rounded-md overflow-x-auto text-sm border border-border/50">
                                 <BlockMath math={info.matrix.display} />
                             </div>
@@ -95,7 +121,7 @@ function InspectorViewComponent( {gate, onClear}: InspectorViewProps) {
                     {/* Truth table */}
                     {info?.truthTable && info.truthTable.length > 0 && (
                         <div>
-                            <h4 className="font-semibold text-xs uppercase tracking-wider mb-2 text-muted-foreground">Wirkungstabelle</h4>
+                            <h4 className="font-semibold text-xs uppercase tracking-wider mb-2 text-muted-foreground">Truth Table</h4>
                             <div className="border rounded-md overflow-hidden">
                                 <table className="w-full text-sm">
                                     <thead className="bg-muted/50">
