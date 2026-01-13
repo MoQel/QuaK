@@ -48,7 +48,7 @@ function TabsTrigger({
         text-text
         hover:text-text-muted
 
-        data-[state=active]:bg-highlight
+        data-[state=active]:bg-bg
         data-[state=active]:text-text
         data-[state=active]:shadow-md
 
