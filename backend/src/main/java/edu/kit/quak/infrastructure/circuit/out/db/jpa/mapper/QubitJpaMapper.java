@@ -8,6 +8,7 @@ import org.mapstruct.*;
         uses = {OperationJpaMapper.class})
 public interface QubitJpaMapper {
     @Mapping(target = "id", source = "id")
+    @Mapping(target = "register", ignore = true)
     JpaQubit toEntity(Qubit domain);
 
     @Mapping(target = "id", source = "id")

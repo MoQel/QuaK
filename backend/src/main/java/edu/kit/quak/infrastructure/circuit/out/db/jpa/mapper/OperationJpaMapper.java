@@ -11,6 +11,7 @@ public interface OperationJpaMapper {
     @BeanMapping(subclassExhaustiveStrategy = SubclassExhaustiveStrategy.RUNTIME_EXCEPTION)
     @SubclassMapping(source = ElementaryQuantumGate.class, target = JpaElementaryQuantumGate.class)
     @Mapping(target = "id", source = "id")
+    @Mapping(target = "qubit", ignore = true)
     JpaQuantumOperation toEntity(QuantumOperation domain);
 
     @BeanMapping(subclassExhaustiveStrategy = SubclassExhaustiveStrategy.RUNTIME_EXCEPTION)

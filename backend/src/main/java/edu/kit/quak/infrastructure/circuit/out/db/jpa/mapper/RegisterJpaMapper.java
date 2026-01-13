@@ -15,6 +15,7 @@ public interface RegisterJpaMapper {
     @SubclassMapping(source = QuantumRegister.class, target = JpaQuantumRegister.class)
     @SubclassMapping(source = ClassicRegister.class, target = JpaClassicRegister.class)
     @Mapping(target = "id", source = "id")
+    @Mapping(target = "circuit", ignore = true)
     JpaRegister toEntity(Register domain);
 
     @BeanMapping(subclassExhaustiveStrategy = SubclassExhaustiveStrategy.RUNTIME_EXCEPTION)

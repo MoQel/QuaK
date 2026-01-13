@@ -33,6 +33,6 @@ class QubitDtoMapperTest {
         // Assert
         assertNotNull(response);
         assertEquals(1, response.gates().size());
-        assertEquals(ElementaryQuantumGateType.H.name(), response.gates().getFirst().type());
+        assertEquals(ElementaryQuantumGateType.H, response.gates().getFirst().type());
     }
 }

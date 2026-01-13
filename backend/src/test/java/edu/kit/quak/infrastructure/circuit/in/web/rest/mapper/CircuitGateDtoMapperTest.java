@@ -27,6 +27,6 @@ class CircuitGateDtoMapperTest {
         // Assert
         assertNotNull(response);
         assertEquals(gate.getId(), response.id());
-        assertEquals(ElementaryQuantumGateType.X.name(), response.type());
+        assertEquals(ElementaryQuantumGateType.X, response.type());
     }
 }
