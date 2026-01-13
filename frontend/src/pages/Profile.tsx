@@ -117,8 +117,8 @@ export const Profile: React.FC = () => {
             </div>
 
             <div className="flex gap-2 pt-4">
-              <Button className="flex-1">Save Changes</Button>
-              <Button variant="outline">Cancel</Button>
+              <Button className="flex-1 bg-special">Save Changes</Button>
+              <Button variant="secondary">Cancel</Button>
             </div>
           </CardContent>
         </Card>

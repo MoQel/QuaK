@@ -41,9 +41,9 @@ function GateList() {
           maxHeight: "300px",
           width: "400px",
           overflowY: "auto",
-          border: "1px solid #444",
+          border: "1px solid var(--border)",
           borderRadius: "8px",
-          backgroundColor: "#111",
+          backgroundColor: "var(--bg-dark)",
           padding: "0"
 
         }}
@@ -56,9 +56,9 @@ function GateList() {
                     padding: "8px 12px",
                     fontWeight: 600,
                     fontSize: "0.9rem",
-                    backgroundColor: "#1f1f1f",           // lighter background (see #3)
-                    borderTop: index === 0 ? "none" : "1px solid #333",
-                    borderBottom: "1px solid #333",      // separator between header and items
+                    backgroundColor: "var(--bg)",
+                    borderTop: index === 0 ? "none" : "1px solid var(--border)",
+                    borderBottom: "1px solid var(--border)",
                   }}
                 >
                   {group.type}
@@ -70,7 +70,7 @@ function GateList() {
                   key={gate.name}
                   style={{
                     padding: "10px 12px",
-                    borderBottom: "1px solid #222",  // bottom border instead of top
+                    borderBottom: "1px solid var(--border-muted)",  // bottom border instead of top
                   }}
                 >
                   <div

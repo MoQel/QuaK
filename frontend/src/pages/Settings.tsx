@@ -133,8 +133,8 @@ export const Settings: React.FC = () => {
             <Separator />
 
             <div className="flex gap-2">
-              <Button variant="destructive">Log Out</Button>
-              <Button variant="outline" className="text-destructive">
+              <Button variant="destructive" className="bg-destructive">Log Out</Button>
+              <Button variant="destructive" className="bg-destructive" >
                 Delete Account
               </Button>
             </div>
@@ -143,8 +143,8 @@ export const Settings: React.FC = () => {
 
         {/* Save Button */}
         <div className="flex justify-end gap-2">
-          <Button variant="outline">Reset to Defaults</Button>
-          <Button>Save Settings</Button>
+          <Button variant="secondary">Reset to Defaults</Button>
+          <Button className="bg-special" >Save Settings</Button>
         </div>
       </div>
     </div>

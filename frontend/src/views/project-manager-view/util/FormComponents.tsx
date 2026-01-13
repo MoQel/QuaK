@@ -14,10 +14,10 @@ import {Input} from "@/components/ui/input.tsx";
 export function DialogCloseButtons({cancel = "Cancel", submit = "Submit"}: { cancel?: string, submit?: string }) {
     return (<DialogFooter>
         <DialogClose asChild>
-            <Button variant="outline">{cancel}</Button>
+            <Button variant="secondary">{cancel}</Button>
         </DialogClose>
         <DialogClose asChild>
-            <Button type="submit">{submit}</Button>
+            <Button variant="outline">{submit}</Button>
         </DialogClose>
     </DialogFooter>)
 }

@@ -10,33 +10,54 @@
   --color-text-muted: var(--text-muted);
   --color-border: var(--border);
   --color-highlight: var(--highlight);
+  --color-destructive: var(--destructive);
+  --color-destructive-hover: var(--destructive-hover);
+  --color-special: var(--special);
+  --color-special-hover: var(--special-hover);
 
 }
 
 :root {
-    --bg-dark: hsl(0 0% 90%);
-    --bg: hsl(0 0% 80%);
-    --bg-light: hsl(0 0% 70%);
-    --text: hsl(0 0% 0%);
-    --text-muted: hsl(0 0% 30%);
-    --border: hsl(0 0 70%);
-    --border-muted: hsl(300 0% 82%);
-    --highlight: hsl(0 0% 50%);
-    --destructive: hsl(0 50% 60%);
+  --bg-dark: hsl(0 0% 90%);        /* main page background (very light gray) */
+  --bg: hsl(0 0% 80%);             /* secondary surfaces / panels */
+  --bg-light: hsl(0 0% 70%);       /* raised elements / cards / hover surfaces */
+
+  --text: hsl(0 0% 0%);            /* primary text (black) */
+  --text-muted: hsl(0 0% 30%);     /* secondary / muted text */
+
+  --border: hsl(0 0 70%);          /* standard borders */
+  --border-muted: hsl(300 0% 82%); /* very subtle / disabled borders */
+
+  --highlight: hsl(0 0% 50%);      /* neutral highlight / emphasis */
+
+  --destructive: hsl(0 50% 50%);   /* destructive actions (red) */
+  --destructive-hover: hsl(0 50% 45%); /* destructive hover state */
+
+  --special: hsl(217 91% 60%);     /* special / primary accent (blue) */
+  --special-hover: hsl(217 91% 80%); /* hover state for special accent */
 }
 
-.dark{
-    --bg-dark: hsl(0 0% 0%);
-    --bg: hsl(0 0% 20%);
-    --bg-light: hsl(0 0% 30%);
-    --text: hsl(0 0% 95%);
-    --text-muted: hsl(0 0% 70%);
-    --border: hsl(0 0 30%);
-    --border-muted: hsl(300 0% 18%);
-    --highlight: hsl(0 0% 50%);
-    --destructive: hsl(0 50% 40%);
 
+.dark {
+  --bg-dark: hsl(0 0% 0%);         /* main page background (black) */
+  --bg: hsl(0 0% 20%);             /* secondary surfaces / panels */
+  --bg-light: hsl(0 0% 30%);       /* raised elements / cards / hover surfaces */
+
+  --text: hsl(0 0% 95%);           /* primary text (almost white) */
+  --text-muted: hsl(0 0% 70%);     /* secondary / muted text */
+
+  --border: hsl(0 0 30%);          /* standard borders (dark gray) */
+  --border-muted: hsl(300 0% 18%); /* very subtle / disabled borders */
+
+  --highlight: hsl(0 0% 50%);      /* neutral highlight / emphasis */
+
+  --destructive: hsl(0 50% 20%);   /* destructive actions (dark red) */
+  --destructive-hover: hsl(0 50% 40%); /* destructive hover state */
+
+  --special: hsl(217 91% 60%);     /* special / primary accent (blue) */
+  --special-hover: hsl(217 91% 70%); /* hover state for special accent */
 }
+
 
 @layer base {
   * {
