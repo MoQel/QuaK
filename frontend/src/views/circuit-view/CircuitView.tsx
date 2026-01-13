@@ -1,4 +1,5 @@
 import {Card, CardContent} from "@/components/ui/card.tsx";
+import {Popover, PopoverContent, PopoverTrigger} from '@/components/ui/popover.tsx';
 import {Button} from "@/components/ui/button.tsx";
 import {Minus, Plus, Trash} from "lucide-react";
 import {Fragment, useEffect, useState} from "react";
@@ -15,6 +16,7 @@ import {
 
 export function CircuitView() {
     const [circuit, setCircuit] = useState<CircuitResponse | null>(null);
+    const [isPopoverOpen, setIsPopoverOpen] = useState(false);
 
     const maxWireLength = Math.max(
         ...(circuit?.registers.map(reg => reg.qubits.at(0)?.gates.length ?? 0)) ?? [0]
@@ -91,8 +93,44 @@ export function CircuitView() {
                 {/* Buttons */}
                 <div className="pb-5 flex justify-end space-x-3">
                     <Button onClick={addQubit} size="icon" className="size-8"><Plus/></Button>
-                    <Button onClick={deleteLastQubit} size="icon" className="size-8"><Minus/></Button>
-                    <Button onClick={resetCircuit} size="icon" className="size-8"><Trash/></Button>
+                    <Button onClick={deleteLastQubit} size="icon" className="size-8" variant="destructive"><Minus/></Button>
+                    <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+                        <PopoverTrigger asChild>
+                            <Button size="icon" className="size-8" variant="destructive">
+                                <Trash />
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-64 p-4">
+                            <div className="flex flex-col space-y-3 text-center">
+                                <p className="text-sm font-medium leading-none">
+                                    Reset Circuit?
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                    This will permanently delete all gates and wires.
+                                </p>
+                                <div className="flex flex-col gap-2">
+                                    <Button
+                                        onClick={() => {
+                                            resetCircuit();
+                                            setIsPopoverOpen(false);
+                                        }}
+                                        variant="destructive"
+                                        size="sm"
+                                        className="w-full font-bold"
+                                    >
+                                        Yes, reset everything
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => setIsPopoverOpen(false)}
+                                    >
+                                        Cancel
+                                    </Button>
+                                </div>
+                            </div>
+                        </PopoverContent>
+                    </Popover>
                 </div>
 
                 {/* Wires container */}
