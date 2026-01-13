@@ -68,9 +68,9 @@ public class CircuitService implements CircuitServicePort {
     }
 
     @Override
-    public QuantumCircuit deleteQubit(String circuitId, String registerId) {
+    public QuantumCircuit deleteQubit(String circuitId, String qubitId) {
         QuantumCircuit circuit = get(circuitId);
-        circuit.deleteQuantumRegister(registerId);
+        circuit.deleteQuantumRegister(qubitId);
         repository.save(circuit);
         return circuit;
     }

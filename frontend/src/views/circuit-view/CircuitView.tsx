@@ -9,7 +9,7 @@ import {
     AddGateRequest,
     ChangeQubitNameRequest,
     CircuitResponse,
-    MoveGateRequest,
+    MoveGateRequest, QubitResponse,
     RegisterResponse
 } from "@/api/dto/circuit.ts";
 
@@ -52,9 +52,9 @@ export function CircuitView() {
 
     const deleteLastQubit = async () => {
         if (circuit != null) {
-            const registerOfLastQubit: RegisterResponse | undefined = circuit.registers.at(-1);
-            if (registerOfLastQubit) {
-                await deleteQubit(registerOfLastQubit.id);
+            const lastQubit: QubitResponse | undefined = circuit.registers.at(-1)?.qubits.at(0);
+            if (lastQubit) {
+                await deleteQubit(lastQubit.id);
             }
         }
     }

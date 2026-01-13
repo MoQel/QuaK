@@ -32,9 +32,10 @@ public class QuantumCircuit extends ElementWithId {
         return register;
     }
 
-    public void deleteQuantumRegister(String registerId) {
+    public void deleteQuantumRegister(String qubitId) {
         for (Register register : registers) {
-            if (register.getId().equals(registerId)) {
+            if (register instanceof QuantumRegister quantumRegister &&
+                    quantumRegister.getQubits().getFirst().getId().equals(qubitId)) {
                 registers.remove(register);
                 return;
             }

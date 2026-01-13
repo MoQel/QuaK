@@ -55,10 +55,10 @@ public class CircuitRestAdapter {
         return mapper.toResponse(circuit);
     }
 
-    @DeleteMapping("/{circuitId}/qubit/{registerId}")
+    @DeleteMapping("/{circuitId}/qubit/{qubitId}")
     public CircuitResponse deleteQubit(@PathVariable String circuitId,
-                                       @PathVariable String registerId) {
-        QuantumCircuit circuit = service.deleteQubit(circuitId, registerId);
+                                       @PathVariable String qubitId) {
+        QuantumCircuit circuit = service.deleteQubit(circuitId, qubitId);
         return mapper.toResponse(circuit);
     }
 
