@@ -1,17 +1,17 @@
 import {Badge} from "@/components/ui/badge.tsx";
 import styles from "@/App.module.css";
-import {GateIcons} from "@/utils/GateIcons.ts";
-import {GateResponse} from "@/api/dto/circuit.ts";
+import {CircuitGateResponse} from "@/api/dto/circuit.ts";
 import {useRef} from 'react'
+import {TextIcon} from '@/views/TextIcon.tsx'
 
-interface GateProps extends GateResponse {
+interface GateProps extends CircuitGateResponse {
     onDragStart?: (id: string) => void;
     onDragEnd?: () => void;
     onDelete?: () => void;
 }
 
 export function Gate({ id, type, onDragStart, onDragEnd, onDelete }: GateProps) {
-    const Icon = GateIcons[type];
+    const Icon = TextIcon(type);
     const isDraggingRef = useRef(false);
 
     const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {

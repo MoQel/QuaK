@@ -1,6 +1,6 @@
 package edu.kit.quak.infrastructure.circuit.in.web.rest;
 
-import edu.kit.quak.application.ports.in.CircuitServicePort;
+import edu.kit.quak.application.circuit.ports.in.CircuitServicePort;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.core.circuit.model.operation.ElementaryQuantumGateType;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.AddGateRequest;

@@ -1,0 +1,1 @@
+export type GateType = 'PLACEHOLDER' | 'H' | 'X' | 'Y' | 'Z' | 'CNOT' | 'CCX' | 'CZ' | 'SWAP' | 'S' | 'T' | 'RX' | 'RY' | 'RZ' | 'MEASURE';

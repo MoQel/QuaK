@@ -1,13 +1,13 @@
 package edu.kit.quak.infrastructure.circuit.in.web.rest;
 
-import edu.kit.quak.application.ports.in.CircuitServicePort;
+import edu.kit.quak.application.circuit.ports.in.CircuitServicePort;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.core.circuit.model.operation.ElementaryQuantumGate;
 import edu.kit.quak.core.circuit.model.operation.ElementaryQuantumGateType;
 import edu.kit.quak.core.circuit.model.register.QuantumRegister;
 import edu.kit.quak.core.circuit.model.register.Qubit;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.CircuitDtoMapperImpl;
-import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.GateDtoMapperImpl;
+import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.CircuitGateDtoMapperImpl;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.QubitDtoMapperImpl;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.RegisterDtoMapperImpl;
 import org.junit.jupiter.api.Test;
@@ -26,7 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(CircuitRestAdapter.class)
-@Import({CircuitDtoMapperImpl.class, RegisterDtoMapperImpl.class,QubitDtoMapperImpl.class, GateDtoMapperImpl.class})
+@Import({CircuitDtoMapperImpl.class, RegisterDtoMapperImpl.class,QubitDtoMapperImpl.class, CircuitGateDtoMapperImpl.class})
 @WithMockUser(username = "tester", roles = "USER")
 class CircuitRestAdapterTest {
     @Autowired

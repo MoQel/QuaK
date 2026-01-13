@@ -4,12 +4,12 @@ import {Button} from "@/components/ui/button"
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover"
 import {Input} from "@/components/ui/input.tsx";
 import React, {Fragment, useState} from "react";
-import {AddGateRequest, ChangeQubitNameRequest, GateResponse, MoveGateRequest} from "@/api/dto/circuit.ts";
+import {AddGateRequest, ChangeQubitNameRequest, CircuitGateResponse, MoveGateRequest} from "@/api/dto/circuit.ts";
 
 type QuantumWiresProps = {
     id: string;
     name: string;
-    gates: GateResponse[];
+    gates: CircuitGateResponse[];
     qubitIndex: number;
     onNameChange: (payload: ChangeQubitNameRequest) => void;
     onDelete: () => void;

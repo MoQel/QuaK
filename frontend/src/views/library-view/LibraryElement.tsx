@@ -1,11 +1,11 @@
 import { Badge } from "@/components/ui/badge.tsx";
 import {TextIcon} from "@/views/TextIcon.tsx";
 import styles from "@/App.module.css";
-import {GateType} from '@/api/dto/circuit.ts'
+import {GateType} from '@/api/dto/GateType.ts'
 
 type LibraryElementProps = {
     id: string;
-    type: GateType; // symbol of the QuantumGate or type of the CircuitCell
+    type: GateType;
 };
 
 export function LibraryElement({ id, type }: Readonly<LibraryElementProps>) {

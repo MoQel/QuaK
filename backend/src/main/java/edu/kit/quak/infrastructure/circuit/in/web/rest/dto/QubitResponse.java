@@ -4,7 +4,7 @@ import java.util.List;
 
 public record QubitResponse(
         String id,
-        List<GateResponse> gates
+        List<CircuitGateResponse> gates
 ) {
     // Ensure gates list is not null
     public QubitResponse {

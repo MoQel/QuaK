@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @ExtendWith(MockitoExtension.class)
 class QubitDtoMapperTest {
     @Spy
-    private GateDtoMapperImpl gateDtoMapper;
+    private CircuitGateDtoMapperImpl gateDtoMapper;
 
     @InjectMocks
     private QubitDtoMapperImpl mapper;

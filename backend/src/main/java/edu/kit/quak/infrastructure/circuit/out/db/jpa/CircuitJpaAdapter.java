@@ -1,6 +1,6 @@
 package edu.kit.quak.infrastructure.circuit.out.db.jpa;
 
-import edu.kit.quak.application.ports.out.CircuitRepositoryPort;
+import edu.kit.quak.application.circuit.ports.out.CircuitRepositoryPort;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.JpaQuantumCircuit;
 import edu.kit.quak.infrastructure.circuit.out.db.jpa.mapper.CircuitJpaMapper;

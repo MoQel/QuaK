@@ -19,7 +19,8 @@ import {
 } from "@/views/project-manager-view/util/FileElement.tsx";
 
 import { DialogCloseButtons, TextInput } from "@/views/project-manager-view/util/FormComponents.tsx";
-import { api } from "@/api/api";
+import { api } from "@/api/api.ts";
+import {DirectoryContentsResponse, DirectoryRequest} from "@/api/dto/filesystem.ts";
 
 /**
  * Displays a {@link IDirectory Directory}
@@ -29,7 +30,7 @@ import { api } from "@/api/api";
  */
 export function Directory({ name, id }: { name: string, id: string }) {
     const icon = (open: boolean) => open ? <FolderOpen /> : <Folder />;
-    return <FileElementContainer name={name} id={id} getContent={fetchDirectoryContent} edit={DirectoryEdit} icon={icon} deletePath={"/file/" + id} />
+    return <FileElementContainer name={name} id={id} getContent={fetchDirectoryContent} edit={DirectoryEdit} icon={icon} deletePath={"/directory/" + id} />
 }
 
 /**
@@ -40,14 +41,7 @@ export function Directory({ name, id }: { name: string, id: string }) {
  */
 function DirectoryEdit(id: string, openDialog: (element: Promise<JSX.Element>) => void) {
     const getDir = () => {
-        return api.get<IDirectory>("/file/" + id)
-            .then((obj) => {
-                if (obj.type === "directory") {
-                    return obj
-                } else {
-                    throw "Not a directory"
-                }
-            })
+        return api.get<DirectoryContentsResponse>("/directory/" + id);
     }
 
     const reloadParent = useContext(ParentRefresh)
@@ -73,7 +67,7 @@ function EditForm({ dir, reloadParent }: { dir: IDirectory, reloadParent: () => 
     const formSchema = z.object({
         name: z.string().min(1, {
             message: "Directory name must be at least 1 characters.",
-        }).optional(),
+        }),
     })
 
     const form = useForm<z.infer<typeof formSchema>>({
@@ -84,12 +78,11 @@ function EditForm({ dir, reloadParent }: { dir: IDirectory, reloadParent: () => 
     })
 
     const onSubmit = (values: z.infer<typeof formSchema>) => {
-        const body = {
-            type: dir.type,
-            ...values
+        const body: DirectoryRequest = {
+            name: values.name
         }
 
-        api.patch("/file/" + dir.id, body).then(reloadParent)
+        api.patch("/directory/" + dir.id, body).then(reloadParent)
     }
     return (
         <Form {...form}>
@@ -108,10 +101,12 @@ function EditForm({ dir, reloadParent }: { dir: IDirectory, reloadParent: () => 
 }
 
 async function fetchDirectoryContent(id: string) {
-    const dir = await api.get<IDirectory>("/file/" + id);
+    const dir = await api.get<DirectoryContentsResponse>("/directory/" + id);
     const elements = [];
-    for (const element of sort(dir.contents)) {
-        elements.push(getElementForFileElement(element))
+    if (dir.contents) {
+        for (const element of sort(dir.contents)) {
+            elements.push(getElementForFileElement(element))
+        }
     }
     return elements
 }
