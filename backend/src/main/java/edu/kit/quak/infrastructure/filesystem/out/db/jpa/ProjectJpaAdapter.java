@@ -65,24 +65,6 @@ public class ProjectJpaAdapter implements ProjectRepositoryPort {
     @Override
     public Optional<UUID> findProjectOwnerIdByElementId(String elementId) {
         return containerRepository.findProjectOwnerIdByElementId(elementId)
-                .map(this::convertToUuid);
-    }
-
-    /**
-     * Converts the raw database value to UUID.
-     * H2 may return byte[], MariaDB may return UUID or String.
-     */
-    private UUID convertToUuid(Object value) {
-        if (value instanceof UUID) {
-            return (UUID) value;
-        } else if (value instanceof byte[]) {
-            // H2 returns UUID as byte array
-            byte[] bytes = (byte[]) value;
-            java.nio.ByteBuffer bb = java.nio.ByteBuffer.wrap(bytes);
-            return new UUID(bb.getLong(), bb.getLong());
-        } else if (value instanceof String) {
-            return UUID.fromString((String) value);
-        }
-        throw new IllegalArgumentException("Cannot convert value to UUID: " + value.getClass());
+                .map(JpaUtils::convertToUuid);
     }
 }

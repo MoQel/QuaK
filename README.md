@@ -38,7 +38,7 @@ This ensures a consistent environment and supports hot-reloading.
 1. **Start Database:**
 
     ```bash
-    docker compose -f docker-compose.dev.yaml up -d database
+    docker-compose -f docker-compose.dev.yaml up -d database
     ```
 
 2. **Start Backend (with Debugging):**
