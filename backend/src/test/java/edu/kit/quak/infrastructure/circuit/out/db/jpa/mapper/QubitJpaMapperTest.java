@@ -29,7 +29,7 @@ class QubitJpaMapperTest {
     void domainToEntity() {
         // Arrange
         Qubit domain = new Qubit();
-        domain.addOperation(new ElementaryQuantumGate(ElementaryQuantumGateType.CNOT));
+        domain.addOperation(domain.getOperations().size(), new ElementaryQuantumGate(ElementaryQuantumGateType.CNOT));
 
         // Act
         JpaQubit entity = mapper.toEntity(domain);

@@ -13,8 +13,8 @@ public class Qubit extends ElementWithId {
         super();
     }
 
-    public void addOperation(QuantumOperation operation) {
-        operations.add(operation);
+    public void addOperation(int index, QuantumOperation operation) {
+        operations.add(index, operation);
     }
 
     public List<QuantumOperation> getOperations() {

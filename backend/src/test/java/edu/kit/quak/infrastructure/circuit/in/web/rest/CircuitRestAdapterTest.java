@@ -111,7 +111,7 @@ class CircuitRestAdapterTest {
         QuantumCircuit circuit = new QuantumCircuit();
         QuantumRegister register = circuit.addQuantumRegister();
         Qubit qubit = register.addQubit();
-        qubit.addOperation(new ElementaryQuantumGate(ElementaryQuantumGateType.CNOT));
+        qubit.addOperation(qubit.getOperations().size(), new ElementaryQuantumGate(ElementaryQuantumGateType.CNOT));
         given(circuitServicePort.addGate(circuitId, ElementaryQuantumGateType.CNOT, 0, 0)).willReturn(circuit);
         String payload = """
                 {

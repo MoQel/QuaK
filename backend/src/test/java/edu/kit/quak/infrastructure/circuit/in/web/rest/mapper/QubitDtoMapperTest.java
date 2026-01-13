@@ -25,7 +25,7 @@ class QubitDtoMapperTest {
     void toResponse() {
         // Arrange
         Qubit qubit = new Qubit();
-        qubit.addOperation(new ElementaryQuantumGate(ElementaryQuantumGateType.H));
+        qubit.addOperation(qubit.getOperations().size(), new ElementaryQuantumGate(ElementaryQuantumGateType.H));
 
         // Act
         QubitResponse response = mapper.toResponse(qubit);

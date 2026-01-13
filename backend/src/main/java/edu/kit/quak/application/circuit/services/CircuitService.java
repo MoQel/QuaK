@@ -82,7 +82,7 @@ public class CircuitService implements CircuitServicePort {
         if (register instanceof QuantumRegister quantumRegister) {
             Qubit qubit = quantumRegister.getQubits().getFirst();
             ElementaryQuantumGate gate = new ElementaryQuantumGate(type);
-            qubit.addOperation(gate);
+            qubit.addOperation(positionIdx, gate);
             repository.save(circuit);
             return circuit;
         }
@@ -137,7 +137,7 @@ public class CircuitService implements CircuitServicePort {
                 adjustedInsertIdx--;
         }
         gateToMove.generateNewId(); //Generate new id because of orphan removal problems with Hibernate.
-        targetQubit.getOperations().add(adjustedInsertIdx, gateToMove);
+        targetQubit.addOperation(adjustedInsertIdx, gateToMove);
 
         repository.save(circuit);
         return circuit;
