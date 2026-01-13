@@ -156,7 +156,7 @@ export function CircuitView() {
                         {Array.from({length: maxWireLength}, (_, i) => (
                             <Fragment key={i}>
                                 <span
-                                    className={`${styles.gateIndexSize} text-gray-500 justify-center border-r border-gray-500`}
+                                    className={`${styles.gateIndexSize} text-gray-500 shrink-0 justify-center border-r border-gray-500`}
                                 >
                                     {i + 1}
                                 </span>

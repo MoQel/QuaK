@@ -113,7 +113,6 @@ export function Qubit({id, name, gates, qubitIndex, onNameChange, onDelete, onGa
             </Popover>
 
             <div className={`${styles.qubitWireSpacing} relative flex-grow self-stretch`}>
-
                 <div className={`${styles.lines} absolute top-1/2 w-full`}/>
                 <div className="flex items-center h-full w-full relative z-10">
                 {/* Actual quantum Gates */}
@@ -151,7 +150,7 @@ export function Qubit({id, name, gates, qubitIndex, onNameChange, onDelete, onGa
 
                     {/* Dropzone after last Gate */}
                     <div
-                        className="self-stretch grow flex justify-start"
+                        className={`${styles.dropzoneSpacing} self-stretch grow flex justify-start`}
                         onDragOver={allowDrop}
                         onDragEnter={() => setHoverIndex(gates.length)}
                         onDragLeave={(e) => {
