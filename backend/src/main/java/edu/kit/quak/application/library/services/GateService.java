@@ -23,7 +23,7 @@ public class GateService implements GateServicePort {
     }
 
     @Override
-    public Optional<Gate> getGateByName(String name) {
-        return gateRepository.findGateByName(name);
+    public Optional<Gate> getGateById(String id) {
+        return gateRepository.findGateById(id);
     }
 }

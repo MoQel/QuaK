@@ -1,18 +1,21 @@
 import { LibraryElement } from "@/views/library-view/LibraryElement.tsx";
-import {QuantumGate} from "@/views/QuantumGate.tsx";
+import {QuantumGate} from "@/views/library-view/QuantumGate.ts";
 
 interface GateLibraryProps {
     gates: QuantumGate[];
+    onGateClick: (gate: QuantumGate) => void;
 }
 
-function GateLibrary({ gates }: GateLibraryProps) {
+function GateLibrary({ gates, onGateClick }: GateLibraryProps) {
     return (
         <div className="grid grid-cols-5 gap-4">
-            {gates.map((gate, index) => (
+        {gates.map((gate: QuantumGate) => (
                 <LibraryElement
-                    key={`${gate.name}-${index}`}
-                    id={gate.name}
+                    key={`${gate.id}`}
+                    id={gate.id}
                     type={gate.symbol}
+                    matrix={gate.inspectorInfo?.matrix?.display}
+                    onClick={() => onGateClick(gate)}
                 />
             ))}
         </div>

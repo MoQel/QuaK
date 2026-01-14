@@ -1,12 +1,13 @@
-import {QuantumGate} from "@/views/QuantumGate.tsx";
+import {QuantumGate} from "@/views/library-view/QuantumGate.ts";
 import {useMemo} from "react";
 import { LibraryElement } from "@/views/library-view/LibraryElement.tsx";
 
 interface GateListProps {
     gates: QuantumGate[];
+    onGateClick: (gate: QuantumGate) => void;
 }
 
-function GateList({ gates }: GateListProps) {
+function GateList({ gates, onGateClick }: GateListProps) {
 
     // Group and sort by type and then by name
     const groupedGates = useMemo(() => {
@@ -81,7 +82,7 @@ function GateList({ gates }: GateListProps) {
                                             alignItems: "center",
                                         }}
                                     >
-                                        <LibraryElement id={gate.name} type={gate.symbol} />
+                                        <LibraryElement id={gate.id} type={gate.symbol} matrix={gate.inspectorInfo?.matrix?.display} onClick={() => onGateClick(gate)} />
                                     </div>
 
                                     <div style={{ textAlign: "left" }}>

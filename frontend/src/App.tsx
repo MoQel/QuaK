@@ -26,8 +26,9 @@ import {Toaster} from "@/components/ui/sonner.tsx";
 import {File} from "@/views/project-manager-view/util/FileElement.tsx";
 import {InspectorView} from "@/views/inspector-view/InspectorView.tsx";
 import {matrixContext} from "./Context"
+import {QuantumGate} from "@/views/library-view/QuantumGate.ts";
 
-    //temporarily object for circuit gates:
+//temporarily object for circuit gates:
     export type CircuitCell = {
       type: string;  // Symbol from QuantumGate
       id: string;
@@ -44,8 +45,7 @@ function App() {
     const [activeQubit, setActiveQubit] = useState<number>()
     const [activeGate, setActiveGate] = useState<CircuitCell>()
     const [activeLibraryElement, setActiveLibraryElement] = useState<CircuitCell>()
-
-
+    const [selectedGate, setSelectedGate] = useState<QuantumGate | undefined>(undefined);
 
     //returns the number of gates of the qubit with the most gates
     const maxQubitLength = useMemo(() => {
@@ -186,8 +186,8 @@ function App() {
                         </div>
                     </div>
                     <div className="flex flex-grow-[1] flex-row w-full">
-                        <GateLibraryView />
-                        <InspectorView />
+                        <GateLibraryView onGateSelect={setSelectedGate} />
+                        <InspectorView gate={selectedGate} onClear={() => setSelectedGate(undefined)} />
                         <ResultsView numberQubits={5} />
                     </div>
                 </div>
@@ -242,7 +242,7 @@ function moveLibraryGate(setMatrixState: (value: (((prevState: CircuitCell[][]) 
     })
 }
 
-function moveCircuitGate(setMatrixState: (value: (((prevState: CircuitCell[][]) => CircuitCell[][]) | CircuitCell[][])) => void, findQubit: (gateId: string) => (number | number), activeGateId: string, activeQubit: number | undefined, overGateId: string, findGate: (gateId: string) => (CircuitCell | undefined), findLastGate: (row: number) => (number | number)) {
+function moveCircuitGate(setMatrixState: (value: (((prevState: CircuitCell[][]) => CircuitCell[][]) | CircuitCell[][])) => void, findQubit: (gateId: string) => (number), activeGateId: string, activeQubit: number | undefined, overGateId: string, findGate: (gateId: string) => (CircuitCell | undefined), findLastGate: (row: number) => (number)) {
     setMatrixState((prev) => {
         const activeRow = findQubit(activeGateId)
         const overRow = activeQubit;
