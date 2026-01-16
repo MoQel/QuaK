@@ -4,21 +4,30 @@ import edu.kit.quak.core.circuit.model.ElementWithId;
 import edu.kit.quak.core.circuit.model.operation.QuantumOperation;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class Qubit extends ElementWithId {
-    private final List<QuantumOperation> operations = new ArrayList<>();
+    private List<QuantumOperation> operations = new ArrayList<>();
 
     public Qubit() {
         super();
+    }
+
+    public List<QuantumOperation> getOperations() {
+        return Collections.unmodifiableList(operations);
+    }
+
+    public void setOperations(List<QuantumOperation> operations) {
+        this.operations = operations;
     }
 
     public void addOperation(int index, QuantumOperation operation) {
         operations.add(index, operation);
     }
 
-    public List<QuantumOperation> getOperations() {
-        return operations;
+    public void removeOperation(QuantumOperation operation) {
+        operations.remove(operation);
     }
 
     @Override

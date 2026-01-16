@@ -1,22 +1,28 @@
 package edu.kit.quak.core.circuit.model;
 
+import edu.kit.quak.core.circuit.model.operation.ElementaryQuantumGateType;
+import edu.kit.quak.core.circuit.model.operation.QuantumOperation;
 import edu.kit.quak.core.circuit.model.register.QuantumRegister;
+import edu.kit.quak.core.circuit.model.register.Qubit;
 import edu.kit.quak.core.circuit.model.register.Register;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class QuantumCircuit extends ElementWithId {
     public static final String REGISTER_PREFIX = "q";
 
-    private final List<Register> registers = new ArrayList<>();
+    private List<Register> registers = new ArrayList<>();
 
     public QuantumCircuit() {
         super();
     }
 
     public List<Register> getRegisters() {
-        return registers;
+        return Collections.unmodifiableList(registers);
+    }
+
+    public void setRegisters(List<Register> registers) {
+        this.registers = registers;
     }
 
     public QuantumRegister addQuantumRegister() {
@@ -34,11 +40,86 @@ public class QuantumCircuit extends ElementWithId {
 
     public void deleteQuantumRegister(String qubitId) {
         for (Register register : registers) {
-            if (register instanceof QuantumRegister quantumRegister &&
-                    quantumRegister.getQubits().getFirst().getId().equals(qubitId)) {
+            if (register.getQubits().getFirst().getId().equals(qubitId)) {
                 registers.remove(register);
                 return;
             }
+        }
+    }
+
+    public void addQubit() {
+        QuantumRegister register = addQuantumRegister();
+        register.addQubit();
+    }
+
+    public void changeQubitName(String qubitId, String name) {
+        for (Register register : registers) {
+            Optional<Qubit> found = register.getQubits().stream()
+                    .filter(qubit -> qubit.getId().equals(qubitId))
+                    .findFirst();
+            if (found.isPresent()) {
+                register.setName(name);
+                break;
+            }
+        }
+    }
+
+    public void addElementaryQuantumGate(ElementaryQuantumGateType type, int qubitIdx, int positionIdx) {
+        registers.get(qubitIdx).addElementaryQuantumGate(type, positionIdx);
+    }
+
+    public void moveQuantumOperation(String operationId, int targetQubitIdx, int positionIdx) {
+        QuantumOperation operationToMove = null;
+        Qubit sourceQubit = null;
+
+        for (Register register : registers) {
+            for (Qubit qubit : register.getQubits()) {
+                Optional<QuantumOperation> found = qubit.getOperations().stream()
+                        .filter(Objects::nonNull)
+                        .filter(op -> op.getId().equals(operationId))
+                        .findFirst();
+                if (found.isPresent()) {
+                    operationToMove = found.get();
+                    sourceQubit = qubit;
+                    break;
+                }
+            }
+            if (operationToMove != null) break;
+        }
+
+        if (operationToMove == null) {
+            throw new IllegalArgumentException(String.format("Operation %s not found within circuit %s.", operationId, id));
+        }
+
+        Qubit targetQubit = registers.get(targetQubitIdx).getQubits().getFirst();
+
+        int oldIdx = sourceQubit.getOperations().indexOf(operationToMove);
+        sourceQubit.removeOperation(operationToMove);
+
+        int adjustedInsertIdx = positionIdx;
+        if (sourceQubit == targetQubit && oldIdx < positionIdx) {
+            adjustedInsertIdx--;
+        }
+        operationToMove.generateNewId(); //Generate new id because of orphan removal problems with Hibernate.
+        targetQubit.addOperation(adjustedInsertIdx, operationToMove);
+    }
+
+    public void deleteQuantumOperation(String operationId) {
+        boolean removed = false;
+        for (Register register : registers) {
+            for (Qubit qubit : register.getQubits()) {
+                Optional<QuantumOperation> operationToRemove = qubit.getOperations().stream()
+                        .filter(operation -> operation.getId().equals(operationId))
+                        .findFirst();
+                if (operationToRemove.isPresent()) {
+                    qubit.removeOperation(operationToRemove.get());
+                    removed = true;
+                    break;
+                }
+            }
+        }
+        if (!removed) {
+            throw new IllegalArgumentException(String.format("Operation %s not found within circuit %s.", operationId, id));
         }
     }
 

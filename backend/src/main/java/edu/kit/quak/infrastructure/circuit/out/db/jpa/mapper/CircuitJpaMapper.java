@@ -9,6 +9,7 @@ import org.mapstruct.*;
 import java.util.List;
 
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING,
+        collectionMappingStrategy = CollectionMappingStrategy.TARGET_IMMUTABLE,
         uses = { RegisterJpaMapper.class })
 public interface CircuitJpaMapper {
     @Mapping(target = "id", source = "id")
