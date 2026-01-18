@@ -6,6 +6,7 @@ import edu.kit.quak.core.circuit.model.operation.ElementaryQuantumGateType;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 public class QuantumRegister extends Register {
     private List<Qubit> qubits = new ArrayList<>();
@@ -15,6 +16,10 @@ public class QuantumRegister extends Register {
     }
 
     @Override
+    public Optional<QuantumRegister> asQuantum() {
+        return Optional.of(this);
+    }
+
     public List<Qubit> getQubits() {
         return Collections.unmodifiableList(qubits);
     }
@@ -23,28 +28,16 @@ public class QuantumRegister extends Register {
         this.qubits = qubits;
     }
 
-    @Override
     public Qubit addQubit() {
         Qubit qubit = new Qubit();
         qubits.add(qubit);
         return qubit;
     }
 
-    @Override
     public void addElementaryQuantumGate(ElementaryQuantumGateType type, int positionIdx) {
         Qubit qubit = qubits.getFirst();
         ElementaryQuantumGate gate = new ElementaryQuantumGate(type);
         qubit.addOperation(positionIdx, gate);
-    }
-
-    @Override
-    public List<Boolean> getBits() {
-        return List.of();
-    }
-
-    @Override
-    public void addBit(Boolean bit) {
-        throw new UnsupportedOperationException("Not a classic register");
     }
 
     @Override

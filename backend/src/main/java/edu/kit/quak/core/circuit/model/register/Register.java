@@ -1,9 +1,8 @@
 package edu.kit.quak.core.circuit.model.register;
 
 import edu.kit.quak.core.circuit.model.ElementWithId;
-import edu.kit.quak.core.circuit.model.operation.ElementaryQuantumGateType;
 
-import java.util.List;
+import java.util.Optional;
 
 public abstract class Register extends ElementWithId {
     protected String name;
@@ -21,13 +20,19 @@ public abstract class Register extends ElementWithId {
         this.name = name;
     }
 
-    public abstract List<Qubit> getQubits();
+    /**
+     * Capability Query: Is this a Quantum Register?
+     * @return Optional containing this if it is a QuantumRegister, empty otherwise.
+     */
+    public Optional<QuantumRegister> asQuantum() {
+        return Optional.empty();
+    }
 
-    public abstract Qubit addQubit();
-
-    public abstract void addElementaryQuantumGate(ElementaryQuantumGateType type, int positionIdx);
-
-    public abstract List<Boolean> getBits();
-
-    public abstract void addBit(Boolean bit);
+    /**
+     * Capability Query: Is this a Classic Register?
+     * @return Optional containing this if it is a ClassicRegister, empty otherwise.
+     */
+    public Optional<ClassicRegister> asClassic() {
+        return Optional.empty();
+    }
 }
