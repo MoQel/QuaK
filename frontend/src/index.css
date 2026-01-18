@@ -39,7 +39,7 @@
 
 
 .dark {
-  --bg-dark: hsl(0 0% 0%);         /* main page background (black) */
+  --bg-dark: hsl(220, 6%, 10%);    /* main page background (black) */
   --bg: hsl(0 0% 20%);             /* secondary surfaces / panels */
   --bg-light: hsl(0 0% 30%);       /* raised elements / cards / hover surfaces */
 

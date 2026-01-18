@@ -12,8 +12,6 @@ import { useTheme } from "@/theme";
 const DEFAULT_VALUE = "No File Selected";
 const DEFAULT_LANG = "plaintext";
 
-
-
 const languages = [
     new Language("plaintext", "txt"),
     new Language("python", "py"),
@@ -27,13 +25,13 @@ function QLPEditor({ file }: { file: File | undefined }) {
     const [readOnly, setReadOnly] = useState<boolean>(true);
     const contentId: RefObject<string | undefined> = useRef(undefined);
     const { theme } = useTheme();
-    const monacoTheme = theme === "dark" ? "vs-dark" : "vs-light";
+    const monacoTheme = theme === "dark" ? "vs-dark" : "vs";
 
-    const onMount = (monaco: Monaco) => {
+    const beforeMount = (monaco: Monaco) => {
         for (const language of languages) {
-            if (language.base !== undefined) language.register(monaco);
+          if (language.base !== undefined) language.register(monaco);
         }
-    };
+      };
 
     const onSave = (id: string | undefined) => {
         if (!id) return Promise.resolve();
@@ -139,7 +137,7 @@ function QLPEditor({ file }: { file: File | undefined }) {
                         wordWrap: 'on',
                         readOnly: readOnly,
                     }}
-                    beforeMount={onMount}
+                    beforeMount={beforeMount}
                 />
             </div>
         </div>
