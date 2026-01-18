@@ -93,15 +93,9 @@ public class QuantumCircuit extends ElementWithId {
 
         Qubit targetQubit = registers.get(targetQubitIdx).getQubits().getFirst();
 
-        int oldIdx = sourceQubit.getOperations().indexOf(operationToMove);
         sourceQubit.removeOperation(operationToMove);
-
-        int adjustedInsertIdx = positionIdx;
-        if (sourceQubit == targetQubit && oldIdx < positionIdx) {
-            adjustedInsertIdx--;
-        }
         operationToMove.generateNewId(); //Generate new id because of orphan removal problems with Hibernate.
-        targetQubit.addOperation(adjustedInsertIdx, operationToMove);
+        targetQubit.addOperation(positionIdx, operationToMove);
     }
 
     public void deleteQuantumOperation(String operationId) {

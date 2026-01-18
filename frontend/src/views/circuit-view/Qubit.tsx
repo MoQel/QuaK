@@ -152,16 +152,16 @@ export function Qubit({id, name, gates, qubitIndex, onNameChange, onDelete, onGa
                     <div
                         className={`${styles.dropzoneSpacing} self-stretch grow flex justify-start`}
                         onDragOver={allowDrop}
-                        onDragEnter={() => setHoverIndex(gates.length)}
+                        onDragEnter={() => setHoverIndex(visibleGates.length)}
                         onDragLeave={(e) => {
                             const rt = e.relatedTarget as Node | null;
                             if (!rt || !e.currentTarget.contains(rt)) {
                                 setHoverIndex(null);
                             }
                         }}
-                        onDrop={(e) => handleDrop(e, qubitIndex, gates.length)}
+                        onDrop={(e) => handleDrop(e, qubitIndex, visibleGates.length)}
                     >
-                        {hoverIndex === gates.length && (
+                        {hoverIndex === visibleGates.length && (
                             <div className={styles.dropZoneLastPlaceHolderMargin}>
                                 <Gate key="placeholder" id="placeholder" type="PLACEHOLDER" />
                             </div>
