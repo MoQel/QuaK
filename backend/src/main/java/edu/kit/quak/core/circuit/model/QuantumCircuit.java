@@ -97,19 +97,12 @@ public class QuantumCircuit extends ElementWithId {
         if (targetReg.getQubits().isEmpty()) {
             throw new IllegalStateException("Target register has no qubits.");
         }
+      
         Qubit targetQubit = targetReg.getQubits().getFirst();
 
-        int oldIdx = sourceQubit.getOperations().indexOf(operationToMove);
         sourceQubit.removeOperation(operationToMove);
-
-        int adjustedInsertIdx = positionIdx;
-        if (sourceQubit == targetQubit && oldIdx < positionIdx) {
-            adjustedInsertIdx--;
-        }
-
         operationToMove.generateNewId(); //Generate new id because of orphan removal problems with Hibernate.
-
-        targetQubit.addOperation(adjustedInsertIdx, operationToMove);
+        targetQubit.addOperation(positionIdx, operationToMove);
     }
 
     public void deleteQuantumOperation(String operationId) {
