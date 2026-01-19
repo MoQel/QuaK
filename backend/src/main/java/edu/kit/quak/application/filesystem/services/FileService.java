@@ -32,7 +32,10 @@ public class FileService implements FileServicePort {
         FileElementContainer<?> parent = getParentById(parentId);
         parent.addChild(element);
         FileElementContainer<?> savedParent = delegator.save(parent);
-        return findFileInParent(savedParent, element.getId());
+        // Create initially empty content entry
+        File createdFile = findFileInParent(savedParent, element.getId());
+        contentRepository.saveContent(createdFile.getId(), new byte[0]);
+        return createdFile;
     }
     // endregion Create
 
