@@ -3,6 +3,8 @@ plugins {
 	id 'org.springframework.boot' version '3.4.5'
 	id 'io.spring.dependency-management' version '1.1.7'
 	id "com.github.node-gradle.node" version "7.1.0"
+	id 'com.diffplug.spotless' version '6.25.0'
+	id 'checkstyle'
 }
 apply from: 'node.gradle'
 
@@ -17,6 +19,24 @@ java {
 
 repositories {
 	mavenCentral()
+}
+
+spotless {
+	java {
+		target 'src/*/java/**/*.java'
+		googleJavaFormat().aosp().reflowLongStrings()
+		removeUnusedImports()
+		formatAnnotations()
+		trimTrailingWhitespace()
+		endWithNewline()
+	}
+}
+
+checkstyle {
+	toolVersion = '10.12.5'
+	configFile = file("${project.projectDir}/config/checkstyle/checkstyle.xml")
+	ignoreFailures = false
+	maxWarnings = 0
 }
 
 dependencies {

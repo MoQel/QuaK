@@ -7,13 +7,12 @@ import edu.kit.quak.application.filesystem.ports.out.DirectoryRepositoryPort;
 import edu.kit.quak.core.filesystem.model.Directory;
 import edu.kit.quak.core.filesystem.model.FileElementContainer;
 import edu.kit.quak.core.user.model.User;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.stereotype.Service;
-
 import java.util.NoSuchElementException;
 import java.util.UUID;
 import java.util.function.Consumer;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
@@ -22,8 +21,8 @@ public class DirectoryService implements DirectoryServicePort {
     private final DirectoryRepositoryPort repository;
     private final FileElementContainerRepositoryDelegator delegator;
 
-    public DirectoryService(DirectoryRepositoryPort repository,
-            FileElementContainerRepositoryDelegator delegator) {
+    public DirectoryService(
+            DirectoryRepositoryPort repository, FileElementContainerRepositoryDelegator delegator) {
         this.repository = repository;
         this.delegator = delegator;
     }
@@ -32,7 +31,11 @@ public class DirectoryService implements DirectoryServicePort {
     @Override
     @Transactional
     public Directory createDirectory(Directory container, String parentId, User user) {
-        log.info("Creating directory '{}' in parent '{}' for user '{}'", container.getName(), parentId, user.getId());
+        log.info(
+                "Creating directory '{}' in parent '{}' for user '{}'",
+                container.getName(),
+                parentId,
+                user.getId());
         verifyOwnershipByParentId(parentId, user);
 
         FileElementContainer<?> parent = getParentById(parentId);
@@ -40,6 +43,7 @@ public class DirectoryService implements DirectoryServicePort {
         FileElementContainer<?> savedParent = delegator.save(parent);
         return findDirectoryInParent(savedParent, container.getId());
     }
+
     // endregion Create
 
     // region Read
@@ -50,6 +54,7 @@ public class DirectoryService implements DirectoryServicePort {
         verifyOwnershipByParentId(directory.getParentId(), user);
         return directory;
     }
+
     // endregion Read
 
     // region Update
@@ -61,6 +66,7 @@ public class DirectoryService implements DirectoryServicePort {
         verifyOwnershipByParentId(directory.getParentId(), user);
         return modifyDirectoryInParent(dId, d -> d.rename(newName));
     }
+
     // endregion Update
 
     // region Delete
@@ -75,20 +81,21 @@ public class DirectoryService implements DirectoryServicePort {
         parent.removeChild(directory);
         delegator.save(parent);
     }
+
     // endregion Delete
 
-    /**
-     * Retrieves directory without authentication check (internal use only).
-     */
+    /** Retrieves directory without authentication check (internal use only). */
     private Directory retrieveDirectoryWithoutAuth(String id) {
         return repository.findById(id).orElseThrow(NoSuchElementException::new);
     }
 
     /**
      * Verifies that the given user owns the project containing the file/directory.
-     * Uses a single efficient database query with recursive CTE to find the root
-     * project's owner, avoiding N+1 queries when traversing deep hierarchies.
-     * 
+     * Uses a single
+     * efficient database query with recursive CTE to find the root project's owner,
+     * avoiding N+1
+     * queries when traversing deep hierarchies.
+     *
      * @param parentId the ID of the parent container
      * @param user     the user to verify ownership for
      * @throws AccessDeniedException if user doesn't own the project
@@ -99,23 +106,34 @@ public class DirectoryService implements DirectoryServicePort {
         }
 
         // Use efficient single-query ownership lookup
-        UUID projectOwnerId = delegator.findProjectOwnerIdByElementId(parentId)
-                .orElseThrow(() -> new IllegalStateException(
-                        "Could not find root project for element with parent ID: " + parentId));
+        UUID projectOwnerId = delegator
+                .findProjectOwnerIdByElementId(parentId)
+                .orElseThrow(
+                        () -> new IllegalStateException(
+                                "Could not find root project for element with"
+                                        + " parent ID: "
+                                        + parentId));
 
         if (!projectOwnerId.equals(user.getId())) {
-            log.warn("Access denied: User '{}' is not owner of project '{}' (directory parent: '{}')",
-                    user.getId(), projectOwnerId, parentId);
+            log.warn(
+                    "Access denied: User '{}' is not owner of project '{}' (directory parent:"
+                            + " '{}')",
+                    user.getId(),
+                    projectOwnerId,
+                    parentId);
             throw new AccessDeniedException("directory", parentId);
         }
     }
 
     // Get the fresh parent (important due to shallow copies of mappers)
     private FileElementContainer<?> getParentById(String parentId) {
-        if (parentId == null)
+        if (parentId == null) {
             throw new IllegalStateException("Directory has no parent corrupt state");
-        return delegator.findContainerById(parentId)
-                .orElseThrow(() -> new IllegalStateException("Parent not found with ID" + parentId));
+        }
+        return delegator
+                .findContainerById(parentId)
+                .orElseThrow(
+                        () -> new IllegalStateException("Parent not found with ID" + parentId));
     }
 
     private Directory findDirectoryInParent(FileElementContainer<?> parent, String dId) {
@@ -124,7 +142,9 @@ public class DirectoryService implements DirectoryServicePort {
                 .filter(c -> c instanceof Directory)
                 .map(c -> (Directory) c)
                 .findFirst()
-                .orElseThrow(() -> new IllegalStateException("File not found in parent container (ID: " + dId + ")"));
+                .orElseThrow(
+                        () -> new IllegalStateException(
+                                "File not found in parent container (ID: " + dId + ")"));
     }
 
     private Directory modifyDirectoryInParent(String dId, Consumer<Directory> modifier) {
