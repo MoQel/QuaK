@@ -1,9 +1,9 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { api } from '@/api/api';
 
+// Minimal user identity for AuthContext
 interface User {
-    email: string;
-    name: string;
-    picture: string;
+    userId: string;
 }
 
 interface AuthContextType {
@@ -37,14 +37,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
     const checkAuthStatus = async () => {
         try {
-            const response = await fetch(`${API_BASE_URL}/api/auth/status`, {
+            const response = await fetch(`${API_BASE_URL}/api/auth/user`, {
                 credentials: 'include', // Important: include cookies
             });
 
             if (response.ok) {
                 const data = await response.json();
-                if (data.authenticated && data.user) {
-                    setUser(data.user);
+                // Expecting { authenticated: boolean, userId: string }
+                if (data.authenticated && data.userId) {
+                    setUser({ userId: data.userId });
                 } else {
                     setUser(null);
                 }
@@ -70,10 +71,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
     const logout = async () => {
         try {
-            await fetch(`${API_BASE_URL}/api/auth/logout`, {
-                method: 'POST',
-                credentials: 'include',
-            });
+            await api.post('/api/auth/logout');
             setUser(null);
         } catch (error) {
             console.error('Logout failed:', error);

@@ -6,8 +6,10 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.OneToMany;
 import java.util.HashSet;
 import java.util.Set;
+import lombok.Getter;
 
 @Entity
+@Getter
 public abstract class JpaFileElementContainer<SELF extends JpaFileElementContainer<SELF>>
         extends JpaFileElement<SELF> {
 
@@ -24,10 +26,6 @@ public abstract class JpaFileElementContainer<SELF extends JpaFileElementContain
 
     public JpaFileElementContainer(String name, JpaFileElementContainer<?> parent) {
         super(name, parent);
-    }
-
-    public Set<JpaFileElement<?>> getContents() {
-        return contents;
     }
 
     public void setContents(Set<JpaFileElement<?>> contents) {

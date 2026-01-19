@@ -24,6 +24,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 interface FetchOptions extends RequestInit {
     headers?: HeadersInit;
+    skipRedirect?: boolean;
 }
 
 /**
@@ -44,7 +45,7 @@ export async function apiRequest<T>(
 
     const defaultOptions: FetchOptions = {
         credentials: 'include', // Always include session cookie
-        ...options, // Spread options first so headers can be merged correctly below
+        ...options,
         headers: {
             'Content-Type': 'application/json',
             ...(csrfToken ? { 'X-XSRF-TOKEN': csrfToken } : {}),
@@ -57,8 +58,10 @@ export async function apiRequest<T>(
 
         // Handle authentication errors
         if (response.status === 401) {
-            // Redirect to login if not authenticated
-            window.location.href = '/login';
+            if (!options.skipRedirect) {
+                // Redirect to login if not authenticated
+                window.location.href = '/login';
+            }
             throw new Error('Unauthorized');
         }
 

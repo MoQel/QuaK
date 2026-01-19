@@ -98,13 +98,13 @@ class UserIntegrationTest {
     }
 
     @Nested
-    @DisplayName("GET /api/auth/status Endpoint")
+    @DisplayName("GET /api/auth/user Endpoint")
     class AuthStatusEndpointTests {
 
         @Test
         @DisplayName("Should return authenticated=false when not logged in")
         void authStatus_notLoggedIn_returnsFalse() throws Exception {
-            mockMvc.perform(get("/api/auth/status"))
+            mockMvc.perform(get("/api/auth/user"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.authenticated").value(false));
         }
@@ -112,26 +112,10 @@ class UserIntegrationTest {
         @Test
         @DisplayName("Should return authenticated=true when logged in")
         void authStatus_loggedIn_returnsTrue() throws Exception {
-            mockMvc.perform(get("/api/auth/status").with(authenticatedUser()))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.authenticated").value(true))
-                    .andExpect(jsonPath("$.user").exists())
-                    .andExpect(jsonPath("$.user.email").value("test@example.com"));
-        }
-    }
-
-    @Nested
-    @DisplayName("GET /api/auth/user Endpoint")
-    class AuthUserEndpointTests {
-
-        @Test
-        @DisplayName("Should return user info when authenticated")
-        void authUser_authenticated_returnsUserInfo() throws Exception {
             mockMvc.perform(get("/api/auth/user").with(authenticatedUser()))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.email").value("test@example.com"))
-                    .andExpect(jsonPath("$.name").value("Test User"))
-                    .andExpect(jsonPath("$.sub").value("test-sub"));
+                    .andExpect(jsonPath("$.authenticated").value(true))
+                    .andExpect(jsonPath("$.userId").value(testUser.getId().toString()));
         }
     }
 
@@ -170,8 +154,8 @@ class UserIntegrationTest {
         @Test
         @DisplayName("Public endpoints should be accessible without authentication")
         void publicEndpoints_noAuthRequired() throws Exception {
-            // /api/auth/status is public
-            mockMvc.perform(get("/api/auth/status")).andExpect(status().isOk());
+            // /api/auth/user is public (returns authenticated=false)
+            mockMvc.perform(get("/api/auth/user")).andExpect(status().isOk());
         }
     }
 }

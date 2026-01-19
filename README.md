@@ -79,6 +79,24 @@ To run the full application (Backend + Frontend served statically):
 
 Please have a look at the [developer guidelines](/docs/DEVELOPMENT.md).
 
+## Testing
+
+### Backend Tests
+
+To run the backend tests, execute the following command in the `backend` directory:
+
+```bash
+./gradlew test
+```
+
+### Frontend Tests
+
+To run the frontend tests, execute the following command in the `frontend` directory:
+
+```bash
+npm run test
+```
+
 ## Deployment
 
 The project will automatically be deployed when a change to the *development*-branch happens.

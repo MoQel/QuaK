@@ -2,18 +2,14 @@ package edu.kit.quak.infrastructure.user.in.web.rest.mapper;
 
 import edu.kit.quak.core.user.model.User;
 import edu.kit.quak.infrastructure.user.in.web.rest.dto.UserResponse;
-import org.springframework.stereotype.Component;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.MappingConstants;
 
 /** Mapper for converting User domain model to DTOs. */
-@Component
-public class UserDtoMapper {
+@Mapper(componentModel = MappingConstants.ComponentModel.SPRING)
+public interface UserDtoMapper {
 
-    public UserResponse toResponse(User user) {
-        return new UserResponse(
-                user.getId(),
-                user.getEmail(),
-                user.getName(),
-                user.getAvatarUrl(),
-                user.getEmailVerified());
-    }
+    @Mapping(source = "id", target = "userId")
+    UserResponse toResponse(User user);
 }

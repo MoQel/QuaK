@@ -65,11 +65,11 @@ class FileRestAdapterTest {
 
         String jsonRequest =
                 """
-                                {
-                                    "name": "test.txt",
-                                    "contentType": "text/plain"
-                                }
-                                """;
+                {
+                    "name": "test.txt",
+                    "contentType": "text/plain"
+                }
+                """;
 
         mockMvc.perform(
                         post("/api/file/")
@@ -89,11 +89,11 @@ class FileRestAdapterTest {
         // "invalid-type" does not match the regex in the DTO
         String jsonRequest =
                 """
-                                {
-                                    "name": "test.txt",
-                                    "contentType": "invalid-type"
-                                }
-                                """;
+                {
+                    "name": "test.txt",
+                    "contentType": "invalid-type"
+                }
+                """;
 
         mockMvc.perform(
                         post("/api/file/")
@@ -137,10 +137,9 @@ class FileRestAdapterTest {
         when(fileService.renameFile(eq("f-123"), eq("renamed.txt"), any(User.class)))
                 .thenReturn(updatedFile);
 
-        String jsonRequest =
-                """
-                                { "name": "renamed.txt" }
-                                """;
+        String jsonRequest = """
+                { "name": "renamed.txt" }
+                """;
 
         mockMvc.perform(
                         patch("/api/file/f-123")
@@ -169,11 +168,11 @@ class FileRestAdapterTest {
         // "SGVsbG8=" ist Base64 für "Hello"
         String jsonRequest =
                 """
-                                {
-                                    "content": "SGVsbG8=",
-                                    "contentType": "text/plain"
-                                }
-                                """;
+                {
+                    "content": "SGVsbG8=",
+                    "contentType": "text/plain"
+                }
+                """;
 
         mockMvc.perform(
                         put("/api/file/f-123/content")

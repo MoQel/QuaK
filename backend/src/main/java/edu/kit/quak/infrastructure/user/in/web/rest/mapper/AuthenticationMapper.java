@@ -1,14 +1,18 @@
 package edu.kit.quak.infrastructure.user.in.web.rest.mapper;
 
+import edu.kit.quak.application.user.dto.AuthStatusResponse;
+import edu.kit.quak.application.user.dto.LogoutResponse;
 import edu.kit.quak.core.user.model.AuthenticatedUser;
+import edu.kit.quak.infrastructure.user.in.web.rest.dto.RestAuthStatusResponse;
+import edu.kit.quak.infrastructure.user.in.web.rest.dto.RestLogoutResponse;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.stereotype.Component;
 
 /**
- * Utility to convert Spring Security Authentication to domain AuthenticatedUser. This adapter
- * component handles the framework-to-domain translation.
+ * Utility to convert between Spring Security, domain models, and REST DTOs. This adapter handles
+ * the framework-to-domain and domain-to-infrastructure translations for authentication.
  */
 @Component
 public class AuthenticationMapper {
@@ -41,7 +45,31 @@ public class AuthenticationMapper {
         String subject = oidcUser.getSubject();
 
         // Note: userId will be null here - it needs to be looked up from the database
-        // This is done by the UserService.getAuthenticatedUser() method
+        // by the AuthService
         return new AuthenticatedUser(null, issuer, subject);
+    }
+
+    /**
+     * Converts application AuthStatusResponse to infrastructure RestAuthStatusResponse.
+     *
+     * @param response The application-layer response
+     * @return The infrastructure-layer REST response
+     */
+    public RestAuthStatusResponse toRestResponse(AuthStatusResponse response) {
+        java.util.UUID userId = null;
+        if (response.user() != null) {
+            userId = response.user().getId();
+        }
+        return new RestAuthStatusResponse(response.authenticated(), userId);
+    }
+
+    /**
+     * Converts application LogoutResponse to infrastructure RestLogoutResponse.
+     *
+     * @param response The application-layer response
+     * @return The infrastructure-layer REST response
+     */
+    public RestLogoutResponse toRestResponse(LogoutResponse response) {
+        return new RestLogoutResponse(response.message());
     }
 }

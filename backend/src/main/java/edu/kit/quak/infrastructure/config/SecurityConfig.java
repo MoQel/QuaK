@@ -1,5 +1,7 @@
 package edu.kit.quak.infrastructure.config;
 
+import edu.kit.quak.application.user.ports.in.OidcSyncServicePort;
+import edu.kit.quak.application.user.ports.in.OidcUserInfo;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -66,7 +68,7 @@ public class SecurityConfig {
                                                 "/",
                                                 "/login/**",
                                                 "/oauth2/**",
-                                                "/api/auth/status",
+                                                "/api/auth/user",
                                                 "/error",
                                                 "/*.js",
                                                 "/*.css",
@@ -193,7 +195,7 @@ public class SecurityConfig {
 
     @Bean
     public AuthenticationSuccessHandler authenticationSuccessHandler(
-            edu.kit.quak.application.user.ports.in.OidcSyncServicePort oidcUserSyncService) {
+            OidcSyncServicePort oidcUserSyncService) {
         SimpleUrlAuthenticationSuccessHandler delegate =
                 new SimpleUrlAuthenticationSuccessHandler();
         delegate.setDefaultTargetUrl(frontendUrl + "/");
@@ -209,8 +211,17 @@ public class SecurityConfig {
                                                 .OAuth2AuthenticationToken
                                         oauthToken) {
                     String registrationId = oauthToken.getAuthorizedClientRegistrationId();
+                    OidcUserInfo userInfo =
+                            new OidcUserInfo(
+                                    oidcUser.getSubject(),
+                                    oidcUser.getEmail(),
+                                    oidcUser.getEmailVerified(),
+                                    oidcUser.getFullName(),
+                                    oidcUser.getGivenName(),
+                                    oidcUser.getFamilyName(),
+                                    oidcUser.getPicture());
                     edu.kit.quak.core.user.model.User user =
-                            oidcUserSyncService.syncUser(registrationId, oidcUser);
+                            oidcUserSyncService.syncUser(registrationId, userInfo);
                     request.getSession().setAttribute("userId", user.getId());
                 }
             }

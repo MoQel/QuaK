@@ -1,9 +1,10 @@
 package edu.kit.quak.application.user.services;
 
+import edu.kit.quak.application.user.dto.AuthStatusResponse;
+import edu.kit.quak.application.user.dto.LogoutResponse;
 import edu.kit.quak.application.user.ports.in.AuthServicePort;
+import edu.kit.quak.application.user.ports.out.UserRepositoryPort;
 import edu.kit.quak.core.user.model.AuthenticatedUser;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -20,44 +21,41 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class AuthService implements AuthServicePort {
 
+    private final UserRepositoryPort userRepository;
+
+    public AuthService(UserRepositoryPort userRepository) {
+        this.userRepository = userRepository;
+    }
+
     @Override
-    public Map<String, Object> getAuthenticationStatus(
-            Optional<AuthenticatedUser> authenticatedUser, Optional<Map<String, Object>> userInfo) {
+    public AuthStatusResponse getAuthenticationStatus(
+            Optional<AuthenticatedUser> authenticatedUser) {
         log.debug("Checking auth status. Authenticated: {}", authenticatedUser.isPresent());
-        Map<String, Object> response = new HashMap<>();
 
-        if (authenticatedUser.isPresent()) {
-            response.put("authenticated", true);
-            userInfo.ifPresent(info -> response.put("user", info));
-        } else {
-            response.put("authenticated", false);
+        if (authenticatedUser.isEmpty()) {
+            return new AuthStatusResponse(false, null);
         }
 
-        return response;
-    }
+        AuthenticatedUser domainUser = authenticatedUser.get();
 
-    @Override
-    public Map<String, Object> getAuthenticatedUserInfo(
-            AuthenticatedUser authenticatedUser, Map<String, Object> userInfo) {
-        if (authenticatedUser == null) {
-            log.warn("Attempt to access user info without authentication");
-            throw new IllegalStateException("User not authenticated");
-        }
+        // Fetch the full User object from the database
         log.debug(
-                "Retrieving user info for user: issuer={} sub={}",
-                authenticatedUser.issuer(),
-                authenticatedUser.subject());
-        return new HashMap<>(userInfo);
+                "Fetching full user details for issuer: {}, sub: {}",
+                domainUser.issuer(),
+                domainUser.subject());
+
+        return userRepository
+                .findByIssuerAndSub(domainUser.issuer(), domainUser.subject())
+                .map(user -> new AuthStatusResponse(true, user))
+                .orElse(new AuthStatusResponse(false, null));
     }
 
     @Override
-    public Map<String, String> logout(String sessionId) {
+    public LogoutResponse logout(String sessionId) {
         log.info("Processing logout for session: {}", sessionId);
         // Business logic for logout can be added here if needed
         // (e.g., audit logging, cleanup operations)
 
-        Map<String, String> response = new HashMap<>();
-        response.put("message", "Logged out successfully");
-        return response;
+        return new LogoutResponse("Logged out successfully");
     }
 }

@@ -158,7 +158,7 @@ tasks.named("bootRun") {
 
 	// Allow passing custom JVM arguments via -PjvmArgs="..."
 	if (project.hasProperty('jvmArgs')) {
-		jvmArgs(project.property('jvmArgs').split(' '))
+		jvmArgs(project.property('jvmArgs').toString().split('\\s+'))
 	}
 }
 

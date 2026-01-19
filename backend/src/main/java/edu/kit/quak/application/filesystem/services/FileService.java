@@ -1,35 +1,32 @@
 package edu.kit.quak.application.filesystem.services;
 
 import edu.kit.quak.application.filesystem.delegator.FileElementContainerRepositoryDelegator;
-import edu.kit.quak.application.filesystem.exceptions.AccessDeniedException;
 import edu.kit.quak.application.filesystem.ports.in.FileServicePort;
 import edu.kit.quak.application.filesystem.ports.out.FileContentRepositoryPort;
 import edu.kit.quak.application.filesystem.ports.out.FileRepositoryPort;
 import edu.kit.quak.core.filesystem.model.File;
+import edu.kit.quak.core.filesystem.model.FileElement;
 import edu.kit.quak.core.filesystem.model.FileElementContainer;
 import edu.kit.quak.core.user.model.User;
 import java.util.NoSuchElementException;
-import java.util.UUID;
-import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
-public class FileService implements FileServicePort {
+public class FileService extends AbstractFileElementService<File> implements FileServicePort {
 
     private final FileRepositoryPort repository;
     private final FileContentRepositoryPort contentRepository;
-    private final FileElementContainerRepositoryDelegator delegator;
 
     public FileService(
             FileRepositoryPort repository,
             FileContentRepositoryPort contentRepository,
             FileElementContainerRepositoryDelegator delegator) {
+        super(delegator);
         this.repository = repository;
         this.contentRepository = contentRepository;
-        this.delegator = delegator;
     }
 
     // region Create
@@ -46,7 +43,7 @@ public class FileService implements FileServicePort {
         FileElementContainer<?> parent = getParentById(parentId);
         parent.addChild(element);
         FileElementContainer<?> savedParent = delegator.save(parent);
-        return findFileInParent(savedParent, element.getId());
+        return findElementInParent(savedParent, element.getId());
     }
 
     // endregion Create
@@ -81,7 +78,7 @@ public class FileService implements FileServicePort {
         log.info("Renaming file '{}' to '{}' for user '{}'", fId, newName, user.getId());
         File file = repository.findById(fId).orElseThrow(NoSuchElementException::new);
         verifyOwnershipByParentId(file.getParentId(), user);
-        return modifyFileInParent(fId, f -> f.rename(newName));
+        return modifyElementInParent(fId, f -> f.rename(newName));
     }
 
     @Override
@@ -91,7 +88,7 @@ public class FileService implements FileServicePort {
         File file = repository.findById(fId).orElseThrow(NoSuchElementException::new);
         verifyOwnershipByParentId(file.getParentId(), user);
 
-        modifyFileInParent(
+        modifyElementInParent(
                 fId,
                 f -> {
                     f.setLastAccessNow();
@@ -108,7 +105,7 @@ public class FileService implements FileServicePort {
     @Transactional
     public void removeFile(String fId, User user) {
         log.info("Removing file '{}' for user '{}'", fId, user.getId());
-        File file = retrieveFileWithoutAuth(fId);
+        File file = retrieveWithoutAuth(fId);
         verifyOwnershipByParentId(file.getParentId(), user);
 
         FileElementContainer<?> parent = getParentById(file.getParentId());
@@ -119,81 +116,27 @@ public class FileService implements FileServicePort {
 
     // endregion Delete
 
-    /** Retrieves file without authentication check (internal use only). */
-    private File retrieveFileWithoutAuth(String id) {
+    // region AbstractFileElementService Implementation
+
+    @Override
+    protected File retrieveWithoutAuth(String id) {
         return repository.findById(id).orElseThrow(NoSuchElementException::new);
     }
 
-    /**
-     * Verifies that the given user owns the project containing the file/directory. Uses a single
-     * efficient database query with recursive CTE to find the root project's owner, avoiding N+1
-     * queries when traversing deep hierarchies.
-     *
-     * @param parentId the ID of the parent container
-     * @param user the user to verify ownership for
-     * @throws AccessDeniedException if user doesn't own the project
-     */
-    private void verifyOwnershipByParentId(String parentId, User user) {
-        if (parentId == null) {
-            throw new IllegalStateException("Cannot verify ownership: element has no parent");
-        }
-
-        // Use efficient single-query ownership lookup
-        UUID projectOwnerId =
-                delegator
-                        .findProjectOwnerIdByElementId(parentId)
-                        .orElseThrow(
-                                () ->
-                                        new IllegalStateException(
-                                                "Could not find root project for element with"
-                                                        + " parent ID: "
-                                                        + parentId));
-
-        if (!projectOwnerId.equals(user.getId())) {
-            log.warn(
-                    "Access denied: User '{}' is not owner of project '{}' (file parent: '{}')",
-                    user.getId(),
-                    projectOwnerId,
-                    parentId);
-            throw new AccessDeniedException("file", parentId);
-        }
+    @Override
+    protected String getElementTypeName() {
+        return "file";
     }
 
-    // Get the fresh parent (important due to shallow copies of mappers)
-    private FileElementContainer<?> getParentById(String parentId) {
-        if (parentId == null) throw new IllegalStateException("File has no parent corrupt state");
-        return delegator
-                .findContainerById(parentId)
-                .orElseThrow(
-                        () -> new IllegalStateException("Parent not found with ID" + parentId));
+    @Override
+    protected boolean isCorrectType(FileElement<?> element) {
+        return element instanceof File;
     }
 
-    private File findFileInParent(FileElementContainer<?> parent, String fileId) {
-        return parent.getContents().stream()
-                .filter(c -> c.getId().equals(fileId))
-                .filter(c -> c instanceof File)
-                .map(c -> (File) c)
-                .findFirst()
-                .orElseThrow(
-                        () ->
-                                new IllegalStateException(
-                                        "File not found in parent container (ID: " + fileId + ")"));
+    @Override
+    protected File castToType(FileElement<?> element) {
+        return (File) element;
     }
 
-    private File modifyFileInParent(String fileId, Consumer<File> modifier) {
-        File tempFile = retrieveFileWithoutAuth(fileId);
-        FileElementContainer<?> parent = getParentById(tempFile.getParentId());
-
-        // Finding the "real" child in the context of the parents
-        File childInParent = findFileInParent(parent, fileId);
-
-        // Apply changes
-        modifier.accept(childInParent);
-
-        // Save changes through parent
-        FileElementContainer<?> savedParent = delegator.save(parent);
-
-        // Return updated child
-        return findFileInParent(savedParent, fileId);
-    }
+    // endregion
 }

@@ -1,10 +1,12 @@
 package edu.kit.quak.application.user.services;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.mock;
 
+import edu.kit.quak.application.user.dto.AuthStatusResponse;
+import edu.kit.quak.application.user.dto.LogoutResponse;
+import edu.kit.quak.application.user.ports.out.UserRepositoryPort;
 import edu.kit.quak.core.user.model.AuthenticatedUser;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -13,8 +15,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 /**
- * Unit tests for AuthService. Tests authentication status, user info retrieval, and logout
- * functionality.
+ * Unit tests for AuthService. Tests authentication status and logout functionality.
  *
  * <p>Note: These tests are framework-agnostic since the refactored AuthService works only with
  * domain concepts (AuthenticatedUser) and not Spring Security.
@@ -22,6 +23,7 @@ import org.junit.jupiter.api.Test;
 class AuthServiceTest {
 
     private AuthService authService;
+    private UserRepositoryPort userRepository;
 
     private static final String TEST_SESSION_ID = "test-session-123";
     private static final UUID TEST_USER_ID = UUID.randomUUID();
@@ -30,7 +32,8 @@ class AuthServiceTest {
 
     @BeforeEach
     void setUp() {
-        authService = new AuthService();
+        userRepository = mock(UserRepositoryPort.class);
+        authService = new AuthService(userRepository);
     }
 
     @Nested
@@ -40,78 +43,45 @@ class AuthServiceTest {
         @Test
         @DisplayName("Should return authenticated=false when no authenticated user")
         void getAuthenticationStatus_noAuth_returnsFalse() {
-            Map<String, Object> result =
-                    authService.getAuthenticationStatus(Optional.empty(), Optional.empty());
+            AuthStatusResponse result = authService.getAuthenticationStatus(Optional.empty());
 
-            assertFalse((Boolean) result.get("authenticated"));
-            assertNull(result.get("user"));
+            assertFalse(result.authenticated());
+            assertNull(result.user());
         }
 
         @Test
-        @DisplayName("Should return authenticated=true with user info for authenticated user")
-        void getAuthenticationStatus_authenticatedUser_returnsTrueWithUserInfo() {
+        @DisplayName(
+                "Should return authenticated=true with user domain model for authenticated user")
+        void getAuthenticationStatus_authenticatedUser_returnsTrueWithUser() {
             AuthenticatedUser authenticatedUser =
                     new AuthenticatedUser(TEST_USER_ID, TEST_ISSUER, TEST_SUBJECT);
 
-            Map<String, Object> userInfo = createUserInfo();
+            // Create a mock User object
+            edu.kit.quak.core.user.model.User mockUser = new edu.kit.quak.core.user.model.User();
+            mockUser.setId(TEST_USER_ID);
+            mockUser.setIssuer(TEST_ISSUER);
+            mockUser.setSub(TEST_SUBJECT);
+            mockUser.setEmail("test@example.com");
+            mockUser.setName("Test User");
+            mockUser.setAvatarUrl("https://example.com/avatar.jpg");
 
-            Map<String, Object> result =
-                    authService.getAuthenticationStatus(
-                            Optional.of(authenticatedUser), Optional.of(userInfo));
+            // Mock the repository to return the user
+            org.mockito.Mockito.when(userRepository.findByIssuerAndSub(TEST_ISSUER, TEST_SUBJECT))
+                    .thenReturn(Optional.of(mockUser));
 
-            assertTrue((Boolean) result.get("authenticated"));
-            assertNotNull(result.get("user"));
+            AuthStatusResponse result =
+                    authService.getAuthenticationStatus(Optional.of(authenticatedUser));
 
-            @SuppressWarnings("unchecked")
-            Map<String, Object> returnedUserInfo = (Map<String, Object>) result.get("user");
-            assertEquals("test@example.com", returnedUserInfo.get("email"));
-            assertEquals("Test User", returnedUserInfo.get("name"));
-            assertEquals("https://example.com/pic.jpg", returnedUserInfo.get("picture"));
-        }
+            assertTrue(result.authenticated());
+            assertNotNull(result.user());
 
-        @Test
-        @DisplayName("Should return authenticated=true without user info when not provided")
-        void getAuthenticationStatus_authenticatedWithoutUserInfo_returnsTrueWithoutUserInfo() {
-            AuthenticatedUser authenticatedUser =
-                    new AuthenticatedUser(TEST_USER_ID, TEST_ISSUER, TEST_SUBJECT);
-
-            Map<String, Object> result =
-                    authService.getAuthenticationStatus(
-                            Optional.of(authenticatedUser), Optional.empty());
-
-            assertTrue((Boolean) result.get("authenticated"));
-            assertNull(result.get("user"));
-        }
-    }
-
-    @Nested
-    @DisplayName("getAuthenticatedUserInfo Tests")
-    class GetAuthenticatedUserInfoTests {
-
-        @Test
-        @DisplayName("Should return user info for authenticated user")
-        void getAuthenticatedUserInfo_authenticatedUser_returnsUserInfo() {
-            AuthenticatedUser authenticatedUser =
-                    new AuthenticatedUser(TEST_USER_ID, TEST_ISSUER, TEST_SUBJECT);
-            Map<String, Object> userInfo = createUserInfoWithSub();
-
-            Map<String, Object> result =
-                    authService.getAuthenticatedUserInfo(authenticatedUser, userInfo);
-
-            assertEquals("test@example.com", result.get("email"));
-            assertEquals("Test User", result.get("name"));
-            assertEquals("https://example.com/pic.jpg", result.get("picture"));
-            assertEquals("sub-123", result.get("sub"));
-        }
-
-        @Test
-        @DisplayName("Should throw exception when authenticated user is null")
-        void getAuthenticatedUserInfo_nullUser_throwsException() {
-            Map<String, Object> userInfo = createUserInfoWithSub();
-
-            assertThrows(
-                    IllegalStateException.class,
-                    () -> authService.getAuthenticatedUserInfo(null, userInfo));
+            edu.kit.quak.core.user.model.User returnedUser = result.user();
+            assertEquals(TEST_USER_ID, returnedUser.getId());
+            assertEquals(TEST_ISSUER, returnedUser.getIssuer());
+            assertEquals(TEST_SUBJECT, returnedUser.getSub());
+            assertEquals("test@example.com", returnedUser.getEmail());
+            assertEquals("Test User", returnedUser.getName());
+            assertEquals("https://example.com/avatar.jpg", returnedUser.getAvatarUrl());
         }
     }
 
@@ -122,33 +92,19 @@ class AuthServiceTest {
         @Test
         @DisplayName("Should return success message on logout")
         void logout_returnsSuccessMessage() {
-            Map<String, String> result = authService.logout(TEST_SESSION_ID);
+            LogoutResponse result = authService.logout(TEST_SESSION_ID);
 
             assertNotNull(result);
-            assertEquals("Logged out successfully", result.get("message"));
+            assertEquals("Logged out successfully", result.message());
         }
 
         @Test
         @DisplayName("Should handle null session ID gracefully")
         void logout_nullSessionId_returnsSuccessMessage() {
-            Map<String, String> result = authService.logout(null);
+            LogoutResponse result = authService.logout(null);
 
             assertNotNull(result);
-            assertEquals("Logged out successfully", result.get("message"));
+            assertEquals("Logged out successfully", result.message());
         }
-    }
-
-    private Map<String, Object> createUserInfo() {
-        Map<String, Object> userInfo = new HashMap<>();
-        userInfo.put("email", "test@example.com");
-        userInfo.put("name", "Test User");
-        userInfo.put("picture", "https://example.com/pic.jpg");
-        return userInfo;
-    }
-
-    private Map<String, Object> createUserInfoWithSub() {
-        Map<String, Object> userInfo = createUserInfo();
-        userInfo.put("sub", "sub-123");
-        return userInfo;
     }
 }

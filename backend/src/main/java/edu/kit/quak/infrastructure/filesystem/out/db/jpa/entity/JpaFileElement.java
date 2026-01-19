@@ -2,12 +2,16 @@ package edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity;
 
 import jakarta.persistence.*;
 import java.time.Instant;
+import lombok.Getter;
+import lombok.Setter;
 
 /** JPA Entity for Storage Contains persistence annotations and id configurations */
 @Entity
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "dtype", discriminatorType = DiscriminatorType.STRING)
 @Table(name = "file_element")
+@Getter
+@Setter
 public abstract class JpaFileElement<SELF extends JpaFileElement<?>> {
 
     @Id
@@ -33,46 +37,6 @@ public abstract class JpaFileElement<SELF extends JpaFileElement<?>> {
     }
 
     protected JpaFileElement() {}
-
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public Instant getCreatedOn() {
-        return createdOn;
-    }
-
-    public void setCreatedOn(Instant createdOn) {
-        this.createdOn = createdOn;
-    }
-
-    public Instant getLastAccess() {
-        return lastAccess;
-    }
-
-    public void setLastAccess(Instant lastAccess) {
-        this.lastAccess = lastAccess;
-    }
-
-    public JpaFileElementContainer<?> getParent() {
-        return parent;
-    }
-
-    public void setParent(JpaFileElementContainer<?> parent) {
-        this.parent = parent;
-    }
 
     @Override
     public final boolean equals(Object o) {
