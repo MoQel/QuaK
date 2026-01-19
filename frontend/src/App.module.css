@@ -57,6 +57,11 @@
   cursor: default;
 }
 
+.libraryElement:hover {
+  background-color: var(--color-gray-300);
+  -webkit-user-drag: element; /* Prevents Safari from “forgetting” the element when dragging */
+}
+
 .gate, .gate:hover {
   padding: 9px 11px;
   border-radius: 3px;
@@ -72,7 +77,8 @@
 }
 
 .gate:hover {
-background-color: var(--color-gray-300);
+  background-color: var(--color-gray-300);
+  -webkit-user-drag: element; /* Prevents Safari from “forgetting” the element when dragging */
 }
 
 .dropzoneSpacing {

@@ -133,7 +133,7 @@ export function Qubit({id, name, gates, qubitIndex, onNameChange, onDelete, onGa
                                 onDrop={(e) => handleDrop(e, qubitIndex, index)}
                             >
                                 {hoverIndex === index && (
-                                    <div className={styles.dropZonePlaceHolderMargin}>
+                                    <div className={styles.dropZonePlaceHolderMargin} style={{ pointerEvents: "none" }}>
                                         <Gate key="placeholder" id="placeholder" type="PLACEHOLDER" />
                                     </div>
                                 )}
@@ -162,6 +162,7 @@ export function Qubit({id, name, gates, qubitIndex, onNameChange, onDelete, onGa
                             if (!rt || !e.currentTarget.contains(rt)) {
                                 setHoverIndex(null);
                             }
+                            console.log("onDragLeave...");
                         }}
                         onDrop={(e) => handleDrop(e, qubitIndex, visibleGates.length)}
                     >
