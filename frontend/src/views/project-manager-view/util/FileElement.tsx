@@ -9,9 +9,7 @@ import {
 } from "@/api/dto/filesystem.ts";
 import { orderBy } from "lodash";
 
-export interface FileElement extends FileElementDto {
-    // FileElementDto already includes id, name, type, createdOn, lastAccess
-}
+export type FileElement = FileElementDto;
 
 export interface FileElementContainer extends FileElement {
     contents: Array<FileElement>
@@ -51,6 +49,6 @@ export function getElementForFileElement(object: FileElementDto) {
     } else if (object.type === "directory") {
         return (<Directory {...object as unknown as DirectoryContentsResponse} key={object.id} />)
     } else {
-        return (<Project {...object as unknown as ProjectContentsResponse} key={object.id} />) // ID als Key ist wichtig!
+        return (<Project {...object as unknown as ProjectContentsResponse} key={object.id} />)
     }
 }
