@@ -5,9 +5,8 @@ import edu.kit.quak.application.circuit.ports.out.CircuitRepositoryPort;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.core.circuit.model.operation.ElementaryQuantumGateDefinitionIdentifier;
 import jakarta.persistence.EntityNotFoundException;
-import org.springframework.stereotype.Service;
-
 import java.util.function.Consumer;
+import org.springframework.stereotype.Service;
 
 @Service
 public class CircuitService implements CircuitServicePort {
@@ -50,13 +49,22 @@ public class CircuitService implements CircuitServicePort {
     }
 
     @Override
-    public QuantumCircuit addGate(String circuitId, ElementaryQuantumGateDefinitionIdentifier definitionId, int qubitIdx, int positionIdx) {
-        return updateCircuit(circuitId, circuit -> circuit.addElementaryQuantumGate(definitionId, qubitIdx, positionIdx));
+    public QuantumCircuit addGate(
+            String circuitId,
+            ElementaryQuantumGateDefinitionIdentifier definitionId,
+            int qubitIdx,
+            int positionIdx) {
+        return updateCircuit(
+                circuitId,
+                circuit -> circuit.addElementaryQuantumGate(definitionId, qubitIdx, positionIdx));
     }
 
     @Override
-    public QuantumCircuit moveGate(String circuitId, String gateId, int targetQubitIdx, int positionIdx) {
-        return updateCircuit(circuitId, circuit -> circuit.moveQuantumOperation(gateId, targetQubitIdx, positionIdx));
+    public QuantumCircuit moveGate(
+            String circuitId, String gateId, int targetQubitIdx, int positionIdx) {
+        return updateCircuit(
+                circuitId,
+                circuit -> circuit.moveQuantumOperation(gateId, targetQubitIdx, positionIdx));
     }
 
     @Override
@@ -65,8 +73,13 @@ public class CircuitService implements CircuitServicePort {
     }
 
     private QuantumCircuit updateCircuit(String circuitId, Consumer<QuantumCircuit> action) {
-        QuantumCircuit circuit = repository.findById(circuitId)
-                .orElseThrow(() -> new EntityNotFoundException("Circuit not found: " + circuitId));
+        QuantumCircuit circuit =
+                repository
+                        .findById(circuitId)
+                        .orElseThrow(
+                                () ->
+                                        new EntityNotFoundException(
+                                                "Circuit not found: " + circuitId));
 
         action.accept(circuit);
 

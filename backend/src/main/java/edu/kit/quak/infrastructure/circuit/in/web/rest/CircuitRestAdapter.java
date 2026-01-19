@@ -12,7 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/circuit")
+@RequestMapping("/api/circuit")
 public class CircuitRestAdapter {
     private final CircuitServicePort service;
     private final CircuitDtoMapper mapper;
@@ -49,38 +49,42 @@ public class CircuitRestAdapter {
 
     @PatchMapping("/{circuitId}/qubit")
     @ResponseStatus(HttpStatus.CREATED)
-    public CircuitResponse changeQubitName(@PathVariable String circuitId,
-                                           @RequestBody ChangeQubitNameRequest request) {
+    public CircuitResponse changeQubitName(
+            @PathVariable String circuitId, @RequestBody ChangeQubitNameRequest request) {
         QuantumCircuit circuit = service.changeQubitName(circuitId, request.id(), request.name());
         return mapper.toResponse(circuit);
     }
 
     @DeleteMapping("/{circuitId}/qubit/{qubitId}")
-    public CircuitResponse deleteQubit(@PathVariable String circuitId,
-                                       @PathVariable String qubitId) {
+    public CircuitResponse deleteQubit(
+            @PathVariable String circuitId, @PathVariable String qubitId) {
         QuantumCircuit circuit = service.deleteQubit(circuitId, qubitId);
         return mapper.toResponse(circuit);
     }
 
     @PostMapping("/{circuitId}/gate")
     @ResponseStatus(HttpStatus.CREATED)
-    public CircuitResponse addGate(@PathVariable String circuitId,
-                                   @RequestBody AddGateRequest request) {
-        ElementaryQuantumGateDefinitionIdentifier definitionId = ElementaryQuantumGateDefinitionIdentifier.fromString(request.definitionId());
-        QuantumCircuit circuit = service.addGate(circuitId, definitionId, request.toQubitIdx(), request.toPositionIdx());
+    public CircuitResponse addGate(
+            @PathVariable String circuitId, @RequestBody AddGateRequest request) {
+        ElementaryQuantumGateDefinitionIdentifier definitionId =
+                ElementaryQuantumGateDefinitionIdentifier.fromString(request.definitionId());
+        QuantumCircuit circuit =
+                service.addGate(
+                        circuitId, definitionId, request.toQubitIdx(), request.toPositionIdx());
         return mapper.toResponse(circuit);
     }
 
     @PatchMapping("/{circuitId}/gate")
-    public CircuitResponse moveGate(@PathVariable String circuitId,
-                                    @RequestBody MoveGateRequest request) {
-        QuantumCircuit circuit = service.moveGate(circuitId, request.id(), request.toQubitIdx(), request.toPositionIdx());
+    public CircuitResponse moveGate(
+            @PathVariable String circuitId, @RequestBody MoveGateRequest request) {
+        QuantumCircuit circuit =
+                service.moveGate(
+                        circuitId, request.id(), request.toQubitIdx(), request.toPositionIdx());
         return mapper.toResponse(circuit);
     }
 
     @DeleteMapping("/{circuitId}/gate/{gateId}")
-    public CircuitResponse deleteGate(@PathVariable String circuitId,
-                                      @PathVariable String gateId) {
+    public CircuitResponse deleteGate(@PathVariable String circuitId, @PathVariable String gateId) {
         QuantumCircuit circuit = service.deleteGate(circuitId, gateId);
         return mapper.toResponse(circuit);
     }

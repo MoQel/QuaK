@@ -95,8 +95,8 @@ class FileElementJpaMapperTest {
         UnknownFileElement unknown = new UnknownFileElement("X", null);
 
         // Act & Assert
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> mapper.toJpaEntity(unknown));
+        IllegalArgumentException exception =
+                assertThrows(IllegalArgumentException.class, () -> mapper.toJpaEntity(unknown));
 
         assertTrue(exception.getMessage().contains("Unknown FileElement subtype"));
     }

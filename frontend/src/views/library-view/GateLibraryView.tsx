@@ -19,7 +19,7 @@ export function GateLibraryView({ onGateSelect }: GateLibraryViewProps) {
 
     // Load Data centralized (Single Source of Truth)
     useEffect(() => {
-        api.get<GateDefinitionResponse[]>("/gates")
+        api.get<GateDefinitionResponse[]>("/api/gates")
             .then((gates) => setGates(gates))
             .catch((e) => console.error("Failed to fetch gates:", e));
     }, []);

@@ -1,27 +1,24 @@
 package edu.kit.quak.infrastructure.circuit.out.db.jpa.mapper;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.JpaQuantumCircuit;
 import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.register.JpaQuantumRegister;
 import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.register.JpaRegister;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 @ExtendWith(MockitoExtension.class)
 class CircuitJpaMapperTest {
-    @Spy
-    private RegisterJpaMapperImpl registerJpaMapper;
+    @Spy private RegisterJpaMapperImpl registerJpaMapper;
 
-    @InjectMocks
-    private CircuitJpaMapperImpl mapper;
+    @InjectMocks private CircuitJpaMapperImpl mapper;
 
     @Test
     void domainToEntity() {
@@ -36,9 +33,9 @@ class CircuitJpaMapperTest {
         // Assert
         assertNotNull(entity);
         assertEquals(2, entity.getRegisters().size());
-        for (int idx = 0; idx <  entity.getRegisters().size(); idx++) {
+        for (int idx = 0; idx < entity.getRegisters().size(); idx++) {
             assertEquals(String.format("q%d", idx), entity.getRegisters().get(idx).getName());
-            assertEquals(entity, entity.getRegisters().get(idx).getCircuit()); //AfterMapping
+            assertEquals(entity, entity.getRegisters().get(idx).getCircuit()); // AfterMapping
         }
     }
 
@@ -60,7 +57,7 @@ class CircuitJpaMapperTest {
         // Assert
         assertNotNull(domain);
         assertEquals(2, domain.getRegisters().size());
-        for (int idx = 0; idx <  domain.getRegisters().size(); idx++) {
+        for (int idx = 0; idx < domain.getRegisters().size(); idx++) {
             assertEquals(String.format("q%d", idx), domain.getRegisters().get(idx).getName());
         }
     }

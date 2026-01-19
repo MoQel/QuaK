@@ -64,9 +64,10 @@ public class FileService extends AbstractFileElementService<File> implements Fil
     @Transactional
     public byte[] getFileContent(String fId, User user) {
         log.debug("Retrieving content for file '{}'", fId);
-        File file = repository
-                .findById(fId)
-                .orElseThrow(() -> new NoSuchElementException("File not found: " + fId));
+        File file =
+                repository
+                        .findById(fId)
+                        .orElseThrow(() -> new NoSuchElementException("File not found: " + fId));
         verifyOwnershipByParentId(file.getParentId(), user);
         return contentRepository.loadContent(fId).orElseThrow(NoSuchElementException::new);
     }

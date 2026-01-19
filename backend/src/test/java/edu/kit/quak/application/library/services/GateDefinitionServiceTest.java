@@ -14,10 +14,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class GateDefinitionServiceTest {
 
-    @Mock
-    GateDefinitionRepositoryPort repo;
-    @InjectMocks
-    GateDefinitionService service;
+    @Mock GateDefinitionRepositoryPort repo;
+    @InjectMocks GateDefinitionService service;
 
     @Test
     void getAllGateDefinitions_delegatesToRepo() {

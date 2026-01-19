@@ -1,5 +1,7 @@
 package edu.kit.quak.infrastructure.circuit.out.db.jpa;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.core.circuit.model.register.QuantumRegister;
 import edu.kit.quak.core.circuit.model.register.Qubit;
@@ -9,27 +11,24 @@ import edu.kit.quak.infrastructure.circuit.out.db.jpa.mapper.OperationJpaMapperI
 import edu.kit.quak.infrastructure.circuit.out.db.jpa.mapper.QubitJpaMapperImpl;
 import edu.kit.quak.infrastructure.circuit.out.db.jpa.mapper.RegisterJpaMapperImpl;
 import edu.kit.quak.infrastructure.circuit.out.db.jpa.repository.SpringDataJpaCircuitRepository;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
 
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
 @DataJpaTest
-@Import({CircuitJpaAdapter.class,
-        CircuitJpaMapperImpl.class,
-        RegisterJpaMapperImpl.class,
-        QubitJpaMapperImpl.class,
-        OperationJpaMapperImpl.class})
+@Import({
+    CircuitJpaAdapter.class,
+    CircuitJpaMapperImpl.class,
+    RegisterJpaMapperImpl.class,
+    QubitJpaMapperImpl.class,
+    OperationJpaMapperImpl.class
+})
 class CircuitJpaAdapterTest {
-    @Autowired
-    private CircuitJpaAdapter jpaAdapter;
+    @Autowired private CircuitJpaAdapter jpaAdapter;
 
-    @Autowired
-    private SpringDataJpaCircuitRepository springRepository;
+    @Autowired private SpringDataJpaCircuitRepository springRepository;
 
     @Test
     void saveAndFindCircuit_ShouldPersistData() {
