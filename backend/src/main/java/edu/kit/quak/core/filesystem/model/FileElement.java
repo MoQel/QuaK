@@ -8,7 +8,7 @@ import java.util.UUID;
  * A FileElement is an element inside a {@link FileElementContainer container} or the container itself.
  * The idea behind this class is the concept of files and directories as they are found inside a POSIX filesystem.
  *
- * @param <T> The type used by the implementing classes in the method
+ * @param <T> The definitionId used by the implementing classes in the method
  * @author Henrik K
  */
 public abstract class FileElement<T extends FileElement<T>> {

@@ -1,8 +1,8 @@
 plugins {
-	id 'java'
-	id 'org.springframework.boot' version '3.4.5'
-	id 'io.spring.dependency-management' version '1.1.7'
-	id "com.github.node-gradle.node" version "7.1.0"
+    id 'java'
+    id 'org.springframework.boot' version '3.4.5'
+    id 'io.spring.dependency-management' version '1.1.7'
+    id "com.github.node-gradle.node" version "7.1.0"
 }
 apply from: 'node.gradle'
 
@@ -10,13 +10,13 @@ group = 'edu.kit'
 version = '0.0.1-SNAPSHOT'
 
 java {
-	toolchain {
-		languageVersion = JavaLanguageVersion.of(21)
-	}
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
 }
 
 repositories {
-	mavenCentral()
+    mavenCentral()
 }
 
 dependencies {
@@ -37,21 +37,21 @@ dependencies {
 }
 
 tasks.register('cleanFrontendFiles', Delete) {
-	group = 'QuaK'
-	def stat = layout.projectDirectory.dir("src/main/resources/static").asFile
-	def toDelete = stat.listFiles().findAll() { file ->
-		!file.name.startsWith(".git")
-	}
-	delete toDelete
+    group = 'QuaK'
+    def stat = layout.projectDirectory.dir("src/main/resources/static").asFile
+    def toDelete = stat.listFiles().findAll() { file ->
+        !file.name.startsWith(".git")
+    }
+    delete toDelete
 }
 
 tasks.register('getFrontend', Copy) {
-	dependsOn npm_run_build
-	dependsOn cleanFrontendFiles
-	group = 'QuaK'
-	description = 'Copy frontend into static-folder inside the backend'
-	from(layout.projectDirectory.dir("../frontend/dist"))
-	into(layout.projectDirectory.dir('src/main/resources/static'))
+    dependsOn npm_run_build
+    dependsOn cleanFrontendFiles
+    group = 'QuaK'
+    description = 'Copy frontend into static-folder inside the backend'
+    from(layout.projectDirectory.dir("../frontend/dist"))
+    into(layout.projectDirectory.dir('src/main/resources/static'))
 }
 
 // Only build frontend when explicitly requested via -PbuildFrontend=true
@@ -64,8 +64,8 @@ tasks.named("processResources") {
 }
 
 tasks.named("bootRun") {
-	group = 'QuaK'
-	mainClass = 'edu.kit.quak.QuaKApplication'
+    group = 'QuaK'
+    mainClass = 'edu.kit.quak.QuaKApplication'
 }
 
 tasks.named('test') {

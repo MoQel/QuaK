@@ -71,13 +71,13 @@ class FileRestAdapterTest {
     }
 
     @Test
-    @DisplayName("POST /file/ returns 400 on invalid content-type format")
+    @DisplayName("POST /file/ returns 400 on invalid content-definitionId format")
     void createFile_validationError() throws Exception {
-        // “invalid-type” does not match the regex in the DTO
+        // “invalid-definitionId” does not match the regex in the DTO
         String jsonRequest = """
             {
                 "name": "test.txt",
-                "contentType": "invalid-type"
+                "contentType": "invalid-definitionId"
             }
             """;
 

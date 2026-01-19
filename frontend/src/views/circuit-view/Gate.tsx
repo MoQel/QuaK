@@ -1,50 +1,62 @@
 import {Badge} from "@/components/ui/badge.tsx";
 import styles from "@/App.module.css";
-import {useSortable} from "@dnd-kit/sortable";
-import {CSS} from "@dnd-kit/utilities";
-import {useContext} from "react";
-import {matrixContext} from "@/Context.tsx";
-import {TextIcon} from "@/views/TextIcon.tsx"
-import {CircuitCell} from "@/App.tsx"
+import {GateResponse} from "@/api/dto/circuit.ts";
+import React, {useRef} from 'react'
+import {TextIcon} from '@/views/TextIcon.tsx'
 
-export function Gate({id, type}: CircuitCell) {
+interface GateProps extends GateResponse {
+    onDragStart?: (id: string) => void;
+    onDragEnd?: () => void;
+    onDelete?: () => void;
+}
 
-    const {attributes, listeners, setNodeRef, transform, transition, isDragging} = useSortable({
-        id: id,
-        data: {
-            source: "circuit"
+export function Gate({ id, definitionId, onDragStart, onDragEnd, onDelete }: GateProps) {
+    const Icon = TextIcon(definitionId);
+    const isDraggingRef = useRef(false);
+
+    const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
+        isDraggingRef.current = true;
+        const data = {
+            origin: "circuit",
+            id: id
+        };
+        e.dataTransfer.setData("text/plain", JSON.stringify(data)); // Use text/plain to support Safari
+        e.dataTransfer.effectAllowed = "move";
+
+        // Timeout of 1 frame to prevent drag cancellation by allowing the browser to
+        // capture the "drag image" before React removes the element from the DOM.
+        setTimeout(() => {
+            onDragStart?.(id);
+        }, 0);
+    };
+
+    const handleDragEnd = () => {
+        onDragEnd?.();
+
+        // Wait 100ms to avoid 'phantom clicks' by browser causing a delete request.
+        setTimeout(() => {
+            isDraggingRef.current = false;
+        }, 100);
+    };
+
+    const handleClick = () => {
+        if (isDraggingRef.current) {
+            return;
         }
-    })
-    const style = {
-        transition,
-        transform: CSS.Transform.toString(transform),
-    }
-    const matrix = useContext(matrixContext)
-    const Icon = TextIcon(type)
+        onDelete?.();
+    };
 
-    if (isDragging) {
-        return (
-            <div ref={setNodeRef}
-                 {...attributes}
-                 {...listeners}
-                 id={id}
-                 style={style}>
-                <Badge className={`${styles.gateDragging} ${type === 'DUMMY' ? 'invisible' : ''}`}>
-                </Badge>
-            </div>
-        )
-    }
     return (
-        <div ref={setNodeRef}
-             {...attributes}
-             {...listeners}
-             id={id}
-             style={style}
-             onClick={() => matrix.removeGate(id)}
+        <div
+            draggable={definitionId !== 'PLACEHOLDER'}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+            onClick={handleClick}
+            className="cursor-grab active:cursor-grabbing"
         >
-            <Badge className={` ${styles.gate} ${type === 'DUMMY' ? 'invisible' : ''}`}>
-                <Icon/>
+            <Badge className={`${styles.gate} ${definitionId === 'PLACEHOLDER' ? 'opacity-60' : ''}`}>
+                <Icon />
             </Badge>
         </div>
-    )
+    );
 }

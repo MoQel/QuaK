@@ -107,16 +107,16 @@ export const api = {
 
 /**
  * Example usage:
- * 
+ *
  * // GET request
  * const projects = await api.get<Project[]>('/api/projects');
- * 
+ *
  * // POST request
  * const newProject = await api.post<Project>('/api/projects', { name: 'My Project' });
- * 
+ *
  * // PUT request
  * const updated = await api.put<Project>('/api/projects/123', { name: 'Updated Name' });
- * 
+ *
  * // DELETE request
  * await api.delete('/api/projects/123');
  */

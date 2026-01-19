@@ -287,7 +287,7 @@ paths:
             type: string
       responses:
         200:
-          description: The file's content. The content-type is chosen by the user.
+          description: The file's content. The content-definitionId is chosen by the user.
           content:
             '*/*':
               example: "Hello World"
@@ -304,7 +304,7 @@ paths:
             type: string
         - name: Content-Type
           in: header
-          description: Indicates the media type of the content
+          description: Indicates the media definitionId of the content
           required: true
           schema:
             type: string
@@ -353,7 +353,7 @@ components:
         - $ref: '#/components/schemas/File'
         - $ref: '#/components/schemas/Directory'
       discriminator:
-        propertyName: type
+        propertyName: definitionId
 
     FileElement:
       type: object
@@ -384,7 +384,7 @@ components:
               description: Unix-Epoch in seconds
             contentType:
               type: string
-              description: The content-type of the file's content
+              description: The content-definitionId of the file's content
 
     Directory:
       allOf:

@@ -1,13 +1,14 @@
-// Java GateResponse
-export interface GateResponseDto {
-    id: string;
+import {GateDefinitionIdentifier} from '@/api/dto/GateDefinitionIdentifier.ts'
+
+export interface GateDefinitionResponse {
+    id: GateDefinitionIdentifier;
     name: string;
-    type: string;
+    symbol: string;
+    category: string;
     description: string;
     qubitCount: number;
-    symbol: string;
     parameters: string[];
-    inspectorInfo?: InspectorInfoDto;
+    inspectorInfo: InspectorInfoDto;
 }
 
 export interface InspectorInfoDto {
