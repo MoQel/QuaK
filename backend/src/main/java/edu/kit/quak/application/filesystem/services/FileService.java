@@ -43,7 +43,10 @@ public class FileService extends AbstractFileElementService<File> implements Fil
         FileElementContainer<?> parent = getParentById(parentId);
         parent.addChild(element);
         FileElementContainer<?> savedParent = delegator.save(parent);
-        return findElementInParent(savedParent, element.getId());
+        // Create initially empty content entry
+        File createdFile = findElementInParent(savedParent, element.getId());
+        contentRepository.saveContent(createdFile.getId(), new byte[0]);
+        return createdFile;
     }
 
     // endregion Create
@@ -61,10 +64,9 @@ public class FileService extends AbstractFileElementService<File> implements Fil
     @Transactional
     public byte[] getFileContent(String fId, User user) {
         log.debug("Retrieving content for file '{}'", fId);
-        File file =
-                repository
-                        .findById(fId)
-                        .orElseThrow(() -> new NoSuchElementException("File not found: " + fId));
+        File file = repository
+                .findById(fId)
+                .orElseThrow(() -> new NoSuchElementException("File not found: " + fId));
         verifyOwnershipByParentId(file.getParentId(), user);
         return contentRepository.loadContent(fId).orElseThrow(NoSuchElementException::new);
     }

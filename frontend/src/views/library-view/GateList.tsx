@@ -1,19 +1,20 @@
-import {QuantumGate} from "@/views/QuantumGate.tsx";
 import {useMemo} from "react";
 import { LibraryElement } from "@/views/library-view/LibraryElement.tsx";
+import {GateDefinitionResponse} from '@/api/dto/library.ts'
 
 interface GateListProps {
-    gates: QuantumGate[];
+    gates: GateDefinitionResponse[];
+    onGateClick: (gate: GateDefinitionResponse) => void;
 }
 
-function GateList({ gates }: GateListProps) {
+function GateList({ gates, onGateClick }: GateListProps) {
 
     // Group and sort by type and then by name
     const groupedGates = useMemo(() => {
-        const groups: Record<string, QuantumGate[]> = {};
+        const groups: Record<string, GateDefinitionResponse[]> = {};
 
         for (const gate of gates) {
-            const type = gate.type;
+            const type = gate.category;
             if (!groups[type]) {
                 groups[type] = [];
             }
@@ -81,7 +82,7 @@ function GateList({ gates }: GateListProps) {
                                             alignItems: "center",
                                         }}
                                     >
-                                        <LibraryElement id={gate.name} type={gate.symbol} />
+                                        <LibraryElement id={gate.id} symbol={gate.symbol} matrix={gate.inspectorInfo.matrix.display} onClick={() => onGateClick(gate)} />
                                     </div>
 
                                     <div style={{ textAlign: "left" }}>

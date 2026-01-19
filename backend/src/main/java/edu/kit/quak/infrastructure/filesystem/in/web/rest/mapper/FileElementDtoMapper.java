@@ -33,7 +33,7 @@ public class FileElementDtoMapper {
         } else if (element instanceof Directory dir) {
             return directoryMapper.toDetailsResponse(dir);
         } else {
-            throw new IllegalArgumentException("Unknown FileElement type: " + element.getClass());
+            throw new IllegalArgumentException("Unknown FileElement definitionId: " + element.getClass());
         }
     }
 

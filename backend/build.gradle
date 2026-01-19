@@ -12,13 +12,13 @@ group = 'edu.kit'
 version = '0.0.1-SNAPSHOT'
 
 java {
-	toolchain {
-		languageVersion = JavaLanguageVersion.of(21)
-	}
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
 }
 
 repositories {
-	mavenCentral()
+    mavenCentral()
 }
 
 spotless {
@@ -67,21 +67,21 @@ dependencies {
 }
 
 tasks.register('cleanFrontendFiles', Delete) {
-	group = 'QuaK'
-	def stat = layout.projectDirectory.dir("src/main/resources/static").asFile
-	def toDelete = stat.listFiles().findAll() { file ->
-		!file.name.startsWith(".git")
-	}
-	delete toDelete
+    group = 'QuaK'
+    def stat = layout.projectDirectory.dir("src/main/resources/static").asFile
+    def toDelete = stat.listFiles().findAll() { file ->
+        !file.name.startsWith(".git")
+    }
+    delete toDelete
 }
 
 tasks.register('getFrontend', Copy) {
-	dependsOn npm_run_build
-	dependsOn cleanFrontendFiles
-	group = 'QuaK'
-	description = 'Copy frontend into static-folder inside the backend'
-	from(layout.projectDirectory.dir("../frontend/dist"))
-	into(layout.projectDirectory.dir('src/main/resources/static'))
+    dependsOn npm_run_build
+    dependsOn cleanFrontendFiles
+    group = 'QuaK'
+    description = 'Copy frontend into static-folder inside the backend'
+    from(layout.projectDirectory.dir("../frontend/dist"))
+    into(layout.projectDirectory.dir('src/main/resources/static'))
 }
 
 tasks.register('prepareDevStatic') {

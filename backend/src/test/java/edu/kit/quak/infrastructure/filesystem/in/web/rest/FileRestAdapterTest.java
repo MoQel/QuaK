@@ -30,24 +30,27 @@ import org.springframework.test.web.servlet.MockMvc;
 
 @IntegrationTest
 @WebMvcTest(FileRestAdapter.class)
-@org.springframework.context.annotation.ComponentScan(basePackageClasses = {FileDtoMapper.class})
+@org.springframework.context.annotation.ComponentScan(basePackageClasses = { FileDtoMapper.class })
 @WithMockUser(username = "tester", roles = "USER") // Simulates logged-in user
 class FileRestAdapterTest {
 
-    @Autowired MockMvc mockMvc;
+    @Autowired
+    MockMvc mockMvc;
 
-    @MockitoBean FileServicePort fileService;
+    @MockitoBean
+    FileServicePort fileService;
 
-    @MockitoBean UserServicePort userService;
+    @MockitoBean
+    UserServicePort userService;
 
-    @MockitoBean AuthenticationMapper authenticationMapper;
+    @MockitoBean
+    AuthenticationMapper authenticationMapper;
 
     private User testUser;
 
     @BeforeEach
     void setUp() {
-        AuthenticatedUser testAuthUser =
-                new AuthenticatedUser(UUID.randomUUID(), "github", "tester");
+        AuthenticatedUser testAuthUser = new AuthenticatedUser(UUID.randomUUID(), "github", "tester");
         testUser = new User(testAuthUser.userId(), testAuthUser.issuer(), testAuthUser.subject());
 
         when(authenticationMapper.toDomain(any())).thenReturn(testAuthUser);
@@ -63,8 +66,7 @@ class FileRestAdapterTest {
         when(fileService.createFile(any(File.class), eq("d-1"), any(User.class)))
                 .thenReturn(createdFile);
 
-        String jsonRequest =
-                """
+        String jsonRequest = """
                 {
                     "name": "test.txt",
                     "contentType": "text/plain"
@@ -72,11 +74,11 @@ class FileRestAdapterTest {
                 """;
 
         mockMvc.perform(
-                        post("/api/file/")
-                                .with(csrf())
-                                .header(ApiConstants.HEADER_PARENT_ID, "d-1")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(jsonRequest))
+                post("/api/file/")
+                        .with(csrf())
+                        .header(ApiConstants.HEADER_PARENT_ID, "d-1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonRequest))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value("f-123"))
                 .andExpect(jsonPath("$.name").value("test.txt"))
@@ -84,11 +86,10 @@ class FileRestAdapterTest {
     }
 
     @Test
-    @DisplayName("POST /file/ returns 400 on invalid content-type format")
+    @DisplayName("POST /file/ returns 400 on invalid content-definitionId format")
     void createFile_validationError() throws Exception {
         // "invalid-type" does not match the regex in the DTO
-        String jsonRequest =
-                """
+        String jsonRequest = """
                 {
                     "name": "test.txt",
                     "contentType": "invalid-type"
@@ -96,11 +97,11 @@ class FileRestAdapterTest {
                 """;
 
         mockMvc.perform(
-                        post("/api/file/")
-                                .with(csrf())
-                                .header(ApiConstants.HEADER_PARENT_ID, "d-1")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(jsonRequest))
+                post("/api/file/")
+                        .with(csrf())
+                        .header(ApiConstants.HEADER_PARENT_ID, "d-1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonRequest))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.title").exists())
                 .andExpect(jsonPath("$.status").value(400));
@@ -142,10 +143,10 @@ class FileRestAdapterTest {
                 """;
 
         mockMvc.perform(
-                        patch("/api/file/f-123")
-                                .with(csrf())
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(jsonRequest))
+                patch("/api/file/f-123")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonRequest))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("renamed.txt"));
     }
@@ -166,8 +167,7 @@ class FileRestAdapterTest {
     @DisplayName("PUT /file/{id}/content updates content")
     void setFileContent_success() throws Exception {
         // "SGVsbG8=" ist Base64 für "Hello"
-        String jsonRequest =
-                """
+        String jsonRequest = """
                 {
                     "content": "SGVsbG8=",
                     "contentType": "text/plain"
@@ -175,10 +175,10 @@ class FileRestAdapterTest {
                 """;
 
         mockMvc.perform(
-                        put("/api/file/f-123/content")
-                                .with(csrf())
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(jsonRequest))
+                put("/api/file/f-123/content")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonRequest))
                 .andExpect(status().isOk());
 
         verify(fileService)

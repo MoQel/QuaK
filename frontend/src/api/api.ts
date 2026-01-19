@@ -70,7 +70,6 @@ export async function apiRequest<T>(
             throw new Error(errorData.message || `API error: ${response.statusText}`);
         }
 
-        // Return parsed JSON
         // Return parsed JSON or text based on content type
         const contentType = response.headers.get("content-type");
         if (contentType && contentType.indexOf("application/json") !== -1) {
@@ -124,4 +123,3 @@ export const api = {
             body: JSON.stringify(data),
         }),
 };
-

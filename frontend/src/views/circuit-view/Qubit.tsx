@@ -1,99 +1,180 @@
 import styles from "@/App.module.css";
-import {horizontalListSortingStrategy, SortableContext, useSortable} from "@dnd-kit/sortable";
 import {Gate} from "@/views/circuit-view/Gate.tsx"
 import {Button} from "@/components/ui/button"
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover"
 import {Input} from "@/components/ui/input.tsx";
-import {ChangeEvent, useContext, useState} from "react";
-import {matrixContext} from "@/Context.tsx";
-import {CircuitCell} from "@/App.tsx"
+import React, {Fragment, useState} from "react";
+import {
+    AddGateRequest,
+    ChangeQubitNameRequest,
+    MoveGateRequest,
+    QubitResponse
+} from "@/api/dto/circuit.ts";
 
-type QuantumWiresProps = {
-    gates: CircuitCell[];
+interface QubitProps extends QubitResponse {
+    name: string;
     qubitIndex: number;
-    length: number;
-};
+    onNameChange: (payload: ChangeQubitNameRequest) => void;
+    onDelete: () => void;
+    onGateAdd: (payload: AddGateRequest) => void;
+    onGateMove: (payload: MoveGateRequest) => void;
+    onGateDelete: (id: string) => void;
+}
 
-export function Qubit({gates, qubitIndex, length}: QuantumWiresProps) {
-    const {setNodeRef} = useSortable({
-        id: qubitIndex,
-    })
+export function Qubit({id, name, gates, qubitIndex, onNameChange, onDelete, onGateAdd, onGateMove, onGateDelete}: Readonly<QubitProps>) {
+    const [tempName, setTempName] = useState<string>(name);
+    const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+    const [draggingGateId, setDraggingGateId] = useState<string | null>(null);
+    const [isPopoverOpen, setIsPopoverOpen] = useState(false);
 
-    const [qubitName, setQubitName] = useState<string>(`q${qubitIndex}`)
-    const [tempName, setTempName] = useState<string>(qubitName)
-    const matrix = useContext(matrixContext)
-    const maxLength = 4;
-    const isTooLong = tempName.length > maxLength;
-    const onNameChange = (e: ChangeEvent<HTMLInputElement>) => {
-        setTempName(e.target.value)
-    }
-    const onSave = () => {
-        if (tempName.length <= maxLength) {
-            setQubitName(tempName)
+    const visibleGates = gates.filter(g => g.id !== draggingGateId);
+
+    const maxQubitNameLength = 4;
+
+    const onNameInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.value.length <= maxQubitNameLength) {
+            setTempName(e.target.value);
         }
     }
-    const deleteQubit = () => {
 
-        matrix.setMatrixState((prev) => {
-            //Simple version of deletion, will get complicated with implementation of multi-gates
-            return prev.filter((_, index) => index !== qubitIndex);
-        });
-
+    const onSave = (e: React.FormEvent) => {
+        e.preventDefault();
+        const payload: ChangeQubitNameRequest = {
+            id: id,
+            name: tempName
+        }
+        onNameChange(payload);
+        setIsPopoverOpen(false);
     }
+
+    const handleDrop = async (e: React.DragEvent, qubitIdx: number, positionIdx: number) => {
+        e.preventDefault();
+        setHoverIndex(null);
+        setDraggingGateId(null);
+
+        const rawData = e.dataTransfer.getData("text/plain");
+        if (!rawData) return;
+
+        const gate = JSON.parse(rawData);
+
+        if (gate.origin === "library") {
+            const payload: AddGateRequest = {
+                definitionId: gate.id,
+                toQubitIdx: qubitIdx,
+                toPositionIdx: positionIdx
+            };
+            onGateAdd(payload);
+        } else if (gate.origin === "circuit") {
+            const payload: MoveGateRequest = {
+                id: gate.id,
+                toQubitIdx: qubitIdx,
+                toPositionIdx: positionIdx
+            };
+            onGateMove(payload);
+        } else {
+            throw new Error("Invalid gate origin: " + gate.origin);
+        }
+    };
+
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+    };
+
     return (
-        <div ref={setNodeRef} className="flex items-center space-x-2 pb-5">
-            <div>
-                <Popover>
-                    <PopoverTrigger asChild>
-                        <Button
-                            className={`${styles.qubit} font-mono text-sm font-bold select-none`}
-                        >
-                            |{qubitName}&gt;
-                        </Button>
-                    </PopoverTrigger>
-                    <PopoverContent>
-                        <div className="flex flex-col space-y-2">
-                            <div className="flex flex-row space-x-2">
-                                <Input
-                                    id="qubitName"
-                                    value={tempName}
-                                    onChange={onNameChange}
-                                    className="font-mono"
-                                />
-                                <Button
-                                    onClick={onSave}
-                                    className="w-16 h-8 font-mono text-sm font-bold select-none"
-                                >
-                                    Save
-                                </Button>
-                            </div>
-                            {isTooLong && (
-                                <span className="self-start text-red-500 text-xs">
-                                    Name too long! Max {maxLength} characters.
-                                </span>
-                            )}
+        <div className="flex items-center py-3">
+            <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+                <PopoverTrigger asChild>
+                    <Button
+                        className={`${styles.qubit} font-mono text-sm font-bold select-none`}
+                    >
+                        |{name}&gt;
+                    </Button>
+                </PopoverTrigger>
+                <PopoverContent>
+                    <form onSubmit={onSave} className="flex flex-col space-y-2">
+                        <div className="flex flex-row space-x-2">
+                            <Input
+                                id="qubitName"
+                                value={tempName}
+                                onChange={onNameInputChange}
+                                className="font-mono"
+                            />
                             <Button
-                                onClick={deleteQubit}
-                                variant="destructive"
-                                className="w-30 h-8 font-mono text-sm font-bold select-none"
+                                type="submit"
+                                className="w-16 h-8 font-mono text-sm font-bold select-none"
                             >
-                                Remove Wire
+                                Save
                             </Button>
                         </div>
-                    </PopoverContent>
-                </Popover>
-            </div>
+                        <Button
+                            type="button"
+                            onClick={onDelete}
+                            variant="destructive"
+                            className="w-30 h-8 font-mono text-sm font-bold select-none"
+                        >
+                            Remove Wire
+                        </Button>
+                    </form>
+                </PopoverContent>
+            </Popover>
 
-            <div className="relative" style={{width: `${length}px`, height: "40px"}}>
-
+            <div className={`${styles.qubitWireSpacing} relative flex-grow self-stretch`}>
                 <div className={`${styles.lines} absolute top-1/2 w-full`}/>
-                <div className="flex items-center h-full space-x-3 pl-3 relative z-10">
-                    {/* Actual quantum Gates */}
-                    <SortableContext items={gates} strategy={horizontalListSortingStrategy}>
-                        {gates.map((gate, index) => (
-                            <Gate key={`${gate.type}-${qubitIndex}-${index}`} id={gate.id} type={gate.type}/>
-                        ))}
-                    </SortableContext>
+                <div className="flex items-center h-full w-full relative z-10">
+                {/* Actual quantum Gates */}
+                    {visibleGates.map((gate, index) => (
+                        <Fragment key={`frag-${qubitIndex}-${index}`}>
+                            {/* Dropzone before every Gate */}
+                            <div
+                                className={`self-stretch ${styles.dropzoneSpacing}`}
+                                onDragOver={handleDragOver}
+                                onDragEnter={() => setHoverIndex(index)}
+                                onDragLeave={(e) => {
+                                    const rt = e.relatedTarget as Node | null;
+                                    if (!rt || !e.currentTarget.contains(rt)) {
+                                        setHoverIndex(null);
+                                    }
+                                }}
+                                onDrop={(e) => handleDrop(e, qubitIndex, index)}
+                            >
+                                {hoverIndex === index && (
+                                    <div className={styles.dropZonePlaceHolderMargin} style={{ pointerEvents: "none" }}>
+                                        <Gate key="placeholder" id="placeholder" definitionId="PLACEHOLDER" />
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Actual Gate */}
+                            <Gate key={`${gate.definitionId}-${qubitIndex}-${index}`}
+                                  id={gate.id}
+                                  definitionId={gate.definitionId}
+                                  onDragStart={(id) => setDraggingGateId(id)}
+                                  onDragEnd={() => setDraggingGateId(null)}
+                                  onDelete={() => onGateDelete(gate.id)}/>
+                        </Fragment>
+                    ))}
+
+                    {/* Dropzone after last Gate */}
+                    <div
+                        className={`${styles.dropzoneSpacing} self-stretch grow flex justify-start`}
+                        onDragOver={handleDragOver}
+                        onDragEnter={() => {
+                            setHoverIndex(visibleGates.length);
+                        }}
+                        onDragLeave={(e) => {
+                            const rt = e.relatedTarget as Node | null;
+                            if (!rt || !e.currentTarget.contains(rt)) {
+                                setHoverIndex(null);
+                            }
+                        }}
+                        onDrop={(e) => handleDrop(e, qubitIndex, visibleGates.length)}
+                    >
+                        {hoverIndex === visibleGates.length && (
+                            <div className={styles.dropZoneLastPlaceHolderMargin} style={{ pointerEvents: "none" }}>
+                                <Gate key="placeholder" id="placeholder" definitionId="PLACEHOLDER" />
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>
