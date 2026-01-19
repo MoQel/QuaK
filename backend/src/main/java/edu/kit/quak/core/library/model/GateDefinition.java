@@ -12,10 +12,12 @@ public record GateDefinition(
         String symbol,
         List<String> parameters,
         InspectorInfo inspectorInfo) {
-    // Compact constructor to ensure non-null lists and handle optional InspectorInfo
+    // Compact constructor to ensure non-null lists and handle optional
+    // InspectorInfo
     public GateDefinition {
         parameters = parameters != null ? Collections.unmodifiableList(parameters) : List.of();
-        // InspectorInfo can be null - it's optional for gates that don't need inspector details
+        // InspectorInfo can be null - it's optional for gates that don't need inspector
+        // details
     }
 
     /**
@@ -38,21 +40,13 @@ public record GateDefinition(
     }
 
     /** Represents a single row in the truth table logic. */
-    public record TruthTableEntry(
-            String input, // e.g., "|0>"
-            String output // e.g., "|1>"
-            ) {}
+    public record TruthTableEntry(String input, String output) {}
 
     /**
      * Dual representation of the gate matrix: 1. Display (LaTeX) for reading. 2. Computable (Math
      * strings) for calculating numeric values in the frontend.
      */
-    public record MatrixInfo(
-            String display, // LaTeX string
-            int rows,
-            int cols,
-            List<List<String>> computable // 2D grid of math strings (e.g. "cos(theta/2)")
-            ) {
+    public record MatrixInfo(String display, int rows, int cols, List<List<String>> computable) {
         // ensures non-null and validates dimensions
         public MatrixInfo {
             display = display != null ? display : "";

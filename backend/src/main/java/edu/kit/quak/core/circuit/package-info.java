@@ -11,7 +11,7 @@
  *   <li>Elementary and composite quantum operations
  * </ul>
  *
- * Reference: F. Gemeinhardt, A. Garmendia, M. Wimmer, R. Wille, "A Model-Driven Framework for
+ * <p>Reference: F. Gemeinhardt, A. Garmendia, M. Wimmer, R. Wille, "A Model-Driven Framework for
  * Composition-Based Quantum Circuit Design", Johannes Kepler University Linz, 2024.
  *
  * @see <a href="https://dl.acm.org/doi/10.1145/3688856">ACM Digital Library: A Model-Driven
