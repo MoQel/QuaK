@@ -4,15 +4,13 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.Scanner;
 
-/**
- * Utility class to load environment variables from a .env file.
- */
+/** Utility class to load environment variables from a .env file. */
 public class DotenvLoader {
 
     /**
-     * Loads environment variables from a .env file if it exists.
-     * This allows IDE debugging to work without manual environment configuration.
-     * It sets variables as system properties if they are not already set.
+     * Loads environment variables from a .env file if it exists. This allows IDE debugging to work
+     * without manual environment configuration. It sets variables as system properties if they are
+     * not already set.
      */
     public static void loadEnv() {
         File envFile = new File(".env");

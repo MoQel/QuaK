@@ -1,13 +1,9 @@
 package edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity;
 
 import jakarta.persistence.*;
-
 import java.time.Instant;
 
-/**
- * JPA Entity for Storage
- * Contains persistence annotations and id configurations
- */
+/** JPA Entity for Storage Contains persistence annotations and id configurations */
 @Entity
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "dtype", discriminatorType = DiscriminatorType.STRING)
@@ -36,8 +32,7 @@ public abstract class JpaFileElement<SELF extends JpaFileElement<?>> {
         this.parent = parent;
     }
 
-    protected JpaFileElement() {
-    }
+    protected JpaFileElement() {}
 
     public String getId() {
         return id;
@@ -81,10 +76,8 @@ public abstract class JpaFileElement<SELF extends JpaFileElement<?>> {
 
     @Override
     public final boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (!(o instanceof JpaFileElement<?> that))
-            return false;
+        if (this == o) return true;
+        if (!(o instanceof JpaFileElement<?> that)) return false;
         return getId() != null && getId().equals(that.getId());
     }
 

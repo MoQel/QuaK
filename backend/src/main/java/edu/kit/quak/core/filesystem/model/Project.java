@@ -1,18 +1,14 @@
 package edu.kit.quak.core.filesystem.model;
 
+import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.UUID;
-
 /**
- * Domain POJO for Project
- * A project is a top level container of {@link FileElement}.
+ * Domain POJO for Project A project is a top level container of {@link FileElement}.
  *
- * @implNote Projects are in their core similar to a directory.
- *           They are implemented in an own class to allow for different
- *           functionalities
- *           later in development.
+ * @implNote Projects are in their core similar to a directory. They are implemented in an own class
+ *     to allow for different functionalities later in development.
  * @author Henrik K
  */
 @Getter
@@ -23,8 +19,8 @@ public class Project extends FileElementContainer<Project> {
     public static final char ID_PREFIX = 'p';
 
     /**
-     * The UUID of the user who owns this project.
-     * This is used for user isolation - each user can only see their own projects.
+     * The UUID of the user who owns this project. This is used for user isolation - each user can
+     * only see their own projects.
      */
     private UUID ownerId;
 

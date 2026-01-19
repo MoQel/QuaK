@@ -1,5 +1,7 @@
 package edu.kit.quak.infrastructure.filesystem.in.web.rest.mapper;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import edu.kit.quak.core.filesystem.model.Directory;
 import edu.kit.quak.core.filesystem.model.File;
 import edu.kit.quak.infrastructure.filesystem.in.web.rest.dto.FileElementDto;
@@ -11,8 +13,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mapstruct.factory.Mappers;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 @UnitTest
 @ExtendWith(MockitoExtension.class)

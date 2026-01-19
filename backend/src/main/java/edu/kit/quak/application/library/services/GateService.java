@@ -3,11 +3,10 @@ package edu.kit.quak.application.library.services;
 import edu.kit.quak.application.library.ports.in.GateServicePort;
 import edu.kit.quak.application.library.ports.out.GateRepositoryPort;
 import edu.kit.quak.core.library.model.Gate;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
 import java.util.List;
 import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j

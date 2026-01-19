@@ -5,9 +5,8 @@ import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
 
 /**
- * JPA entity for persisting File domain objects.
- * This lives in the infrastructure layer and maps directly to the database
- * schema.
+ * JPA entity for persisting File domain objects. This lives in the infrastructure layer and maps
+ * directly to the database schema.
  */
 @Entity
 @DiscriminatorValue("file")

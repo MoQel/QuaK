@@ -22,7 +22,10 @@ public class FileRestAdapter {
     private final FileDtoMapper mapper;
     private final AuthenticationMapper authMapper;
 
-    public FileRestAdapter(FileServicePort service, UserServicePort userService, FileDtoMapper mapper,
+    public FileRestAdapter(
+            FileServicePort service,
+            UserServicePort userService,
+            FileDtoMapper mapper,
             AuthenticationMapper authMapper) {
         this.service = service;
         this.userService = userService;
@@ -45,7 +48,8 @@ public class FileRestAdapter {
 
     @GetMapping("/{fId}")
     @PreAuthorize("isAuthenticated()")
-    public FileDetailsResponse retrieveFile(@PathVariable String fId, Authentication authentication) {
+    public FileDetailsResponse retrieveFile(
+            @PathVariable String fId, Authentication authentication) {
         User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
         File domainFile = service.retrieveFile(fId, user);
         return mapper.toDetailsResponse(domainFile);
@@ -71,7 +75,8 @@ public class FileRestAdapter {
 
     @GetMapping("/{fId}/content")
     @PreAuthorize("isAuthenticated()")
-    public FileContentResponse getFileContent(@PathVariable String fId, Authentication authentication) {
+    public FileContentResponse getFileContent(
+            @PathVariable String fId, Authentication authentication) {
         User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
         byte[] content = service.getFileContent(fId, user);
         return mapper.toContentResponse(content);
@@ -79,7 +84,8 @@ public class FileRestAdapter {
 
     @PutMapping("/{fId}/content")
     @PreAuthorize("isAuthenticated()")
-    public void setFileContent(@PathVariable String fId,
+    public void setFileContent(
+            @PathVariable String fId,
             @RequestBody FileContentRequest fileContent,
             Authentication authentication) {
         User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));

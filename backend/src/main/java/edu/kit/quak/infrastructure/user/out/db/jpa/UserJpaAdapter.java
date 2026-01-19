@@ -5,14 +5,13 @@ import edu.kit.quak.core.user.model.User;
 import edu.kit.quak.infrastructure.user.out.db.jpa.entity.JpaUser;
 import edu.kit.quak.infrastructure.user.out.db.jpa.mapper.UserJpaMapper;
 import edu.kit.quak.infrastructure.user.out.db.jpa.repository.SpringDataUserRepository;
-import org.springframework.stereotype.Component;
-
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.stereotype.Component;
 
 /**
- * JPA adapter implementing UserRepositoryPort.
- * This adapter translates domain operations to JPA operations.
+ * JPA adapter implementing UserRepositoryPort. This adapter translates domain operations to JPA
+ * operations.
  */
 @Component
 public class UserJpaAdapter implements UserRepositoryPort {

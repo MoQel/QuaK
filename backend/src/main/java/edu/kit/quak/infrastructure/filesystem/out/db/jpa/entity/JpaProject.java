@@ -3,10 +3,9 @@ package edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity;
 import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
+import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
-
-import java.util.UUID;
 
 @Entity
 @DiscriminatorValue("project")
@@ -15,9 +14,8 @@ import java.util.UUID;
 public class JpaProject extends JpaFileElementContainer<JpaProject> {
 
     /**
-     * The UUID of the user who owns this project.
-     * We store only the ID to avoid coupling filesystem entities with user
-     * entities.
+     * The UUID of the user who owns this project. We store only the ID to avoid coupling filesystem
+     * entities with user entities.
      */
     @Column(name = "owner_id")
     private UUID ownerId;

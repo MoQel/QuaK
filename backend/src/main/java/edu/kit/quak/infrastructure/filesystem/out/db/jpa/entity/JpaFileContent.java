@@ -13,8 +13,7 @@ public class JpaFileContent {
     @Column(name = "file_id", nullable = false, updatable = false)
     private String fileId;
 
-    @Lob
-    private byte[] content;
+    @Lob private byte[] content;
 
     protected JpaFileContent() {}
 
@@ -23,7 +22,15 @@ public class JpaFileContent {
         this.content = content;
     }
 
-    public byte[] getContent() { return content; }
-    public void setContent(byte[] content) { this.content = content; }
-    public String getFileId() { return fileId; }
+    public byte[] getContent() {
+        return content;
+    }
+
+    public void setContent(byte[] content) {
+        this.content = content;
+    }
+
+    public String getFileId() {
+        return fileId;
+    }
 }

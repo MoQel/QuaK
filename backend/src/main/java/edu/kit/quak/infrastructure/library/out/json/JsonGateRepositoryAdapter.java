@@ -4,10 +4,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.kit.quak.application.library.ports.out.GateRepositoryPort;
 import edu.kit.quak.core.library.model.Gate;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.stereotype.Repository;
-
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.io.InputStream;
@@ -16,6 +12,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.stereotype.Repository;
 
 @Repository
 public class JsonGateRepositoryAdapter implements GateRepositoryPort {
@@ -25,8 +24,9 @@ public class JsonGateRepositoryAdapter implements GateRepositoryPort {
     private List<Gate> cachedGates = Collections.emptyList();
 
     // Constructor Injection with property
-    public JsonGateRepositoryAdapter(ObjectMapper objectMapper,
-                                     @Value("${quak.library.gates-file:gates.json}") String gatesFilePath) {
+    public JsonGateRepositoryAdapter(
+            ObjectMapper objectMapper,
+            @Value("${quak.library.gates-file:gates.json}") String gatesFilePath) {
         this.objectMapper = objectMapper;
         this.gatesFilePath = gatesFilePath;
     }
@@ -43,9 +43,7 @@ public class JsonGateRepositoryAdapter implements GateRepositoryPort {
 
     @Override
     public Optional<Gate> findGateByName(String name) {
-        return cachedGates.stream()
-                .filter(g -> g.name().equalsIgnoreCase(name))
-                .findFirst();
+        return cachedGates.stream().filter(g -> g.name().equalsIgnoreCase(name)).findFirst();
     }
 
     private List<Gate> loadGatesFromJson() {
@@ -57,12 +55,11 @@ public class JsonGateRepositoryAdapter implements GateRepositoryPort {
 
             try (InputStream is = resource.getInputStream()) {
                 JsonGateDto[] dtos = objectMapper.readValue(is, JsonGateDto[].class);
-                return Arrays.stream(dtos)
-                        .map(JsonGateDto::toDomain)
-                        .collect(Collectors.toList());
+                return Arrays.stream(dtos).map(JsonGateDto::toDomain).collect(Collectors.toList());
             }
         } catch (IOException e) {
-            throw new IllegalStateException("Failed to parse gate library from " + gatesFilePath, e);
+            throw new IllegalStateException(
+                    "Failed to parse gate library from " + gatesFilePath, e);
         }
     }
 
@@ -71,8 +68,7 @@ public class JsonGateRepositoryAdapter implements GateRepositoryPort {
             @JsonProperty("type") String type,
             @JsonProperty("description") String description,
             @JsonProperty("qubitCount") int qubitCount,
-            @JsonProperty("symbol") Gate.SYMBOL symbol
-    ) {
+            @JsonProperty("symbol") Gate.SYMBOL symbol) {
         Gate toDomain() {
             return new Gate(name, type, description, qubitCount, symbol);
         }

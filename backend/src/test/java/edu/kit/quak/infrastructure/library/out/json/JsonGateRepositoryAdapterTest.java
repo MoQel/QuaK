@@ -1,11 +1,11 @@
 package edu.kit.quak.infrastructure.library.out.json;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.kit.quak.shared.tags.UnitTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 @UnitTest
 class JsonGateRepositoryAdapterTest {

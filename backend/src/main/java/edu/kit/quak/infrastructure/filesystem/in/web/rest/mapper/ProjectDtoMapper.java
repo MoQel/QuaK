@@ -4,13 +4,14 @@ import edu.kit.quak.core.filesystem.model.Project;
 import edu.kit.quak.infrastructure.filesystem.in.web.rest.dto.ProjectContentsResponse;
 import edu.kit.quak.infrastructure.filesystem.in.web.rest.dto.ProjectDetailsResponse;
 import edu.kit.quak.infrastructure.filesystem.in.web.rest.dto.ProjectRequest;
+import java.util.List;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
 
-import java.util.List;
-
-@Mapper(componentModel = MappingConstants.ComponentModel.SPRING, uses = { FileElementDtoMapper.class })
+@Mapper(
+        componentModel = MappingConstants.ComponentModel.SPRING,
+        uses = {FileElementDtoMapper.class})
 public interface ProjectDtoMapper {
 
     @Mapping(target = "id", ignore = true)

@@ -1,22 +1,19 @@
 package edu.kit.quak.infrastructure.user.out.db.jpa.entity;
 
 import jakarta.persistence.*;
+import java.time.Instant;
+import java.util.UUID;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import java.time.Instant;
-import java.util.UUID;
-
-/**
- * JPA entity for User persistence.
- */
+/** JPA entity for User persistence. */
 @Entity
-@Table(name = "users", uniqueConstraints = {
-        @UniqueConstraint(columnNames = { "issuer", "sub" })
-})
+@Table(
+        name = "users",
+        uniqueConstraints = {@UniqueConstraint(columnNames = {"issuer", "sub"})})
 @Getter
 @Setter
 @NoArgsConstructor

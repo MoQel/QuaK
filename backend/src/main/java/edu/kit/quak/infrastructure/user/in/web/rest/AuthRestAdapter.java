@@ -4,25 +4,20 @@ import edu.kit.quak.application.user.ports.in.AuthServicePort;
 import edu.kit.quak.core.user.model.AuthenticatedUser;
 import edu.kit.quak.infrastructure.user.in.web.rest.mapper.AuthenticationMapper;
 import jakarta.servlet.http.HttpSession;
-
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-
 /**
- * REST adapter for authentication-related endpoints.
- * Handles HTTP-specific concerns and delegates business logic to the
- * application layer.
- * 
- * This adapter is responsible for:
- * - Extracting authentication from Spring Security context
- * - Converting framework-specific objects to domain models
- * - Handling session management
+ * REST adapter for authentication-related endpoints. Handles HTTP-specific concerns and delegates
+ * business logic to the application layer.
+ *
+ * <p>This adapter is responsible for: - Extracting authentication from Spring Security context -
+ * Converting framework-specific objects to domain models - Handling session management
  */
 @RestController
 @RequestMapping("/api/auth")
@@ -31,8 +26,7 @@ public class AuthRestAdapter {
     private final AuthServicePort authService;
     private final AuthenticationMapper authenticationMapper;
 
-    public AuthRestAdapter(AuthServicePort authService,
-            AuthenticationMapper authenticationMapper) {
+    public AuthRestAdapter(AuthServicePort authService, AuthenticationMapper authenticationMapper) {
         this.authService = authService;
         this.authenticationMapper = authenticationMapper;
     }
@@ -47,10 +41,12 @@ public class AuthRestAdapter {
 
     @GetMapping("/user")
     public Map<String, Object> getUser() {
-        AuthenticatedUser authenticatedUser = extractAuthenticatedUser()
-                .orElseThrow(() -> new IllegalStateException("User not authenticated"));
-        Map<String, Object> userInfo = extractUserInfoWithSub()
-                .orElseThrow(() -> new IllegalStateException("User info not available"));
+        AuthenticatedUser authenticatedUser =
+                extractAuthenticatedUser()
+                        .orElseThrow(() -> new IllegalStateException("User not authenticated"));
+        Map<String, Object> userInfo =
+                extractUserInfoWithSub()
+                        .orElseThrow(() -> new IllegalStateException("User info not available"));
 
         return authService.getAuthenticatedUserInfo(authenticatedUser, userInfo);
     }
@@ -72,14 +68,14 @@ public class AuthRestAdapter {
 
     /**
      * Extracts AuthenticatedUser from Spring Security context.
-     * 
-     * @return Optional containing the authenticated user, empty if not
-     *         authenticated
+     *
+     * @return Optional containing the authenticated user, empty if not authenticated
      */
     private Optional<AuthenticatedUser> extractAuthenticatedUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        if (authentication == null || !authentication.isAuthenticated()
+        if (authentication == null
+                || !authentication.isAuthenticated()
                 || "anonymousUser".equals(authentication.getPrincipal())) {
             return Optional.empty();
         }
@@ -93,7 +89,7 @@ public class AuthRestAdapter {
 
     /**
      * Extracts user info (email, name, picture) from OAuth2User principal.
-     * 
+     *
      * @return Optional containing user info map, empty if not available
      */
     private Optional<Map<String, Object>> extractUserInfo() {
@@ -112,7 +108,7 @@ public class AuthRestAdapter {
 
     /**
      * Extracts user info including 'sub' claim from OAuth2User principal.
-     * 
+     *
      * @return Optional containing user info map with sub, empty if not available
      */
     private Optional<Map<String, Object>> extractUserInfoWithSub() {

@@ -5,12 +5,11 @@ import edu.kit.quak.application.filesystem.ports.in.ProjectServicePort;
 import edu.kit.quak.application.filesystem.ports.out.ProjectRepositoryPort;
 import edu.kit.quak.core.filesystem.model.Project;
 import edu.kit.quak.core.user.model.User;
+import java.util.List;
+import java.util.NoSuchElementException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.NoSuchElementException;
 
 @Service
 @Transactional
@@ -33,8 +32,7 @@ public class ProjectService implements ProjectServicePort {
     @Override
     public Project renameProject(String pId, String newName, User user) {
         log.info("Renaming project '{}' to '{}' for user '{}'", pId, newName, user.getId());
-        Project project = repository.findById(pId)
-                .orElseThrow(NoSuchElementException::new);
+        Project project = repository.findById(pId).orElseThrow(NoSuchElementException::new);
 
         verifyOwnership(project, user);
 
@@ -45,8 +43,7 @@ public class ProjectService implements ProjectServicePort {
     @Override
     public void removeProject(String id, User user) {
         log.info("Removing project '{}' for user '{}'", id, user.getId());
-        Project project = repository.findById(id)
-                .orElseThrow(NoSuchElementException::new);
+        Project project = repository.findById(id).orElseThrow(NoSuchElementException::new);
 
         verifyOwnership(project, user);
 
@@ -56,8 +53,7 @@ public class ProjectService implements ProjectServicePort {
     @Override
     public Project retrieveProject(String id, User user) {
         log.debug("Retrieving project '{}' for user '{}'", id, user.getId());
-        Project project = repository.findById(id)
-                .orElseThrow(NoSuchElementException::new);
+        Project project = repository.findById(id).orElseThrow(NoSuchElementException::new);
 
         verifyOwnership(project, user);
 
@@ -72,12 +68,15 @@ public class ProjectService implements ProjectServicePort {
 
     /**
      * Verifies that the given user owns the given project.
-     * 
+     *
      * @throws AccessDeniedException if user doesn't own the project
      */
     private void verifyOwnership(Project project, User user) {
         if (project.getOwnerId() == null || !project.getOwnerId().equals(user.getId())) {
-            log.warn("Access denied: User '{}' does not own project '{}'", user.getId(), project.getId());
+            log.warn(
+                    "Access denied: User '{}' does not own project '{}'",
+                    user.getId(),
+                    project.getId());
             throw new AccessDeniedException("project", project.getId());
         }
     }

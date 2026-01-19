@@ -1,7 +1,13 @@
 package edu.kit.quak.application.user.services;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
 import edu.kit.quak.application.user.ports.out.UserRepositoryPort;
 import edu.kit.quak.core.user.model.User;
+import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -12,25 +18,13 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 
-import java.util.Optional;
-import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
-
-/**
- * Unit tests for OidcUserSyncService.
- * Tests user synchronization logic during OIDC login.
- */
+/** Unit tests for OidcUserSyncService. Tests user synchronization logic during OIDC login. */
 @ExtendWith(MockitoExtension.class)
 class OidcUserSyncServiceTest {
 
-    @Mock
-    private UserRepositoryPort userRepository;
+    @Mock private UserRepositoryPort userRepository;
 
-    @InjectMocks
-    private OidcUserSyncService oidcUserSyncService;
+    @InjectMocks private OidcUserSyncService oidcUserSyncService;
 
     private OidcUser createMockOidcUser() {
         OidcUser mockOidcUser = mock(OidcUser.class);
@@ -55,7 +49,7 @@ class OidcUserSyncServiceTest {
             // Arrange
             when(userRepository.findByIssuerAndSub("google", "test-sub-123"))
                     .thenReturn(Optional.empty());
-            
+
             User savedUser = new User(UUID.randomUUID(), "google", "test-sub-123");
             savedUser.setEmail("test@example.com");
             when(userRepository.save(any(User.class))).thenReturn(savedUser);
@@ -65,11 +59,11 @@ class OidcUserSyncServiceTest {
 
             // Assert
             assertNotNull(result);
-            
+
             // Verify save was called with correct data
             ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
             verify(userRepository).save(userCaptor.capture());
-            
+
             User capturedUser = userCaptor.getValue();
             assertEquals("google", capturedUser.getIssuer());
             assertEquals("test-sub-123", capturedUser.getSub());
@@ -179,9 +173,10 @@ class OidcUserSyncServiceTest {
             when(nullSubjectUser.getSubject()).thenReturn(null);
 
             // Act & Assert
-            assertThrows(IllegalArgumentException.class,
+            assertThrows(
+                    IllegalArgumentException.class,
                     () -> oidcUserSyncService.syncUser("google", nullSubjectUser));
-            
+
             verify(userRepository, never()).save(any());
         }
     }
@@ -200,11 +195,12 @@ class OidcUserSyncServiceTest {
             when(userRepository.findByIssuerAndSub("github", "test-sub-123"))
                     .thenReturn(Optional.empty());
             when(userRepository.save(any(User.class)))
-                    .thenAnswer(invocation -> {
-                        User u = invocation.getArgument(0);
-                        u.setId(UUID.randomUUID());
-                        return u;
-                    });
+                    .thenAnswer(
+                            invocation -> {
+                                User u = invocation.getArgument(0);
+                                u.setId(UUID.randomUUID());
+                                return u;
+                            });
 
             // Act
             User googleUser = oidcUserSyncService.syncUser("google", mockOidcUser);
@@ -214,7 +210,7 @@ class OidcUserSyncServiceTest {
             assertNotEquals(googleUser.getId(), githubUser.getId());
             assertEquals("google", googleUser.getIssuer());
             assertEquals("github", githubUser.getIssuer());
-            
+
             verify(userRepository, times(2)).save(any(User.class));
         }
     }

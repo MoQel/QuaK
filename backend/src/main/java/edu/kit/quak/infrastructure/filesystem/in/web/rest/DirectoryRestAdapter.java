@@ -22,7 +22,8 @@ public class DirectoryRestAdapter {
     private final DirectoryDtoMapper mapper;
     private final AuthenticationMapper authMapper;
 
-    public DirectoryRestAdapter(DirectoryServicePort service,
+    public DirectoryRestAdapter(
+            DirectoryServicePort service,
             UserServicePort userService,
             DirectoryDtoMapper mapper,
             AuthenticationMapper authMapper) {
@@ -47,7 +48,8 @@ public class DirectoryRestAdapter {
 
     @GetMapping("/{dId}")
     @PreAuthorize("isAuthenticated()")
-    public DirectoryContentsResponse retrieveDirectory(@PathVariable String dId, Authentication authentication) {
+    public DirectoryContentsResponse retrieveDirectory(
+            @PathVariable String dId, Authentication authentication) {
         User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
         Directory dir = service.retrieveDirectory(dId, user);
         return mapper.toContentsResponse(dir);

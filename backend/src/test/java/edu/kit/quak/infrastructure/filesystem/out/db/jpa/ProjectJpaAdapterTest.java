@@ -1,33 +1,30 @@
 package edu.kit.quak.infrastructure.filesystem.out.db.jpa;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import edu.kit.quak.core.filesystem.model.Directory;
 import edu.kit.quak.core.filesystem.model.File;
 import edu.kit.quak.core.filesystem.model.FileElement;
 import edu.kit.quak.core.filesystem.model.Project;
 import edu.kit.quak.shared.tags.IntegrationTest;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.*;
-
 @IntegrationTest
 @DataJpaTest
-@org.springframework.context.annotation.ComponentScan(basePackages = "edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper")
-@Import({
-        ProjectJpaAdapter.class
-})
+@org.springframework.context.annotation.ComponentScan(
+        basePackages = "edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper")
+@Import({ProjectJpaAdapter.class})
 @Transactional
 public class ProjectJpaAdapterTest {
 
-    @Autowired
-    private ProjectJpaAdapter adapter;
+    @Autowired private ProjectJpaAdapter adapter;
 
     @Test
     void saveAndFindById_withContents() {
