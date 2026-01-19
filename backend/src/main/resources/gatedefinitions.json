@@ -3,7 +3,7 @@
     "id": "h",
     "name": "Hadamard",
     "symbol": "H",
-    "type": "Superposition",
+    "category": "Superposition",
     "description": "Creates an equal superposition of |0⟩ and |1⟩.",
     "qubitCount": 1,
     "inspectorInfo": {
@@ -27,7 +27,7 @@
     "id": "x",
     "name": "Pauli-X",
     "symbol": "X",
-    "type": "Pauli",
+    "category": "Pauli",
     "description": "Bit-flip gate (NOT). Rotates the state by π around the X-axis.",
     "qubitCount": 1,
     "inspectorInfo": {
@@ -51,7 +51,7 @@
     "id": "y",
     "name": "Pauli-Y",
     "symbol": "Y",
-    "type": "Pauli",
+    "category": "Pauli",
     "description": "Bit- and phase-flip. Rotates the state by π around the Y-axis.",
     "qubitCount": 1,
     "inspectorInfo": {
@@ -75,7 +75,7 @@
     "id": "z",
     "name": "Pauli-Z",
     "symbol": "Z",
-    "type": "Pauli",
+    "category": "Pauli",
     "description": "Phase-flip gate. Rotates the state by π around the Z-axis.",
     "qubitCount": 1,
     "inspectorInfo": {
@@ -98,8 +98,8 @@
   {
     "id": "cx",
     "name": "CNOT",
-    "symbol": "CNOT",
-    "type": "Multi-Qubit",
+    "symbol": "CX",
+    "category": "Multi-Qubit",
     "description": "Controlled-NOT. Flips the target qubit if the control qubit is |1⟩.",
     "qubitCount": 2,
     "inspectorInfo": {
@@ -127,7 +127,7 @@
     "id": "cz",
     "name": "CZ",
     "symbol": "CZ",
-    "type": "Multi-Qubit",
+    "category": "Multi-Qubit",
     "description": "Controlled-Z. Applies a phase flip only if both qubits are |1⟩.",
     "qubitCount": 2,
     "inspectorInfo": {
@@ -155,7 +155,7 @@
     "id": "swap",
     "name": "SWAP",
     "symbol": "SWAP",
-    "type": "Multi-Qubit",
+    "category": "Multi-Qubit",
     "description": "Exchanges the states of two qubits.",
     "qubitCount": 2,
     "inspectorInfo": {
@@ -183,7 +183,7 @@
     "id": "ccx",
     "name": "Toffoli",
     "symbol": "CCX",
-    "type": "Multi-Qubit",
+    "category": "Multi-Qubit",
     "description": "Controlled-Controlled-X (Toffoli/AND-gate). Flips target if both controls are |1⟩.",
     "qubitCount": 3,
     "inspectorInfo": {
@@ -214,7 +214,7 @@
     "id": "s",
     "name": "S-Gate",
     "symbol": "S",
-    "type": "Phase",
+    "category": "Phase",
     "description": "Clifford phase gate. Adds a 90° (π/2) phase to the |1⟩ state.",
     "qubitCount": 1,
     "inspectorInfo": {
@@ -238,7 +238,7 @@
     "id": "t",
     "name": "T-Gate",
     "symbol": "T",
-    "type": "Phase",
+    "category": "Phase",
     "description": "Non-Clifford phase gate. Adds a 45° (π/4) phase to the |1⟩ state.",
     "qubitCount": 1,
     "inspectorInfo": {
@@ -262,7 +262,7 @@
     "id": "rx",
     "name": "RX",
     "symbol": "RX",
-    "type": "Rotation",
+    "category": "Rotation",
     "description": "Parametric rotation around the X-axis by a given angle θ.",
     "qubitCount": 1,
     "parameters": ["theta"],
@@ -287,7 +287,7 @@
     "id": "ry",
     "name": "RY",
     "symbol": "RY",
-    "type": "Rotation",
+    "category": "Rotation",
     "description": "Parametric rotation around the Y-axis by a given angle θ.",
     "qubitCount": 1,
     "parameters": ["theta"],
@@ -312,7 +312,7 @@
     "id": "rz",
     "name": "RZ",
     "symbol": "RZ",
-    "type": "Rotation",
+    "category": "Rotation",
     "description": "Parametric rotation around the Z-axis by a given angle θ.",
     "qubitCount": 1,
     "parameters": ["theta"],
@@ -337,7 +337,7 @@
     "id": "measure",
     "name": "Measure",
     "symbol": "M",
-    "type": "Non-Unitary",
+    "category": "Non-Unitary",
     "description": "Measures the qubit in the Z-basis and collapses the wavefunction.",
     "qubitCount": 1,
     "inspectorInfo": {

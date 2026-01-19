@@ -1,8 +1,8 @@
 package edu.kit.quak.infrastructure.circuit.in.web.rest.mapper;
 
 import edu.kit.quak.core.circuit.model.operation.ElementaryQuantumGate;
-import edu.kit.quak.core.circuit.model.operation.ElementaryQuantumGateType;
-import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.CircuitGateResponse;
+import edu.kit.quak.core.circuit.model.operation.ElementaryQuantumGateDefinitionIdentifier;
+import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.GateResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -12,21 +12,21 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @ExtendWith(MockitoExtension.class)
-class CircuitGateDtoMapperTest {
+class CircuitGateDefinitionDtoMapperTest {
     @InjectMocks
-    private CircuitGateDtoMapperImpl mapper;
+    private GateDtoMapperImpl mapper;
 
     @Test
     void toResponse() {
         // Arrange
-        ElementaryQuantumGate gate = new ElementaryQuantumGate(ElementaryQuantumGateType.X);
+        ElementaryQuantumGate gate = new ElementaryQuantumGate(ElementaryQuantumGateDefinitionIdentifier.X);
 
         // Act
-        CircuitGateResponse response = mapper.toResponse(gate);
+        GateResponse response = mapper.toResponse(gate);
 
         // Assert
         assertNotNull(response);
         assertEquals(gate.getId(), response.id());
-        assertEquals(ElementaryQuantumGateType.X, response.type());
+        assertEquals(ElementaryQuantumGateDefinitionIdentifier.X, response.definitionId());
     }
 }

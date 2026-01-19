@@ -1,7 +1,7 @@
 package edu.kit.quak.infrastructure.circuit.out.db.jpa.mapper;
 
 import edu.kit.quak.core.circuit.model.operation.ElementaryQuantumGate;
-import edu.kit.quak.core.circuit.model.operation.ElementaryQuantumGateType;
+import edu.kit.quak.core.circuit.model.operation.ElementaryQuantumGateDefinitionIdentifier;
 import edu.kit.quak.core.circuit.model.register.Qubit;
 import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.operation.JpaElementaryQuantumGate;
 import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.register.JpaQubit;
@@ -29,7 +29,7 @@ class QubitJpaMapperTest {
     void domainToEntity() {
         // Arrange
         Qubit domain = new Qubit();
-        domain.addOperation(domain.getOperations().size(), new ElementaryQuantumGate(ElementaryQuantumGateType.CNOT));
+        domain.addOperation(domain.getOperations().size(), new ElementaryQuantumGate(ElementaryQuantumGateDefinitionIdentifier.CX));
 
         // Act
         JpaQubit entity = mapper.toEntity(domain);
@@ -45,7 +45,7 @@ class QubitJpaMapperTest {
         // Arrange
         JpaQubit entity = new JpaQubit();
         JpaElementaryQuantumGate gate = new JpaElementaryQuantumGate();
-        gate.setType(ElementaryQuantumGateType.CNOT);
+        gate.setDefinitionId(ElementaryQuantumGateDefinitionIdentifier.CX);
         entity.setOperations(List.of(gate));
 
         // Act

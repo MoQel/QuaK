@@ -7,11 +7,11 @@ import java.util.Optional;
 /**
  * Repository port for {@link FileElementContainer} aggregates.
  * <p>
- * Each implementation is responsible for exactly one container type and
+ * Each implementation is responsible for exactly one container definitionId and
  * must declare the ID prefix it manages. The prefix is used to route
  * persistence operations to the correct repository.
  *
- * @param <T> the concrete container aggregate type
+ * @param <T> the concrete container aggregate definitionId
  */
 public interface FileElementContainerRepositoryPort<T extends FileElementContainer<?>> extends FileElementRepositoryPort {
 

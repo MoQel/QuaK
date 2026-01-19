@@ -1,6 +1,6 @@
 package edu.kit.quak.core.circuit.model;
 
-import edu.kit.quak.core.circuit.model.operation.ElementaryQuantumGateType;
+import edu.kit.quak.core.circuit.model.operation.ElementaryQuantumGateDefinitionIdentifier;
 import edu.kit.quak.core.circuit.model.operation.QuantumOperation;
 import edu.kit.quak.core.circuit.model.register.QuantumRegister;
 import edu.kit.quak.core.circuit.model.register.Qubit;
@@ -64,13 +64,13 @@ public class QuantumCircuit extends ElementWithId {
         }
     }
 
-    public void addElementaryQuantumGate(ElementaryQuantumGateType type, int registerIdx, int positionIdx) {
+    public void addElementaryQuantumGate(ElementaryQuantumGateDefinitionIdentifier definitionId, int registerIdx, int positionIdx) {
         if (registerIdx < 0 || registerIdx >= registers.size()) {
             throw new IllegalArgumentException("Register index out of bounds: " + registerIdx);
         }
 
         registers.get(registerIdx).asQuantum().ifPresentOrElse(
-                qReg -> qReg.addElementaryQuantumGate(type, positionIdx),
+                qReg -> qReg.addElementaryQuantumGate(definitionId, positionIdx),
                 () -> {
                     throw new IllegalArgumentException(
                             String.format("Register at index %d is not a quantum register (cannot add gate).", registerIdx)

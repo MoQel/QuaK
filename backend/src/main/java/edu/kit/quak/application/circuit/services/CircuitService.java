@@ -3,7 +3,7 @@ package edu.kit.quak.application.circuit.services;
 import edu.kit.quak.application.circuit.ports.in.CircuitServicePort;
 import edu.kit.quak.application.circuit.ports.out.CircuitRepositoryPort;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
-import edu.kit.quak.core.circuit.model.operation.ElementaryQuantumGateType;
+import edu.kit.quak.core.circuit.model.operation.ElementaryQuantumGateDefinitionIdentifier;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 
@@ -50,8 +50,8 @@ public class CircuitService implements CircuitServicePort {
     }
 
     @Override
-    public QuantumCircuit addGate(String circuitId, ElementaryQuantumGateType type, int qubitIdx, int positionIdx) {
-        return updateCircuit(circuitId, circuit -> circuit.addElementaryQuantumGate(type, qubitIdx, positionIdx));
+    public QuantumCircuit addGate(String circuitId, ElementaryQuantumGateDefinitionIdentifier definitionId, int qubitIdx, int positionIdx) {
+        return updateCircuit(circuitId, circuit -> circuit.addElementaryQuantumGate(definitionId, qubitIdx, positionIdx));
     }
 
     @Override

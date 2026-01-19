@@ -2,7 +2,7 @@ package edu.kit.quak.infrastructure.circuit.in.web.rest;
 
 import edu.kit.quak.application.circuit.ports.in.CircuitServicePort;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
-import edu.kit.quak.core.circuit.model.operation.ElementaryQuantumGateType;
+import edu.kit.quak.core.circuit.model.operation.ElementaryQuantumGateDefinitionIdentifier;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.AddGateRequest;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.ChangeQubitNameRequest;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.CircuitResponse;
@@ -66,8 +66,8 @@ public class CircuitRestAdapter {
     @ResponseStatus(HttpStatus.CREATED)
     public CircuitResponse addGate(@PathVariable String circuitId,
                                    @RequestBody AddGateRequest request) {
-        ElementaryQuantumGateType type = ElementaryQuantumGateType.fromString(request.type());
-        QuantumCircuit circuit = service.addGate(circuitId, type, request.toQubitIdx(), request.toPositionIdx());
+        ElementaryQuantumGateDefinitionIdentifier definitionId = ElementaryQuantumGateDefinitionIdentifier.fromString(request.definitionId());
+        QuantumCircuit circuit = service.addGate(circuitId, definitionId, request.toQubitIdx(), request.toPositionIdx());
         return mapper.toResponse(circuit);
     }
 

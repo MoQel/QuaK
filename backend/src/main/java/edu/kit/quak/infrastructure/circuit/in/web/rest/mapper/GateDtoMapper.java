@@ -2,12 +2,12 @@ package edu.kit.quak.infrastructure.circuit.in.web.rest.mapper;
 
 import edu.kit.quak.core.circuit.model.operation.ElementaryQuantumGate;
 import edu.kit.quak.core.circuit.model.operation.QuantumOperation;
-import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.CircuitGateResponse;
+import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.GateResponse;
 import org.mapstruct.*;
 
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING)
-public interface CircuitGateDtoMapper {
+public interface GateDtoMapper {
     @BeanMapping(subclassExhaustiveStrategy = SubclassExhaustiveStrategy.RUNTIME_EXCEPTION)
-    @SubclassMapping(source = ElementaryQuantumGate.class, target = CircuitGateResponse.class)
-    CircuitGateResponse toResponse(QuantumOperation operation);
+    @SubclassMapping(source = ElementaryQuantumGate.class, target = GateResponse.class)
+    GateResponse toResponse(QuantumOperation operation);
 }

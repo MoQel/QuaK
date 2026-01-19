@@ -23,16 +23,8 @@ export function CircuitView() {
     );
 
     useEffect(() => {
-        fetchCircuit().then(setCircuit);
+        api.post<CircuitResponse>('/circuit').then(setCircuit);
     }, [])
-
-    async function fetchCircuit() {
-        if (circuit == null) {
-            return await api.post<CircuitResponse>('/circuit')
-        } else {
-            return await api.get<CircuitResponse>(`/circuit/${circuit.id}`)
-        }
-    }
 
     const addQubit = async () => {
         if (circuit != null) {

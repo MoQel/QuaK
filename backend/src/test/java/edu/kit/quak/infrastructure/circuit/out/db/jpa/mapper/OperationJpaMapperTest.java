@@ -1,7 +1,7 @@
 package edu.kit.quak.infrastructure.circuit.out.db.jpa.mapper;
 
 import edu.kit.quak.core.circuit.model.operation.ElementaryQuantumGate;
-import edu.kit.quak.core.circuit.model.operation.ElementaryQuantumGateType;
+import edu.kit.quak.core.circuit.model.operation.ElementaryQuantumGateDefinitionIdentifier;
 import edu.kit.quak.core.circuit.model.operation.QuantumOperation;
 import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.operation.JpaElementaryQuantumGate;
 import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.operation.JpaQuantumOperation;
@@ -20,7 +20,7 @@ class OperationJpaMapperTest {
     @Test
     void domainToEntity() {
         // Arrange
-        ElementaryQuantumGate domain = new ElementaryQuantumGate(ElementaryQuantumGateType.CNOT);
+        ElementaryQuantumGate domain = new ElementaryQuantumGate(ElementaryQuantumGateDefinitionIdentifier.CX);
 
         // Act
         JpaQuantumOperation entity = mapper.toEntity(domain);
@@ -29,14 +29,14 @@ class OperationJpaMapperTest {
         assertNotNull(entity);
         assertInstanceOf(JpaElementaryQuantumGate.class, entity);
         JpaElementaryQuantumGate jpaGate = (JpaElementaryQuantumGate) entity;
-        assertEquals(ElementaryQuantumGateType.CNOT, jpaGate.getType());
+        assertEquals(ElementaryQuantumGateDefinitionIdentifier.CX, jpaGate.getDefinitionId());
     }
 
     @Test
     void entityToDomain() {
         // Arrange
         JpaElementaryQuantumGate entity = new JpaElementaryQuantumGate();
-        entity.setType(ElementaryQuantumGateType.H);
+        entity.setDefinitionId(ElementaryQuantumGateDefinitionIdentifier.H);
 
         // Act
         QuantumOperation domain = mapper.toDomain(entity);
@@ -45,6 +45,6 @@ class OperationJpaMapperTest {
         assertNotNull(domain);
         assertInstanceOf(ElementaryQuantumGate.class, domain);
         ElementaryQuantumGate gate = (ElementaryQuantumGate) domain;
-        assertEquals(ElementaryQuantumGateType.H, gate.getType());
+        assertEquals(ElementaryQuantumGateDefinitionIdentifier.H, gate.getDefinitionId());
     }
 }

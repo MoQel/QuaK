@@ -1,6 +1,6 @@
 package edu.kit.quak.application.library.services;
 
-import edu.kit.quak.application.library.ports.out.GateRepositoryPort;
+import edu.kit.quak.application.library.ports.out.GateDefinitionRepositoryPort;
 import edu.kit.quak.shared.tags.UnitTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -12,16 +12,16 @@ import static org.mockito.Mockito.verify;
 
 @UnitTest
 @ExtendWith(MockitoExtension.class)
-class GateServiceTest {
+class GateDefinitionServiceTest {
 
     @Mock
-    GateRepositoryPort repo;
+    GateDefinitionRepositoryPort repo;
     @InjectMocks
-    GateService service;
+    GateDefinitionService service;
 
     @Test
-    void getAllGates_delegatesToRepo() {
-        service.getAllGates();
-        verify(repo).findAllGates();
+    void getAllGateDefinitions_delegatesToRepo() {
+        service.getAllGateDefinitions();
+        verify(repo).findAllGateDefinitions();
     }
 }

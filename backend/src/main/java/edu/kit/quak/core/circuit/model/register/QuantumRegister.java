@@ -1,7 +1,7 @@
 package edu.kit.quak.core.circuit.model.register;
 
 import edu.kit.quak.core.circuit.model.operation.ElementaryQuantumGate;
-import edu.kit.quak.core.circuit.model.operation.ElementaryQuantumGateType;
+import edu.kit.quak.core.circuit.model.operation.ElementaryQuantumGateDefinitionIdentifier;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -34,9 +34,9 @@ public class QuantumRegister extends Register {
         return qubit;
     }
 
-    public void addElementaryQuantumGate(ElementaryQuantumGateType type, int positionIdx) {
+    public void addElementaryQuantumGate(ElementaryQuantumGateDefinitionIdentifier definitionId, int positionIdx) {
         Qubit qubit = qubits.getFirst();
-        ElementaryQuantumGate gate = new ElementaryQuantumGate(type);
+        ElementaryQuantumGate gate = new ElementaryQuantumGate(definitionId);
         qubit.addOperation(positionIdx, gate);
     }
 

@@ -1,24 +1,24 @@
 package edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.operation;
 
-import edu.kit.quak.core.circuit.model.operation.ElementaryQuantumGateType;
+import edu.kit.quak.core.circuit.model.operation.ElementaryQuantumGateDefinitionIdentifier;
 import jakarta.persistence.*;
 
 @Entity
 @DiscriminatorValue("ELEMENTARY_GATE")
 public class JpaElementaryQuantumGate extends JpaQuantumOperation {
     @Enumerated(EnumType.STRING)
-    private ElementaryQuantumGateType type;
+    private ElementaryQuantumGateDefinitionIdentifier definitionId;
 
     private double theta;
     private double phi;
     private double lambda;
 
-    public ElementaryQuantumGateType getType() {
-        return type;
+    public ElementaryQuantumGateDefinitionIdentifier getDefinitionId() {
+        return definitionId;
     }
 
-    public void setType(ElementaryQuantumGateType type) {
-        this.type = type;
+    public void setDefinitionId(ElementaryQuantumGateDefinitionIdentifier definitionId) {
+        this.definitionId = definitionId;
     }
 
     public double getTheta() {

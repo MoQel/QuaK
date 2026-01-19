@@ -3,11 +3,11 @@ package edu.kit.quak.infrastructure.circuit.in.web.rest;
 import edu.kit.quak.application.circuit.ports.in.CircuitServicePort;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.core.circuit.model.operation.ElementaryQuantumGate;
-import edu.kit.quak.core.circuit.model.operation.ElementaryQuantumGateType;
+import edu.kit.quak.core.circuit.model.operation.ElementaryQuantumGateDefinitionIdentifier;
 import edu.kit.quak.core.circuit.model.register.QuantumRegister;
 import edu.kit.quak.core.circuit.model.register.Qubit;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.CircuitDtoMapperImpl;
-import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.CircuitGateDtoMapperImpl;
+import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.GateDtoMapperImpl;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.QubitDtoMapperImpl;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.RegisterDtoMapperImpl;
 import org.junit.jupiter.api.Test;
@@ -26,7 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(CircuitRestAdapter.class)
-@Import({CircuitDtoMapperImpl.class, RegisterDtoMapperImpl.class,QubitDtoMapperImpl.class, CircuitGateDtoMapperImpl.class})
+@Import({CircuitDtoMapperImpl.class, RegisterDtoMapperImpl.class,QubitDtoMapperImpl.class, GateDtoMapperImpl.class})
 @WithMockUser(username = "tester", roles = "USER")
 class CircuitRestAdapterTest {
     @Autowired
@@ -111,11 +111,11 @@ class CircuitRestAdapterTest {
         QuantumCircuit circuit = new QuantumCircuit();
         QuantumRegister register = circuit.addQuantumRegister();
         Qubit qubit = register.addQubit();
-        qubit.addOperation(qubit.getOperations().size(), new ElementaryQuantumGate(ElementaryQuantumGateType.CNOT));
-        given(circuitServicePort.addGate(circuitId, ElementaryQuantumGateType.CNOT, 0, 0)).willReturn(circuit);
+        qubit.addOperation(qubit.getOperations().size(), new ElementaryQuantumGate(ElementaryQuantumGateDefinitionIdentifier.CX));
+        given(circuitServicePort.addGate(circuitId, ElementaryQuantumGateDefinitionIdentifier.CX, 0, 0)).willReturn(circuit);
         String payload = """
                 {
-                    "type": "CNOT",
+                    "definitionId": "cx",
                     "toQubitIdx": 0,
                     "toPositionIdx": 0
                 }
@@ -134,6 +134,6 @@ class CircuitRestAdapterTest {
                 .andExpect(jsonPath("$.registers[0].qubits").isArray())
                 .andExpect(jsonPath("$.registers[0].qubits[0].gates").isArray())
                 .andExpect(jsonPath("$.registers[0].qubits[0].gates[0]").exists())
-                .andExpect(jsonPath("$.registers[0].qubits[0].gates[0].type").value("CNOT"));
+                .andExpect(jsonPath("$.registers[0].qubits[0].gates[0].definitionId").value("CX"));
     }
 }

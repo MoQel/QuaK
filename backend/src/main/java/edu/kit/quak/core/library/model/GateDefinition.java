@@ -3,10 +3,10 @@ package edu.kit.quak.core.library.model;
 import java.util.Collections;
 import java.util.List;
 
-public record Gate(
+public record GateDefinition(
         String id,
         String name,
-        String type,
+        String category,
         String description,
         int qubitCount,
         String symbol,
@@ -14,7 +14,7 @@ public record Gate(
         InspectorInfo inspectorInfo
 ) {
     // Compact constructor to ensure non-null lists and handle optional InspectorInfo
-    public Gate {
+    public GateDefinition {
         parameters = parameters != null ? Collections.unmodifiableList(parameters) : List.of();
         // InspectorInfo can be null - it's optional for gates that don't need inspector details
     }

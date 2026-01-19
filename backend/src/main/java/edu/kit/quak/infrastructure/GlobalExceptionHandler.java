@@ -1,6 +1,6 @@
 package edu.kit.quak.infrastructure;
 
-import edu.kit.quak.application.library.exceptions.GateNotFoundException;
+import edu.kit.quak.application.library.exceptions.GateDefinitionNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -56,9 +56,9 @@ public class GlobalExceptionHandler {
     }
 
     // TODO: Seperate library related and filesystem related exceptions
-    @ExceptionHandler(GateNotFoundException.class)
+    @ExceptionHandler(GateDefinitionNotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND) // 404
-    public ProblemDetail handleGateNotFound(GateNotFoundException ex) {
+    public ProblemDetail handleGateNotFound(GateDefinitionNotFoundException ex) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
         problem.setTitle("Gate Not Found");
         return problem;

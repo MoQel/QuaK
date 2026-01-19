@@ -1,9 +1,0 @@
-package edu.kit.quak.infrastructure.circuit.in.web.rest.dto;
-
-import edu.kit.quak.core.circuit.model.operation.ElementaryQuantumGateType;
-
-public record CircuitGateResponse(
-        String id,
-        ElementaryQuantumGateType type
-) {
-}

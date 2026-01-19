@@ -1,4 +1,4 @@
-import {Dispatch, SetStateAction, useEffect, useState} from "react";
+import {Dispatch, SetStateAction, useState} from "react";
 
 import {ResizableHandle, ResizablePanel, ResizablePanelGroup} from "@/components/ui/resizable.tsx";
 import {GateLibraryView} from "@/views/library-view/GateLibraryView.tsx";
@@ -9,11 +9,11 @@ import {ResultsView} from "@/views/results-view/ResultsView.tsx";
 import {Toaster} from "@/components/ui/sonner.tsx";
 import {File} from "@/views/project-manager-view/util/FileElement.tsx";
 import {InspectorView} from "@/views/inspector-view/InspectorView.tsx";
-import {QuantumGate} from "@/views/library-view/QuantumGate.ts";
+import {GateDefinitionResponse} from "@/api/dto/library.ts";
 
 function App() {
     const [file, openFile]: [File, Dispatch<SetStateAction<File>>] = useState(undefined as unknown as File);
-    const [selectedGate, setSelectedGate] = useState<QuantumGate | undefined>(undefined);
+    const [selectedGate, setSelectedGate] = useState<GateDefinitionResponse | undefined>(undefined);
 
     return (
         <>

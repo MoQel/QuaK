@@ -1,4 +1,4 @@
-import {GateType} from '@/api/dto/GateType.ts'
+import {GateDefinitionIdentifier} from '@/api/dto/GateDefinitionIdentifier.ts'
 
 // --- Requests ---
 
@@ -8,7 +8,7 @@ export interface ChangeQubitNameRequest {
 }
 
 export interface AddGateRequest {
-    type: GateType;
+    definitionId: GateDefinitionIdentifier;
     toQubitIdx: number;
     toPositionIdx: number;
 }
@@ -34,10 +34,10 @@ export interface RegisterResponse {
 
 export interface QubitResponse {
     id: string;
-    gates: CircuitGateResponse[];
+    gates: GateResponse[];
 }
 
-export interface CircuitGateResponse {
+export interface GateResponse {
     id: string;
-    type: GateType;
+    definitionId: GateDefinitionIdentifier;
 }

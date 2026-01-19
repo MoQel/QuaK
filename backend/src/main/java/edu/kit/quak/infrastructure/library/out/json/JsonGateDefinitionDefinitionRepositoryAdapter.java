@@ -2,8 +2,8 @@ package edu.kit.quak.infrastructure.library.out.json;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import edu.kit.quak.application.library.ports.out.GateRepositoryPort;
-import edu.kit.quak.core.library.model.Gate;
+import edu.kit.quak.application.library.ports.out.GateDefinitionRepositoryPort;
+import edu.kit.quak.core.library.model.GateDefinition;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Repository;
@@ -18,69 +18,69 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Repository
-public class JsonGateRepositoryAdapter implements GateRepositoryPort {
+public class JsonGateDefinitionDefinitionRepositoryAdapter implements GateDefinitionRepositoryPort {
 
     private final ObjectMapper objectMapper;
-    private final String gatesFilePath; // Configurable path
-    private List<Gate> cachedGates = Collections.emptyList();
+    private final String gateDefinitionsFilePath; // Configurable path
+    private List<GateDefinition> cachedGateDefinitions = Collections.emptyList();
 
     // Constructor Injection with property
-    public JsonGateRepositoryAdapter(ObjectMapper objectMapper,
-                                     @Value("${quak.library.gates-file:gates.json}") String gatesFilePath) {
+    public JsonGateDefinitionDefinitionRepositoryAdapter(ObjectMapper objectMapper,
+                                                         @Value("${quak.library.gates-file:gatedefinitions.json}") String gateDefinitionsFilePath) {
         this.objectMapper = objectMapper;
-        this.gatesFilePath = gatesFilePath;
+        this.gateDefinitionsFilePath = gateDefinitionsFilePath;
     }
 
     @PostConstruct
     public void init() {
-        this.cachedGates = loadGatesFromJson();
+        this.cachedGateDefinitions = loadGateDefinitionsFromJson();
     }
 
     @Override
-    public List<Gate> findAllGates() {
-        return Collections.unmodifiableList(cachedGates);
+    public List<GateDefinition> findAllGateDefinitions() {
+        return Collections.unmodifiableList(cachedGateDefinitions);
     }
 
     @Override
-    public Optional<Gate> findGateById(String id) {
-        return cachedGates.stream()
+    public Optional<GateDefinition> findGateDefinitionById(String id) {
+        return cachedGateDefinitions.stream()
                 .filter(g -> g.id().equals(id))
                 .findFirst();
     }
 
-    private List<Gate> loadGatesFromJson() {
+    private List<GateDefinition> loadGateDefinitionsFromJson() {
         try {
-            ClassPathResource resource = new ClassPathResource(gatesFilePath);
+            ClassPathResource resource = new ClassPathResource(gateDefinitionsFilePath);
             if (!resource.exists()) {
-                throw new IllegalStateException("Gate library file not found: " + gatesFilePath);
+                throw new IllegalStateException("Gate library file not found: " + gateDefinitionsFilePath);
             }
 
             try (InputStream is = resource.getInputStream()) {
-                JsonGateDto[] dtos = objectMapper.readValue(is, JsonGateDto[].class);
+                JsonGateDefinitionDto[] dtos = objectMapper.readValue(is, JsonGateDefinitionDto[].class);
                 return Arrays.stream(dtos)
-                        .map(JsonGateDto::toDomain)
+                        .map(JsonGateDefinitionDto::toDomain)
                         .collect(Collectors.toList());
             }
         } catch (IOException e) {
-            throw new IllegalStateException("Failed to parse gate library from " + gatesFilePath, e);
+            throw new IllegalStateException("Failed to parse gate library from " + gateDefinitionsFilePath, e);
         }
     }
 
-    private record JsonGateDto(
+    private record JsonGateDefinitionDto(
             @JsonProperty("id") String id,
             @JsonProperty("name") String name,
             @JsonProperty("symbol") String symbol,
-            @JsonProperty("type") String type,
+            @JsonProperty("category") String category,
             @JsonProperty("description") String description,
             @JsonProperty("qubitCount") int qubitCount,
             @JsonProperty("parameters") List<String> parameters,
             @JsonProperty("inspectorInfo") JsonInspectorInfoDto inspectorInfo
     ) {
-        Gate toDomain() {
-            return new Gate(
+        GateDefinition toDomain() {
+            return new GateDefinition(
                     id,
                     name,
-                    type,
+                    category,
                     description,
                     qubitCount,
                     symbol,
@@ -95,8 +95,8 @@ public class JsonGateRepositoryAdapter implements GateRepositoryPort {
             @JsonProperty("truthTable") List<JsonTruthTableEntryDto> truthTable,
             @JsonProperty("matrix") JsonMatrixDto matrix
     ) {
-        Gate.InspectorInfo toDomain() {
-            return new Gate.InspectorInfo(
+        GateDefinition.InspectorInfo toDomain() {
+            return new GateDefinition.InspectorInfo(
                     operatorDefinition,
                     truthTable != null ? truthTable.stream()
                             .map(JsonTruthTableEntryDto::toDomain)
@@ -110,8 +110,8 @@ public class JsonGateRepositoryAdapter implements GateRepositoryPort {
             @JsonProperty("input") String input,
             @JsonProperty("output") String output
     ) {
-        Gate.TruthTableEntry toDomain() {
-            return new Gate.TruthTableEntry(input, output);
+        GateDefinition.TruthTableEntry toDomain() {
+            return new GateDefinition.TruthTableEntry(input, output);
         }
     }
 
@@ -121,8 +121,8 @@ public class JsonGateRepositoryAdapter implements GateRepositoryPort {
             @JsonProperty("cols") int cols,
             @JsonProperty("computable") List<List<String>> computable
     ) {
-        Gate.MatrixInfo toDomain() {
-            return new Gate.MatrixInfo(display, rows, cols, computable);
+        GateDefinition.MatrixInfo toDomain() {
+            return new GateDefinition.MatrixInfo(display, rows, cols, computable);
         }
     }
 }

@@ -17,7 +17,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @WithMockUser(username = "tester", roles = "USER")
-class GateIntegrationTest {
+class GateDefinitionIntegrationTest {
 
     @Autowired
     MockMvc mockMvc;

@@ -4,21 +4,24 @@ import {Button} from "@/components/ui/button"
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover"
 import {Input} from "@/components/ui/input.tsx";
 import React, {Fragment, useState} from "react";
-import {AddGateRequest, ChangeQubitNameRequest, CircuitGateResponse, MoveGateRequest} from "@/api/dto/circuit.ts";
+import {
+    AddGateRequest,
+    ChangeQubitNameRequest,
+    MoveGateRequest,
+    QubitResponse
+} from "@/api/dto/circuit.ts";
 
-type QuantumWiresProps = {
-    id: string;
+interface QubitProps extends QubitResponse {
     name: string;
-    gates: CircuitGateResponse[];
     qubitIndex: number;
     onNameChange: (payload: ChangeQubitNameRequest) => void;
     onDelete: () => void;
     onGateAdd: (payload: AddGateRequest) => void;
     onGateMove: (payload: MoveGateRequest) => void;
     onGateDelete: (id: string) => void;
-};
+}
 
-export function Qubit({id, name, gates, qubitIndex, onNameChange, onDelete, onGateAdd, onGateMove, onGateDelete}: Readonly<QuantumWiresProps>) {
+export function Qubit({id, name, gates, qubitIndex, onNameChange, onDelete, onGateAdd, onGateMove, onGateDelete}: Readonly<QubitProps>) {
     const [tempName, setTempName] = useState<string>(name);
     const [hoverIndex, setHoverIndex] = useState<number | null>(null);
     const [draggingGateId, setDraggingGateId] = useState<string | null>(null);
@@ -54,20 +57,22 @@ export function Qubit({id, name, gates, qubitIndex, onNameChange, onDelete, onGa
 
         const gate = JSON.parse(rawData);
 
-        if (gate.type) {
+        if (gate.origin === "library") {
             const payload: AddGateRequest = {
-                type: gate.type,
+                definitionId: gate.id,
                 toQubitIdx: qubitIdx,
                 toPositionIdx: positionIdx
             };
             onGateAdd(payload);
-        } else if (gate.id) {
+        } else if (gate.origin === "circuit") {
             const payload: MoveGateRequest = {
                 id: gate.id,
                 toQubitIdx: qubitIdx,
                 toPositionIdx: positionIdx
             };
             onGateMove(payload);
+        } else {
+            throw new Error("Invalid gate origin: " + gate.origin);
         }
     };
 
@@ -134,15 +139,15 @@ export function Qubit({id, name, gates, qubitIndex, onNameChange, onDelete, onGa
                             >
                                 {hoverIndex === index && (
                                     <div className={styles.dropZonePlaceHolderMargin} style={{ pointerEvents: "none" }}>
-                                        <Gate key="placeholder" id="placeholder" type="PLACEHOLDER" />
+                                        <Gate key="placeholder" id="placeholder" definitionId="PLACEHOLDER" />
                                     </div>
                                 )}
                             </div>
 
                             {/* Actual Gate */}
-                            <Gate key={`${gate.type}-${qubitIndex}-${index}`}
+                            <Gate key={`${gate.definitionId}-${qubitIndex}-${index}`}
                                   id={gate.id}
-                                  type={gate.type}
+                                  definitionId={gate.definitionId}
                                   onDragStart={(id) => setDraggingGateId(id)}
                                   onDragEnd={() => setDraggingGateId(null)}
                                   onDelete={() => onGateDelete(gate.id)}/>
@@ -155,20 +160,18 @@ export function Qubit({id, name, gates, qubitIndex, onNameChange, onDelete, onGa
                         onDragOver={handleDragOver}
                         onDragEnter={() => {
                             setHoverIndex(visibleGates.length);
-                            console.log("onDragEnter... setHoverIndex: " + visibleGates.length);
                         }}
                         onDragLeave={(e) => {
                             const rt = e.relatedTarget as Node | null;
                             if (!rt || !e.currentTarget.contains(rt)) {
                                 setHoverIndex(null);
                             }
-                            console.log("onDragLeave...");
                         }}
                         onDrop={(e) => handleDrop(e, qubitIndex, visibleGates.length)}
                     >
                         {hoverIndex === visibleGates.length && (
                             <div className={styles.dropZoneLastPlaceHolderMargin} style={{ pointerEvents: "none" }}>
-                                <Gate key="placeholder" id="placeholder" type="PLACEHOLDER" />
+                                <Gate key="placeholder" id="placeholder" definitionId="PLACEHOLDER" />
                             </div>
                         )}
                     </div>

@@ -1,14 +1,14 @@
-import {GateType} from '@/api/dto/GateType.ts'
+import {GateDefinitionIdentifier} from '@/api/dto/GateDefinitionIdentifier.ts'
 
-export interface LibraryGateResponse {
-    id: string;
+export interface GateDefinitionResponse {
+    id: GateDefinitionIdentifier;
     name: string;
-    symbol: GateType;
-    type: string;
+    symbol: string;
+    category: string;
     description: string;
     qubitCount: number;
     parameters: string[];
-    inspectorInfo?: InspectorInfoDto;
+    inspectorInfo: InspectorInfoDto;
 }
 
 export interface InspectorInfoDto {

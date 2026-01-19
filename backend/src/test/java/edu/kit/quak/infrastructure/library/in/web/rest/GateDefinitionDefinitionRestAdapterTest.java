@@ -1,9 +1,9 @@
 package edu.kit.quak.infrastructure.library.in.web.rest;
 
-import edu.kit.quak.application.library.ports.in.GateServicePort;
-import edu.kit.quak.core.library.model.Gate;
+import edu.kit.quak.application.library.ports.in.GateDefinitionServicePort;
+import edu.kit.quak.core.library.model.GateDefinition;
 import edu.kit.quak.infrastructure.GlobalExceptionHandler;
-import edu.kit.quak.infrastructure.library.in.web.rest.mapper.LibraryGateDtoMapperImpl;
+import edu.kit.quak.infrastructure.library.in.web.rest.mapper.GateDefinitionDtoMapperImpl;
 import edu.kit.quak.shared.tags.IntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,24 +22,24 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @IntegrationTest
-@WebMvcTest(GateRestAdapter.class)
-@Import({LibraryGateDtoMapperImpl.class, GlobalExceptionHandler.class})
+@WebMvcTest(GateDefinitionRestAdapter.class)
+@Import({GateDefinitionDtoMapperImpl.class, GlobalExceptionHandler.class})
 @WithMockUser(username = "tester", roles = "USER")
-class GateRestAdapterTest {
+class GateDefinitionDefinitionRestAdapterTest {
 
     @Autowired
     MockMvc mockMvc;
 
     @MockitoBean
-    GateServicePort gateService;
+    GateDefinitionServicePort gateService;
 
     @Test
     void getGate_returns200AndDto() throws Exception {
         // Arrange
-        Gate gate = new Gate(
+        GateDefinition gateDefinition = new GateDefinition(
                 "x",          // id
                 "X",             // name
-                "Pauli",         // type
+                "Pauli",         // category
                 "Bit-Flip",      // description
                 1,               // qubitCount
                 "X",             // symbol
@@ -47,7 +47,7 @@ class GateRestAdapterTest {
                 null             // inspectorInfo
         );
 
-        when(gateService.getGateById("x")).thenReturn(Optional.of(gate));
+        when(gateService.getGateDefinitionById("x")).thenReturn(Optional.of(gateDefinition));
 
         // Act & Assert
         mockMvc.perform(get("/gates/x"))
@@ -60,23 +60,23 @@ class GateRestAdapterTest {
     @Test
     void getGate_returns200AndDtoWithInspectorInfo() throws Exception {
         // Arrange
-        Gate.TruthTableEntry entry1 = new Gate.TruthTableEntry("|0\\rangle", "|1\\rangle");
-        Gate.TruthTableEntry entry2 = new Gate.TruthTableEntry("|1\\rangle", "|0\\rangle");
+        GateDefinition.TruthTableEntry entry1 = new GateDefinition.TruthTableEntry("|0\\rangle", "|1\\rangle");
+        GateDefinition.TruthTableEntry entry2 = new GateDefinition.TruthTableEntry("|1\\rangle", "|0\\rangle");
         
-        Gate.MatrixInfo matrixInfo = new Gate.MatrixInfo(
+        GateDefinition.MatrixInfo matrixInfo = new GateDefinition.MatrixInfo(
                 "\\begin{pmatrix} 0 & 1 \\\\ 1 & 0 \\end{pmatrix}",
                 2,
                 2,
                 List.of(List.of("0", "1"), List.of("1", "0"))
         );
         
-        Gate.InspectorInfo inspectorInfo = new Gate.InspectorInfo(
+        GateDefinition.InspectorInfo inspectorInfo = new GateDefinition.InspectorInfo(
                 "X = |0\\rangle\\langle1| + |1\\rangle\\langle0|",
                 List.of(entry1, entry2),
                 matrixInfo
         );
         
-        Gate gate = new Gate(
+        GateDefinition gateDefinition = new GateDefinition(
                 "x",
                 "X",
                 "Pauli",
@@ -87,7 +87,7 @@ class GateRestAdapterTest {
                 inspectorInfo
         );
 
-        when(gateService.getGateById("x")).thenReturn(Optional.of(gate));
+        when(gateService.getGateDefinitionById("x")).thenReturn(Optional.of(gateDefinition));
 
         // Act & Assert
         mockMvc.perform(get("/gates/x"))
@@ -119,7 +119,7 @@ class GateRestAdapterTest {
     @Test
     void getGate_returns404_whenNotFound() throws Exception {
         // Arrange
-        when(gateService.getGateById("GibtsNicht")).thenReturn(Optional.empty());
+        when(gateService.getGateDefinitionById("GibtsNicht")).thenReturn(Optional.empty());
 
         // Act & Assert
         mockMvc.perform(get("/gates/GibtsNicht"))

@@ -1,7 +1,7 @@
 package edu.kit.quak.infrastructure.circuit.in.web.rest.mapper;
 
 import edu.kit.quak.core.circuit.model.operation.ElementaryQuantumGate;
-import edu.kit.quak.core.circuit.model.operation.ElementaryQuantumGateType;
+import edu.kit.quak.core.circuit.model.operation.ElementaryQuantumGateDefinitionIdentifier;
 import edu.kit.quak.core.circuit.model.register.Qubit;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.QubitResponse;
 import org.junit.jupiter.api.Test;
@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @ExtendWith(MockitoExtension.class)
 class QubitDtoMapperTest {
     @Spy
-    private CircuitGateDtoMapperImpl gateDtoMapper;
+    private GateDtoMapperImpl gateDtoMapper;
 
     @InjectMocks
     private QubitDtoMapperImpl mapper;
@@ -25,7 +25,7 @@ class QubitDtoMapperTest {
     void toResponse() {
         // Arrange
         Qubit qubit = new Qubit();
-        qubit.addOperation(qubit.getOperations().size(), new ElementaryQuantumGate(ElementaryQuantumGateType.H));
+        qubit.addOperation(qubit.getOperations().size(), new ElementaryQuantumGate(ElementaryQuantumGateDefinitionIdentifier.H));
 
         // Act
         QubitResponse response = mapper.toResponse(qubit);
@@ -33,6 +33,6 @@ class QubitDtoMapperTest {
         // Assert
         assertNotNull(response);
         assertEquals(1, response.gates().size());
-        assertEquals(ElementaryQuantumGateType.H, response.gates().getFirst().type());
+        assertEquals(ElementaryQuantumGateDefinitionIdentifier.H, response.gates().getFirst().definitionId());
     }
 }

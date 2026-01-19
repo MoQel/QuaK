@@ -67,7 +67,7 @@ class FileElementJpaMapperTest {
     @Test
     void mapUnknownTypeThrows() {
         // Arrange
-        // Use a local class to satisfy the recursive generic type T extends FileElement<T>
+        // Use a local class to satisfy the recursive generic definitionId T extends FileElement<T>
         class UnknownFileElement extends FileElement<UnknownFileElement> {
             public UnknownFileElement(String name, String parentId) {
                 super(name, parentId);

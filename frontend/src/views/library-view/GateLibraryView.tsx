@@ -6,25 +6,25 @@ import { List,  LayoutGrid } from "lucide-react";
 import GateList from "@/views/library-view/GateList.tsx";
 import {useEffect, useState} from 'react';
 import {api} from "@/api/api.ts";
-import {LibraryGateResponse} from "@/api/dto/library.ts";
+import {GateDefinitionResponse} from "@/api/dto/library.ts";
 
 interface GateLibraryViewProps {
-    onGateSelect?: (gate: LibraryGateResponse) => void;
+    onGateSelect?: (gate: GateDefinitionResponse) => void;
 }
 
 export function GateLibraryView({ onGateSelect }: GateLibraryViewProps) {
 
     const [boxMode, setBoxMode] = useState(true);
-    const [gates, setGates] = useState<LibraryGateResponse[]>([]);
+    const [gates, setGates] = useState<GateDefinitionResponse[]>([]);
 
     // Load Data centralized (Single Source of Truth)
     useEffect(() => {
-        api.get<LibraryGateResponse[]>("/gates")
+        api.get<GateDefinitionResponse[]>("/gates")
             .then((gates) => setGates(gates))
             .catch((e) => console.error("Failed to fetch gates:", e));
     }, []);
 
-    const handleGateClick = (gate: LibraryGateResponse) => {
+    const handleGateClick = (gate: GateDefinitionResponse) => {
         if (onGateSelect) {
             onGateSelect(gate);
         }

@@ -1,22 +1,19 @@
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card.tsx";
 import { Button } from "@/components/ui/button.tsx";
-import {QuantumGate} from "@/views/library-view/QuantumGate.ts";
 import {memo} from 'react';
-// LaTex rendering
-import { BlockMath, InlineMath } from 'react-katex';
-import 'katex/dist/katex.min.css';
-// Icons
+import { BlockMath, InlineMath } from 'react-katex'; // LaTex rendering
+import 'katex/dist/katex.min.css';  // LaTex rendering
 import { X, Microscope } from "lucide-react";
-
 import { Info } from "lucide-react";
 import {
     Tooltip,
     TooltipContent,
     TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {GateDefinitionResponse} from "@/api/dto/library.ts";
 
 interface InspectorViewProps {
-    gate: QuantumGate | undefined;
+    gate: GateDefinitionResponse | undefined;
     onClear?: () => void;
 }
 
