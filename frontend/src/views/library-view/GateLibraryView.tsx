@@ -8,7 +8,11 @@ import {useEffect, useState} from 'react';
 import {api} from "@/api/api.ts";
 import {LibraryGateResponse} from "@/api/dto/library.ts";
 
-export function GateLibraryView() {
+interface GateLibraryViewProps {
+    onGateSelect?: (gate: LibraryGateResponse) => void;
+}
+
+export function GateLibraryView({ onGateSelect }: GateLibraryViewProps) {
 
     const [boxMode, setBoxMode] = useState(true);
     const [gates, setGates] = useState<LibraryGateResponse[]>([]);
@@ -19,6 +23,12 @@ export function GateLibraryView() {
             .then((gates) => setGates(gates))
             .catch((e) => console.error("Failed to fetch gates:", e));
     }, []);
+
+    const handleGateClick = (gate: LibraryGateResponse) => {
+        if (onGateSelect) {
+            onGateSelect(gate);
+        }
+    };
 
     return (
         <Card className="w-full relative">
@@ -42,8 +52,8 @@ export function GateLibraryView() {
 
             <CardContent>
                 <div className={styles.availableGateContainer}>
-                    {boxMode && <GateLibrary gates={gates}/>}
-                    {!(boxMode) && <GateList gates={gates}/>}
+                    {boxMode && <GateLibrary gates={gates} onGateClick={handleGateClick}/>}
+                    {!(boxMode) && <GateList gates={gates} onGateClick={handleGateClick}/>}
                 </div>
             </CardContent>
         </Card>

@@ -1,11 +1,33 @@
 package edu.kit.quak.infrastructure.library.in.web.rest.dto;
 
-import edu.kit.quak.core.library.model.Gate;
+import java.util.List;
 
 public record LibraryGateResponse(
+        String id,
         String name,
         String type,
         String description,
         int qubitCount,
-        Gate.SYMBOL symbol
-) {}
+        String symbol,
+        List<String> parameters,
+        InspectorInfoResponse inspectorInfo
+) {
+
+    public record InspectorInfoResponse(
+            String operatorDefinition,
+            List<TruthTableEntryResponse> truthTable,
+            MatrixInfoResponse matrix
+    ) {}
+
+    public record TruthTableEntryResponse(
+            String input,
+            String output
+    ) {}
+
+    public record MatrixInfoResponse(
+            String display,
+            int rows,
+            int cols,
+            List<List<String>> computable
+    ) {}
+}

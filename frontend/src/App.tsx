@@ -9,12 +9,11 @@ import {ResultsView} from "@/views/results-view/ResultsView.tsx";
 import {Toaster} from "@/components/ui/sonner.tsx";
 import {File} from "@/views/project-manager-view/util/FileElement.tsx";
 import {InspectorView} from "@/views/inspector-view/InspectorView.tsx";
+import {QuantumGate} from "@/views/library-view/QuantumGate.ts";
 
 function App() {
-    useEffect(() => {
-        document.documentElement.classList.add('dark');
-    }, []);
     const [file, openFile]: [File, Dispatch<SetStateAction<File>>] = useState(undefined as unknown as File);
+    const [selectedGate, setSelectedGate] = useState<QuantumGate | undefined>(undefined);
 
     return (
         <>
@@ -37,8 +36,8 @@ function App() {
                     </div>
                 </div>
                 <div className="flex flex-grow-[1] flex-row w-full">
-                    <GateLibraryView/>
-                    <InspectorView/>
+                    <GateLibraryView onGateSelect={setSelectedGate} />
+                    <InspectorView gate={selectedGate} onClear={() => setSelectedGate(undefined)} />
                     <ResultsView numberQubits={5}/>
                 </div>
             </div>

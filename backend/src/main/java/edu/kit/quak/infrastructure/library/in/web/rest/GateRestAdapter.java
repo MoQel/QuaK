@@ -31,11 +31,11 @@ public class GateRestAdapter {
         return mapper.toResponseList(domainGates);
     }
 
-    @GetMapping("/{name}")
-    public ResponseEntity<LibraryGateResponse> getGateByName(@PathVariable String name) {
-        return gateService.getGateByName(name)
+    @GetMapping("/{id}")
+    public ResponseEntity<LibraryGateResponse> getGateById(@PathVariable String id) {
+        return gateService.getGateById(id)
                 .map(mapper::toResponse) // Mapping Domain -> DTO
                 .map(ResponseEntity::ok)
-                .orElseThrow(() -> new GateNotFoundException(name));
+                .orElseThrow(() -> new GateNotFoundException(id));
     }
 }

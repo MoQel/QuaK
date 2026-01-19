@@ -6,5 +6,5 @@ import java.util.Optional;
 
 public interface GateServicePort {
     List<Gate> getAllGates();
-    Optional<Gate> getGateByName(String name);
+    Optional<Gate> getGateById(String id);
 }
