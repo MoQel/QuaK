@@ -25,13 +25,36 @@ function QLPEditor({ file }: { file: File | undefined }) {
     const [readOnly, setReadOnly] = useState<boolean>(true);
     const contentId: RefObject<string | undefined> = useRef(undefined);
     const { theme } = useTheme();
+
+    const applyMonacoTheme = (monaco: Monaco) => {
+        monaco.editor.defineTheme("my-theme", {
+            base: theme === "dark" ? "vs-dark" : "vs",
+            inherit: true,
+            rules: [],
+            colors: {
+                "editor.background": theme === "dark" ? "#18191B" : "#E6E6E6",
+            },
+        });
+
+        monaco.editor.setTheme("my-theme");
+    };
+
     const monacoTheme = theme === "dark" ? "vs-dark" : "vs";
+    const monacoRef = useRef<Monaco | null>(null);
+
 
     const beforeMount = (monaco: Monaco) => {
+        monacoRef.current = monaco;
+
         for (const language of languages) {
-          if (language.base !== undefined) language.register(monaco);
+            if (language.base !== undefined) {
+                language.register(monaco);
+            }
         }
-      };
+
+        applyMonacoTheme(monaco);
+    };
+
 
     const onSave = (id: string | undefined) => {
         if (!id) return Promise.resolve();
@@ -45,6 +68,12 @@ function QLPEditor({ file }: { file: File | undefined }) {
             .then(setValue)
             .then(() => toast("Saved successfully"));
     };
+
+    useEffect(() => {
+        if (monacoRef.current) {
+            applyMonacoTheme(monacoRef.current);
+        }
+    }, [theme]);
 
     useEffect(() => {
         if (!file?.id) {
@@ -129,7 +158,7 @@ function QLPEditor({ file }: { file: File | undefined }) {
             <div className="h-full">
                 <Editor
                     language={lang}
-                    theme={monacoTheme}
+                    theme="my-theme"
                     value={value}
                     onChange={(value) => setValue(value || '')}
                     options={{
