@@ -1,7 +1,7 @@
 import {Badge} from "@/components/ui/badge.tsx";
 import styles from "@/App.module.css";
 import {CircuitGateResponse} from "@/api/dto/circuit.ts";
-import {useRef} from 'react'
+import React, {useRef} from 'react'
 import {TextIcon} from '@/views/TextIcon.tsx'
 
 interface GateProps extends CircuitGateResponse {
@@ -16,7 +16,8 @@ export function Gate({ id, type, onDragStart, onDragEnd, onDelete }: GateProps) 
 
     const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
         isDraggingRef.current = true;
-        e.dataTransfer.setData("application/json", JSON.stringify({ id }));
+        const data = JSON.stringify({ id });
+        e.dataTransfer.setData("text/plain", data);
         e.dataTransfer.effectAllowed = "move";
 
         // Timeout of 1 frame to prevent drag cancellation by allowing the browser to

@@ -49,28 +49,29 @@ export function Qubit({id, name, gates, qubitIndex, onNameChange, onDelete, onGa
         setHoverIndex(null);
         setDraggingGateId(null);
 
-        const gateJson = e.dataTransfer.getData("application/json");
-        if (!gateJson) return;
+        const rawData = e.dataTransfer.getData("text/plain");
+        if (!rawData) return;
 
-        const gate = JSON.parse(gateJson);
-        if (e.dataTransfer.effectAllowed == "copy") {
+        const gate = JSON.parse(rawData);
+
+        if (gate.type) {
             const payload: AddGateRequest = {
                 type: gate.type,
                 toQubitIdx: qubitIdx,
                 toPositionIdx: positionIdx
-            }
+            };
             onGateAdd(payload);
-        } else if (e.dataTransfer.effectAllowed == "move") {
+        } else if (gate.id) {
             const payload: MoveGateRequest = {
                 id: gate.id,
                 toQubitIdx: qubitIdx,
                 toPositionIdx: positionIdx
-            }
+            };
             onGateMove(payload);
         }
     };
 
-    const allowDrop = (e: React.DragEvent) => {
+    const handleDragOver = (e: React.DragEvent) => {
         e.preventDefault();
     };
 
@@ -121,7 +122,7 @@ export function Qubit({id, name, gates, qubitIndex, onNameChange, onDelete, onGa
                             {/* Dropzone before every Gate */}
                             <div
                                 className={`self-stretch ${styles.dropzoneSpacing}`}
-                                onDragOver={allowDrop}
+                                onDragOver={handleDragOver}
                                 onDragEnter={() => setHoverIndex(index)}
                                 onDragLeave={(e) => {
                                     const rt = e.relatedTarget as Node | null;
@@ -151,8 +152,11 @@ export function Qubit({id, name, gates, qubitIndex, onNameChange, onDelete, onGa
                     {/* Dropzone after last Gate */}
                     <div
                         className={`${styles.dropzoneSpacing} self-stretch grow flex justify-start`}
-                        onDragOver={allowDrop}
-                        onDragEnter={() => setHoverIndex(visibleGates.length)}
+                        onDragOver={handleDragOver}
+                        onDragEnter={() => {
+                            setHoverIndex(visibleGates.length);
+                            console.log("onDragEnter... setHoverIndex: " + visibleGates.length);
+                        }}
                         onDragLeave={(e) => {
                             const rt = e.relatedTarget as Node | null;
                             if (!rt || !e.currentTarget.contains(rt)) {
@@ -162,7 +166,7 @@ export function Qubit({id, name, gates, qubitIndex, onNameChange, onDelete, onGa
                         onDrop={(e) => handleDrop(e, qubitIndex, visibleGates.length)}
                     >
                         {hoverIndex === visibleGates.length && (
-                            <div className={styles.dropZoneLastPlaceHolderMargin}>
+                            <div className={styles.dropZoneLastPlaceHolderMargin} style={{ pointerEvents: "none" }}>
                                 <Gate key="placeholder" id="placeholder" type="PLACEHOLDER" />
                             </div>
                         )}
