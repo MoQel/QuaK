@@ -1,16 +1,12 @@
 package edu.kit.quak.core.user.model;
 
+import java.time.Instant;
+import java.util.UUID;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.Instant;
-import java.util.UUID;
-
-/**
- * Domain model representing a User.
- * This is a pure POJO with no infrastructure dependencies.
- */
+/** Domain model representing a User. This is a pure POJO with no infrastructure dependencies. */
 @Getter
 @Setter
 @NoArgsConstructor
@@ -35,8 +31,13 @@ public class User {
     }
 
     // Business Methods
-    public void updateFromOidc(String email, Boolean emailVerified, String name,
-            String givenName, String familyName, String avatarUrl) {
+    public void updateFromOidc(
+            String email,
+            Boolean emailVerified,
+            String name,
+            String givenName,
+            String familyName,
+            String avatarUrl) {
         this.email = email;
         this.emailVerified = emailVerified;
         this.name = name;
@@ -46,9 +47,14 @@ public class User {
         this.lastLoginAt = Instant.now();
     }
 
-    public static User createFromOidc(String issuer, String sub, String email,
-            Boolean emailVerified, String name,
-            String givenName, String familyName,
+    public static User createFromOidc(
+            String issuer,
+            String sub,
+            String email,
+            Boolean emailVerified,
+            String name,
+            String givenName,
+            String familyName,
             String avatarUrl) {
         User user = new User();
         user.setIssuer(issuer);

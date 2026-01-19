@@ -6,9 +6,8 @@ import org.mapstruct.Mapper;
 import org.mapstruct.MappingConstants;
 
 /**
- * MapStruct mapper for converting between User domain model and JpaUser entity.
- * All field names match between domain and JPA entity, so no explicit mappings
- * are needed.
+ * MapStruct mapper for converting between User domain model and JpaUser entity. All field names
+ * match between domain and JPA entity, so no explicit mappings are needed.
  */
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING)
 public interface UserJpaMapper {

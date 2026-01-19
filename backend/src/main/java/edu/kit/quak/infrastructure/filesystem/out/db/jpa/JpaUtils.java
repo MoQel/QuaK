@@ -3,9 +3,7 @@ package edu.kit.quak.infrastructure.filesystem.out.db.jpa;
 import java.nio.ByteBuffer;
 import java.util.UUID;
 
-/**
- * Utility class for JPA specific operations.
- */
+/** Utility class for JPA specific operations. */
 public final class JpaUtils {
 
     private JpaUtils() {
@@ -13,11 +11,8 @@ public final class JpaUtils {
     }
 
     /**
-     * Converts the raw database value to UUID.
-     * Different databases may return different types for UUIDs when using native
-     * queries:
-     * - H2 returns byte[]
-     * - MariaDB may return UUID or String
+     * Converts the raw database value to UUID. Different databases may return different types for
+     * UUIDs when using native queries: - H2 returns byte[] - MariaDB may return UUID or String
      *
      * @param value the raw value from the database
      * @return the converted UUID or null if the value is null

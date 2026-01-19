@@ -5,13 +5,12 @@ import edu.kit.quak.application.library.ports.in.GateServicePort;
 import edu.kit.quak.core.library.model.Gate;
 import edu.kit.quak.infrastructure.library.in.web.rest.dto.GateResponse;
 import edu.kit.quak.infrastructure.library.in.web.rest.mapper.GateDtoMapper;
+import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/gates")
@@ -33,7 +32,8 @@ public class GateRestAdapter {
 
     @GetMapping("/{name}")
     public ResponseEntity<GateResponse> getGateByName(@PathVariable String name) {
-        return gateService.getGateByName(name)
+        return gateService
+                .getGateByName(name)
                 .map(mapper::toResponse) // Mapping Domain -> DTO
                 .map(ResponseEntity::ok)
                 .orElseThrow(() -> new GateNotFoundException(name));

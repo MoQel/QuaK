@@ -1,5 +1,9 @@
 package edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.anySet;
+import static org.mockito.Mockito.*;
+
 import edu.kit.quak.core.filesystem.model.Directory;
 import edu.kit.quak.core.filesystem.model.File;
 import edu.kit.quak.core.filesystem.model.FileElement;
@@ -8,18 +12,13 @@ import edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity.JpaFile;
 import edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity.JpaFileElement;
 import edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity.JpaProject;
 import edu.kit.quak.shared.tags.UnitTest;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mapstruct.factory.Mappers;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
-
-import java.util.Set;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.anySet;
-import static org.mockito.Mockito.*;
 
 @UnitTest
 @ExtendWith(MockitoExtension.class)

@@ -4,24 +4,19 @@ import edu.kit.quak.core.filesystem.model.Directory;
 import edu.kit.quak.core.filesystem.model.File;
 import edu.kit.quak.core.filesystem.model.FileElement;
 import edu.kit.quak.infrastructure.filesystem.in.web.rest.dto.FileElementDto;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 @Component
 public class FileElementDtoMapper {
 
-    @Autowired
-    @Lazy
-    protected FileDtoMapper fileMapper;
+    @Autowired @Lazy protected FileDtoMapper fileMapper;
 
-    @Autowired
-    @Lazy
-    protected DirectoryDtoMapper directoryMapper;
+    @Autowired @Lazy protected DirectoryDtoMapper directoryMapper;
 
     public FileElementDto toDto(FileElement<?> element) {
         if (element instanceof File file) {
@@ -37,8 +32,6 @@ public class FileElementDtoMapper {
         if (set == null) {
             return null;
         }
-        return set.stream()
-                .map(this::toDto)
-                .collect(Collectors.toList());
+        return set.stream().map(this::toDto).collect(Collectors.toList());
     }
 }

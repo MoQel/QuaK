@@ -5,15 +5,14 @@ import edu.kit.quak.application.user.ports.in.UserServicePort;
 import edu.kit.quak.application.user.ports.out.UserRepositoryPort;
 import edu.kit.quak.core.user.model.AuthenticatedUser;
 import edu.kit.quak.core.user.model.User;
+import java.util.Optional;
+import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
-import java.util.UUID;
-
 /**
- * Service for user-related business logic.
- * Handles user authentication, authorization, and user data operations.
+ * Service for user-related business logic. Handles user authentication, authorization, and user
+ * data operations.
  */
 @Service
 @Slf4j
@@ -27,17 +26,23 @@ public class UserService implements UserServicePort {
 
     @Override
     public User getAuthenticatedUser(AuthenticatedUser authenticatedUser) {
-        log.debug("Fetching authenticated user details for issuer={} sub={}", authenticatedUser.issuer(),
+        log.debug(
+                "Fetching authenticated user details for issuer={} sub={}",
+                authenticatedUser.issuer(),
                 authenticatedUser.subject());
         // Look up the full user from the repository using the authenticated user's
         // issuer and subject
-        return userRepository.findByIssuerAndSub(authenticatedUser.issuer(), authenticatedUser.subject())
-                .orElseThrow(() -> {
-                    log.warn("User not found for issuer={} sub={}", authenticatedUser.issuer(),
-                            authenticatedUser.subject());
-                    return new UserNotFoundException(
-                            authenticatedUser.issuer(), authenticatedUser.subject());
-                });
+        return userRepository
+                .findByIssuerAndSub(authenticatedUser.issuer(), authenticatedUser.subject())
+                .orElseThrow(
+                        () -> {
+                            log.warn(
+                                    "User not found for issuer={} sub={}",
+                                    authenticatedUser.issuer(),
+                                    authenticatedUser.subject());
+                            return new UserNotFoundException(
+                                    authenticatedUser.issuer(), authenticatedUser.subject());
+                        });
     }
 
     @Override
@@ -54,17 +59,21 @@ public class UserService implements UserServicePort {
 
     @Override
     public UUID getAuthenticatedUserId(AuthenticatedUser authenticatedUser) {
-        log.debug("Fetching authenticated user ID for issuer={} sub={}", authenticatedUser.issuer(),
+        log.debug(
+                "Fetching authenticated user ID for issuer={} sub={}",
+                authenticatedUser.issuer(),
                 authenticatedUser.subject());
         // Use the efficient query that only fetches the UUID
-        return userRepository.findIdByIssuerAndSub(
-                authenticatedUser.issuer(),
-                authenticatedUser.subject())
-                .orElseThrow(() -> {
-                    log.warn("User ID not found for issuer={} sub={}", authenticatedUser.issuer(),
-                            authenticatedUser.subject());
-                    return new UserNotFoundException(
-                            authenticatedUser.issuer(), authenticatedUser.subject());
-                });
+        return userRepository
+                .findIdByIssuerAndSub(authenticatedUser.issuer(), authenticatedUser.subject())
+                .orElseThrow(
+                        () -> {
+                            log.warn(
+                                    "User ID not found for issuer={} sub={}",
+                                    authenticatedUser.issuer(),
+                                    authenticatedUser.subject());
+                            return new UserNotFoundException(
+                                    authenticatedUser.issuer(), authenticatedUser.subject());
+                        });
     }
 }

@@ -1,9 +1,14 @@
 package edu.kit.quak.application.user.services;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import edu.kit.quak.application.user.exceptions.UserNotFoundException;
 import edu.kit.quak.application.user.ports.out.UserRepositoryPort;
 import edu.kit.quak.core.user.model.AuthenticatedUser;
 import edu.kit.quak.core.user.model.User;
-import edu.kit.quak.test.helpers.AuthTestHelper;
+import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -12,26 +17,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import edu.kit.quak.application.user.exceptions.UserNotFoundException;
 
-import java.util.Optional;
-import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
-
-/**
- * Unit tests for UserService.
- * Tests user retrieval logic.
- */
+/** Unit tests for UserService. Tests user retrieval logic. */
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
 
-    @Mock
-    private UserRepositoryPort userRepository;
+    @Mock private UserRepositoryPort userRepository;
 
-    @InjectMocks
-    private UserService userService;
+    @InjectMocks private UserService userService;
 
     private User testUser;
     private UUID testUserId;
@@ -114,7 +107,8 @@ class UserServiceTest {
         @DisplayName("Should return user when authenticated user exists in database")
         void getAuthenticatedUser_existingUser_returnsUser() {
             // Arrange
-            AuthenticatedUser authenticatedUser = new AuthenticatedUser(null, "google", "test-sub-123");
+            AuthenticatedUser authenticatedUser =
+                    new AuthenticatedUser(null, "google", "test-sub-123");
             when(userRepository.findByIssuerAndSub("google", "test-sub-123"))
                     .thenReturn(Optional.of(testUser));
 
@@ -131,13 +125,16 @@ class UserServiceTest {
         @DisplayName("Should throw UserNotFoundException when user not found")
         void getAuthenticatedUser_userNotFound_throwsException() {
             // Arrange
-            AuthenticatedUser authenticatedUser = new AuthenticatedUser(null, "google", "unknown-sub");
+            AuthenticatedUser authenticatedUser =
+                    new AuthenticatedUser(null, "google", "unknown-sub");
             when(userRepository.findByIssuerAndSub("google", "unknown-sub"))
                     .thenReturn(Optional.empty());
 
             // Act & Assert
-            UserNotFoundException exception = assertThrows(UserNotFoundException.class,
-                    () -> userService.getAuthenticatedUser(authenticatedUser));
+            UserNotFoundException exception =
+                    assertThrows(
+                            UserNotFoundException.class,
+                            () -> userService.getAuthenticatedUser(authenticatedUser));
             assertTrue(exception.getMessage().contains("google"));
             assertTrue(exception.getMessage().contains("unknown-sub"));
         }

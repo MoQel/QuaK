@@ -1,16 +1,14 @@
 package edu.kit.quak.core.filesystem.model;
 
-import lombok.Getter;
-import lombok.Setter;
 import java.time.Instant;
 import java.util.UUID;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
- * Domain POJO for FileElement
- * A FileElement is an element inside a {@link FileElementContainer container}
- * or the container itself.
- * The idea behind this class is the concept of files and directories as they
- * are found inside a POSIX filesystem.
+ * Domain POJO for FileElement A FileElement is an element inside a {@link FileElementContainer
+ * container} or the container itself. The idea behind this class is the concept of files and
+ * directories as they are found inside a POSIX filesystem.
  *
  * @param <T> The type used by the implementing classes in the method
  * @author Henrik K
@@ -41,9 +39,9 @@ public abstract class FileElement<T extends FileElement<T>> {
     }
 
     /**
-     * Renames this element and updates the lastAccess timestamp.
-     * For business logic, prefer this method over {@link #setName(String)}.
-     * 
+     * Renames this element and updates the lastAccess timestamp. For business logic, prefer this
+     * method over {@link #setName(String)}.
+     *
      * @param newName the new name for this element
      * @throws IllegalArgumentException if the name is null or blank
      */
@@ -65,10 +63,8 @@ public abstract class FileElement<T extends FileElement<T>> {
 
     @Override
     public final boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (!(o instanceof FileElement<?> other))
-            return false;
+        if (this == o) return true;
+        if (!(o instanceof FileElement<?> other)) return false;
         return id != null && id.equals(other.getId());
     }
 

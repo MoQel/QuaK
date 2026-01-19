@@ -7,23 +7,19 @@ import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.stereotype.Component;
 
 /**
- * Utility to convert Spring Security Authentication to domain
- * AuthenticatedUser.
- * This adapter component handles the framework-to-domain translation.
+ * Utility to convert Spring Security Authentication to domain AuthenticatedUser. This adapter
+ * component handles the framework-to-domain translation.
  */
 @Component
 public class AuthenticationMapper {
 
     /**
      * Extracts domain AuthenticatedUser from Spring Security Authentication.
-     * 
+     *
      * @param authentication Spring Security authentication object
      * @return Domain model representing the authenticated user
-     * @throws edu.kit.quak.application.user.exceptions.UserNotFoundException if
-     *                                                                        authentication
-     *                                                                        is not
-     *                                                                        OAuth2/OIDC
-     *                                                                        based
+     * @throws edu.kit.quak.application.user.exceptions.UserNotFoundException if authentication is
+     *     not OAuth2/OIDC based
      */
     public AuthenticatedUser toDomain(Authentication authentication) {
         if (authentication == null) {

@@ -1,16 +1,14 @@
 package edu.kit.quak.core.filesystem.model;
 
-/**
- * Domain POJO for FileElement
- */
+/** Domain POJO for FileElement */
 public class File extends FileElement<File> {
 
     public static final String TYPE_IDENTIFIER = "file";
     public static final char ID_PREFIX = 'f';
 
     /**
-     * Default content type for files when no specific type is set.
-     * Represents "accept all" or "unknown" media type.
+     * Default content type for files when no specific type is set. Represents "accept all" or
+     * "unknown" media type.
      */
     public static final String DEFAULT_CONTENT_TYPE = "*/*";
 

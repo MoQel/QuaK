@@ -1,35 +1,30 @@
 package edu.kit.quak.infrastructure.filesystem.out.db.jpa;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import edu.kit.quak.core.filesystem.model.Directory;
 import edu.kit.quak.core.filesystem.model.File;
 import edu.kit.quak.core.filesystem.model.FileElement;
 import edu.kit.quak.core.filesystem.model.Project;
 import edu.kit.quak.shared.tags.IntegrationTest;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.*;
-
 @IntegrationTest
 @DataJpaTest
-@org.springframework.context.annotation.ComponentScan(basePackages = "edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper")
-@Import({
-        DirectoryJpaAdapter.class,
-        ProjectJpaAdapter.class
-})
+@org.springframework.context.annotation.ComponentScan(
+        basePackages = "edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper")
+@Import({DirectoryJpaAdapter.class, ProjectJpaAdapter.class})
 @Transactional
 class DirectoryJpaAdapterTest {
 
-    @Autowired
-    private DirectoryJpaAdapter adapter;
+    @Autowired private DirectoryJpaAdapter adapter;
 
-    @Autowired
-    private ProjectJpaAdapter projectAdapter;
+    @Autowired private ProjectJpaAdapter projectAdapter;
 
     @Test
     void saveAndFindDirectory_withFiles() {

@@ -1,36 +1,29 @@
 package edu.kit.quak.infrastructure.filesystem.out.db.jpa;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import edu.kit.quak.core.filesystem.model.Directory;
 import edu.kit.quak.core.filesystem.model.File;
 import edu.kit.quak.core.filesystem.model.Project;
 import edu.kit.quak.shared.tags.IntegrationTest;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
 
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.*;
-
 @IntegrationTest
 @DataJpaTest
-@org.springframework.context.annotation.ComponentScan(basePackages = "edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper")
-@Import({
-        FileJpaAdapter.class,
-        DirectoryJpaAdapter.class,
-        ProjectJpaAdapter.class
-})
+@org.springframework.context.annotation.ComponentScan(
+        basePackages = "edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper")
+@Import({FileJpaAdapter.class, DirectoryJpaAdapter.class, ProjectJpaAdapter.class})
 class FileJpaAdapterTest {
 
-    @Autowired
-    private FileJpaAdapter fileAdapter;
+    @Autowired private FileJpaAdapter fileAdapter;
 
-    @Autowired
-    private DirectoryJpaAdapter directoryAdapter;
+    @Autowired private DirectoryJpaAdapter directoryAdapter;
 
-    @Autowired
-    private ProjectJpaAdapter projectAdapter;
+    @Autowired private ProjectJpaAdapter projectAdapter;
 
     @Test
     void findById_returnsFile_whenExists() {
@@ -42,11 +35,12 @@ class FileJpaAdapterTest {
 
         Directory savedDir = directoryAdapter.save(dir);
 
-        String fileId = savedDir.getContents().stream()
-                .filter(e -> e.getName().equals("TestFile.txt"))
-                .findFirst()
-                .orElseThrow()
-                .getId();
+        String fileId =
+                savedDir.getContents().stream()
+                        .filter(e -> e.getName().equals("TestFile.txt"))
+                        .findFirst()
+                        .orElseThrow()
+                        .getId();
 
         // 2. Act
         Optional<File> loaded = fileAdapter.findById(fileId);

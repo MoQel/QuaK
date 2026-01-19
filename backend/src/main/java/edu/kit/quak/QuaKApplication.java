@@ -7,9 +7,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class QuaKApplication {
 
-	public static void main(String[] args) {
-		DotenvLoader.loadEnv();
-		SpringApplication.run(QuaKApplication.class, args);
-	}
-
+    public static void main(String[] args) {
+        DotenvLoader.loadEnv();
+        SpringApplication.run(QuaKApplication.class, args);
+    }
 }

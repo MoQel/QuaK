@@ -5,12 +5,13 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Domain POJO for FileElementContainer
- * A FileElementContainer is a container that holds {@link FileElement FileElements}.
+ * Domain POJO for FileElementContainer A FileElementContainer is a container that holds {@link
+ * FileElement FileElements}.
  *
  * @author Henrik K
  */
-public abstract class FileElementContainer<T extends FileElementContainer<T>> extends FileElement<T> {
+public abstract class FileElementContainer<T extends FileElementContainer<T>>
+        extends FileElement<T> {
 
     protected Set<FileElement<?>> contents = new HashSet<>();
 
@@ -25,14 +26,20 @@ public abstract class FileElementContainer<T extends FileElementContainer<T>> ex
     public Set<FileElement<?>> getContents() {
         return Collections.unmodifiableSet(contents);
     }
-    public void setContents(Set<FileElement<?>> contents) { this.contents = contents; }
+
+    public void setContents(Set<FileElement<?>> contents) {
+        this.contents = contents;
+    }
 
     public void addChild(FileElement<?> child) {
         // No duplicate names within one parent
         if (hasChildWithName(child.getName())) {
             throw new IllegalArgumentException(
-                    "An element with the name '" + child.getName() + "' already exists in '" + this.getName() + "'"
-            );
+                    "An element with the name '"
+                            + child.getName()
+                            + "' already exists in '"
+                            + this.getName()
+                            + "'");
         }
         this.contents.add(child);
 

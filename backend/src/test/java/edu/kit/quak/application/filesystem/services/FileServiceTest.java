@@ -1,5 +1,9 @@
 package edu.kit.quak.application.filesystem.services;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import edu.kit.quak.application.filesystem.delegator.FileElementContainerRepositoryDelegator;
 import edu.kit.quak.application.filesystem.ports.out.FileContentRepositoryPort;
 import edu.kit.quak.application.filesystem.ports.out.FileRepositoryPort;
@@ -7,6 +11,8 @@ import edu.kit.quak.core.filesystem.model.File;
 import edu.kit.quak.core.filesystem.model.Project;
 import edu.kit.quak.core.user.model.User;
 import edu.kit.quak.shared.tags.UnitTest;
+import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -14,26 +20,15 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Optional;
-import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 @UnitTest
 @ExtendWith(MockitoExtension.class)
 class FileServiceTest {
 
-    @Mock
-    private FileRepositoryPort repository;
-    @Mock
-    private FileContentRepositoryPort contentRepository;
-    @Mock
-    private FileElementContainerRepositoryDelegator delegator;
+    @Mock private FileRepositoryPort repository;
+    @Mock private FileContentRepositoryPort contentRepository;
+    @Mock private FileElementContainerRepositoryDelegator delegator;
 
-    @InjectMocks
-    private FileService service;
+    @InjectMocks private FileService service;
 
     private User testUser;
     private UUID testUserId;
@@ -135,7 +130,7 @@ class FileServiceTest {
 
         when(repository.findById("f-1")).thenReturn(Optional.of(orphanFile));
 
-        assertThrows(IllegalStateException.class,
-                () -> service.renameFile("f-1", "NewName", testUser));
+        assertThrows(
+                IllegalStateException.class, () -> service.renameFile("f-1", "NewName", testUser));
     }
 }

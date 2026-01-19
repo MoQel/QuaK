@@ -4,14 +4,18 @@ import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.OneToMany;
-
 import java.util.HashSet;
 import java.util.Set;
 
 @Entity
-public abstract class JpaFileElementContainer<SELF extends JpaFileElementContainer<SELF>> extends JpaFileElement<SELF> {
-    
-    @OneToMany(mappedBy = "parent", orphanRemoval = true, cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+public abstract class JpaFileElementContainer<SELF extends JpaFileElementContainer<SELF>>
+        extends JpaFileElement<SELF> {
+
+    @OneToMany(
+            mappedBy = "parent",
+            orphanRemoval = true,
+            cascade = CascadeType.ALL,
+            fetch = FetchType.LAZY)
     protected Set<JpaFileElement<?>> contents = new HashSet<>();
 
     protected JpaFileElementContainer() {

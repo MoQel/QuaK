@@ -1,5 +1,11 @@
 package edu.kit.quak.integration.user;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.oidcLogin;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
 import edu.kit.quak.infrastructure.user.out.db.jpa.entity.JpaUser;
 import edu.kit.quak.infrastructure.user.out.db.jpa.repository.SpringDataUserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -11,25 +17,17 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.servlet.MockMvc;
 
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.oidcLogin;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-
 /**
- * Integration tests for User-related endpoints.
- * Tests the full request/response cycle including security.
+ * Integration tests for User-related endpoints. Tests the full request/response cycle including
+ * security.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
 class UserIntegrationTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+    @Autowired private MockMvc mockMvc;
 
-    @Autowired
-    private SpringDataUserRepository userRepository;
+    @Autowired private SpringDataUserRepository userRepository;
 
     private JpaUser testUser;
 
@@ -38,34 +36,43 @@ class UserIntegrationTest {
         // Create a test user if not exists
         // The oidcLogin() mock uses "test" as the registration ID by default in our
         // tests
-        testUser = userRepository.findByIssuerAndSub("test", "test-sub")
-                .orElseGet(() -> {
-                    JpaUser user = new JpaUser();
-                    user.setIssuer("test"); // Match the test's OIDC mock registration ID
-                    user.setSub("test-sub");
-                    user.setEmail("test@example.com");
-                    user.setName("Test User");
-                    user.setEmailVerified(true);
-                    return userRepository.save(user);
-                });
+        testUser =
+                userRepository
+                        .findByIssuerAndSub("test", "test-sub")
+                        .orElseGet(
+                                () -> {
+                                    JpaUser user = new JpaUser();
+                                    user.setIssuer(
+                                            "test"); // Match the test's OIDC mock registration ID
+                                    user.setSub("test-sub");
+                                    user.setEmail("test@example.com");
+                                    user.setName("Test User");
+                                    user.setEmailVerified(true);
+                                    return userRepository.save(user);
+                                });
     }
 
-    private org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.OidcLoginRequestPostProcessor authenticatedUser() {
+    private org.springframework.security.test.web.servlet.request
+                    .SecurityMockMvcRequestPostProcessors.OidcLoginRequestPostProcessor
+            authenticatedUser() {
         return oidcLogin()
-                .idToken(token -> token
-                        .claim("sub", "test-sub")
-                        .claim("email", "test@example.com")
-                        .claim("name", "Test User")
-                        .claim("picture", "https://example.com/avatar.jpg"))
-                .clientRegistration(org.springframework.security.oauth2.client.registration.ClientRegistration
-                        .withRegistrationId("test")
-                        .clientId("test-client-id")
-                        .authorizationGrantType(
-                                org.springframework.security.oauth2.core.AuthorizationGrantType.AUTHORIZATION_CODE)
-                        .redirectUri("http://localhost/callback")
-                        .authorizationUri("http://localhost/authorize")
-                        .tokenUri("http://localhost/token")
-                        .build());
+                .idToken(
+                        token ->
+                                token.claim("sub", "test-sub")
+                                        .claim("email", "test@example.com")
+                                        .claim("name", "Test User")
+                                        .claim("picture", "https://example.com/avatar.jpg"))
+                .clientRegistration(
+                        org.springframework.security.oauth2.client.registration.ClientRegistration
+                                .withRegistrationId("test")
+                                .clientId("test-client-id")
+                                .authorizationGrantType(
+                                        org.springframework.security.oauth2.core
+                                                .AuthorizationGrantType.AUTHORIZATION_CODE)
+                                .redirectUri("http://localhost/callback")
+                                .authorizationUri("http://localhost/authorize")
+                                .tokenUri("http://localhost/token")
+                                .build());
     }
 
     @Nested
@@ -75,8 +82,7 @@ class UserIntegrationTest {
         @Test
         @DisplayName("Should return 401 when not authenticated")
         void getMeEndpoint_unauthenticated_returns401() throws Exception {
-            mockMvc.perform(get("/api/me"))
-                    .andExpect(status().isUnauthorized());
+            mockMvc.perform(get("/api/me")).andExpect(status().isUnauthorized());
         }
 
         @Test
@@ -136,17 +142,14 @@ class UserIntegrationTest {
         @Test
         @DisplayName("Should successfully logout authenticated user")
         void logout_authenticated_success() throws Exception {
-            mockMvc.perform(post("/api/auth/logout")
-                    .with(csrf())
-                    .with(authenticatedUser()))
+            mockMvc.perform(post("/api/auth/logout").with(csrf()).with(authenticatedUser()))
                     .andExpect(status().isOk());
         }
 
         @Test
         @DisplayName("Should allow logout even when not authenticated")
         void logout_notAuthenticated_success() throws Exception {
-            mockMvc.perform(post("/api/auth/logout").with(csrf()))
-                    .andExpect(status().isOk());
+            mockMvc.perform(post("/api/auth/logout").with(csrf())).andExpect(status().isOk());
         }
     }
 
@@ -158,20 +161,17 @@ class UserIntegrationTest {
         @DisplayName("Protected endpoints should require authentication")
         void protectedEndpoints_requireAuth() throws Exception {
             // /api/me requires authentication
-            mockMvc.perform(get("/api/me"))
-                    .andExpect(status().isUnauthorized());
+            mockMvc.perform(get("/api/me")).andExpect(status().isUnauthorized());
 
             // /api/projects requires authentication
-            mockMvc.perform(get("/api/projects"))
-                    .andExpect(status().isUnauthorized());
+            mockMvc.perform(get("/api/projects")).andExpect(status().isUnauthorized());
         }
 
         @Test
         @DisplayName("Public endpoints should be accessible without authentication")
         void publicEndpoints_noAuthRequired() throws Exception {
             // /api/auth/status is public
-            mockMvc.perform(get("/api/auth/status"))
-                    .andExpect(status().isOk());
+            mockMvc.perform(get("/api/auth/status")).andExpect(status().isOk());
         }
     }
 }

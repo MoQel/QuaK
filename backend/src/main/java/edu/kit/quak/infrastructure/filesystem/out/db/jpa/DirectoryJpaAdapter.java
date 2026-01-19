@@ -7,10 +7,9 @@ import edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity.JpaFileElementCo
 import edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper.DirectoryJpaMapper;
 import edu.kit.quak.infrastructure.filesystem.out.db.jpa.repository.SpringDataDirectoryRepository;
 import edu.kit.quak.infrastructure.filesystem.out.db.jpa.repository.SpringDataFileElementContainerRepository;
-import org.springframework.stereotype.Repository;
-
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.stereotype.Repository;
 
 @Repository
 public class DirectoryJpaAdapter implements DirectoryRepositoryPort {
@@ -19,7 +18,9 @@ public class DirectoryJpaAdapter implements DirectoryRepositoryPort {
     SpringDataFileElementContainerRepository parentRepository;
     DirectoryJpaMapper directoryMapper;
 
-    public DirectoryJpaAdapter(SpringDataDirectoryRepository directoryRepository, DirectoryJpaMapper directoryMapper,
+    public DirectoryJpaAdapter(
+            SpringDataDirectoryRepository directoryRepository,
+            DirectoryJpaMapper directoryMapper,
             SpringDataFileElementContainerRepository parentRepository) {
         this.directoryRepository = directoryRepository;
         this.directoryMapper = directoryMapper;
@@ -33,8 +34,7 @@ public class DirectoryJpaAdapter implements DirectoryRepositoryPort {
 
     @Override
     public Optional<Directory> findById(String dId) {
-        return directoryRepository.findById(dId)
-                .map(directoryMapper::toDomainEntity);
+        return directoryRepository.findById(dId).map(directoryMapper::toDomainEntity);
     }
 
     @Override
@@ -44,8 +44,14 @@ public class DirectoryJpaAdapter implements DirectoryRepositoryPort {
         // mapping
         // else we would lose the bidirectional behavior in the db
         if (container.getParentId() != null) {
-            JpaFileElementContainer<?> parent = parentRepository.findById(container.getParentId())
-                    .orElseThrow(() -> new IllegalArgumentException("Parent not found: " + container.getParentId()));
+            JpaFileElementContainer<?> parent =
+                    parentRepository
+                            .findById(container.getParentId())
+                            .orElseThrow(
+                                    () ->
+                                            new IllegalArgumentException(
+                                                    "Parent not found: "
+                                                            + container.getParentId()));
             jpaDirectory.setParent(parent);
         }
         return directoryMapper.toDomainEntity(directoryRepository.save(jpaDirectory));
@@ -58,7 +64,8 @@ public class DirectoryJpaAdapter implements DirectoryRepositoryPort {
 
     @Override
     public Optional<UUID> findProjectOwnerIdByElementId(String elementId) {
-        return parentRepository.findProjectOwnerIdByElementId(elementId)
+        return parentRepository
+                .findProjectOwnerIdByElementId(elementId)
                 .map(JpaUtils::convertToUuid);
     }
 }

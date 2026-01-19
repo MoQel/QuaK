@@ -1,24 +1,23 @@
 package edu.kit.quak.application.user.services;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import edu.kit.quak.core.user.model.AuthenticatedUser;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.*;
-
 /**
- * Unit tests for AuthService.
- * Tests authentication status, user info retrieval, and logout functionality.
- * 
- * Note: These tests are framework-agnostic since the refactored AuthService
- * works only with domain concepts (AuthenticatedUser) and not Spring Security.
+ * Unit tests for AuthService. Tests authentication status, user info retrieval, and logout
+ * functionality.
+ *
+ * <p>Note: These tests are framework-agnostic since the refactored AuthService works only with
+ * domain concepts (AuthenticatedUser) and not Spring Security.
  */
 class AuthServiceTest {
 
@@ -41,9 +40,8 @@ class AuthServiceTest {
         @Test
         @DisplayName("Should return authenticated=false when no authenticated user")
         void getAuthenticationStatus_noAuth_returnsFalse() {
-            Map<String, Object> result = authService.getAuthenticationStatus(
-                    Optional.empty(),
-                    Optional.empty());
+            Map<String, Object> result =
+                    authService.getAuthenticationStatus(Optional.empty(), Optional.empty());
 
             assertFalse((Boolean) result.get("authenticated"));
             assertNull(result.get("user"));
@@ -52,14 +50,14 @@ class AuthServiceTest {
         @Test
         @DisplayName("Should return authenticated=true with user info for authenticated user")
         void getAuthenticationStatus_authenticatedUser_returnsTrueWithUserInfo() {
-            AuthenticatedUser authenticatedUser = new AuthenticatedUser(
-                    TEST_USER_ID, TEST_ISSUER, TEST_SUBJECT);
+            AuthenticatedUser authenticatedUser =
+                    new AuthenticatedUser(TEST_USER_ID, TEST_ISSUER, TEST_SUBJECT);
 
             Map<String, Object> userInfo = createUserInfo();
 
-            Map<String, Object> result = authService.getAuthenticationStatus(
-                    Optional.of(authenticatedUser),
-                    Optional.of(userInfo));
+            Map<String, Object> result =
+                    authService.getAuthenticationStatus(
+                            Optional.of(authenticatedUser), Optional.of(userInfo));
 
             assertTrue((Boolean) result.get("authenticated"));
             assertNotNull(result.get("user"));
@@ -74,12 +72,12 @@ class AuthServiceTest {
         @Test
         @DisplayName("Should return authenticated=true without user info when not provided")
         void getAuthenticationStatus_authenticatedWithoutUserInfo_returnsTrueWithoutUserInfo() {
-            AuthenticatedUser authenticatedUser = new AuthenticatedUser(
-                    TEST_USER_ID, TEST_ISSUER, TEST_SUBJECT);
+            AuthenticatedUser authenticatedUser =
+                    new AuthenticatedUser(TEST_USER_ID, TEST_ISSUER, TEST_SUBJECT);
 
-            Map<String, Object> result = authService.getAuthenticationStatus(
-                    Optional.of(authenticatedUser),
-                    Optional.empty());
+            Map<String, Object> result =
+                    authService.getAuthenticationStatus(
+                            Optional.of(authenticatedUser), Optional.empty());
 
             assertTrue((Boolean) result.get("authenticated"));
             assertNull(result.get("user"));
@@ -93,13 +91,12 @@ class AuthServiceTest {
         @Test
         @DisplayName("Should return user info for authenticated user")
         void getAuthenticatedUserInfo_authenticatedUser_returnsUserInfo() {
-            AuthenticatedUser authenticatedUser = new AuthenticatedUser(
-                    TEST_USER_ID, TEST_ISSUER, TEST_SUBJECT);
+            AuthenticatedUser authenticatedUser =
+                    new AuthenticatedUser(TEST_USER_ID, TEST_ISSUER, TEST_SUBJECT);
             Map<String, Object> userInfo = createUserInfoWithSub();
 
-            Map<String, Object> result = authService.getAuthenticatedUserInfo(
-                    authenticatedUser,
-                    userInfo);
+            Map<String, Object> result =
+                    authService.getAuthenticatedUserInfo(authenticatedUser, userInfo);
 
             assertEquals("test@example.com", result.get("email"));
             assertEquals("Test User", result.get("name"));
@@ -112,7 +109,8 @@ class AuthServiceTest {
         void getAuthenticatedUserInfo_nullUser_throwsException() {
             Map<String, Object> userInfo = createUserInfoWithSub();
 
-            assertThrows(IllegalStateException.class,
+            assertThrows(
+                    IllegalStateException.class,
                     () -> authService.getAuthenticatedUserInfo(null, userInfo));
         }
     }
