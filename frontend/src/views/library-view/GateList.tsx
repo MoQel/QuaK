@@ -35,9 +35,9 @@ function GateList({ gates, onGateClick }: GateListProps) {
                 maxHeight: "300px",
                 width: "400px",
                 overflowY: "auto",
-                border: "1px solid #444",
+                border: "1px solid border-border",
                 borderRadius: "8px",
-                backgroundColor: "#111",
+                backgroundColor: "bg-bg-dark",
                 padding: "0"
             }}
         >
@@ -49,9 +49,9 @@ function GateList({ gates, onGateClick }: GateListProps) {
                             padding: "8px 12px",
                             fontWeight: 600,
                             fontSize: "0.9rem",
-                            backgroundColor: "#1f1f1f",
-                            borderTop: index === 0 ? "none" : "1px solid #333",
-                            borderBottom: "1px solid #333",
+                            backgroundColor: "var(--bg)",
+                            borderTop: index === 0 ? "none" : "1px solid var(--border)",
+                            //borderBottom: "1px solid var(--border)",
                         }}
                     >
                         {group.type}
@@ -63,7 +63,7 @@ function GateList({ gates, onGateClick }: GateListProps) {
                                 key={gate.name}
                                 style={{
                                     padding: "10px 12px",
-                                    borderBottom: "1px solid #222",
+                                    borderTop: "1px solid var(--border)",
                                 }}
                             >
                                 <div
