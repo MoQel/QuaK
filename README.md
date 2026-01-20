@@ -1,4 +1,12 @@
-# QuaK
+# QuaK IDE
+
+[![License](https://img.shields.io/github/license/MoQel/QuaK)](LICENSE) 
+[![CI](https://img.shields.io/github/actions/workflow/status/MoQel/QuaK/test_and_build.yml?label=CI)](https://github.com/MoQel/QuaK/actions/workflows/test_and_build.yml)
+[![Deploy](https://img.shields.io/github/actions/workflow/status/MoQel/QuaK/deploy.yml?label=deploy)](https://github.com/MoQel/QuaK/actions/workflows/deploy.yml)
+
+## About
+
+This repository contains the source code for the Quantum Kit (QuaK) Web IDE.
 
 ## Docker Workflows
 
@@ -91,3 +99,9 @@ If you want to use this feature, run any gradle-command with the flag `-Pdownloa
 If you wish to remove the custom nodejs install, run `gradlew :removeCustomNode`.
 
 [gradle-node-plugin]: https://github.com/node-gradle/gradle-node-plugin
+
+## License
+
+Copyright (c) 2025 MoQel
+
+This project is available under the [MIT License](./LICENSE)

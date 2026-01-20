@@ -3,7 +3,7 @@ import { FormEvent, JSX, useContext } from "react";
 import { ParentRefresh } from "@/views/project-manager-view/ProjectManagerView.tsx";
 import { DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog.tsx";
 import { DialogCloseButtons } from "@/views/project-manager-view/util/FormComponents.tsx";
-import { api } from "@/utils/api";
+import { api } from "@/api/api.ts";
 
 /**
  * Provides a {@link ContextMenuItem} That allows for deletion of an HTTP-Path

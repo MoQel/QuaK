@@ -1,110 +1,162 @@
 import {Card, CardContent} from "@/components/ui/card.tsx";
-import {Qubit} from "@/views/circuit-view/Qubit.tsx";
+import {Popover, PopoverContent, PopoverTrigger} from '@/components/ui/popover.tsx';
 import {Button} from "@/components/ui/button.tsx";
 import {Minus, Plus, Trash} from "lucide-react";
-import {CircuitState} from "@/type/quantum.tsx";
-import {Fragment, useCallback, useState} from "react";
+import {Fragment, useEffect, useState} from "react";
 import styles from "@/App.module.css";
-import {matrixContext} from "@/Context.tsx";
-import {useContext} from "react";
-import {CircuitCell} from "@/App.tsx"
+import {Qubit} from "@/views/circuit-view/Qubit.tsx";
+import {api} from "@/api/api.ts";
+import {
+    AddGateRequest,
+    ChangeQubitNameRequest,
+    CircuitResponse,
+    MoveGateRequest, QubitResponse,
+    RegisterResponse
+} from "@/api/dto/circuit.ts";
 
-type CircuitViewProps = {
-    maxWireLength: number
-}
+export function CircuitView() {
+    const [circuit, setCircuit] = useState<CircuitResponse | null>(null);
+    const [isPopoverOpen, setIsPopoverOpen] = useState(false);
 
-export function CircuitView({maxWireLength}: CircuitViewProps) {
-    //TODO These are not needed anymore, safely remove them
-    const GATE_CAPACITY_VISIBLE = 40
-    const INITIAL_QUBITS_VISIBLE = 5
-    const WIRE_LENGTH = GATE_CAPACITY_VISIBLE * 25
+    const maxWireLength = Math.max(
+        ...(circuit?.registers.map(reg => reg.qubits.at(0)?.gates.length ?? 0)) ?? [0]
+    );
 
+    useEffect(() => {
+        api.post<CircuitResponse>('/circuit').then(setCircuit);
+    }, [])
 
-    const matrix = useContext(matrixContext)
-    const [circuitState, setCircuitState] = useState<CircuitState>({
-        qubits: INITIAL_QUBITS_VISIBLE,
-        steps: GATE_CAPACITY_VISIBLE,
-    });
+    const addQubit = async () => {
+        if (circuit != null) {
+            setCircuit(await api.post<CircuitResponse>(`/circuit/${circuit.id}/qubit`));
+        }
+    }
 
-    const removeQubit = useCallback(() => {
-        setCircuitState(prev => ({
-            qubits: Math.max(prev.qubits - 1, 1),
-            steps: prev.steps,
-        }));
+    const changeQubitName = async (payload: ChangeQubitNameRequest) => {
+        if (circuit != null) {
+            setCircuit(await api.patch<CircuitResponse>(`/circuit/${circuit.id}/qubit`, payload));
+        }
+    }
 
-        matrix.setMatrixState((prev: CircuitCell[][]): CircuitCell[][] => {
-            // prevent removing the last qubit
-            if (prev.length <= 1) return prev;
-            return prev.slice(0, -1); // remove last qubit (wire)
-        });
-    }, [matrix]);
+    const deleteQubit = async (qubitId: string) => {
+        if (circuit != null) {
+            setCircuit(await api.delete<CircuitResponse>(`/circuit/${circuit.id}/qubit/${qubitId}`));
+        }
+    }
 
-    const addQubit = useCallback(() => {
-        setCircuitState(prev => ({
-            qubits: Math.min(prev.qubits + 1, 20),
-            steps: prev.steps,
-        }));
-        matrix.setMatrixState((prev: CircuitCell[][]): CircuitCell[][] => {
-            return [...prev, [] as CircuitCell[]];  // new wire (empty array) appended
-        });
-    }, [matrix]);
+    const deleteLastQubit = async () => {
+        if (circuit != null) {
+            const lastQubit: QubitResponse | undefined = circuit.registers.at(-1)?.qubits.at(0);
+            if (lastQubit) {
+                await deleteQubit(lastQubit.id);
+            }
+        }
+    }
 
-    const resetCircuit = useCallback(() => {
-        setCircuitState(prev => ({
-            qubits: 1,
-            steps: prev.steps,
-        }));
-        matrix.setMatrixState((prev) =>
-            prev.map((row) =>
-                row.filter((gate) =>
-                    gate.type === "DUMMY"))
-        );
-    }, [matrix]);
+    const resetCircuit = async () => {
+        if (circuit != null) {
+            await api.delete<CircuitResponse>(`/circuit/${circuit.id}`);
+            setCircuit(await api.post<CircuitResponse>('/circuit'));
+        }
+    }
+
+    const addGate = async (payload: AddGateRequest) => {
+        if (circuit != null) {
+            setCircuit(await api.post<CircuitResponse>(`/circuit/${circuit.id}/gate`, payload));
+        }
+    }
+
+    const moveGate = async (payload: MoveGateRequest) => {
+        if (circuit != null) {
+            setCircuit(await api.patch<CircuitResponse>(`/circuit/${circuit.id}/gate`, payload));
+        }
+    }
+
+    const deleteGate = async (gateId: string) => {
+        if (circuit != null) {
+            setCircuit(await api.delete<CircuitResponse>(`/circuit/${circuit.id}/gate/${gateId}`));
+        }
+    }
 
     return (
         <Card className="h-full overflow-hidden">
             <CardContent className="flex flex-col h-full">
-                {/* Buttons for adding, removing and resetting the circuit */}
+
+                {/* Buttons */}
                 <div className="pb-5 flex justify-end space-x-3">
-                    <Button onClick={addQubit} size="icon" className="size-8">
-                        <Plus/>
-                    </Button>
-                    <Button onClick={removeQubit} size="icon" className="size-8">
-                        <Minus/>
-                    </Button>
-                    <Button onClick={resetCircuit} size="icon" className="size-8">
-                        <Trash/>
-                    </Button>
+                    <Button onClick={addQubit} size="icon" className="size-8"><Plus/></Button>
+                    <Button onClick={deleteLastQubit} size="icon" className="size-8" variant="destructive"><Minus/></Button>
+                    <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+                        <PopoverTrigger asChild>
+                            <Button size="icon" className="size-8" variant="destructive">
+                                <Trash />
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-64 p-4">
+                            <div className="flex flex-col space-y-3 text-center">
+                                <p className="text-sm font-medium leading-none">
+                                    Reset Circuit?
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                    This will permanently delete all gates and wires.
+                                </p>
+                                <div className="flex flex-col gap-2">
+                                    <Button
+                                        onClick={() => {
+                                            resetCircuit();
+                                            setIsPopoverOpen(false);
+                                        }}
+                                        variant="destructive"
+                                        size="sm"
+                                        className="w-full font-bold"
+                                    >
+                                        Yes, reset everything
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => setIsPopoverOpen(false)}
+                                    >
+                                        Cancel
+                                    </Button>
+                                </div>
+                            </div>
+                        </PopoverContent>
+                    </Popover>
                 </div>
 
                 {/* Wires container */}
                 <div className="flex-1 overflow-auto">
-                    {Array.from({length: circuitState.qubits}).map((_, qubitIndex) => (
-                        <Qubit
-                            key={qubitIndex}
-                            gates={matrix?.matrixState[qubitIndex] ?? []}
-                            qubitIndex={qubitIndex}
-                            length={WIRE_LENGTH}
-                        />
-                    ))}
+                    {
+                        circuit?.registers.map((reg: RegisterResponse, idx) => (
+                            <Qubit
+                                key={reg.qubits.at(0)?.id}
+                                id={reg.qubits.at(0)?.id ?? ""}
+                                name={reg.name}
+                                gates={reg.qubits.at(0)?.gates ?? []}
+                                qubitIndex={idx}
+                                onNameChange={changeQubitName}
+                                onDelete={() => deleteQubit(reg.qubits.at(0)?.id ?? "")}
+                                onGateAdd={addGate}
+                                onGateMove={moveGate}
+                                onGateDelete={deleteGate}
+                            />
+                        ))
+                    }
                     {/* Gate Indexing of form: | 1 | 2 | ... */}
-                    <div className={`${styles.gateIndexSpacing} font-mono text-sm flex justify-start flex-shrink-0`}>
-                        {Array.from({length: maxWireLength - 1}, (_, i) => (
+                    <div className={`${styles.gateIndexSpacing} flex font-mono text-sm border-l border-gray-500`}>
+                        {Array.from({length: maxWireLength}, (_, i) => (
                             <Fragment key={i}>
-                                <span className="text-text w-3 shrink-0">|</span>
                                 <span
-                                    className={`${styles.gateIndexSize} text-text inline-block center shrink-0`}
+                                    className={`${styles.gateIndexSize} text-gray-500 shrink-0 justify-center border-r border-gray-500`}
                                 >
-                                {i + 1}
-                            </span>
+                                    {i + 1}
+                                </span>
                             </Fragment>
                         ))}
-                        <span className="text-text">|</span>
                     </div>
                 </div>
-
-
             </CardContent>
         </Card>
-    )
+    );
 }

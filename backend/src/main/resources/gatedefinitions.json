@@ -1,0 +1,357 @@
+[
+  {
+    "id": "h",
+    "name": "Hadamard",
+    "symbol": "H",
+    "category": "Superposition",
+    "description": "Creates an equal superposition of |0⟩ and |1⟩.",
+    "qubitCount": 1,
+    "inspectorInfo": {
+      "operatorDefinition": "H = \\frac{|0\\rangle\\langle 0| + |0\\rangle\\langle 1| + |1\\rangle\\langle 0| - |1\\rangle\\langle 1|}{\\sqrt{2}}",
+      "truthTable": [
+        { "input": "|0⟩", "output": "|+⟩ = \\frac{|0⟩ + |1⟩}{\\sqrt{2}}" },
+        { "input": "|1⟩", "output": "|-⟩ = \\frac{|0⟩ - |1⟩}{\\sqrt{2}}" }
+      ],
+      "matrix": {
+        "display": "\\frac{1}{\\sqrt{2}} \\begin{pmatrix} 1 & 1 \\\\ 1 & -1 \\end{pmatrix}",
+        "rows": 2,
+        "cols": 2,
+        "computable": [
+          ["1/sqrt(2)", "1/sqrt(2)"],
+          ["1/sqrt(2)", "-1/sqrt(2)"]
+        ]
+      }
+    }
+  },
+  {
+    "id": "x",
+    "name": "Pauli-X",
+    "symbol": "X",
+    "category": "Pauli",
+    "description": "Bit-flip gate (NOT). Rotates the state by π around the X-axis.",
+    "qubitCount": 1,
+    "inspectorInfo": {
+      "operatorDefinition": "X = |0\\rangle\\langle 1| + |1\\rangle\\langle 0|",
+      "truthTable": [
+        { "input": "|0⟩", "output": "|1⟩" },
+        { "input": "|1⟩", "output": "|0⟩" }
+      ],
+      "matrix": {
+        "display": "\\begin{pmatrix} 0 & 1 \\\\ 1 & 0 \\end{pmatrix}",
+        "rows": 2,
+        "cols": 2,
+        "computable": [
+          ["0", "1"],
+          ["1", "0"]
+        ]
+      }
+    }
+  },
+  {
+    "id": "y",
+    "name": "Pauli-Y",
+    "symbol": "Y",
+    "category": "Pauli",
+    "description": "Bit- and phase-flip. Rotates the state by π around the Y-axis.",
+    "qubitCount": 1,
+    "inspectorInfo": {
+      "operatorDefinition": "Y = -i|0\\rangle\\langle 1| + i|1\\rangle\\langle 0|",
+      "truthTable": [
+        { "input": "|0⟩", "output": "i|1⟩" },
+        { "input": "|1⟩", "output": "-i|0⟩" }
+      ],
+      "matrix": {
+        "display": "\\begin{pmatrix} 0 & -i \\\\ i & 0 \\end{pmatrix}",
+        "rows": 2,
+        "cols": 2,
+        "computable": [
+          ["0", "-i"],
+          ["i", "0"]
+        ]
+      }
+    }
+  },
+  {
+    "id": "z",
+    "name": "Pauli-Z",
+    "symbol": "Z",
+    "category": "Pauli",
+    "description": "Phase-flip gate. Rotates the state by π around the Z-axis.",
+    "qubitCount": 1,
+    "inspectorInfo": {
+      "operatorDefinition": "Z = |0\\rangle\\langle 0| - |1\\rangle\\langle 1|",
+      "truthTable": [
+        { "input": "|0⟩", "output": "|0⟩" },
+        { "input": "|1⟩", "output": "-|1⟩" }
+      ],
+      "matrix": {
+        "display": "\\begin{pmatrix} 1 & 0 \\\\ 0 & -1 \\end{pmatrix}",
+        "rows": 2,
+        "cols": 2,
+        "computable": [
+          ["1", "0"],
+          ["0", "-1"]
+        ]
+      }
+    }
+  },
+  {
+    "id": "cx",
+    "name": "CNOT",
+    "symbol": "CX",
+    "category": "Multi-Qubit",
+    "description": "Controlled-NOT. Flips the target qubit if the control qubit is |1⟩.",
+    "qubitCount": 2,
+    "inspectorInfo": {
+      "operatorDefinition": "\\text{CNOT} = |0\\rangle\\langle 0| \\otimes I + |1\\rangle\\langle 1| \\otimes X",
+      "truthTable": [
+        { "input": "|00⟩", "output": "|00⟩" },
+        { "input": "|01⟩", "output": "|01⟩" },
+        { "input": "|10⟩", "output": "|11⟩" },
+        { "input": "|11⟩", "output": "|10⟩" }
+      ],
+      "matrix": {
+        "display": "\\begin{pmatrix} 1 & 0 & 0 & 0 \\\\ 0 & 1 & 0 & 0 \\\\ 0 & 0 & 0 & 1 \\\\ 0 & 0 & 1 & 0 \\end{pmatrix}",
+        "rows": 4,
+        "cols": 4,
+        "computable": [
+          ["1", "0", "0", "0"],
+          ["0", "1", "0", "0"],
+          ["0", "0", "0", "1"],
+          ["0", "0", "1", "0"]
+        ]
+      }
+    }
+  },
+  {
+    "id": "cz",
+    "name": "CZ",
+    "symbol": "CZ",
+    "category": "Multi-Qubit",
+    "description": "Controlled-Z. Applies a phase flip only if both qubits are |1⟩.",
+    "qubitCount": 2,
+    "inspectorInfo": {
+      "operatorDefinition": "\\text{CZ} = |0\\rangle\\langle 0| \\otimes I + |1\\rangle\\langle 1| \\otimes Z",
+      "truthTable": [
+        { "input": "|00⟩", "output": "|00⟩" },
+        { "input": "|01⟩", "output": "|01⟩" },
+        { "input": "|10⟩", "output": "|10⟩" },
+        { "input": "|11⟩", "output": "-|11⟩" }
+      ],
+      "matrix": {
+        "display": "\\begin{pmatrix} 1 & 0 & 0 & 0 \\\\ 0 & 1 & 0 & 0 \\\\ 0 & 0 & 1 & 0 \\\\ 0 & 0 & 0 & -1 \\end{pmatrix}",
+        "rows": 4,
+        "cols": 4,
+        "computable": [
+          ["1", "0", "0", "0"],
+          ["0", "1", "0", "0"],
+          ["0", "0", "1", "0"],
+          ["0", "0", "0", "-1"]
+        ]
+      }
+    }
+  },
+  {
+    "id": "swap",
+    "name": "SWAP",
+    "symbol": "SWAP",
+    "category": "Multi-Qubit",
+    "description": "Exchanges the states of two qubits.",
+    "qubitCount": 2,
+    "inspectorInfo": {
+      "operatorDefinition": "\\text{SWAP} = \\sum_{a,b \\in \\{0,1\\}} |b,a\\rangle\\langle a,b|",
+      "truthTable": [
+        { "input": "|00⟩", "output": "|00⟩" },
+        { "input": "|01⟩", "output": "|10⟩" },
+        { "input": "|10⟩", "output": "|01⟩" },
+        { "input": "|11⟩", "output": "|11⟩" }
+      ],
+      "matrix": {
+        "display": "\\begin{pmatrix} 1 & 0 & 0 & 0 \\\\ 0 & 0 & 1 & 0 \\\\ 0 & 1 & 0 & 0 \\\\ 0 & 0 & 0 & 1 \\end{pmatrix}",
+        "rows": 4,
+        "cols": 4,
+        "computable": [
+          ["1", "0", "0", "0"],
+          ["0", "0", "1", "0"],
+          ["0", "1", "0", "0"],
+          ["0", "0", "0", "1"]
+        ]
+      }
+    }
+  },
+  {
+    "id": "ccx",
+    "name": "Toffoli",
+    "symbol": "CCX",
+    "category": "Multi-Qubit",
+    "description": "Controlled-Controlled-X (Toffoli/AND-gate). Flips target if both controls are |1⟩.",
+    "qubitCount": 3,
+    "inspectorInfo": {
+      "operatorDefinition": "\\text{CCX} = |0\\rangle\\langle 0| \\otimes I + |10\\rangle\\langle 10| \\otimes I + |11\\rangle\\langle 11| \\otimes X",
+      "truthTable": [
+        { "input": "|110⟩", "output": "|111⟩" },
+        { "input": "|111⟩", "output": "|110⟩" },
+        { "input": "Others", "output": "Unchanged" }
+      ],
+      "matrix": {
+        "display": "\\begin{pmatrix} I_6 & 0 \\\\ 0 & X \\end{pmatrix}",
+        "rows": 8,
+        "cols": 8,
+        "computable": [
+          ["1", "0", "0", "0", "0", "0", "0", "0"],
+          ["0", "1", "0", "0", "0", "0", "0", "0"],
+          ["0", "0", "1", "0", "0", "0", "0", "0"],
+          ["0", "0", "0", "1", "0", "0", "0", "0"],
+          ["0", "0", "0", "0", "1", "0", "0", "0"],
+          ["0", "0", "0", "0", "0", "1", "0", "0"],
+          ["0", "0", "0", "0", "0", "0", "0", "1"],
+          ["0", "0", "0", "0", "0", "0", "1", "0"]
+        ]
+      }
+    }
+  },
+  {
+    "id": "s",
+    "name": "S-Gate",
+    "symbol": "S",
+    "category": "Phase",
+    "description": "Clifford phase gate. Adds a 90° (π/2) phase to the |1⟩ state.",
+    "qubitCount": 1,
+    "inspectorInfo": {
+      "operatorDefinition": "S = |0\\rangle\\langle 0| + i|1\\rangle\\langle 1|",
+      "truthTable": [
+        { "input": "|0⟩", "output": "|0⟩" },
+        { "input": "|1⟩", "output": "i|1⟩" }
+      ],
+      "matrix": {
+        "display": "\\begin{pmatrix} 1 & 0 \\\\ 0 & i \\end{pmatrix}",
+        "rows": 2,
+        "cols": 2,
+        "computable": [
+          ["1", "0"],
+          ["0", "i"]
+        ]
+      }
+    }
+  },
+  {
+    "id": "t",
+    "name": "T-Gate",
+    "symbol": "T",
+    "category": "Phase",
+    "description": "Non-Clifford phase gate. Adds a 45° (π/4) phase to the |1⟩ state.",
+    "qubitCount": 1,
+    "inspectorInfo": {
+      "operatorDefinition": "T = |0\\rangle\\langle 0| + e^{i\\pi/4}|1\\rangle\\langle 1|",
+      "truthTable": [
+        { "input": "|0⟩", "output": "|0⟩" },
+        { "input": "|1⟩", "output": "e^{i\\pi/4}|1⟩" }
+      ],
+      "matrix": {
+        "display": "\\begin{pmatrix} 1 & 0 \\\\ 0 & e^{i\\pi/4} \\end{pmatrix}",
+        "rows": 2,
+        "cols": 2,
+        "computable": [
+          ["1", "0"],
+          ["0", "exp(i * pi / 4)"]
+        ]
+      }
+    }
+  },
+  {
+    "id": "rx",
+    "name": "RX",
+    "symbol": "RX",
+    "category": "Rotation",
+    "description": "Parametric rotation around the X-axis by a given angle θ.",
+    "qubitCount": 1,
+    "parameters": ["theta"],
+    "inspectorInfo": {
+      "operatorDefinition": "R_x(\\theta) = e^{-i\\frac{\\theta}{2} X}",
+      "truthTable": [
+        { "input": "|0⟩", "output": "\\cos(\\frac{\\theta}{2})|0⟩ - i\\sin(\\frac{\\theta}{2})|1⟩" },
+        { "input": "|1⟩", "output": "\\cos(\\frac{\\theta}{2})|1⟩ - i\\sin(\\frac{\\theta}{2})|0⟩" }
+      ],
+      "matrix": {
+        "display": "\\begin{pmatrix} \\cos(\\frac{\\theta}{2}) & -i\\sin(\\frac{\\theta}{2}) \\\\ -i\\sin(\\frac{\\theta}{2}) & \\cos(\\frac{\\theta}{2}) \\end{pmatrix}",
+        "rows": 2,
+        "cols": 2,
+        "computable": [
+          ["cos(theta/2)", "-i * sin(theta/2)"],
+          ["-i * sin(theta/2)", "cos(theta/2)"]
+        ]
+      }
+    }
+  },
+  {
+    "id": "ry",
+    "name": "RY",
+    "symbol": "RY",
+    "category": "Rotation",
+    "description": "Parametric rotation around the Y-axis by a given angle θ.",
+    "qubitCount": 1,
+    "parameters": ["theta"],
+    "inspectorInfo": {
+      "operatorDefinition": "R_y(\\theta) = e^{-i\\frac{\\theta}{2} Y}",
+      "truthTable": [
+        { "input": "|0⟩", "output": "\\cos(\\frac{\\theta}{2})|0⟩ + \\sin(\\frac{\\theta}{2})|1⟩" },
+        { "input": "|1⟩", "output": "\\cos(\\frac{\\theta}{2})|1⟩ - \\sin(\\frac{\\theta}{2})|0⟩" }
+      ],
+      "matrix": {
+        "display": "\\begin{pmatrix} \\cos(\\frac{\\theta}{2}) & -\\sin(\\frac{\\theta}{2}) \\\\ \\sin(\\frac{\\theta}{2}) & \\cos(\\frac{\\theta}{2}) \\end{pmatrix}",
+        "rows": 2,
+        "cols": 2,
+        "computable": [
+          ["cos(theta/2)", "-sin(theta/2)"],
+          ["sin(theta/2)", "cos(theta/2)"]
+        ]
+      }
+    }
+  },
+  {
+    "id": "rz",
+    "name": "RZ",
+    "symbol": "RZ",
+    "category": "Rotation",
+    "description": "Parametric rotation around the Z-axis by a given angle θ.",
+    "qubitCount": 1,
+    "parameters": ["theta"],
+    "inspectorInfo": {
+      "operatorDefinition": "R_z(\\theta) = e^{-i\\frac{\\theta}{2} Z}",
+      "truthTable": [
+        { "input": "|0⟩", "output": "e^{-i\\theta/2}|0⟩" },
+        { "input": "|1⟩", "output": "e^{i\\theta/2}|1⟩" }
+      ],
+      "matrix": {
+        "display": "\\begin{pmatrix} e^{-i\\frac{\\theta}{2}} & 0 \\\\ 0 & e^{i\\frac{\\theta}{2}} \\end{pmatrix}",
+        "rows": 2,
+        "cols": 2,
+        "computable": [
+          ["exp(-i * theta / 2)", "0"],
+          ["0", "exp(i * theta / 2)"]
+        ]
+      }
+    }
+  },
+  {
+    "id": "measure",
+    "name": "Measure",
+    "symbol": "M",
+    "category": "Non-Unitary",
+    "description": "Measures the qubit in the Z-basis and collapses the wavefunction.",
+    "qubitCount": 1,
+    "inspectorInfo": {
+      "operatorDefinition": "P_0 = |0\\rangle\\langle 0|, \\quad P_1 = |1\\rangle\\langle 1|",
+      "truthTable": [
+        { "input": "α|0⟩ + β|1⟩", "output": "|0⟩ (prob. |α|²)" },
+        { "input": "α|0⟩ + β|1⟩", "output": "|1⟩ (prob. |β|²)" }
+      ],
+      "matrix": {
+        "display": "\\text{Projection Operators (Non-Unitary)}",
+        "rows": 0,
+        "cols": 0,
+        "computable": []
+      }
+    }
+  }
+]

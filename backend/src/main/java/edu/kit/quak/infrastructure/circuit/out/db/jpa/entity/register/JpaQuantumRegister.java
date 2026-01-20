@@ -1,0 +1,21 @@
+package edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.register;
+
+import jakarta.persistence.*;
+import java.util.ArrayList;
+import java.util.List;
+
+@Entity
+@DiscriminatorValue("QUANTUM")
+public class JpaQuantumRegister extends JpaRegister {
+    @OneToMany(mappedBy = "register", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderColumn(name = "position")
+    private List<JpaQubit> qubits = new ArrayList<>();
+
+    public void setQubits(List<JpaQubit> qubits) {
+        this.qubits = qubits;
+    }
+
+    public List<JpaQubit> getQubits() {
+        return qubits;
+    }
+}

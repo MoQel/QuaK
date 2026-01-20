@@ -1,8 +1,8 @@
 plugins {
-	id 'java'
-	id 'org.springframework.boot' version '3.4.5'
-	id 'io.spring.dependency-management' version '1.1.7'
-	id "com.github.node-gradle.node" version "7.1.0"
+    id 'java'
+    id 'org.springframework.boot' version '3.4.5'
+    id 'io.spring.dependency-management' version '1.1.7'
+    id "com.github.node-gradle.node" version "7.1.0"
 }
 apply from: 'node.gradle'
 
@@ -10,19 +10,22 @@ group = 'edu.kit'
 version = '0.0.1-SNAPSHOT'
 
 java {
-	toolchain {
-		languageVersion = JavaLanguageVersion.of(21)
-	}
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
 }
 
 repositories {
-	mavenCentral()
+    mavenCentral()
 }
 
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-jdbc'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	implementation 'org.mapstruct:mapstruct:1.5.5.Final'
+	annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.5.Final'
 	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'org.springframework.session:spring-session-core'
@@ -34,21 +37,21 @@ dependencies {
 }
 
 tasks.register('cleanFrontendFiles', Delete) {
-	group = 'QuaK'
-	def stat = layout.projectDirectory.dir("src/main/resources/static").asFile
-	def toDelete = stat.listFiles().findAll() { file ->
-		!file.name.startsWith(".git")
-	}
-	delete toDelete
+    group = 'QuaK'
+    def stat = layout.projectDirectory.dir("src/main/resources/static").asFile
+    def toDelete = stat.listFiles().findAll() { file ->
+        !file.name.startsWith(".git")
+    }
+    delete toDelete
 }
 
 tasks.register('getFrontend', Copy) {
-	dependsOn npm_run_build
-	dependsOn cleanFrontendFiles
-	group = 'QuaK'
-	description = 'Copy frontend into static-folder inside the backend'
-	from(layout.projectDirectory.dir("../frontend/dist"))
-	into(layout.projectDirectory.dir('src/main/resources/static'))
+    dependsOn npm_run_build
+    dependsOn cleanFrontendFiles
+    group = 'QuaK'
+    description = 'Copy frontend into static-folder inside the backend'
+    from(layout.projectDirectory.dir("../frontend/dist"))
+    into(layout.projectDirectory.dir('src/main/resources/static'))
 }
 
 // Only build frontend when explicitly requested via -PbuildFrontend=true
@@ -61,10 +64,48 @@ tasks.named("processResources") {
 }
 
 tasks.named("bootRun") {
-	group = 'QuaK'
-	mainClass = 'edu.kit.quak.QuaKApplication'
+    group = 'QuaK'
+    mainClass = 'edu.kit.quak.QuaKApplication'
 }
 
 tasks.named('test') {
 	useJUnitPlatform()
+	// Configure Mockito as Java Agent to solve Warning of dynamic loading (self-attaching)
+	doFirst {
+		def mockitoFile = classpath.files.find { it.name.contains('mockito-core') }
+
+		if (mockitoFile) {
+			jvmArgs("-javaagent:${mockitoFile.absolutePath}")
+		}
+	}
+}
+
+// Task for fast Unit Tests
+tasks.register('unitTest', Test) {
+	description = 'Runs unit tests.'
+	group = 'verification'
+
+	testClassesDirs = sourceSets.test.output.classesDirs
+	classpath = sourceSets.test.runtimeClasspath
+
+	useJUnitPlatform {
+		includeTags 'unit'
+	}
+	// Optional: Fail fast
+	failFast = true
+}
+
+// Task for slower Integration Tests
+tasks.register('integrationTest', Test) {
+	description = 'Runs integration tests.'
+	group = 'verification'
+
+	testClassesDirs = sourceSets.test.output.classesDirs
+	classpath = sourceSets.test.runtimeClasspath
+
+	useJUnitPlatform {
+		includeTags 'integration'
+	}
+	// More storage for Integration Tests
+	maxHeapSize = '1G'
 }

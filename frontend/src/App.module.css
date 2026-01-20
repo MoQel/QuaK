@@ -3,13 +3,13 @@
   text-align: center;
   --gateWidth : 60px;
   --gateHeight :60px;
-  --gateMargin : 5px;
+  --gateSpacing : 24px;
+  --qubitWireSpacing: 8px;
   --colorBack: #2f2e2e;
   --colorFront: #1e1616;
   --qubitWidth : var(--gateWidth);
   --qubitHeight : var(--gateHeight);
   --spacingBetweenGates: 3px;
-  --startOfFirstGate: 9px;
 }
 
 .main {
@@ -42,7 +42,7 @@
   background-repeat: no-repeat;
 }
 
-.library {
+.libraryElement {
   padding: 9px 11px;
   border-radius: 3px;
   margin-top: 0;
@@ -56,7 +56,12 @@
   font-size: 20px;
 }
 
-.gate, .gate:hover, .gateDragging {
+.libraryElement:hover {
+  background-color: var(--color-gray-300);
+  -webkit-user-drag: element; /* Prevents Safari from “forgetting” the element when dragging */
+}
+
+.gate, .gate:hover {
   padding: 9px 11px;
   border-radius: 3px;
   margin-top: 0;
@@ -68,14 +73,22 @@
   font-weight: bold;
   user-select: none;
   font-size: 20px;
-}
-
-.gateDragging {
-  opacity: 0.4;
 }
 
 .gate:hover {
-background-color: var(--color-gray-300);
+  background-color: var(--color-gray-300);
+  -webkit-user-drag: element; /* Prevents Safari from “forgetting” the element when dragging */
+}
+
+.dropzoneSpacing {
+    min-width: var(--gateSpacing);
+}
+
+.dropZonePlaceHolderMargin {
+    margin-inline: var(--gateSpacing);
+}
+.dropZoneLastPlaceHolderMargin {
+    margin-left: var(--gateSpacing);
 }
 
 .qubit {
@@ -83,11 +96,15 @@ background-color: var(--color-gray-300);
   height: var(--qubitHeight);
 }
 
+.qubitWireSpacing {
+    margin-left: var(--qubitWireSpacing);
+}
+
 .gateIndexSpacing {
-  margin-left: calc(var(--qubitWidth) + var(--startOfFirstGate));
+  margin-left: calc(var(--qubitWidth) + var(--qubitWireSpacing) + var(--gateSpacing) / 2);
 }
 .gateIndexSize {
-  width: calc(var(--gateWidth));
+  width: calc(var(--gateWidth) + var(--gateSpacing));
 }
 .availableGateContainer {
   padding: 9px 11px;
