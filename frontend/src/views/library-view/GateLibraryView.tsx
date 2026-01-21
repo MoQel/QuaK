@@ -31,31 +31,34 @@ export function GateLibraryView({ onGateSelect }: GateLibraryViewProps) {
     };
 
     return (
-        <Card className="w-full relative">
-            <CardHeader className="w-full flex justify-center items-center relative">
-                <CardTitle className="text-center">
-                    Library
-                </CardTitle>
+        <Card className="w-full h-full min-h-0 relative flex flex-col overflow-hidden">
+            <CardHeader className="w-full shrink-0 flex justify-center items-center relative">
+                <CardTitle className="text-center">Library</CardTitle>
 
                 <Button
-                    onClick={() =>
-                        setBoxMode(!(boxMode))
-                    }
+                    onClick={() => setBoxMode(!boxMode)}
                     variant="default"
                     size="icon"
                     className="absolute right-5"
                 >
-                    {boxMode && <List />}
-                    {!(boxMode) && <LayoutGrid/>}
+                    {boxMode ? <List /> : <LayoutGrid />}
                 </Button>
             </CardHeader>
 
-            <CardContent>
-                <div className={styles.availableGateContainer}>
-                    {boxMode && <GateLibrary gates={gates} onGateClick={handleGateClick}/>}
-                    {!(boxMode) && <GateList gates={gates} onGateClick={handleGateClick}/>}
+            {/* Important: make CardContent fill remaining height */}
+            <CardContent className="flex-1 min-h-0 overflow-hidden p-0">
+                {/* This is the actual scroll container */}
+                <div className="h-full min-h-0 overflow-y-auto no-scrollbar p-3">
+                    <div className={styles.availableGateContainer}>
+                        {boxMode ? (
+                            <GateLibrary gates={gates} onGateClick={handleGateClick} />
+                        ) : (
+                            <GateList gates={gates} onGateClick={handleGateClick} />
+                        )}
+                    </div>
                 </div>
             </CardContent>
         </Card>
+
     )
 }

@@ -16,6 +16,7 @@
   --color-special-hover: var(--special-hover);
   --color-logo-start: var(--logo-start);
   --color-logo-end: var(--logo-end);
+  --color-destructive-text: var(--destructive-text);
 }
 
 :root {
@@ -33,6 +34,7 @@
 
   --destructive: hsl(0 50% 50%);   /* destructive actions (red) */
   --destructive-hover: hsl(0 50% 45%); /* destructive hover state */
+  --destructive-text: hsl(0 75% 45%);
 
   --special: hsl(217 91% 60%);     /* special / primary accent (blue) */
   --special-hover: hsl(217 91% 80%); /* hover state for special accent */
@@ -55,14 +57,16 @@
 
   --highlight: hsl(0 0% 50%);      /* neutral highlight / emphasis */
 
-  --destructive: hsl(0 50% 20%);   /* destructive actions (dark red) */
+  --destructive: hsl(0 50% 30%);   /* destructive actions (dark red) */
   --destructive-hover: hsl(0 50% 40%); /* destructive hover state */
+  --destructive-text: hsl(0 85% 65%);
 
   --special: hsl(217 91% 60%);     /* special / primary accent (blue) */
   --special-hover: hsl(217 91% 70%); /* hover state for special accent */
 
   --logo-start: hsl(217 100% 85%);
   --logo-end:   hsl(217 91% 60%);
+
 }
 
 

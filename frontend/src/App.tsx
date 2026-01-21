@@ -17,9 +17,8 @@ function App() {
 
     return (
         <>
-            <div className="flex flex-col h-full overflow-hidden px-[10px]">
-                <div className="flex flex-row h-2/3 overflow-hidden">
-                    <div className="flex flex-grow-[2] w-full overflow-hidden">
+        <div className="h-full min-h-0 overflow-hidden px-[10px] flex flex-col">
+            <div className="flex-[3] min-h-0 overflow-hidden">
                         <ResizablePanelGroup direction="horizontal" className="h-full">
                             <ResizablePanel defaultSize={20} className="h-full overflow-hidden">
                                 <ProjectManagerView onFileSelect={openFile} />
@@ -33,15 +32,16 @@ function App() {
                                 <TextEditorView file={file} />
                             </ResizablePanel>
                         </ResizablePanelGroup>
-                    </div>
-                </div>
 
-                <div className="flex flex-grow flex-row w-full overflow-hidden">
-                    <GateLibraryView onGateSelect={setSelectedGate} />
-                    <InspectorView gate={selectedGate} onClear={() => setSelectedGate(undefined)} />
-                    <ResultsView numberQubits={5} />
-                </div>
             </div>
+
+            <div className="flex-[2] min-h-0 overflow-hidden flex w-full">
+                <GateLibraryView onGateSelect={setSelectedGate} />
+                <InspectorView gate={selectedGate} onClear={() => setSelectedGate(undefined)} />
+                <ResultsView numberQubits={5} />
+            </div>
+
+        </div>
 
             <Toaster />
         </>

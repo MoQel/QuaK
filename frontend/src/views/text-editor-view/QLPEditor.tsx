@@ -36,6 +36,8 @@ function QLPEditor({ file }: { file: File | undefined }) {
             rules: [],
             colors: {
                 "editor.background": theme === "dark" ? "#18191B" : "#E6E6E6",
+                "editorLineNumber.foreground": theme === "dark" ? "#858585" : "#666666",
+                "editorLineNumber.activeForeground": theme === "dark" ? "#858585" : "#666666"
             },
         });
 

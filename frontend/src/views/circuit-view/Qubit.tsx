@@ -85,7 +85,7 @@ export function Qubit({id, name, gates, qubitIndex, onNameChange, onDelete, onGa
             <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
                 <PopoverTrigger asChild>
                     <Button
-                        className={`${styles.qubit} font-mono text-sm font-bold select-none`}
+                        className={`${styles.qubit} font-mono text-sm font-bold select-none focus-visible:ring-0 focus-visible:ring-offset-0`}
                     >
                         |{name}&gt;
                     </Button>
