@@ -14,7 +14,8 @@
   --color-destructive-hover: var(--destructive-hover);
   --color-special: var(--special);
   --color-special-hover: var(--special-hover);
-
+  --color-logo-start: var(--logo-start);
+  --color-logo-end: var(--logo-end);
 }
 
 :root {
@@ -22,7 +23,7 @@
   --bg: hsl(0 0% 80%);             /* secondary surfaces / panels */
   --bg-light: hsl(0 0% 70%);       /* raised elements / cards / hover surfaces */
 
-  --text: hsl(0 0% 0%);            /* primary text (black) */
+  --text: hsl(0 0% 20%);            /* primary text  */
   --text-muted: hsl(0 0% 30%);     /* secondary / muted text */
 
   --border: hsl(0 0 70%);          /* standard borders */
@@ -35,6 +36,9 @@
 
   --special: hsl(217 91% 60%);     /* special / primary accent (blue) */
   --special-hover: hsl(217 91% 80%); /* hover state for special accent */
+
+  --logo-start: hsl(217 91% 40%);
+  --logo-end:   hsl(217 91% 60%);
 }
 
 
@@ -56,6 +60,9 @@
 
   --special: hsl(217 91% 60%);     /* special / primary accent (blue) */
   --special-hover: hsl(217 91% 70%); /* hover state for special accent */
+
+  --logo-start: hsl(217 100% 85%);
+  --logo-end:   hsl(217 91% 60%);
 }
 
 
@@ -66,5 +73,40 @@
   body {
     @apply bg-bg-dark text-text;
   }
+  /* Works for Chrome, Edge, and Safari */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: var(--bg); /* Your 50% gray */
+    border-radius: 9999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: var(--border);
+  }
 }
+
+@layer utilities {
+  /* Hide scrollbar but keep scrolling */
+  .no-scrollbar {
+    scrollbar-gutter: auto;        /* don't reserve extra gutter space */
+    -ms-overflow-style: none;      /* IE/old Edge */
+    scrollbar-width: none;         /* Firefox */
+  }
+
+  /* Chrome / Edge / Safari */
+  .no-scrollbar::-webkit-scrollbar {
+    width: 0 !important;
+    height: 0 !important;
+  }
+}
+
+
 

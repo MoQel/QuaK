@@ -17,7 +17,7 @@ export function DialogCloseButtons({cancel = "Cancel", submit = "Submit"}: { can
             <Button variant="secondary">{cancel}</Button>
         </DialogClose>
         <DialogClose asChild>
-            <Button variant="outline">{submit}</Button>
+            <Button type="submit" variant="outline">{submit}</Button>
         </DialogClose>
     </DialogFooter>)
 }

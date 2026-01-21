@@ -42,7 +42,6 @@ function QLPEditor({ file }: { file: File | undefined }) {
         monaco.editor.setTheme("my-theme");
     };
 
-    const monacoTheme = theme === "dark" ? "vs-dark" : "vs";
     const monacoRef = useRef<Monaco | null>(null);
 
 
