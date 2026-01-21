@@ -14,24 +14,25 @@ import {
     MenubarSubTrigger,
     MenubarCheckboxItem,
 } from '@/components/ui/menubar';
-import { Undo, Redo, Save, FileCode } from 'lucide-react'; // Reuse your existing icons
+import { Undo, Redo } from 'lucide-react';
 
-export const IdeMenubar = () => {
+interface IdeMenubarProps {
+    visiblePanels: {
+        file: boolean;
+        circuit: boolean;
+        code: boolean,
+        results: boolean,
+        inspector: boolean,
+        library: boolean,
+    };
+    togglePanel: (key: any) => void; // specific type is better, but 'any' works for now
+}
+
+
+export const IdeMenubar = ({ visiblePanels, togglePanel } : IdeMenubarProps) => {
     const { theme, toggleTheme } = useTheme();
 
     const isDark = theme === "dark";
-    const [visiblePanels, setVisiblePanels] = useState({
-        file: true,
-        circuit: true,
-        code: false,
-        results: false,
-        inspector: false,
-        library: true,
-    });
-
-    const togglePanel = (key: keyof typeof visiblePanels) => {
-        setVisiblePanels(prev => ({ ...prev, [key]: !prev[key] }));
-    };
 
     return (
         // This div creates the strip/background for the bar
