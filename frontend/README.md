@@ -17,6 +17,9 @@ The goal is to bridge textual and visual quantum programming, making development
 For linting use this command.
 `npm run lint`
 
+For manual code formatting of staged files with prettier use this command.
+`npx lint-staged`
+
 ## Testing
 
 Our project uses **Vitest** together with **React Testing Library** to ensure both the correctness of our quantum simulation logic and the stability of the user interface. Our testing strategy is divided into two main categories: **unit tests** for logic and engine validation, and **component tests** for UI and interaction validation.
