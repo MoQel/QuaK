@@ -20,87 +20,171 @@ jobs:
   test:
     name: test
     runs-on: ubuntu-latest
-    if: github.actor != 'github-actions[bot]'
     steps:
+      - name: Skip for bot commits
+        if: |
+          github.actor == 'github-actions[bot]' ||
+          contains(github.event.head_commit.message, '[skip ci]') ||
+          contains(github.event.head_commit.message, '[ci skip]')
+        run: |
+          echo "Skipping tests for bot commit or [skip ci] tag"
+          exit 0
+
       - name: Checkout Repository
+        if: |
+          github.actor != 'github-actions[bot]' &&
+          !contains(github.event.head_commit.message, '[skip ci]') &&
+          !contains(github.event.head_commit.message, '[ci skip]')
         uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref }}
 
       - name: Set up JDK 21
+        if: |
+          github.actor != 'github-actions[bot]' &&
+          !contains(github.event.head_commit.message, '[skip ci]') &&
+          !contains(github.event.head_commit.message, '[ci skip]')
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
 
       - name: Setup Gradle
+        if: |
+          github.actor != 'github-actions[bot]' &&
+          !contains(github.event.head_commit.message, '[skip ci]') &&
+          !contains(github.event.head_commit.message, '[ci skip]')
         uses: gradle/actions/setup-gradle@v4
 
       - name: Run Checkstyle
+        if: |
+          github.actor != 'github-actions[bot]' &&
+          !contains(github.event.head_commit.message, '[skip ci]') &&
+          !contains(github.event.head_commit.message, '[ci skip]')
         run: cd backend && ./gradlew checkstyleMain checkstyleTest
 
       - name: Run Tests
+        if: |
+          github.actor != 'github-actions[bot]' &&
+          !contains(github.event.head_commit.message, '[skip ci]') &&
+          !contains(github.event.head_commit.message, '[ci skip]')
         run: cd backend && ./gradlew :test
 
   build:
     name: build
     needs: test
     runs-on: ubuntu-latest
-    if: github.actor != 'github-actions[bot]'
     steps:
+      - name: Skip for bot commits
+        if: |
+          github.actor == 'github-actions[bot]' ||
+          contains(github.event.head_commit.message, '[skip ci]') ||
+          contains(github.event.head_commit.message, '[ci skip]')
+        run: |
+          echo "Skipping build for bot commit or [skip ci] tag"
+          exit 0
+
       - name: Checkout Repository
+        if: |
+          github.actor != 'github-actions[bot]' &&
+          !contains(github.event.head_commit.message, '[skip ci]') &&
+          !contains(github.event.head_commit.message, '[ci skip]')
         uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref }}
       
       - name: Set up JDK 21
+        if: |
+          github.actor != 'github-actions[bot]' &&
+          !contains(github.event.head_commit.message, '[skip ci]') &&
+          !contains(github.event.head_commit.message, '[ci skip]')
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
 
       - name: Setup Gradle
+        if: |
+          github.actor != 'github-actions[bot]' &&
+          !contains(github.event.head_commit.message, '[skip ci]') &&
+          !contains(github.event.head_commit.message, '[ci skip]')
         uses: gradle/actions/setup-gradle@v4
 
       - name: Build with Gradle
+        if: |
+          github.actor != 'github-actions[bot]' &&
+          !contains(github.event.head_commit.message, '[skip ci]') &&
+          !contains(github.event.head_commit.message, '[ci skip]')
         run: cd backend && ./gradlew :bootJar
 
   auto-format:
     name: Auto-Format with Spotless
     needs: [test, build]
     runs-on: ubuntu-latest
-    if: github.actor != 'github-actions[bot]'
     steps:
+      - name: Skip for bot commits
+        if: |
+          github.actor == 'github-actions[bot]' ||
+          contains(github.event.head_commit.message, '[skip ci]') ||
+          contains(github.event.head_commit.message, '[ci skip]')
+        run: |
+          echo "Skipping auto-format for bot commit or [skip ci] tag"
+          exit 0
+
       - name: Checkout Repository
+        if: |
+          github.actor != 'github-actions[bot]' &&
+          !contains(github.event.head_commit.message, '[skip ci]') &&
+          !contains(github.event.head_commit.message, '[ci skip]')
         uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up JDK 21
+        if: |
+          github.actor != 'github-actions[bot]' &&
+          !contains(github.event.head_commit.message, '[skip ci]') &&
+          !contains(github.event.head_commit.message, '[ci skip]')
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
 
       - name: Setup Gradle
+        if: |
+          github.actor != 'github-actions[bot]' &&
+          !contains(github.event.head_commit.message, '[skip ci]') &&
+          !contains(github.event.head_commit.message, '[ci skip]')
         uses: gradle/actions/setup-gradle@v4
 
       - name: Check Spotless Formatting
         id: spotless-check
+        if: |
+          github.actor != 'github-actions[bot]' &&
+          !contains(github.event.head_commit.message, '[skip ci]') &&
+          !contains(github.event.head_commit.message, '[ci skip]')
         continue-on-error: true
         run: |
           cd backend
           ./gradlew spotlessCheck
 
       - name: Apply Spotless Formatting
-        if: steps.spotless-check.outcome == 'failure'
+        if: |
+          steps.spotless-check.outcome == 'failure' &&
+          github.actor != 'github-actions[bot]' &&
+          !contains(github.event.head_commit.message, '[skip ci]') &&
+          !contains(github.event.head_commit.message, '[ci skip]')
         run: |
           cd backend
           ./gradlew spotlessApply
 
       - name: Commit and Push Formatting Changes
-        if: steps.spotless-check.outcome == 'failure'
+        if: |
+          steps.spotless-check.outcome == 'failure' &&
+          github.actor != 'github-actions[bot]' &&
+          !contains(github.event.head_commit.message, '[skip ci]') &&
+          !contains(github.event.head_commit.message, '[ci skip]')
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "style: auto-format Java code with Spotless [skip ci]"
