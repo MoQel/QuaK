@@ -23,6 +23,7 @@ export default function ThemeSwitch({ onToggle }: ThemeSwitchProps) {
         w-14 h-7 rounded-full
         bg-bg-light
         p-1
+        cursor-pointer
       "
     >
       {isDark ? (
