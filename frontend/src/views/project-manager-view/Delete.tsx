@@ -20,7 +20,9 @@ export function Delete({ endpoint, openDialog }: { endpoint: string, openDialog:
     }
 
     return (
-        <ContextMenuItem variant="destructive" onSelect={() => openDialog(Promise.resolve(
+        <ContextMenuItem
+            className="text-destructive-text focus:text-destructive-text"
+            onSelect={() => openDialog(Promise.resolve(
             <>
                 <DialogHeader>
                     <DialogTitle>Are you absolutely sure?</DialogTitle>
