@@ -67,9 +67,7 @@ export class Language {
     }
 
     #getLanguage(): languages.IMonarchLanguage {
-        const lang = {...this.base, tokenizer: this.#tokenizer}
-        console.log(lang, this.base)
-        return lang
+        return {...this.base, tokenizer: this.#tokenizer}
     }
 
     #getCompletions() {
