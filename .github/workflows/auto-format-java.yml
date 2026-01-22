@@ -10,6 +10,10 @@ on:
       - "main"
       - "merge/**"
       - "feature/**"
+  pull_request:
+    paths:
+      - 'backend/src/**/*.java'
+      - 'backend/build.gradle'
   workflow_dispatch:
 
 permissions:
