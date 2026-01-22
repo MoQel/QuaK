@@ -7,8 +7,13 @@ on:
   push:
     branches:
       - "development"
+      - "main"
+      - "merge/**"
+      - "feature/**"
   pull_request:
-    branches: [ "development" ]
+    branches:
+      - "development"
+      - "main"
 
 jobs:
   lint:
