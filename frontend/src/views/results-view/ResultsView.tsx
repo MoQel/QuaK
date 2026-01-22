@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import {
     BarChart,
     Bar,
@@ -12,8 +12,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CircuitResponse } from "@/api/dto/circuit";
-import {CircuitTranslator} from "@/views/results-view/CircuitTranslator.ts";
-
+import {useQuantumSimulation} from "@/hooks/useQuantumSimulation.ts";
 interface ResultsViewProps {
     circuit: CircuitResponse | null;
 }
@@ -27,39 +26,21 @@ interface ChartDataPoint {
 }
 
 export function ResultsView({ circuit }: ResultsViewProps) {
-    const [data, setData] = useState<ChartDataPoint[]>([]);
-    const [counts, setCounts] = useState<Record<string, number> | null>(null);
-    const [error, setError] = useState<string | null>(null);
+    // 1. Use Worker Hook: It handles loading, errors and calculations.
+    const { result, isLoading, error } = useQuantumSimulation(circuit);
 
-    // Run simulation whenever the circuit changes
-    useEffect(() => {
-        if (!circuit) {
-            setData([]);
-            return;
-        }
+    // Transform data: Only if “result” is present use useMemo so that this does not occur with every re-render
+    const chartData = useMemo<ChartDataPoint[]>(() => {
+        if (!result) return [];
 
-        try {
-            // Execute the simulator
-            const result = CircuitTranslator.translateAndRun(circuit);
-
-            // Prepare state vector data for the chart
-            const chartData = result.stateVector.map(entry => ({
-                state: entry.state, // expected format like "|00>" from the translator
-                prob: entry.prob * 100,
-                real: entry.real,
-                imag: entry.imag,
-                phase: entry.phase
-            }));
-
-            setData(chartData);
-            setCounts(result.counts);
-            setError(null);
-
-        } catch (e) {
-            console.error("Simulation failed", e);
-            setError("Simulation failed. Check console.");
-        }
-    }, [circuit]);
+        return result.stateVector.map(entry => ({
+            state: entry.state,
+            prob: entry.prob * 100, // Umrechnung in Prozent für die Chart
+            real: entry.real,
+            imag: entry.imag,
+            phase: entry.phase
+        }));
+    }, [result]);
 
     // Compute number of qubits (used for UI metadata)
     const numQubits = useMemo(() => {
@@ -90,19 +71,25 @@ export function ResultsView({ circuit }: ResultsViewProps) {
                 <div className="flex justify-between items-center">
                     <CardTitle>Simulation Results</CardTitle>
                     <div className="flex gap-2">
+                        {/* Display loading badge when worker is calculating */}
+                        {isLoading && <Badge variant="secondary" className="animate-pulse">Calculating...</Badge>}
+
                         <Badge variant="outline">{numQubits} Qubits</Badge>
-                        <Badge variant={counts ? "default" : "secondary"}>
-                            {counts ? "Monte Carlo (1024 Shots)" : "Exact State Vector"}
+                        <Badge variant={result?.counts ? "default" : "secondary"}>
+                            {result?.counts ? "Monte Carlo (1024 Shots)" : "Exact State Vector"}
                         </Badge>
                     </div>
                 </div>
             </CardHeader>
-            <CardContent className="flex-1 min-h-[300px]">
+            <CardContent className="flex-1 min-h-[300px] relative">
+                {/* Error State */}
                 {error ? (
-                    <div className="text-red-500">{error}</div>
+                    <div className="absolute inset-0 flex items-center justify-center text-red-500 bg-background/80 z-10">
+                        Simulation Error: {error}
+                    </div>
                 ) : (
                     <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={data} margin={{ top: 20, right: 30, left: 0, bottom: 50 }}>
+                        <BarChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 50 }}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
                             <XAxis
                                 dataKey="state"
@@ -144,7 +131,7 @@ export function ResultsView({ circuit }: ResultsViewProps) {
                                 }}
                             />
                             <Bar dataKey="prob" radius={[4, 4, 0, 0]}>
-                                {data.map((entry, index) => (
+                                {chartData.map((entry, index) => (
                                     <Cell
                                         key={`cell-${index}`}
                                         fill={getPhaseColor(entry.phase)}
@@ -154,6 +141,11 @@ export function ResultsView({ circuit }: ResultsViewProps) {
                             </Bar>
                         </BarChart>
                     </ResponsiveContainer>
+                )}
+
+                {/* Optional: Overlay during loading if the old chart should still be visible */}
+                {isLoading && (
+                    <div className="absolute inset-0 bg-background/20 pointer-events-none" />
                 )}
             </CardContent>
         </Card>
