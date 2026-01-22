@@ -30,8 +30,8 @@ jobs:
           distribution: 'temurin'
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4.4.2
-      - name: Run Spotless and Checkstyle
-        run: cd backend && ./gradlew spotlessCheck checkstyleMain checkstyleTest
+      - name: Run Checkstyle
+        run: cd backend && ./gradlew checkstyleMain checkstyleTest
 
   test:
     needs: lint

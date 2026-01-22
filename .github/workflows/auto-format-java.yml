@@ -5,8 +5,11 @@ on:
     paths:
       - 'backend/src/**/*.java'
       - 'backend/build.gradle'
-    branches-ignore:
-      - 'main'
+    branches:
+      - "development"
+      - "main"
+      - "merge/**"
+      - "feature/**"
   workflow_dispatch:
 
 permissions:
