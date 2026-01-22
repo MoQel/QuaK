@@ -20,6 +20,11 @@ For linting use this command.
 For manual code formatting of staged files with prettier use this command.
 `npx lint-staged`
 
+### To configure auto formatter using prettier and husky follow this steps:
+1. in root Quak folder `npm install`
+2. run `git config core.hooksPath .husky`
+3. If the file has no rights run `chmod +x .husky/pre-commit`
+
 ## Testing
 
 Our project uses **Vitest** together with **React Testing Library** to ensure both the correctness of our quantum simulation logic and the stability of the user interface. Our testing strategy is divided into two main categories: **unit tests** for logic and engine validation, and **component tests** for UI and interaction validation.

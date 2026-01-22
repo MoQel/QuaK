@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from "react";
-import SimulationWorker from "@/workers/simulation.worker?worker";
-import { CircuitResponse } from "@/api/dto/circuit";
-import { WorkerRequest, WorkerResponse } from "@/workers/messages";
-import { SimulationResult } from "@/simulation/simulation.types";
+import { useEffect, useRef, useState } from 'react';
+import SimulationWorker from '@/workers/simulation.worker?worker';
+import { CircuitResponse } from '@/api/dto/circuit';
+import { WorkerRequest, WorkerResponse } from '@/workers/messages';
+import { SimulationResult } from '@/simulation/simulation.types';
 
 export function useQuantumSimulation(circuit: CircuitResponse | null) {
     const [result, setResult] = useState<SimulationResult | null>(null);
@@ -22,7 +22,7 @@ export function useQuantumSimulation(circuit: CircuitResponse | null) {
             // Ignore outdated responses
             if (msg.requestId !== requestIdRef.current) return;
 
-            if (msg.type === "SUCCESS") {
+            if (msg.type === 'SUCCESS') {
                 setResult(msg.payload);
                 setError(null);
             } else {
@@ -42,7 +42,7 @@ export function useQuantumSimulation(circuit: CircuitResponse | null) {
         setIsLoading(true);
 
         workerRef.current.postMessage({
-            type: "CALCULATE_CIRCUIT",
+            type: 'CALCULATE_CIRCUIT',
             requestId,
             circuit,
         } satisfies WorkerRequest);
