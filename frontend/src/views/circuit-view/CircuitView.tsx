@@ -14,8 +14,12 @@ import {
     RegisterResponse
 } from "@/api/dto/circuit.ts";
 
-export function CircuitView() {
-    const [circuit, setCircuit] = useState<CircuitResponse | null>(null);
+interface CircuitViewProps {
+    circuit: CircuitResponse | null;
+    setCircuit: (circuit: CircuitResponse) => void;
+}
+
+export function CircuitView({ circuit, setCircuit } : CircuitViewProps) {
     const [isPopoverOpen, setIsPopoverOpen] = useState(false);
 
     const maxWireLength = Math.max(

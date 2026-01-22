@@ -10,10 +10,12 @@ import {Toaster} from "@/components/ui/sonner.tsx";
 import {File} from "@/views/project-manager-view/util/FileElement.tsx";
 import {InspectorView} from "@/views/inspector-view/InspectorView.tsx";
 import {GateDefinitionResponse} from "@/api/dto/library.ts";
+import {CircuitResponse} from "@/api/dto/circuit.ts";
 
 function App() {
     const [file, openFile]: [File, Dispatch<SetStateAction<File>>] = useState(undefined as unknown as File);
     const [selectedGate, setSelectedGate] = useState<GateDefinitionResponse | undefined>(undefined);
+    const [circuit, setCircuit] = useState<CircuitResponse | null>(null);
 
     return (
         <>
@@ -26,7 +28,9 @@ function App() {
                             </ResizablePanel>
                             <ResizableHandle withHandle/>
                             <ResizablePanel>
-                                    <CircuitView />
+                                    <CircuitView
+                                        circuit={circuit}
+                                        setCircuit={setCircuit}/>
                             </ResizablePanel>
                             <ResizableHandle withHandle/>
                             <ResizablePanel className="flex-col h-full">
@@ -38,7 +42,7 @@ function App() {
                 <div className="flex flex-grow-[1] flex-row w-full">
                     <GateLibraryView onGateSelect={setSelectedGate} />
                     <InspectorView gate={selectedGate} onClear={() => setSelectedGate(undefined)} />
-                    <ResultsView numberQubits={5}/>
+                    <ResultsView circuit={circuit}/>
                 </div>
             </div>
             <Toaster/>
