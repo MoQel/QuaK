@@ -32,7 +32,7 @@ function GateList({ gates, onGateClick }: GateListProps) {
     return (
         <div
 
-            className="w-full h-[550px] overflow-y-auto border border-border rounded-md bg-bg-dark no-scrollbar">
+            className="w-full h-full overflow-y-auto will-change-transform transform-gpu border border-border rounded-md bg-bg-dark no-scrollbar">
             {groupedGates.map((group, index) => (
                 <section key={group.type}>
                     {/* Type heading */}
@@ -60,7 +60,7 @@ function GateList({ gates, onGateClick }: GateListProps) {
                             >
 
                             <div className="flex items-center gap-4">
-                                    <div className="w-12 min-w-[48px] flex justify-center items-center">
+                                    <div className="w-12 min-w-48px flex justify-center items-center">
                                         <LibraryElement
                                             id={gate.id}
                                             symbol={gate.symbol}
@@ -70,7 +70,7 @@ function GateList({ gates, onGateClick }: GateListProps) {
                                     </div>
 
                                     <div className="text-left">
-                                        <div className="font-semibold text-sm text-text mb-[2px]">
+                                        <div className="font-semibold text-sm text-text mb-2px">
                                             {gate.name}
                                         </div>
                                         {gate.description && (

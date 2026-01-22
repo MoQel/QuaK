@@ -18,7 +18,7 @@ function App() {
     return (
         <>
         <div className="h-full min-h-0 overflow-hidden px-[10px] flex flex-col">
-            <div className="flex-[3] min-h-0 overflow-hidden">
+            <div className="flex-3 min-h-0 overflow-hidden">
                         <ResizablePanelGroup direction="horizontal" className="h-full">
                             <ResizablePanel defaultSize={20} className="h-full overflow-hidden">
                                 <ProjectManagerView onFileSelect={openFile} />
@@ -35,7 +35,7 @@ function App() {
 
             </div>
 
-            <div className="flex-[2] min-h-0 overflow-hidden flex w-full">
+            <div className="flex-4 min-h-0 overflow-hidden flex w-full">
                 <GateLibraryView onGateSelect={setSelectedGate} />
                 <InspectorView gate={selectedGate} onClear={() => setSelectedGate(undefined)} />
                 <ResultsView numberQubits={5} />
