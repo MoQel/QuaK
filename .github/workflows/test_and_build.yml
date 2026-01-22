@@ -1,6 +1,10 @@
 name: PR CI Pipeline
 
 on:
+  push:
+    branches:
+      - "development"
+      - "main"
   pull_request:
     branches:
       - "development"
@@ -14,7 +18,7 @@ permissions:
 
 jobs:
   test:
-    name: Run Tests
+    name: test
     runs-on: ubuntu-latest
     if: github.actor != 'github-actions[bot]'
     steps:
@@ -39,7 +43,7 @@ jobs:
         run: cd backend && ./gradlew :test
 
   build:
-    name: Build Application
+    name: build
     needs: test
     runs-on: ubuntu-latest
     if: github.actor != 'github-actions[bot]'
