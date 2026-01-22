@@ -7,6 +7,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class QuaKApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(QuaKApplication.class, args);
+        SpringApplication
+                .run(QuaKApplication.class, args);
     }
 }
