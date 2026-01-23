@@ -41,6 +41,7 @@ function TabsTrigger({
       data-slot="tabs-trigger"
       className={cn(
         `
+        cursor-pointer
         inline-flex h-[calc(100%-8px)] flex-1 items-center justify-center gap-2
         rounded-md border border-transparent px-4 py-2 text-base font-medium
         whitespace-nowrap transition-all
