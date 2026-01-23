@@ -1,6 +1,6 @@
 .entry {
     text-align: start;
-    cursor: default;
+    cursor: pointer;
 }
 
 .entry:hover {

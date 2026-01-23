@@ -32,10 +32,9 @@ function GateList({ gates, onGateClick }: GateListProps) {
     return (
         <div
 
-            className="w-full h-full overflow-y-auto will-change-transform transform-gpu border border-border rounded-md bg-bg-dark no-scrollbar">
+            className="w-full h-full overflow-y-auto will-change-transform transform-gpu border border-border rounded-md bg-bg-dark">
             {groupedGates.map((group, index) => (
                 <section key={group.type}>
-                    {/* Type heading */}
                     <div
 
                         className="sticky top-0 z-10 bg-bg text-text border-b border-border font-semibold text-sm px-4 py-3"

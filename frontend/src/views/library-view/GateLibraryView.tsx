@@ -45,11 +45,9 @@ export function GateLibraryView({ onGateSelect }: GateLibraryViewProps) {
                 </Button>
             </CardHeader>
 
-            {/* Important: make CardContent fill remaining height */}
-            <CardContent className="flex-1 min-h-0 overflow-hidden p-0">
-                {/* This is the actual scroll container */}
-                <div className="h-full min-h-0 overflow-y-auto no-scrollbar p-3">
-                    <div className={styles.availableGateContainer}>
+            <CardContent className="flex-1 min-h-0 overflow-hidden p-3">
+                <div className="h-full w-full min-h-0">
+                    <div className={`h-full overflow-y-auto ${styles.availableGateContainer}`}>
                         {boxMode ? (
                             <GateLibrary gates={gates} onGateClick={handleGateClick} />
                         ) : (

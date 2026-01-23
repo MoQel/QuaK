@@ -6,6 +6,7 @@
   --color-bg-dark: var(--bg-dark);
   --color-bg: var(--bg);
   --color-bg-light: var(--bg-light);
+  --color-bg-light-hover: var(--bg-light-hover);
   --color-text: var(--text);
   --color-text-muted: var(--text-muted);
   --color-border: var(--border);
@@ -23,6 +24,7 @@
   --bg-dark: hsl(0 0% 90%);        /* main page background (very light gray) */
   --bg: hsl(0 0% 80%);             /* secondary surfaces / panels */
   --bg-light: hsl(0 0% 70%);       /* raised elements / cards / hover surfaces */
+  --bg-light-hover: hsl(0 0% 60%);
 
   --text: hsl(0 0% 20%);            /* primary text  */
   --text-muted: hsl(0 0% 30%);     /* secondary / muted text */
@@ -36,8 +38,8 @@
   --destructive-hover: hsl(0 50% 45%); /* destructive hover state */
   --destructive-text: hsl(0 75% 45%);
 
-  --special: hsl(217 91% 60%);     /* special / primary accent (blue) */
-  --special-hover: hsl(217 91% 80%); /* hover state for special accent */
+  --special: hsl(217 91% 70%);     /* special / primary accent (blue) */
+  --special-hover: hsl(217 91% 60%); /* hover state for special accent */
 
   --logo-start: hsl(217 91% 40%);
   --logo-end:   hsl(217 91% 60%);
@@ -48,6 +50,7 @@
   --bg-dark: hsl(220, 6%, 10%);    /* main page background (black) */
   --bg: hsl(0 0% 20%);             /* secondary surfaces / panels */
   --bg-light: hsl(0 0% 30%);       /* raised elements / cards / hover surfaces */
+  --bg-light-hover: hsl(0 0% 60%);
 
   --text: hsl(0 0% 95%);           /* primary text (almost white) */
   --text-muted: hsl(0 0% 70%);     /* secondary / muted text */
@@ -96,21 +99,5 @@
     background-color: var(--border);
   }
 }
-
-@layer utilities {
-  /* Hide scrollbar but keep scrolling */
-  .no-scrollbar {
-    scrollbar-gutter: auto;        /* don't reserve extra gutter space */
-    -ms-overflow-style: none;      /* IE/old Edge */
-    scrollbar-width: none;         /* Firefox */
-  }
-
-  /* Chrome / Edge / Safari */
-  .no-scrollbar::-webkit-scrollbar {
-    width: 0 !important;
-    height: 0 !important;
-  }
-}
-
 
 

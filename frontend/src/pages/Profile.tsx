@@ -38,7 +38,7 @@ export const Profile: React.FC = () => {
                   @{profileData.username} • {profileData.email}
                 </CardDescription>
                 <div className="flex gap-2 flex-wrap">
-                  <Badge variant="secondary">{profileData.role}</Badge>
+                  <Badge variant="outline">{profileData.role}</Badge>
                   <Badge variant="outline">{profileData.institution}</Badge>
                   <Badge variant="outline">Joined {profileData.joinDate}</Badge>
                 </div>
@@ -117,7 +117,7 @@ export const Profile: React.FC = () => {
             </div>
 
             <div className="flex gap-2 pt-4">
-              <Button className="flex-1 bg-special">Save Changes</Button>
+              <Button className="flex-1 bg-special hover:bg-special-hover">Save Changes</Button>
               <Button variant="secondary">Cancel</Button>
             </div>
           </CardContent>

@@ -113,7 +113,7 @@ export function CircuitView() {
                                         Yes, reset everything
                                     </Button>
                                     <Button
-                                        variant="ghost"
+                                        variant="secondary"
                                         size="sm"
                                         onClick={() => setIsPopoverOpen(false)}
                                     >

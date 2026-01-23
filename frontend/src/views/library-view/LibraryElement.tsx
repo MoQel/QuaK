@@ -76,7 +76,6 @@ export function LibraryElement({ id, symbol, onClick, matrix }: Readonly<Library
                 side="right"
                 className="bg-bg-light text-text border shadow-xl p-3 min-w-[150px] z-[9999]"
             >
-                {/* CHANGED: text-muted-foreground -> text-text-muted */}
                 <div className="text-xs text-text-muted mb-2 text-center font-semibold">
                     Matrix Representation
                 </div>
