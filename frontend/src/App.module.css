@@ -57,7 +57,7 @@
 }
 
 .libraryElement:hover {
-  background-color: var(--color-gray-300);
+  background-color: var(--bg-light);
   -webkit-user-drag: element; /* Prevents Safari from “forgetting” the element when dragging */
 }
 
@@ -76,7 +76,7 @@
 }
 
 .gate:hover {
-  background-color: var(--color-gray-300);
+  background-color: var(--bg-light);
   -webkit-user-drag: element; /* Prevents Safari from “forgetting” the element when dragging */
 }
 

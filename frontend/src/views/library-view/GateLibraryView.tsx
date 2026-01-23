@@ -31,7 +31,7 @@ export function GateLibraryView({ onGateSelect }: GateLibraryViewProps) {
     };
 
     return (
-        <Card className="w-full relative">
+        <Card className="w-full h-full min-h-0 relative flex flex-col overflow-hidden">
             <CardHeader className="w-full flex justify-center items-center relative">
                 <CardTitle className="text-center">
                     Library
@@ -50,11 +50,13 @@ export function GateLibraryView({ onGateSelect }: GateLibraryViewProps) {
                 </Button>
             </CardHeader>
 
-            <CardContent>
-                <div className={styles.availableGateContainer}>
-                    {boxMode && <GateLibrary gates={gates} onGateClick={handleGateClick} />}
-                    {!(boxMode) && <GateList gates={gates} onGateClick={handleGateClick} />}
-                </div >
+            <CardContent className="flex-1 min-h-0 overflow-hidden p-3">
+                <div className="h-full w-full min-h-0">
+                    <div className={`h-full ${boxMode ? "overflow-y-auto" : ""} ${styles.availableGateContainer}`}>
+                        {boxMode && <GateLibrary gates={gates} onGateClick={handleGateClick} />}
+                        {!(boxMode) && <GateList gates={gates} onGateClick={handleGateClick} />}
+                    </div>
+                </div>
             </CardContent >
         </Card >
     )

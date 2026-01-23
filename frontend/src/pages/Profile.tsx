@@ -36,7 +36,7 @@ export const Profile: React.FC = () => {
   if (loading) {
     return (
       <div className="flex h-[50vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-special" />
       </div>
     );
   }
@@ -44,7 +44,7 @@ export const Profile: React.FC = () => {
   if (error || !user) {
     return (
       <div className="p-8 max-w-4xl mx-auto text-center">
-        <h1 className="text-2xl font-bold text-red-600">Error</h1>
+        <h1 className="text-2xl font-bold text-destructive">Error</h1>
         <p className="text-muted-foreground">{error || 'User not found'}</p>
       </div>
     );
@@ -73,7 +73,7 @@ export const Profile: React.FC = () => {
                 </CardDescription>
                 <div className="flex gap-2 flex-wrap">
                   {user.emailVerified && (
-                    <Badge variant="secondary" className="bg-green-100 text-green-800 hover:bg-green-100">
+                    <Badge variant="secondary" className="bg-special text-text hover:bg-special-hover cursor-default">
                       Verified Email
                     </Badge>
                   )}
