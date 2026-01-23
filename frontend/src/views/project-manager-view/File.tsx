@@ -18,7 +18,8 @@ import { Form, FormField } from "@/components/ui/form.tsx";
 import { File as IFile } from "@/views/project-manager-view/util/FileElement.tsx";
 import { DialogCloseButtons, TextInput } from "@/views/project-manager-view/util/FormComponents.tsx";
 import { ListingElement } from "@/views/project-manager-view/util/TreeComponents.tsx";
-import { api } from "@/utils/api";
+import { api } from "@/api/api.ts";
+import { FileDetailsResponse, RenameFileRequest } from "@/api/dto/filesystem.ts";
 
 /**
  * Displays a {@link IFile File}
@@ -44,7 +45,7 @@ export function File(file: IFile) {
                 </ContextMenuTrigger>
                 <ContextMenuContent>
                     {FileEdit(id, dialogTrigger)}
-                    <Delete endpoint={"/file/" + id} openDialog={dialogTrigger} />
+                    <Delete endpoint={"/api/file/" + id} openDialog={dialogTrigger} />
                 </ContextMenuContent>
             </ContextMenu>
             <DialogContent>
@@ -55,20 +56,13 @@ export function File(file: IFile) {
 }
 
 function FileEdit(id: string, trigger: (element: Promise<JSX.Element>) => void) {
-    const getDir = () => {
-        return api.get<IFile>("/file/" + id)
-            .then((obj) => {
-                if (obj.type === "file") {
-                    return obj
-                } else {
-                    throw "Not a file"
-                }
-            })
+    const getFile = () => {
+        return api.get<FileDetailsResponse>("/api/file/" + id)
     }
 
     const reloadParent = useContext(ParentRefresh)
     const dialog = () => {
-        trigger(getDir()
+        trigger(getFile()
             .then(file => <>
                 <DialogHeader>
                     <DialogTitle>Edit Directory</DialogTitle>
@@ -88,8 +82,8 @@ function FileEdit(id: string, trigger: (element: Promise<JSX.Element>) => void) 
 function EditForm({ file, reloadParent }: { file: IFile, reloadParent: () => void }) {
     const formSchema = z.object({
         name: z.string().min(1, {
-            message: "Directory name must be at least 1 characters.",
-        }).optional(),
+            message: "Filename must be at least 1 characters.",
+        }),
     })
 
     const form = useForm<z.infer<typeof formSchema>>({
@@ -100,12 +94,11 @@ function EditForm({ file, reloadParent }: { file: IFile, reloadParent: () => voi
     })
 
     const onSubmit = (values: z.infer<typeof formSchema>) => {
-        const body = {
-            type: file.type,
-            ...values
+        const body: RenameFileRequest = {
+            name: values.name
         }
 
-        api.patch("/file/" + file.id, body).then(reloadParent)
+        api.patch("/api/file/" + file.id, body).then(reloadParent)
     }
     return (
         <Form {...form}>

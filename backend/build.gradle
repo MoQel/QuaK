@@ -3,6 +3,8 @@ plugins {
 	id 'org.springframework.boot' version '3.4.5'
 	id 'io.spring.dependency-management' version '1.1.7'
 	id "com.github.node-gradle.node" version "7.1.0"
+	id 'com.diffplug.spotless' version '6.25.0'
+	id 'checkstyle'
 }
 apply from: 'node.gradle'
 
@@ -10,19 +12,50 @@ group = 'edu.kit'
 version = '0.0.1-SNAPSHOT'
 
 java {
-	toolchain {
-		languageVersion = JavaLanguageVersion.of(21)
-	}
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
 }
 
 repositories {
-	mavenCentral()
+    mavenCentral()
+}
+
+spotless {
+	java {
+		target 'src/*/java/**/*.java'
+		googleJavaFormat().aosp().reflowLongStrings()
+		removeUnusedImports()
+		formatAnnotations()
+		trimTrailingWhitespace()
+		endWithNewline()
+	}
+}
+
+checkstyle {
+	toolVersion = '10.12.5'
+	configFile = file("${project.projectDir}/config/checkstyle/checkstyle.xml")
+	ignoreFailures = false
+	maxWarnings = 0
 }
 
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-jdbc'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	
+	// Lombok - must be declared before MapStruct for proper annotation processor ordering
+	compileOnly 'org.projectlombok:lombok:1.18.30'
+	annotationProcessor 'org.projectlombok:lombok:1.18.30'
+	testCompileOnly 'org.projectlombok:lombok:1.18.30'
+	testAnnotationProcessor 'org.projectlombok:lombok:1.18.30'
+	
+	// MapStruct with Lombok binding
+	implementation 'org.mapstruct:mapstruct:1.5.5.Final'
+	annotationProcessor 'org.projectlombok:lombok-mapstruct-binding:0.2.0'
+	annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.5.Final'
+	
 	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'org.springframework.session:spring-session-core'
@@ -38,32 +71,209 @@ dependencies {
 }
 
 tasks.register('cleanFrontendFiles', Delete) {
-	group = 'QuaK'
-	def stat = layout.projectDirectory.dir("src/main/resources/static").asFile
-	def toDelete = stat.listFiles().findAll() { file ->
-		!file.name.startsWith(".git")
-	}
-	delete toDelete
+    group = 'QuaK'
+    def stat = layout.projectDirectory.dir("src/main/resources/static").asFile
+    def toDelete = stat.listFiles().findAll() { file ->
+        !file.name.startsWith(".git")
+    }
+    delete toDelete
 }
 
 tasks.register('getFrontend', Copy) {
-	dependsOn npm_run_build
-	dependsOn cleanFrontendFiles
-	group = 'QuaK'
-	description = 'Copy frontend into static-folder inside the backend'
-	from(layout.projectDirectory.dir("../frontend/dist"))
-	into(layout.projectDirectory.dir('src/main/resources/static'))
+    dependsOn npm_run_build
+    dependsOn cleanFrontendFiles
+    group = 'QuaK'
+    description = 'Copy frontend into static-folder inside the backend'
+    from(layout.projectDirectory.dir("../frontend/dist"))
+    into(layout.projectDirectory.dir('src/main/resources/static'))
 }
 
+tasks.register('prepareDevStatic') {
+	group = 'QuaK'
+	description = 'Ensures 8080 serves a placeholder instead of stale frontend files during development'
+	
+	doLast {
+		def staticDir = file("src/main/resources/static")
+		if (!staticDir.exists()) staticDir.mkdirs()
+		
+		// Delete stale files
+		staticDir.listFiles().each { f ->
+			if (f.name != ".gitkeep") {
+				if (f.isDirectory()) f.deleteDir()
+				else f.delete()
+			}
+		}
+		
+		// Create placeholder
+		def placeholder = file("src/main/resources/static/index.html")
+		placeholder.text = """
+<!DOCTYPE html>
+<html>
+<head>
+    <title>QuaK - Backend Dev Mode</title>
+    <style>
+        body { font-family: -apple-system, system-ui, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background-color: #0f172a; color: white; }
+        .card { background: #1e293b; padding: 3rem; border-radius: 1rem; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); text-align: center; border: 1px solid #334155; max-width: 500px; }
+        h1 { color: #38bdf8; margin-bottom: 1rem; font-size: 2.25rem; }
+        p { color: #94a3b8; line-height: 1.6; margin-bottom: 1.5rem; font-size: 1.125rem; }
+        .btn { display: inline-block; padding: 0.75rem 1.5rem; background: #0284c7; color: white; text-decoration: none; border-radius: 0.5rem; font-weight: 600; transition: background 0.2s; }
+        .btn:hover { background: #0369a1; }
+        .cmd { background: #000; padding: 0.5rem; border-radius: 0.25rem; font-family: monospace; color: #10b981; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Backend is Ready!</h1>
+        <p>You are accessing the <strong>API Port (8080)</strong>. The full frontend is not served here during development.</p>
+        <p>Please start the frontend in another terminal:</p>
+        <div style="margin-bottom: 2rem;"><span class="cmd">cd frontend && npm run dev</span></div>
+        <a href="http://localhost:5173" class="btn">Open App on Port 5173</a>
+    </div>
+</body>
+</html>
+""".trim()
+	}
+}
+
+// Only build frontend when explicitly requested via -PbuildFrontend=true
+def shouldBuildFrontend = project.hasProperty('buildFrontend') && project.property('buildFrontend') == 'true'
+
 tasks.named("processResources") {
-	dependsOn getFrontend
+	if (shouldBuildFrontend) {
+		dependsOn getFrontend
+	} else {
+		dependsOn prepareDevStatic
+	}
 }
 
 tasks.named("bootRun") {
 	group = 'QuaK'
 	mainClass = 'edu.kit.quak.QuaKApplication'
+
+	// Load environment variables from .env file for local development
+	if (file(".env").exists()) {
+		file(".env").readLines().each { line ->
+			if (line.trim() && !line.startsWith("#") && line.contains("=")) {
+				def parts = line.split("=", 2)
+				environment parts[0].trim(), parts[1].trim()
+			}
+		}
+	}
+
+	// Allow passing custom JVM arguments via -PjvmArgs="..."
+	if (project.hasProperty('jvmArgs')) {
+		jvmArgs(project.property('jvmArgs').toString().split('\\s+'))
+	}
 }
 
 tasks.named('test') {
 	useJUnitPlatform()
+	// Configure Mockito as Java Agent to solve Warning of dynamic loading (self-attaching)
+	doFirst {
+		def mockitoFile = classpath.files.find { it.name.contains('mockito-core') }
+
+		if (mockitoFile) {
+			jvmArgs("-javaagent:${mockitoFile.absolutePath}")
+		}
+	}
+}
+
+// Task for fast Unit Tests
+tasks.register('unitTest', Test) {
+	description = 'Runs unit tests.'
+	group = 'verification'
+
+	testClassesDirs = sourceSets.test.output.classesDirs
+	classpath = sourceSets.test.runtimeClasspath
+
+	useJUnitPlatform {
+		includeTags 'unit'
+	}
+	// Optional: Fail fast
+	failFast = true
+}
+
+// Task for slower Integration Tests
+tasks.register('integrationTest', Test) {
+	description = 'Runs integration tests.'
+	group = 'verification'
+
+	testClassesDirs = sourceSets.test.output.classesDirs
+	classpath = sourceSets.test.runtimeClasspath
+
+	useJUnitPlatform {
+		includeTags 'integration'
+	}
+	// More storage for Integration Tests
+	maxHeapSize = '1G'
+}
+
+// Production build task - always includes frontend
+tasks.register('buildProduction') {
+	group = 'QuaK'
+	description = 'Build backend with frontend for production deployment'
+	dependsOn getFrontend
+	dependsOn build
+	doLast {
+		println "✅ Production build complete with frontend included!"
+		println "📦 JAR location: build/libs/"
+	}
+}
+
+// Frontend test task
+tasks.register('testFrontend', Exec) {
+	group = 'QuaK'
+	description = 'Run frontend tests using Vitest'
+	workingDir = layout.projectDirectory.file("../frontend")
+	
+	// Check if npm is available
+	def npmCmd = System.getProperty('os.name').toLowerCase().contains('windows') ? 'npm.cmd' : 'npm'
+	commandLine npmCmd, 'test'
+	
+	// Make it fail gracefully if npm is not installed
+	ignoreExitValue = false
+	
+	doFirst {
+		println "🧪 Running frontend tests..."
+	}
+	
+	doLast {
+		println "✅ Frontend tests completed!"
+	}
+}
+
+// Run all tests (backend + frontend) in parallel
+tasks.register('testAll') {
+	group = 'QuaK'
+	description = 'Run both backend and frontend tests in parallel'
+	
+	dependsOn test
+	dependsOn testFrontend
+	
+	doLast {
+		println ""
+		println "╔═══════════════════════════════════════╗"
+		println "║  ✅ All tests completed successfully! ║"
+		println "╚═══════════════════════════════════════╝"
+	}
+}
+
+// Run all tests sequentially (useful for CI)
+tasks.register('testAllSequential') {
+	group = 'QuaK'
+	description = 'Run backend tests, then frontend tests (sequential)'
+	
+	doFirst {
+		println "🧪 Running tests sequentially..."
+	}
+	
+	finalizedBy test
+	
+	doLast {
+		tasks.testFrontend.execute()
+		println ""
+		println "╔═══════════════════════════════════════╗"
+		println "║  ✅ All tests completed successfully! ║"
+		println "╚═══════════════════════════════════════╝"
+	}
 }

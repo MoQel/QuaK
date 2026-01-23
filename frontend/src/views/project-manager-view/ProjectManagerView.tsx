@@ -8,12 +8,13 @@ import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
-import { Project as IProject, sort } from "@/views/project-manager-view/util/FileElement.tsx";
+import { sort } from "@/views/project-manager-view/util/FileElement.tsx";
 import { DialogCloseButtons, TextInput } from "@/views/project-manager-view/util/FormComponents.tsx";
 import { Plus } from "lucide-react";
 import { Empty } from "@/views/project-manager-view/util/TreeComponents.tsx";
 import { File } from "@/views/project-manager-view/util/FileElement.tsx";
-import { api } from "@/utils/api";
+import { api } from "@/api/api.ts";
+import { ProjectDetailsResponse, ProjectRequest } from "@/api/dto/filesystem.ts";
 
 export const ParentRefresh = createContext(() => { })
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -50,7 +51,7 @@ export function ProjectManagerView({ onFileSelect }: { onFileSelect: (file: File
 
 async function fetchProjects() {
     try {
-        const projects = await api.get<IProject[]>("/project/");
+        const projects = await api.get<ProjectDetailsResponse[]>("/api/project/");
         const elements = [];
         if (projects.length == 0) {
             elements.push(<Empty key="empty" />)
@@ -81,11 +82,11 @@ function CreateProject({ reload }: { reload: () => void }) {
     })
 
     const onSubmit = (values: z.infer<typeof formSchema>) => {
-        const body = {
-            ...values
+        const body: ProjectRequest = {
+            name: values.name
         }
 
-        api.post("/project/", body).then(reload)
+        api.post("/api/project/", body).then(reload)
     }
 
     return (
