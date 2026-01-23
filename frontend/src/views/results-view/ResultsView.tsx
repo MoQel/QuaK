@@ -1,151 +1,161 @@
-import { useMemo } from 'react';
-import {
-    BarChart,
-    Bar,
-    XAxis,
-    YAxis,
-    CartesianGrid,
-    Tooltip,
-    ResponsiveContainer,
-    Cell
-} from 'recharts';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { CircuitResponse } from "@/api/dto/circuit";
-import {useQuantumSimulation} from "@/hooks/useQuantumSimulation.ts";
+import { useMemo, useState } from 'react';
+import { BarChart, Bar, XAxis, CartesianGrid, Cell } from 'recharts';
+import { ChartContainer, ChartTooltip, ChartConfig } from '@/components/ui/chart';
+import { RefreshCcw } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { SimulationToolbar } from '@/views/results-view/SimulationToolbar.tsx';
+import { CustomTooltipContent } from '@/views/results-view/CustomTooltipContent.tsx';
+import { CircuitResponse } from '@/api/dto/circuit';
+import { useQuantumSimulation } from '@/hooks/useQuantumSimulation.ts';
+import { SimulationOptions } from '@/simulation/simulation.types.ts';
+import { useChartData } from '@/hooks/useChartData.ts';
+import { getBarColor } from '@/views/results-view/util/quantum-utils.ts';
+
+const chartConfig = {
+    prob: {
+        label: 'Probability',
+        color: 'hsl(var(--chart-1))',
+    },
+} satisfies ChartConfig;
+
 interface ResultsViewProps {
     circuit: CircuitResponse | null;
 }
 
-interface ChartDataPoint {
-    state: string;      // e.g. "|01>"
-    prob: number;       // 0–100
-    real: number;
-    imag: number;
-    phase: number;      // radians
-}
-
 export function ResultsView({ circuit }: ResultsViewProps) {
-    // 1. Use Worker Hook: It handles loading, errors and calculations.
-    const { result, isLoading, error } = useQuantumSimulation(circuit);
+    const [options, setOptions] = useState<SimulationOptions>({
+        mode: 'exact',
+        sampleCount: 1024,
+        maxQubits: 8,
+    });
 
-    // Transform data: Only if “result” is present use useMemo so that this does not occur with every re-render
-    const chartData = useMemo<ChartDataPoint[]>(() => {
-        if (!result) return [];
+    const { result, isCalculating, error } = useQuantumSimulation(circuit, options);
 
-        return result.stateVector.map(entry => ({
-            state: entry.state,
-            prob: entry.prob * 100, // Umrechnung in Prozent für die Chart
-            real: entry.real,
-            imag: entry.imag,
-            phase: entry.phase
-        }));
-    }, [result]);
+    const numQubits = useMemo(
+        () => circuit?.registers.flatMap((r) => r.qubits).length || 0,
+        [circuit],
+    );
 
-    // Compute number of qubits (used for UI metadata)
-    const numQubits = useMemo(() => {
-        return circuit?.registers.flatMap(r => r.qubits).length || 0;
-    }, [circuit]);
+    const chartData = useChartData(result, options, numQubits);
 
-    // Helper: compute bar color based on phase
-    const getPhaseColor = (phase: number) => {
-        // Map phase (-PI to +PI) to color wheel (0–360)
-        const degrees = (phase * 180) / Math.PI;
-        // Use HSL: hue rotates with the phase
-        return `hsl(${degrees < 0 ? degrees + 360 : degrees}, 70%, 60%)`;
-    };
+    // Dynamic Width Calculation for Scrolling
+    const minBarWidth = 40;
+    const computedWidth = Math.max(100, chartData.length * minBarWidth);
+    const shouldScroll = chartData.length > 12;
 
-    // --- RENDER: Empty state ---
+    const basisLabel = numQubits > 1 ? `|q${numQubits - 1}...q0>` : numQubits === 1 ? '|q0>' : '';
+
+    // Empty State
     if (!circuit || numQubits === 0) {
         return (
-            <Card className="w-full h-full flex flex-col justify-center items-center text-muted-foreground p-8">
-                <div className="text-4xl mb-2">⚛️</div>
+            <Card className="w-full h-full flex flex-col justify-center items-center text-muted-foreground p-8 border-dashed">
+                <div className="bg-muted p-4 rounded-full mb-4 ring-1 ring-border">
+                    <RefreshCcw className="w-8 h-8 opacity-50" />
+                </div>
                 <p>Add qubits to the circuit to see results.</p>
             </Card>
         );
     }
 
     return (
-        <Card className="w-full h-full flex flex-col">
-            <CardHeader className="pb-2">
-                <div className="flex justify-between items-center">
-                    <CardTitle>Simulation Results</CardTitle>
-                    <div className="flex gap-2">
-                        {/* Display loading badge when worker is calculating */}
-                        {isLoading && <Badge variant="secondary" className="animate-pulse">Calculating...</Badge>}
-
-                        <Badge variant="outline">{numQubits} Qubits</Badge>
-                        <Badge variant={result?.counts ? "default" : "secondary"}>
-                            {result?.counts ? "Monte Carlo (1024 Shots)" : "Exact State Vector"}
-                        </Badge>
+        <Card className="w-full h-full flex flex-col overflow-hidden border-none shadow-none sm:border sm:shadow-sm">
+            <CardHeader className="pb-3 border-b bg-muted/20 shrink-0">
+                <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
+                    <div>
+                        <CardTitle className="flex items-center gap-2 text-lg">
+                            Simulation Results
+                            {isCalculating && (
+                                <Badge variant="secondary" className="animate-pulse text-xs">
+                                    Calculating...
+                                </Badge>
+                            )}
+                        </CardTitle>
+                        <p className="text-xs text-muted-foreground mt-1 font-mono">
+                            Basis: Big Endian{' '}
+                            <span className="bg-muted px-1.5 py-0.5 rounded text-foreground border border-border/50">
+                                {basisLabel}
+                            </span>
+                        </p>
                     </div>
+                    <SimulationToolbar options={options} setOptions={setOptions} />
                 </div>
             </CardHeader>
-            <CardContent className="flex-1 min-h-[300px] relative">
-                {/* Error State */}
+
+            <CardContent className="flex-1 p-0 relative overflow-hidden flex flex-col min-h-0">
                 {error ? (
-                    <div className="absolute inset-0 flex items-center justify-center text-red-500 bg-background/80 z-10">
-                        Simulation Error: {error}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-destructive bg-background/95 z-10 p-4 text-center">
+                        <span className="font-bold mb-2">Simulation Error</span>
+                        <span className="text-sm">{error}</span>
                     </div>
                 ) : (
-                    <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 50 }}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
-                            <XAxis
-                                dataKey="state"
-                                tickLine={false}
-                                axisLine={false}
-                                interval={0}
-                                angle={-45}
-                                textAnchor="end"
-                                fontSize={12}
-                            />
-                            <YAxis
-                                unit="%"
-                                domain={[0, 100]}
-                                tickLine={false}
-                                axisLine={false}
-                            />
-                            <Tooltip
-                                content={({ active, payload }) => {
-                                    if (active && payload && payload.length) {
-                                        const d = payload[0].payload as ChartDataPoint;
-                                        return (
-                                            <div className="bg-popover border text-popover-foreground p-3 rounded shadow-lg text-sm">
-                                                <p className="font-bold mb-1">{d.state}</p>
-                                                <div className="space-y-1">
-                                                    <p>Probability: <span className="font-mono">{d.prob.toFixed(2)}%</span></p>
-                                                    <div className="h-px bg-border my-2" />
-                                                    <p className="text-xs text-muted-foreground">Amplitude:</p>
-                                                    <p className="font-mono text-xs">
-                                                        {d.real.toFixed(3)} {d.imag >= 0 ? '+' : ''}{d.imag.toFixed(3)}i
-                                                    </p>
-                                                    <p className="text-xs text-muted-foreground mt-1">
-                                                        Phase: {(d.phase * 180 / Math.PI).toFixed(1)}°
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        );
-                                    }
-                                    return null;
-                                }}
-                            />
-                            <Bar dataKey="prob" radius={[4, 4, 0, 0]}>
-                                {chartData.map((entry, index) => (
-                                    <Cell
-                                        key={`cell-${index}`}
-                                        fill={getPhaseColor(entry.phase)}
-                                        stroke={getPhaseColor(entry.phase)}
+                    <div className="w-full h-full overflow-x-auto overflow-y-hidden custom-scrollbar">
+                        {/* Wrapper div bestimmt die Breite (Scroll vs Full) */}
+                        <div
+                            style={{ width: shouldScroll ? `${computedWidth}px` : '100%' }}
+                            className="h-full p-4 pb-2"
+                        >
+                            <ChartContainer config={chartConfig} className="h-full w-full">
+                                <BarChart
+                                    data={chartData}
+                                    margin={{ top: 20, right: 0, left: 0, bottom: 40 }}
+                                    accessibilityLayer
+                                >
+                                    <CartesianGrid
+                                        vertical={false}
+                                        strokeDasharray="3 3"
+                                        stroke="hsl(var(--border))" // Theme variable
+                                        opacity={0.5}
                                     />
-                                ))}
-                            </Bar>
-                        </BarChart>
-                    </ResponsiveContainer>
+                                    <XAxis
+                                        dataKey="state"
+                                        tickLine={false}
+                                        axisLine={false}
+                                        interval={0}
+                                        angle={-45}
+                                        textAnchor="end"
+                                        height={60}
+                                        // Wir entfernen manuelle Farben hier, ChartContainer macht das via CSS
+                                        tick={{ fontSize: 11, fontFamily: 'monospace' }}
+                                    />
+
+                                    {/* Shadcn Tooltip Component + Custom Content */}
+                                    <ChartTooltip
+                                        cursor={{ fill: 'hsl(var(--muted)/0.3)' }}
+                                        content={
+                                            <CustomTooltipContent
+                                                sampleCount={options.sampleCount}
+                                            />
+                                        }
+                                    />
+
+                                    <Bar dataKey="prob" radius={[4, 4, 0, 0]}>
+                                        {chartData.map((entry, index) => (
+                                            <Cell
+                                                key={`cell-${index}`}
+                                                // Nutzt Theme Farbe für Sim, Color Wheel für Exact
+                                                fill={getBarColor(entry.phase)}
+                                                // Border nur im Dark Mode subtil sichtbar machen oder weglassen
+                                                strokeWidth={0}
+                                            />
+                                        ))}
+                                    </Bar>
+                                </BarChart>
+                            </ChartContainer>
+                        </div>
+                    </div>
                 )}
 
-                {/* Optional: Overlay during loading if the old chart should still be visible */}
-                {isLoading && (
-                    <div className="absolute inset-0 bg-background/20 pointer-events-none" />
+                {/* Loading State Overlay */}
+                {isCalculating && (
+                    <div className="absolute inset-0 bg-background/50 backdrop-blur-[2px] z-20 flex items-center justify-center">
+                        <Badge
+                            variant="outline"
+                            className="bg-background shadow-lg px-4 py-2 animate-pulse"
+                        >
+                            Processing...
+                        </Badge>
+                    </div>
                 )}
             </CardContent>
         </Card>
