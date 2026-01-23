@@ -14,5 +14,28 @@ The goal is to bridge textual and visual quantum programming, making development
 
 ## Development
 
+### Linting
 For linting use this command.
-`npm run lint`
+```bash
+npm run lint
+```
+
+### Testing
+This project uses [Vitest](https://vitest.dev/) for testing.
+
+* **Run all tests:**
+  ```bash
+  npm test
+  ```
+* **Watch mode (automatic re-run on changes):**
+  ```bash
+  npm run test:watch
+  ```
+* **Interactive UI:**
+  ```bash
+  npm run test:ui
+  ```
+* **Coverage report:**
+  ```bash
+  npm run test:coverage
+  ```

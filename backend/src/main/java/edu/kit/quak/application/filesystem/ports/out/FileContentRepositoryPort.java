@@ -13,6 +13,7 @@ public interface FileContentRepositoryPort {
 
     /**
      * Loads the content of a file.
+     *
      * @param fId ID of the file
      * @return byte array of content
      */
@@ -20,6 +21,7 @@ public interface FileContentRepositoryPort {
 
     /**
      * Deletes the content of a file.
+     *
      * @param fId ID of the file
      */
     void deleteContent(String fId);

@@ -15,10 +15,10 @@ import { ChevronDown, ChevronRight } from "lucide-react";
 import { getElementForFileElement, type Project, sort } from "@/views/project-manager-view/util/FileElement.tsx";
 import { DialogCloseButtons } from "@/views/project-manager-view/util/FormComponents.tsx";
 import { api } from "@/api/api.ts";
-import {ProjectContentsResponse, ProjectRequest} from "@/api/dto/filesystem.ts";
+import { ProjectContentsResponse, ProjectRequest } from "@/api/dto/filesystem.ts";
 
 async function fetchProjectContent(id: string) {
-    const project = await api.get<Project>("/project/" + id);
+    const project = await api.get<Project>("/api/project/" + id);
     const elements = [];
     for (const element of sort(project.contents)) {
         elements.push(getElementForFileElement(element))
@@ -34,12 +34,12 @@ async function fetchProjectContent(id: string) {
  */
 export function Project({ name, id }: { name: string, id: string }) {
     const icon = (open: boolean) => open ? <ChevronDown /> : <ChevronRight />;
-    return <FileElementContainer name={name} id={id} getContent={fetchProjectContent} edit={ProjectEdit} icon={icon} deletePath={"/project/" + id} />
+    return <FileElementContainer name={name} id={id} getContent={fetchProjectContent} edit={ProjectEdit} icon={icon} deletePath={"/api/project/" + id} />
 }
 
 function ProjectEdit(id: string, trigger: (element: Promise<JSX.Element>) => void) {
     const getProject = () => {
-        return api.get<ProjectContentsResponse>("/project/" + id);
+        return api.get<ProjectContentsResponse>("/api/project/" + id);
     }
 
     const reloadParent = useContext(ParentRefresh)
@@ -80,7 +80,7 @@ function EditForm({ project, reloadParent }: { project: Project, reloadParent: (
             name: values.name
         }
 
-        api.patch("/project/" + project.id, body).then(reloadParent)
+        api.patch("/api/project/" + project.id, body).then(reloadParent)
     }
     return (
         <Form {...form}>

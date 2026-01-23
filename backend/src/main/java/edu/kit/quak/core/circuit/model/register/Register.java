@@ -1,7 +1,6 @@
 package edu.kit.quak.core.circuit.model.register;
 
 import edu.kit.quak.core.circuit.model.ElementWithId;
-
 import java.util.Optional;
 
 public abstract class Register extends ElementWithId {
@@ -22,6 +21,7 @@ public abstract class Register extends ElementWithId {
 
     /**
      * Capability Query: Is this a Quantum Register?
+     *
      * @return Optional containing this if it is a QuantumRegister, empty otherwise.
      */
     public Optional<QuantumRegister> asQuantum() {
@@ -30,6 +30,7 @@ public abstract class Register extends ElementWithId {
 
     /**
      * Capability Query: Is this a Classic Register?
+     *
      * @return Optional containing this if it is a ClassicRegister, empty otherwise.
      */
     public Optional<ClassicRegister> asClassic() {

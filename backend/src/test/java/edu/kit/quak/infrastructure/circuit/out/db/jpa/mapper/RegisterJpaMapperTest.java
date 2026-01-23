@@ -1,26 +1,23 @@
 package edu.kit.quak.infrastructure.circuit.out.db.jpa.mapper;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import edu.kit.quak.core.circuit.model.register.QuantumRegister;
 import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.register.JpaQuantumRegister;
 import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.register.JpaQubit;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 @ExtendWith(MockitoExtension.class)
 class RegisterJpaMapperTest {
-    @Spy
-    private QubitJpaMapperImpl qubitJpaMapper;
+    @Spy private QubitJpaMapperImpl qubitJpaMapper;
 
-    @InjectMocks
-    private RegisterJpaMapperImpl mapper;
+    @InjectMocks private RegisterJpaMapperImpl mapper;
 
     @Test
     void domainToEntity() {
@@ -36,7 +33,7 @@ class RegisterJpaMapperTest {
         assertEquals("name", entity.getName());
         assertNotNull(entity.getQubits());
         assertEquals(1, entity.getQubits().size());
-        assertEquals(entity, entity.getQubits().getFirst().getRegister()); //AfterMapping
+        assertEquals(entity, entity.getQubits().getFirst().getRegister()); // AfterMapping
     }
 
     @Test

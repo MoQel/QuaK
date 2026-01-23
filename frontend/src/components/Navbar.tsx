@@ -3,11 +3,13 @@ import { Link, useLocation } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Home, User, Settings, LogOut } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCurrentUser } from '@/hooks/useUser';
 import ThemeSwitch from "@/components/ThemeSwitch";
 
 export const Navbar: React.FC = () => {
   const location = useLocation();
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
+  const { user } = useCurrentUser();
 
   // Determine active tab based on current path
   const getActiveTab = () => {
@@ -58,11 +60,11 @@ export const Navbar: React.FC = () => {
 
       {user && (
         <div className="flex items-center gap-4">
-         <ThemeSwitch />
+          <ThemeSwitch />
           <div className="flex items-center gap-3">
-            {user.picture && (
+            {user.avatarUrl && (
               <img
-                src={user.picture}
+                src={user.avatarUrl}
                 alt={user.name}
                 className="w-9 h-9 rounded-full border-2 border-blue-500"
               />

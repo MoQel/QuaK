@@ -19,7 +19,7 @@ import { File as IFile } from "@/views/project-manager-view/util/FileElement.tsx
 import { DialogCloseButtons, TextInput } from "@/views/project-manager-view/util/FormComponents.tsx";
 import { ListingElement } from "@/views/project-manager-view/util/TreeComponents.tsx";
 import { api } from "@/api/api.ts";
-import {FileDetailsResponse, RenameFileRequest} from "@/api/dto/filesystem.ts";
+import { FileDetailsResponse, RenameFileRequest } from "@/api/dto/filesystem.ts";
 
 /**
  * Displays a {@link IFile File}
@@ -45,7 +45,7 @@ export function File(file: IFile) {
                 </ContextMenuTrigger>
                 <ContextMenuContent>
                     {FileEdit(id, dialogTrigger)}
-                    <Delete endpoint={"/file/" + id} openDialog={dialogTrigger} />
+                    <Delete endpoint={"/api/file/" + id} openDialog={dialogTrigger} />
                 </ContextMenuContent>
             </ContextMenu>
             <DialogContent>
@@ -57,7 +57,7 @@ export function File(file: IFile) {
 
 function FileEdit(id: string, trigger: (element: Promise<JSX.Element>) => void) {
     const getFile = () => {
-        return api.get<FileDetailsResponse>("/file/" + id)
+        return api.get<FileDetailsResponse>("/api/file/" + id)
     }
 
     const reloadParent = useContext(ParentRefresh)
@@ -98,7 +98,7 @@ function EditForm({ file, reloadParent }: { file: IFile, reloadParent: () => voi
             name: values.name
         }
 
-        api.patch("/file/" + file.id, body).then(reloadParent)
+        api.patch("/api/file/" + file.id, body).then(reloadParent)
     }
     return (
         <Form {...form}>

@@ -16,14 +16,29 @@ public class ElementaryQuantumGate extends QuantumOperation {
         return definitionId;
     }
 
-    public double getTheta() { return theta; }
-    public void setTheta(double theta) { this.theta = theta; }
+    public double getTheta() {
+        return theta;
+    }
 
-    public double getPhi() { return phi; }
-    public void setPhi(double phi) { this.phi = phi; }
+    public void setTheta(double theta) {
+        this.theta = theta;
+    }
 
-    public double getLambda() { return lambda; }
-    public void setLambda(double lambda) { this.lambda = lambda; }
+    public double getPhi() {
+        return phi;
+    }
+
+    public void setPhi(double phi) {
+        this.phi = phi;
+    }
+
+    public double getLambda() {
+        return lambda;
+    }
+
+    public void setLambda(double lambda) {
+        this.lambda = lambda;
+    }
 
     @Override
     public String toString() {

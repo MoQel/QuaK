@@ -5,9 +5,8 @@ import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.JpaQuantumCircuit;
 import edu.kit.quak.infrastructure.circuit.out.db.jpa.mapper.CircuitJpaMapper;
 import edu.kit.quak.infrastructure.circuit.out.db.jpa.repository.SpringDataJpaCircuitRepository;
-import org.springframework.stereotype.Repository;
-
 import java.util.Optional;
+import org.springframework.stereotype.Repository;
 
 @Repository
 public class CircuitJpaAdapter implements CircuitRepositoryPort {

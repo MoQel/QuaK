@@ -4,7 +4,8 @@ import edu.kit.quak.core.circuit.model.register.Qubit;
 import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.register.JpaQubit;
 import org.mapstruct.*;
 
-@Mapper(componentModel = MappingConstants.ComponentModel.SPRING,
+@Mapper(
+        componentModel = MappingConstants.ComponentModel.SPRING,
         collectionMappingStrategy = CollectionMappingStrategy.TARGET_IMMUTABLE,
         uses = {OperationJpaMapper.class})
 public interface QubitJpaMapper {

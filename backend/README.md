@@ -1,5 +1,34 @@
 # QuaK Backend
 
+## Code Formatting and Style
+
+This project uses **Spotless** for code formatting and **Checkstyle** for style enforcement.
+
+### Commands
+
+| Command                              | Description                                    |
+|:-------------------------------------|:-----------------------------------------------|
+| `./gradlew spotlessApply`            | Auto-format all Java code                      |
+| `./gradlew spotlessCheck`            | Check if code is properly formatted            |
+| `./gradlew checkstyleMain checkstyleTest` | Run Checkstyle on all code            |
+
+### Before Creating a Pull Request
+
+**Spotless formatting checks only run on pull requests** (not on regular pushes to your branch).
+
+Before creating a PR, ensure your code is properly formatted:
+
+```bash
+cd backend
+./gradlew spotlessApply
+./gradlew spotlessCheck
+./gradlew checkstyleMain checkstyleTest
+```
+
+If the PR pipeline fails due to formatting, run `./gradlew spotlessApply` locally, commit, and push again.
+
+---
+
 ## Testing Workflows
 
 ### 1. Test-Kategorien

@@ -1,12 +1,11 @@
 package edu.kit.quak.core.filesystem.model;
 
-import edu.kit.quak.shared.tags.UnitTest;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
+import edu.kit.quak.shared.tags.UnitTest;
 import java.time.Instant;
 import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
 
 @UnitTest
 class FileElementDomainTest {
@@ -75,7 +74,8 @@ class FileElementDomainTest {
         file.rename("NewName");
 
         assertEquals("NewName", file.getName());
-        assertTrue(file.getLastAccess().isAfter(beforeRename), "LastAccess should update on rename");
+        assertTrue(
+                file.getLastAccess().isAfter(beforeRename), "LastAccess should update on rename");
     }
 
     @Test
@@ -126,7 +126,8 @@ class FileElementDomainTest {
         // Assert
         assertFalse(sourceDir.getContents().contains(file));
         assertTrue(targetDir.getContents().contains(file));
-        assertEquals(targetDir.getId(), file.getParentId(), "ParentID must be updated to new container");
+        assertEquals(
+                targetDir.getId(), file.getParentId(), "ParentID must be updated to new container");
     }
 
     @Test
@@ -137,7 +138,8 @@ class FileElementDomainTest {
 
         File f2 = new File("Config.txt", dir.getId());
 
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> dir.addChild(f2));
+        IllegalArgumentException ex =
+                assertThrows(IllegalArgumentException.class, () -> dir.addChild(f2));
 
         assertTrue(ex.getMessage().toLowerCase().contains("exists"));
     }

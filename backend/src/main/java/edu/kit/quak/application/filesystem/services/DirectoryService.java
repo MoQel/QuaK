@@ -4,90 +4,105 @@ import edu.kit.quak.application.filesystem.delegator.FileElementContainerReposit
 import edu.kit.quak.application.filesystem.ports.in.DirectoryServicePort;
 import edu.kit.quak.application.filesystem.ports.out.DirectoryRepositoryPort;
 import edu.kit.quak.core.filesystem.model.Directory;
+import edu.kit.quak.core.filesystem.model.FileElement;
 import edu.kit.quak.core.filesystem.model.FileElementContainer;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.stereotype.Service;
-
+import edu.kit.quak.core.user.model.User;
 import java.util.NoSuchElementException;
-import java.util.function.Consumer;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
-public class DirectoryService implements DirectoryServicePort {
+@Slf4j
+public class DirectoryService extends AbstractFileElementService<Directory>
+        implements DirectoryServicePort {
 
     private final DirectoryRepositoryPort repository;
-    private final FileElementContainerRepositoryDelegator delegator;
-    public DirectoryService(DirectoryRepositoryPort repository, FileElementContainerRepositoryDelegator delegator) {
+
+    public DirectoryService(
+            DirectoryRepositoryPort repository, FileElementContainerRepositoryDelegator delegator) {
+        super(delegator);
         this.repository = repository;
-        this.delegator = delegator;
     }
 
     // region Create
     @Override
     @Transactional
-    public Directory createDirectory(Directory container, String parentId) {
+    public Directory createDirectory(Directory container, String parentId, User user) {
+        log.info(
+                "Creating directory '{}' in parent '{}' for user '{}'",
+                container.getName(),
+                parentId,
+                user.getId());
+        verifyOwnershipByParentId(parentId, user);
+
         FileElementContainer<?> parent = getParentById(parentId);
         parent.addChild(container);
         FileElementContainer<?> savedParent = delegator.save(parent);
-        return findDirectoryInParent(savedParent, container.getId());
+        return findElementInParent(savedParent, container.getId());
     }
+
     // endregion Create
 
     // region Read
     @Override
-    public Directory retrieveDirectory(String id) {
-        return repository.findById(id).orElseThrow(NoSuchElementException::new);
+    public Directory retrieveDirectory(String id, User user) {
+        log.debug("Retrieving directory '{}' for user '{}'", id, user.getId());
+        Directory directory = repository.findById(id).orElseThrow(NoSuchElementException::new);
+        verifyOwnershipByParentId(directory.getParentId(), user);
+        return directory;
     }
+
     // endregion Read
 
     // region Update
     @Override
     @Transactional
-    public Directory renameDirectory(String dId, String newName) {
-        return modifyDirectoryInParent(dId, directory -> directory.rename(newName));
+    public Directory renameDirectory(String dId, String newName, User user) {
+        log.info("Renaming directory '{}' to '{}' for user '{}'", dId, newName, user.getId());
+        Directory directory = repository.findById(dId).orElseThrow(NoSuchElementException::new);
+        verifyOwnershipByParentId(directory.getParentId(), user);
+        return modifyElementInParent(dId, d -> d.rename(newName));
     }
+
     // endregion Update
 
     // region Delete
     @Override
     @Transactional
-    public void removeDirectory(String dId) {
-        Directory directory = retrieveDirectory(dId);
+    public void removeDirectory(String dId, User user) {
+        log.info("Removing directory '{}' for user '{}'", dId, user.getId());
+        Directory directory = retrieveWithoutAuth(dId);
+        verifyOwnershipByParentId(directory.getParentId(), user);
+
         FileElementContainer<?> parent = getParentById(directory.getParentId());
         parent.removeChild(directory);
         delegator.save(parent);
     }
+
     // endregion Delete
 
-    // Get the fresh parent (important due to shallow copies of mappers)
-    private FileElementContainer<?> getParentById(String parentId) {
-        if (parentId == null) throw new IllegalStateException("Directory has no parent corrupt state");
-        return delegator.findContainerById(parentId)
-                .orElseThrow(() -> new IllegalStateException("Parent not found with ID" + parentId));
+    // region AbstractFileElementService Implementation
+
+    @Override
+    protected Directory retrieveWithoutAuth(String id) {
+        return repository.findById(id).orElseThrow(NoSuchElementException::new);
     }
 
-    private Directory findDirectoryInParent(FileElementContainer<?> parent, String dId) {
-        return parent.getContents().stream()
-                .filter(c -> c.getId().equals(dId))
-                .filter(c -> c instanceof Directory)
-                .map(c -> (Directory) c)
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("File not found in parent container (ID: " + dId + ")"));
+    @Override
+    protected String getElementTypeName() {
+        return "directory";
     }
 
-    private Directory modifyDirectoryInParent(String dId, Consumer<Directory> modifier) {
-        Directory tempDir = retrieveDirectory(dId);
-        FileElementContainer<?> parent = getParentById(tempDir.getParentId());
-
-        // Finding the “real” child in the context of the parents
-        Directory childInParent = findDirectoryInParent(parent, dId);
-
-        // Apply changes
-        modifier.accept(childInParent);
-
-        // Save changes through parent
-        FileElementContainer<?> savedParent = delegator.save(parent);
-
-        // Return updated child
-        return findDirectoryInParent(savedParent, dId);
+    @Override
+    protected boolean isCorrectType(FileElement<?> element) {
+        return element instanceof Directory;
     }
+
+    @Override
+    protected Directory castToType(FileElement<?> element) {
+        return (Directory) element;
+    }
+
+    // endregion
 }

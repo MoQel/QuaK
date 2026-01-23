@@ -79,7 +79,7 @@ function CreateFile({ parent }: { parent: string }) {
             contentType: "text/plain" // TODO: Issue
         }
 
-        api.post("/file/", body, {
+        api.post("/api/file/", body, {
             headers: {
                 'parent-id': parent
             }
@@ -129,7 +129,7 @@ function CreateDirectory({ parent }: { parent: string }) {
             name: values.name
         }
 
-        api.post("/directory/", body, {
+        api.post("/api/directory/", body, {
             headers: {
                 'parent-id': parent
             }
