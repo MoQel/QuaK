@@ -1,11 +1,11 @@
-import {Card, CardContent} from "@/components/ui/card.tsx";
-import {Popover, PopoverContent, PopoverTrigger} from '@/components/ui/popover.tsx';
-import {Button} from "@/components/ui/button.tsx";
-import {Minus, Plus, Trash} from "lucide-react";
-import {Fragment, useEffect, useState} from "react";
+import { Card, CardContent } from "@/components/ui/card.tsx";
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover.tsx';
+import { Button } from "@/components/ui/button.tsx";
+import { Minus, Plus, Trash } from "lucide-react";
+import { Fragment, useEffect, useState } from "react";
 import styles from "@/App.module.css";
-import {Qubit} from "@/views/circuit-view/Qubit.tsx";
-import {api} from "@/api/api.ts";
+import { Qubit } from "@/views/circuit-view/Qubit.tsx";
+import { api } from "@/api/api.ts";
 import {
     AddGateRequest,
     ChangeQubitNameRequest,
@@ -23,24 +23,24 @@ export function CircuitView() {
     );
 
     useEffect(() => {
-        api.post<CircuitResponse>('/circuit').then(setCircuit);
+        api.post<CircuitResponse>('/api/circuit').then(setCircuit);
     }, [])
 
     const addQubit = async () => {
         if (circuit != null) {
-            setCircuit(await api.post<CircuitResponse>(`/circuit/${circuit.id}/qubit`));
+            setCircuit(await api.post<CircuitResponse>(`/api/circuit/${circuit.id}/qubit`));
         }
     }
 
     const changeQubitName = async (payload: ChangeQubitNameRequest) => {
         if (circuit != null) {
-            setCircuit(await api.patch<CircuitResponse>(`/circuit/${circuit.id}/qubit`, payload));
+            setCircuit(await api.patch<CircuitResponse>(`/api/circuit/${circuit.id}/qubit`, payload));
         }
     }
 
     const deleteQubit = async (qubitId: string) => {
         if (circuit != null) {
-            setCircuit(await api.delete<CircuitResponse>(`/circuit/${circuit.id}/qubit/${qubitId}`));
+            setCircuit(await api.delete<CircuitResponse>(`/api/circuit/${circuit.id}/qubit/${qubitId}`));
         }
     }
 
@@ -55,26 +55,26 @@ export function CircuitView() {
 
     const resetCircuit = async () => {
         if (circuit != null) {
-            await api.delete<CircuitResponse>(`/circuit/${circuit.id}`);
-            setCircuit(await api.post<CircuitResponse>('/circuit'));
+            await api.delete<CircuitResponse>(`/api/circuit/${circuit.id}`);
+            setCircuit(await api.post<CircuitResponse>('/api/circuit'));
         }
     }
 
     const addGate = async (payload: AddGateRequest) => {
         if (circuit != null) {
-            setCircuit(await api.post<CircuitResponse>(`/circuit/${circuit.id}/gate`, payload));
+            setCircuit(await api.post<CircuitResponse>(`/api/circuit/${circuit.id}/gate`, payload));
         }
     }
 
     const moveGate = async (payload: MoveGateRequest) => {
         if (circuit != null) {
-            setCircuit(await api.patch<CircuitResponse>(`/circuit/${circuit.id}/gate`, payload));
+            setCircuit(await api.patch<CircuitResponse>(`/api/circuit/${circuit.id}/gate`, payload));
         }
     }
 
     const deleteGate = async (gateId: string) => {
         if (circuit != null) {
-            setCircuit(await api.delete<CircuitResponse>(`/circuit/${circuit.id}/gate/${gateId}`));
+            setCircuit(await api.delete<CircuitResponse>(`/api/circuit/${circuit.id}/gate/${gateId}`));
         }
     }
 
@@ -84,8 +84,8 @@ export function CircuitView() {
 
                 {/* Buttons */}
                 <div className="pb-5 flex justify-end space-x-3">
-                    <Button onClick={addQubit} size="icon" className="size-8"><Plus/></Button>
-                    <Button onClick={deleteLastQubit} size="icon" className="size-8" variant="destructive"><Minus/></Button>
+                    <Button onClick={addQubit} size="icon" className="size-8"><Plus /></Button>
+                    <Button onClick={deleteLastQubit} size="icon" className="size-8" variant="destructive"><Minus /></Button>
                     <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
                         <PopoverTrigger asChild>
                             <Button size="icon" className="size-8" variant="destructive">
@@ -145,7 +145,7 @@ export function CircuitView() {
                     }
                     {/* Gate Indexing of form: | 1 | 2 | ... */}
                     <div className={`${styles.gateIndexSpacing} flex font-mono text-sm border-l border-gray-500`}>
-                        {Array.from({length: maxWireLength}, (_, i) => (
+                        {Array.from({ length: maxWireLength }, (_, i) => (
                             <Fragment key={i}>
                                 <span
                                     className={`${styles.gateIndexSize} text-gray-500 shrink-0 justify-center border-r border-gray-500`}

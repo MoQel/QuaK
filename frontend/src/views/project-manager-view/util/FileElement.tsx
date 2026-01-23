@@ -1,7 +1,6 @@
-import {FileElementContainer} from "@/views/project-manager-view/FileElementContainer.tsx";
-import {File} from "@/views/project-manager-view/File.tsx";
-import {Directory} from "@/views/project-manager-view/Directory.tsx";
-import {Project} from "@/views/project-manager-view/Project.tsx";
+import { File } from "@/views/project-manager-view/File.tsx";
+import { Directory } from "@/views/project-manager-view/Directory.tsx";
+import { Project } from "@/views/project-manager-view/Project.tsx";
 import {
     DirectoryContentsResponse,
     FileDetailsResponse,
@@ -10,13 +9,7 @@ import {
 } from "@/api/dto/filesystem.ts";
 import { orderBy } from "lodash";
 
-export interface FileElement {
-    id: string,
-    name: string,
-    type: string,
-    createdOn: string,
-    lastAccess: string,
-}
+export type FileElement = FileElementDto;
 
 export interface FileElementContainer extends FileElement {
     contents: Array<FileElement>
@@ -36,10 +29,10 @@ export interface File extends FileElement {
  * 2. Alphabetically by name (case-insensitive)
  * 3. By creation date
  */
-export function sort(elements: FileElementDto[]) {
+export function sort(elements: FileElementDto[]): FileElementDto[] {
     return orderBy(elements, [
-        (el) => ({ "directory": 1, "file": 2 }[el.type || ""] || 3),
-        (el) => el.name?.toLowerCase(),
+        (el: FileElementDto) => ({ "directory": 1, "file": 2 }[el.type || ""] || 3),
+        (el: FileElementDto) => el.name?.toLowerCase(),
         // Fallback
         "createdOn"
     ], ["asc", "asc", "asc"]);
@@ -52,10 +45,10 @@ export function sort(elements: FileElementDto[]) {
 
 export function getElementForFileElement(object: FileElementDto) {
     if (object.type === "file") {
-        return (<File {...object as unknown as FileDetailsResponse} key={object.id}/>)
+        return (<File {...object as unknown as FileDetailsResponse} key={object.id} />)
     } else if (object.type === "directory") {
-        return (<Directory {...object as unknown as DirectoryContentsResponse} key={object.id}/>)
+        return (<Directory {...object as unknown as DirectoryContentsResponse} key={object.id} />)
     } else {
-        return (<Project {...object as unknown as ProjectContentsResponse} key={object.id}/>)
+        return (<Project {...object as unknown as ProjectContentsResponse} key={object.id} />)
     }
 }

@@ -1,5 +1,7 @@
 package edu.kit.quak.infrastructure.circuit.out.db.jpa.mapper;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import edu.kit.quak.core.circuit.model.operation.ElementaryQuantumGate;
 import edu.kit.quak.core.circuit.model.operation.ElementaryQuantumGateDefinitionIdentifier;
 import edu.kit.quak.core.circuit.model.operation.QuantumOperation;
@@ -10,17 +12,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 @ExtendWith(MockitoExtension.class)
 class OperationJpaMapperTest {
-    @InjectMocks
-    private OperationJpaMapperImpl mapper;
+    @InjectMocks private OperationJpaMapperImpl mapper;
 
     @Test
     void domainToEntity() {
         // Arrange
-        ElementaryQuantumGate domain = new ElementaryQuantumGate(ElementaryQuantumGateDefinitionIdentifier.CX);
+        ElementaryQuantumGate domain =
+                new ElementaryQuantumGate(ElementaryQuantumGateDefinitionIdentifier.CX);
 
         // Act
         JpaQuantumOperation entity = mapper.toEntity(domain);

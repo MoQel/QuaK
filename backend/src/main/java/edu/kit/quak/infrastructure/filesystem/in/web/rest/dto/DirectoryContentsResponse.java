@@ -9,5 +9,4 @@ public record DirectoryContentsResponse(
         String type,
         List<FileElementDto> contents,
         Instant createdOn,
-        Instant lastAccess
-) { }
+        Instant lastAccess) {}

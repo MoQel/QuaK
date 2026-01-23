@@ -4,13 +4,13 @@ import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.core.circuit.model.register.Register;
 import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.JpaQuantumCircuit;
 import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.register.JpaRegister;
+import java.util.List;
 import org.mapstruct.*;
 
-import java.util.List;
-
-@Mapper(componentModel = MappingConstants.ComponentModel.SPRING,
+@Mapper(
+        componentModel = MappingConstants.ComponentModel.SPRING,
         collectionMappingStrategy = CollectionMappingStrategy.TARGET_IMMUTABLE,
-        uses = { RegisterJpaMapper.class })
+        uses = {RegisterJpaMapper.class})
 public interface CircuitJpaMapper {
     @Mapping(target = "id", source = "id")
     JpaQuantumCircuit toEntity(QuantumCircuit domain);

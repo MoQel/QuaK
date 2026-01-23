@@ -4,20 +4,26 @@ import edu.kit.quak.application.filesystem.ports.out.ProjectRepositoryPort;
 import edu.kit.quak.core.filesystem.model.Project;
 import edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity.JpaProject;
 import edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper.ProjectJpaMapper;
+import edu.kit.quak.infrastructure.filesystem.out.db.jpa.repository.SpringDataFileElementContainerRepository;
 import edu.kit.quak.infrastructure.filesystem.out.db.jpa.repository.SpringDataProjectRepository;
-import org.springframework.stereotype.Repository;
-
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
+import org.springframework.stereotype.Repository;
 
 @Repository
 public class ProjectJpaAdapter implements ProjectRepositoryPort {
 
-    public final SpringDataProjectRepository repository;
+    private final SpringDataProjectRepository repository;
+    private final SpringDataFileElementContainerRepository containerRepository;
     private final ProjectJpaMapper projectMapper;
 
-    ProjectJpaAdapter(SpringDataProjectRepository repository, ProjectJpaMapper projectMapper) {
+    ProjectJpaAdapter(
+            SpringDataProjectRepository repository,
+            SpringDataFileElementContainerRepository containerRepository,
+            ProjectJpaMapper projectMapper) {
         this.repository = repository;
+        this.containerRepository = containerRepository;
         this.projectMapper = projectMapper;
     }
 
@@ -28,8 +34,7 @@ public class ProjectJpaAdapter implements ProjectRepositoryPort {
 
     @Override
     public Optional<Project> findById(String pId) {
-        return repository.findById(pId)
-                .map(projectMapper::toDomainEntity);
+        return repository.findById(pId).map(projectMapper::toDomainEntity);
     }
 
     @Override
@@ -40,9 +45,9 @@ public class ProjectJpaAdapter implements ProjectRepositoryPort {
     }
 
     @Override
-    public List<Project> getAllProjects() {
-        return repository.findAll()
-                .stream().map(projectMapper::toDomainEntity)
+    public List<Project> getProjectsByOwnerId(UUID ownerId) {
+        return repository.findAllByOwnerId(ownerId).stream()
+                .map(projectMapper::toDomainEntity)
                 .toList();
     }
 
@@ -54,5 +59,12 @@ public class ProjectJpaAdapter implements ProjectRepositoryPort {
     @Override
     public boolean existsById(String pId) {
         return repository.existsById(pId);
+    }
+
+    @Override
+    public Optional<UUID> findProjectOwnerIdByElementId(String elementId) {
+        return containerRepository
+                .findProjectOwnerIdByElementId(elementId)
+                .map(JpaUtils::convertToUuid);
     }
 }

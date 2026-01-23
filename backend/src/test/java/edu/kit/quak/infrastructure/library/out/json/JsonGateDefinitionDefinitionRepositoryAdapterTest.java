@@ -1,15 +1,14 @@
 package edu.kit.quak.infrastructure.library.out.json;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.kit.quak.core.library.model.GateDefinition;
 import edu.kit.quak.shared.tags.UnitTest;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import java.util.List;
 import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 @UnitTest
 class JsonGateDefinitionDefinitionRepositoryAdapterTest {
@@ -42,7 +41,9 @@ class JsonGateDefinitionDefinitionRepositoryAdapterTest {
 
         // Deep checks for InspectorInfo
         assertNotNull(hGateDefinition.inspectorInfo(), "InspectorInfo should be mapped");
-        assertFalse(hGateDefinition.inspectorInfo().truthTable().isEmpty(), "TruthTable should contain entries");
+        assertFalse(
+                hGateDefinition.inspectorInfo().truthTable().isEmpty(),
+                "TruthTable should contain entries");
         assertEquals("|0⟩", hGateDefinition.inspectorInfo().truthTable().getFirst().input());
     }
 

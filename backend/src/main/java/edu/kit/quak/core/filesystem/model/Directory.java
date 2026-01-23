@@ -1,8 +1,7 @@
 package edu.kit.quak.core.filesystem.model;
 
 /**
- * Domain POJO for Directory
- * A Directory is a container of FileElements inside a project.
+ * Domain POJO for Directory A Directory is a container of FileElements inside a project.
  *
  * @author Henrik K
  */
@@ -25,5 +24,7 @@ public class Directory extends FileElementContainer<Directory> {
     }
 
     @Override
-    public char getIdPrefix() { return ID_PREFIX; }
+    public char getIdPrefix() {
+        return ID_PREFIX;
+    }
 }

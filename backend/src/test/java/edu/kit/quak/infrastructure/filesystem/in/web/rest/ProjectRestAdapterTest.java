@@ -1,25 +1,7 @@
 package edu.kit.quak.infrastructure.filesystem.in.web.rest;
 
-import edu.kit.quak.application.filesystem.ports.in.ProjectServicePort;
-import edu.kit.quak.core.filesystem.model.Project;
-import edu.kit.quak.infrastructure.filesystem.in.web.rest.mapper.DirectoryDtoMapperImpl;
-import edu.kit.quak.infrastructure.filesystem.in.web.rest.mapper.FileDtoMapperImpl;
-import edu.kit.quak.infrastructure.filesystem.in.web.rest.mapper.FileElementDtoMapperImpl;
-import edu.kit.quak.infrastructure.filesystem.in.web.rest.mapper.ProjectDtoMapperImpl;
-import edu.kit.quak.shared.tags.IntegrationTest;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.context.annotation.Import;
-import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MockMvc;
-
-import java.util.List;
-
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -27,22 +9,51 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import edu.kit.quak.application.filesystem.ports.in.ProjectServicePort;
+import edu.kit.quak.application.user.ports.in.UserServicePort;
+import edu.kit.quak.core.filesystem.model.Project;
+import edu.kit.quak.core.user.model.AuthenticatedUser;
+import edu.kit.quak.core.user.model.User;
+import edu.kit.quak.infrastructure.filesystem.in.web.rest.mapper.ProjectDtoMapper;
+import edu.kit.quak.infrastructure.user.in.web.rest.mapper.AuthenticationMapper;
+import edu.kit.quak.shared.tags.IntegrationTest;
+import java.util.List;
+import java.util.UUID;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+
 @IntegrationTest
 @WebMvcTest(ProjectRestAdapter.class)
-@Import({
-        ProjectDtoMapperImpl.class,
-        FileElementDtoMapperImpl.class,
-        DirectoryDtoMapperImpl.class,
-        FileDtoMapperImpl.class
-})
+@org.springframework.context.annotation.ComponentScan(basePackageClasses = {ProjectDtoMapper.class})
 @WithMockUser(username = "tester", roles = "USER") // simulates logged-in user
 class ProjectRestAdapterTest {
 
-    @Autowired
-    MockMvc mockMvc;
+    @Autowired MockMvc mockMvc;
 
-    @MockitoBean
-    ProjectServicePort projectService;
+    @MockitoBean ProjectServicePort projectService;
+
+    @MockitoBean UserServicePort userService;
+
+    @MockitoBean AuthenticationMapper authMapper;
+
+    @org.junit.jupiter.api.BeforeEach
+    void setUp() {
+        // Mock the authMapper to return a test AuthenticatedUser for any Authentication
+        AuthenticatedUser testAuthUser =
+                new AuthenticatedUser(UUID.randomUUID(), "test", "test-sub");
+        User testUser =
+                new User(testAuthUser.userId(), testAuthUser.issuer(), testAuthUser.subject());
+
+        when(authMapper.toDomain(any(org.springframework.security.core.Authentication.class)))
+                .thenReturn(testAuthUser);
+        when(userService.getAuthenticatedUser(any(AuthenticatedUser.class))).thenReturn(testUser);
+    }
 
     @Test
     @DisplayName("GET /project returns list of projects")
@@ -52,9 +63,9 @@ class ProjectRestAdapterTest {
         Project p2 = new Project("Beta");
         p2.setId("p-2");
 
-        when(projectService.listProjects()).thenReturn(List.of(p1, p2));
+        when(projectService.listProjects(any(User.class))).thenReturn(List.of(p1, p2));
 
-        mockMvc.perform(get("/project"))
+        mockMvc.perform(get("/api/project"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2))
                 .andExpect(jsonPath("$[0].name").value("Alpha"))
@@ -67,16 +78,19 @@ class ProjectRestAdapterTest {
         Project createdProject = new Project("New Project");
         createdProject.setId("p-100");
 
-        when(projectService.createProject(any(Project.class))).thenReturn(createdProject);
+        when(projectService.createProject(any(Project.class), any(User.class)))
+                .thenReturn(createdProject);
 
-        String jsonRequest = """
-            { "name": "New Project" }
-            """;
+        String jsonRequest =
+                """
+                                { "name": "New Project" }
+                                """;
 
-        mockMvc.perform(post("/project")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonRequest))
+        mockMvc.perform(
+                        post("/api/project")
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(jsonRequest))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value("p-100"))
                 .andExpect(jsonPath("$.name").value("New Project"));
@@ -88,10 +102,9 @@ class ProjectRestAdapterTest {
         Project project = new Project("MyProject");
         project.setId("p-1");
 
-        // Service returns Object directly (no Optional), based on your Exception Handling Refactoring
-        when(projectService.retrieveProject("p-1")).thenReturn(project);
+        when(projectService.retrieveProject(eq("p-1"), any(User.class))).thenReturn(project);
 
-        mockMvc.perform(get("/project/p-1"))
+        mockMvc.perform(get("/api/project/p-1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value("p-1"))
                 .andExpect(jsonPath("$.name").value("MyProject"));
@@ -100,11 +113,10 @@ class ProjectRestAdapterTest {
     @Test
     @DisplayName("DELETE /project/{id} removes project")
     void deleteProject_success() throws Exception {
-        mockMvc.perform(delete("/project/p-1")
-                        .with(csrf())) // WICHTIG: CSRF Token
+        mockMvc.perform(delete("/api/project/p-1").with(csrf())) // WICHTIG: CSRF Token
                 .andExpect(status().isOk());
 
-        verify(projectService).removeProject("p-1");
+        verify(projectService).removeProject(eq("p-1"), any(User.class));
     }
 
     @Test
@@ -113,17 +125,19 @@ class ProjectRestAdapterTest {
         Project updatedProject = new Project("Renamed Project");
         updatedProject.setId("p-1");
 
-        when(projectService.renameProject("p-1", "Renamed Project"))
+        when(projectService.renameProject(eq("p-1"), eq("Renamed Project"), any(User.class)))
                 .thenReturn(updatedProject);
 
-        String jsonRequest = """
-            { "name": "Renamed Project" }
-            """;
+        String jsonRequest =
+                """
+                                { "name": "Renamed Project" }
+                                """;
 
-        mockMvc.perform(patch("/project/p-1")
-                        .with(csrf()) // WICHTIG: CSRF Token
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonRequest))
+        mockMvc.perform(
+                        patch("/api/project/p-1")
+                                .with(csrf()) // WICHTIG: CSRF Token
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(jsonRequest))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("Renamed Project"));
     }

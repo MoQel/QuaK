@@ -2,7 +2,6 @@ package edu.kit.quak.core.circuit.model.register;
 
 import edu.kit.quak.core.circuit.model.ElementWithId;
 import edu.kit.quak.core.circuit.model.operation.QuantumOperation;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
