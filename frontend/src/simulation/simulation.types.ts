@@ -30,3 +30,11 @@ export interface StateVectorEntry {
     prob: number;
     phase: number;
 }
+
+export interface SimulationOptions {
+    maxQubits?: number;
+    sampleCount?: number;
+    mode?: SimulationMode;
+}
+
+export type SimulationMode = 'exact' | 'simulation';

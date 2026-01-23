@@ -1,6 +1,6 @@
-import {CircuitTranslator} from "@/simulation/CircuitTranslator.ts";
-import { initQulacs } from "qulacs-wasm";
-import { WorkerRequest, WorkerResponse } from "./messages.ts";
+import { CircuitTranslator } from '@/simulation/CircuitTranslator.ts';
+import { initQulacs } from 'qulacs-wasm';
+import { WorkerRequest, WorkerResponse } from './messages.ts';
 
 // TypeScript needs to know this is a Worker context
 const ctx = self as unknown as DedicatedWorkerGlobalScope;
@@ -24,22 +24,22 @@ ctx.onmessage = async (event: MessageEvent<WorkerRequest>) => {
     const msg = event.data;
 
     try {
-        if (msg.type === "CALCULATE_CIRCUIT") {
+        if (msg.type === 'CALCULATE_CIRCUIT') {
             await ensureInitialized();
 
-            const result = CircuitTranslator.translateAndRun(msg.circuit);
+            const result = CircuitTranslator.translateAndRun(msg.circuit, msg.options);
 
             ctx.postMessage({
-                type: "SUCCESS",
+                type: 'SUCCESS',
                 requestId: msg.requestId,
                 payload: result,
             } satisfies WorkerResponse);
         }
     } catch (error) {
         ctx.postMessage({
-            type: "ERROR",
+            type: 'ERROR',
             requestId: msg.requestId,
-            error: error instanceof Error ? error.message : "Unknown Worker Error",
+            error: error instanceof Error ? error.message : 'Unknown Worker Error',
         } satisfies WorkerResponse);
     }
 };

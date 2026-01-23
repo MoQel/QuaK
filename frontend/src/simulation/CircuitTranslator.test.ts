@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import { CircuitTranslator } from './CircuitTranslator';
 import { initQulacs } from 'qulacs-wasm'; // Namespace import for robust WASM handling
 import { CircuitResponse, GateResponse, RegisterResponse } from '@/api/dto/circuit';
-import {GateDefinitionIdentifier} from "@/api/dto/GateDefinitionIdentifier.ts";
+import { GateDefinitionIdentifier } from '@/api/dto/GateDefinitionIdentifier.ts';
 
 // --- Test Helpers ---
 
@@ -17,14 +17,14 @@ const createCircuit = (qubitConfigs: GateResponse[][]): CircuitResponse => {
         qubits: [
             {
                 id: `qubit-${index}`,
-                gates: gates
-            }
-        ]
+                gates: gates,
+            },
+        ],
     }));
 
     return {
-        id: "test-circuit",
-        registers: registers
+        id: 'test-circuit',
+        registers: registers,
     };
 };
 
@@ -33,13 +33,12 @@ const createCircuit = (qubitConfigs: GateResponse[][]): CircuitResponse => {
  */
 const gate = (definitionId: string): GateResponse => ({
     id: `gate-${Math.random()}`,
-    definitionId: definitionId as GateDefinitionIdentifier
+    definitionId: definitionId as GateDefinitionIdentifier,
 });
 
 // --- Tests ---
 
 describe('CircuitTranslator', () => {
-
     // Robust initialization for Qulacs in Node/Vitest environment
     beforeAll(async () => {
         await initQulacs();
@@ -133,6 +132,36 @@ describe('CircuitTranslator', () => {
 
             // State should remain |0>
             expect(result.stateVector[0].prob).toBeCloseTo(1.0);
+        });
+    });
+
+    describe('Configuration & Limits', () => {
+        it('should respect custom maxQubits limit', () => {
+            // Create 3 registers, each with 1 qubit
+            const circuit = createCircuit([
+                [gate('X')], // Reg 0
+                [gate('X')], // Reg 1
+                [gate('X')], // Reg 2
+            ]);
+
+            // Set limit to 2
+            const result = CircuitTranslator.translateAndRun(circuit, { maxQubits: 2 });
+
+            expect(result.stateVector).toHaveLength(4);
+            expect(result.stateVector[3].state).toBe('|11>');
+            expect(result.stateVector[3].prob).toBeCloseTo(1.0);
+        });
+
+        it('should respect custom sampleCount', () => {
+            const circuit = createCircuit([[gate('MEASURE')]]); // Zustand |0>
+
+            // We only want 10 samples instead of 1024
+            const result = CircuitTranslator.translateAndRun(circuit, { sampleCount: 10 });
+
+            expect(result.counts).not.toBeNull();
+            // Number of shots should be 10
+            const totalSamples = Object.values(result.counts!).reduce((a, b) => a + b, 0);
+            expect(totalSamples).toBe(10);
         });
     });
 });
