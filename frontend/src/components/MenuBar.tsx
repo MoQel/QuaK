@@ -25,23 +25,25 @@ interface IdeMenubarProps {
         inspector: boolean,
         library: boolean,
     };
-    togglePanel: (key: any) => void; // specific type is better, but 'any' works for now
+    togglePanel: (key: any) => void;
+    resetLayout: () => void;
 }
 
 
-export const IdeMenubar = ({ visiblePanels, togglePanel } : IdeMenubarProps) => {
+export const IdeMenubar = ({ visiblePanels, togglePanel, resetLayout } : IdeMenubarProps) => {
     const { theme, toggleTheme } = useTheme();
 
     const isDark = theme === "dark";
+    const keepMenuOpen = (event: Event) => {
+        event.preventDefault();
+    };
 
     return (
-        // This div creates the strip/background for the bar
-        <div className="border-b px-6 py-2 bg-background flex items-center">
+        <div className="border-b px-6 py-2 flex items-center">
 
             <Menubar className="border-none">
 
 
-                {/* --- MENU 2: EDIT --- */}
                 <MenubarMenu>
                     <MenubarTrigger className="text-base px-4 py-2 cursor-pointer data-[state=open]:bg-accent">Edit</MenubarTrigger>
                     <MenubarContent>
@@ -65,10 +67,8 @@ export const IdeMenubar = ({ visiblePanels, togglePanel } : IdeMenubarProps) => 
                     <MenubarContent>
 
                         <MenubarSub>
-                            {/* 1. The Trigger (What you hover over) */}
                             <MenubarSubTrigger inset>Theme </MenubarSubTrigger>
 
-                            {/* 2. The Content (What pops out) */}
                             <MenubarSubContent>
                                 <MenubarCheckboxItem
                                     checked={isDark}
@@ -83,14 +83,13 @@ export const IdeMenubar = ({ visiblePanels, togglePanel } : IdeMenubarProps) => 
                             </MenubarSubContent>
                         </MenubarSub>
                         <MenubarSub>
-                            {/* 1. The Trigger (What you hover over) */}
                             <MenubarSubTrigger inset>Panels </MenubarSubTrigger>
 
-                            {/* 2. The Content (What pops out) */}
                             <MenubarSubContent>
                                 <MenubarCheckboxItem
                                     checked={visiblePanels.file}
                                     onCheckedChange={() => togglePanel('file')}
+                                    onSelect={keepMenuOpen}
                                 >
                                     File Browser
                                 </MenubarCheckboxItem>
@@ -98,6 +97,7 @@ export const IdeMenubar = ({ visiblePanels, togglePanel } : IdeMenubarProps) => 
                                 <MenubarCheckboxItem
                                     checked={visiblePanels.circuit}
                                     onCheckedChange={() => togglePanel('circuit')}
+                                    onSelect={keepMenuOpen}
                                 >
                                     Circuit Editor
                                 </MenubarCheckboxItem>
@@ -105,6 +105,7 @@ export const IdeMenubar = ({ visiblePanels, togglePanel } : IdeMenubarProps) => 
                                 <MenubarCheckboxItem
                                     checked={visiblePanels.code}
                                     onCheckedChange={() => togglePanel('code')}
+                                    onSelect={keepMenuOpen}
                                 >
                                     Code Editor
                                 </MenubarCheckboxItem>
@@ -112,6 +113,7 @@ export const IdeMenubar = ({ visiblePanels, togglePanel } : IdeMenubarProps) => 
                                 <MenubarCheckboxItem
                                     checked={visiblePanels.results}
                                     onCheckedChange={() => togglePanel('results')}
+                                    onSelect={keepMenuOpen}
                                 >
                                     Results Panel
                                 </MenubarCheckboxItem>
@@ -119,6 +121,7 @@ export const IdeMenubar = ({ visiblePanels, togglePanel } : IdeMenubarProps) => 
                                 <MenubarCheckboxItem
                                     checked={visiblePanels.inspector}
                                     onCheckedChange={() => togglePanel('inspector')}
+                                    onSelect={keepMenuOpen}
                                 >
                                     Inspector
                                 </MenubarCheckboxItem>
@@ -126,18 +129,17 @@ export const IdeMenubar = ({ visiblePanels, togglePanel } : IdeMenubarProps) => 
                                 <MenubarCheckboxItem
                                     checked={visiblePanels.library}
                                     onCheckedChange={() => togglePanel('library')}
+                                    onSelect={keepMenuOpen}
                                 >
                                     Library
                                 </MenubarCheckboxItem>
                             </MenubarSubContent>
                         </MenubarSub>
-                        {/* NESTED MENU ENDS HERE */}
                         <MenubarSeparator />
-                        <MenubarItem> Reset </MenubarItem>
+                        <MenubarItem onClick={resetLayout} className="justify-center font-medium"> Reset Panels</MenubarItem>
                     </MenubarContent>
                 </MenubarMenu>
 
-                {/* --- MENU 1: Help --- */}
                 <MenubarMenu>
                     <MenubarTrigger className="text-base px-4 py-2 cursor-pointer data-[state=open]:bg-accent">Help</MenubarTrigger>
                     <MenubarContent>
