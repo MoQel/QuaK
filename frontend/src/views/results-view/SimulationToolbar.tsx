@@ -37,12 +37,22 @@ export function SimulationToolbar({ options, setOptions }: ToolbarProps) {
                     }))
                 }
             >
-                <SelectTrigger className="w-[140px] h-8 text-xs bg-bg-light border-border text-text">
+                <SelectTrigger className="w-[140px] h-8 bg-bg-light hover:bg-bg-light-hover border-border text-text">
                     <SelectValue placeholder="Mode" />
                 </SelectTrigger>
                 <SelectContent className="bg-bg-light border-border text-text">
-                    <SelectItem value="exact">Exact State</SelectItem>
-                    <SelectItem value="simulation">Simulation</SelectItem>
+                    <SelectItem
+                        value="exact"
+                        className="border-b border-border rounded cursor-pointer focus:bg-highlight focus:text-text"
+                    >
+                        Exact State
+                    </SelectItem>
+                    <SelectItem
+                        value="simulation"
+                        className="rounded cursor-pointer focus:bg-highlight focus:text-text"
+                    >
+                        Simulation
+                    </SelectItem>
                 </SelectContent>
             </Select>
 
