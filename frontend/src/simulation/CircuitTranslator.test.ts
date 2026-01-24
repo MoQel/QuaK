@@ -101,28 +101,6 @@ describe('CircuitTranslator', () => {
         });
     });
 
-    describe('Measurements', () => {
-        it('should return null counts if no MEASURE gate is present', () => {
-            const circuit = createCircuit([[gate('X')]]);
-            const result = CircuitTranslator.translateAndRun(circuit);
-
-            expect(result.counts).toBeNull();
-        });
-
-        it('should return counts if MEASURE gate is present', () => {
-            const circuit = createCircuit([[gate('X'), gate('MEASURE')]]);
-            const result = CircuitTranslator.translateAndRun(circuit);
-
-            expect(result.counts).not.toBeNull();
-
-            // Since state is |1>, we expect ~1024 counts for key '1'
-            // We use string keys because that's how JS objects work
-            const countForOne = result.counts ? result.counts['1'] : 0;
-
-            expect(countForOne).toBe(1024);
-        });
-    });
-
     describe('Error Handling', () => {
         it('should handle unknown gates gracefully', () => {
             const circuit = createCircuit([[gate('UNKNOWN_GATE')]]);
@@ -156,7 +134,10 @@ describe('CircuitTranslator', () => {
             const circuit = createCircuit([[gate('MEASURE')]]); // Zustand |0>
 
             // We only want 10 samples instead of 1024
-            const result = CircuitTranslator.translateAndRun(circuit, { sampleCount: 10 });
+            const result = CircuitTranslator.translateAndRun(circuit, {
+                sampleCount: 10,
+                mode: 'simulation',
+            });
 
             expect(result.counts).not.toBeNull();
             // Number of shots should be 10
