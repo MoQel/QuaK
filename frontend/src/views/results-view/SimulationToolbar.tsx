@@ -24,7 +24,6 @@ interface ToolbarProps {
 }
 
 export function SimulationToolbar({ options, setOptions }: ToolbarProps) {
-    // Helper für sauberes Input-Handling (verhindert NaN)
     const handleNumberChange = (
         field: keyof SimulationOptions,
         value: string,
@@ -49,10 +48,10 @@ export function SimulationToolbar({ options, setOptions }: ToolbarProps) {
                     }))
                 }
             >
-                <SelectTrigger className="w-[140px] h-8 text-xs bg-background">
+                <SelectTrigger className="w-[140px] h-8 text-xs bg-bg-light border-border text-text">
                     <SelectValue placeholder="Mode" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-bg-light border-border text-text">
                     <SelectItem value="exact">Exact State</SelectItem>
                     <SelectItem value="simulation">Simulation</SelectItem>
                 </SelectContent>
@@ -61,31 +60,37 @@ export function SimulationToolbar({ options, setOptions }: ToolbarProps) {
             {/* Advanced Settings Popover */}
             <Popover>
                 <PopoverTrigger asChild>
-                    <Button variant="outline" size="icon" className="h-8 w-8">
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8 bg-bg-light border-border text-text hover:bg-bg-light-hover"
+                    >
                         <Settings2 className="h-4 w-4" />
                         <span className="sr-only">Settings</span>
                     </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-80" align="end">
+                <PopoverContent className="w-80 bg-bg-light border-border text-text" align="end">
                     <div className="grid gap-4">
                         <div className="space-y-2">
-                            <h4 className="font-medium leading-none">Simulation Settings</h4>
-                            <p className="text-xs text-muted-foreground">
+                            <h4 className="font-medium leading-none text-text">
+                                Simulation Settings
+                            </h4>
+                            <p className="text-xs text-text-muted">
                                 Configure simulator parameters.
                             </p>
                         </div>
-                        <Separator />
+                        <Separator className="bg-border-muted" />
 
                         <div className="grid gap-4">
                             {/* Max Qubits */}
                             <div className="grid grid-cols-3 items-center gap-4">
-                                <Label htmlFor="maxQubits" className="text-xs">
+                                <Label htmlFor="maxQubits" className="text-xs text-text">
                                     Max Qubits
                                 </Label>
                                 <Input
                                     id="maxQubits"
                                     type="number"
-                                    className="col-span-2 h-8 text-xs"
+                                    className="col-span-2 h-8 text-xs bg-bg border-border text-text"
                                     value={options.maxQubits}
                                     onChange={(e) =>
                                         handleNumberChange('maxQubits', e.target.value, 8)
@@ -101,13 +106,13 @@ export function SimulationToolbar({ options, setOptions }: ToolbarProps) {
                                     options.mode === 'exact' ? 'opacity-50 pointer-events-none' : ''
                                 }`}
                             >
-                                <Label htmlFor="shots" className="text-xs">
+                                <Label htmlFor="shots" className="text-xs text-text">
                                     Shots
                                 </Label>
                                 <Input
                                     id="shots"
                                     type="number"
-                                    className="col-span-2 h-8 text-xs"
+                                    className="col-span-2 h-8 text-xs bg-bg border-border text-text"
                                     value={options.sampleCount}
                                     onChange={(e) =>
                                         handleNumberChange('sampleCount', e.target.value, 1024)

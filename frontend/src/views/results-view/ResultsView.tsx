@@ -15,7 +15,7 @@ import { getBarColor } from '@/views/results-view/util/quantum-utils.ts';
 const chartConfig = {
     prob: {
         label: 'Probability',
-        color: 'hsl(var(--chart-1))',
+        color: 'var(--special)',
     },
 } satisfies ChartConfig;
 
@@ -49,9 +49,9 @@ export function ResultsView({ circuit }: ResultsViewProps) {
     // Empty State
     if (!circuit || numQubits === 0) {
         return (
-            <Card className="w-full h-full flex flex-col justify-center items-center text-muted-foreground p-8 border-dashed">
-                <div className="bg-muted p-4 rounded-full mb-4 ring-1 ring-border">
-                    <RefreshCcw className="w-8 h-8 opacity-50" />
+            <Card className="w-full h-full flex flex-col justify-center items-center text-text-muted p-8 border-dashed border-border-muted bg-bg-dark">
+                <div className="bg-bg p-4 rounded-full mb-4 ring-1 ring-border">
+                    <RefreshCcw className="w-8 h-8 text-text-muted/50" />
                 </div>
                 <p>Add qubits to the circuit to see results.</p>
             </Card>
@@ -60,20 +60,23 @@ export function ResultsView({ circuit }: ResultsViewProps) {
 
     return (
         <Card className="w-full h-full flex flex-col overflow-hidden border-none shadow-none sm:border sm:shadow-sm">
-            <CardHeader className="pb-3 border-b bg-muted/20 shrink-0">
+            <CardHeader className="pb-3 border-b border-border bg-bg/30 shrink-0">
                 <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
                     <div>
-                        <CardTitle className="flex items-center gap-2 text-lg">
+                        <CardTitle className="flex items-center gap-2 text-lg text-text">
                             Simulation Results
                             {isCalculating && (
-                                <Badge variant="secondary" className="animate-pulse text-xs">
+                                <Badge
+                                    variant="secondary"
+                                    className="animate-pulse text-xs bg-bg-light text-text-muted"
+                                >
                                     Calculating...
                                 </Badge>
                             )}
                         </CardTitle>
-                        <p className="text-xs text-muted-foreground mt-1 font-mono">
+                        <p className="text-xs text-text-muted mt-1 font-mono">
                             Basis: Big Endian{' '}
-                            <span className="bg-muted px-1.5 py-0.5 rounded text-foreground border border-border/50">
+                            <span className="bg-bg px-1.5 py-0.5 rounded text-text border border-border-muted">
                                 {basisLabel}
                             </span>
                         </p>
@@ -82,15 +85,14 @@ export function ResultsView({ circuit }: ResultsViewProps) {
                 </div>
             </CardHeader>
 
-            <CardContent className="flex-1 p-0 relative overflow-hidden flex flex-col min-h-0">
+            <CardContent className="flex-1 p-0 relative overflow-hidden flex flex-col min-h-0 bg-bg-dark">
                 {error ? (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center text-destructive bg-background/95 z-10 p-4 text-center">
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-destructive bg-bg-dark/95 z-10 p-4 text-center">
                         <span className="font-bold mb-2">Simulation Error</span>
                         <span className="text-sm">{error}</span>
                     </div>
                 ) : (
                     <div className="w-full h-full overflow-x-auto overflow-y-hidden custom-scrollbar">
-                        {/* Wrapper div bestimmt die Breite (Scroll vs Full) */}
                         <div
                             style={{ width: shouldScroll ? `${computedWidth}px` : '100%' }}
                             className="h-full p-4 pb-2"
@@ -104,7 +106,7 @@ export function ResultsView({ circuit }: ResultsViewProps) {
                                     <CartesianGrid
                                         vertical={false}
                                         strokeDasharray="3 3"
-                                        stroke="hsl(var(--border))" // Theme variable
+                                        stroke="var(--border-muted)"
                                         opacity={0.5}
                                     />
                                     <XAxis
@@ -115,13 +117,15 @@ export function ResultsView({ circuit }: ResultsViewProps) {
                                         angle={-45}
                                         textAnchor="end"
                                         height={60}
-                                        // Wir entfernen manuelle Farben hier, ChartContainer macht das via CSS
-                                        tick={{ fontSize: 11, fontFamily: 'monospace' }}
+                                        tick={{
+                                            fontSize: 11,
+                                            fontFamily: 'monospace',
+                                            fill: 'var(--text-muted)',
+                                        }}
                                     />
 
-                                    {/* Shadcn Tooltip Component + Custom Content */}
                                     <ChartTooltip
-                                        cursor={{ fill: 'hsl(var(--muted)/0.3)' }}
+                                        cursor={{ fill: 'var(--bg-light-hover)', opacity: 0.3 }}
                                         content={
                                             <CustomTooltipContent
                                                 sampleCount={options.sampleCount}
@@ -133,9 +137,7 @@ export function ResultsView({ circuit }: ResultsViewProps) {
                                         {chartData.map((entry, index) => (
                                             <Cell
                                                 key={`cell-${index}`}
-                                                // Nutzt Theme Farbe für Sim, Color Wheel für Exact
                                                 fill={getBarColor(entry.phase)}
-                                                // Border nur im Dark Mode subtil sichtbar machen oder weglassen
                                                 strokeWidth={0}
                                             />
                                         ))}
@@ -148,10 +150,10 @@ export function ResultsView({ circuit }: ResultsViewProps) {
 
                 {/* Loading State Overlay */}
                 {isCalculating && (
-                    <div className="absolute inset-0 bg-background/50 backdrop-blur-[2px] z-20 flex items-center justify-center">
+                    <div className="absolute inset-0 bg-bg-dark/50 backdrop-blur-[2px] z-20 flex items-center justify-center">
                         <Badge
                             variant="outline"
-                            className="bg-background shadow-lg px-4 py-2 animate-pulse"
+                            className="bg-bg-light shadow-lg px-4 py-2 animate-pulse text-text border-border"
                         >
                             Processing...
                         </Badge>
