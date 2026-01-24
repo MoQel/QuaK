@@ -15,17 +15,31 @@ export function useChartData(
         if (!result) return [];
         let data: ChartDataPoint[] = [];
 
-        // Monte Carlo simulation
         if (options.mode === 'simulation' && result.counts) {
             const total = options.sampleCount || 1024;
-            data = Object.entries(result.counts).map(([bitString, count]) => ({
-                state: `|${bitString}>`,
-                prob: ((count as number) / total) * 100,
-                count: count as number,
-            }));
-        }
-        // Exact Vector
-        else if (options.mode === 'exact' && result.stateVector) {
+
+            // If we have fewer than 4 qubits, we generate ALL possible states (including 0%),
+            // so that the diagram does not appear empty.
+            if (numQubits < 4) {
+                const totalStates = 1 << numQubits; // 2^n
+                for (let i = 0; i < totalStates; i++) {
+                    const bitString = i.toString(2).padStart(numQubits, '0');
+                    const count = result.counts[bitString] || 0;
+
+                    data.push({
+                        state: `|${bitString}>`,
+                        prob: ((count as number) / total) * 100,
+                        count: count as number,
+                    });
+                }
+            } else {
+                data = Object.entries(result.counts).map(([bitString, count]) => ({
+                    state: `|${bitString}>`,
+                    prob: ((count as number) / total) * 100,
+                    count: count as number,
+                }));
+            }
+        } else if (options.mode === 'exact' && result.stateVector) {
             data = result.stateVector.map((entry: StateVectorEntry) => ({
                 state: entry.state,
                 prob: entry.prob * 100,
@@ -35,7 +49,6 @@ export function useChartData(
             }));
         }
 
-        // Filter insignificant states for performance (>4 qubits)
         if (numQubits >= 4) {
             data = data.filter((d) => d.prob > 0.0001);
         }

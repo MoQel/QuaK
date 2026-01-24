@@ -1,7 +1,5 @@
 import { Dispatch, SetStateAction } from 'react';
 import { Settings2 } from 'lucide-react';
-
-// UI Components
 import {
     Select,
     SelectContent,
@@ -13,10 +11,10 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 
 // Domain Types
 import { SimulationMode, SimulationOptions } from '@/simulation/simulation.types';
+import { SmartInput } from '@/views/results-view/SmartInput.tsx';
 
 interface ToolbarProps {
     options: SimulationOptions;
@@ -24,21 +22,12 @@ interface ToolbarProps {
 }
 
 export function SimulationToolbar({ options, setOptions }: ToolbarProps) {
-    const handleNumberChange = (
-        field: keyof SimulationOptions,
-        value: string,
-        fallback: number,
-    ) => {
-        const num = parseInt(value);
-        setOptions((prev) => ({
-            ...prev,
-            [field]: isNaN(num) ? fallback : num,
-        }));
+    const updateOption = (field: keyof SimulationOptions, val: number) => {
+        setOptions((prev) => ({ ...prev, [field]: val }));
     };
 
     return (
         <div className="flex items-center gap-2">
-            {/* Mode Selector */}
             <Select
                 value={options.mode}
                 onValueChange={(val) =>
@@ -57,7 +46,6 @@ export function SimulationToolbar({ options, setOptions }: ToolbarProps) {
                 </SelectContent>
             </Select>
 
-            {/* Advanced Settings Popover */}
             <Popover>
                 <PopoverTrigger asChild>
                     <Button
@@ -82,25 +70,19 @@ export function SimulationToolbar({ options, setOptions }: ToolbarProps) {
                         <Separator className="bg-border-muted" />
 
                         <div className="grid gap-4">
-                            {/* Max Qubits */}
                             <div className="grid grid-cols-3 items-center gap-4">
                                 <Label htmlFor="maxQubits" className="text-xs text-text">
                                     Max Qubits
                                 </Label>
-                                <Input
+                                <SmartInput
                                     id="maxQubits"
-                                    type="number"
-                                    className="col-span-2 h-8 text-xs bg-bg border-border text-text"
-                                    value={options.maxQubits}
-                                    onChange={(e) =>
-                                        handleNumberChange('maxQubits', e.target.value, 8)
-                                    }
-                                    max={14}
+                                    value={options.maxQubits ?? 1024}
+                                    onChange={(v) => updateOption('maxQubits', v)}
                                     min={1}
+                                    max={14}
                                 />
                             </div>
 
-                            {/* Shots (Disabled if Exact Mode) */}
                             <div
                                 className={`grid grid-cols-3 items-center gap-4 transition-opacity duration-200 ${
                                     options.mode === 'exact' ? 'opacity-50 pointer-events-none' : ''
@@ -109,16 +91,12 @@ export function SimulationToolbar({ options, setOptions }: ToolbarProps) {
                                 <Label htmlFor="shots" className="text-xs text-text">
                                     Shots
                                 </Label>
-                                <Input
+                                <SmartInput
                                     id="shots"
-                                    type="number"
-                                    className="col-span-2 h-8 text-xs bg-bg border-border text-text"
-                                    value={options.sampleCount}
-                                    onChange={(e) =>
-                                        handleNumberChange('sampleCount', e.target.value, 1024)
-                                    }
-                                    step={100}
+                                    value={options.sampleCount ?? 1024}
+                                    onChange={(v) => updateOption('sampleCount', v)}
                                     min={1}
+                                    step={100}
                                 />
                             </div>
                         </div>

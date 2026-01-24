@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { BarChart, Bar, XAxis, CartesianGrid, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Cell } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartConfig } from '@/components/ui/chart';
 import { RefreshCcw } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -41,7 +41,7 @@ export function ResultsView({ circuit }: ResultsViewProps) {
 
     // Dynamic Width Calculation for Scrolling
     const minBarWidth = 40;
-    const computedWidth = Math.max(100, chartData.length * minBarWidth);
+    const computedMinWidth = Math.max(100, chartData.length * minBarWidth);
     const shouldScroll = chartData.length > 12;
 
     const basisLabel = numQubits > 1 ? `|q${numQubits - 1}...q0>` : numQubits === 1 ? '|q0>' : '';
@@ -49,18 +49,23 @@ export function ResultsView({ circuit }: ResultsViewProps) {
     // Empty State
     if (!circuit || numQubits === 0) {
         return (
-            <Card className="w-full h-full flex flex-col justify-center items-center text-text-muted p-8 border-dashed border-border-muted bg-bg-dark">
-                <div className="bg-bg p-4 rounded-full mb-4 ring-1 ring-border">
-                    <RefreshCcw className="w-8 h-8 text-text-muted/50" />
-                </div>
-                <p>Add qubits to the circuit to see results.</p>
+            <Card className="w-full h-full border-l rounded-none bg-muted/10">
+                <CardHeader>
+                    <CardTitle>Simulation</CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-col items-center justify-center h-[50vh] text-muted-foreground text-sm italic">
+                    <div className="bg-bg p-4 rounded-full mb-4 ring-1 ring-border">
+                        <RefreshCcw className="w-8 h-8 text-text-muted/50" />
+                    </div>
+                    <p>Add qubits to the circuit to see results.</p>
+                </CardContent>
             </Card>
         );
     }
 
     return (
-        <Card className="w-full h-full flex flex-col overflow-hidden border-none shadow-none sm:border sm:shadow-sm">
-            <CardHeader className="pb-3 border-b border-border bg-bg/30 shrink-0">
+        <Card className="w-full h-full border-l rounded-none flex flex-col">
+            <CardHeader className="pb-2 border-b bg-card z-10 shrink-0">
                 <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
                     <div>
                         <CardTitle className="flex items-center gap-2 text-lg text-text">
@@ -94,13 +99,17 @@ export function ResultsView({ circuit }: ResultsViewProps) {
                 ) : (
                     <div className="w-full h-full overflow-x-auto overflow-y-hidden custom-scrollbar">
                         <div
-                            style={{ width: shouldScroll ? `${computedWidth}px` : '100%' }}
+                            style={{
+                                minWidth: shouldScroll ? `${computedMinWidth}px` : '100%',
+                                width: '100%',
+                                height: '100%',
+                            }}
                             className="h-full p-4 pb-2"
                         >
                             <ChartContainer config={chartConfig} className="h-full w-full">
                                 <BarChart
                                     data={chartData}
-                                    margin={{ top: 20, right: 0, left: 0, bottom: 40 }}
+                                    margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
                                     accessibilityLayer
                                 >
                                     <CartesianGrid
@@ -112,7 +121,7 @@ export function ResultsView({ circuit }: ResultsViewProps) {
                                     <XAxis
                                         dataKey="state"
                                         tickLine={false}
-                                        axisLine={false}
+                                        axisLine={{ stroke: 'var(--border)', strokeWidth: 1 }}
                                         interval={0}
                                         angle={-45}
                                         textAnchor="end"
@@ -122,6 +131,15 @@ export function ResultsView({ circuit }: ResultsViewProps) {
                                             fontFamily: 'monospace',
                                             fill: 'var(--text-muted)',
                                         }}
+                                    />
+                                    <YAxis
+                                        domain={[0, 100]}
+                                        tick={{ fontSize: 10, fill: 'var(--text-muted)' }}
+                                        axisLine={{ stroke: 'var(--border)', strokeWidth: 1 }}
+                                        tickLine={false}
+                                        ticks={[0, 25, 50, 75, 100]}
+                                        tickFormatter={(value) => `${value}%`}
+                                        width={35}
                                     />
 
                                     <ChartTooltip
