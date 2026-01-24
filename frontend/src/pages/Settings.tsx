@@ -31,7 +31,7 @@ export const Settings: React.FC = () => {
               <input
                 type="checkbox"
                 defaultChecked
-                className="h-4 w-4 rounded border-gray-300"
+                className="h-4 w-4 rounded border-gray-300 cursor-pointer"
               />
             </div>
 
@@ -48,7 +48,7 @@ export const Settings: React.FC = () => {
                 type="checkbox"
                 checked={isDark}
                 onChange={(e) => setTheme(e.target.checked ? "dark" : "light")}
-                className="h-4 w-4 rounded border-gray-300"
+                className="h-4 w-4 rounded border-gray-300 cursor-pointer"
               />
             </div>
 
@@ -63,7 +63,7 @@ export const Settings: React.FC = () => {
               </div>
               <input
                 type="checkbox"
-                className="h-4 w-4 rounded border-gray-300"
+                className="h-4 w-4 rounded border-gray-300 cursor-pointer"
               />
             </div>
           </CardContent>
@@ -83,7 +83,7 @@ export const Settings: React.FC = () => {
                   name="privacy"
                   id="public"
                   defaultChecked
-                  className="h-4 w-4"
+                  className="h-4 w-4 cursor-pointer"
                 />
                 <div className="flex-1">
                   <Label htmlFor="public" className="text-base cursor-pointer">
@@ -100,7 +100,7 @@ export const Settings: React.FC = () => {
                   type="radio"
                   name="privacy"
                   id="private"
-                  className="h-4 w-4"
+                  className="h-4 w-4 cursor-pointer"
                 />
                 <div className="flex-1">
                   <Label htmlFor="private" className="text-base cursor-pointer">
@@ -127,14 +127,14 @@ export const Settings: React.FC = () => {
                 <p className="font-medium">Account Status</p>
                 <p className="text-sm text-muted-foreground">Your account is active</p>
               </div>
-              <Badge variant="secondary">Active</Badge>
+              <Badge variant="outline">Active</Badge>
             </div>
 
             <Separator />
 
             <div className="flex gap-2">
-              <Button variant="destructive">Log Out</Button>
-              <Button variant="outline" className="text-destructive">
+              <Button variant="destructive" className="bg-destructive">Log Out</Button>
+              <Button variant="destructive" className="bg-destructive" >
                 Delete Account
               </Button>
             </div>
@@ -143,8 +143,8 @@ export const Settings: React.FC = () => {
 
         {/* Save Button */}
         <div className="flex justify-end gap-2">
-          <Button variant="outline">Reset to Defaults</Button>
-          <Button>Save Settings</Button>
+          <Button variant="secondary">Reset to Defaults</Button>
+          <Button className="bg-special hover:bg-special-hover" >Save Settings</Button>
         </div>
       </div>
     </div>

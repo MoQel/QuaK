@@ -12,8 +12,8 @@ const chartConfig = {
   probability: {
     label: "Probability",
     theme: {
-      light: "hsl(220 80% 56%)",
-      dark: "hsl(220 80% 65%)",
+      light: "hsl(0 0% 90%)",
+      dark: "hsl(0 0% 0%)",
     },
   },
 } satisfies ChartConfig;
@@ -33,26 +33,31 @@ export function ResultsView({ numberQubits }: ResultsViewProps) {
     }, [numberQubits]);
 
     return (
-        <Card className="w-full">
-            <CardHeader className="w-full">
-                <CardTitle>Results</CardTitle>
+        <Card className="w-full h-full min-h-0 flex flex-col overflow-hidden">
+            <CardHeader className="shrink-0">
+                <CardTitle className="text-center">Results</CardTitle>
             </CardHeader>
-            <CardContent>
-                <ChartContainer config={chartConfig}>
-                    <BarChart accessibilityLayer data={chartData}>
-                        <CartesianGrid vertical={false} stroke="var(--color-foreground)" strokeOpacity={0.4} />
-                        <XAxis
-                            dataKey="qubit"
-                            tickLine={false}
-                            tickMargin={10}
-                            axisLine={false}
-                            tickFormatter={(value) => value.slice(0, 3)}
-                        />
-                        <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
-                        <Bar dataKey="probability" fill="var(--color-probability)" radius={8} />
-                    </BarChart>
-                </ChartContainer>
+
+            {/* This must be able to shrink, and it must define the height for the chart */}
+            <CardContent className="flex-1 min-h-0 overflow-hidden">
+                <div className="h-full w-full">
+                    <ChartContainer config={chartConfig} className="h-full w-full">
+                        <BarChart accessibilityLayer data={chartData}>
+                            <CartesianGrid vertical={false} stroke="var(--color-bg-light)" strokeOpacity={0.4} />
+                            <XAxis
+                                dataKey="qubit"
+                                tickLine={false}
+                                tickMargin={10}
+                                axisLine={false}
+                                tickFormatter={(value) => value.slice(0, 3)}
+                            />
+                            <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
+                            <Bar dataKey="probability" fill="hsl(220 80% 56%)" radius={8} />
+                        </BarChart>
+                    </ChartContainer>
+                </div>
             </CardContent>
         </Card>
+
     );
 }

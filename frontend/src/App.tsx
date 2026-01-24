@@ -12,38 +12,41 @@ import {InspectorView} from "@/views/inspector-view/InspectorView.tsx";
 import {GateDefinitionResponse} from "@/api/dto/library.ts";
 
 function App() {
-    const [file, openFile]: [File, Dispatch<SetStateAction<File>>] = useState(undefined as unknown as File);
+    const [file, openFile] = useState(undefined as unknown as File);
     const [selectedGate, setSelectedGate] = useState<GateDefinitionResponse | undefined>(undefined);
 
     return (
         <>
-            <div className="flex flex-col h-screen px-[10px]">
-                <div className="flex flex-row h-2/3">
-                    <div className="flex flex-grow-[2] w-full">
-                        <ResizablePanelGroup direction="horizontal">
-                            <ResizablePanel defaultSize={20}>
-                                <ProjectManagerView onFileSelect={openFile}/>
+        <div className="h-full min-h-0 overflow-hidden px-[10px] flex flex-col">
+            <div className="flex-3 min-h-0 overflow-hidden">
+                        <ResizablePanelGroup direction="horizontal" className="h-full">
+                            <ResizablePanel defaultSize={20} className="h-full overflow-hidden">
+                                <ProjectManagerView onFileSelect={openFile} />
                             </ResizablePanel>
-                            <ResizableHandle withHandle/>
-                            <ResizablePanel>
-                                    <CircuitView />
+                            <ResizableHandle withHandle />
+                            <ResizablePanel className="h-full overflow-hidden">
+                                <CircuitView />
                             </ResizablePanel>
-                            <ResizableHandle withHandle/>
-                            <ResizablePanel className="flex-col h-full">
-                                <TextEditorView file={file}/>
+                            <ResizableHandle withHandle />
+                            <ResizablePanel className="flex-col h-full overflow-hidden">
+                                <TextEditorView file={file} />
                             </ResizablePanel>
                         </ResizablePanelGroup>
-                    </div>
-                </div>
-                <div className="flex flex-grow-[1] flex-row w-full">
-                    <GateLibraryView onGateSelect={setSelectedGate} />
-                    <InspectorView gate={selectedGate} onClear={() => setSelectedGate(undefined)} />
-                    <ResultsView numberQubits={5}/>
-                </div>
+
             </div>
-            <Toaster/>
+
+            <div className="flex-4 min-h-0 overflow-hidden flex w-full">
+                <GateLibraryView onGateSelect={setSelectedGate} />
+                <InspectorView gate={selectedGate} onClear={() => setSelectedGate(undefined)} />
+                <ResultsView numberQubits={5} />
+            </div>
+
+        </div>
+
+            <Toaster />
         </>
     );
 }
+
 
 export default App

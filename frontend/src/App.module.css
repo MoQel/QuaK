@@ -36,7 +36,7 @@
 .lines {
   height: 2px;
   background-size: 100% 2px;
-  background-image: linear-gradient(to right, var(--color-white) 0% 100%);
+  background-image: linear-gradient(to right, var(--text) 0% 100%);
   background-position-y: center;
   background-position-x: right;
   background-repeat: no-repeat;
@@ -57,7 +57,7 @@
 }
 
 .libraryElement:hover {
-  background-color: var(--color-gray-300);
+  background-color: var(--bg-light);
   -webkit-user-drag: element; /* Prevents Safari from “forgetting” the element when dragging */
 }
 
@@ -76,7 +76,7 @@
 }
 
 .gate:hover {
-  background-color: var(--color-gray-300);
+  background-color: var(--bg-light);
   -webkit-user-drag: element; /* Prevents Safari from “forgetting” the element when dragging */
 }
 
@@ -115,4 +115,12 @@
   justify-content: space-evenly;
   row-gap: 5px;
   flex-wrap: wrap;
+}
+
+/* index.css */
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
 }

@@ -84,7 +84,7 @@ export function FileElementContainer({ name, id, getContent, edit, icon, deleteP
 
             <CollapsibleContent>
                 <ParentRefresh value={reload}>
-                    <div className="pl-2"><div className="pl-2 mb-1 mt-1 border-l-1 border-gray-500 border-opacity-50">
+                    <div className="pl-2"><div className="pl-2 mb-1 mt-1 border-l-1 border-border border-opacity-50">
                         {content.length === 0 ? [<Empty key="empty" />] : content}
                     </div></div>
                 </ParentRefresh>

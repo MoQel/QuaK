@@ -1,6 +1,6 @@
-import {useMemo} from "react";
+import { useMemo } from "react";
 import { LibraryElement } from "@/views/library-view/LibraryElement.tsx";
-import {GateDefinitionResponse} from '@/api/dto/library.ts'
+import { GateDefinitionResponse } from '@/api/dto/library.ts'
 
 interface GateListProps {
     gates: GateDefinitionResponse[];
@@ -31,78 +31,50 @@ function GateList({ gates, onGateClick }: GateListProps) {
 
     return (
         <div
-            style={{
-                maxHeight: "300px",
-                width: "400px",
-                overflowY: "auto",
-                border: "1px solid #444",
-                borderRadius: "8px",
-                backgroundColor: "#111",
-                padding: "0"
-            }}
-        >
+
+            className="w-full h-full overflow-y-auto will-change-transform transform-gpu border border-border rounded-md bg-bg-dark">
             {groupedGates.map((group, index) => (
                 <section key={group.type}>
-                    {/* Type heading */}
                     <div
+
+                        className="sticky top-0 z-10 bg-bg text-text border-b border-border font-semibold text-sm px-4 py-3"
                         style={{
-                            padding: "8px 12px",
-                            fontWeight: 600,
-                            fontSize: "0.9rem",
-                            backgroundColor: "#1f1f1f",
-                            borderTop: index === 0 ? "none" : "1px solid #333",
-                            borderBottom: "1px solid #333",
+
+                            borderTop: index === 0 ? "none" : "1px solid var(--border)",
                         }}
                     >
                         {group.type}
                     </div>
 
-                    <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
+                    <ul className="list-none m-0 p-0">
                         {group.gates.map((gate) => (
                             <li
                                 key={gate.name}
-                                style={{
-                                    padding: "10px 12px",
-                                    borderBottom: "1px solid #222",
-                                }}
+                                className="
+                                    border-b border-border
+                                    last:border-b-0
+                                    hover:bg-bg transition-colors
+                                    cursor-pointer px-4 py-3"
+                                onClick={() => onGateClick(gate)}
                             >
-                                <div
-                                    style={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                        gap: "14px",
-                                    }}
-                                >
-                                    <div
-                                        style={{
-                                            width: "48px",
-                                            minWidth: "48px",
-                                            display: "flex",
-                                            justifyContent: "center",
-                                            alignItems: "center",
-                                        }}
-                                    >
-                                        <LibraryElement id={gate.id} symbol={gate.symbol} matrix={gate.inspectorInfo.matrix.display} onClick={() => onGateClick(gate)} />
+
+                            <div className="flex items-center gap-4">
+                                    <div className="w-12 min-w-48px flex justify-center items-center">
+                                        <LibraryElement
+                                            id={gate.id}
+                                            symbol={gate.symbol}
+                                            matrix={gate.inspectorInfo.matrix.display}
+                                            onClick={() => onGateClick(gate)}
+                                        />
                                     </div>
 
-                                    <div style={{ textAlign: "left" }}>
-                                        <div
-                                            style={{
-                                                fontWeight: 600,
-                                                fontSize: "0.9rem",
-                                                marginBottom: gate.description ? "2px" : 0,
-                                            }}
-                                        >
+                                    <div className="text-left">
+                                        <div className="font-semibold text-sm text-text mb-2px">
                                             {gate.name}
                                         </div>
                                         {gate.description && (
-                                            <div
-                                                style={{
-                                                    fontSize: "0.8rem",
-                                                    opacity: 0.85,
-                                                    lineHeight: 1.25,
-                                                }}
-                                            >
+
+                                            <div className="text-xs text-text-muted leading-tight">
                                                 {gate.description}
                                             </div>
                                         )}

@@ -21,8 +21,9 @@ export default function ThemeSwitch({ onToggle }: ThemeSwitchProps) {
       className="
         relative flex items-center
         w-14 h-7 rounded-full
-        bg-gray-100
+        bg-bg-light
         p-1
+        cursor-pointer
       "
     >
       {isDark ? (

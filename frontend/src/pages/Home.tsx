@@ -36,7 +36,7 @@ export const Home: React.FC = () => {
             </div>
             <div className="font-medium text-lg flex-1">{name}</div>
           </div>
-          <div className="text-sm text-muted-foreground">
+          <div className="text-sm text-text-muted">
             Last modified: 2 days ago
           </div >
           <div className="mt-2">
@@ -52,10 +52,10 @@ export const Home: React.FC = () => {
   return (
     <div className="p-8 max-w-[1600px] mx-auto">
       <div className="mb-9">
-        <h1 className="text-4xl font-bold mb-5 bg-gradient-to-r from-white to-white bg-clip-text text-transparent leading-tight py-1">
+        <h1 className="text-4xl font-bold mb-5 text-text leading-tight py-1">
           Projects
         </h1>
-        <p className="text-lg text-muted-foreground">
+        <p className="text-lg text-text-muted">
           Welcome to your quantum computing workspace. View and manage all your projects.
         </p>
       </div>
@@ -85,8 +85,8 @@ export const Home: React.FC = () => {
               </div>
             ) : (
               <div className="text-center py-12">
-                <FolderOpen className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-                <p className="text-sm text-muted-foreground">You have no projects yet.</p>
+                <FolderOpen className="w-12 h-12 text-text-muted mx-auto mb-3" />
+                <p className="text-sm text-text-muted">You have no projects yet.</p>
                 <Button className="mt-4" variant="outline">Create New Project</Button>
               </div>
             )}
