@@ -1,9 +1,13 @@
 package edu.kit.quak.application.filesystem.delegator;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
 import edu.kit.quak.application.filesystem.ports.out.FileElementContainerRepositoryPort;
 import edu.kit.quak.core.filesystem.model.FileElementContainer;
 import edu.kit.quak.core.filesystem.model.Project;
 import edu.kit.quak.shared.tags.UnitTest;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -11,20 +15,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
-
 @UnitTest
 @ExtendWith(MockitoExtension.class)
 class FileElementContainerRepositoryDelegatorTest {
 
-    @Mock
-    FileElementContainerRepositoryRegistry registry;
+    @Mock FileElementContainerRepositoryRegistry registry;
 
-    @Mock
-    FileElementContainerRepositoryPort<Project> projectRepo;
+    @Mock FileElementContainerRepositoryPort<Project> projectRepo;
 
     FileElementContainerRepositoryDelegator delegator;
 

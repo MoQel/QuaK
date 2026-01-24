@@ -1,10 +1,27 @@
 {
-  "name": "quak-root",
-  "private": true,
-  "scripts": {
-    "prepare": "husky"
-  },
-  "devDependencies": {
-    "husky": "^9.1.0"
-  }
+    "name": "quak-monorepo",
+    "version": "1.0.0",
+    "private": true,
+    "description": "QuaK - Quantum Knowledge Editor",
+    "scripts": {
+        "test": "npm run test:all",
+        "test:all": "npm run test:backend & npm run test:frontend & wait",
+        "test:backend": "cd backend && ./gradlew test",
+        "test:frontend": "cd frontend && npm run test",
+        "test:sequential": "npm run test:backend && npm run test:frontend",
+        "lint": "npm run lint:frontend",
+        "lint:frontend": "cd frontend && npm run lint",
+        "dev:backend": "cd backend && ./gradlew bootRun",
+        "dev:frontend": "cd frontend && npm run dev",
+        "build": "npm run build:backend",
+        "build:backend": "cd backend && ./gradlew buildProduction",
+        "build:frontend": "cd frontend && npm run build",
+        "prepare": "husky"
+    },
+    "devDependencies": {
+      "husky": "^9.1.0"
+    },
+    "workspaces": [
+        "frontend"
+    ]
 }

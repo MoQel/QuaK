@@ -1,5 +1,8 @@
 package edu.kit.quak.infrastructure.circuit.in.web.rest.mapper;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.CircuitResponse;
 import org.junit.jupiter.api.Test;
@@ -8,16 +11,11 @@ import org.mockito.InjectMocks;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 @ExtendWith(MockitoExtension.class)
 class CircuitDtoMapperTest {
-    @Spy
-    private RegisterDtoMapperImpl registerDtoMapper;
+    @Spy private RegisterDtoMapperImpl registerDtoMapper;
 
-    @InjectMocks
-    private CircuitDtoMapperImpl mapper;
+    @InjectMocks private CircuitDtoMapperImpl mapper;
 
     @Test
     void toResponse() {

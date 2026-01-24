@@ -11,61 +11,47 @@ This project is a web-based Quantum IDE designed to support intuitive quantum pr
     Multidirectional Sync – any change in the code updates the circuit, etc.
 
 The goal is to bridge textual and visual quantum programming, making development easier for both beginners and experts.
-
+---
 ## Development
 
+### Linting
 For linting use this command.
-`npm run lint`
-
-For manual code formatting of staged files with prettier use this command.
-`npx lint-staged`
+```bash
+npm run lint
+```
 
 ### To configure auto formatter using prettier and husky follow this steps:
 1. in root Quak folder `npm install`
 2. run `git config core.hooksPath .husky`
 3. If the file has no rights run `chmod +x .husky/pre-commit`
-
+---
 ## Testing
+This project uses [Vitest](https://vitest.dev/) for testing.
 
-Our project uses **Vitest** together with **React Testing Library** to ensure both the correctness of our quantum simulation logic and the stability of the user interface. Our testing strategy is divided into two main categories: **unit tests** for logic and engine validation, and **component tests** for UI and interaction validation.
-
+* **Run all tests:**
+  ```bash
+  npm test
+  ```
+* **Watch mode (automatic re-run on changes):**
+  ```bash
+  npm run test:watch
+  ```
+* **Interactive UI:**
+  ```bash
+  npm run test:ui
+  ```
+* **Coverage report:**
+  ```bash
+  npm run test:coverage
+  ```
 ---
 
-### Tools & Frameworks
-- **[Vitest](https://vitest.dev)** – Fast, TypeScript-friendly test runner
-- **[React Testing Library](https://testing-library.com/docs/react-testing-library/intro/)** – Simulates user interaction and DOM testing
-- **[JSDOM](https://github.com/jsdom/jsdom)** – Provides a virtual DOM for headless tests
-
-Additional helpers include mocking utilities (`vi.mock`) and polyfills like `ResizeObserver` to support chart rendering in the test environment.
-
----
-
-### Running Tests
-
-To execute the test suite, use the following commands:
-
-- **Run all tests once:**
-  ```bash
-  npm run test
-  
-- **Run tests in watch mode (interactive)**
-  ```bash
-  npx vitest
-  
-- Coverage
-  ```bash
-  npx vitest run --coverage
-  
----
-  
 ### Testing Strategy
 #### Unit Tests (Logic & Engine)
 Testing isolated **business logic** without any dependency on the UI
 
 #### Component Tests
 Component tests **simulate user interaction** and **validate how the UI reacts** to different states of the simulation.
-- **Scope**: Views and React components (e.g., src/views/results-view.test.tsx)
-- **Method**: We use Mocking (via vi.mock) to decouple UI
 
 ---
 

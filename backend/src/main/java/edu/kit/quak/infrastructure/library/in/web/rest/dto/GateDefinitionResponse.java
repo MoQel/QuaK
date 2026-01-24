@@ -10,8 +10,7 @@ public record GateDefinitionResponse(
         int qubitCount,
         String symbol,
         List<String> parameters,
-        InspectorInfoResponse inspectorInfo
-) {
+        InspectorInfoResponse inspectorInfo) {
     // Ensure parameters list is not null
     public GateDefinitionResponse {
         if (parameters == null) {
@@ -22,18 +21,10 @@ public record GateDefinitionResponse(
     public record InspectorInfoResponse(
             String operatorDefinition,
             List<TruthTableEntryResponse> truthTable,
-            MatrixInfoResponse matrix
-    ) {}
+            MatrixInfoResponse matrix) {}
 
-    public record TruthTableEntryResponse(
-            String input,
-            String output
-    ) {}
+    public record TruthTableEntryResponse(String input, String output) {}
 
     public record MatrixInfoResponse(
-            String display,
-            int rows,
-            int cols,
-            List<List<String>> computable
-    ) {}
+            String display, int rows, int cols, List<List<String>> computable) {}
 }

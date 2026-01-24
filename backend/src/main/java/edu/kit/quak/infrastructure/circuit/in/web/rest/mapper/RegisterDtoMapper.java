@@ -6,8 +6,10 @@ import edu.kit.quak.core.circuit.model.register.Register;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.RegisterResponse;
 import org.mapstruct.*;
 
-@Mapper(componentModel = MappingConstants.ComponentModel.SPRING,
-        uses = { QubitDtoMapper.class })
+@Mapper(
+        componentModel = MappingConstants.ComponentModel.SPRING,
+        unmappedTargetPolicy = ReportingPolicy.IGNORE,
+        uses = {QubitDtoMapper.class})
 public interface RegisterDtoMapper {
     @BeanMapping(subclassExhaustiveStrategy = SubclassExhaustiveStrategy.RUNTIME_EXCEPTION)
     @SubclassMapping(source = QuantumRegister.class, target = RegisterResponse.class)

@@ -1,27 +1,24 @@
 package edu.kit.quak.application.filesystem.delegator;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.when;
+
 import edu.kit.quak.application.filesystem.ports.out.FileElementContainerRepositoryPort;
 import edu.kit.quak.shared.tags.UnitTest;
+import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.when;
-
 @UnitTest
 @ExtendWith(MockitoExtension.class)
 class FileElementContainerRepositoryRegistryTest {
 
-    @Mock
-    FileElementContainerRepositoryPort<?> repoP;
+    @Mock FileElementContainerRepositoryPort<?> repoP;
 
-    @Mock
-    FileElementContainerRepositoryPort<?> repoD;
+    @Mock FileElementContainerRepositoryPort<?> repoD;
 
     @Test
     @DisplayName("Registry maps repositories correctly by their prefix")
@@ -47,8 +44,8 @@ class FileElementContainerRepositoryRegistryTest {
 
         List<FileElementContainerRepositoryPort<?>> repos = List.of(repoP, repoD);
 
-        assertThrows(IllegalStateException.class, () ->
-                new FileElementContainerRepositoryRegistry(repos)
-        );
+        assertThrows(
+                IllegalStateException.class,
+                () -> new FileElementContainerRepositoryRegistry(repos));
     }
 }

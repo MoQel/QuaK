@@ -1,129 +1,98 @@
-@import "tailwindcss";
-@import "tw-animate-css";
+@import 'tailwindcss';
+@import 'tw-animate-css';
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-probability: var(--probability);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
+    --color-bg-dark: var(--bg-dark);
+    --color-bg: var(--bg);
+    --color-bg-light: var(--bg-light);
+    --color-bg-light-hover: var(--bg-light-hover);
+    --color-text: var(--text);
+    --color-text-muted: var(--text-muted);
+    --color-border: var(--border);
+    --color-highlight: var(--highlight);
+    --color-destructive: var(--destructive);
+    --color-destructive-hover: var(--destructive-hover);
+    --color-special: var(--special);
+    --color-special-hover: var(--special-hover);
+    --color-logo-start: var(--logo-start);
+    --color-logo-end: var(--logo-end);
+    --color-destructive-text: var(--destructive-text);
 }
 
 :root {
-  --radius: 0.625rem;
+    --bg-dark: hsl(0 0% 90%); /* main page background (very light gray) */
+    --bg: hsl(0 0% 80%); /* secondary surfaces / panels */
+    --bg-light: hsl(0 0% 70%); /* raised elements / cards / hover surfaces */
+    --bg-light-hover: hsl(0 0% 60%);
 
-  --background: hsl(0 0% 100%);
-  --foreground: hsl(0 0% 40%);
+    --text: hsl(0 0% 20%); /* primary text  */
+    --text-muted: hsl(0 0% 30%); /* secondary / muted text */
 
-  --card: hsl(0 0% 100%);
-  --card-foreground: hsl(0 0% 0%);
+    --border: hsl(0 0 70%); /* standard borders */
+    --border-muted: hsl(300 0% 82%); /* very subtle / disabled borders */
 
-  --popover: hsl(0 0% 100%);
-  --popover-foreground: hsl(0 0% 0%);
+    --highlight: hsl(0 0% 50%); /* neutral highlight / emphasis */
 
-  --primary: hsl(0 0% 0%);
-  --primary-foreground: hsl(0 0% 100%);
+    --destructive: hsl(0 50% 50%); /* destructive actions (red) */
+    --destructive-hover: hsl(0 50% 45%); /* destructive hover state */
+    --destructive-text: hsl(0 75% 45%);
 
-  --secondary: hsl(0 0% 100%);
-  --secondary-foreground: hsl(0 0% 0%);
+    --special: hsl(217 91% 70%); /* special / primary accent (blue) */
+    --special-hover: hsl(217 91% 60%); /* hover state for special accent */
 
-  --muted: hsl(0 0% 100%);
-  --muted-foreground: hsl(0 0% 0%);
-
-  --accent: hsl(0 0% 95%);
-  --accent-foreground: hsl(0 0% 0%);
-
-  --destructive: hsl(0 84% 60%);
-
-  --border: hsl(0 0% 90%);
-  --input: hsl(0 0% 90%);
-  --ring: hsl(0 0% 70%);
-
-  --sidebar: hsl(0 0% 98%);
-  --sidebar-foreground: hsl(0 0% 12%);
-  --sidebar-primary: hsl(0 0% 12%);
-  --sidebar-primary-foreground: hsl(0 0% 98%);
-  --sidebar-accent: hsl(0 0% 96%);
-  --sidebar-accent-foreground: hsl(0 0% 12%);
-  --sidebar-border: hsl(0 0% 90%);
-  --sidebar-ring: hsl(0 0% 70%);
-  --probability: hsl(220 80% 56%); /* temporary for the bars in the results*/
+    --logo-start: hsl(217 91% 40%);
+    --logo-end: hsl(217 91% 60%);
 }
 
 .dark {
-  --background: hsl(0 0% 0%);
-  --foreground: hsl(0 0% 90%);
-  --card: hsl(0 0% 5%);
-  --card-foreground: hsl(0 0% 98%);
-  --popover: hsl(0 0% 16%);
-  --popover-foreground: hsl(0 0% 98%);
-  --primary: hsl(0 0% 90%);
-  --primary-foreground: hsl(0 0% 5%);
-  --secondary: hsl(0 0% 22%);
-  --secondary-foreground: hsl(0 0% 98%);
-  --muted: hsl(0 0% 22%);
-  --muted-foreground: hsl(0 0% 65%);
-  --accent: hsl(0 0% 10%);
-  --accent-foreground: hsl(0 0% 98%);
-  --destructive: hsl(0 72% 50%);
-  --border: hsl(0 0% 100% / 10%);
-  --input: hsl(0 0% 100% / 15%);
-  --ring: hsl(0 0% 55%);
-  --sidebar: hsl(0 0% 16%);
-  --sidebar-foreground: hsl(0 0% 98%);
-  --sidebar-primary: hsl(220 80% 60%);
-  --sidebar-primary-foreground: hsl(0 0% 98%);
-  --sidebar-accent: hsl(0 0% 22%);
-  --sidebar-accent-foreground: hsl(0 0% 98%);
-  --sidebar-border: hsl(0 0% 100% / 10%);
-  --sidebar-ring: hsl(0 0% 55%);
+    --bg-dark: hsl(220, 6%, 10%); /* main page background (black) */
+    --bg: hsl(0 0% 20%); /* secondary surfaces / panels */
+    --bg-light: hsl(0 0% 30%); /* raised elements / cards / hover surfaces */
+    --bg-light-hover: hsl(0 0% 60%);
+
+    --text: hsl(0 0% 95%); /* primary text (almost white) */
+    --text-muted: hsl(0 0% 70%); /* secondary / muted text */
+
+    --border: hsl(0 0 30%); /* standard borders (dark gray) */
+    --border-muted: hsl(300 0% 18%); /* very subtle / disabled borders */
+
+    --highlight: hsl(0 0% 50%); /* neutral highlight / emphasis */
+
+    --destructive: hsl(0 50% 30%); /* destructive actions (dark red) */
+    --destructive-hover: hsl(0 50% 40%); /* destructive hover state */
+    --destructive-text: hsl(0 85% 65%);
+
+    --special: hsl(217 91% 60%); /* special / primary accent (blue) */
+    --special-hover: hsl(217 91% 70%); /* hover state for special accent */
+
+    --logo-start: hsl(217 100% 85%);
+    --logo-end: hsl(217 91% 60%);
 }
-
-
-
-/*.lucide {
-  width: 40px;
-  height: 28px;
-}*/
 
 @layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
-}
+    * {
+        @apply border-border;
+    }
+    body {
+        @apply bg-bg-dark text-text;
+    }
+    /* Works for Chrome, Edge, and Safari */
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
 
+    ::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background-color: var(--bg); /* Your 50% gray */
+        border-radius: 9999px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background-color: var(--border);
+    }
+}

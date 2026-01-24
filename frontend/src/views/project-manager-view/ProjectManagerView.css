@@ -1,13 +1,14 @@
 .entry {
     text-align: start;
-    cursor: default;
+    cursor: pointer;
 }
 
 .entry:hover {
     text-decoration: underline;
 }
 
-.entry .lucide, .create-project .lucide {
+.entry .lucide,
+.create-project .lucide {
     height: revert-layer;
     width: revert-layer;
 }

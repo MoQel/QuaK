@@ -8,7 +8,8 @@ import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.register.JpaQuantum
 import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.register.JpaRegister;
 import org.mapstruct.*;
 
-@Mapper(componentModel = MappingConstants.ComponentModel.SPRING,
+@Mapper(
+        componentModel = MappingConstants.ComponentModel.SPRING,
         collectionMappingStrategy = CollectionMappingStrategy.TARGET_IMMUTABLE,
         uses = {QubitJpaMapper.class})
 public interface RegisterJpaMapper {
@@ -27,7 +28,8 @@ public interface RegisterJpaMapper {
 
     @AfterMapping
     default void linkQubits(@MappingTarget JpaRegister entity) {
-        if (entity instanceof JpaQuantumRegister quantumRegister && quantumRegister.getQubits() != null) {
+        if (entity instanceof JpaQuantumRegister quantumRegister
+                && quantumRegister.getQubits() != null) {
             quantumRegister.getQubits().forEach(qubit -> qubit.setRegister(quantumRegister));
         }
     }

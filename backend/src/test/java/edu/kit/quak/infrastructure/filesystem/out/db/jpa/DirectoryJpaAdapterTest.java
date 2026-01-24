@@ -1,42 +1,30 @@
 package edu.kit.quak.infrastructure.filesystem.out.db.jpa;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import edu.kit.quak.core.filesystem.model.Directory;
 import edu.kit.quak.core.filesystem.model.File;
 import edu.kit.quak.core.filesystem.model.FileElement;
 import edu.kit.quak.core.filesystem.model.Project;
-import edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper.DirectoryJpaMapperImpl;
-import edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper.FileElementJpaMapperImpl;
-import edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper.FileJpaMapperImpl;
-import edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper.ProjectJpaMapperImpl;
 import edu.kit.quak.shared.tags.IntegrationTest;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.*;
-
 @IntegrationTest
 @DataJpaTest
-@Import({
-        DirectoryJpaAdapter.class,
-        ProjectJpaAdapter.class,
-        DirectoryJpaMapperImpl.class,
-        FileJpaMapperImpl.class,
-        ProjectJpaMapperImpl.class,
-        FileElementJpaMapperImpl.class
-})
+@org.springframework.context.annotation.ComponentScan(
+        basePackages = "edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper")
+@Import({DirectoryJpaAdapter.class, ProjectJpaAdapter.class})
 @Transactional
 class DirectoryJpaAdapterTest {
 
-    @Autowired
-    private DirectoryJpaAdapter adapter;
+    @Autowired private DirectoryJpaAdapter adapter;
 
-    @Autowired
-    private ProjectJpaAdapter projectAdapter;
+    @Autowired private ProjectJpaAdapter projectAdapter;
 
     @Test
     void saveAndFindDirectory_withFiles() {
@@ -47,7 +35,6 @@ class DirectoryJpaAdapterTest {
         File file = new File("File.txt", dir.getId());
 
         dir.addChild(file);
-
 
         Directory saved = adapter.save(dir);
 
