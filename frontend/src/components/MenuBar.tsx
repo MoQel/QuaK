@@ -43,25 +43,6 @@ export const IdeMenubar = ({ visiblePanels, togglePanel, resetLayout } : IdeMenu
 
             <Menubar className="border-none">
 
-
-                <MenubarMenu>
-                    <MenubarTrigger className="text-base px-4 py-2 cursor-pointer data-[state=open]:bg-accent">Edit</MenubarTrigger>
-                    <MenubarContent>
-                        <MenubarItem>
-                            <Undo className="w-4 h-4 mr-2" />
-                            Undo <MenubarShortcut>⌘Z</MenubarShortcut>
-                        </MenubarItem>
-                        <MenubarItem>
-                            <Redo className="w-4 h-4 mr-2" />
-                            Redo <MenubarShortcut>⇧⌘Z</MenubarShortcut>
-                        </MenubarItem>
-                        <MenubarItem>
-                            <Undo className="w-4 h-4 mr-2" />
-                            Select All <MenubarShortcut>⌘Z</MenubarShortcut>
-                        </MenubarItem>
-                    </MenubarContent>
-                </MenubarMenu>
-
                 <MenubarMenu>
                     <MenubarTrigger className="text-base px-4 py-2 cursor-pointer data-[state=open]:bg-accent">View</MenubarTrigger>
                     <MenubarContent>
@@ -144,7 +125,6 @@ export const IdeMenubar = ({ visiblePanels, togglePanel, resetLayout } : IdeMenu
                     <MenubarTrigger className="text-base px-4 py-2 cursor-pointer data-[state=open]:bg-accent">Help</MenubarTrigger>
                     <MenubarContent>
                         <MenubarItem>Guided Tour </MenubarItem>
-                        <MenubarItem>Shortcuts</MenubarItem>
                         <MenubarSeparator />
                         <MenubarItem>About us</MenubarItem>
                     </MenubarContent>
