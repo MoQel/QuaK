@@ -1,4 +1,4 @@
-import {Dispatch, SetStateAction, useState} from "react";
+import {useState} from "react";
 
 import {ResizableHandle, ResizablePanel, ResizablePanelGroup} from "@/components/ui/resizable.tsx";
 import {GateLibraryView} from "@/views/library-view/GateLibraryView.tsx";
