@@ -1,5 +1,5 @@
 import * as React from "react"
-import { GripVerticalIcon } from "lucide-react"
+import { GripVerticalIcon, X } from "lucide-react"
 import * as ResizablePrimitive from "react-resizable-panels"
 
 import { cn } from "@/lib/utils"
@@ -21,10 +21,31 @@ function ResizablePanelGroup({
 }
 
 function ResizablePanel({
-  ...props
-}: React.ComponentProps<typeof ResizablePrimitive.Panel>) {
-  return <ResizablePrimitive.Panel data-slot="resizable-panel" {...props} />
+                          className,
+                          children,
+                          onClose,
+                          ...props
+                        }: React.ComponentProps<typeof ResizablePrimitive.Panel> & { onClose?: () => void }) {
+  return (
+      <ResizablePrimitive.Panel
+          data-slot="resizable-panel"
+          className={cn("relative", className)}
+          {...props}
+      >
+        {onClose && (
+            <button
+                onClick={onClose}
+                className="absolute top-2 right-2 z-[99] p-1 rounded-sm  text-text-muted hover:text-text cursor-pointer transition-colors"
+                title="Close Panel"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+        )}
+        {children}
+      </ResizablePrimitive.Panel>
+  )
 }
+
 
 function ResizableHandle({
   withHandle,

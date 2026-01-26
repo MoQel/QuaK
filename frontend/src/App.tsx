@@ -8,6 +8,11 @@ import {ProjectManagerView} from "@/views/project-manager-view/ProjectManagerVie
 import {ResultsView} from "@/views/results-view/ResultsView.tsx";
 import {Toaster} from "@/components/ui/sonner.tsx";
 import {File} from "@/views/project-manager-view/util/FileElement.tsx";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import {
+    togglePanel,
+    resetLayout,
+} from "@/store/slices/layoutSlice";
 import {InspectorView} from "@/views/inspector-view/InspectorView.tsx";
 import {GateDefinitionResponse} from "@/api/dto/library.ts";
 import {IdeMenubar} from "@/components/MenuBar.tsx";
@@ -16,44 +21,31 @@ function App() {
     const [file, openFile] = useState(undefined as unknown as File);
     const [selectedGate, setSelectedGate] = useState<GateDefinitionResponse | undefined>(undefined);
 
-    const togglePanel = (key: keyof typeof visiblePanels) => {
-        setVisiblePanels(prev => ({ ...prev, [key]: !prev[key] }));
-    };
-    const [visiblePanels, setVisiblePanels] = useState({
-        file: true,
-        circuit: true,
-        code: true,
-        results: true,
-        inspector: true,
-        library: true,
-    });
+    const visiblePanels = useAppSelector((state) => state.layout.visiblePanels);
+    const topLayout = useAppSelector((state) => state.layout.topLayout);
+    const dispatch = useAppDispatch();
 
-    const resetLayout = () => {
-        setVisiblePanels({
-            file: true,
-            circuit: true,
-            code: true,
-            results: true,
-            inspector: true,
-            library: true,
-        });
-    };
     const isTopVisible = visiblePanels.file || visiblePanels.circuit || visiblePanels.code;
     const isBottomVisible = visiblePanels.library || visiblePanels.inspector || visiblePanels.results;
 
-
-
     return (
         <div className="flex flex-col h-[calc(100vh-65px)] overflow-hidden bg-background text-foreground">
-            <IdeMenubar visiblePanels={visiblePanels} togglePanel={togglePanel} resetLayout={resetLayout} />
-            <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+            <IdeMenubar
+                visiblePanels={visiblePanels}
+                togglePanel={(key) => dispatch(togglePanel(key))}
+                resetLayout={() => dispatch(resetLayout())}
+            />            <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
 
             <div className={`w-full ${!isTopVisible ? "hidden" : (isBottomVisible ? "h-[30%]" : "flex-1")}`}>
                 <ResizablePanelGroup direction="horizontal">
 
                     {visiblePanels.file && (
                         <>
-                            <ResizablePanel defaultSize={20} minSize={15}>
+                            <ResizablePanel
+                                defaultSize={topLayout[0]}
+                                minSize={15}
+                                onClose={() => dispatch(togglePanel('file'))}
+                            >
                                 <ProjectManagerView onFileSelect={openFile} />
                             </ResizablePanel>
                             {(visiblePanels.circuit || visiblePanels.code) && <ResizableHandle withHandle />}
@@ -62,7 +54,10 @@ function App() {
 
                     {visiblePanels.circuit && (
                         <>
-                            <ResizablePanel defaultSize={50}>
+                            <ResizablePanel
+                                defaultSize={topLayout[1]}
+                                onClose={() => dispatch(togglePanel('circuit'))}
+                            >
                                 <CircuitView />
                             </ResizablePanel>
                             {visiblePanels.code && <ResizableHandle withHandle />}
@@ -70,7 +65,10 @@ function App() {
                     )}
 
                     {visiblePanels.code && (
-                        <ResizablePanel defaultSize={30}>
+                        <ResizablePanel
+                            defaultSize={topLayout[2]}
+                            onClose={() => dispatch(togglePanel('code'))}
+                        >
                             <TextEditorView file={file} />
                         </ResizablePanel>
                     )}
