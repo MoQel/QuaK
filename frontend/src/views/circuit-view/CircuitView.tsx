@@ -113,7 +113,7 @@ export function CircuitView() {
                                         Yes, reset everything
                                     </Button>
                                     <Button
-                                        variant="ghost"
+                                        variant="secondary"
                                         size="sm"
                                         onClick={() => setIsPopoverOpen(false)}
                                     >
@@ -148,7 +148,7 @@ export function CircuitView() {
                         {Array.from({ length: maxWireLength }, (_, i) => (
                             <Fragment key={i}>
                                 <span
-                                    className={`${styles.gateIndexSize} text-gray-500 shrink-0 justify-center border-r border-gray-500`}
+                                    className={`${styles.gateIndexSize} text-text shrink-0 justify-center border-r border-border`}
                                 >
                                     {i + 1}
                                 </span>

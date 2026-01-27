@@ -96,7 +96,7 @@ function InspectorViewComponent( {gate, onClear}: InspectorViewProps) {
             </CardHeader>
 
             {/* Scrollable Content Area */}
-            <div className="flex-1 min-h-0 overflow-y-auto">
+            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
                 <CardContent className="space-y-6 pt-6">
 
                     {/* Bra-Ket / Operator definition */}

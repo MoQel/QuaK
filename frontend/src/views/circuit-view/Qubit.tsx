@@ -85,7 +85,7 @@ export function Qubit({id, name, gates, qubitIndex, onNameChange, onDelete, onGa
             <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
                 <PopoverTrigger asChild>
                     <Button
-                        className={`${styles.qubit} font-mono text-sm font-bold select-none`}
+                        className={`${styles.qubit} font-mono text-sm font-bold select-none focus-visible:ring-0 focus-visible:ring-offset-0 hover:bg-bg-light`}
                     >
                         |{name}&gt;
                     </Button>
@@ -101,7 +101,7 @@ export function Qubit({id, name, gates, qubitIndex, onNameChange, onDelete, onGa
                             />
                             <Button
                                 type="submit"
-                                className="w-16 h-8 font-mono text-sm font-bold select-none"
+                                className="w-16 h-8 font-mono text-sm font-bold select-none bg-special text-white hover:bg-special-hover"
                             >
                                 Save
                             </Button>
@@ -118,8 +118,8 @@ export function Qubit({id, name, gates, qubitIndex, onNameChange, onDelete, onGa
                 </PopoverContent>
             </Popover>
 
-            <div className={`${styles.qubitWireSpacing} relative flex-grow self-stretch`}>
-                <div className={`${styles.lines} absolute top-1/2 w-full`}/>
+            <div className={`${styles.qubitWireSpacing}  relative flex-grow self-stretch`}>
+                <div className={`${styles.lines}  absolute top-1/2 w-full`}/>
                 <div className="flex items-center h-full w-full relative z-10">
                 {/* Actual quantum Gates */}
                     {visibleGates.map((gate, index) => (

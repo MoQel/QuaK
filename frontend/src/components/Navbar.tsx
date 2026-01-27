@@ -26,10 +26,10 @@ export const Navbar: React.FC = () => {
   };
 
   return (
-    <nav className="bg-background border-b border-border px-6 py-4 flex justify-between items-center sticky top-0 z-50">
+    <nav className="bg-bg-dark border-b border-border px-6 py-4 flex justify-between items-center sticky top-0 z-50">
       <div className="flex items-center gap-8">
         <Link to="/" className="flex items-center gap-2">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-100 to-blue-500 bg-clip-text text-transparent">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-logo-start to-logo-end bg-clip-text text-transparent">
             QuaK
           </h1>
         </Link>
@@ -70,14 +70,14 @@ export const Navbar: React.FC = () => {
               />
             )}
             <div className="flex flex-col">
-              <span className="text-sm font-medium text-foreground">{user.name}</span>
-              <span className="text-xs text-muted-foreground">{user.email}</span>
+              <span className="text-sm font-medium text-text">{user.name}</span>
+              <span className="text-xs text-text-muted">{user.email}</span>
             </div>
           </div>
 
           <button
             onClick={logout}
-            className="flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg transition-colors duration-200"
+            className="flex items-center gap-2 px-4 py-2 bg-destructive hover:bg-destructive-hover text-text border-border rounded-lg transition-colors duration-200 cursor-pointer"
           >
             <LogOut className="size-4" />
             <span className="text-sm font-medium">Logout</span>

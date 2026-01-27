@@ -8,7 +8,7 @@ interface GateLibraryProps {
 
 function GateLibrary({ gates, onGateClick }: GateLibraryProps) {
     return (
-        <div className="grid grid-cols-5 gap-4">
+        <div className="grid grid-cols-5 gap-4 content-start">
         {gates.map((gate: GateDefinitionResponse) => (
                 <LibraryElement
                     key={`${gate.id}`}

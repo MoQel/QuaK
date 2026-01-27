@@ -15,8 +15,6 @@ import { Base64 } from 'js-base64';
 const DEFAULT_VALUE = "No File Selected";
 const DEFAULT_LANG = "plaintext";
 
-
-
 const languages = [
     new Language("plaintext", "txt"),
     new Language("python", "py"),
@@ -30,13 +28,37 @@ function QLPEditor({ file }: { file: File | undefined }) {
     const [readOnly, setReadOnly] = useState<boolean>(true);
     const contentId: RefObject<string | undefined> = useRef(undefined);
     const { theme } = useTheme();
-    const monacoTheme = theme === "dark" ? "vs-dark" : "vs-light";
 
-    const onMount = (monaco: Monaco) => {
-        for (const language of languages) {
-            if (language.base !== undefined) language.register(monaco);
-        }
+    const applyMonacoTheme = (monaco: Monaco) => {
+        monaco.editor.defineTheme("my-theme", {
+            base: theme === "dark" ? "vs-dark" : "vs",
+            inherit: true,
+            rules: [],
+            colors: {
+                "editor.background": theme === "dark" ? "#18191B" : "#E6E6E6",
+                "editorLineNumber.foreground": theme === "dark" ? "#858585" : "#666666",
+                "editorLineNumber.activeForeground": theme === "dark" ? "#858585" : "#666666"
+            },
+        });
+
+        monaco.editor.setTheme("my-theme");
     };
+
+    const monacoRef = useRef<Monaco | null>(null);
+
+
+    const beforeMount = (monaco: Monaco) => {
+        monacoRef.current = monaco;
+
+        for (const language of languages) {
+            if (language.base !== undefined) {
+                language.register(monaco);
+            }
+        }
+
+        applyMonacoTheme(monaco);
+    };
+
 
     const onSave = (id: string | undefined) => {
         if (!id) return Promise.resolve();
@@ -65,6 +87,12 @@ function QLPEditor({ file }: { file: File | undefined }) {
                 }
             });
     };
+
+    useEffect(() => {
+        if (monacoRef.current) {
+            applyMonacoTheme(monacoRef.current);
+        }
+    }, [theme]);
 
     useEffect(() => {
         if (!file?.id) {
@@ -148,7 +176,7 @@ function QLPEditor({ file }: { file: File | undefined }) {
             <div className="h-full">
                 <Editor
                     language={lang}
-                    theme={monacoTheme}
+                    theme="my-theme"
                     value={value}
                     onChange={(value) => setValue(value || '')}
                     options={{
@@ -156,7 +184,7 @@ function QLPEditor({ file }: { file: File | undefined }) {
                         wordWrap: 'on',
                         readOnly: readOnly,
                     }}
-                    beforeMount={onMount}
+                    beforeMount={beforeMount}
                 />
             </div>
         </div>
