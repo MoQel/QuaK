@@ -149,6 +149,9 @@ tasks.named("bootRun") {
 		}
 	}
 
+	// Pass system properties (like -Dspring.profiles.active=dev) to the application
+	systemProperties System.properties
+
 	// Allow passing custom JVM arguments via -PjvmArgs="..."
 	if (project.hasProperty('jvmArgs')) {
 		jvmArgs(project.property('jvmArgs').toString().split('\\s+'))

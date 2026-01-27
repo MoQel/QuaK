@@ -21,15 +21,21 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 /**
- * Development-only security configuration. This configuration is ONLY active when the "dev" profile
+ * Development-only security configuration. This configuration is ONLY active
+ * when the "dev" profile
  * is enabled.
  *
- * <p>It replaces OAuth2/OIDC with simple HTTP Basic authentication for easier development and API
+ * <p>
+ * It replaces OAuth2/OIDC with simple HTTP Basic authentication for easier
+ * development and API
  * testing via Swagger UI.
  *
- * <p>Usage: Run with -Dspring.profiles.active=dev or set SPRING_PROFILES_ACTIVE=dev
+ * <p>
+ * Usage: Run with -Dspring.profiles.active=dev or set
+ * SPRING_PROFILES_ACTIVE=dev
  *
- * <p>Default credentials: admin / admin
+ * <p>
+ * Default credentials: admin / admin
  */
 @Configuration
 @EnableWebSecurity
@@ -70,7 +76,7 @@ public class DevSecurityConfig {
                                 // H2 Console for development
                                 "/h2-console/**",
                                 // Auth status endpoint
-                                "/api/auth/status")
+                                "/api/auth/user")
                         .permitAll()
                         .anyRequest()
                         .authenticated())

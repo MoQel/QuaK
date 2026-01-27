@@ -15,7 +15,7 @@ docker-compose -f docker-compose.dev.yaml up -d database
 Starts the backend service using Gradle. It will be available at `http://localhost:8080`.
 // turbo
 ```bash
-cd backend && ./gradlew bootRun
+cd backend && ./gradlew bootRun -Dspring.profiles.active=dev
 ```
 
 ### 3. Start Frontend
