@@ -22,17 +22,29 @@ export const store = configureStore({
     preloadedState: loadState(),
 });
 
-// --- 3. Save State to LocalStorage on Change ---
-store.subscribe(() => {
+
+const saveState = (state: RootState) => {
     try {
-        const state = store.getState();
-        const stateToSave = {
-            layout: state.layout
-        };
-        localStorage.setItem("ide-layout-settings", JSON.stringify(stateToSave));
+        const serializedState = JSON.stringify({ layout: state.layout });
+        localStorage.setItem("ide-layout", serializedState);
     } catch (e) {
-        console.warn("Could not save layout state to local storage", e);
+        console.warn("Could not save state", e);
     }
+};
+
+let debounceTimer: ReturnType<typeof setTimeout>;
+
+
+store.subscribe(() => {
+
+    if (debounceTimer) {
+        clearTimeout(debounceTimer);
+    }
+    const currentState = store.getState();
+
+    debounceTimer = setTimeout(() => {
+        saveState(currentState);
+    }, 300);
 });
 
 export type RootState = ReturnType<typeof store.getState>;

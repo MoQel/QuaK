@@ -8,7 +8,8 @@ import {ProjectManagerView} from "@/views/project-manager-view/ProjectManagerVie
 import {ResultsView} from "@/views/results-view/ResultsView.tsx";
 import {Toaster} from "@/components/ui/sonner.tsx";
 import {File} from "@/views/project-manager-view/util/FileElement.tsx";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { useAppDispatch } from "@/hooks/useAppDispatch";
+import { useAppSelector } from "@/hooks/useAppSelector";
 import {
     togglePanel,
     resetLayout,
