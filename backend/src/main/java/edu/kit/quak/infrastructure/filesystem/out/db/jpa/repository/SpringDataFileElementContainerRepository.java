@@ -6,8 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-public interface SpringDataFileElementContainerRepository
-        extends JpaRepository<JpaFileElementContainer<?>, String> {
+public interface SpringDataFileElementContainerRepository extends JpaRepository<JpaFileElementContainer<?>, String> {
 
     /**
      * Finds the owner ID of the root project containing the given element. Uses a recursive CTE to
@@ -16,9 +15,7 @@ public interface SpringDataFileElementContainerRepository
      * @param elementId The ID of any file element (file, directory, or project)
      * @return The UUID of the user who owns the root project
      */
-    @Query(
-            value =
-                    """
+    @Query(value = """
             WITH RECURSIVE hierarchy(id, parent_id, owner_id, dtype) AS (
                 SELECT id, parent_id, owner_id, dtype
                 FROM file_element
@@ -29,7 +26,6 @@ public interface SpringDataFileElementContainerRepository
                 INNER JOIN hierarchy h ON fe.id = h.parent_id
             )
             SELECT owner_id FROM hierarchy WHERE dtype = 'project'
-            """,
-            nativeQuery = true)
+            """, nativeQuery = true)
     Optional<Object> findProjectOwnerIdByElementId(@Param("elementId") String elementId);
 }

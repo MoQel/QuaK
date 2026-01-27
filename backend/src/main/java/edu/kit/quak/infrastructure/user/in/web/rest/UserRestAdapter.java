@@ -26,10 +26,7 @@ public class UserRestAdapter {
     private final UserDtoMapper userDtoMapper;
     private final AuthenticationMapper authMapper;
 
-    public UserRestAdapter(
-            UserServicePort userService,
-            UserDtoMapper userDtoMapper,
-            AuthenticationMapper authMapper) {
+    public UserRestAdapter(UserServicePort userService, UserDtoMapper userDtoMapper, AuthenticationMapper authMapper) {
         this.userService = userService;
         this.userDtoMapper = userDtoMapper;
         this.authMapper = authMapper;

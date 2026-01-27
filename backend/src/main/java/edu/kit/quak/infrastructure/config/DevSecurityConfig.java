@@ -51,31 +51,29 @@ public class DevSecurityConfig {
         http.cors(cors -> cors.configurationSource(devCorsConfigurationSource()))
                 // Disable CSRF for easier API testing in development
                 .csrf(csrf -> csrf.disable())
-                .authorizeHttpRequests(
-                        auth ->
-                                auth.requestMatchers(
-                                                "/",
-                                                "/error",
-                                                "/*.js",
-                                                "/*.css",
-                                                "/*.html",
-                                                "/*.ico",
-                                                "/*.png",
-                                                "/*.jpg",
-                                                "/assets/**",
-                                                // OpenAPI / Swagger endpoints
-                                                "/swagger-ui/**",
-                                                "/swagger-ui.html",
-                                                "/api-docs/**",
-                                                "/api-docs.yaml",
-                                                "/v3/api-docs/**",
-                                                // H2 Console for development
-                                                "/h2-console/**",
-                                                // Auth status endpoint
-                                                "/api/auth/status")
-                                        .permitAll()
-                                        .anyRequest()
-                                        .authenticated())
+                .authorizeHttpRequests(auth -> auth.requestMatchers(
+                                "/",
+                                "/error",
+                                "/*.js",
+                                "/*.css",
+                                "/*.html",
+                                "/*.ico",
+                                "/*.png",
+                                "/*.jpg",
+                                "/assets/**",
+                                // OpenAPI / Swagger endpoints
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/api-docs/**",
+                                "/api-docs.yaml",
+                                "/v3/api-docs/**",
+                                // H2 Console for development
+                                "/h2-console/**",
+                                // Auth status endpoint
+                                "/api/auth/status")
+                        .permitAll()
+                        .anyRequest()
+                        .authenticated())
                 // Use HTTP Basic Auth instead of OAuth2 for development
                 .httpBasic(Customizer.withDefaults())
                 // Allow frames for H2 console
@@ -86,12 +84,11 @@ public class DevSecurityConfig {
 
     @Bean
     public UserDetailsService devUserDetailsService() {
-        UserDetails devUser =
-                User.builder()
-                        .username(devUsername)
-                        .password(passwordEncoder().encode(devPassword))
-                        .roles("USER", "ADMIN")
-                        .build();
+        UserDetails devUser = User.builder()
+                .username(devUsername)
+                .password(passwordEncoder().encode(devPassword))
+                .roles("USER", "ADMIN")
+                .build();
 
         return new InMemoryUserDetailsManager(devUser);
     }
@@ -105,8 +102,7 @@ public class DevSecurityConfig {
     public CorsConfigurationSource devCorsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(List.of(frontendUrl, "http://localhost:8080"));
-        configuration.setAllowedMethods(
-                List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
 

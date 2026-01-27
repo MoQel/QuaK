@@ -50,8 +50,7 @@ public class DirectoryRestAdapter {
 
     @GetMapping("/{dId}")
     @PreAuthorize("isAuthenticated()")
-    public DirectoryContentsResponse retrieveDirectory(
-            @PathVariable String dId, Authentication authentication) {
+    public DirectoryContentsResponse retrieveDirectory(@PathVariable String dId, Authentication authentication) {
         User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
         Directory dir = service.retrieveDirectory(dId, user);
         return mapper.toContentsResponse(dir);
@@ -67,9 +66,7 @@ public class DirectoryRestAdapter {
     @PatchMapping("/{dId}")
     @PreAuthorize("isAuthenticated()")
     public DirectoryDetailsResponse renameDirectory(
-            @PathVariable String dId,
-            @RequestBody DirectoryRequest request,
-            Authentication authentication) {
+            @PathVariable String dId, @RequestBody DirectoryRequest request, Authentication authentication) {
         User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
         Directory updatedDirectory = service.renameDirectory(dId, request.name(), user);
         return mapper.toDetailsResponse(updatedDirectory);

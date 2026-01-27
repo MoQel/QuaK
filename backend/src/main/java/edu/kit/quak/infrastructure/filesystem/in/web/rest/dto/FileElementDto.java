@@ -10,8 +10,7 @@ public abstract class FileElementDto {
     private final Instant createdOn;
     private final Instant lastAccess;
 
-    public FileElementDto(
-            String id, String name, String type, Instant createdOn, Instant lastAccess) {
+    public FileElementDto(String id, String name, String type, Instant createdOn, Instant lastAccess) {
         this.id = id;
         this.name = name;
         this.type = type;

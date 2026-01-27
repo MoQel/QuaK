@@ -50,8 +50,7 @@ public class FileRestAdapter {
 
     @GetMapping("/{fId}")
     @PreAuthorize("isAuthenticated()")
-    public FileDetailsResponse retrieveFile(
-            @PathVariable String fId, Authentication authentication) {
+    public FileDetailsResponse retrieveFile(@PathVariable String fId, Authentication authentication) {
         User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
         File domainFile = service.retrieveFile(fId, user);
         return mapper.toDetailsResponse(domainFile);
@@ -67,9 +66,7 @@ public class FileRestAdapter {
     @PatchMapping("/{fId}")
     @PreAuthorize("isAuthenticated()")
     public FileDetailsResponse renameFile(
-            @PathVariable String fId,
-            @RequestBody RenameFileRequest request,
-            Authentication authentication) {
+            @PathVariable String fId, @RequestBody RenameFileRequest request, Authentication authentication) {
         User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
         File updatedFile = service.renameFile(fId, request.name(), user);
         return mapper.toDetailsResponse(updatedFile);
@@ -77,8 +74,7 @@ public class FileRestAdapter {
 
     @GetMapping("/{fId}/content")
     @PreAuthorize("isAuthenticated()")
-    public FileContentResponse getFileContent(
-            @PathVariable String fId, Authentication authentication) {
+    public FileContentResponse getFileContent(@PathVariable String fId, Authentication authentication) {
         User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
         byte[] content = service.getFileContent(fId, user);
         return mapper.toContentResponse(content);
@@ -87,9 +83,7 @@ public class FileRestAdapter {
     @PutMapping("/{fId}/content")
     @PreAuthorize("isAuthenticated()")
     public void setFileContent(
-            @PathVariable String fId,
-            @RequestBody FileContentRequest fileContent,
-            Authentication authentication) {
+            @PathVariable String fId, @RequestBody FileContentRequest fileContent, Authentication authentication) {
         User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
         service.setFileContent(fId, fileContent.content(), fileContent.contentType(), user);
     }

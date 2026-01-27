@@ -12,9 +12,7 @@ import org.mapstruct.MappingConstants;
 public abstract class FileJpaMapper {
 
     @Mapping(target = "id", source = "id")
-    @Mapping(
-            target = "parent",
-            ignore = true) // Is set automatically - we never store Files directly
+    @Mapping(target = "parent", ignore = true) // Is set automatically - we never store Files directly
     public abstract JpaFile toJpaEntity(File domain);
 
     @Mapping(target = "id", source = "id")

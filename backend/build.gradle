@@ -3,8 +3,7 @@ plugins {
 	id 'org.springframework.boot' version '3.4.5'
 	id 'io.spring.dependency-management' version '1.1.7'
 	id "com.github.node-gradle.node" version "7.1.0"
-	id 'com.diffplug.spotless' version '6.25.0'
-	id 'checkstyle'
+	id 'com.diffplug.spotless' version '8.2.0'
 }
 apply from: 'node.gradle'
 
@@ -24,20 +23,13 @@ repositories {
 spotless {
 	java {
 		target 'src/*/java/**/*.java'
-		googleJavaFormat().aosp().reflowLongStrings()
+		importOrder()
 		removeUnusedImports()
+		palantirJavaFormat()
 		formatAnnotations()
-		trimTrailingWhitespace()
-		endWithNewline()
 	}
 }
 
-checkstyle {
-	toolVersion = '10.12.5'
-	configFile = file("${project.projectDir}/config/checkstyle/checkstyle.xml")
-	ignoreFailures = false
-	maxWarnings = 0
-}
 
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
@@ -59,12 +51,6 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'org.springframework.session:spring-session-core'
-	
-	// OpenAPI / Swagger Documentation
-	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.5'
-	implementation 'io.swagger.core.v3:swagger-annotations-jakarta'
-	implementation 'io.swagger.core.v3:swagger-models-jakarta'
-	
 	runtimeOnly 'com.h2database:h2'
 	runtimeOnly "org.mariadb.jdbc:mariadb-java-client:3.5.4"
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'

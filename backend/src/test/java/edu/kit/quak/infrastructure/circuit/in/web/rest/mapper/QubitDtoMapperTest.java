@@ -15,17 +15,18 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class QubitDtoMapperTest {
-    @Spy private GateDtoMapperImpl gateDtoMapper;
+    @Spy
+    private GateDtoMapperImpl gateDtoMapper;
 
-    @InjectMocks private QubitDtoMapperImpl mapper;
+    @InjectMocks
+    private QubitDtoMapperImpl mapper;
 
     @Test
     void toResponse() {
         // Arrange
         Qubit qubit = new Qubit();
         qubit.addOperation(
-                qubit.getOperations().size(),
-                new ElementaryQuantumGate(ElementaryQuantumGateDefinitionIdentifier.H));
+                qubit.getOperations().size(), new ElementaryQuantumGate(ElementaryQuantumGateDefinitionIdentifier.H));
 
         // Act
         QubitResponse response = mapper.toResponse(qubit);

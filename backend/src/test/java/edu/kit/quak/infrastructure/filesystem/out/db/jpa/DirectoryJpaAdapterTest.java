@@ -22,9 +22,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 class DirectoryJpaAdapterTest {
 
-    @Autowired private DirectoryJpaAdapter adapter;
+    @Autowired
+    private DirectoryJpaAdapter adapter;
 
-    @Autowired private ProjectJpaAdapter projectAdapter;
+    @Autowired
+    private ProjectJpaAdapter projectAdapter;
 
     @Test
     void saveAndFindDirectory_withFiles() {

@@ -17,10 +17,7 @@ public interface CircuitServicePort {
     QuantumCircuit deleteQubit(String circuitId, String qubitId);
 
     QuantumCircuit addGate(
-            String circuitId,
-            ElementaryQuantumGateDefinitionIdentifier definitionId,
-            int qubitIdx,
-            int positionIdx);
+            String circuitId, ElementaryQuantumGateDefinitionIdentifier definitionId, int qubitIdx, int positionIdx);
 
     QuantumCircuit moveGate(String circuitId, String id, int qubitIdx, int positionIdx);
 

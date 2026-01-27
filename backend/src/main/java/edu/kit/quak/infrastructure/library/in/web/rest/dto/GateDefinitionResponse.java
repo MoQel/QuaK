@@ -19,12 +19,9 @@ public record GateDefinitionResponse(
     }
 
     public record InspectorInfoResponse(
-            String operatorDefinition,
-            List<TruthTableEntryResponse> truthTable,
-            MatrixInfoResponse matrix) {}
+            String operatorDefinition, List<TruthTableEntryResponse> truthTable, MatrixInfoResponse matrix) {}
 
     public record TruthTableEntryResponse(String input, String output) {}
 
-    public record MatrixInfoResponse(
-            String display, int rows, int cols, List<List<String>> computable) {}
+    public record MatrixInfoResponse(String display, int rows, int cols, List<List<String>> computable) {}
 }

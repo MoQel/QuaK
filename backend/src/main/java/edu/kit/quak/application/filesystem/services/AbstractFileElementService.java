@@ -50,15 +50,10 @@ public abstract class AbstractFileElementService<T extends FileElement<T>> {
         }
 
         // Use efficient single-query ownership lookup
-        UUID projectOwnerId =
-                delegator
-                        .findProjectOwnerIdByElementId(parentId)
-                        .orElseThrow(
-                                () ->
-                                        new IllegalStateException(
-                                                "Could not find root project for element with"
-                                                        + " parent ID: "
-                                                        + parentId));
+        UUID projectOwnerId = delegator
+                .findProjectOwnerIdByElementId(parentId)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Could not find root project for element with" + " parent ID: " + parentId));
 
         if (!projectOwnerId.equals(user.getId())) {
             log.warn(
@@ -80,13 +75,11 @@ public abstract class AbstractFileElementService<T extends FileElement<T>> {
      */
     protected FileElementContainer<?> getParentById(String parentId) {
         if (parentId == null) {
-            throw new IllegalStateException(
-                    getElementTypeName() + " has no parent - corrupt state");
+            throw new IllegalStateException(getElementTypeName() + " has no parent - corrupt state");
         }
         return delegator
                 .findContainerById(parentId)
-                .orElseThrow(
-                        () -> new IllegalStateException("Parent not found with ID: " + parentId));
+                .orElseThrow(() -> new IllegalStateException("Parent not found with ID: " + parentId));
     }
 
     /**
@@ -103,13 +96,8 @@ public abstract class AbstractFileElementService<T extends FileElement<T>> {
                 .filter(this::isCorrectType)
                 .map(this::castToType)
                 .findFirst()
-                .orElseThrow(
-                        () ->
-                                new IllegalStateException(
-                                        getElementTypeName()
-                                                + " not found in parent container (ID: "
-                                                + elementId
-                                                + ")"));
+                .orElseThrow(() -> new IllegalStateException(
+                        getElementTypeName() + " not found in parent container (ID: " + elementId + ")"));
     }
 
     /**

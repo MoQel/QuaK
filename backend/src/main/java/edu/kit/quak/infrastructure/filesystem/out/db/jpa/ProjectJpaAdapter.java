@@ -63,8 +63,6 @@ public class ProjectJpaAdapter implements ProjectRepositoryPort {
 
     @Override
     public Optional<UUID> findProjectOwnerIdByElementId(String elementId) {
-        return containerRepository
-                .findProjectOwnerIdByElementId(elementId)
-                .map(JpaUtils::convertToUuid);
+        return containerRepository.findProjectOwnerIdByElementId(elementId).map(JpaUtils::convertToUuid);
     }
 }

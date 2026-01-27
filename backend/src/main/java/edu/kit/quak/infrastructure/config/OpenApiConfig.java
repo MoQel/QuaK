@@ -30,11 +30,9 @@ public class OpenApiConfig {
     @Bean
     public OpenAPI quakOpenAPI() {
         return new OpenAPI()
-                .info(
-                        new Info()
-                                .title("QuaK API")
-                                .description(
-                                        """
+                .info(new Info()
+                        .title("QuaK API")
+                        .description("""
                                                 RESTful API for the QuaK application - A quantum computing project management platform.
 
                                                 ## Authentication
@@ -45,46 +43,27 @@ public class OpenApiConfig {
 
                                                 **Production Mode**: OAuth2/OIDC via Google
                                                 """)
-                                .version("0.0.1-SNAPSHOT")
-                                .contact(
-                                        new Contact()
-                                                .name("QuaK Development Team")
-                                                .email("quak@kit.edu"))
-                                .license(
-                                        new License()
-                                                .name("MIT License")
-                                                .url("https://opensource.org/licenses/MIT")))
-                .servers(
-                        List.of(
-                                new Server()
-                                        .url("http://localhost:" + serverPort)
-                                        .description("Local Development Server")))
+                        .version("0.0.1-SNAPSHOT")
+                        .contact(new Contact().name("QuaK Development Team").email("quak@kit.edu"))
+                        .license(new License().name("MIT License").url("https://opensource.org/licenses/MIT")))
+                .servers(List.of(
+                        new Server().url("http://localhost:" + serverPort).description("Local Development Server")))
                 // Add security scheme for HTTP Basic Auth (used in dev mode)
-                .components(
-                        new Components()
-                                .addSecuritySchemes(
-                                        "basicAuth",
-                                        new SecurityScheme()
-                                                .type(SecurityScheme.Type.HTTP)
-                                                .scheme("basic")
-                                                .description(
-                                                        "HTTP Basic Authentication (dev mode:"
-                                                                + " admin/admin)")))
+                .components(new Components()
+                        .addSecuritySchemes(
+                                "basicAuth",
+                                new SecurityScheme()
+                                        .type(SecurityScheme.Type.HTTP)
+                                        .scheme("basic")
+                                        .description("HTTP Basic Authentication (dev mode:" + " admin/admin)")))
                 // Apply security globally
                 .addSecurityItem(new SecurityRequirement().addList("basicAuth"))
-                .tags(
-                        List.of(
-                                new Tag()
-                                        .name("Authentication")
-                                        .description(
-                                                "Authentication and user session management"
-                                                        + " endpoints"),
-                                new Tag()
-                                        .name("Projects")
-                                        .description("Project management operations"),
-                                new Tag()
-                                        .name("Files")
-                                        .description("File and directory management operations"),
-                                new Tag().name("Gates").description("Quantum gate operations")));
+                .tags(List.of(
+                        new Tag()
+                                .name("Authentication")
+                                .description("Authentication and user session management" + " endpoints"),
+                        new Tag().name("Projects").description("Project management operations"),
+                        new Tag().name("Files").description("File and directory management operations"),
+                        new Tag().name("Gates").description("Quantum gate operations")));
     }
 }

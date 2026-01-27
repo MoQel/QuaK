@@ -14,13 +14,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class OperationJpaMapperTest {
-    @InjectMocks private OperationJpaMapperImpl mapper;
+    @InjectMocks
+    private OperationJpaMapperImpl mapper;
 
     @Test
     void domainToEntity() {
         // Arrange
-        ElementaryQuantumGate domain =
-                new ElementaryQuantumGate(ElementaryQuantumGateDefinitionIdentifier.CX);
+        ElementaryQuantumGate domain = new ElementaryQuantumGate(ElementaryQuantumGateDefinitionIdentifier.CX);
 
         // Act
         JpaQuantumOperation entity = mapper.toEntity(domain);

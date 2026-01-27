@@ -44,14 +44,9 @@ public class DirectoryJpaAdapter implements DirectoryRepositoryPort {
         // mapping
         // else we would lose the bidirectional behavior in the db
         if (container.getParentId() != null) {
-            JpaFileElementContainer<?> parent =
-                    parentRepository
-                            .findById(container.getParentId())
-                            .orElseThrow(
-                                    () ->
-                                            new IllegalArgumentException(
-                                                    "Parent not found: "
-                                                            + container.getParentId()));
+            JpaFileElementContainer<?> parent = parentRepository
+                    .findById(container.getParentId())
+                    .orElseThrow(() -> new IllegalArgumentException("Parent not found: " + container.getParentId()));
             jpaDirectory.setParent(parent);
         }
         return directoryMapper.toDomainEntity(directoryRepository.save(jpaDirectory));
@@ -64,8 +59,6 @@ public class DirectoryJpaAdapter implements DirectoryRepositoryPort {
 
     @Override
     public Optional<UUID> findProjectOwnerIdByElementId(String elementId) {
-        return parentRepository
-                .findProjectOwnerIdByElementId(elementId)
-                .map(JpaUtils::convertToUuid);
+        return parentRepository.findProjectOwnerIdByElementId(elementId).map(JpaUtils::convertToUuid);
     }
 }

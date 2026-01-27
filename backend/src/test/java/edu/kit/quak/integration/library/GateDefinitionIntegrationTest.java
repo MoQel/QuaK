@@ -19,7 +19,8 @@ import org.springframework.test.web.servlet.MockMvc;
 @WithMockUser(username = "tester", roles = "USER")
 class GateDefinitionIntegrationTest {
 
-    @Autowired MockMvc mockMvc;
+    @Autowired
+    MockMvc mockMvc;
 
     @Test
     void getAllGates_endToEnd() throws Exception {
