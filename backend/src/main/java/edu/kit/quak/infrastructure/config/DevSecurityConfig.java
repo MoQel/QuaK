@@ -1,5 +1,7 @@
 package edu.kit.quak.infrastructure.config;
 
+import edu.kit.quak.application.user.ports.in.OidcSyncServicePort;
+import edu.kit.quak.application.user.ports.in.OidcUserInfo;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -14,8 +16,12 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -52,6 +58,12 @@ public class DevSecurityConfig {
     @Value("${app.frontend.url:http://localhost:5173}")
     private String frontendUrl;
 
+    private final OidcSyncServicePort oidcUserSyncService;
+
+    public DevSecurityConfig(OidcSyncServicePort oidcUserSyncService) {
+        this.oidcUserSyncService = oidcUserSyncService;
+    }
+
     @Bean
     public SecurityFilterChain devSecurityFilterChain(HttpSecurity http) throws Exception {
         http.cors(cors -> cors.configurationSource(devCorsConfigurationSource()))
@@ -59,6 +71,8 @@ public class DevSecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth.requestMatchers(
                                 "/",
+                                "/login/**",
+                                "/oauth2/**",
                                 "/error",
                                 "/*.js",
                                 "/*.css",
@@ -80,12 +94,60 @@ public class DevSecurityConfig {
                         .permitAll()
                         .anyRequest()
                         .authenticated())
-                // Use HTTP Basic Auth instead of OAuth2 for development
+                // Use HTTP Basic Auth AND OAuth2 for development
                 .httpBasic(Customizer.withDefaults())
+                .oauth2Login(oauth2 -> oauth2.successHandler(devAuthenticationSuccessHandler()))
                 // Allow frames for H2 console
                 .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()));
 
         return http.build();
+    }
+
+    @Bean
+    public AuthenticationSuccessHandler devAuthenticationSuccessHandler() {
+        SimpleUrlAuthenticationSuccessHandler delegate = new SimpleUrlAuthenticationSuccessHandler();
+        delegate.setDefaultTargetUrl(frontendUrl + "/");
+        delegate.setAlwaysUseDefaultTargetUrl(true);
+
+        return (request, response, authentication) -> {
+            if (authentication instanceof OAuth2AuthenticationToken oauthToken) {
+                OAuth2User principal = oauthToken.getPrincipal();
+                String registrationId = oauthToken.getAuthorizedClientRegistrationId();
+
+                OidcUserInfo userInfo = mapToUserInfo(principal);
+                edu.kit.quak.core.user.model.User user = oidcUserSyncService.syncUser(registrationId, userInfo);
+                request.getSession().setAttribute("userId", user.getId());
+            }
+            delegate.onAuthenticationSuccess(request, response, authentication);
+        };
+    }
+
+    private OidcUserInfo mapToUserInfo(OAuth2User principal) {
+        String sub = principal.getAttribute("sub") != null
+                ? principal.getAttribute("sub").toString()
+                : (principal.getAttribute("id") != null
+                        ? principal.getAttribute("id").toString()
+                        : null);
+
+        Boolean emailVerified = principal.getAttribute("email_verified") != null
+                ? (Boolean) principal.getAttribute("email_verified")
+                : true;
+
+        String picture = principal.getAttribute("picture") != null
+                ? principal.getAttribute("picture").toString()
+                : (principal.getAttribute("avatar_url") != null
+                        ? principal.getAttribute("avatar_url").toString()
+                        : null);
+
+        // Logic to handle different attribute names across providers
+        return new OidcUserInfo(
+                sub,
+                principal.getAttribute("email"),
+                emailVerified,
+                principal.getAttribute("name"),
+                principal.getAttribute("given_name"),
+                principal.getAttribute("family_name"),
+                picture);
     }
 
     @Bean

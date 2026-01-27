@@ -19,10 +19,12 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
 import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
@@ -36,7 +38,8 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
- * Security configuration for the application. Configures OAuth2/OIDC authentication, CORS, CSRF,
+ * Security configuration for the application. Configures OAuth2/OIDC
+ * authentication, CORS, CSRF,
  * and authorization rules.
  */
 @Configuration
@@ -119,7 +122,7 @@ public class SecurityConfig {
             @Override
             public OAuth2AuthorizationRequest resolve(jakarta.servlet.http.HttpServletRequest request) {
                 OAuth2AuthorizationRequest authorizationRequest = defaultResolver.resolve(request);
-                return authorizationRequest != null ? customizeAuthorizationRequest(authorizationRequest) : null;
+                return authorizationRequest != null ? customizeAuthorizationRequest(authorizationRequest, null) : null;
             }
 
             @Override
@@ -127,12 +130,15 @@ public class SecurityConfig {
                     jakarta.servlet.http.HttpServletRequest request, String clientRegistrationId) {
                 OAuth2AuthorizationRequest authorizationRequest =
                         defaultResolver.resolve(request, clientRegistrationId);
-                return authorizationRequest != null ? customizeAuthorizationRequest(authorizationRequest) : null;
+                return authorizationRequest != null
+                        ? customizeAuthorizationRequest(authorizationRequest, clientRegistrationId)
+                        : null;
             }
         };
     }
 
-    private OAuth2AuthorizationRequest customizeAuthorizationRequest(OAuth2AuthorizationRequest authorizationRequest) {
+    private OAuth2AuthorizationRequest customizeAuthorizationRequest(
+            OAuth2AuthorizationRequest authorizationRequest, String registrationId) {
 
         // Generate PKCE code verifier and challenge
         String codeVerifier = generateCodeVerifier();
@@ -142,7 +148,11 @@ public class SecurityConfig {
                 .additionalParameters(params -> {
                     params.put("code_challenge", codeChallenge);
                     params.put("code_challenge_method", "S256");
-                    params.put("prompt", "select_account");
+                    // Only add prompt=select_account for Google to avoid issues with other
+                    // providers
+                    if ("google".equalsIgnoreCase(registrationId)) {
+                        params.put("prompt", "select_account");
+                    }
                 })
                 .attributes(attrs -> {
                     attrs.put("code_verifier", codeVerifier);
@@ -173,27 +183,46 @@ public class SecurityConfig {
         delegate.setAlwaysUseDefaultTargetUrl(true);
 
         return (request, response, authentication) -> {
-            if (authentication.getPrincipal()
-                    instanceof org.springframework.security.oauth2.core.oidc.user.OidcUser oidcUser) {
-                if (authentication
-                        instanceof
-                        org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken
-                                oauthToken) {
-                    String registrationId = oauthToken.getAuthorizedClientRegistrationId();
-                    OidcUserInfo userInfo = new OidcUserInfo(
-                            oidcUser.getSubject(),
-                            oidcUser.getEmail(),
-                            oidcUser.getEmailVerified(),
-                            oidcUser.getFullName(),
-                            oidcUser.getGivenName(),
-                            oidcUser.getFamilyName(),
-                            oidcUser.getPicture());
-                    edu.kit.quak.core.user.model.User user = oidcUserSyncService.syncUser(registrationId, userInfo);
-                    request.getSession().setAttribute("userId", user.getId());
-                }
+            if (authentication instanceof OAuth2AuthenticationToken oauthToken) {
+                OAuth2User principal = oauthToken.getPrincipal();
+                String registrationId = oauthToken.getAuthorizedClientRegistrationId();
+
+                // Map attributes dynamically based on provider
+                OidcUserInfo userInfo = mapToUserInfo(principal);
+
+                edu.kit.quak.core.user.model.User user = oidcUserSyncService.syncUser(registrationId, userInfo);
+                request.getSession().setAttribute("userId", user.getId());
             }
             delegate.onAuthenticationSuccess(request, response, authentication);
         };
+    }
+
+    private OidcUserInfo mapToUserInfo(OAuth2User principal) {
+        String sub = principal.getAttribute("sub") != null
+                ? principal.getAttribute("sub").toString()
+                : (principal.getAttribute("id") != null
+                        ? principal.getAttribute("id").toString()
+                        : null);
+
+        Boolean emailVerified = principal.getAttribute("email_verified") != null
+                ? (Boolean) principal.getAttribute("email_verified")
+                : true;
+
+        String picture = principal.getAttribute("picture") != null
+                ? principal.getAttribute("picture").toString()
+                : (principal.getAttribute("avatar_url") != null
+                        ? principal.getAttribute("avatar_url").toString()
+                        : null);
+
+        // Logic to handle different attribute names across providers
+        return new OidcUserInfo(
+                sub,
+                principal.getAttribute("email"),
+                emailVerified,
+                principal.getAttribute("name"),
+                principal.getAttribute("given_name"),
+                principal.getAttribute("family_name"),
+                picture);
     }
 
     @Bean

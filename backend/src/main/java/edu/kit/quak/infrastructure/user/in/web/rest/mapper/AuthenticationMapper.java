@@ -7,7 +7,7 @@ import edu.kit.quak.infrastructure.user.in.web.rest.dto.RestAuthStatusResponse;
 import edu.kit.quak.infrastructure.user.in.web.rest.dto.RestLogoutResponse;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
-import org.springframework.security.oauth2.core.oidc.user.OidcUser;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Component;
 
 /**
@@ -38,12 +38,15 @@ public class AuthenticationMapper {
         }
 
         if (authentication instanceof OAuth2AuthenticationToken oauthToken) {
-            if (!(authentication.getPrincipal() instanceof OidcUser oidcUser)) {
-                throw new edu.kit.quak.application.user.exceptions.UserNotFoundException(
-                        "Invalid principal type", "Expected OIDC user");
-            }
+            OAuth2User principal = oauthToken.getPrincipal();
             String issuer = oauthToken.getAuthorizedClientRegistrationId();
-            String subject = oidcUser.getSubject();
+
+            // GitHub uses "id" as the unique identifier, Google (OIDC) uses "sub"
+            Object subAttr = principal.getAttribute("sub");
+            String subject = subAttr != null
+                    ? subAttr.toString()
+                    : principal.getAttribute("id").toString();
+
             return new AuthenticatedUser(null, issuer, subject);
         }
 
