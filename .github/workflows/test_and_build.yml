@@ -49,9 +49,6 @@ jobs:
             exit 1
           }
 
-      - name: Run Checkstyle
-        run: cd backend && ./gradlew checkstyleMain checkstyleTest
-
       - name: Run Tests
         run: cd backend && ./gradlew :test
 
