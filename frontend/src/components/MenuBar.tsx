@@ -38,13 +38,13 @@ const ViewMenu = ({ visiblePanels, togglePanel, resetLayout }: IdeMenubarProps) 
 
     return (
         <MenubarMenu>
-            <MenubarTrigger className="text-base px-4 py-2 cursor-pointer data-[state=open]:bg-accent">
+            <MenubarTrigger className="text-sm px-3 py-1 h-7 cursor-pointer data-[state=open]: rounded-sm">
                 View
             </MenubarTrigger>
             <MenubarContent>
                 <MenubarSub>
                     <MenubarSubTrigger inset>Theme</MenubarSubTrigger>
-                    <MenubarSubContent>
+                    <MenubarSubContent >
                         <MenubarCheckboxItem checked={isDark} onCheckedChange={toggleTheme}>
                             Dark
                         </MenubarCheckboxItem>
@@ -56,7 +56,7 @@ const ViewMenu = ({ visiblePanels, togglePanel, resetLayout }: IdeMenubarProps) 
 
                 <MenubarSub>
                     <MenubarSubTrigger inset>Panels</MenubarSubTrigger>
-                    <MenubarSubContent>
+                    <MenubarSubContent >
                         {(Object.keys(visiblePanels) as Array<keyof VisiblePanelsState>).map((key) => (
                             <MenubarCheckboxItem
                                 key={key}
@@ -83,7 +83,7 @@ const ViewMenu = ({ visiblePanels, togglePanel, resetLayout }: IdeMenubarProps) 
 const HelpMenu = () => {
     return (
         <MenubarMenu>
-            <MenubarTrigger className="text-base px-4 py-2 cursor-pointer data-[state=open]:bg-accent">
+            <MenubarTrigger className="text-sm px-3 py-1 h-7 cursor-pointer data-[state=open]:bg-accent rounded-sm">
                 Help
             </MenubarTrigger>
             <MenubarContent>
@@ -97,8 +97,8 @@ const HelpMenu = () => {
 
 export const IdeMenubar = (props: IdeMenubarProps) => {
     return (
-        <div className="border-b px-6 py-2 flex items-center">
-            <Menubar className="border-none">
+        <div className="border-b px-3 h-8 flex items-center bg-muted/20">
+            <Menubar className="border-none h-auto p-0 space-x-1 bg-transparent">
                 <ViewMenu {...props} />
                 <HelpMenu />
             </Menubar>

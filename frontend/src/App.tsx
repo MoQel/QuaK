@@ -1,4 +1,4 @@
-import {useState} from "react";
+import {useState, useEffect} from "react";
 
 import {ResizableHandle, ResizablePanel, ResizablePanelGroup} from "@/components/ui/resizable.tsx";
 import {GateLibraryView} from "@/views/library-view/GateLibraryView.tsx";
@@ -10,13 +10,10 @@ import {Toaster} from "@/components/ui/sonner.tsx";
 import {File} from "@/views/project-manager-view/util/FileElement.tsx";
 import { useAppDispatch } from "@/hooks/useAppDispatch";
 import { useAppSelector } from "@/hooks/useAppSelector";
-import {
-    togglePanel,
-    resetLayout,
-} from "@/store/slices/layoutSlice";
 import {InspectorView} from "@/views/inspector-view/InspectorView.tsx";
 import {GateDefinitionResponse} from "@/api/dto/library.ts";
-import {IdeMenubar} from "@/components/MenuBar.tsx";
+import {togglePanel, resetLayout, setMenubarVisibility } from "@/store/slices/layoutSlice";
+import { IdeMenubar } from "@/components/MenuBar";
 
 function App() {
     const [file, openFile] = useState(undefined as unknown as File);
@@ -24,18 +21,29 @@ function App() {
 
     const visiblePanels = useAppSelector((state) => state.layout.visiblePanels);
     const topLayout = useAppSelector((state) => state.layout.topLayout);
+    const isMenubarVisible = useAppSelector((state) => state.layout.isMenubarVisible);
     const dispatch = useAppDispatch();
 
     const isTopVisible = visiblePanels.file || visiblePanels.circuit || visiblePanels.code;
     const isBottomVisible = visiblePanels.library || visiblePanels.inspector || visiblePanels.results;
 
+    useEffect(() => {
+        return () => {
+            dispatch(setMenubarVisibility(false));
+        };
+    }, [dispatch]);
+
     return (
         <div className="flex flex-col h-[calc(100vh-65px)] overflow-hidden bg-background text-foreground">
-            <IdeMenubar
-                visiblePanels={visiblePanels}
-                togglePanel={(key) => dispatch(togglePanel(key))}
-                resetLayout={() => dispatch(resetLayout())}
-            />            <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+            {isMenubarVisible && (
+                <IdeMenubar
+                    visiblePanels={visiblePanels}
+                    togglePanel={(key) => dispatch(togglePanel(key))}
+                    resetLayout={() => dispatch(resetLayout())}
+                />
+            )}
+
+            <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
 
             <div className={`w-full ${!isTopVisible ? "hidden" : (isBottomVisible ? "h-[30%]" : "flex-1")}`}>
                 <ResizablePanelGroup direction="horizontal">

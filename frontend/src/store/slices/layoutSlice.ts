@@ -11,6 +11,7 @@ export interface LayoutState {
     };
     topLayout: number[];
     bottomLayout: number[];
+    isMenubarVisible: boolean;
 }
 
 const initialState: LayoutState = {
@@ -24,6 +25,7 @@ const initialState: LayoutState = {
     },
     topLayout: [20, 50, 30],
     bottomLayout: [33, 34, 33],
+    isMenubarVisible: false,
 };
 
 export const layoutSlice = createSlice({
@@ -40,8 +42,14 @@ export const layoutSlice = createSlice({
         setBottomLayout: (state, action: PayloadAction<number[]>) => {
             state.bottomLayout = action.payload;
         },
+        toggleMenubar: (state) => {
+            state.isMenubarVisible = !state.isMenubarVisible;
+        },
+        setMenubarVisibility: (state, action: PayloadAction<boolean>) => {
+            state.isMenubarVisible = action.payload;
+        }
     },
 });
 
-export const { togglePanel, resetLayout, setTopLayout, setBottomLayout } = layoutSlice.actions;
+export const { togglePanel, resetLayout,  toggleMenubar, setMenubarVisibility   } = layoutSlice.actions;
 export default layoutSlice.reducer;

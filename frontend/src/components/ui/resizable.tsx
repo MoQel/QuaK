@@ -35,7 +35,7 @@ function ResizablePanel({
         {onClose && (
             <button
                 onClick={onClose}
-                className="absolute top-2 right-2 z-[99] p-1 rounded-sm  text-text-muted hover:text-text cursor-pointer transition-colors"
+                className="absolute top-2 right-2 p-1 rounded-sm  text-text-muted hover:text-text cursor-pointer transition-colors"
                 title="Close Panel"
             >
               <X className="h-3.5 w-3.5" />

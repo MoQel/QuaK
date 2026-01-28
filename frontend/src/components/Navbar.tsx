@@ -1,17 +1,26 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Home, User, Settings, LogOut } from 'lucide-react';
+import { Home, User, Settings, LogOut, Menu } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCurrentUser } from '@/hooks/useUser';
 import ThemeSwitch from "@/components/ThemeSwitch";
+import { Button } from "@/components/ui/button";
+
+import { useAppDispatch } from "@/hooks/useAppDispatch";
+import { useAppSelector } from "@/hooks/useAppSelector";
+import { toggleMenubar } from "@/store/slices/layoutSlice";
 
 export const Navbar: React.FC = () => {
   const location = useLocation();
+  const dispatch = useAppDispatch();
+
   const { logout } = useAuth();
   const { user } = useCurrentUser();
 
-  // Determine active tab based on current path
+  const isMenubarOpen = useAppSelector((state) => state.layout.isMenubarVisible);
+  const isIdeView = location.pathname.startsWith('/project');
+
   const getActiveTab = () => {
     if (location.pathname === '/' || location.pathname.startsWith('/home')) {
       return 'home';
@@ -33,6 +42,19 @@ export const Navbar: React.FC = () => {
             QuaK
           </h1>
         </Link>
+
+        {isIdeView && (
+            <div className="border-l border-border pl-4">
+              <Button
+                  variant={isMenubarOpen ? "secondary" : "ghost"}
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => dispatch(toggleMenubar())}
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+            </div>
+        )}
 
         <Tabs value={getActiveTab()} className="w-auto">
           <TabsList>

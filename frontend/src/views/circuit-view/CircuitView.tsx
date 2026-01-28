@@ -83,7 +83,7 @@ export function CircuitView() {
             <CardContent className="flex flex-col h-full">
 
                 {/* Buttons */}
-                <div className="pb-5 flex justify-end space-x-3">
+                <div className="pb-5 flex justify-end space-x-3 pr-6">
                     <Button onClick={addQubit} size="icon" className="size-8"><Plus /></Button>
                     <Button onClick={deleteLastQubit} size="icon" className="size-8" variant="destructive"><Minus /></Button>
                     <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
