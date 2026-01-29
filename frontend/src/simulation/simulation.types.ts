@@ -1,13 +1,4 @@
 /**
- * Defines the actual return value of the WASM library at runtime.
- * This corrects the often erroneous d.ts files of the library.
- */
-export interface QulacsComplex {
-    real: number;
-    imag: number;
-}
-
-/**
  * Emscripten objects have a delete method that is missing in the types.
  * This interface prevents the use of “any”.
  */

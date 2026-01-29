@@ -2,13 +2,13 @@ import { CircuitResponse, RegisterResponse } from '@/api/dto/circuit.ts';
 import * as qulacs from 'qulacs-wasm';
 import { GateDefinitionIdentifier } from '@/api/dto/GateDefinitionIdentifier.ts';
 import {
-    QulacsComplex,
     Disposable,
     SimulationResult,
     StateVectorEntry,
     SimulationOptions,
     SimulationMode,
 } from '@/simulation/simulation.types.ts';
+import { Complex } from 'qulacs-wasm';
 
 export class CircuitTranslator {
     // Default values, if options not set
@@ -19,17 +19,11 @@ export class CircuitTranslator {
     /**
      * Maps backend Circuit representation into qualacs simulation
      */
-    static translateAndRun(
-        circuitData: CircuitResponse,
-        options: SimulationOptions = {},
-    ): SimulationResult {
+    static translateAndRun(circuitData: CircuitResponse, options: SimulationOptions = {}): SimulationResult {
         const maxQubits = options.maxQubits ?? this.MAX_SIMULATION_QUBITS;
         const sampleCount = options.sampleCount ?? this.SAMPLE_COUNT;
         const mode: SimulationMode = options.mode ?? this.DEFAULT_MODE;
-        const consideredRegisters: RegisterResponse[] = this.filterRegisters(
-            circuitData,
-            maxQubits,
-        );
+        const consideredRegisters: RegisterResponse[] = this.filterRegisters(circuitData, maxQubits);
 
         // Not more than MAX_SIMULATION_QUBITS
         const consideredQubits = consideredRegisters.flatMap((reg) => reg.qubits);
@@ -42,6 +36,7 @@ export class CircuitTranslator {
 
         // Initialize Qulacs Circuit instances
         const state = new qulacs.QuantumState(numQubits);
+        state.set_zero_state();
         const circuit = new qulacs.QuantumCircuit(numQubits);
 
         try {
@@ -97,10 +92,7 @@ export class CircuitTranslator {
     /**
      * Builds the circuit based on the filtered registers.
      */
-    private static buildCircuit(
-        registers: RegisterResponse[],
-        circuit: qulacs.QuantumCircuit,
-    ): void {
+    private static buildCircuit(registers: RegisterResponse[], circuit: qulacs.QuantumCircuit): void {
         const allQubits = registers.flatMap((reg) => reg.qubits);
 
         if (allQubits.length === 0) return;
@@ -128,12 +120,21 @@ export class CircuitTranslator {
     /**
      * Applies a single gate to the circuit.
      * We do not support multi-qubit, rotation parameters and measurements yet!
+     *
+     * Please be aware that although the qulacs python library is well maintained,
+     * the last release of qulacs-wasm was a long time ago and there may be bugs in the gate mapping.
+     * In such a case, define the gate using the custom addMatrixGate method,
+     * which is a workaround for custom gates from their unitary matrix.
      */
+    // #TODO: Add multiqubit support when backend supports it
     private static applyGate(
         circuit: qulacs.QuantumCircuit,
         type: GateDefinitionIdentifier,
         targetIdx: number,
+        angle?: number,
     ) {
+        // #TODO: Hard coded rotation angle change when backend support custom angle
+        angle = Math.PI / 2;
         switch (type) {
             case 'H':
                 circuit.add_H_gate(targetIdx);
@@ -147,20 +148,27 @@ export class CircuitTranslator {
             case 'Z':
                 circuit.add_Z_gate(targetIdx);
                 break;
+            // Wrong mapping in Qulacs version 0.0.5
             case 'S':
-                circuit.add_S_gate(targetIdx);
+                this.addMatrixGate(circuit, targetIdx, [
+                    [1, 0],
+                    [0, { real: 0, imag: 1 }],
+                ]);
                 break;
             case 'T':
                 circuit.add_T_gate(targetIdx);
                 break;
+            // Inverted rotation direction in Qulacs version 0.0.5
             case 'RX':
-                circuit.add_RX_gate(targetIdx, Math.PI / 2);
+                circuit.add_RX_gate(targetIdx, -(angle || 0));
                 break;
+            // Inverted rotation direction in Qulacs version 0.0.5
             case 'RY':
-                circuit.add_RY_gate(targetIdx, Math.PI / 2);
+                circuit.add_RY_gate(targetIdx, -(angle || 0));
                 break;
+            // Inverted rotation direction in Qulacs version 0.0.5
             case 'RZ':
-                circuit.add_RZ_gate(targetIdx, Math.PI / 2);
+                circuit.add_RZ_gate(targetIdx, -(angle || 0));
                 break;
             case 'MEASURE':
                 break;
@@ -172,12 +180,9 @@ export class CircuitTranslator {
     /**
      * Extracts and formats the state vector.
      */
-    private static extractStateVector(
-        state: qulacs.QuantumState,
-        numQubits: number,
-    ): StateVectorEntry[] {
+    private static extractStateVector(state: qulacs.QuantumState, numQubits: number): StateVectorEntry[] {
         // safe cast
-        const vec = state.get_vector() as unknown as QulacsComplex[];
+        const vec = state.get_vector() as unknown as Complex[];
 
         return vec.map((complex, i) => {
             const { real, imag } = complex;
@@ -216,5 +221,14 @@ export class CircuitTranslator {
         }
 
         return counts;
+    }
+
+    private static addMatrixGate(
+        circuit: qulacs.QuantumCircuit,
+        target_index_list: number | number[],
+        matrix: (Complex | number)[][],
+    ) {
+        const gate = qulacs.DenseMatrix(target_index_list, matrix);
+        circuit.add_gate(gate);
     }
 }
