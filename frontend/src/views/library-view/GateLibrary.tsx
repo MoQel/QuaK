@@ -1,5 +1,5 @@
-import { LibraryElement } from "@/views/library-view/LibraryElement.tsx";
-import {GateDefinitionResponse} from "@/api/dto/library.ts";
+import { LibraryElement } from '@/views/library-view/LibraryElement.tsx';
+import { GateDefinitionResponse } from '@/api/dto/library.ts';
 
 interface GateLibraryProps {
     gates: GateDefinitionResponse[];
@@ -9,7 +9,7 @@ interface GateLibraryProps {
 function GateLibrary({ gates, onGateClick }: GateLibraryProps) {
     return (
         <div className="grid grid-cols-5 gap-4 content-start">
-        {gates.map((gate: GateDefinitionResponse) => (
+            {gates.map((gate: GateDefinitionResponse) => (
                 <LibraryElement
                     key={`${gate.id}`}
                     id={gate.id}
