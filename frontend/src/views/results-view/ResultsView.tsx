@@ -32,10 +32,7 @@ export function ResultsView({ circuit }: ResultsViewProps) {
 
     const { result, isCalculating, error } = useQuantumSimulation(circuit, options);
 
-    const numQubits = useMemo(
-        () => circuit?.registers.flatMap((r) => r.qubits).length || 0,
-        [circuit],
-    );
+    const numQubits = useMemo(() => circuit?.registers.flatMap((r) => r.qubits).length || 0, [circuit]);
 
     const chartData = useChartData(result, options, numQubits);
 
@@ -64,7 +61,7 @@ export function ResultsView({ circuit }: ResultsViewProps) {
     }
 
     return (
-        <Card className="w-full h-full border-l rounded-none flex flex-col">
+        <Card className="w-full h-full border-l rounded-none flex flex-col min-w-0">
             <CardHeader className="pb-2 border-b bg-card z-10 shrink-0">
                 <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
                     <div>
@@ -106,7 +103,7 @@ export function ResultsView({ circuit }: ResultsViewProps) {
                             }}
                             className="h-full p-4 pb-2"
                         >
-                            <ChartContainer config={chartConfig} className="h-full w-full">
+                            <ChartContainer config={chartConfig} className="h-full w-full aspect-auto">
                                 <BarChart
                                     data={chartData}
                                     margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
@@ -144,11 +141,7 @@ export function ResultsView({ circuit }: ResultsViewProps) {
 
                                     <ChartTooltip
                                         cursor={{ fill: 'var(--bg-light-hover)', opacity: 0.3 }}
-                                        content={
-                                            <CustomTooltipContent
-                                                sampleCount={options.sampleCount}
-                                            />
-                                        }
+                                        content={<CustomTooltipContent sampleCount={options.sampleCount} />}
                                     />
 
                                     <Bar dataKey="prob" radius={[4, 4, 0, 0]}>
