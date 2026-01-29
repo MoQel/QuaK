@@ -97,11 +97,9 @@ const HelpMenu = () => {
 
 export const IdeMenubar = (props: IdeMenubarProps) => {
     return (
-        <div className="border-b px-3 h-8 flex items-center bg-muted/20">
-            <Menubar className="border-none h-auto p-0 space-x-1 bg-transparent">
-                <ViewMenu {...props} />
-                <HelpMenu />
-            </Menubar>
-        </div>
+        <Menubar className="border-none bg-transparent p-0 ml-2">
+            <ViewMenu {...props} />
+            <HelpMenu />
+        </Menubar>
     );
 };

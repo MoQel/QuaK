@@ -12,8 +12,7 @@ import { useAppDispatch } from "@/hooks/useAppDispatch";
 import { useAppSelector } from "@/hooks/useAppSelector";
 import {InspectorView} from "@/views/inspector-view/InspectorView.tsx";
 import {GateDefinitionResponse} from "@/api/dto/library.ts";
-import {togglePanel, resetLayout, setMenubarVisibility } from "@/store/slices/layoutSlice";
-import { IdeMenubar } from "@/components/MenuBar";
+import {togglePanel, setMenubarVisibility } from "@/store/slices/layoutSlice";
 
 function App() {
     const [file, openFile] = useState(undefined as unknown as File);
@@ -21,7 +20,6 @@ function App() {
 
     const visiblePanels = useAppSelector((state) => state.layout.visiblePanels);
     const topLayout = useAppSelector((state) => state.layout.topLayout);
-    const isMenubarVisible = useAppSelector((state) => state.layout.isMenubarVisible);
     const dispatch = useAppDispatch();
 
     const isTopVisible = visiblePanels.file || visiblePanels.circuit || visiblePanels.code;
@@ -35,13 +33,6 @@ function App() {
 
     return (
         <div className="flex flex-col h-[calc(100vh-65px)] overflow-hidden bg-background text-foreground">
-            {isMenubarVisible && (
-                <IdeMenubar
-                    visiblePanels={visiblePanels}
-                    togglePanel={(key) => dispatch(togglePanel(key))}
-                    resetLayout={() => dispatch(resetLayout())}
-                />
-            )}
 
             <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
 

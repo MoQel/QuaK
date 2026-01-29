@@ -12,7 +12,6 @@ export const Layout: React.FC = () => {
         <div className={isIDE ? "h-screen flex flex-col overflow-hidden" : "min-h-screen flex flex-col"}>
             <Navbar />
 
-            {/* Key part: for IDE, main becomes a fixed-height box under navbar */}
             <main className={isIDE ? "flex-1 min-h-0 overflow-hidden relative" : "flex-1 w-full"}>
                 <Outlet />
             </main>

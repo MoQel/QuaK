@@ -36,12 +36,7 @@ export const layoutSlice = createSlice({
             state.visiblePanels[action.payload] = !state.visiblePanels[action.payload];
         },
         resetLayout: () => initialState,
-        setTopLayout: (state, action: PayloadAction<number[]>) => {
-            state.topLayout = action.payload;
-        },
-        setBottomLayout: (state, action: PayloadAction<number[]>) => {
-            state.bottomLayout = action.payload;
-        },
+
         toggleMenubar: (state) => {
             state.isMenubarVisible = !state.isMenubarVisible;
         },
