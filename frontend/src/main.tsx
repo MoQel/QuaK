@@ -7,7 +7,6 @@ import { ThemeProvider } from "@/theme";
 
 // Enable dark mode globally
 //document.documentElement.classList.add('dark');
-
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ThemeProvider>

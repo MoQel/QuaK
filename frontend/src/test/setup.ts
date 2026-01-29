@@ -1,11 +1,11 @@
-import '@testing-library/jest-dom'
-import { cleanup } from '@testing-library/react'
-import { afterEach } from 'vitest'
+import '@testing-library/jest-dom';
+import { cleanup } from '@testing-library/react';
+import { afterEach } from 'vitest';
 
 // Cleanup after each test
 afterEach(() => {
-    cleanup()
-})
+    cleanup();
+});
 
 // Mock window.matchMedia
 Object.defineProperty(window, 'matchMedia', {
@@ -14,21 +14,29 @@ Object.defineProperty(window, 'matchMedia', {
         matches: false,
         media: query,
         onchange: null,
-        addListener: () => { }, // deprecated
-        removeListener: () => { }, // deprecated
-        addEventListener: () => { },
-        removeEventListener: () => { },
+        addListener: () => {}, // deprecated
+        removeListener: () => {}, // deprecated
+        addEventListener: () => {},
+        removeEventListener: () => {},
         dispatchEvent: () => false,
     }),
-})
+});
 
 // Mock IntersectionObserver
 global.IntersectionObserver = class IntersectionObserver {
-    constructor() { }
-    disconnect() { }
-    observe() { }
+    constructor() {}
+    disconnect() {}
+    observe() {}
     takeRecords() {
-        return []
+        return [];
     }
-    unobserve() { }
-} as any
+    unobserve() {}
+} as any;
+
+// Global hack for Recharts (ResponsiveContainer)
+// JSDOM does not have a ResizeObserver, simulate it here
+global.ResizeObserver = class ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+};
