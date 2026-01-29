@@ -10,10 +10,7 @@ export type ChartConfig = {
     [k in string]: {
         label?: React.ReactNode;
         icon?: React.ComponentType;
-    } & (
-        | { color?: string; theme?: never }
-        | { color?: never; theme: Record<keyof typeof THEMES, string> }
-    );
+    } & ({ color?: string; theme?: never } | { color?: never; theme: Record<keyof typeof THEMES, string> });
 };
 
 type ChartContextProps = {
@@ -43,7 +40,7 @@ function ChartContainer({
     children: React.ComponentProps<typeof RechartsPrimitive.ResponsiveContainer>['children'];
 }) {
     const uniqueId = React.useId();
-    const chartId = `chart-${id || uniqueId.replace(/:/g, '')}`;
+    const chartId = `chart-${id || uniqueId.replaceAll(':', '')}`;
 
     return (
         <ChartContext.Provider value={{ config }}>
@@ -57,9 +54,7 @@ function ChartContainer({
                 {...props}
             >
                 <ChartStyle id={chartId} config={config} />
-                <RechartsPrimitive.ResponsiveContainer>
-                    {children}
-                </RechartsPrimitive.ResponsiveContainer>
+                <RechartsPrimitive.ResponsiveContainer>{children}</RechartsPrimitive.ResponsiveContainer>
             </div>
         </ChartContext.Provider>
     );
@@ -81,8 +76,7 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
 ${prefix} [data-chart=${id}] {
 ${colorConfig
     .map(([key, itemConfig]) => {
-        const color =
-            itemConfig.theme?.[theme as keyof typeof itemConfig.theme] || itemConfig.color;
+        const color = itemConfig.theme?.[theme as keyof typeof itemConfig.theme] || itemConfig.color;
         return color ? `  --color-${key}: ${color};` : null;
     })
     .join('\n')}
@@ -135,11 +129,7 @@ function ChartTooltipContent({
                 : itemConfig?.label;
 
         if (labelFormatter) {
-            return (
-                <div className={cn('font-medium', labelClassName)}>
-                    {labelFormatter(value, payload)}
-                </div>
-            );
+            return <div className={cn('font-medium', labelClassName)}>{labelFormatter(value, payload)}</div>;
         }
 
         if (!value) {
@@ -195,8 +185,7 @@ function ChartTooltipContent({
                                                             'w-1': indicator === 'line',
                                                             'w-0 border-[1.5px] border-dashed bg-transparent':
                                                                 indicator === 'dashed',
-                                                            'my-0.5':
-                                                                nestLabel && indicator === 'dashed',
+                                                            'my-0.5': nestLabel && indicator === 'dashed',
                                                         },
                                                     )}
                                                     style={
@@ -272,9 +261,7 @@ function ChartLegendContent({
                     return (
                         <div
                             key={item.value}
-                            className={cn(
-                                '[&>svg]:text-text-muted flex items-center gap-1.5 [&>svg]:h-3 [&>svg]:w-3',
-                            )}
+                            className={cn('[&>svg]:text-text-muted flex items-center gap-1.5 [&>svg]:h-3 [&>svg]:w-3')}
                         >
                             {itemConfig?.icon && !hideIcon ? (
                                 <itemConfig.icon />
@@ -320,11 +307,4 @@ function getPayloadConfigFromPayload(config: ChartConfig, payload: unknown, key:
     return configLabelKey in config ? config[configLabelKey] : config[key as keyof typeof config];
 }
 
-export {
-    ChartContainer,
-    ChartTooltip,
-    ChartTooltipContent,
-    ChartLegend,
-    ChartLegendContent,
-    ChartStyle,
-};
+export { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent, ChartStyle };

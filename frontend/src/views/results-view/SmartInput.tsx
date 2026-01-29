@@ -29,9 +29,9 @@ export const SmartInput = ({
     const commitValue = () => {
         if (localValue === '') return;
 
-        let num = parseFloat(localValue);
+        let num = Number.parseFloat(localValue);
 
-        if (isNaN(num)) {
+        if (Number.isNaN(num)) {
             setLocalValue(value.toString());
             return;
         }
