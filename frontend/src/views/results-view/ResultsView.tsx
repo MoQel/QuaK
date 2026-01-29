@@ -32,14 +32,41 @@ export function ResultsView({ circuit }: ResultsViewProps) {
 
     const { result, isCalculating, error } = useQuantumSimulation(circuit, options);
 
-    const numQubits = useMemo(() => circuit?.registers.flatMap((r) => r.qubits).length || 0, [circuit]);
+    const numQubits = useMemo(() => {
+        if (result?.simulatedQubits) {
+            return result.simulatedQubits;
+        }
+
+        if (!circuit) return 0;
+
+        const max = options.maxQubits ?? 8;
+        let count = 0;
+
+        for (const reg of circuit.registers) {
+            if (count + reg.qubits.length <= max) {
+                count += reg.qubits.length;
+            } else {
+                break;
+            }
+        }
+        return count;
+    }, [circuit, result, options.maxQubits]);
 
     const chartData = useChartData(result, options, numQubits);
 
+    const [showZero, setShowZero] = useState(false);
+    const [minProbability, setMinProbability] = useState(0.1); //standard is 0,1%
+
+    const visibleData = useMemo(() => {
+        if (showZero) return chartData;
+        console.log(chartData);
+        return chartData.filter((d) => d.prob >= minProbability);
+    }, [chartData, showZero, minProbability]);
+
     // Dynamic Width Calculation for Scrolling
     const minBarWidth = 40;
-    const computedMinWidth = Math.max(100, chartData.length * minBarWidth);
-    const shouldScroll = chartData.length > 12;
+    const computedMinWidth = Math.max(100, visibleData.length * minBarWidth);
+    const shouldScroll = visibleData.length > 12;
 
     const basisLabel = numQubits > 1 ? `|q${numQubits - 1}...q0>` : numQubits === 1 ? '|q0>' : '';
 
@@ -83,7 +110,14 @@ export function ResultsView({ circuit }: ResultsViewProps) {
                             </span>
                         </p>
                     </div>
-                    <SimulationToolbar options={options} setOptions={setOptions} />
+                    <SimulationToolbar
+                        options={options}
+                        setOptions={setOptions}
+                        showZero={showZero}
+                        setShowZero={setShowZero}
+                        minProbability={minProbability}
+                        setMinProbability={setMinProbability}
+                    />
                 </div>
             </CardHeader>
 
@@ -105,7 +139,7 @@ export function ResultsView({ circuit }: ResultsViewProps) {
                         >
                             <ChartContainer config={chartConfig} className="h-full w-full aspect-auto">
                                 <BarChart
-                                    data={chartData}
+                                    data={visibleData}
                                     margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
                                     accessibilityLayer
                                 >

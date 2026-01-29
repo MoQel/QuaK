@@ -1,16 +1,8 @@
-import {
-    SimulationOptions,
-    SimulationResult,
-    StateVectorEntry,
-} from '@/simulation/simulation.types.ts';
+import { SimulationOptions, SimulationResult, StateVectorEntry } from '@/simulation/simulation.types.ts';
 import { useMemo } from 'react';
 import { ChartDataPoint } from '@/views/results-view/CustomTooltipContent.tsx';
 
-export function useChartData(
-    result: SimulationResult | null,
-    options: SimulationOptions,
-    numQubits: number,
-) {
+export function useChartData(result: SimulationResult | null, options: SimulationOptions, numQubits: number) {
     return useMemo<ChartDataPoint[]>(() => {
         if (!result) return [];
         let data: ChartDataPoint[] = [];
@@ -47,10 +39,6 @@ export function useChartData(
                 imag: entry.imag,
                 phase: entry.phase,
             }));
-        }
-
-        if (numQubits >= 4) {
-            data = data.filter((d) => d.prob > 0.0001);
         }
 
         return data.sort((a, b) => a.state.localeCompare(b.state));

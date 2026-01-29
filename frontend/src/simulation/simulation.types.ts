@@ -12,6 +12,7 @@ export interface Disposable {
 export interface SimulationResult {
     stateVector: StateVectorEntry[];
     counts: Record<string, number> | null;
+    simulatedQubits: number;
 }
 
 export interface StateVectorEntry {

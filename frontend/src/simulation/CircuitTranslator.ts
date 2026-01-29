@@ -31,7 +31,7 @@ export class CircuitTranslator {
 
         // Early return if no circuit is present
         if (numQubits === 0) {
-            return { stateVector: [], counts: null };
+            return { stateVector: [], counts: null, simulatedQubits: numQubits };
         }
 
         // Initialize Qulacs Circuit instances
@@ -49,16 +49,16 @@ export class CircuitTranslator {
             if (mode === 'simulation') {
                 const rawResult = state.sampling(sampleCount);
                 const counts = this.aggregateSamples(rawResult, numQubits);
-                return { stateVector: [], counts: counts };
+                return { stateVector: [], counts: counts, simulatedQubits: numQubits };
             } else if (mode === 'exact') {
                 // Extract results
                 const stateVector = this.extractStateVector(state, numQubits);
 
-                return { stateVector, counts: null };
-            } else return { stateVector: [], counts: null };
+                return { stateVector, counts: null, simulatedQubits: numQubits };
+            } else return { stateVector: [], counts: null, simulatedQubits: numQubits };
         } catch (error) {
             console.error('Simulation failed:', error);
-            return { stateVector: [], counts: null };
+            return { stateVector: [], counts: null, simulatedQubits: numQubits };
         } finally {
             // Secure cast on our disposable interface for cleanup (type does not exist)
             (state as unknown as Disposable).delete();

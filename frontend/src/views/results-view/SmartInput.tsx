@@ -23,30 +23,34 @@ export const SmartInput = ({
     }, [value]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const newVal = e.target.value;
-        setLocalValue(newVal);
+        setLocalValue(e.target.value);
+    };
 
-        if (newVal === '') return;
+    const commitValue = () => {
+        if (localValue === '') return;
 
-        const num = parseInt(newVal);
-        if (!isNaN(num)) {
-            onChange(num);
+        let num = parseFloat(localValue);
+
+        if (isNaN(num)) {
+            setLocalValue(value.toString());
+            return;
         }
+
+        if (min !== undefined && num < min) num = min;
+        if (max !== undefined && num > max) num = max;
+
+        setLocalValue(num.toString());
+
+        onChange(num);
     };
 
     const handleBlur = () => {
-        const num = parseInt(localValue);
-        if (isNaN(num) || localValue === '') {
-            setLocalValue(value.toString());
-        } else {
-            let finalVal = num;
-            if (min !== undefined && finalVal < min) finalVal = min;
-            if (max !== undefined && finalVal > max) finalVal = max;
+        commitValue();
+    };
 
-            if (finalVal !== num) {
-                setLocalValue(finalVal.toString());
-                onChange(finalVal);
-            }
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
+            (e.target as HTMLInputElement).blur();
         }
     };
 
@@ -54,10 +58,11 @@ export const SmartInput = ({
         <Input
             id={id}
             type="number"
-            className="col-span-2 h-8 text-xs bg-bg border-border text-text"
+            className={`col-span-2 h-8 text-xs bg-bg border-border text-text`}
             value={localValue}
             onChange={handleChange}
             onBlur={handleBlur}
+            onKeyDown={handleKeyDown}
             min={min}
             max={max}
             step={step}
