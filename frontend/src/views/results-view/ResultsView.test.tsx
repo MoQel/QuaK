@@ -25,6 +25,7 @@ const mockSuccessResult: SimulationResult = {
         { state: '|1>', prob: 0.0, real: 0, imag: 0, phase: 0 },
     ],
     counts: { '0': 1024 },
+    simulatedQubits: 1,
 };
 
 describe('ResultsView Component', () => {

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Cell } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartConfig } from '@/components/ui/chart';
-import { RefreshCcw } from 'lucide-react';
+import { RefreshCcw, FilterX } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { SimulationToolbar } from '@/views/results-view/SimulationToolbar.tsx';
@@ -11,6 +11,7 @@ import { useQuantumSimulation } from '@/hooks/useQuantumSimulation.ts';
 import { SimulationOptions } from '@/simulation/simulation.types.ts';
 import { useChartData } from '@/hooks/useChartData.ts';
 import { getBarColor } from '@/views/results-view/util/quantum-utils.ts';
+import { Button } from '@/components/ui/button';
 
 const chartConfig = {
     prob: {
@@ -63,6 +64,8 @@ export function ResultsView({ circuit }: ResultsViewProps) {
         return chartData.filter((d) => d.prob >= minProbability);
     }, [chartData, showZero, minProbability]);
 
+    const isFilteredOut = chartData.length > 0 && visibleData.length === 0;
+
     // Dynamic Width Calculation for Scrolling
     const minBarWidth = 40;
     const computedMinWidth = Math.max(100, visibleData.length * minBarWidth);
@@ -71,7 +74,7 @@ export function ResultsView({ circuit }: ResultsViewProps) {
     const basisLabel = numQubits > 1 ? `|q${numQubits - 1}...q0>` : numQubits === 1 ? '|q0>' : '';
 
     // Empty State
-    if (!circuit || numQubits === 0) {
+    if (!circuit || (numQubits === 0 && !isCalculating)) {
         return (
             <Card className="w-full h-full border-l rounded-none bg-muted/10">
                 <CardHeader>
@@ -127,6 +130,24 @@ export function ResultsView({ circuit }: ResultsViewProps) {
                         <span className="font-bold mb-2">Simulation Error</span>
                         <span className="text-sm">{error}</span>
                     </div>
+                ) : isFilteredOut ? (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-text-muted z-10 p-4 text-center animate-in fade-in zoom-in-95 duration-200">
+                        <div className="bg-bg-light p-4 rounded-full mb-4 ring-1 ring-border shadow-sm">
+                            <FilterX className="w-8 h-8 text-text-muted" />
+                        </div>
+                        <h3 className="font-semibold text-text mb-1">No states visible</h3>
+                        <p className="text-sm max-w-[250px] mb-4">
+                            All states are below the current threshold of {minProbability.toFixed(1)}%.
+                        </p>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setMinProbability(0.1)}
+                            className="bg-bg-light border-border hover:bg-bg-light-hover text-text"
+                        >
+                            Reset Filter
+                        </Button>
+                    </div>
                 ) : (
                     <div className="w-full h-full overflow-x-auto overflow-y-hidden custom-scrollbar">
                         <div
@@ -146,8 +167,8 @@ export function ResultsView({ circuit }: ResultsViewProps) {
                                     <CartesianGrid
                                         vertical={false}
                                         strokeDasharray="3 3"
-                                        stroke="var(--border-muted)"
-                                        opacity={0.5}
+                                        stroke="var(--border)"
+                                        opacity={0.8}
                                     />
                                     <XAxis
                                         dataKey="state"
@@ -179,7 +200,7 @@ export function ResultsView({ circuit }: ResultsViewProps) {
                                     />
 
                                     <Bar dataKey="prob" radius={[4, 4, 0, 0]}>
-                                        {chartData.map((entry, index) => (
+                                        {visibleData.map((entry, index) => (
                                             <Cell
                                                 key={`cell-${index}`}
                                                 fill={getBarColor(entry.phase)}
