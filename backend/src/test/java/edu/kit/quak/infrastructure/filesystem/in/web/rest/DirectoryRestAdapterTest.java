@@ -80,7 +80,7 @@ class DirectoryRestAdapterTest {
     }
 
     @Test
-    @DisplayName("GET /directory/{id} returns contents")
+    @DisplayName("GET /directory/{quantumOperationId} returns contents")
     void retrieveDirectory() throws Exception {
         Directory dir = new Directory("MyDir", null);
         dir.setId("d-123");
@@ -93,7 +93,7 @@ class DirectoryRestAdapterTest {
     }
 
     @Test
-    @DisplayName("DELETE /directory/{id} calls service")
+    @DisplayName("DELETE /directory/{quantumOperationId} calls service")
     void deleteDirectory() throws Exception {
         mockMvc.perform(delete("/api/directory/d-123").with(csrf())).andExpect(status().isOk());
 
@@ -101,7 +101,7 @@ class DirectoryRestAdapterTest {
     }
 
     @Test
-    @DisplayName("PATCH /directory/{id} renames directory")
+    @DisplayName("PATCH /directory/{quantumOperationId} renames directory")
     void renameDirectory() throws Exception {
         Directory updated = new Directory("Renamed", null);
         updated.setId("d-123");

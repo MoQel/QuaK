@@ -1,8 +1,5 @@
 package edu.kit.quak.infrastructure.circuit.in.web.rest.mapper;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.CircuitResponse;
 import org.junit.jupiter.api.Test;
@@ -11,18 +8,24 @@ import org.mockito.InjectMocks;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 @ExtendWith(MockitoExtension.class)
 class CircuitDtoMapperTest {
-    @Spy private RegisterDtoMapperImpl registerDtoMapper;
+    @Spy
+    private RegisterDtoMapperImpl registerDtoMapper;
 
-    @InjectMocks private CircuitDtoMapperImpl mapper;
+    @Spy
+    private LayerDtoMapperImpl layerDtoMapper;
+
+    @InjectMocks
+    private CircuitDtoMapperImpl mapper;
 
     @Test
     void toResponse() {
         // Arrange
         QuantumCircuit circuit = new QuantumCircuit();
-        circuit.addQuantumRegister();
-        circuit.addQuantumRegister();
 
         // Act
         CircuitResponse response = mapper.toResponse(circuit);
@@ -30,8 +33,9 @@ class CircuitDtoMapperTest {
         // Assert
         assertNotNull(response);
         assertEquals(circuit.getId(), response.id());
-        assertEquals(2, response.registers().size());
-        assertEquals("q0", response.registers().get(0).name());
-        assertEquals("q1", response.registers().get(1).name());
+        assertEquals(1, response.registers().size());
+        assertEquals("q", response.registers().getFirst().getName());
+        assertEquals(1, response.layers().size());
+        assertEquals(0, response.layers().getFirst().quantumOperations().size());
     }
 }

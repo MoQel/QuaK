@@ -56,7 +56,7 @@ class ProjectLifecycleIntegrationTest {
                                         .claim("name", "Test User"))
                 .clientRegistration(
                         ClientRegistration.withRegistrationId("test")
-                                .clientId("test-client-id")
+                                .clientId("test-client-quantumOperationId")
                                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                                 .redirectUri("http://localhost/callback")
                                 .authorizationUri("http://localhost/authorize")

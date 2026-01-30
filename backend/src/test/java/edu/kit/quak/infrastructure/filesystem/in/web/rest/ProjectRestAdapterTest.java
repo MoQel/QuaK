@@ -97,7 +97,7 @@ class ProjectRestAdapterTest {
     }
 
     @Test
-    @DisplayName("GET /project/{id} returns project contents")
+    @DisplayName("GET /project/{quantumOperationId} returns project contents")
     void retrieveProject_success() throws Exception {
         Project project = new Project("MyProject");
         project.setId("p-1");
@@ -111,7 +111,7 @@ class ProjectRestAdapterTest {
     }
 
     @Test
-    @DisplayName("DELETE /project/{id} removes project")
+    @DisplayName("DELETE /project/{quantumOperationId} removes project")
     void deleteProject_success() throws Exception {
         mockMvc.perform(delete("/api/project/p-1").with(csrf())) // WICHTIG: CSRF Token
                 .andExpect(status().isOk());
@@ -120,7 +120,7 @@ class ProjectRestAdapterTest {
     }
 
     @Test
-    @DisplayName("PATCH /project/{id} renames project")
+    @DisplayName("PATCH /project/{quantumOperationId} renames project")
     void renameProject_success() throws Exception {
         Project updatedProject = new Project("Renamed Project");
         updatedProject.setId("p-1");
