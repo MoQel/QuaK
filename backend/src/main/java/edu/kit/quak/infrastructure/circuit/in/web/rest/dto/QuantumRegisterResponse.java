@@ -5,7 +5,6 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public abstract class RegisterResponse {
-    protected String id;
-    protected String name;
+public class QuantumRegisterResponse extends RegisterResponse {
+    private int numberOfQubits;
 }

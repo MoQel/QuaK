@@ -5,9 +5,8 @@ import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.CircuitResponse;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingConstants;
 
-@Mapper(
-        componentModel = MappingConstants.ComponentModel.SPRING,
-        uses = {RegisterDtoMapper.class})
+@Mapper(componentModel = MappingConstants.ComponentModel.SPRING,
+        uses = {RegisterDtoMapper.class, LayerDtoMapper.class})
 public interface CircuitDtoMapper {
     CircuitResponse toResponse(QuantumCircuit circuit);
 }
