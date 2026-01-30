@@ -1,20 +1,22 @@
-package edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.register;
+package edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.layer;
 
 import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.JpaElementWithId;
 import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.JpaQuantumCircuit;
+import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.layer.operation.JpaQuantumOperation;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.List;
+
 @Getter
 @Setter
 @Entity
-@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
-@DiscriminatorColumn(name = "register_type", discriminatorType = DiscriminatorType.STRING)
-public abstract class JpaRegister extends JpaElementWithId {
+public class JpaLayer extends JpaElementWithId {
     @ManyToOne
     @JoinColumn(name = "circuit_id", referencedColumnName = "id")
     protected JpaQuantumCircuit circuit;
 
-    protected String name;
+    @OneToMany(mappedBy = "layer", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<JpaQuantumOperation> quantumOperations;
 }
