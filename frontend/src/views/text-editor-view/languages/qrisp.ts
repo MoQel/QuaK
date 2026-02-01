@@ -1,4 +1,4 @@
-import {languages} from "monaco-editor";
+import { languages } from 'monaco-editor';
 export const qrisp = <languages.IMonarchLanguage>{
     defaultToken: '',
     tokenPostfix: '.python',
@@ -150,7 +150,7 @@ export const qrisp = <languages.IMonarchLanguage>{
     brackets: [
         { open: '{', close: '}', token: 'delimiter.curly' },
         { open: '[', close: ']', token: 'delimiter.bracket' },
-        { open: '(', close: ')', token: 'delimiter.parenthesis' }
+        { open: '(', close: ')', token: 'delimiter.parenthesis' },
     ],
 
     tokenizer: {
@@ -160,7 +160,7 @@ export const qrisp = <languages.IMonarchLanguage>{
             { include: '@strings' },
 
             [/[,:;]/, 'delimiter'],
-            [/[{}\[\]()]/, '@brackets'],
+            [/[{}[\]()]/, '@brackets'],
 
             [/@[a-zA-Z_]\w*/, 'tag'],
             [
@@ -168,10 +168,10 @@ export const qrisp = <languages.IMonarchLanguage>{
                 {
                     cases: {
                         '@keywords': 'keyword',
-                        '@default': 'identifier'
-                    }
-                }
-            ]
+                        '@default': 'identifier',
+                    },
+                },
+            ],
         ],
 
         // Deal with white space, including single and multi-line comments
@@ -179,25 +179,25 @@ export const qrisp = <languages.IMonarchLanguage>{
             [/\s+/, 'white'],
             [/(^#.*$)/, 'comment'],
             [/'''/, 'string', '@endDocString'],
-            [/"""/, 'string', '@endDblDocString']
+            [/"""/, 'string', '@endDblDocString'],
         ],
         endDocString: [
             [/[^']+/, 'string'],
             [/\\'/, 'string'],
             [/'''/, 'string', '@popall'],
-            [/'/, 'string']
+            [/'/, 'string'],
         ],
         endDblDocString: [
             [/[^"]+/, 'string'],
             [/\\"/, 'string'],
             [/"""/, 'string', '@popall'],
-            [/"/, 'string']
+            [/"/, 'string'],
         ],
 
         // Recognize hex, negatives, decimals, imaginaries, longs, and scientific notation
         numbers: [
             [/-?0x([abcdef]|[ABCDEF]|\d)+[lL]?/, 'number.hex'],
-            [/-?(\d*\.)?\d+([eE][+\-]?\d+)?[jJ]?[lL]?/, 'number']
+            [/-?(\d*\.)?\d+([eE][+-]?\d+)?[jJ]?[lL]?/, 'number'],
         ],
 
         // Recognize strings, including those broken across lines with \ (but not without)
@@ -207,43 +207,43 @@ export const qrisp = <languages.IMonarchLanguage>{
             [/'/, 'string.escape', '@stringBody'],
             [/"$/, 'string.escape', '@popall'],
             [/f"{1,3}/, 'string.escape', '@fDblStringBody'],
-            [/"/, 'string.escape', '@dblStringBody']
+            [/"/, 'string.escape', '@dblStringBody'],
         ],
         fStringBody: [
-            [/[^\\'\{\}]+$/, 'string', '@popall'],
-            [/[^\\'\{\}]+/, 'string'],
-            [/\{[^\}':!=]+/, 'identifier', '@fStringDetail'],
+            [/[^\\'{}]+$/, 'string', '@popall'],
+            [/[^\\'{}]+/, 'string'],
+            [/\{[^}':!=]+/, 'identifier', '@fStringDetail'],
             [/\\./, 'string'],
             [/'/, 'string.escape', '@popall'],
-            [/\\$/, 'string']
+            [/\\$/, 'string'],
         ],
         stringBody: [
             [/[^\\']+$/, 'string', '@popall'],
             [/[^\\']+/, 'string'],
             [/\\./, 'string'],
             [/'/, 'string.escape', '@popall'],
-            [/\\$/, 'string']
+            [/\\$/, 'string'],
         ],
         fDblStringBody: [
-            [/[^\\"\{\}]+$/, 'string', '@popall'],
-            [/[^\\"\{\}]+/, 'string'],
-            [/\{[^\}':!=]+/, 'identifier', '@fStringDetail'],
+            [/[^\\"{}]+$/, 'string', '@popall'],
+            [/[^\\"{}]+/, 'string'],
+            [/\{[^}':!=]+/, 'identifier', '@fStringDetail'],
             [/\\./, 'string'],
             [/"/, 'string.escape', '@popall'],
-            [/\\$/, 'string']
+            [/\\$/, 'string'],
         ],
         dblStringBody: [
             [/[^\\"]+$/, 'string', '@popall'],
             [/[^\\"]+/, 'string'],
             [/\\./, 'string'],
             [/"/, 'string.escape', '@popall'],
-            [/\\$/, 'string']
+            [/\\$/, 'string'],
         ],
         fStringDetail: [
-            [/[:][^}]+/, 'string'],
-            [/[!][ars]/, 'string'], // only !a, !r, !s are supported by f-strings: https://docs.python.org/3/tutorial/inputoutput.html#formatted-string-literals
+            [/:[^}]+/, 'string'],
+            [/![ars]/, 'string'], // only !a, !r, !s are supported by f-strings: https://docs.python.org/3/tutorial/inputoutput.html#formatted-string-literals
             [/=/, 'string'],
-            [/\}/, 'identifier', '@pop']
-        ]
-    }
+            [/}/, 'identifier', '@pop'],
+        ],
+    },
 };
