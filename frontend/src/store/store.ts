@@ -9,8 +9,8 @@ const loadState = (): { layout: LayoutState } | undefined => {
             return undefined;
         }
         return JSON.parse(serializedState);
-    } catch (err) {
-        return undefined;
+    } catch (e) {
+        console.warn('Could not load state', e);
     }
 };
 
