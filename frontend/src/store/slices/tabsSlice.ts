@@ -3,7 +3,6 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 export interface Tab {
     id: string; // Unique file id
     title: string; // Filename
-    viewport: 'code' | 'circuit';
 }
 
 export interface TabsState {
