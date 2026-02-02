@@ -4,6 +4,7 @@ import {
     closeAll,
     closeOthers,
     closeTab,
+    moveTab,
     requestLanguageChange,
     requestSave,
     setActiveTab,
@@ -22,7 +23,7 @@ import {
 import { useAppDispatch } from '@/hooks/useAppDispatch.ts';
 import { useAppSelector } from '@/hooks/useAppSelector.ts';
 import { languages } from '@/views/text-editor-view/languages/languages.ts';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, DragEvent, useState } from 'react';
 
 interface TabBarProps {
     currentLangId: string | null;
@@ -51,6 +52,29 @@ export function TabBar({ currentLangId }: TabBarProps) {
         }
     }, [activeTabId, openTabs]);
 
+    // region Drag and Drop
+    const [draggingId, setDraggingId] = useState<string | null>(null);
+    const handleDragStart = (e: DragEvent<HTMLDivElement>, id: string) => {
+        setDraggingId(id);
+        e.dataTransfer.effectAllowed = 'move';
+    };
+
+    const handleDragEnter = (targetId: string) => {
+        if (draggingId && draggingId !== targetId) {
+            dispatch(moveTab({ fromId: draggingId, toId: targetId }));
+        }
+    };
+
+    const handleDragEnd = () => {
+        setDraggingId(null);
+    };
+
+    const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+    };
+    // endregion
+
     return (
         <div className="flex w-full flex-col">
             <div
@@ -60,12 +84,22 @@ export function TabBar({ currentLangId }: TabBarProps) {
                 {openTabs.map((tab) => {
                     const isActive = tab.id === activeTabId;
                     const isDirty = dirtyFiles.includes(tab.id);
+                    const isDragging = tab.id === draggingId;
                     return (
                         <div
                             key={tab.id}
                             ref={(el) => {
                                 tabRefs.current[tab.id] = el;
                             }}
+                            draggable
+                            onDragStart={(e) => handleDragStart(e, tab.id)}
+                            onDragEnter={() => handleDragEnter(tab.id)}
+                            onDragOver={handleDragOver}
+                            onDragEnd={handleDragEnd}
+                            className={cn(
+                                'h-full transition-all duration-200',
+                                isDragging ? 'opacity-20' : 'opacity-100',
+                            )}
                         >
                             <ContextMenu>
                                 <ContextMenuTrigger className="h-full">

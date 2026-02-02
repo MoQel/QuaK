@@ -74,6 +74,16 @@ export const tabsSlice = createSlice({
                 timestamp: Date.now(),
             };
         },
+        moveTab: (state, action: PayloadAction<{ fromId: string; toId: string }>) => {
+            const { fromId, toId } = action.payload;
+            const fromIndex = state.openTabs.findIndex((t) => t.id === fromId);
+            const toIndex = state.openTabs.findIndex((t) => t.id === toId);
+
+            if (fromIndex !== -1 && toIndex !== -1 && fromIndex !== toIndex) {
+                const [movedTab] = state.openTabs.splice(fromIndex, 1);
+                state.openTabs.splice(toIndex, 0, movedTab);
+            }
+        },
     },
 });
 
@@ -86,5 +96,6 @@ export const {
     setActiveTab,
     requestLanguageChange,
     requestSave,
+    moveTab,
 } = tabsSlice.actions;
 export default tabsSlice.reducer;
