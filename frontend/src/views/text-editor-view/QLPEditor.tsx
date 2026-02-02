@@ -117,16 +117,29 @@ function QLPEditor({ activeFileId, setCurrentLangId }: QLPEditorProps) {
         applyTheme();
     };
 
+    const handleEditorDidMount = (editor: editor.IStandaloneCodeEditor, monaco: Monaco) => {
+        editorRef.current = editor;
+        setEditorInstance(editor);
+        applyTheme();
+
+        // Add Save Shortcut (Ctrl+S / Cmd+S)
+        editor.addAction({
+            id: 'save-file',
+            label: 'Save File',
+            keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS],
+            run: () => {
+                void handleSave();
+            },
+        });
+    };
+
     return (
         <div className="h-full flex flex-col p-0">
             <div className="h-full relative">
                 <Editor
                     className="h-full"
                     theme="my-theme"
-                    onMount={(editor) => {
-                        editorRef.current = editor;
-                        setEditorInstance(editor);
-                    }}
+                    onMount={handleEditorDidMount}
                     beforeMount={beforeMount}
                     options={{
                         minimap: { enabled: false },

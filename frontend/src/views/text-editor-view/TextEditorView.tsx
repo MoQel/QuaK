@@ -2,20 +2,37 @@ import { Card, CardContent } from '@/components/ui/card.tsx';
 import QLPEditor from '@/views/text-editor-view/QLPEditor.tsx';
 import { useAppSelector } from '@/hooks/useAppSelector.ts';
 import { TabBar } from '@/views/text-editor-view/TabBar.tsx';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { DEFAULT_LANG } from '@/views/text-editor-view/languages/languages.ts';
+import { requestSave } from '@/store/slices/tabsSlice.ts';
+import { useAppDispatch } from '@/hooks/useAppDispatch.ts';
 
 export function TextEditorView() {
-    const activeTabId = useAppSelector((state) => state.tabs.activeTabId);
+    const activeFileId = useAppSelector((state) => state.tabs.activeTabId);
     const [currentLangId, setCurrentLangId] = useState(DEFAULT_LANG);
+    const dispatch = useAppDispatch();
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+                e.preventDefault();
+                if (activeFileId) {
+                    dispatch(requestSave(activeFileId));
+                }
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [activeFileId, dispatch]);
 
     return (
         <Card className="h-full flex flex-col p-0 border-none rounded-none">
             <TabBar currentLangId={currentLangId} />
 
             <CardContent className="flex flex-col flex-1 p-0 overflow-hidden relative">
-                {activeTabId ? (
-                    <QLPEditor activeFileId={activeTabId} setCurrentLangId={setCurrentLangId} />
+                {activeFileId ? (
+                    <QLPEditor activeFileId={activeFileId} setCurrentLangId={setCurrentLangId} />
                 ) : (
                     <div className="flex h-full items-center justify-center text-gray-500">No file open</div>
                 )}
