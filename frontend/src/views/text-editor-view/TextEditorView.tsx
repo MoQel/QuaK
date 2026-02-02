@@ -4,13 +4,20 @@ import { useAppSelector } from '@/hooks/useAppSelector.ts';
 import { TabBar } from '@/views/text-editor-view/TabBar.tsx';
 import { useEffect, useState } from 'react';
 import { DEFAULT_LANG } from '@/views/text-editor-view/languages/languages.ts';
-import { requestSave } from '@/store/slices/tabsSlice.ts';
+import { closeAll, requestSave } from '@/store/slices/tabsSlice.ts';
 import { useAppDispatch } from '@/hooks/useAppDispatch.ts';
 
 export function TextEditorView() {
     const activeFileId = useAppSelector((state) => state.tabs.activeTabId);
     const [currentLangId, setCurrentLangId] = useState(DEFAULT_LANG);
     const dispatch = useAppDispatch();
+
+    // Cleanup close all tabs
+    useEffect(() => {
+        return () => {
+            dispatch(closeAll());
+        };
+    }, [dispatch]);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {

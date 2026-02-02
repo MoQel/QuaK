@@ -71,6 +71,18 @@ function QLPEditor({ activeFileId, setCurrentLangId }: QLPEditorProps) {
             }
         });
     }, [openTabs, monaco, activeFileId, editorInstance]);
+
+    // Cleanup on unmount
+    useEffect(() => {
+        return () => {
+            if (monaco) {
+                const models = monaco.editor.getModels();
+                models.forEach((model) => {
+                    model.dispose();
+                });
+            }
+        };
+    }, [monaco]);
     // endregion
 
     // region tab management and model switching
