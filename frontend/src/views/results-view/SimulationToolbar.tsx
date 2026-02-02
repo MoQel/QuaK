@@ -44,10 +44,7 @@ export function SimulationToolbar({
                     <SelectValue placeholder="Mode" />
                 </SelectTrigger>
                 <SelectContent className="bg-bg-light border-border text-text">
-                    <SelectItem
-                        value="exact"
-                        className="border-b border-border rounded cursor-pointer focus:bg-highlight focus:text-text"
-                    >
+                    <SelectItem value="exact" className="rounded cursor-pointer focus:bg-highlight focus:text-text">
                         Exact State
                     </SelectItem>
                     <SelectItem
