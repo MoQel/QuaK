@@ -1,22 +1,13 @@
-import { DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog.tsx';
+import { DialogHeader, DialogTitle } from '@/components/ui/dialog.tsx';
 import { FileElementContainer } from '@/views/project-manager-view/FileElementContainer.tsx';
 import { ParentRefresh } from '@/views/project-manager-view/ProjectManagerView.tsx';
-import { z } from 'zod';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form.tsx';
-import { Input } from '@/components/ui/input.tsx';
 import { JSX, useContext } from 'react';
 import { ContextMenuItem } from '@/components/ui/context-menu.tsx';
 import { ChevronDown, ChevronRight } from 'lucide-react';
-import {
-    getElementForFileElement,
-    type Project,
-    sort,
-} from '@/views/project-manager-view/util/FileElement.tsx';
-import { DialogCloseButtons } from '@/views/project-manager-view/util/FormComponents.tsx';
+import { getElementForFileElement, type Project, sort } from '@/views/project-manager-view/util/FileElement.tsx';
 import { api } from '@/api/api.ts';
 import { ProjectContentsResponse, ProjectRequest } from '@/api/dto/filesystem.ts';
+import { EntityForm } from '@/views/project-manager-view/util/FormUtils.tsx';
 
 async function fetchProjectContent(id: string) {
     const project = await api.get<Project>('/api/project/' + id);
@@ -59,9 +50,6 @@ function ProjectEdit(id: string, trigger: (element: Promise<JSX.Element>) => voi
                 <>
                     <DialogHeader>
                         <DialogTitle>Edit Project</DialogTitle>
-                        <DialogDescription>
-                            Edit Project with id <i>{id}</i>
-                        </DialogDescription>
                     </DialogHeader>
                     <EditForm project={proj} reloadParent={reloadParent} />
                 </>
@@ -73,43 +61,10 @@ function ProjectEdit(id: string, trigger: (element: Promise<JSX.Element>) => voi
 }
 
 function EditForm({ project, reloadParent }: { project: Project; reloadParent: () => void }) {
-    const formSchema = z.object({
-        name: z.string().min(1, {
-            message: 'Project name must be at least 1 characters.',
-        }),
-    });
-
-    const form = useForm<z.infer<typeof formSchema>>({
-        resolver: zodResolver(formSchema),
-        defaultValues: {
-            name: project.name,
-        },
-    });
-
-    const onSubmit = (values: z.infer<typeof formSchema>) => {
-        const body: ProjectRequest = {
-            name: values.name,
-        };
-
+    const onSubmit = (name: string) => {
+        const body: ProjectRequest = { name };
         api.patch('/api/project/' + project.id, body).then(reloadParent);
     };
-    return (
-        <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)}>
-                <FormField
-                    name="name"
-                    control={form.control}
-                    render={({ field }) => (
-                        <FormItem className="pb-2">
-                            <FormLabel>Name</FormLabel>
-                            <FormControl>
-                                <Input placeholder="Enter a new name" {...field} />
-                            </FormControl>
-                        </FormItem>
-                    )}
-                />
-                <DialogCloseButtons submit={'Save'} />
-            </form>
-        </Form>
-    );
+
+    return <EntityForm defaultName={project.name} onSubmit={onSubmit} label="Project Name" />;
 }
