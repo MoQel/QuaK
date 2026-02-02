@@ -11,6 +11,8 @@ import { useMonacoTheme } from '@/hooks/useMonacoTheme.ts';
 function QLPEditor({ activeFileId }: { activeFileId: string | undefined }) {
     const [currentLangId, setCurrentLangId] = useState(DEFAULT_LANG);
     const [isReadOnly, setIsReadOnly] = useState(true);
+    // against race condition
+    const [editorInstance, setEditorInstance] = useState<editor.IStandaloneCodeEditor | null>(null);
 
     // Refs & Hooks
     const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
@@ -20,15 +22,14 @@ function QLPEditor({ activeFileId }: { activeFileId: string | undefined }) {
 
     // region tab management and model switching
     useEffect(() => {
-        if (!monaco || !editorRef.current || !activeFileId) {
-            if (!activeFileId && editorRef.current) {
-                editorRef.current.setModel(null);
+        if (!monaco || !editorInstance || !activeFileId) {
+            if (!activeFileId && editorInstance) {
+                editorInstance.setModel(null);
                 setIsReadOnly(true);
             }
             return;
         }
 
-        const editorInstance = editorRef.current;
         const modelUri = Uri.parse(`file://${encodeURI(activeFileId)}`);
         const model = monaco.editor.getModel(modelUri);
 
@@ -61,14 +62,14 @@ function QLPEditor({ activeFileId }: { activeFileId: string | undefined }) {
         return () => {
             isCancelled = true;
         };
-    }, [activeFileId, monaco]);
+    }, [activeFileId, monaco, editorInstance]);
     // endregion
 
     // region Save & actions
     // Currently only saved when explicitly pressed save!!!
     const handleSave = async () => {
-        if (!activeFileId || !editorRef.current) return;
-        const model = editorRef.current.getModel();
+        if (!activeFileId || !editorInstance) return;
+        const model = editorInstance.getModel();
         if (!model) return;
 
         try {
@@ -81,7 +82,7 @@ function QLPEditor({ activeFileId }: { activeFileId: string | undefined }) {
     };
 
     const handleLanguageChange = (newLangId: string) => {
-        const model = editorRef.current?.getModel();
+        const model = editorInstance?.getModel();
         if (model && monaco) {
             monaco.editor.setModelLanguage(model, newLangId);
             setCurrentLangId(newLangId);
@@ -114,6 +115,7 @@ function QLPEditor({ activeFileId }: { activeFileId: string | undefined }) {
                     theme="my-theme"
                     onMount={(editor) => {
                         editorRef.current = editor;
+                        setEditorInstance(editor);
                     }}
                     beforeMount={beforeMount}
                     options={{
