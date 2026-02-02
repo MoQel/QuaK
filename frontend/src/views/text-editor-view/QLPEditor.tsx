@@ -1,4 +1,4 @@
-import { Editor, Monaco, useMonaco } from '@monaco-editor/react';
+import { Editor, useMonaco } from '@monaco-editor/react';
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { editor, Uri } from 'monaco-editor';
@@ -10,6 +10,16 @@ import { useAppSelector } from '@/hooks/useAppSelector.ts';
 import { useAppDispatch } from '@/hooks/useAppDispatch.ts';
 import { setFileDirty } from '@/store/slices/tabsSlice.ts';
 
+const savedVersionIds = new WeakMap<editor.ITextModel, number>();
+
+const getModelId = (model: editor.ITextModel): string => {
+    let fileId = decodeURIComponent(model.uri.path);
+    if (fileId.startsWith('/')) {
+        fileId = fileId.substring(1);
+    }
+    return fileId;
+};
+
 interface QLPEditorProps {
     activeFileId: string | null;
     setCurrentLangId: Dispatch<SetStateAction<string>>;
@@ -17,7 +27,6 @@ interface QLPEditorProps {
 
 function QLPEditor({ activeFileId, setCurrentLangId }: QLPEditorProps) {
     const [isReadOnly, setIsReadOnly] = useState(true);
-    // against race condition
     const [editorInstance, setEditorInstance] = useState<editor.IStandaloneCodeEditor | null>(null);
 
     // Refs & Hooks
@@ -29,88 +38,147 @@ function QLPEditor({ activeFileId, setCurrentLangId }: QLPEditorProps) {
     const langRequest = useAppSelector((state) => state.tabs.lastLanguageRequest);
     const openTabs = useAppSelector((state) => state.tabs.openTabs);
     const dispatch = useAppDispatch();
+    const dirtyFiles = useAppSelector((state) => state.tabs.dirtyFiles);
+    const isCurrentFileDirty = activeFileId ? dirtyFiles.includes(activeFileId) : false;
+    const isDirtyRef = useRef(isCurrentFileDirty);
+
+    const syncDirtyState = (model: editor.ITextModel, shouldDispatch = true) => {
+        const saved = savedVersionIds.get(model);
+        const isDirty = saved !== undefined && model.getAlternativeVersionId() !== saved;
+        isDirtyRef.current = isDirty;
+
+        if (shouldDispatch) {
+            if (isDirty !== isCurrentFileDirty) {
+                dispatch(setFileDirty({ fileId: getModelId(model), isDirty }));
+            }
+        }
+    };
 
     // region Garbage Collection
     useEffect(() => {
         if (!monaco) return;
 
+        const openTabIds = new Set(openTabs.map((t) => t.id));
         const currentModels = monaco.editor.getModels();
-        const allowedUris = new Set(openTabs.map((t) => Uri.parse(`file://${encodeURI(t.id)}`).toString()));
 
         currentModels.forEach((model) => {
-            if (model.uri.scheme === 'file') {
-                if (!allowedUris.has(model.uri.toString())) {
-                    model.dispose();
-                }
+            const modelId = getModelId(model);
+            if (modelId === activeFileId) return;
+
+            if (!openTabIds.has(modelId)) {
+                // console.log(`GC: Disposing model ${modelId}`); // Debug Log
+                model.dispose();
             }
         });
-    }, [openTabs, monaco]);
+    }, [openTabs, monaco, activeFileId, editorInstance]);
     // endregion
 
     // region tab management and model switching
     useEffect(() => {
-        if (!monaco || !editorInstance || !activeFileId) {
-            if (!activeFileId && editorInstance) {
-                editorInstance.setModel(null);
-                setIsReadOnly(true);
-            }
+        if (!monaco || !editorInstance) return;
+
+        if (!activeFileId) {
+            editorInstance.setModel(null);
+            setIsReadOnly(true);
             return;
         }
 
-        const modelUri = Uri.parse(`file://${encodeURI(activeFileId)}`);
-        const model = monaco.editor.getModel(modelUri);
+        const modelUri = Uri.file(activeFileId);
+        let model = monaco.editor.getModel(modelUri);
 
         // Model with content exists (Hit)
-        if (model) {
+        if (model && !model.isDisposed()) {
             editorInstance.setModel(model);
+            syncDirtyState(model, false);
             setCurrentLangId(model.getLanguageId());
             setIsReadOnly(false);
             return;
         }
 
         // Fetch content (Miss)
-        setIsReadOnly(true); // Lock UI
-        let isCancelled = false; // Fix für Race Condition
+        setIsReadOnly(true);
+        let isCancelled = false;
 
-        fetchFileContent(activeFileId).then((data) => {
-            if (isCancelled || !data) return;
+        fetchFileContent(activeFileId)
+            .then((data) => {
+                if (isCancelled || !data || !editorInstance || !monaco) return;
 
-            const langMatch = languages.find((l) => l.fileExtension === data.ext);
-            const langId = langMatch ? langMatch.id : DEFAULT_LANG;
+                // Has someone else created it in the meantime?
+                model = monaco.editor.getModel(modelUri);
 
-            let newModel = monaco.editor.getModel(modelUri);
-            if (!newModel || newModel.isDisposed()) {
-                newModel = monaco.editor.createModel(data.content, langId, modelUri);
-            }
+                if (!model || model.isDisposed()) {
+                    const langMatch = languages.find((l) => l.fileExtension === data.ext);
+                    const langId = langMatch ? langMatch.id : DEFAULT_LANG;
 
-            editorInstance.setModel(newModel);
-            setCurrentLangId(langId);
-            setIsReadOnly(false);
-        });
+                    model = monaco.editor.createModel(data.content, langId, modelUri);
+                    savedVersionIds.set(model, model.getAlternativeVersionId());
+                }
 
-        // Cleanup when activeFileId changes
+                editorInstance.setModel(model);
+                setCurrentLangId(model.getLanguageId());
+                syncDirtyState(model);
+                setIsReadOnly(false);
+            })
+            .catch((err) => {
+                console.error('Failed to load file', err);
+                toast.error('File loading failed');
+            });
+
         return () => {
             isCancelled = true;
         };
     }, [activeFileId, monaco, editorInstance]);
     // endregion
 
+    // region Editor config and mount
+    const handleEditorDidMount = (editor: editor.IStandaloneCodeEditor) => {
+        editorRef.current = editor;
+        setEditorInstance(editor);
+        applyTheme();
+
+        const disposable = editor.onDidChangeModelContent(() => {
+            const model = editor.getModel();
+            if (!model) return;
+            const fileId = getModelId(model);
+
+            const currentVersion = model.getAlternativeVersionId();
+            const savedVersion = savedVersionIds.get(model);
+            const isDirty = savedVersion !== undefined && currentVersion !== savedVersion;
+
+            if (isDirty !== isDirtyRef.current) {
+                isDirtyRef.current = isDirty;
+                dispatch(setFileDirty({ fileId: fileId, isDirty: isDirty }));
+            }
+        });
+
+        editor.onDidDispose(() => {
+            disposable.dispose();
+            setEditorInstance(null);
+        });
+    };
+
+    useEffect(() => {
+        isDirtyRef.current = isCurrentFileDirty;
+    }, [isCurrentFileDirty]);
+    // endregion
+
     // region Save & actions
-    // Currently only saved when explicitly pressed save!!!
     useEffect(() => {
         if (saveRequest.timestamp > 0 && saveRequest.fileId) {
             void handleSave(saveRequest.fileId);
         }
     }, [saveRequest.timestamp]);
 
-    const handleSave = async (targetFileId: string | null) => {
-        if (!monaco || !targetFileId) return;
-        const modelUri = Uri.parse(`file://${encodeURI(targetFileId)}`);
+    const handleSave = async (targetFileId: string) => {
+        if (!monaco) return;
+        const modelUri = Uri.file(targetFileId);
         const model = monaco.editor.getModel(modelUri);
-        if (!model) return;
+        if (!model || model.isDisposed()) return;
 
         try {
             await saveFileContent(targetFileId, model.getValue());
+            savedVersionIds.set(model, model.getAlternativeVersionId());
+            dispatch(setFileDirty({ fileId: targetFileId, isDirty: false }));
             toast.success('Saved successfully');
         } catch (e) {
             toast.error('Save failed');
@@ -123,53 +191,28 @@ function QLPEditor({ activeFileId, setCurrentLangId }: QLPEditorProps) {
         const isNewRequest = langRequest.timestamp > 0;
 
         if (isTargetFile && isNewRequest && langRequest.langId) {
-            handleLanguageChange(langRequest.langId);
+            const model = editorInstance?.getModel();
+            if (model && monaco) {
+                monaco.editor.setModelLanguage(model, langRequest.langId);
+                setCurrentLangId(langRequest.langId);
+                toast.info(`Language changed to ${langRequest.langId.toUpperCase()}`);
+            }
         }
     }, [langRequest.timestamp, activeFileId]);
-
-    const handleLanguageChange = (newLangId: string) => {
-        const model = editorInstance?.getModel();
-        if (model && monaco) {
-            monaco.editor.setModelLanguage(model, newLangId);
-            setCurrentLangId(newLangId);
-            toast.info(`Language changed to ${newLangId.toUpperCase()}`);
-        }
-    };
     // endregion
 
-    const beforeMount = (m: Monaco) => {
-        languages.forEach((l) => l.base !== undefined && l.register(m));
-        applyTheme();
-    };
-
-    const handleEditorDidMount = (editor: editor.IStandaloneCodeEditor) => {
-        editorRef.current = editor;
-        setEditorInstance(editor);
-        applyTheme();
-
-        // Add Save Shortcut (Ctrl+S / Cmd+S)
-        editor.addAction({
-            id: 'save-file',
-            label: 'Save File',
-            keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS],
-            run: () => {
-                void handleSave();
-            },
-        });
-    };
-
-    if (!activeFileId) {
-        return <div className="flex h-full items-center justify-center text-gray-500">No file open</div>;
-    }
-
     return (
-        <div className="h-full flex flex-col p-0">
-            <div className="h-full relative">
+        <div className="h-full flex flex-col p-0 relative">
+            {!activeFileId && (
+                <div className="absolute inset-0 z-10 flex items-center justify-center text-gray-500">No file open</div>
+            )}
+
+            <div className="h-full w-full" style={{ display: activeFileId ? 'block' : 'none' }}>
                 <Editor
                     className="h-full"
                     theme="my-theme"
                     onMount={handleEditorDidMount}
-                    beforeMount={beforeMount}
+                    beforeMount={(m) => languages.forEach((l) => l.base !== undefined && l.register(m))}
                     options={{
                         minimap: { enabled: false },
                         wordWrap: 'on',

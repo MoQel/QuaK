@@ -5,31 +5,35 @@ export function useMonacoTheme(monaco: Monaco | null, theme: 'dark' | 'light') {
     const applyTheme = useCallback(() => {
         if (!monaco) return;
 
-        const getCssVar = (name: string) => {
-            return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-        };
+        try {
+            const getCssVar = (name: string) => {
+                if (typeof window === 'undefined') return '';
+                const style = getComputedStyle(document.documentElement);
+                return style ? style.getPropertyValue(name).trim() : '';
+            };
 
-        monaco.editor.defineTheme('my-theme', {
-            base: theme === 'dark' ? 'vs-dark' : 'vs',
-            inherit: true,
-            rules: [],
-            colors: {
-                'editor.background': getCssVar('--editor-bg'),
-                'editorLineNumber.foreground': getCssVar('--editor-line-number'),
-                'editorLineNumber.activeForeground': getCssVar('--editor-line-number'),
-            },
-        });
+            monaco.editor.defineTheme('my-theme', {
+                base: theme === 'dark' ? 'vs-dark' : 'vs',
+                inherit: true,
+                rules: [],
+                colors: {
+                    'editor.background': getCssVar('--editor-bg'),
+                    'editorLineNumber.foreground': getCssVar('--editor-line-number'),
+                    'editorLineNumber.activeForeground': getCssVar('--editor-line-number'),
+                },
+            });
 
-        monaco.editor.setTheme('my-theme');
+            monaco.editor.setTheme('my-theme');
+        } catch (e) {
+            console.warn('Theme apply failed:', e);
+        }
     }, [monaco, theme]);
 
     useEffect(() => {
-        // Wait for the browser to apply the CSS class and recalculate styles
-        const handle = requestAnimationFrame(() => {
+        if (monaco) {
             applyTheme();
-        });
-        return () => cancelAnimationFrame(handle);
-    }, [applyTheme]);
+        }
+    }, [applyTheme, monaco]);
 
     return { applyTheme };
 }

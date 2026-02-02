@@ -33,7 +33,6 @@ function App() {
         const handleGlobalKeyDown = (e: KeyboardEvent) => {
             if ((e.ctrlKey || e.metaKey) && e.key === 's') {
                 e.preventDefault();
-                console.log('Global Save prevented');
             }
         };
         window.addEventListener('keydown', handleGlobalKeyDown);

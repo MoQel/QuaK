@@ -30,6 +30,7 @@ interface TabBarProps {
 export function TabBar({ currentLangId }: TabBarProps) {
     const dispatch = useAppDispatch();
     const { openTabs, activeTabId } = useAppSelector((state) => state.tabs);
+    const dirtyFiles = useAppSelector((state) => state.tabs.dirtyFiles);
 
     if (openTabs.length === 0) return null;
 
@@ -38,7 +39,7 @@ export function TabBar({ currentLangId }: TabBarProps) {
             <div className="flex h-9 w-full flex-row items-center overflow-x-auto border-b border-border bg-bg-light scrollbar-hide">
                 {openTabs.map((tab) => {
                     const isActive = tab.id === activeTabId;
-
+                    const isDirty = dirtyFiles.includes(tab.id);
                     return (
                         <ContextMenu key={tab.id}>
                             <ContextMenuTrigger className="h-full">
@@ -54,13 +55,26 @@ export function TabBar({ currentLangId }: TabBarProps) {
                                     <span className="mr-2 flex-1 truncate">{tab.title}</span>
 
                                     <span
-                                        className="rounded-sm p-0.5 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-bg-light hover:text-text text-text-muted"
+                                        className="relative flex items-center justify-center p-0.5 rounded-sm h-5 w-5 hover:bg-bg-light"
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             dispatch(closeTab(tab.id));
                                         }}
                                     >
-                                        <X className="size-3.5" />
+                                        <X
+                                            className={cn(
+                                                'size-3.5 transition-opacity',
+                                                isDirty
+                                                    ? 'opacity-0 group-hover:opacity-100'
+                                                    : 'opacity-0 group-hover:opacity-100',
+                                            )}
+                                        />
+
+                                        {isDirty && (
+                                            <div className="absolute inset-0 flex items-center justify-center group-hover:hidden">
+                                                <div className="h-2 w-2 rounded-full bg-text-muted" />
+                                            </div>
+                                        )}
                                     </span>
                                 </div>
                             </ContextMenuTrigger>

@@ -60,7 +60,6 @@ export function ResultsView({ circuit }: ResultsViewProps) {
 
     const visibleData = useMemo(() => {
         if (showZero) return chartData;
-        console.log(chartData);
         return chartData.filter((d) => d.prob >= minProbability);
     }, [chartData, showZero, minProbability]);
 
