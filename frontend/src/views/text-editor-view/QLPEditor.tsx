@@ -1,15 +1,19 @@
 import { Editor, Monaco, useMonaco } from '@monaco-editor/react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { Menu } from '@/views/text-editor-view/Menu.tsx';
 import { editor, Uri } from 'monaco-editor';
 import { useTheme } from '@/theme';
 import { DEFAULT_LANG, languages } from '@/views/text-editor-view/languages/languages.ts';
 import { fetchFileContent, saveFileContent } from '@/views/text-editor-view/util/fileService.ts';
 import { useMonacoTheme } from '@/hooks/useMonacoTheme.ts';
+import { useAppSelector } from '@/hooks/useAppSelector.ts';
 
-function QLPEditor({ activeFileId }: { activeFileId: string | undefined }) {
-    const [currentLangId, setCurrentLangId] = useState(DEFAULT_LANG);
+interface QLPEditorProps {
+    activeFileId: string | null;
+    setCurrentLangId: Dispatch<SetStateAction<string>>;
+}
+
+function QLPEditor({ activeFileId, setCurrentLangId }: QLPEditorProps) {
     const [isReadOnly, setIsReadOnly] = useState(true);
     // against race condition
     const [editorInstance, setEditorInstance] = useState<editor.IStandaloneCodeEditor | null>(null);
@@ -19,6 +23,8 @@ function QLPEditor({ activeFileId }: { activeFileId: string | undefined }) {
     const monaco = useMonaco();
     const { theme } = useTheme();
     const { applyTheme } = useMonacoTheme(monaco, theme);
+    const saveRequest = useAppSelector((state) => state.tabs.lastSaveRequest);
+    const langRequest = useAppSelector((state) => state.tabs.lastLanguageRequest);
 
     // region tab management and model switching
     useEffect(() => {
@@ -67,6 +73,12 @@ function QLPEditor({ activeFileId }: { activeFileId: string | undefined }) {
 
     // region Save & actions
     // Currently only saved when explicitly pressed save!!!
+    useEffect(() => {
+        if (saveRequest.fileId === activeFileId && saveRequest.timestamp > 0) {
+            void handleSave();
+        }
+    }, [saveRequest.timestamp, activeFileId]);
+
     const handleSave = async () => {
         if (!activeFileId || !editorInstance) return;
         const model = editorInstance.getModel();
@@ -81,12 +93,21 @@ function QLPEditor({ activeFileId }: { activeFileId: string | undefined }) {
         }
     };
 
+    useEffect(() => {
+        const isTargetFile = langRequest.fileId === activeFileId;
+        const isNewRequest = langRequest.timestamp > 0;
+
+        if (isTargetFile && isNewRequest && langRequest.langId) {
+            handleLanguageChange(langRequest.langId);
+        }
+    }, [langRequest.timestamp, activeFileId]);
+
     const handleLanguageChange = (newLangId: string) => {
         const model = editorInstance?.getModel();
         if (model && monaco) {
             monaco.editor.setModelLanguage(model, newLangId);
             setCurrentLangId(newLangId);
-            toast.info(`Language changed to ${newLangId}`);
+            toast.info(`Language changed to ${newLangId.toUpperCase()}`);
         }
     };
     // endregion
@@ -96,19 +117,8 @@ function QLPEditor({ activeFileId }: { activeFileId: string | undefined }) {
         applyTheme();
     };
 
-    const menuLanguages = useMemo(
-        () =>
-            languages.map((l) => ({
-                displayName: l.getID().toUpperCase(),
-                isSelected: l.languageId === currentLangId,
-                select: () => handleLanguageChange(l.languageId),
-            })),
-        [currentLangId],
-    );
-
     return (
         <div className="h-full flex flex-col p-0">
-            <Menu onSave={handleSave} languages={menuLanguages} />
             <div className="h-full relative">
                 <Editor
                     className="h-full"

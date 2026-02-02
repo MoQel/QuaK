@@ -1,41 +1,110 @@
-import { closeTab, setActiveTab } from '@/store/slices/tabsSlice.ts';
-import { X } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Check, X } from 'lucide-react';
+import {
+    closeAll,
+    closeOthers,
+    closeTab,
+    requestLanguageChange,
+    requestSave,
+    setActiveTab,
+} from '@/store/slices/tabsSlice';
+import {
+    ContextMenu,
+    ContextMenuContent,
+    ContextMenuItem,
+    ContextMenuTrigger,
+    ContextMenuSeparator,
+    ContextMenuSub,
+    ContextMenuSubTrigger,
+    ContextMenuSubContent,
+    ContextMenuShortcut,
+} from '@/components/ui/context-menu';
 import { useAppDispatch } from '@/hooks/useAppDispatch.ts';
 import { useAppSelector } from '@/hooks/useAppSelector.ts';
+import { languages } from '@/views/text-editor-view/languages/languages.ts';
 
-export function TabBar() {
+interface TabBarProps {
+    currentLangId: string | null;
+}
+
+export function TabBar({ currentLangId }: TabBarProps) {
     const dispatch = useAppDispatch();
     const { openTabs, activeTabId } = useAppSelector((state) => state.tabs);
 
     if (openTabs.length === 0) return null;
 
     return (
-        <div className="flex flex-row bg-[#252526] overflow-x-auto h-9 items-center border-b border-black/20">
-            {openTabs.map((tab) => (
-                <div
-                    key={tab.id}
-                    onClick={() => dispatch(setActiveTab(tab.id))}
-                    className={`
-                        group flex items-center px-3 h-full cursor-pointer select-none text-sm min-w-[120px] max-w-[200px] border-r border-white/10
-                        ${
-                            tab.id === activeTabId
-                                ? 'bg-[#1e1e1e] text-white border-t-2 border-t-blue-500'
-                                : 'bg-[#2d2d2d] text-gray-400 hover:bg-[#2a2d2e]'
-                        }
-                    `}
-                >
-                    <span className="truncate flex-1 mr-2">{tab.title}</span>
-                    <span
-                        className="opacity-0 group-hover:opacity-100 p-0.5 hover:bg-white/20 rounded-sm"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            dispatch(closeTab(tab.id));
-                        }}
-                    >
-                        <X size={14} />
-                    </span>
-                </div>
-            ))}
+        <div className="flex w-full flex-col">
+            <div className="flex h-9 w-full flex-row items-center overflow-x-auto border-b border-border bg-bg-light scrollbar-hide">
+                {openTabs.map((tab) => {
+                    const isActive = tab.id === activeTabId;
+
+                    return (
+                        <ContextMenu key={tab.id}>
+                            <ContextMenuTrigger className="h-full">
+                                <div
+                                    onClick={() => dispatch(setActiveTab(tab.id))}
+                                    className={cn(
+                                        'group relative flex h-full min-w-[120px] max-w-[200px] cursor-pointer select-none items-center border-r border-border px-3 text-sm font-medium transition-colors',
+                                        !isActive &&
+                                            'bg-transparent text-text-muted hover:bg-bg hover:text-text border-t-2 border-t-transparent',
+                                        isActive && 'bg-bg text-text border-t-2 border-t-blue-500',
+                                    )}
+                                >
+                                    <span className="mr-2 flex-1 truncate">{tab.title}</span>
+
+                                    <span
+                                        className="rounded-sm p-0.5 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-bg-light hover:text-text text-text-muted"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            dispatch(closeTab(tab.id));
+                                        }}
+                                    >
+                                        <X className="size-3.5" />
+                                    </span>
+                                </div>
+                            </ContextMenuTrigger>
+
+                            {/* Right Click Menu */}
+                            <ContextMenuContent className="w-48">
+                                <ContextMenuItem onClick={() => dispatch(closeTab(tab.id))}>Close</ContextMenuItem>
+                                <ContextMenuItem onClick={() => dispatch(closeOthers(tab.id))}>
+                                    Close Others
+                                </ContextMenuItem>
+                                <ContextMenuItem onClick={() => dispatch(closeAll())}>Close All</ContextMenuItem>
+                                <ContextMenuSeparator />
+                                <ContextMenuSub>
+                                    <ContextMenuSubTrigger>Language</ContextMenuSubTrigger>
+                                    <ContextMenuSubContent className="w-48">
+                                        {languages.map((l) => (
+                                            <ContextMenuItem
+                                                key={l.languageId}
+                                                onClick={() =>
+                                                    dispatch(
+                                                        requestLanguageChange({
+                                                            fileId: tab.id,
+                                                            langId: l.languageId,
+                                                        }),
+                                                    )
+                                                }
+                                            >
+                                                {l.getID().toUpperCase()}
+                                                {isActive && l.languageId === currentLangId && (
+                                                    <ContextMenuShortcut>
+                                                        <Check className="size-3.5" />
+                                                    </ContextMenuShortcut>
+                                                )}
+                                            </ContextMenuItem>
+                                        ))}
+                                    </ContextMenuSubContent>
+                                </ContextMenuSub>
+                                <ContextMenuSeparator />
+                                <ContextMenuItem onClick={() => dispatch(requestSave(tab.id))}>Save</ContextMenuItem>
+                            </ContextMenuContent>
+                        </ContextMenu>
+                    );
+                })}
+            </div>
         </div>
     );
 }

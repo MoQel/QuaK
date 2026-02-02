@@ -8,11 +8,15 @@ export interface Tab {
 export interface TabsState {
     openTabs: Tab[];
     activeTabId: string | null;
+    lastSaveRequest: { fileId: string | null; timestamp: number };
+    lastLanguageRequest: { fileId: string | null; langId: string | null; timestamp: number };
 }
 
 const initialState: TabsState = {
     openTabs: [],
     activeTabId: null,
+    lastSaveRequest: { fileId: null, timestamp: 0 },
+    lastLanguageRequest: { fileId: null, langId: null, timestamp: 0 },
 };
 
 export const tabsSlice = createSlice({
@@ -36,11 +40,30 @@ export const tabsSlice = createSlice({
                 state.activeTabId = nextTab ? nextTab.id : null;
             }
         },
+        closeOthers: (state, action: PayloadAction<string>) => {
+            const targetId = action.payload;
+            state.openTabs = state.openTabs.filter((t) => t.id === targetId);
+            state.activeTabId = targetId;
+        },
+        closeAll: () => initialState,
         setActiveTab: (state, action: PayloadAction<string>) => {
             state.activeTabId = action.payload;
+        },
+        requestLanguageChange: (state, action: PayloadAction<{ fileId: string; langId: string }>) => {
+            state.lastLanguageRequest = {
+                ...action.payload,
+                timestamp: Date.now(),
+            };
+        },
+        requestSave: (state, action: PayloadAction<string>) => {
+            state.lastSaveRequest = {
+                fileId: action.payload,
+                timestamp: Date.now(),
+            };
         },
     },
 });
 
-export const { openTab, closeTab, setActiveTab } = tabsSlice.actions;
+export const { openTab, closeTab, closeOthers, closeAll, setActiveTab, requestLanguageChange, requestSave } =
+    tabsSlice.actions;
 export default tabsSlice.reducer;
