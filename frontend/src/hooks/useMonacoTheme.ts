@@ -31,7 +31,10 @@ export function useMonacoTheme(monaco: Monaco | null, theme: 'dark' | 'light') {
 
     useEffect(() => {
         if (monaco) {
-            applyTheme();
+            const handle = requestAnimationFrame(() => {
+                applyTheme();
+            });
+            return () => cancelAnimationFrame(handle);
         }
     }, [applyTheme, monaco]);
 
