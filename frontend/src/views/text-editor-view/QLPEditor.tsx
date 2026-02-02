@@ -7,6 +7,8 @@ import { DEFAULT_LANG, languages } from '@/views/text-editor-view/languages/lang
 import { fetchFileContent, saveFileContent } from '@/views/text-editor-view/util/fileService.ts';
 import { useMonacoTheme } from '@/hooks/useMonacoTheme.ts';
 import { useAppSelector } from '@/hooks/useAppSelector.ts';
+import { useAppDispatch } from '@/hooks/useAppDispatch.ts';
+import { setFileDirty } from '@/store/slices/tabsSlice.ts';
 
 interface QLPEditorProps {
     activeFileId: string | null;
@@ -25,6 +27,25 @@ function QLPEditor({ activeFileId, setCurrentLangId }: QLPEditorProps) {
     const { applyTheme } = useMonacoTheme(monaco, theme);
     const saveRequest = useAppSelector((state) => state.tabs.lastSaveRequest);
     const langRequest = useAppSelector((state) => state.tabs.lastLanguageRequest);
+    const openTabs = useAppSelector((state) => state.tabs.openTabs);
+    const dispatch = useAppDispatch();
+
+    // region Garbage Collection
+    useEffect(() => {
+        if (!monaco) return;
+
+        const currentModels = monaco.editor.getModels();
+        const allowedUris = new Set(openTabs.map((t) => Uri.parse(`file://${encodeURI(t.id)}`).toString()));
+
+        currentModels.forEach((model) => {
+            if (model.uri.scheme === 'file') {
+                if (!allowedUris.has(model.uri.toString())) {
+                    model.dispose();
+                }
+            }
+        });
+    }, [openTabs, monaco]);
+    // endregion
 
     // region tab management and model switching
     useEffect(() => {
@@ -57,7 +78,10 @@ function QLPEditor({ activeFileId, setCurrentLangId }: QLPEditorProps) {
             const langMatch = languages.find((l) => l.fileExtension === data.ext);
             const langId = langMatch ? langMatch.id : DEFAULT_LANG;
 
-            const newModel = monaco.editor.createModel(data.content, langId, modelUri);
+            let newModel = monaco.editor.getModel(modelUri);
+            if (!newModel || newModel.isDisposed()) {
+                newModel = monaco.editor.createModel(data.content, langId, modelUri);
+            }
 
             editorInstance.setModel(newModel);
             setCurrentLangId(langId);
@@ -74,18 +98,19 @@ function QLPEditor({ activeFileId, setCurrentLangId }: QLPEditorProps) {
     // region Save & actions
     // Currently only saved when explicitly pressed save!!!
     useEffect(() => {
-        if (saveRequest.fileId === activeFileId && saveRequest.timestamp > 0) {
-            void handleSave();
+        if (saveRequest.timestamp > 0 && saveRequest.fileId) {
+            void handleSave(saveRequest.fileId);
         }
-    }, [saveRequest.timestamp, activeFileId]);
+    }, [saveRequest.timestamp]);
 
-    const handleSave = async () => {
-        if (!activeFileId || !editorInstance) return;
-        const model = editorInstance.getModel();
+    const handleSave = async (targetFileId: string | null) => {
+        if (!monaco || !targetFileId) return;
+        const modelUri = Uri.parse(`file://${encodeURI(targetFileId)}`);
+        const model = monaco.editor.getModel(modelUri);
         if (!model) return;
 
         try {
-            await saveFileContent(activeFileId, model.getValue());
+            await saveFileContent(targetFileId, model.getValue());
             toast.success('Saved successfully');
         } catch (e) {
             toast.error('Save failed');
@@ -117,7 +142,7 @@ function QLPEditor({ activeFileId, setCurrentLangId }: QLPEditorProps) {
         applyTheme();
     };
 
-    const handleEditorDidMount = (editor: editor.IStandaloneCodeEditor, monaco: Monaco) => {
+    const handleEditorDidMount = (editor: editor.IStandaloneCodeEditor) => {
         editorRef.current = editor;
         setEditorInstance(editor);
         applyTheme();
@@ -132,6 +157,10 @@ function QLPEditor({ activeFileId, setCurrentLangId }: QLPEditorProps) {
             },
         });
     };
+
+    if (!activeFileId) {
+        return <div className="flex h-full items-center justify-center text-gray-500">No file open</div>;
+    }
 
     return (
         <div className="h-full flex flex-col p-0">

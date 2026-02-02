@@ -31,11 +31,7 @@ export function TextEditorView() {
             <TabBar currentLangId={currentLangId} />
 
             <CardContent className="flex flex-col flex-1 p-0 overflow-hidden relative">
-                {activeFileId ? (
-                    <QLPEditor activeFileId={activeFileId} setCurrentLangId={setCurrentLangId} />
-                ) : (
-                    <div className="flex h-full items-center justify-center text-gray-500">No file open</div>
-                )}
+                <QLPEditor activeFileId={activeFileId} setCurrentLangId={setCurrentLangId} />
             </CardContent>
         </Card>
     );
