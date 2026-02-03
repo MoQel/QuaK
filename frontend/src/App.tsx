@@ -8,28 +8,32 @@ import {ProjectManagerView} from "@/views/project-manager-view/ProjectManagerVie
 import {ResultsView} from "@/views/results-view/ResultsView.tsx";
 import {Toaster} from "@/components/ui/sonner.tsx";
 import {File} from "@/views/project-manager-view/util/FileElement.tsx";
-import { useAppDispatch } from "@/hooks/useAppDispatch";
-import { useAppSelector } from "@/hooks/useAppSelector";
 import {InspectorView} from "@/views/inspector-view/InspectorView.tsx";
 import {GateDefinitionResponse} from "@/api/dto/library.ts";
-import {togglePanel, setMenubarVisibility } from "@/store/slices/layoutSlice";
+import { useLayout } from "@/hooks/use-layout";
+
 
 function App() {
     const [file, openFile] = useState(undefined as unknown as File);
     const [selectedGate, setSelectedGate] = useState<GateDefinitionResponse | undefined>(undefined);
 
-    const visiblePanels = useAppSelector((state) => state.layout.visiblePanels);
-    const topLayout = useAppSelector((state) => state.layout.topLayout);
-    const dispatch = useAppDispatch();
+    // Use Hook
+    const {
+        visiblePanels,
+        topLayout,
+        onTogglePanel,
+        onSetMenubarVisibility
+    } = useLayout();
+
 
     const isTopVisible = visiblePanels.file || visiblePanels.circuit || visiblePanels.code;
     const isBottomVisible = visiblePanels.library || visiblePanels.inspector || visiblePanels.results;
 
     useEffect(() => {
         return () => {
-            dispatch(setMenubarVisibility(false));
+            onSetMenubarVisibility(false);
         };
-    }, [dispatch]);
+    }, []);
 
     return (
         <div className="flex flex-col h-[calc(100vh-65px)] overflow-hidden bg-background text-foreground">
@@ -44,7 +48,7 @@ function App() {
                             <ResizablePanel
                                 defaultSize={topLayout[0]}
                                 minSize={15}
-                                onClose={() => dispatch(togglePanel('file'))}
+                                onClose={() => onTogglePanel('file')}
                             >
                                 <ProjectManagerView onFileSelect={openFile} />
                             </ResizablePanel>
@@ -56,7 +60,7 @@ function App() {
                         <>
                             <ResizablePanel
                                 defaultSize={topLayout[1]}
-                                onClose={() => dispatch(togglePanel('circuit'))}
+                                onClose={() => onTogglePanel('circuit')}
                             >
                                 <CircuitView />
                             </ResizablePanel>
@@ -67,7 +71,7 @@ function App() {
                     {visiblePanels.code && (
                         <ResizablePanel
                             defaultSize={topLayout[2]}
-                            onClose={() => dispatch(togglePanel('code'))}
+                            onClose={() => onTogglePanel('code')}
                         >
                             <TextEditorView file={file} />
                         </ResizablePanel>

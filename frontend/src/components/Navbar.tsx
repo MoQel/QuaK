@@ -7,18 +7,21 @@ import { useCurrentUser } from '@/hooks/useUser';
 import ThemeSwitch from "@/components/ThemeSwitch";
 import { Button } from "@/components/ui/button";
 import { IdeMenubar } from "@/components/MenuBar";
-import { useAppDispatch } from "@/hooks/useAppDispatch";
-import { useAppSelector } from "@/hooks/useAppSelector";
-import {togglePanel, resetLayout, toggleMenubar} from "@/store/slices/layoutSlice";
+import { useLayout } from "@/hooks/use-layout";
+
 
 export const Navbar: React.FC = ( ) => {
   const location = useLocation();
-  const dispatch = useAppDispatch();
-
-  const visiblePanels = useAppSelector((state) => state.layout.visiblePanels);
-  const isMenubarVisible = useAppSelector((state) => state.layout.isMenubarVisible);
   const { logout } = useAuth();
   const { user } = useCurrentUser();
+
+  const {
+    visiblePanels,
+    isMenubarVisible,
+    onToggleMenubar,
+    onTogglePanel,
+    onResetLayout
+  } = useLayout();
 
   const isIdeView = location.pathname.startsWith('/project');
 
@@ -52,7 +55,7 @@ export const Navbar: React.FC = ( ) => {
                   variant={isMenubarVisible ? "secondary" : "ghost"}
                   size="icon"
                   className="h-8 w-8"
-                  onClick={() => dispatch(toggleMenubar())}
+                  onClick={() => onToggleMenubar()}
               >
                 <Menu className="h-4 w-4" />
               </Button>
@@ -60,8 +63,8 @@ export const Navbar: React.FC = ( ) => {
               {isMenubarVisible && (
                   <IdeMenubar
                       visiblePanels={visiblePanels}
-                      togglePanel={(key) => dispatch(togglePanel(key))}
-                      resetLayout={() => dispatch(resetLayout())}
+                      togglePanel={(key) => onTogglePanel(key)}
+                      resetLayout={() => onResetLayout()}
                   />
               )}
             </div>

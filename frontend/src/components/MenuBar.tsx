@@ -53,6 +53,7 @@ const ViewMenu = ({ visiblePanels, togglePanel, resetLayout }: IdeMenubarProps) 
                         </MenubarCheckboxItem>
                     </MenubarSubContent>
                 </MenubarSub>
+                <MenubarSeparator />
 
                 <MenubarSub>
                     <MenubarSubTrigger inset>Panels</MenubarSubTrigger>
