@@ -1,15 +1,15 @@
-import styles from "@/App.module.css";
-import {Gate} from "@/views/circuit-view/Gate.tsx"
-import {Button} from "@/components/ui/button"
-import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover"
-import {Input} from "@/components/ui/input.tsx";
-import React, {Fragment, useState} from "react";
+import styles from '@/App.module.css';
+import { Gate } from '@/views/circuit-view/Gate.tsx';
+import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Input } from '@/components/ui/input.tsx';
+import React, { Fragment, useState } from 'react';
 import {
     AddGateRequest,
     ChangeQubitNameRequest,
     MoveGateRequest,
-    QubitResponse
-} from "@/api/dto/circuit.ts";
+    QubitResponse,
+} from '@/api/dto/circuit.ts';
 
 interface QubitProps extends QubitResponse {
     name: string;
@@ -21,13 +21,23 @@ interface QubitProps extends QubitResponse {
     onGateDelete: (id: string) => void;
 }
 
-export function Qubit({id, name, gates, qubitIndex, onNameChange, onDelete, onGateAdd, onGateMove, onGateDelete}: Readonly<QubitProps>) {
+export function Qubit({
+    id,
+    name,
+    gates,
+    qubitIndex,
+    onNameChange,
+    onDelete,
+    onGateAdd,
+    onGateMove,
+    onGateDelete,
+}: Readonly<QubitProps>) {
     const [tempName, setTempName] = useState<string>(name);
     const [hoverIndex, setHoverIndex] = useState<number | null>(null);
     const [draggingGateId, setDraggingGateId] = useState<string | null>(null);
     const [isPopoverOpen, setIsPopoverOpen] = useState(false);
 
-    const visibleGates = gates.filter(g => g.id !== draggingGateId);
+    const visibleGates = gates.filter((g) => g.id !== draggingGateId);
 
     const maxQubitNameLength = 4;
 
@@ -35,44 +45,44 @@ export function Qubit({id, name, gates, qubitIndex, onNameChange, onDelete, onGa
         if (e.target.value.length <= maxQubitNameLength) {
             setTempName(e.target.value);
         }
-    }
+    };
 
     const onSave = (e: React.FormEvent) => {
         e.preventDefault();
         const payload: ChangeQubitNameRequest = {
             id: id,
-            name: tempName
-        }
+            name: tempName,
+        };
         onNameChange(payload);
         setIsPopoverOpen(false);
-    }
+    };
 
     const handleDrop = async (e: React.DragEvent, qubitIdx: number, positionIdx: number) => {
         e.preventDefault();
         setHoverIndex(null);
         setDraggingGateId(null);
 
-        const rawData = e.dataTransfer.getData("text/plain");
+        const rawData = e.dataTransfer.getData('text/plain');
         if (!rawData) return;
 
         const gate = JSON.parse(rawData);
 
-        if (gate.origin === "library") {
+        if (gate.origin === 'library') {
             const payload: AddGateRequest = {
                 definitionId: gate.id,
                 toQubitIdx: qubitIdx,
-                toPositionIdx: positionIdx
+                toPositionIdx: positionIdx,
             };
             onGateAdd(payload);
-        } else if (gate.origin === "circuit") {
+        } else if (gate.origin === 'circuit') {
             const payload: MoveGateRequest = {
                 id: gate.id,
                 toQubitIdx: qubitIdx,
-                toPositionIdx: positionIdx
+                toPositionIdx: positionIdx,
             };
             onGateMove(payload);
         } else {
-            throw new Error("Invalid gate origin: " + gate.origin);
+            throw new Error('Invalid gate origin: ' + gate.origin);
         }
     };
 
@@ -119,9 +129,9 @@ export function Qubit({id, name, gates, qubitIndex, onNameChange, onDelete, onGa
             </Popover>
 
             <div className={`${styles.qubitWireSpacing}  relative flex-grow self-stretch`}>
-                <div className={`${styles.lines}  absolute top-1/2 w-full`}/>
+                <div className={`${styles.lines}  absolute top-1/2 w-full`} />
                 <div className="flex items-center h-full w-full relative z-10">
-                {/* Actual quantum Gates */}
+                    {/* Actual quantum Gates */}
                     {visibleGates.map((gate, index) => (
                         <Fragment key={`frag-${qubitIndex}-${index}`}>
                             {/* Dropzone before every Gate */}
@@ -138,19 +148,28 @@ export function Qubit({id, name, gates, qubitIndex, onNameChange, onDelete, onGa
                                 onDrop={(e) => handleDrop(e, qubitIndex, index)}
                             >
                                 {hoverIndex === index && (
-                                    <div className={styles.dropZonePlaceHolderMargin} style={{ pointerEvents: "none" }}>
-                                        <Gate key="placeholder" id="placeholder" definitionId="PLACEHOLDER" />
+                                    <div
+                                        className={styles.dropZonePlaceHolderMargin}
+                                        style={{ pointerEvents: 'none' }}
+                                    >
+                                        <Gate
+                                            key="placeholder"
+                                            id="placeholder"
+                                            definitionId="PLACEHOLDER"
+                                        />
                                     </div>
                                 )}
                             </div>
 
                             {/* Actual Gate */}
-                            <Gate key={`${gate.definitionId}-${qubitIndex}-${index}`}
-                                  id={gate.id}
-                                  definitionId={gate.definitionId}
-                                  onDragStart={(id) => setDraggingGateId(id)}
-                                  onDragEnd={() => setDraggingGateId(null)}
-                                  onDelete={() => onGateDelete(gate.id)}/>
+                            <Gate
+                                key={`${gate.definitionId}-${qubitIndex}-${index}`}
+                                id={gate.id}
+                                definitionId={gate.definitionId}
+                                onDragStart={(id) => setDraggingGateId(id)}
+                                onDragEnd={() => setDraggingGateId(null)}
+                                onDelete={() => onGateDelete(gate.id)}
+                            />
                         </Fragment>
                     ))}
 
@@ -170,8 +189,15 @@ export function Qubit({id, name, gates, qubitIndex, onNameChange, onDelete, onGa
                         onDrop={(e) => handleDrop(e, qubitIndex, visibleGates.length)}
                     >
                         {hoverIndex === visibleGates.length && (
-                            <div className={styles.dropZoneLastPlaceHolderMargin} style={{ pointerEvents: "none" }}>
-                                <Gate key="placeholder" id="placeholder" definitionId="PLACEHOLDER" />
+                            <div
+                                className={styles.dropZoneLastPlaceHolderMargin}
+                                style={{ pointerEvents: 'none' }}
+                            >
+                                <Gate
+                                    key="placeholder"
+                                    id="placeholder"
+                                    definitionId="PLACEHOLDER"
+                                />
                             </div>
                         )}
                     </div>

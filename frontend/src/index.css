@@ -1,103 +1,98 @@
-@import "tailwindcss";
-@import "tw-animate-css";
+@import 'tailwindcss';
+@import 'tw-animate-css';
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --color-bg-dark: var(--bg-dark);
-  --color-bg: var(--bg);
-  --color-bg-light: var(--bg-light);
-  --color-bg-light-hover: var(--bg-light-hover);
-  --color-text: var(--text);
-  --color-text-muted: var(--text-muted);
-  --color-border: var(--border);
-  --color-highlight: var(--highlight);
-  --color-destructive: var(--destructive);
-  --color-destructive-hover: var(--destructive-hover);
-  --color-special: var(--special);
-  --color-special-hover: var(--special-hover);
-  --color-logo-start: var(--logo-start);
-  --color-logo-end: var(--logo-end);
-  --color-destructive-text: var(--destructive-text);
+    --color-bg-dark: var(--bg-dark);
+    --color-bg: var(--bg);
+    --color-bg-light: var(--bg-light);
+    --color-bg-light-hover: var(--bg-light-hover);
+    --color-text: var(--text);
+    --color-text-muted: var(--text-muted);
+    --color-border: var(--border);
+    --color-highlight: var(--highlight);
+    --color-destructive: var(--destructive);
+    --color-destructive-hover: var(--destructive-hover);
+    --color-special: var(--special);
+    --color-special-hover: var(--special-hover);
+    --color-logo-start: var(--logo-start);
+    --color-logo-end: var(--logo-end);
+    --color-destructive-text: var(--destructive-text);
 }
 
 :root {
-  --bg-dark: hsl(0 0% 90%);        /* main page background (very light gray) */
-  --bg: hsl(0 0% 80%);             /* secondary surfaces / panels */
-  --bg-light: hsl(0 0% 70%);       /* raised elements / cards / hover surfaces */
-  --bg-light-hover: hsl(0 0% 60%);
+    --bg-dark: hsl(0 0% 90%); /* main page background (very light gray) */
+    --bg: hsl(0 0% 80%); /* secondary surfaces / panels */
+    --bg-light: hsl(0 0% 70%); /* raised elements / cards / hover surfaces */
+    --bg-light-hover: hsl(0 0% 60%);
 
-  --text: hsl(0 0% 20%);            /* primary text  */
-  --text-muted: hsl(0 0% 30%);     /* secondary / muted text */
+    --text: hsl(0 0% 20%); /* primary text  */
+    --text-muted: hsl(0 0% 30%); /* secondary / muted text */
 
-  --border: hsl(0 0 70%);          /* standard borders */
-  --border-muted: hsl(300 0% 82%); /* very subtle / disabled borders */
+    --border: hsl(0 0 70%); /* standard borders */
+    --border-muted: hsl(300 0% 82%); /* very subtle / disabled borders */
 
-  --highlight: hsl(0 0% 50%);      /* neutral highlight / emphasis */
+    --highlight: hsl(0 0% 50%); /* neutral highlight / emphasis */
 
-  --destructive: hsl(0 50% 50%);   /* destructive actions (red) */
-  --destructive-hover: hsl(0 50% 45%); /* destructive hover state */
-  --destructive-text: hsl(0 75% 45%);
+    --destructive: hsl(0 50% 50%); /* destructive actions (red) */
+    --destructive-hover: hsl(0 50% 45%); /* destructive hover state */
+    --destructive-text: hsl(0 75% 45%);
 
-  --special: hsl(217 91% 70%);     /* special / primary accent (blue) */
-  --special-hover: hsl(217 91% 60%); /* hover state for special accent */
+    --special: hsl(217 91% 70%); /* special / primary accent (blue) */
+    --special-hover: hsl(217 91% 60%); /* hover state for special accent */
 
-  --logo-start: hsl(217 91% 40%);
-  --logo-end:   hsl(217 91% 60%);
+    --logo-start: hsl(217 91% 40%);
+    --logo-end: hsl(217 91% 60%);
 }
-
 
 .dark {
-  --bg-dark: hsl(220, 6%, 10%);    /* main page background (black) */
-  --bg: hsl(0 0% 20%);             /* secondary surfaces / panels */
-  --bg-light: hsl(0 0% 30%);       /* raised elements / cards / hover surfaces */
-  --bg-light-hover: hsl(0 0% 60%);
+    --bg-dark: hsl(220, 6%, 10%); /* main page background (black) */
+    --bg: hsl(0 0% 20%); /* secondary surfaces / panels */
+    --bg-light: hsl(0 0% 30%); /* raised elements / cards / hover surfaces */
+    --bg-light-hover: hsl(0 0% 60%);
 
-  --text: hsl(0 0% 95%);           /* primary text (almost white) */
-  --text-muted: hsl(0 0% 70%);     /* secondary / muted text */
+    --text: hsl(0 0% 95%); /* primary text (almost white) */
+    --text-muted: hsl(0 0% 70%); /* secondary / muted text */
 
-  --border: hsl(0 0 30%);          /* standard borders (dark gray) */
-  --border-muted: hsl(300 0% 18%); /* very subtle / disabled borders */
+    --border: hsl(0 0 30%); /* standard borders (dark gray) */
+    --border-muted: hsl(300 0% 18%); /* very subtle / disabled borders */
 
-  --highlight: hsl(0 0% 50%);      /* neutral highlight / emphasis */
+    --highlight: hsl(0 0% 50%); /* neutral highlight / emphasis */
 
-  --destructive: hsl(0 50% 30%);   /* destructive actions (dark red) */
-  --destructive-hover: hsl(0 50% 40%); /* destructive hover state */
-  --destructive-text: hsl(0 85% 65%);
+    --destructive: hsl(0 50% 30%); /* destructive actions (dark red) */
+    --destructive-hover: hsl(0 50% 40%); /* destructive hover state */
+    --destructive-text: hsl(0 85% 65%);
 
-  --special: hsl(217 91% 60%);     /* special / primary accent (blue) */
-  --special-hover: hsl(217 91% 70%); /* hover state for special accent */
+    --special: hsl(217 91% 60%); /* special / primary accent (blue) */
+    --special-hover: hsl(217 91% 70%); /* hover state for special accent */
 
-  --logo-start: hsl(217 100% 85%);
-  --logo-end:   hsl(217 91% 60%);
-
+    --logo-start: hsl(217 100% 85%);
+    --logo-end: hsl(217 91% 60%);
 }
-
 
 @layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-bg-dark text-text;
-  }
-  /* Works for Chrome, Edge, and Safari */
-  ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
+    * {
+        @apply border-border;
+    }
+    body {
+        @apply bg-bg-dark text-text;
+    }
+    /* Works for Chrome, Edge, and Safari */
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
 
-  ::-webkit-scrollbar-track {
-    background: transparent;
-  }
+    ::-webkit-scrollbar-track {
+        background: transparent;
+    }
 
-  ::-webkit-scrollbar-thumb {
-    background-color: var(--bg); /* Your 50% gray */
-    border-radius: 9999px;
-  }
+    ::-webkit-scrollbar-thumb {
+        background-color: var(--bg); /* Your 50% gray */
+        border-radius: 9999px;
+    }
 
-  ::-webkit-scrollbar-thumb:hover {
-    background-color: var(--border);
-  }
+    ::-webkit-scrollbar-thumb:hover {
+        background-color: var(--border);
+    }
 }
-
-
