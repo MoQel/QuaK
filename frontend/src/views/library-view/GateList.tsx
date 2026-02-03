@@ -1,6 +1,6 @@
-import { useMemo } from "react";
-import { LibraryElement } from "@/views/library-view/LibraryElement.tsx";
-import { GateDefinitionResponse } from '@/api/dto/library.ts'
+import { useMemo } from 'react';
+import { LibraryElement } from '@/views/library-view/LibraryElement.tsx';
+import { GateDefinitionResponse } from '@/api/dto/library.ts';
 
 interface GateListProps {
     gates: GateDefinitionResponse[];
@@ -8,7 +8,6 @@ interface GateListProps {
 }
 
 function GateList({ gates, onGateClick }: GateListProps) {
-
     // Group and sort by type and then by name
     const groupedGates = useMemo(() => {
         const groups: Record<string, GateDefinitionResponse[]> = {};
@@ -30,17 +29,13 @@ function GateList({ gates, onGateClick }: GateListProps) {
     }, [gates]);
 
     return (
-        <div
-
-            className="w-full h-full overflow-y-auto will-change-transform transform-gpu border border-border rounded-md bg-bg-dark">
+        <div className="w-full h-full overflow-y-auto will-change-transform transform-gpu border border-border rounded-md bg-bg-dark">
             {groupedGates.map((group, index) => (
                 <section key={group.type}>
                     <div
-
                         className="sticky top-0 z-10 bg-bg text-text border-b border-border font-semibold text-sm px-4 py-3"
                         style={{
-
-                            borderTop: index === 0 ? "none" : "1px solid var(--border)",
+                            borderTop: index === 0 ? 'none' : '1px solid var(--border)',
                         }}
                     >
                         {group.type}
@@ -57,8 +52,7 @@ function GateList({ gates, onGateClick }: GateListProps) {
                                     cursor-pointer px-4 py-3"
                                 onClick={() => onGateClick(gate)}
                             >
-
-                            <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-4">
                                     <div className="w-12 min-w-48px flex justify-center items-center">
                                         <LibraryElement
                                             id={gate.id}
@@ -73,7 +67,6 @@ function GateList({ gates, onGateClick }: GateListProps) {
                                             {gate.name}
                                         </div>
                                         {gate.description && (
-
                                             <div className="text-xs text-text-muted leading-tight">
                                                 {gate.description}
                                             </div>

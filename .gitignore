@@ -1,5 +1,6 @@
 **/.idea/
 .env
+.nvm
 
 # OS Junk files
 .DS_Store

@@ -1,15 +1,11 @@
-import { Badge } from "@/components/ui/badge.tsx";
-import { TextIcon } from "@/views/TextIcon.tsx";
-import styles from "@/App.module.css";
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Badge } from '@/components/ui/badge.tsx';
+import { TextIcon } from '@/views/TextIcon.tsx';
+import styles from '@/App.module.css';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { BlockMath } from 'react-katex';
 import 'katex/dist/katex.min.css';
-import React, { useState } from "react"; //
-import { GateDefinitionIdentifier } from "@/api/dto/GateDefinitionIdentifier.ts";
+import React, { useState } from 'react'; //
+import { GateDefinitionIdentifier } from '@/api/dto/GateDefinitionIdentifier.ts';
 
 type LibraryElementProps = {
     id: GateDefinitionIdentifier;
@@ -30,11 +26,11 @@ export function LibraryElement({ id, symbol, onClick, matrix }: Readonly<Library
         setIsDragging(true);
 
         const data = {
-            origin: "library",
-            id: id
+            origin: 'library',
+            id: id,
         };
-        e.dataTransfer.setData("text/plain", JSON.stringify(data));
-        e.dataTransfer.effectAllowed = "copy";
+        e.dataTransfer.setData('text/plain', JSON.stringify(data));
+        e.dataTransfer.effectAllowed = 'copy';
     };
 
     const handleDragEnd = () => {
@@ -52,11 +48,7 @@ export function LibraryElement({ id, symbol, onClick, matrix }: Readonly<Library
     };
 
     return (
-        <Tooltip
-            delayDuration={DELAY_DURATION}
-            open={isOpen}
-            onOpenChange={handleOpenChange}
-        >
+        <Tooltip delayDuration={DELAY_DURATION} open={isOpen} onOpenChange={handleOpenChange}>
             <TooltipTrigger asChild>
                 <div
                     id={id}
