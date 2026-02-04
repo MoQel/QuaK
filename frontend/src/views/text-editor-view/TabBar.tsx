@@ -20,6 +20,7 @@ import {
     ContextMenuSubContent,
     ContextMenuShortcut,
 } from '@/components/ui/context-menu';
+import { Button } from '@/components/ui/button.tsx';
 import { useAppDispatch } from '@/hooks/useAppDispatch.ts';
 import { useAppSelector } from '@/hooks/useAppSelector.ts';
 import { languages } from '@/views/text-editor-view/languages/languages.ts';
@@ -29,7 +30,7 @@ interface TabBarProps {
     currentLangId: string | null;
 }
 
-export function TabBar({ currentLangId }: TabBarProps) {
+export function TabBar({ currentLangId }: Readonly<TabBarProps>) {
     const dispatch = useAppDispatch();
     const { openTabs, activeTabId } = useAppSelector((state) => state.tabs);
     const dirtyFiles = useAppSelector((state) => state.tabs.dirtyFiles);
@@ -79,7 +80,7 @@ export function TabBar({ currentLangId }: TabBarProps) {
         <div className="flex w-full flex-col">
             <div
                 ref={containerRef}
-                className="flex h-9 w-full flex-row items-center overflow-x-auto border-b border-border bg-bg-light scrollbar-hide"
+                className="flex w-full flex-row overflow-x-auto border-b border-border bg-bg-light scrollbar-hide"
             >
                 {openTabs.map((tab) => {
                     const isActive = tab.id === activeTabId;
@@ -87,6 +88,7 @@ export function TabBar({ currentLangId }: TabBarProps) {
                     const isDragging = tab.id === draggingId;
                     return (
                         <div
+                            role="tab"
                             key={tab.id}
                             ref={(el) => {
                                 tabRefs.current[tab.id] = el;
@@ -97,16 +99,17 @@ export function TabBar({ currentLangId }: TabBarProps) {
                             onDragOver={handleDragOver}
                             onDragEnd={handleDragEnd}
                             className={cn(
-                                'h-full transition-all duration-200',
+                                'h-9 flex-shrink-0 transition-all duration-200',
                                 isDragging ? 'opacity-20' : 'opacity-100',
                             )}
                         >
                             <ContextMenu>
                                 <ContextMenuTrigger className="h-full">
-                                    <div
+                                    <Button
+                                        variant="ghost"
                                         onClick={() => dispatch(setActiveTab(tab.id))}
                                         className={cn(
-                                            'group relative flex h-full min-w-[120px] max-w-[200px] cursor-pointer select-none items-center border-r border-border px-3 text-sm font-medium transition-colors',
+                                            'group relative flex h-full rounded-none min-w-[120px] max-w-[200px] cursor-pointer select-none items-center border-r border-border px-3 text-sm font-medium transition-colors',
                                             !isActive &&
                                                 'bg-transparent text-text-muted hover:bg-bg hover:text-text border-t-2 border-t-transparent',
                                             isActive && 'bg-bg text-text border-t-2 border-t-blue-500',
@@ -115,28 +118,21 @@ export function TabBar({ currentLangId }: TabBarProps) {
                                         <span className="mr-2 flex-1 truncate">{tab.title}</span>
 
                                         <span
+                                            role="button"
                                             className="relative flex items-center justify-center p-0.5 rounded-sm h-5 w-5 hover:bg-bg-light"
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 dispatch(closeTab(tab.id));
                                             }}
                                         >
-                                            <X
-                                                className={cn(
-                                                    'size-3.5 transition-opacity',
-                                                    isDirty
-                                                        ? 'opacity-0 group-hover:opacity-100'
-                                                        : 'opacity-0 group-hover:opacity-100',
-                                                )}
-                                            />
-
+                                            <X className="size-3.5 transition-opacity opacity-0 group-hover:opacity-100" />
                                             {isDirty && (
                                                 <div className="absolute inset-0 flex items-center justify-center group-hover:hidden">
                                                     <div className="h-2 w-2 rounded-full bg-text-muted" />
                                                 </div>
                                             )}
                                         </span>
-                                    </div>
+                                    </Button>
                                 </ContextMenuTrigger>
 
                                 {/* Right Click Menu */}

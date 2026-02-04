@@ -23,7 +23,7 @@ export function EntityForm({
     label = 'Name',
     placeholder = 'Enter name',
     ignoreExtension = false,
-}: EntityFormProps) {
+}: Readonly<EntityFormProps>) {
     const inputRef = useFocusSelection(defaultName, ignoreExtension);
 
     const form = useForm<z.infer<typeof nameSchema>>({

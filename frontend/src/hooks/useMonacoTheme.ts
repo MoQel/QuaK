@@ -7,7 +7,7 @@ export function useMonacoTheme(monaco: Monaco | null, theme: 'dark' | 'light') {
 
         try {
             const getCssVar = (name: string) => {
-                if (typeof window === 'undefined') return '';
+                if (typeof document === 'undefined') return '';
                 const style = getComputedStyle(document.documentElement);
                 return style ? style.getPropertyValue(name).trim() : '';
             };

@@ -25,7 +25,7 @@ interface QLPEditorProps {
     setCurrentLangId: Dispatch<SetStateAction<string>>;
 }
 
-function QLPEditor({ activeFileId, setCurrentLangId }: QLPEditorProps) {
+function QLPEditor({ activeFileId, setCurrentLangId }: Readonly<QLPEditorProps>) {
     const [isReadOnly, setIsReadOnly] = useState(true);
     const [editorInstance, setEditorInstance] = useState<editor.IStandaloneCodeEditor | null>(null);
 
@@ -66,7 +66,6 @@ function QLPEditor({ activeFileId, setCurrentLangId }: QLPEditorProps) {
             if (modelId === activeFileId) return;
 
             if (!openTabIds.has(modelId)) {
-                // console.log(`GC: Disposing model ${modelId}`); // Debug Log
                 model.dispose();
             }
         });

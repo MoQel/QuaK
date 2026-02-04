@@ -35,8 +35,8 @@ function App() {
                 e.preventDefault();
             }
         };
-        window.addEventListener('keydown', handleGlobalKeyDown);
-        return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+        globalThis.addEventListener('keydown', handleGlobalKeyDown);
+        return () => globalThis.removeEventListener('keydown', handleGlobalKeyDown);
     }, []);
 
     return (

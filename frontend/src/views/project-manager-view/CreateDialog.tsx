@@ -17,13 +17,18 @@ import { CreateFileRequest, DirectoryRequest } from '@/api/dto/filesystem';
 import { EntityForm } from '@/views/project-manager-view/util/FormUtils.tsx';
 import { useFocusSelection } from '@/hooks/useFocusSelection.ts';
 
+interface CreateDialogProps {
+    id: string;
+    openDialog: (element: Promise<JSX.Element>) => void;
+}
+
 /**
  * Provides a {@link ContextMenuItem} that allows for the creation of {@link FileElement FileElements}.
  * @param id The id of the parent of the new element
  * @param openDialog A function that opens a dialog and displays the given elements after their promise resolves.
  * @constructor
  */
-export function CreateDialog({ id, openDialog }: { id: string; openDialog: (element: Promise<JSX.Element>) => void }) {
+export function CreateDialog({ id, openDialog }: Readonly<CreateDialogProps>) {
     const dialog = (e: JSX.Element) => openDialog(Promise.resolve(e));
     return (
         <ContextMenuSub>

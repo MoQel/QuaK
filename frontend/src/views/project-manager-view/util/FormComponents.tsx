@@ -5,6 +5,11 @@ import { FormControl, FormItem, FormLabel } from '@/components/ui/form.tsx';
 import { Input } from '@/components/ui/input.tsx';
 import React from 'react';
 
+interface DialogCloseButtonsProps {
+    cancel?: string;
+    submit?: string;
+}
+
 /**
  * Provides a {@link DialogFooter} with two buttons.
  * The submit-button is of type <i>submit</i>.
@@ -12,7 +17,7 @@ import React from 'react';
  * @param submit The label of the submit-button
  * @constructor
  */
-export function DialogCloseButtons({ cancel = 'Cancel', submit = 'Submit' }: { cancel?: string; submit?: string }) {
+export function DialogCloseButtons({ cancel = 'Cancel', submit = 'Submit' }: Readonly<DialogCloseButtonsProps>) {
     return (
         <DialogFooter>
             <DialogClose asChild>
