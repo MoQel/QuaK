@@ -1,10 +1,6 @@
 import { useState, useEffect } from 'react';
 
-import {
-    ResizableHandle,
-    ResizablePanel,
-    ResizablePanelGroup,
-} from '@/components/ui/resizable.tsx';
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable.tsx';
 import { GateLibraryView } from '@/views/library-view/GateLibraryView.tsx';
 import { CircuitView } from '@/views/circuit-view/CircuitView.tsx';
 import { TextEditorView } from '@/views/text-editor-view/TextEditorView.tsx';
@@ -15,8 +11,7 @@ import { File } from '@/views/project-manager-view/util/FileElement.tsx';
 import { InspectorView } from '@/views/inspector-view/InspectorView.tsx';
 import { GateDefinitionResponse } from '@/api/dto/library.ts';
 import { CircuitResponse } from '@/api/dto/circuit.ts';
-import { useLayout } from "@/hooks/use-layout";
-
+import { useLayout } from '@/hooks/use-layout';
 
 function App() {
     const [file, openFile] = useState(undefined as unknown as File);
@@ -24,13 +19,7 @@ function App() {
     const [circuit, setCircuit] = useState<CircuitResponse | null>(null);
 
     // Use Hook
-    const {
-        visiblePanels,
-        topLayout,
-        onTogglePanel,
-        onSetMenubarVisibility
-    } = useLayout();
-
+    const { visiblePanels, topLayout, onTogglePanel, onSetMenubarVisibility } = useLayout();
 
     const isTopVisible = visiblePanels.file || visiblePanels.circuit || visiblePanels.code;
     const isBottomVisible = visiblePanels.library || visiblePanels.inspector || visiblePanels.results;
@@ -42,13 +31,10 @@ function App() {
     }, []);
 
     return (
-<div className="flex flex-col h-[calc(100vh-65px)] overflow-hidden bg-background text-foreground">
-
+        <div className="flex flex-col h-[calc(100vh-65px)] overflow-hidden bg-background text-foreground">
             <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-
-                <div className={`w-full ${!isTopVisible ? "hidden" : (isBottomVisible ? "h-[30%]" : "flex-1")}`}>
+                <div className={`w-full ${!isTopVisible ? 'hidden' : isBottomVisible ? 'h-[30%]' : 'flex-1'}`}>
                     <ResizablePanelGroup direction="horizontal">
-
                         {visiblePanels.file && (
                             <>
                                 <ResizablePanel
@@ -64,10 +50,7 @@ function App() {
 
                         {visiblePanels.circuit && (
                             <>
-                                <ResizablePanel
-                                    defaultSize={topLayout[1]}
-                                    onClose={() => onTogglePanel('circuit')}
-                                >
+                                <ResizablePanel defaultSize={topLayout[1]} onClose={() => onTogglePanel('circuit')}>
                                     <CircuitView circuit={circuit} setCircuit={setCircuit} />
                                 </ResizablePanel>
                                 {visiblePanels.code && <ResizableHandle withHandle />}
@@ -75,18 +58,16 @@ function App() {
                         )}
 
                         {visiblePanels.code && (
-                            <ResizablePanel
-                                defaultSize={topLayout[2]}
-                                onClose={() => onTogglePanel('code')}
-                            >
+                            <ResizablePanel defaultSize={topLayout[2]} onClose={() => onTogglePanel('code')}>
                                 <TextEditorView file={file} />
                             </ResizablePanel>
                         )}
                     </ResizablePanelGroup>
                 </div>
 
-
-                <div className={`w-full flex min-h-0 border-t border-border divide-x divide-border bg-background ${!isBottomVisible ? "hidden" : (isTopVisible ? "h-[70%]" : "flex-1")}`}>
+                <div
+                    className={`w-full flex min-h-0 border-t border-border divide-x divide-border bg-background ${!isBottomVisible ? 'hidden' : isTopVisible ? 'h-[70%]' : 'flex-1'}`}
+                >
                     {visiblePanels.library && (
                         <div className="flex-1 overflow-hidden relative">
                             <GateLibraryView onGateSelect={setSelectedGate} />
@@ -107,9 +88,6 @@ function App() {
                 </div>
 
                 <Toaster />
-            </div>
-        </div>
-            <Toaster />
             </div>
         </div>
     );
