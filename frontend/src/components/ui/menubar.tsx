@@ -3,12 +3,14 @@ import * as MenubarPrimitive from '@radix-ui/react-menubar';
 import { CheckIcon, ChevronRightIcon, CircleIcon } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
+// Import the shared styles
+import { menuContentStyle, menuItemStyle, menuTriggerStyle } from '@/components/ui/utils';
 
 function Menubar({ className, ...props }: React.ComponentProps<typeof MenubarPrimitive.Root>) {
     return (
         <MenubarPrimitive.Root
             data-slot="menubar"
-            className={cn('bg-bg-light flex h-9 items-center gap-1 rounded-md border p-1 shadow-xs', className)}
+            className={cn('bg-bg-dark flex h-9 items-center gap-1 rounded-md border p-1', className)}
             {...props}
         />
     );
@@ -34,10 +36,8 @@ function MenubarTrigger({ className, ...props }: React.ComponentProps<typeof Men
     return (
         <MenubarPrimitive.Trigger
             data-slot="menubar-trigger"
-            className={cn(
-                'focus:bg-bg-light focus:text-text data-[state=open]:bg-bg-light data-[state=open]:text-text flex items-center rounded-sm px-2 py-1 text-sm font-medium outline-hidden select-none cursor-pointer hover:bg-bg-light hover:text-text',
-                className,
-            )}
+            // Usage of shared trigger style
+            className={cn(menuTriggerStyle, className)}
             {...props}
         />
     );
@@ -57,8 +57,10 @@ function MenubarContent({
                 align={align}
                 alignOffset={alignOffset}
                 sideOffset={sideOffset}
+                // Usage of shared content style + specific overrides (min-w-12rem)
                 className={cn(
-                    'bg-bg text-text data-[state=open]:animate-in data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 min-w-[12rem] origin-(--radix-menubar-content-transform-origin) overflow-hidden rounded-md p-0 shadow-md cursor-pointer ',
+                    menuContentStyle,
+                    'min-w-[12rem] origin-(--radix-menubar-content-transform-origin) p-0 cursor-pointer',
                     className,
                 )}
                 {...props}
@@ -81,8 +83,12 @@ function MenubarItem({
             data-slot="menubar-item"
             data-inset={inset}
             data-variant={variant}
+            // Usage of shared item style + variant logic
             className={cn(
-                "bg-bg focus:bg-bg-light focus:text-text data-[variant=destructive]:text-destructive data-[variant=destructive]:focus:bg-destructive/10 dark:data-[variant=destructive]:focus:bg-destructive/20 data-[variant=destructive]:focus:text-destructive data-[variant=destructive]:*:[svg]:!text-destructive [&_svg:not([class*='text-'])]:text-text-muted relative flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[inset]:pl-8 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 cursor-pointer hover:bg-bg-light hover:text-text ",
+                menuItemStyle,
+                'bg-bg', // Specific background from your original file
+                "data-[variant=destructive]:text-destructive data-[variant=destructive]:focus:bg-destructive/10 dark:data-[variant=destructive]:focus:bg-destructive/20 data-[variant=destructive]:focus:text-destructive data-[variant=destructive]:*:[svg]:!text-destructive [&_svg:not([class*='text-'])]:text-text-muted",
+                inset && 'pl-8',
                 className,
             )}
             {...props}
@@ -99,10 +105,8 @@ function MenubarCheckboxItem({
     return (
         <MenubarPrimitive.CheckboxItem
             data-slot="menubar-checkbox-item"
-            className={cn(
-                "focus:bg-bg-light focus:text-text relative flex cursor-pointer items-center gap-2 rounded-xs py-1.5 pr-2 pl-8 text-sm outline-hidden select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 border-b border-border last:border-b-0",
-                className,
-            )}
+            // Reusing item style helps keep checkboxes consistent with regular items
+            className={cn(menuItemStyle, 'pr-2 pl-8 border-b border-border last:border-b-0', className)}
             checked={checked}
             {...props}
         >
@@ -120,10 +124,8 @@ function MenubarRadioItem({ className, children, ...props }: React.ComponentProp
     return (
         <MenubarPrimitive.RadioItem
             data-slot="menubar-radio-item"
-            className={cn(
-                "focus:bg-bg-light focus:text-text relative flex cursor-default items-center gap-2 rounded-xs py-1.5 pr-2 pl-8 text-sm outline-hidden select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
-                className,
-            )}
+            // Reusing item style
+            className={cn(menuItemStyle, 'cursor-default pr-2 pl-8', className)}
             {...props}
         >
             <span className="pointer-events-none absolute left-2 flex size-3.5 items-center justify-center">
@@ -189,8 +191,11 @@ function MenubarSubTrigger({
         <MenubarPrimitive.SubTrigger
             data-slot="menubar-sub-trigger"
             data-inset={inset}
+            // Reusing item style because triggers inside menus look like items
             className={cn(
-                'cursor-pointer focus:bg-bg-light focus:text-text data-[state=open]:bg-bg-light data-[state=open]:text-text flex items-center rounded-sm px-2 py-1.5 text-sm outline-none select-none data-[inset]:pl-8',
+                menuItemStyle,
+                'data-[state=open]:bg-bg-light data-[state=open]:text-text',
+                inset && 'pl-8',
                 className,
             )}
             {...props}
@@ -205,8 +210,10 @@ function MenubarSubContent({ className, ...props }: React.ComponentProps<typeof 
     return (
         <MenubarPrimitive.SubContent
             data-slot="menubar-sub-content"
+            // Reusing content style, but keeping your original min-w and shadow-lg
             className={cn(
-                'bg-bg cursor-pointer text-text data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 min-w-[8rem] origin-(--radix-menubar-content-transform-origin) overflow-hidden rounded-md border p-0 shadow-lg',
+                menuContentStyle,
+                'bg-bg min-w-[8rem] origin-(--radix-menubar-content-transform-origin) p-0 shadow-lg cursor-pointer',
                 className,
             )}
             {...props}

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable.tsx';
 import { GateLibraryView } from '@/views/library-view/GateLibraryView.tsx';
@@ -11,39 +11,85 @@ import { File } from '@/views/project-manager-view/util/FileElement.tsx';
 import { InspectorView } from '@/views/inspector-view/InspectorView.tsx';
 import { GateDefinitionResponse } from '@/api/dto/library.ts';
 import { CircuitResponse } from '@/api/dto/circuit.ts';
+import { useLayout } from '@/hooks/use-layout';
 
 function App() {
     const [file, openFile] = useState(undefined as unknown as File);
     const [selectedGate, setSelectedGate] = useState<GateDefinitionResponse | undefined>(undefined);
     const [circuit, setCircuit] = useState<CircuitResponse | null>(null);
 
+    // Use Hook
+    const { visiblePanels, topLayout, onTogglePanel, onSetMenubarVisibility } = useLayout();
+
+    const isTopVisible = visiblePanels.file || visiblePanels.circuit || visiblePanels.code;
+    const isBottomVisible = visiblePanels.library || visiblePanels.inspector || visiblePanels.results;
+
+    useEffect(() => {
+        return () => {
+            onSetMenubarVisibility(false);
+        };
+    }, []);
+
     return (
-        <>
-            <div className="h-full min-h-0 overflow-hidden px-[10px] flex flex-col">
-                <div className="flex-3 min-h-0 overflow-hidden">
-                    <ResizablePanelGroup direction="horizontal" className="h-full">
-                        <ResizablePanel defaultSize={20} className="h-full overflow-hidden">
-                            <ProjectManagerView onFileSelect={openFile} />
-                        </ResizablePanel>
-                        <ResizableHandle withHandle />
-                        <ResizablePanel className="h-full overflow-hidden">
-                            <CircuitView circuit={circuit} setCircuit={setCircuit} />
-                        </ResizablePanel>
-                        <ResizableHandle withHandle />
-                        <ResizablePanel className="flex-col h-full overflow-hidden">
-                            <TextEditorView file={file} />
-                        </ResizablePanel>
+        <div className="flex flex-col h-[calc(100vh-65px)] overflow-hidden bg-background text-foreground">
+            <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+                <div className={`w-full ${!isTopVisible ? 'hidden' : isBottomVisible ? 'h-[30%]' : 'flex-1'}`}>
+                    <ResizablePanelGroup direction="horizontal">
+                        {visiblePanels.file && (
+                            <>
+                                <ResizablePanel
+                                    defaultSize={topLayout[0]}
+                                    minSize={15}
+                                    onClose={() => onTogglePanel('file')}
+                                >
+                                    <ProjectManagerView onFileSelect={openFile} />
+                                </ResizablePanel>
+                                {(visiblePanels.circuit || visiblePanels.code) && <ResizableHandle withHandle />}
+                            </>
+                        )}
+
+                        {visiblePanels.circuit && (
+                            <>
+                                <ResizablePanel defaultSize={topLayout[1]} onClose={() => onTogglePanel('circuit')}>
+                                    <CircuitView circuit={circuit} setCircuit={setCircuit} />
+                                </ResizablePanel>
+                                {visiblePanels.code && <ResizableHandle withHandle />}
+                            </>
+                        )}
+
+                        {visiblePanels.code && (
+                            <ResizablePanel defaultSize={topLayout[2]} onClose={() => onTogglePanel('code')}>
+                                <TextEditorView file={file} />
+                            </ResizablePanel>
+                        )}
                     </ResizablePanelGroup>
                 </div>
 
-                <div className="flex-4 min-h-0 overflow-hidden flex w-full">
-                    <GateLibraryView onGateSelect={setSelectedGate} />
-                    <InspectorView gate={selectedGate} onClear={() => setSelectedGate(undefined)} />
-                    <ResultsView circuit={circuit} />
+                <div
+                    className={`w-full flex min-h-0 border-t border-border divide-x divide-border bg-background ${!isBottomVisible ? 'hidden' : isTopVisible ? 'h-[70%]' : 'flex-1'}`}
+                >
+                    {visiblePanels.library && (
+                        <div className="flex-1 overflow-hidden relative">
+                            <GateLibraryView onGateSelect={setSelectedGate} />
+                        </div>
+                    )}
+
+                    {visiblePanels.inspector && (
+                        <div className="flex-1 overflow-hidden relative">
+                            <InspectorView gate={selectedGate} onClear={() => setSelectedGate(undefined)} />
+                        </div>
+                    )}
+
+                    {visiblePanels.results && (
+                        <div className="flex-1 overflow-hidden relative">
+                            <ResultsView circuit={circuit} />
+                        </div>
+                    )}
                 </div>
+
+                <Toaster />
             </div>
-            <Toaster />
-        </>
+        </div>
     );
 }
 
