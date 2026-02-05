@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/circuit")
-@Tag(name = "Gates", description = "Quantum gate operations")
+@Tag(name = "Circuit", description = "Controls operations on a quantum circuit")
 public class CircuitRestAdapter {
     private final CircuitServicePort service;
     private final CircuitDtoMapper mapper;
@@ -66,17 +66,17 @@ public class CircuitRestAdapter {
     @PostMapping("/{circuitId}/gate")
     @ResponseStatus(HttpStatus.CREATED)
     public CircuitResponse addGate(@PathVariable String circuitId, @RequestBody AddGateRequest request) {
-        ElementaryQuantumGateDefinitionIdentifier definitionId =
-                ElementaryQuantumGateDefinitionIdentifier.fromString(request.definitionId());
-        QuantumCircuit circuit =
-                service.addGate(circuitId, definitionId, request.toQubitIdx(), request.toPositionIdx());
+        ElementaryQuantumGateDefinitionIdentifier definitionId = ElementaryQuantumGateDefinitionIdentifier
+                .fromString(request.definitionId());
+        QuantumCircuit circuit = service.addGate(circuitId, definitionId, request.toQubitIdx(),
+                request.toPositionIdx());
         return mapper.toResponse(circuit);
     }
 
     @PatchMapping("/{circuitId}/gate")
     public CircuitResponse moveGate(@PathVariable String circuitId, @RequestBody MoveGateRequest request) {
-        QuantumCircuit circuit =
-                service.moveGate(circuitId, request.id(), request.toQubitIdx(), request.toPositionIdx());
+        QuantumCircuit circuit = service.moveGate(circuitId, request.id(), request.toQubitIdx(),
+                request.toPositionIdx());
         return mapper.toResponse(circuit);
     }
 
