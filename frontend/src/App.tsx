@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable.tsx';
 import { GateLibraryView } from '@/views/library-view/GateLibraryView.tsx';
@@ -14,6 +15,7 @@ import { CircuitResponse } from '@/api/dto/circuit.ts';
 import { useLayout } from '@/hooks/use-layout';
 
 function App() {
+    const { projectId } = useParams<{ projectId: string }>();
     const [file, openFile] = useState(undefined as unknown as File);
     const [selectedGate, setSelectedGate] = useState<GateDefinitionResponse | undefined>(undefined);
     const [circuit, setCircuit] = useState<CircuitResponse | null>(null);
@@ -42,7 +44,7 @@ function App() {
                                     minSize={15}
                                     onClose={() => onTogglePanel('file')}
                                 >
-                                    <ProjectManagerView onFileSelect={openFile} />
+                                    <ProjectManagerView onFileSelect={openFile} projectId={projectId} />
                                 </ResizablePanel>
                                 {(visiblePanels.circuit || visiblePanels.code) && <ResizableHandle withHandle />}
                             </>

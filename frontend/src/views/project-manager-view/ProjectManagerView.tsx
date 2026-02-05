@@ -24,23 +24,29 @@ export const FileSelect: Context<(file: File) => void> = createContext((_) => {}
  * Displays a tree-view of the projects inside a {@link Card}
  * @constructor
  */
-export function ProjectManagerView({ onFileSelect }: { onFileSelect: (file: File) => void }) {
+export function ProjectManagerView({
+    onFileSelect,
+    projectId,
+}: {
+    onFileSelect: (file: File) => void;
+    projectId?: string;
+}) {
     const [content, setContent] = useState([<Skeleton className="h-4" key="LOADING" />]);
     const [reloaded, r] = useState(false);
     const reload = () => r(!reloaded);
 
     useEffect(() => {
-        fetchProjects().then(setContent);
-    }, [reloaded]);
+        fetchProjects(projectId).then(setContent);
+    }, [reloaded, projectId]);
 
     return (
-        <Card className="h-full">
-            <CardContent className="overflow-auto">
+        <Card className="h-full border-0 rounded-none bg-background shadow-none">
+            <CardContent className="overflow-auto p-4">
                 <div className="flex-col">
                     <FileSelect value={onFileSelect}>
                         <ParentRefresh value={reload}>
                             {content}
-                            <CreateProject reload={reload} key="NEW" />
+                            {!projectId && <CreateProject reload={reload} key="NEW" />}
                         </ParentRefresh>
                     </FileSelect>
                 </div>
@@ -49,8 +55,13 @@ export function ProjectManagerView({ onFileSelect }: { onFileSelect: (file: File
     );
 }
 
-async function fetchProjects() {
+async function fetchProjects(projectId?: string) {
     try {
+        if (projectId) {
+            const project = await api.get<ProjectDetailsResponse>(`/api/project/${projectId}`);
+            return [<Project name={project.name} id={project.id} key={project.id} initiallyOpen={true} />];
+        }
+
         const projects = await api.get<ProjectDetailsResponse[]>('/api/project/');
         const elements = [];
         if (projects.length == 0) {
@@ -67,7 +78,16 @@ async function fetchProjects() {
     }
 }
 
-function CreateProject({ reload }: { reload: () => void }) {
+export function CreateProject({
+    reload,
+    onSuccess,
+    children,
+}: {
+    reload?: () => void;
+    onSuccess?: (project: ProjectDetailsResponse) => void;
+    children?: React.ReactNode;
+}) {
+    const [open, setOpen] = useState(false);
     const formSchema = z.object({
         name: z.string().min(1, {
             message: 'Name of the project must be at least 1 characters.',
@@ -86,15 +106,25 @@ function CreateProject({ reload }: { reload: () => void }) {
             name: values.name,
         };
 
-        api.post('/api/project/', body).then(reload);
+        api.post<ProjectDetailsResponse>('/api/project/', body).then((project) => {
+            setOpen(false);
+            if (onSuccess) {
+                onSuccess(project);
+            }
+            if (reload) {
+                reload();
+            }
+        });
     };
 
     return (
-        <Dialog>
+        <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild className="create-project">
-                <Button className="w-full" variant="ghost">
-                    <Plus />
-                </Button>
+                {children || (
+                    <Button className="w-full" variant="ghost">
+                        <Plus />
+                    </Button>
+                )}
             </DialogTrigger>
             <DialogContent>
                 <DialogHeader>

@@ -45,6 +45,7 @@ export function FileElementContainer({
     edit,
     icon,
     deletePath,
+    initiallyOpen = false,
 }: {
     name: string;
     id: string;
@@ -52,13 +53,14 @@ export function FileElementContainer({
     edit: Edit;
     icon: Icon;
     deletePath: string;
+    initiallyOpen?: boolean;
 }) {
     const [content, setContent] = useState([<Skeleton className="h-4" />]);
     const [dialogContent, setDialogContent] = useState(<Skeleton className="h-5 mt-5" />);
     const [reloaded, r] = useState(false);
     const reload = () => r(!reloaded);
     const [open, setOpen] = useState(false);
-    const [collapsible, toggleCollapsible] = useState(false);
+    const [collapsible, toggleCollapsible] = useState(initiallyOpen);
 
     useEffect(() => {
         getContent(id).then(setContent);

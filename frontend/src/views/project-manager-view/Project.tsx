@@ -29,7 +29,7 @@ async function fetchProjectContent(id: string) {
  * @param id The id of the project
  * @constructor
  */
-export function Project({ name, id }: { name: string; id: string }) {
+export function Project({ name, id, initiallyOpen }: { name: string; id: string; initiallyOpen?: boolean }) {
     const icon = (open: boolean) => (open ? <ChevronDown /> : <ChevronRight />);
     return (
         <FileElementContainer
@@ -39,6 +39,7 @@ export function Project({ name, id }: { name: string; id: string }) {
             edit={ProjectEdit}
             icon={icon}
             deletePath={'/api/project/' + id}
+            initiallyOpen={initiallyOpen}
         />
     );
 }
