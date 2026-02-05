@@ -9,11 +9,7 @@ import { Input } from '@/components/ui/input.tsx';
 import { JSX, useContext } from 'react';
 import { ContextMenuItem } from '@/components/ui/context-menu.tsx';
 import { ChevronDown, ChevronRight } from 'lucide-react';
-import {
-    getElementForFileElement,
-    type Project,
-    sort,
-} from '@/views/project-manager-view/util/FileElement.tsx';
+import { getElementForFileElement, type Project, sort } from '@/views/project-manager-view/util/FileElement.tsx';
 import { DialogCloseButtons } from '@/views/project-manager-view/util/FormComponents.tsx';
 import { api } from '@/api/api.ts';
 import { ProjectContentsResponse, ProjectRequest } from '@/api/dto/filesystem.ts';

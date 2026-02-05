@@ -14,13 +14,7 @@ export const Navbar: React.FC = () => {
     const { logout } = useAuth();
     const { user } = useCurrentUser();
 
-    const {
-        visiblePanels,
-        isMenubarVisible,
-        onToggleMenubar,
-        onTogglePanel,
-        onResetLayout
-    } = useLayout();
+    const { visiblePanels, isMenubarVisible, onToggleMenubar, onTogglePanel, onResetLayout } = useLayout();
 
     const isIdeView = location.pathname.startsWith('/project');
 

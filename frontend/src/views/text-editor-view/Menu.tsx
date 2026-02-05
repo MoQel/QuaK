@@ -57,11 +57,7 @@ function formatLanguages(languages: language[]) {
     const elements = [];
     for (const lang of languages) {
         elements.push(
-            <MenubarCheckboxItem
-                onSelect={lang.select}
-                checked={lang.isSelected}
-                key={lang.displayName}
-            >
+            <MenubarCheckboxItem onSelect={lang.select} checked={lang.isSelected} key={lang.displayName}>
                 {lang.displayName}
             </MenubarCheckboxItem>,
         );

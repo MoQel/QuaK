@@ -4,9 +4,4 @@ import java.time.Instant;
 import java.util.List;
 
 public record DirectoryContentsResponse(
-        String id,
-        String name,
-        String type,
-        List<FileElementDto> contents,
-        Instant createdOn,
-        Instant lastAccess) {}
+        String id, String name, String type, List<FileElementDto> contents, Instant createdOn, Instant lastAccess) {}

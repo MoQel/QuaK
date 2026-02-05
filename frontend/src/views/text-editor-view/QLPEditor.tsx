@@ -8,11 +8,7 @@ import { qrisp } from '@/components/languages/qrisp.ts';
 import { openqasm } from '@/components/languages/openqasm.ts';
 import { api } from '@/api/api.ts';
 import { useTheme } from '@/theme';
-import {
-    FileContentRequest,
-    FileContentResponse,
-    FileDetailsResponse,
-} from '@/api/dto/filesystem.ts';
+import { FileContentRequest, FileContentResponse, FileDetailsResponse } from '@/api/dto/filesystem.ts';
 
 import { Base64 } from 'js-base64';
 

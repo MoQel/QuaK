@@ -28,8 +28,7 @@ public class AuthService implements AuthServicePort {
     }
 
     @Override
-    public AuthStatusResponse getAuthenticationStatus(
-            Optional<AuthenticatedUser> authenticatedUser) {
+    public AuthStatusResponse getAuthenticationStatus(Optional<AuthenticatedUser> authenticatedUser) {
         log.debug("Checking auth status. Authenticated: {}", authenticatedUser.isPresent());
 
         if (authenticatedUser.isEmpty()) {
@@ -39,10 +38,7 @@ public class AuthService implements AuthServicePort {
         AuthenticatedUser domainUser = authenticatedUser.get();
 
         // Fetch the full User object from the database
-        log.debug(
-                "Fetching full user details for issuer: {}, sub: {}",
-                domainUser.issuer(),
-                domainUser.subject());
+        log.debug("Fetching full user details for issuer: {}, sub: {}", domainUser.issuer(), domainUser.subject());
 
         return userRepository
                 .findByIssuerAndSub(domainUser.issuer(), domainUser.subject())

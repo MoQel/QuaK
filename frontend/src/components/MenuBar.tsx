@@ -1,5 +1,5 @@
 import React from 'react';
-import { useTheme } from "@/theme";
+import { useTheme } from '@/theme';
 import {
     Menubar,
     MenubarMenu,
@@ -30,7 +30,7 @@ interface IdeMenubarProps {
 
 const ViewMenu = ({ visiblePanels, togglePanel, resetLayout }: IdeMenubarProps) => {
     const { theme, toggleTheme } = useTheme();
-    const isDark = theme === "dark";
+    const isDark = theme === 'dark';
 
     const keepMenuOpen = (event: Event) => {
         event.preventDefault();
@@ -44,7 +44,7 @@ const ViewMenu = ({ visiblePanels, togglePanel, resetLayout }: IdeMenubarProps) 
             <MenubarContent>
                 <MenubarSub>
                     <MenubarSubTrigger inset>Theme</MenubarSubTrigger>
-                    <MenubarSubContent >
+                    <MenubarSubContent>
                         <MenubarCheckboxItem checked={isDark} onCheckedChange={toggleTheme}>
                             Dark
                         </MenubarCheckboxItem>
@@ -57,7 +57,7 @@ const ViewMenu = ({ visiblePanels, togglePanel, resetLayout }: IdeMenubarProps) 
 
                 <MenubarSub>
                     <MenubarSubTrigger inset>Panels</MenubarSubTrigger>
-                    <MenubarSubContent >
+                    <MenubarSubContent>
                         {(Object.keys(visiblePanels) as Array<keyof VisiblePanelsState>).map((key) => (
                             <MenubarCheckboxItem
                                 key={key}

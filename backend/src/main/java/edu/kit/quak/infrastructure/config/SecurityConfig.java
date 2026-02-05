@@ -15,13 +15,16 @@ import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
 import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
@@ -35,12 +38,14 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
- * Security configuration for the application. Configures OAuth2/OIDC authentication, CORS, CSRF,
+ * Security configuration for the application. Configures OAuth2/OIDC
+ * authentication, CORS, CSRF,
  * and authorization rules.
  */
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
+@Profile("!dev") // This config is NOT active when 'dev' profile is enabled
 public class SecurityConfig {
 
     @Value("${app.frontend.url}")
@@ -53,75 +58,55 @@ public class SecurityConfig {
             AuthenticationSuccessHandler authenticationSuccessHandler)
             throws Exception {
         http.cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .csrf(
-                        csrf ->
-                                csrf.csrfTokenRepository(
-                                                CookieCsrfTokenRepository.withHttpOnlyFalse())
-                                        .csrfTokenRequestHandler(
-                                                new CsrfTokenRequestAttributeHandler())
-                                        .ignoringRequestMatchers(
-                                                "/api/auth/**", "/login/**", "/oauth2/**"))
+                .csrf(csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                        .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
+                        .ignoringRequestMatchers("/api/auth/**", "/login/**", "/oauth2/**"))
                 .addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class)
-                .authorizeHttpRequests(
-                        auth ->
-                                auth.requestMatchers(
-                                                "/",
-                                                "/login/**",
-                                                "/oauth2/**",
-                                                "/api/auth/user",
-                                                "/error",
-                                                "/*.js",
-                                                "/*.css",
-                                                "/*.html",
-                                                "/*.ico",
-                                                "/*.png",
-                                                "/*.jpg",
-                                                "/assets/**")
-                                        .permitAll()
-                                        .anyRequest()
-                                        .authenticated())
-                .oauth2Login(
-                        oauth2 ->
-                                oauth2.authorizationEndpoint(
-                                                authorization ->
-                                                        authorization.authorizationRequestResolver(
-                                                                authorizationRequestResolver))
-                                        .successHandler(authenticationSuccessHandler))
-                .logout(
-                        logout ->
-                                logout.logoutUrl("/api/auth/logout")
-                                        .logoutSuccessHandler(
-                                                (request, response, authentication) -> {
-                                                    response.setStatus(
-                                                            jakarta.servlet.http.HttpServletResponse
-                                                                    .SC_OK);
-                                                })
-                                        .invalidateHttpSession(true)
-                                        .deleteCookies("JSESSIONID")
-                                        .permitAll())
-                .exceptionHandling(
-                        exception ->
-                                exception
-                                        .authenticationEntryPoint(
-                                                new org.springframework.security.web.authentication
-                                                        .HttpStatusEntryPoint(
-                                                        org.springframework.http.HttpStatus
-                                                                .UNAUTHORIZED))
-                                        .accessDeniedHandler(
-                                                (request, response, accessDeniedException) -> {
-                                                    response.setStatus(
-                                                            org.springframework.http.HttpStatus
-                                                                    .FORBIDDEN
-                                                                    .value());
-                                                    response.setContentType("application/json");
-                                                    response.getWriter()
-                                                            .write(
-                                                                    "{\"error\":\"Access"
-                                                                        + " Denied\",\"message\":\""
-                                                                            + accessDeniedException
-                                                                                    .getMessage()
-                                                                            + "\"}");
-                                                }));
+                .authorizeHttpRequests(auth -> auth.requestMatchers(
+                                "/",
+                                "/login/**",
+                                "/oauth2/**",
+                                "/api/auth/user",
+                                "/error",
+                                "/*.js",
+                                "/*.css",
+                                "/*.html",
+                                "/*.ico",
+                                "/*.png",
+                                "/*.jpg",
+                                "/assets/**",
+                                // OpenAPI / Swagger endpoints
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/api-docs/**",
+                                "/api-docs.yaml",
+                                "/v3/api-docs/**")
+                        .permitAll()
+                        .anyRequest()
+                        .authenticated())
+                .oauth2Login(oauth2 -> oauth2.authorizationEndpoint(authorization ->
+                                authorization.authorizationRequestResolver(authorizationRequestResolver))
+                        .successHandler(authenticationSuccessHandler))
+                .logout(logout -> logout.logoutUrl("/api/auth/logout")
+                        .logoutSuccessHandler((request, response, authentication) -> {
+                            response.setStatus(jakarta.servlet.http.HttpServletResponse.SC_OK);
+                        })
+                        .invalidateHttpSession(true)
+                        .deleteCookies("JSESSIONID")
+                        .permitAll())
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(
+                                new org.springframework.security.web.authentication.HttpStatusEntryPoint(
+                                        org.springframework.http.HttpStatus.UNAUTHORIZED))
+                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            response.setStatus(org.springframework.http.HttpStatus.FORBIDDEN.value());
+                            response.setContentType("application/json");
+                            response.getWriter()
+                                    .write("{\"error\":\"Access"
+                                            + " Denied\",\"message\":\""
+                                            + accessDeniedException.getMessage()
+                                            + "\"}");
+                        }));
 
         return http.build();
     }
@@ -131,17 +116,13 @@ public class SecurityConfig {
             ClientRegistrationRepository clientRegistrationRepository) {
 
         DefaultOAuth2AuthorizationRequestResolver defaultResolver =
-                new DefaultOAuth2AuthorizationRequestResolver(
-                        clientRegistrationRepository, "/oauth2/authorization");
+                new DefaultOAuth2AuthorizationRequestResolver(clientRegistrationRepository, "/oauth2/authorization");
 
         return new OAuth2AuthorizationRequestResolver() {
             @Override
-            public OAuth2AuthorizationRequest resolve(
-                    jakarta.servlet.http.HttpServletRequest request) {
+            public OAuth2AuthorizationRequest resolve(jakarta.servlet.http.HttpServletRequest request) {
                 OAuth2AuthorizationRequest authorizationRequest = defaultResolver.resolve(request);
-                return authorizationRequest != null
-                        ? customizeAuthorizationRequest(authorizationRequest)
-                        : null;
+                return authorizationRequest != null ? customizeAuthorizationRequest(authorizationRequest, null) : null;
             }
 
             @Override
@@ -150,30 +131,32 @@ public class SecurityConfig {
                 OAuth2AuthorizationRequest authorizationRequest =
                         defaultResolver.resolve(request, clientRegistrationId);
                 return authorizationRequest != null
-                        ? customizeAuthorizationRequest(authorizationRequest)
+                        ? customizeAuthorizationRequest(authorizationRequest, clientRegistrationId)
                         : null;
             }
         };
     }
 
     private OAuth2AuthorizationRequest customizeAuthorizationRequest(
-            OAuth2AuthorizationRequest authorizationRequest) {
+            OAuth2AuthorizationRequest authorizationRequest, String registrationId) {
 
         // Generate PKCE code verifier and challenge
         String codeVerifier = generateCodeVerifier();
         String codeChallenge = generateCodeChallenge(codeVerifier);
 
         return OAuth2AuthorizationRequest.from(authorizationRequest)
-                .additionalParameters(
-                        params -> {
-                            params.put("code_challenge", codeChallenge);
-                            params.put("code_challenge_method", "S256");
-                            params.put("prompt", "select_account");
-                        })
-                .attributes(
-                        attrs -> {
-                            attrs.put("code_verifier", codeVerifier);
-                        })
+                .additionalParameters(params -> {
+                    params.put("code_challenge", codeChallenge);
+                    params.put("code_challenge_method", "S256");
+                    // Only add prompt=select_account for Google to avoid issues with other
+                    // providers
+                    if ("google".equalsIgnoreCase(registrationId)) {
+                        params.put("prompt", "select_account");
+                    }
+                })
+                .attributes(attrs -> {
+                    attrs.put("code_verifier", codeVerifier);
+                })
                 .build();
     }
 
@@ -194,47 +177,59 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationSuccessHandler authenticationSuccessHandler(
-            OidcSyncServicePort oidcUserSyncService) {
-        SimpleUrlAuthenticationSuccessHandler delegate =
-                new SimpleUrlAuthenticationSuccessHandler();
+    public AuthenticationSuccessHandler authenticationSuccessHandler(OidcSyncServicePort oidcUserSyncService) {
+        SimpleUrlAuthenticationSuccessHandler delegate = new SimpleUrlAuthenticationSuccessHandler();
         delegate.setDefaultTargetUrl(frontendUrl + "/");
         delegate.setAlwaysUseDefaultTargetUrl(true);
 
         return (request, response, authentication) -> {
-            if (authentication.getPrincipal()
-                    instanceof
-                    org.springframework.security.oauth2.core.oidc.user.OidcUser oidcUser) {
-                if (authentication
-                        instanceof
-                        org.springframework.security.oauth2.client.authentication
-                                                .OAuth2AuthenticationToken
-                                        oauthToken) {
-                    String registrationId = oauthToken.getAuthorizedClientRegistrationId();
-                    OidcUserInfo userInfo =
-                            new OidcUserInfo(
-                                    oidcUser.getSubject(),
-                                    oidcUser.getEmail(),
-                                    oidcUser.getEmailVerified(),
-                                    oidcUser.getFullName(),
-                                    oidcUser.getGivenName(),
-                                    oidcUser.getFamilyName(),
-                                    oidcUser.getPicture());
-                    edu.kit.quak.core.user.model.User user =
-                            oidcUserSyncService.syncUser(registrationId, userInfo);
-                    request.getSession().setAttribute("userId", user.getId());
-                }
+            if (authentication instanceof OAuth2AuthenticationToken oauthToken) {
+                OAuth2User principal = oauthToken.getPrincipal();
+                String registrationId = oauthToken.getAuthorizedClientRegistrationId();
+
+                // Map attributes dynamically based on provider
+                OidcUserInfo userInfo = mapToUserInfo(principal);
+
+                edu.kit.quak.core.user.model.User user = oidcUserSyncService.syncUser(registrationId, userInfo);
+                request.getSession().setAttribute("userId", user.getId());
             }
             delegate.onAuthenticationSuccess(request, response, authentication);
         };
+    }
+
+    private OidcUserInfo mapToUserInfo(OAuth2User principal) {
+        String sub = principal.getAttribute("sub") != null
+                ? principal.getAttribute("sub").toString()
+                : (principal.getAttribute("id") != null
+                        ? principal.getAttribute("id").toString()
+                        : null);
+
+        Boolean emailVerified = principal.getAttribute("email_verified") != null
+                ? (Boolean) principal.getAttribute("email_verified")
+                : true;
+
+        String picture = principal.getAttribute("picture") != null
+                ? principal.getAttribute("picture").toString()
+                : (principal.getAttribute("avatar_url") != null
+                        ? principal.getAttribute("avatar_url").toString()
+                        : null);
+
+        // Logic to handle different attribute names across providers
+        return new OidcUserInfo(
+                sub,
+                principal.getAttribute("email"),
+                emailVerified,
+                principal.getAttribute("name"),
+                principal.getAttribute("given_name"),
+                principal.getAttribute("family_name"),
+                picture);
     }
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(List.of(frontendUrl));
-        configuration.setAllowedMethods(
-                List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
 

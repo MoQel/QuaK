@@ -135,10 +135,9 @@ describe('useQuantumSimulation Hook', () => {
     });
 
     it('should ignore outdated worker responses (race conditions)', () => {
-        const { result, rerender } = renderHook(
-            ({ opts }) => useQuantumSimulation(mockCircuit, opts),
-            { initialProps: { opts: { sampleCount: 100 } } },
-        );
+        const { result, rerender } = renderHook(({ opts }) => useQuantumSimulation(mockCircuit, opts), {
+            initialProps: { opts: { sampleCount: 100 } },
+        });
 
         // First request triggers
         act(() => vi.advanceTimersByTime(300));

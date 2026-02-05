@@ -63,9 +63,7 @@ function InspectorViewComponent({ gate, onClear }: InspectorViewProps) {
                                 {gate.symbol}
                             </span>
                         </div>
-                        <p className="text-xs text-muted-foreground line-clamp-2">
-                            {gate.description}
-                        </p>
+                        <p className="text-xs text-muted-foreground line-clamp-2">{gate.description}</p>
                     </div>
 
                     {/* Close Button */}
@@ -149,10 +147,7 @@ function InspectorViewComponent({ gate, onClear }: InspectorViewProps) {
                                     </thead>
                                     <tbody className="divide-y">
                                         {info.truthTable.map((row, idx) => (
-                                            <tr
-                                                key={idx}
-                                                className="hover:bg-muted/20 transition-colors"
-                                            >
+                                            <tr key={idx} className="hover:bg-muted/20 transition-colors">
                                                 <td className="px-3 py-2 font-mono text-xs">
                                                     <SafeInlineMath math={row.input} />
                                                 </td>

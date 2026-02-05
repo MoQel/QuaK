@@ -14,10 +14,7 @@ import {
     sort,
 } from '@/views/project-manager-view/util/FileElement.tsx';
 
-import {
-    DialogCloseButtons,
-    TextInput,
-} from '@/views/project-manager-view/util/FormComponents.tsx';
+import { DialogCloseButtons, TextInput } from '@/views/project-manager-view/util/FormComponents.tsx';
 import { api } from '@/api/api.ts';
 import { DirectoryContentsResponse, DirectoryRequest } from '@/api/dto/filesystem.ts';
 
@@ -99,9 +96,7 @@ function EditForm({ dir, reloadParent }: { dir: IDirectory; reloadParent: () => 
                 <FormField
                     name="name"
                     control={form.control}
-                    render={({ field }) => (
-                        <TextInput placeholder="Enter a new name" label="Name" field={field} />
-                    )}
+                    render={({ field }) => <TextInput placeholder="Enter a new name" label="Name" field={field} />}
                 />
                 <DialogCloseButtons submit="Save" />
             </form>

@@ -24,7 +24,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class ProjectJpaAdapterTest {
 
-    @Autowired private ProjectJpaAdapter adapter;
+    @Autowired
+    private ProjectJpaAdapter adapter;
 
     @Test
     void saveAndFindById_withContents() {

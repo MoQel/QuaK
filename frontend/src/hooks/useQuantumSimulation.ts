@@ -7,10 +7,7 @@ import { SimulationResult, SimulationOptions } from '@/simulation/simulation.typ
 // Debounce delay in milliseconds
 const SIMULATION_DELAY_MS = 300;
 
-export function useQuantumSimulation(
-    circuit: CircuitResponse | null,
-    options: SimulationOptions = {},
-) {
+export function useQuantumSimulation(circuit: CircuitResponse | null, options: SimulationOptions = {}) {
     const [result, setResult] = useState<SimulationResult | null>(null);
     const [isCalculating, setIsCalculating] = useState(false);
     const [error, setError] = useState<string | null>(null);

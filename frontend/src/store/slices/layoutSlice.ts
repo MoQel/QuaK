@@ -1,4 +1,4 @@
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 export interface LayoutState {
     visiblePanels: {
@@ -29,10 +29,10 @@ const initialState: LayoutState = {
 };
 
 export const layoutSlice = createSlice({
-    name: "layout",
+    name: 'layout',
     initialState,
     reducers: {
-        togglePanel: (state, action: PayloadAction<keyof LayoutState["visiblePanels"]>) => {
+        togglePanel: (state, action: PayloadAction<keyof LayoutState['visiblePanels']>) => {
             state.visiblePanels[action.payload] = !state.visiblePanels[action.payload];
         },
         resetLayout: () => initialState,
@@ -42,9 +42,9 @@ export const layoutSlice = createSlice({
         },
         setMenubarVisibility: (state, action: PayloadAction<boolean>) => {
             state.isMenubarVisible = action.payload;
-        }
+        },
     },
 });
 
-export const { togglePanel, resetLayout,  toggleMenubar, setMenubarVisibility   } = layoutSlice.actions;
+export const { togglePanel, resetLayout, toggleMenubar, setMenubarVisibility } = layoutSlice.actions;
 export default layoutSlice.reducer;

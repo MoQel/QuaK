@@ -24,11 +24,17 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class FileServiceTest {
 
-    @Mock private FileRepositoryPort repository;
-    @Mock private FileContentRepositoryPort contentRepository;
-    @Mock private FileElementContainerRepositoryDelegator delegator;
+    @Mock
+    private FileRepositoryPort repository;
 
-    @InjectMocks private FileService service;
+    @Mock
+    private FileContentRepositoryPort contentRepository;
+
+    @Mock
+    private FileElementContainerRepositoryDelegator delegator;
+
+    @InjectMocks
+    private FileService service;
 
     private User testUser;
     private UUID testUserId;
@@ -130,7 +136,6 @@ class FileServiceTest {
 
         when(repository.findById("f-1")).thenReturn(Optional.of(orphanFile));
 
-        assertThrows(
-                IllegalStateException.class, () -> service.renameFile("f-1", "NewName", testUser));
+        assertThrows(IllegalStateException.class, () -> service.renameFile("f-1", "NewName", testUser));
     }
 }

@@ -1,19 +1,8 @@
 import { FileSelect, ParentRefresh } from '@/views/project-manager-view/ProjectManagerView.tsx';
 import { FileCode } from 'lucide-react';
-import {
-    ContextMenu,
-    ContextMenuContent,
-    ContextMenuItem,
-    ContextMenuTrigger,
-} from '@/components/ui/context-menu.tsx';
+import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu.tsx';
 import { Delete } from '@/views/project-manager-view/Delete.tsx';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog.tsx';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog.tsx';
 import { JSX, useContext, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton.tsx';
 import { z } from 'zod';
@@ -21,10 +10,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Form, FormField } from '@/components/ui/form.tsx';
 import { File as IFile } from '@/views/project-manager-view/util/FileElement.tsx';
-import {
-    DialogCloseButtons,
-    TextInput,
-} from '@/views/project-manager-view/util/FormComponents.tsx';
+import { DialogCloseButtons, TextInput } from '@/views/project-manager-view/util/FormComponents.tsx';
 import { ListingElement } from '@/views/project-manager-view/util/TreeComponents.tsx';
 import { api } from '@/api/api.ts';
 import { FileDetailsResponse, RenameFileRequest } from '@/api/dto/filesystem.ts';
@@ -113,9 +99,7 @@ function EditForm({ file, reloadParent }: { file: IFile; reloadParent: () => voi
                 <FormField
                     name="name"
                     control={form.control}
-                    render={({ field }) => (
-                        <TextInput placeholder="Enter a new name" label="Name" field={field} />
-                    )}
+                    render={({ field }) => <TextInput placeholder="Enter a new name" label="Name" field={field} />}
                 />
                 <DialogCloseButtons submit="Save" />
             </form>

@@ -1,7 +1,7 @@
-import {editor, languages, Position} from "monaco-editor";
+import { editor, languages, Position } from 'monaco-editor';
 
-type ThemeExtension = Omit<editor.ITokenThemeRule, 'token'>
-type CompletionStub = Omit<languages.CompletionItem, 'range'>
+type ThemeExtension = Omit<editor.ITokenThemeRule, 'token'>;
+type CompletionStub = Omit<languages.CompletionItem, 'range'>;
 
 /**
  * A Language is a wrapper for <i>monaco-editor</i> language-extension-API.
@@ -17,14 +17,14 @@ type CompletionStub = Omit<languages.CompletionItem, 'range'>
  * </ul>
  */
 export class Language {
-    id: string
-    fileExtension: string
-    themeId: string
-    languageId: string
-    base?: languages.IMonarchLanguage
-    #tokenizer: {[name: string]: languages.IMonarchLanguageRule[]}
-    #themeRules: editor.ITokenThemeRule[] = []
-    #completionItems: CompletionStub[] = []
+    id: string;
+    fileExtension: string;
+    themeId: string;
+    languageId: string;
+    base?: languages.IMonarchLanguage;
+    #tokenizer: { [name: string]: languages.IMonarchLanguageRule[] };
+    #themeRules: editor.ITokenThemeRule[] = [];
+    #completionItems: CompletionStub[] = [];
 
     /**
      * Constructs a new language
@@ -33,12 +33,12 @@ export class Language {
      * @param base The optional basis for this language to be an extension of
      */
     constructor(id: string, fileExtension: string, base?: languages.IMonarchLanguage) {
-        this.id = id
-        this.fileExtension = fileExtension
-        this.themeId = `${id}Theme`
-        this.languageId = `${id}`
-        this.base = base
-        this.#tokenizer = base?.tokenizer || {}
+        this.id = id;
+        this.fileExtension = fileExtension;
+        this.themeId = `${id}Theme`;
+        this.languageId = `${id}`;
+        this.base = base;
+        this.#tokenizer = base?.tokenizer || {};
     }
 
     /**
@@ -46,28 +46,28 @@ export class Language {
      * This method should be called last, after the definition of the language
      * @param monaco The monaco instance
      */
-    register(monaco: typeof import("monaco-editor")) {
-        monaco.languages.register(this.#getMetadata())
-        monaco.editor.defineTheme(this.themeId, this.#getTheme())
-        monaco.languages.setMonarchTokensProvider(this.languageId, this.#getLanguage())
-        monaco.languages.registerCompletionItemProvider(this.languageId, this.#getCompletions())
+    register(monaco: typeof import('monaco-editor')) {
+        monaco.languages.register(this.#getMetadata());
+        monaco.editor.defineTheme(this.themeId, this.#getTheme());
+        monaco.languages.setMonarchTokensProvider(this.languageId, this.#getLanguage());
+        monaco.languages.registerCompletionItemProvider(this.languageId, this.#getCompletions());
     }
 
     #getMetadata(): languages.ILanguageExtensionPoint {
-        return {id: this.id}
+        return { id: this.id };
     }
 
     #getTheme(): editor.IStandaloneThemeData {
         return {
-            base: "vs-dark",
+            base: 'vs-dark',
             inherit: true,
             colors: {},
             rules: this.#themeRules,
-        }
+        };
     }
 
     #getLanguage(): languages.IMonarchLanguage {
-        return {...this.base, tokenizer: this.#tokenizer}
+        return { ...this.base, tokenizer: this.#tokenizer };
     }
 
     #getCompletions() {
@@ -80,9 +80,13 @@ export class Language {
                     startColumn: word.startColumn,
                     endColumn: word.endColumn,
                 };
-                return {suggestions: this.#completionItems.map(obj => {return {...obj, range: range}})}
-            }
-        }
+                return {
+                    suggestions: this.#completionItems.map((obj) => {
+                        return { ...obj, range: range };
+                    }),
+                };
+            },
+        };
     }
 
     /**
@@ -94,37 +98,36 @@ export class Language {
      */
     addTokenRule(category: string, rule: languages.IMonarchLanguageRule, theme?: ThemeExtension) {
         if (this.#tokenizer[category] === undefined) {
-            this.#tokenizer[category] = []
+            this.#tokenizer[category] = [];
         }
-        this.#tokenizer[category].unshift(rule)
+        this.#tokenizer[category].unshift(rule);
 
         if (theme !== undefined) {
             const processAction = (action: languages.IMonarchLanguageAction) => {
                 if (Array.isArray(action)) {
                     for (const element of action) {
-                        this.#addActionTheme(element, theme)
+                        this.#addActionTheme(element, theme);
                     }
                 } else {
-                    this.#addActionTheme(action, theme)
+                    this.#addActionTheme(action, theme);
                 }
-            }
+            };
 
             // We want to extract the actions from the rule
             if (Array.isArray(rule)) {
-                const action: languages.IMonarchLanguageAction = rule[1] //Position is always the same
-                processAction(action)
+                const action: languages.IMonarchLanguageAction = rule[1]; //Position is always the same
+                processAction(action);
             } else {
-                if (rule.action !== undefined)
-                    processAction(rule.action)
+                if (rule.action !== undefined) processAction(rule.action);
             }
         }
     }
 
     #addActionTheme(action: string | languages.IExpandedMonarchLanguageAction, theme: ThemeExtension) {
-        const name = typeof action === "string" ? action : action.token;
-        if (name === undefined) return
+        const name = typeof action === 'string' ? action : action.token;
+        if (name === undefined) return;
         if (theme) {
-            this.#themeRules.push({token: name, ...theme})
+            this.#themeRules.push({ token: name, ...theme });
         }
     }
 
@@ -134,10 +137,10 @@ export class Language {
      *                   once the completion is called.
      */
     addSimpleCompletionItem(completion: CompletionStub) {
-        this.#completionItems.push(completion)
+        this.#completionItems.push(completion);
     }
 
     getID() {
-        return this.id.length == 0 ? this.id : this.id
+        return this.id.length == 0 ? this.id : this.id;
     }
 }

@@ -17,11 +17,17 @@ import org.springframework.context.annotation.Lazy;
 
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING)
 public abstract class FileElementJpaMapper {
-    @Autowired @Lazy protected FileJpaMapper fileMapper;
+    @Autowired
+    @Lazy
+    protected FileJpaMapper fileMapper;
 
-    @Autowired @Lazy protected DirectoryJpaMapper directoryMapper;
+    @Autowired
+    @Lazy
+    protected DirectoryJpaMapper directoryMapper;
 
-    @Autowired @Lazy protected ProjectJpaMapper projectMapper;
+    @Autowired
+    @Lazy
+    protected ProjectJpaMapper projectMapper;
 
     // Map polymorph FileElement<?>
     public JpaFileElement<?> toJpaEntity(FileElement<?> domain) {

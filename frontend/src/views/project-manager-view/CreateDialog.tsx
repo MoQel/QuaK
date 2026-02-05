@@ -11,10 +11,7 @@ import {
     ContextMenuSubContent,
     ContextMenuSubTrigger,
 } from '@/components/ui/context-menu';
-import {
-    DialogCloseButtons,
-    TextInput,
-} from '@/views/project-manager-view/util/FormComponents.tsx';
+import { DialogCloseButtons, TextInput } from '@/views/project-manager-view/util/FormComponents.tsx';
 import { api } from '@/api/api.ts';
 import { CreateFileRequest, DirectoryRequest } from '@/api/dto/filesystem';
 
@@ -24,13 +21,7 @@ import { CreateFileRequest, DirectoryRequest } from '@/api/dto/filesystem';
  * @param openDialog A function that opens a dialog and displays the given elements after their promise resolves.
  * @constructor
  */
-export function CreateDialog({
-    id,
-    openDialog,
-}: {
-    id: string;
-    openDialog: (element: Promise<JSX.Element>) => void;
-}) {
+export function CreateDialog({ id, openDialog }: { id: string; openDialog: (element: Promise<JSX.Element>) => void }) {
     const dialog = (e: JSX.Element) => openDialog(Promise.resolve(e));
     return (
         <ContextMenuSub>
@@ -106,19 +97,13 @@ function CreateFile({ parent }: { parent: string }) {
                 <FormField
                     control={form.control}
                     name="name"
-                    render={({ field }) => (
-                        <TextInput placeholder="new_file.txt" label="Filename" field={field} />
-                    )}
+                    render={({ field }) => <TextInput placeholder="new_file.txt" label="Filename" field={field} />}
                 />
                 <FormField
                     control={form.control}
                     name="contentType"
                     render={({ field }) => (
-                        <TextInput
-                            placeholder="application/json"
-                            label="Content-Type"
-                            field={field}
-                        />
+                        <TextInput placeholder="application/json" label="Content-Type" field={field} />
                     )}
                 />
                 <DialogCloseButtons />
@@ -161,11 +146,7 @@ function CreateDirectory({ parent }: { parent: string }) {
                     control={form.control}
                     name="name"
                     render={({ field }) => (
-                        <TextInput
-                            placeholder="folder"
-                            label="Name of the directory"
-                            field={field}
-                        />
+                        <TextInput placeholder="folder" label="Name of the directory" field={field} />
                     )}
                 />
                 <DialogCloseButtons />

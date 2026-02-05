@@ -23,10 +23,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class DirectoryServiceTest {
 
-    @Mock private DirectoryRepositoryPort repository;
-    @Mock private FileElementContainerRepositoryDelegator delegator;
+    @Mock
+    private DirectoryRepositoryPort repository;
 
-    @InjectMocks private DirectoryService service;
+    @Mock
+    private FileElementContainerRepositoryDelegator delegator;
+
+    @InjectMocks
+    private DirectoryService service;
 
     private User testUser;
     private UUID testUserId;
@@ -71,9 +75,7 @@ class DirectoryServiceTest {
         // Mock the ownership check to succeed, but container lookup fails
         when(delegator.findProjectOwnerIdByElementId("missing")).thenReturn(Optional.empty());
 
-        assertThrows(
-                IllegalStateException.class,
-                () -> service.createDirectory(newDir, "missing", testUser));
+        assertThrows(IllegalStateException.class, () -> service.createDirectory(newDir, "missing", testUser));
     }
 
     @Test

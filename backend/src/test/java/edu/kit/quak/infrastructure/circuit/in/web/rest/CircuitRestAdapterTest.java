@@ -26,17 +26,14 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(CircuitRestAdapter.class)
-@Import({
-    CircuitDtoMapperImpl.class,
-    RegisterDtoMapperImpl.class,
-    QubitDtoMapperImpl.class,
-    GateDtoMapperImpl.class
-})
+@Import({CircuitDtoMapperImpl.class, RegisterDtoMapperImpl.class, QubitDtoMapperImpl.class, GateDtoMapperImpl.class})
 @WithMockUser(username = "tester", roles = "USER")
 class CircuitRestAdapterTest {
-    @Autowired private MockMvc mockMvc;
+    @Autowired
+    private MockMvc mockMvc;
 
-    @MockitoBean private CircuitServicePort circuitServicePort;
+    @MockitoBean
+    private CircuitServicePort circuitServicePort;
 
     @Test
     void initCircuit_ShouldReturnCreated() throws Exception {
@@ -76,10 +73,9 @@ class CircuitRestAdapterTest {
         given(circuitServicePort.addQubit(circuitId)).willReturn(circuit);
 
         // Act & Assert
-        mockMvc.perform(
-                        post("/api/circuit/{circuitId}/qubit", circuitId)
-                                .with(csrf())
-                                .contentType(MediaType.APPLICATION_JSON))
+        mockMvc.perform(post("/api/circuit/{circuitId}/qubit", circuitId)
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.registers").exists())
                 .andExpect(jsonPath("$.registers").isArray())
@@ -99,10 +95,9 @@ class CircuitRestAdapterTest {
         given(circuitServicePort.deleteQubit(circuitId, qubitId)).willReturn(updatedCircuit);
 
         // Act & Assert
-        mockMvc.perform(
-                        delete("/api/circuit/{circuitId}/qubit/{qubitId}", circuitId, qubitId)
-                                .with(csrf())
-                                .contentType(MediaType.APPLICATION_JSON))
+        mockMvc.perform(delete("/api/circuit/{circuitId}/qubit/{qubitId}", circuitId, qubitId)
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(updatedCircuit.getId()));
     }
@@ -115,14 +110,10 @@ class CircuitRestAdapterTest {
         QuantumRegister register = circuit.addQuantumRegister();
         Qubit qubit = register.addQubit();
         qubit.addOperation(
-                qubit.getOperations().size(),
-                new ElementaryQuantumGate(ElementaryQuantumGateDefinitionIdentifier.CX));
-        given(
-                        circuitServicePort.addGate(
-                                circuitId, ElementaryQuantumGateDefinitionIdentifier.CX, 0, 0))
+                qubit.getOperations().size(), new ElementaryQuantumGate(ElementaryQuantumGateDefinitionIdentifier.CX));
+        given(circuitServicePort.addGate(circuitId, ElementaryQuantumGateDefinitionIdentifier.CX, 0, 0))
                 .willReturn(circuit);
-        String payload =
-                """
+        String payload = """
                 {
                     "definitionId": "cx",
                     "toQubitIdx": 0,
@@ -131,11 +122,10 @@ class CircuitRestAdapterTest {
                 """;
 
         // Act & Assert
-        mockMvc.perform(
-                        post("/api/circuit/{circuitId}/gate", circuitId)
-                                .with(csrf())
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(payload))
+        mockMvc.perform(post("/api/circuit/{circuitId}/gate", circuitId)
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.registers").exists())
                 .andExpect(jsonPath("$.registers").isArray())
@@ -144,6 +134,7 @@ class CircuitRestAdapterTest {
                 .andExpect(jsonPath("$.registers[0].qubits").isArray())
                 .andExpect(jsonPath("$.registers[0].qubits[0].gates").isArray())
                 .andExpect(jsonPath("$.registers[0].qubits[0].gates[0]").exists())
-                .andExpect(jsonPath("$.registers[0].qubits[0].gates[0].definitionId").value("CX"));
+                .andExpect(jsonPath("$.registers[0].qubits[0].gates[0].definitionId")
+                        .value("CX"));
     }
 }

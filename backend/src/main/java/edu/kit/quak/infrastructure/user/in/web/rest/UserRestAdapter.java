@@ -6,6 +6,7 @@ import edu.kit.quak.core.user.model.User;
 import edu.kit.quak.infrastructure.user.in.web.rest.dto.UserResponse;
 import edu.kit.quak.infrastructure.user.in.web.rest.mapper.AuthenticationMapper;
 import edu.kit.quak.infrastructure.user.in.web.rest.mapper.UserDtoMapper;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,16 +19,14 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/api")
+@Tag(name = "Authentication", description = "Authentication and user session management endpoints")
 public class UserRestAdapter {
 
     private final UserServicePort userService;
     private final UserDtoMapper userDtoMapper;
     private final AuthenticationMapper authMapper;
 
-    public UserRestAdapter(
-            UserServicePort userService,
-            UserDtoMapper userDtoMapper,
-            AuthenticationMapper authMapper) {
+    public UserRestAdapter(UserServicePort userService, UserDtoMapper userDtoMapper, AuthenticationMapper authMapper) {
         this.userService = userService;
         this.userDtoMapper = userDtoMapper;
         this.authMapper = authMapper;

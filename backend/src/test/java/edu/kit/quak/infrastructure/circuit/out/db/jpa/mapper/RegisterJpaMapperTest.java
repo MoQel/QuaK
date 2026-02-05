@@ -15,9 +15,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class RegisterJpaMapperTest {
-    @Spy private QubitJpaMapperImpl qubitJpaMapper;
+    @Spy
+    private QubitJpaMapperImpl qubitJpaMapper;
 
-    @InjectMocks private RegisterJpaMapperImpl mapper;
+    @InjectMocks
+    private RegisterJpaMapperImpl mapper;
 
     @Test
     void domainToEntity() {

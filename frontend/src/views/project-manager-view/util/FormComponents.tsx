@@ -11,13 +11,7 @@ import { Input } from '@/components/ui/input.tsx';
  * @param submit The label of the submit-button
  * @constructor
  */
-export function DialogCloseButtons({
-    cancel = 'Cancel',
-    submit = 'Submit',
-}: {
-    cancel?: string;
-    submit?: string;
-}) {
+export function DialogCloseButtons({ cancel = 'Cancel', submit = 'Submit' }: { cancel?: string; submit?: string }) {
     return (
         <DialogFooter>
             <DialogClose asChild>
@@ -45,15 +39,7 @@ type Field<
  * @param field The field-object provided by the form
  * @constructor
  */
-export function TextInput({
-    placeholder,
-    label,
-    field,
-}: {
-    placeholder: string;
-    label: string;
-    field: Field;
-}) {
+export function TextInput({ placeholder, label, field }: { placeholder: string; label: string; field: Field }) {
     return (
         <FormItem className="pb-2">
             <FormLabel>{label}</FormLabel>
