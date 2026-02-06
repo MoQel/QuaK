@@ -142,32 +142,36 @@ export function TabBar({ currentLangId }: Readonly<TabBarProps>) {
                                         Close Others
                                     </ContextMenuItem>
                                     <ContextMenuItem onClick={() => dispatch(closeAll())}>Close All</ContextMenuItem>
-                                    <ContextMenuSeparator />
-                                    <ContextMenuSub>
-                                        <ContextMenuSubTrigger>Language</ContextMenuSubTrigger>
-                                        <ContextMenuSubContent className="w-48">
-                                            {languages.map((l) => (
-                                                <ContextMenuItem
-                                                    key={l.languageId}
-                                                    onClick={() =>
-                                                        dispatch(
-                                                            requestLanguageChange({
-                                                                fileId: tab.id,
-                                                                langId: l.languageId,
-                                                            }),
-                                                        )
-                                                    }
-                                                >
-                                                    {l.getID().toUpperCase()}
-                                                    {isActive && l.languageId === currentLangId && (
-                                                        <ContextMenuShortcut>
-                                                            <Check className="size-3.5" />
-                                                        </ContextMenuShortcut>
-                                                    )}
-                                                </ContextMenuItem>
-                                            ))}
-                                        </ContextMenuSubContent>
-                                    </ContextMenuSub>
+                                    {/* Show languages only for active tab*/}
+                                    {isActive && <ContextMenuSeparator />}
+                                    {isActive && (
+                                        <ContextMenuSub>
+                                            <ContextMenuSubTrigger>Language</ContextMenuSubTrigger>
+                                            <ContextMenuSubContent className="w-48">
+                                                {languages.map((l) => (
+                                                    <ContextMenuItem
+                                                        key={l.languageId}
+                                                        onClick={() =>
+                                                            dispatch(
+                                                                requestLanguageChange({
+                                                                    fileId: tab.id,
+                                                                    langId: l.languageId,
+                                                                }),
+                                                            )
+                                                        }
+                                                    >
+                                                        {l.getID().toUpperCase()}
+                                                        {/* Da isActive oben geprüft ist, reicht hier der Check auf die ID */}
+                                                        {l.languageId === currentLangId && (
+                                                            <ContextMenuShortcut>
+                                                                <Check className="size-3.5" />
+                                                            </ContextMenuShortcut>
+                                                        )}
+                                                    </ContextMenuItem>
+                                                ))}
+                                            </ContextMenuSubContent>
+                                        </ContextMenuSub>
+                                    )}
                                     <ContextMenuSeparator />
                                     <ContextMenuItem onClick={() => dispatch(requestSave(tab.id))}>
                                         Save

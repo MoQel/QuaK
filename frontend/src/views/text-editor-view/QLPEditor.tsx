@@ -1,5 +1,5 @@
 import { Editor, useMonaco } from '@monaco-editor/react';
-import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { editor, Uri } from 'monaco-editor';
 import { useTheme } from '@/theme';
@@ -22,7 +22,7 @@ const getModelId = (model: editor.ITextModel): string => {
 
 interface QLPEditorProps {
     activeFileId: string | null;
-    setCurrentLangId: Dispatch<SetStateAction<string>>;
+    setCurrentLangId: (langId: string) => void;
 }
 
 function QLPEditor({ activeFileId, setCurrentLangId }: Readonly<QLPEditorProps>) {
@@ -41,6 +41,7 @@ function QLPEditor({ activeFileId, setCurrentLangId }: Readonly<QLPEditorProps>)
     const dirtyFiles = useAppSelector((state) => state.tabs.dirtyFiles);
     const isCurrentFileDirty = activeFileId ? dirtyFiles.includes(activeFileId) : false;
     const isDirtyRef = useRef(isCurrentFileDirty);
+    const lastHandledLangRequest = useRef<number>(0);
 
     const syncDirtyState = (model: editor.ITextModel, shouldDispatch = true) => {
         const saved = savedVersionIds.get(model);
@@ -199,9 +200,11 @@ function QLPEditor({ activeFileId, setCurrentLangId }: Readonly<QLPEditorProps>)
 
     useEffect(() => {
         const isTargetFile = langRequest.fileId === activeFileId;
-        const isNewRequest = langRequest.timestamp > 0;
+        const isNewRequest = langRequest.timestamp > lastHandledLangRequest.current;
 
         if (isTargetFile && isNewRequest && langRequest.langId) {
+            lastHandledLangRequest.current = langRequest.timestamp;
+
             const model = editorInstance?.getModel();
             if (model && monaco) {
                 monaco.editor.setModelLanguage(model, langRequest.langId);
