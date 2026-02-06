@@ -51,12 +51,12 @@ export function TextInput({
     label,
     field,
     inputRef,
-}: {
+}: Readonly<{
     placeholder: string;
     label: string;
     field: Field;
     inputRef?: React.RefObject<HTMLInputElement | null>;
-}) {
+}>) {
     return (
         <FormItem className="pb-2">
             <FormLabel>{label}</FormLabel>
@@ -68,7 +68,7 @@ export function TextInput({
                         field.ref(e);
 
                         if (inputRef) {
-                            (inputRef as React.RefObject<HTMLInputElement | null>).current = e;
+                            inputRef.current = e;
                         }
                     }}
                 />
