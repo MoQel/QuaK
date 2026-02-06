@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { requestSave } from '@/store/slices/tabsSlice';
+import { useAppDispatch } from '@/hooks/useAppDispatch.ts';
+import { requestSave } from '@/store/slices/tabsSlice.ts';
 
 export function useEditorShortcuts(activeFileId: string | null) {
     const dispatch = useAppDispatch();

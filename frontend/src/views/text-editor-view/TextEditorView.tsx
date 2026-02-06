@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { DEFAULT_LANG } from '@/views/text-editor-view/languages/languages.ts';
 import { closeAll } from '@/store/slices/tabsSlice.ts';
 import { useAppDispatch } from '@/hooks/useAppDispatch.ts';
-import { useEditorShortcuts } from '@/hooks/useEditorShortcuts.ts';
+import { useEditorShortcuts } from '@/hooks/editor/useEditorShortcuts.ts';
 
 export function TextEditorView() {
     const activeFileId = useAppSelector((state) => state.tabs.activeTabId);

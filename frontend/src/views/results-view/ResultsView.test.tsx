@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach, Mock, beforeAll } from 'vitest';
 import { ResultsView } from './ResultsView';
 import { CircuitResponse } from '@/api/dto/circuit';
 import { SimulationResult } from '@/simulation/simulation.types';
-import { useQuantumSimulation } from '@/hooks/useQuantumSimulation.ts';
+import { useQuantumSimulation } from '@/hooks/results/useQuantumSimulation.ts';
 
 vi.mock('@/hooks/useQuantumSimulation');
 

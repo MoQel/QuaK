@@ -7,9 +7,9 @@ import { Badge } from '@/components/ui/badge';
 import { SimulationToolbar } from '@/views/results-view/SimulationToolbar.tsx';
 import { CustomTooltipContent } from '@/views/results-view/CustomTooltipContent.tsx';
 import { CircuitResponse } from '@/api/dto/circuit';
-import { useQuantumSimulation } from '@/hooks/useQuantumSimulation.ts';
+import { useQuantumSimulation } from '@/hooks/results/useQuantumSimulation.ts';
 import { SimulationOptions } from '@/simulation/simulation.types.ts';
-import { useChartData } from '@/hooks/useChartData.ts';
+import { useChartData } from '@/hooks/results/useChartData.ts';
 import { getBarColor } from '@/views/results-view/util/quantum-utils.ts';
 import { Button } from '@/components/ui/button';
 

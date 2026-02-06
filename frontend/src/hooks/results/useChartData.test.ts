@@ -1,6 +1,6 @@
 import { renderHook } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
-import { useChartData } from './useChartData';
+import { useChartData } from './useChartData.ts';
 import { SimulationOptions, SimulationResult } from '@/simulation/simulation.types.ts';
 
 describe('useChartData Hook', () => {

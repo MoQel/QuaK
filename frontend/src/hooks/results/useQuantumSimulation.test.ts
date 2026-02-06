@@ -1,7 +1,7 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { useQuantumSimulation } from './useQuantumSimulation';
-import { CircuitResponse } from '@/api/dto/circuit';
+import { useQuantumSimulation } from './useQuantumSimulation.ts';
+import { CircuitResponse } from '@/api/dto/circuit.ts';
 
 const mockPostMessage = vi.fn();
 const mockTerminate = vi.fn();
@@ -135,10 +135,9 @@ describe('useQuantumSimulation Hook', () => {
     });
 
     it('should ignore outdated worker responses (race conditions)', () => {
-        const { result, rerender } = renderHook(
-            ({ opts }) => useQuantumSimulation(mockCircuit, opts),
-            { initialProps: { opts: { sampleCount: 100 } } },
-        );
+        const { result, rerender } = renderHook(({ opts }) => useQuantumSimulation(mockCircuit, opts), {
+            initialProps: { opts: { sampleCount: 100 } },
+        });
 
         // First request triggers
         act(() => vi.advanceTimersByTime(300));
