@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, DragEvent, ReactNode } from 'react';
+import { useEffect, useRef, useState, DragEvent, ReactNode, KeyboardEvent } from 'react';
 import { cn } from '@/lib/utils';
 
 export interface TabItem {
@@ -9,6 +9,7 @@ interface GenericTabBarProps<T extends TabItem> {
     tabs: T[];
     activeTabId: string | null;
     onReorder: (fromId: string, toId: string) => void;
+    onTabClick: (tab: T) => void;
     children: (tab: T, isActive: boolean) => ReactNode;
     className?: string;
 }
@@ -17,16 +18,15 @@ export function GenericTabBar<T extends TabItem>({
     tabs,
     activeTabId,
     onReorder,
+    onTabClick,
     children,
     className,
 }: Readonly<GenericTabBarProps<T>>) {
     const containerRef = useRef<HTMLDivElement>(null);
     const tabRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-    // Scroll active tab into view when it changes
     useEffect(() => {
         if (!activeTabId || !tabRefs.current[activeTabId]) return;
-
         tabRefs.current[activeTabId]?.scrollIntoView({
             behavior: 'smooth',
             block: 'nearest',
@@ -56,12 +56,22 @@ export function GenericTabBar<T extends TabItem>({
         e.preventDefault();
         e.dataTransfer.dropEffect = 'move';
     };
+
+    // Keyboard support for A11Y
+    const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>, tab: T) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onTabClick(tab);
+        }
+    };
     // endregion
 
     return (
         <div className={cn('flex w-full flex-col', className)}>
             <div
                 ref={containerRef}
+                role="tablist"
+                aria-orientation="horizontal"
                 className="flex w-full flex-row overflow-x-auto border-b border-border bg-bg-light scrollbar-hide"
             >
                 {tabs.map((tab) => {
@@ -71,6 +81,8 @@ export function GenericTabBar<T extends TabItem>({
                     return (
                         <div
                             role="tab"
+                            aria-selected={isActive}
+                            tabIndex={isActive ? 0 : -1}
                             key={tab.id}
                             ref={(el) => {
                                 tabRefs.current[tab.id] = el;
@@ -80,12 +92,13 @@ export function GenericTabBar<T extends TabItem>({
                             onDragEnter={() => handleDragEnter(tab.id)}
                             onDragOver={handleDragOver}
                             onDragEnd={handleDragEnd}
+                            onClick={() => onTabClick(tab)}
+                            onKeyDown={(e) => handleKeyDown(e, tab)}
                             className={cn(
-                                'h-9 flex-shrink-0 transition-all duration-200',
+                                'h-9 flex-shrink-0 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
                                 isDragging ? 'opacity-20' : 'opacity-100',
                             )}
                         >
-                            {/* Delegate the rendering to the parent */}
                             {children(tab, isActive)}
                         </div>
                     );

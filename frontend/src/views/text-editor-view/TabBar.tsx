@@ -20,11 +20,11 @@ import {
     ContextMenuSubContent,
     ContextMenuShortcut,
 } from '@/components/ui/context-menu';
-import { Button } from '@/components/ui/button.tsx';
 import { useAppDispatch } from '@/hooks/useAppDispatch.ts';
 import { useAppSelector } from '@/hooks/useAppSelector.ts';
 import { languages } from '@/views/text-editor-view/languages/languages.ts';
-import { GenericTabBar } from '@/components/GenericTabBar.tsx'; // Import the new component
+import { GenericTabBar } from '@/components/GenericTabBar.tsx';
+import { Button } from '@/components/ui/button.tsx'; // Import the new component
 
 interface TabBarProps {
     currentLangId: string | null;
@@ -40,17 +40,15 @@ export function TabBar({ currentLangId }: Readonly<TabBarProps>) {
             tabs={openTabs}
             activeTabId={activeTabId}
             onReorder={(fromId, toId) => dispatch(moveTab({ fromId, toId }))}
+            onTabClick={(tab) => dispatch(setActiveTab(tab.id))}
         >
-            {/* Render Prop Pattern: We define how each tab looks here */}
             {(tab, isActive) => {
                 const isDirty = dirtyFiles.includes(tab.id);
 
                 return (
                     <ContextMenu>
                         <ContextMenuTrigger className="h-full">
-                            <Button
-                                variant="ghost"
-                                onClick={() => dispatch(setActiveTab(tab.id))}
+                            <div
                                 className={cn(
                                     'group relative flex h-full rounded-none min-w-[120px] max-w-[200px] cursor-pointer select-none items-center border-r border-border px-3 text-sm font-medium transition-colors',
                                     !isActive &&
@@ -60,9 +58,13 @@ export function TabBar({ currentLangId }: Readonly<TabBarProps>) {
                             >
                                 <span className="mr-2 flex-1 truncate">{tab.title}</span>
 
-                                <span
-                                    role="button"
-                                    className="relative flex items-center justify-center p-0.5 rounded-sm h-5 w-5 hover:bg-bg-light"
+                                <Button
+                                    type="button"
+                                    aria-label="Close tab"
+                                    className={cn(
+                                        'relative flex items-center justify-center p-0.5 rounded-sm h-5 w-5 hover:bg-bg-light ',
+                                        'bg-transparent border-none',
+                                    )}
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         dispatch(closeTab(tab.id));
@@ -74,8 +76,8 @@ export function TabBar({ currentLangId }: Readonly<TabBarProps>) {
                                             <div className="h-2 w-2 rounded-full bg-text-muted" />
                                         </div>
                                     )}
-                                </span>
-                            </Button>
+                                </Button>
+                            </div>
                         </ContextMenuTrigger>
 
                         {/* Right Click Menu Content */}
