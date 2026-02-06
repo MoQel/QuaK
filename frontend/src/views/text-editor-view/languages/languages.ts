@@ -1,12 +1,11 @@
-import { qrisp } from '@/views/text-editor-view/languages/qrisp.ts';
-import { openqasm } from '@/views/text-editor-view/languages/openqasm.ts';
+import { openqasm3 } from '@/views/text-editor-view/languages/openqasm.ts';
 import { Language } from '@/views/text-editor-view/model/Language.ts';
 
 export const DEFAULT_LANG = 'plaintext';
 
 export const languages = [
-    new Language('plaintext', 'txt'),
-    new Language('python', 'py'),
-    new Language('qrisp', 'qrisp', qrisp),
-    new Language('qasm', 'qasm', openqasm),
+    new Language('plaintext', 'txt', 'Plaintext'),
+    new Language('python', 'py', 'Python'),
+    new Language('python', 'qrisp', 'Qrisp'),
+    new Language('qasm', 'qasm', 'OpenQASM', openqasm3),
 ];

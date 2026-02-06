@@ -105,7 +105,7 @@ export function TabBar({ currentLangId }: Readonly<TabBarProps>) {
                                                     )
                                                 }
                                             >
-                                                {l.getID().toUpperCase()}
+                                                {l.getName()}
                                                 {l.languageId === currentLangId && (
                                                     <ContextMenuShortcut>
                                                         <Check className="size-3.5" />

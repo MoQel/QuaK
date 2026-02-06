@@ -1,6 +1,6 @@
 import { vi, describe, it, expect, beforeEach, Mock } from 'vitest';
 
-global.ResizeObserver = vi.fn().mockImplementation(() => ({
+globalThis.ResizeObserver = vi.fn().mockImplementation(() => ({
     observe: vi.fn(),
     unobserve: vi.fn(),
     disconnect: vi.fn(),

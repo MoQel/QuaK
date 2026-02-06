@@ -1,20 +1,23 @@
 import { languages } from 'monaco-editor';
 
-export const openqasm = <languages.IMonarchLanguage>{
+export const openqasm3: languages.IMonarchLanguage = {
     defaultToken: '',
     tokenPostfix: '.qasm',
 
     keywords: [
         'OPENQASM',
         'include',
+
+        // Declarations
         'def',
-        'gate',
-        'defcal',
         'extern',
+        'defcal',
+        'cal',
+        'defcalgrammar',
+
+        // Types
         'qubit',
-        'qreg',
         'bit',
-        'creg',
         'bool',
         'int',
         'uint',
@@ -24,59 +27,57 @@ export const openqasm = <languages.IMonarchLanguage>{
         'stretch',
         'complex',
         'array',
+        'void',
+
+        // Modifiers
         'const',
         'let',
+        'input',
+        'output',
+        'readonly',
+        'mutable',
+        'shared',
+
+        // Control flow
         'if',
         'else',
         'for',
         'while',
-        'in',
+        'do',
+        'repeat',
+        'until',
+        'switch',
+        'case',
+        'default',
+        'break',
+        'continue',
         'return',
+        'end',
+
+        // Quantum ops
         'measure',
         'reset',
         'barrier',
-        'box',
         'delay',
+        'box',
         'nop',
         'gphase',
-        'U',
+
+        // Modifiers / Functors
         'inv',
         'pow',
         'ctrl',
         'negctrl',
         'at',
-        'cal',
-        'play',
-        'set',
-        'shift',
-        'waveform',
-        'port',
-        'frame',
-        'input',
-        'output',
-        'end',
-        'break',
-        'continue',
-        'void',
-        'readonly',
+
+        // Timing / builtin ops
         'durationof',
         'sizeof',
-        'exp',
-        'sin',
-        'cos',
-        'tan',
-        'sqrt',
-        'ln',
-        'pi',
-        'pragma',
-        'defcalgrammar',
     ],
 
     typeKeywords: [
         'qubit',
-        'qreg',
         'bit',
-        'creg',
         'bool',
         'int',
         'uint',
@@ -86,8 +87,10 @@ export const openqasm = <languages.IMonarchLanguage>{
         'stretch',
         'complex',
         'array',
-        'const',
+        'void',
     ],
+
+    constants: ['true', 'false', 'null', 'pi'],
 
     operators: [
         '=',
@@ -103,16 +106,15 @@ export const openqasm = <languages.IMonarchLanguage>{
         '!=',
         '&&',
         '||',
-        '++',
-        '--',
         '+',
         '-',
         '*',
         '/',
+        '%',
+        '**',
         '&',
         '|',
         '^',
-        '%',
         '<<',
         '>>',
         '+=',
@@ -126,7 +128,6 @@ export const openqasm = <languages.IMonarchLanguage>{
         '<<=',
         '>>=',
         '->',
-        '**',
         '@',
     ],
 
@@ -140,28 +141,40 @@ export const openqasm = <languages.IMonarchLanguage>{
         root: [
             { include: '@whitespace' },
 
-            [/[;,. ]/, 'delimiter'],
+            // OPENQASM 3.x header
+            [/OPENQASM(?=\s+\d+(\.\d+)?)/, 'keyword'],
+
+            // include "file.qasm";
+            [/include(?=\s+")/, 'keyword'],
 
             [/[{}()[\]]/, '@brackets'],
+            [/[;,.]/, 'delimiter'],
 
+            // Annotations: @foo, @foo(...)
+            [/@[a-zA-Z_]\w*/, 'annotation'],
+
+            // Operators
             [/->/, 'operator.arrow'],
-            [/(\*\*|[=><!~?:+\-*/&|^%]+)/, 'operator'],
+            [/(\*\*|==|!=|<=|>=|<<=|>>=|&&|\|\||[=><!~?:+\-*/&|^%])/, 'operator'],
 
+            // Strings
             [/"([^"\\]|\\.)*$/, 'string.invalid'],
             [/"/, 'string', '@string'],
 
-            // Literale für Zeit und Winkel
-            [/(\d+(\.\d+)?)(ns|us|ms|s|dt|rad)/, 'number.unit'],
+            // Time / angle literals (5ns, 3.14rad)
+            [/\b\d+(\.\d+)?(ns|us|ms|s|dt|rad)\b/, 'number.unit'],
 
-            // Zahlen, erfasst 1.0e-3, 42, 3.14 (Gleitkomma und Integer)
-            [/\d+(\.\d+)?([eE][-+]?\d+)?/, 'number'],
+            // Numbers
+            [/\b\d+(\.\d+)?([eE][-+]?\d+)?\b/, 'number'],
 
+            // Identifiers & function calls
             [
                 /[a-zA-Z_]\w*/,
                 {
                     cases: {
                         '@keywords': 'keyword',
                         '@typeKeywords': 'type',
+                        '@constants': 'constant.language',
                         '@default': 'identifier',
                     },
                 },
@@ -170,9 +183,9 @@ export const openqasm = <languages.IMonarchLanguage>{
 
         whitespace: [
             [/[ \t\r\n]+/, 'white'],
-            [/\/\/.*$/, 'comment'], // Einzelzeilen-Kommentar
-            [/\/\*/, 'comment', '@comment'], // Block-Kommentar
-            [/#.*$/, 'comment.directive'], // Optionale QASM-Direktiven (Legacy/Pragmas)
+            [/\/\/[^\r\n]*/, 'comment'],
+            [/\/\*/, 'comment', '@comment'],
+            [/#([^\r\n]*)/, 'comment.directive'],
         ],
 
         comment: [
