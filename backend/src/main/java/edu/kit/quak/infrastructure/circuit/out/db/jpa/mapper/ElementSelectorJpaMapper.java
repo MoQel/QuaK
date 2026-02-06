@@ -11,7 +11,9 @@ import org.mapstruct.MappingConstants;
         collectionMappingStrategy = CollectionMappingStrategy.TARGET_IMMUTABLE)
 public interface ElementSelectorJpaMapper {
     @Mapping(target = "id", source = "id")
-    @Mapping(target = "quantumOperation", ignore = true)
+    @Mapping(target = "quantumOperationTarget", ignore = true)
+    @Mapping(target = "quantumOperationControl", ignore = true)
+    @Mapping(target = "measurement", ignore = true)
     JpaElementSelector toEntity(ElementSelector domain);
 
     @Mapping(target = "id", source = "id")

@@ -15,7 +15,7 @@ import java.util.List;
 public class JpaLayer extends JpaElementWithId {
     @ManyToOne
     @JoinColumn(name = "circuit_id", referencedColumnName = "id")
-    protected JpaQuantumCircuit circuit;
+    private JpaQuantumCircuit circuit;
 
     @OneToMany(mappedBy = "layer", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<JpaQuantumOperation> quantumOperations;

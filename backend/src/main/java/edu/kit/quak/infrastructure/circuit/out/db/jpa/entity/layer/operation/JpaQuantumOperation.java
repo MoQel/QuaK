@@ -24,9 +24,9 @@ public abstract class JpaQuantumOperation extends JpaElementWithId {
 
     protected boolean inverseForm;
 
-    @OneToMany(mappedBy = "quantumOperation", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "quantumOperationTarget", cascade = CascadeType.ALL, orphanRemoval = true)
     protected List<JpaElementSelector> targetQubits;
 
-    @OneToMany(mappedBy = "quantumOperation", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "quantumOperationControl", cascade = CascadeType.ALL, orphanRemoval = true)
     protected List<JpaElementSelector> controlQubits;
 }

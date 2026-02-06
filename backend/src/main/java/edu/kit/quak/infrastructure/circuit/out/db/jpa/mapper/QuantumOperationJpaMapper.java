@@ -35,17 +35,17 @@ public interface QuantumOperationJpaMapper {
     @AfterMapping
     default void linkTargetAndControlQubits(@MappingTarget JpaQuantumOperation entity) {
         if (entity.getTargetQubits() != null) {
-            entity.getTargetQubits().forEach(selector -> selector.setQuantumOperation(entity));
+            entity.getTargetQubits().forEach(selector -> selector.setQuantumOperationTarget(entity));
         }
         if (entity.getControlQubits() != null) {
-            entity.getControlQubits().forEach(selector -> selector.setQuantumOperation(entity));
+            entity.getControlQubits().forEach(selector -> selector.setQuantumOperationControl(entity));
         }
     }
 
     @AfterMapping
     default void linkClassicBits(@MappingTarget JpaMeasurement entity) {
         if (entity.getClassicBits() != null) {
-            entity.getClassicBits().forEach(selector -> selector.setQuantumOperation(entity));
+            entity.getClassicBits().forEach(selector -> selector.setMeasurement(entity));
         }
     }
 }

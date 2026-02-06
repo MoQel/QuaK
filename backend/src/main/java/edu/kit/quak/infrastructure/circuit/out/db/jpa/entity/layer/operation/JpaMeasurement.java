@@ -14,6 +14,6 @@ import java.util.List;
 @Entity
 @DiscriminatorValue("MEASUREMENT")
 public class JpaMeasurement extends JpaQuantumOperation {
-    @OneToMany(mappedBy = "quantumOperation", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "measurement", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<JpaElementSelector> classicBits;
 }
