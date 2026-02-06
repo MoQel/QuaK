@@ -42,8 +42,7 @@ function InspectorViewComponent({ gate, onClear }: InspectorViewProps) {
                 </CardHeader>
                 <CardContent className="flex flex-col items-center justify-center h-[50vh] text-muted-foreground text-sm italic">
                     <Microscope className="w-12 h-12 mb-4 opacity-20" />
-                    <p>Select a gate from the Library</p>
-                    <p>or out of the Circuit.</p>
+                    <p>Select a gate from the Library.</p>
                 </CardContent>
             </Card>
         );
@@ -63,9 +62,7 @@ function InspectorViewComponent({ gate, onClear }: InspectorViewProps) {
                                 {gate.symbol}
                             </span>
                         </div>
-                        <p className="text-xs text-muted-foreground line-clamp-2">
-                            {gate.description}
-                        </p>
+                        <p className="text-xs text-muted-foreground line-clamp-2">{gate.description}</p>
                     </div>
 
                     {/* Close Button */}
@@ -149,10 +146,7 @@ function InspectorViewComponent({ gate, onClear }: InspectorViewProps) {
                                     </thead>
                                     <tbody className="divide-y">
                                         {info.truthTable.map((row, idx) => (
-                                            <tr
-                                                key={idx}
-                                                className="hover:bg-muted/20 transition-colors"
-                                            >
+                                            <tr key={idx} className="hover:bg-muted/20 transition-colors">
                                                 <td className="px-3 py-2 font-mono text-xs">
                                                     <SafeInlineMath math={row.input} />
                                                 </td>
