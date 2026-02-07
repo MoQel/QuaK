@@ -33,8 +33,7 @@ public class QuantumRegister extends Register {
         return qubit;
     }
 
-    public void addElementaryQuantumGate(
-            ElementaryQuantumGateDefinitionIdentifier definitionId, int positionIdx) {
+    public void addElementaryQuantumGate(ElementaryQuantumGateDefinitionIdentifier definitionId, int positionIdx) {
         Qubit qubit = qubits.getFirst();
         ElementaryQuantumGate gate = new ElementaryQuantumGate(definitionId);
         qubit.addOperation(positionIdx, gate);

@@ -33,11 +33,7 @@ public class FileService extends AbstractFileElementService<File> implements Fil
     @Override
     @Transactional
     public File createFile(File element, String parentId, User user) {
-        log.info(
-                "Creating file '{}' in parent '{}' for user '{}'",
-                element.getName(),
-                parentId,
-                user.getId());
+        log.info("Creating file '{}' in parent '{}' for user '{}'", element.getName(), parentId, user.getId());
         verifyOwnershipByParentId(parentId, user);
 
         FileElementContainer<?> parent = getParentById(parentId);
@@ -64,10 +60,7 @@ public class FileService extends AbstractFileElementService<File> implements Fil
     @Transactional
     public byte[] getFileContent(String fId, User user) {
         log.debug("Retrieving content for file '{}'", fId);
-        File file =
-                repository
-                        .findById(fId)
-                        .orElseThrow(() -> new NoSuchElementException("File not found: " + fId));
+        File file = repository.findById(fId).orElseThrow(() -> new NoSuchElementException("File not found: " + fId));
         verifyOwnershipByParentId(file.getParentId(), user);
         return contentRepository.loadContent(fId).orElseThrow(NoSuchElementException::new);
     }
@@ -91,12 +84,10 @@ public class FileService extends AbstractFileElementService<File> implements Fil
         File file = repository.findById(fId).orElseThrow(NoSuchElementException::new);
         verifyOwnershipByParentId(file.getParentId(), user);
 
-        modifyElementInParent(
-                fId,
-                f -> {
-                    f.setLastAccessNow();
-                    f.setContentType(contentType);
-                });
+        modifyElementInParent(fId, f -> {
+            f.setLastAccessNow();
+            f.setContentType(contentType);
+        });
         // Store content blob seperate
         contentRepository.saveContent(fId, content);
     }

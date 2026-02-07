@@ -9,11 +9,7 @@ export const Layout: React.FC = () => {
     const isIDE = pathname.startsWith('/project'); // <-- change to e.g. "/ide" or "/editor"
 
     return (
-        <div
-            className={
-                isIDE ? 'h-screen flex flex-col overflow-hidden' : 'min-h-screen flex flex-col'
-            }
-        >
+        <div className={isIDE ? 'h-screen flex flex-col overflow-hidden' : 'min-h-screen flex flex-col'}>
             <Navbar />
 
             {/* Key part: for IDE, main becomes a fixed-height box under navbar */}

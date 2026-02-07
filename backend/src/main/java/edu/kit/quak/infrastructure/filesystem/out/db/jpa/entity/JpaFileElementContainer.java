@@ -10,14 +10,9 @@ import lombok.Getter;
 
 @Entity
 @Getter
-public abstract class JpaFileElementContainer<SELF extends JpaFileElementContainer<SELF>>
-        extends JpaFileElement<SELF> {
+public abstract class JpaFileElementContainer<SELF extends JpaFileElementContainer<SELF>> extends JpaFileElement<SELF> {
 
-    @OneToMany(
-            mappedBy = "parent",
-            orphanRemoval = true,
-            cascade = CascadeType.ALL,
-            fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "parent", orphanRemoval = true, cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     protected Set<JpaFileElement<?>> contents = new HashSet<>();
 
     protected JpaFileElementContainer() {

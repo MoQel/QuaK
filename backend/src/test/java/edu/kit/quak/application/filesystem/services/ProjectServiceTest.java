@@ -24,7 +24,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ProjectServiceTest {
 
-    @Mock private ProjectRepositoryPort repository;
+    @Mock
+    private ProjectRepositoryPort repository;
 
     private ProjectService service;
     private User testUser;
@@ -38,8 +39,7 @@ class ProjectServiceTest {
 
     @Test
     void createProject_delegatesToRepo() {
-        when(repository.save(any(Project.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(repository.save(any(Project.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         Project p = new Project("P1");
         Project result = service.createProject(p, testUser);
@@ -53,8 +53,7 @@ class ProjectServiceTest {
         // Arrange
         Project p = new Project("Old", testUser.getId());
         when(repository.findById("1")).thenReturn(Optional.of(p));
-        when(repository.save(any(Project.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(repository.save(any(Project.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // Act
         service.renameProject("1", "New", testUser);
@@ -68,7 +67,6 @@ class ProjectServiceTest {
     void renameProject_throws_whenNotFound() {
         when(repository.findById(anyString())).thenReturn(Optional.empty());
 
-        assertThrows(
-                NoSuchElementException.class, () -> service.renameProject("99", "New", testUser));
+        assertThrows(NoSuchElementException.class, () -> service.renameProject("99", "New", testUser));
     }
 }

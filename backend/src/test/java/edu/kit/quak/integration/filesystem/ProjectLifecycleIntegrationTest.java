@@ -35,13 +35,17 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 class ProjectLifecycleIntegrationTest {
 
-    @Autowired MockMvc mockMvc;
+    @Autowired
+    MockMvc mockMvc;
 
-    @Autowired ObjectMapper objectMapper;
+    @Autowired
+    ObjectMapper objectMapper;
 
-    @Autowired private SpringDataUserRepository userRepository;
+    @Autowired
+    private SpringDataUserRepository userRepository;
 
-    @Autowired private jakarta.persistence.EntityManager entityManager;
+    @Autowired
+    private jakarta.persistence.EntityManager entityManager;
 
     private String projectId;
     private String dirId;
@@ -49,19 +53,16 @@ class ProjectLifecycleIntegrationTest {
 
     private OidcLoginRequestPostProcessor authenticatedUser() {
         return oidcLogin()
-                .idToken(
-                        token ->
-                                token.claim("sub", "test-sub")
-                                        .claim("email", "test@example.com")
-                                        .claim("name", "Test User"))
-                .clientRegistration(
-                        ClientRegistration.withRegistrationId("test")
-                                .clientId("test-client-id")
-                                .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-                                .redirectUri("http://localhost/callback")
-                                .authorizationUri("http://localhost/authorize")
-                                .tokenUri("http://localhost/token")
-                                .build());
+                .idToken(token -> token.claim("sub", "test-sub")
+                        .claim("email", "test@example.com")
+                        .claim("name", "Test User"))
+                .clientRegistration(ClientRegistration.withRegistrationId("test")
+                        .clientId("test-client-id")
+                        .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+                        .redirectUri("http://localhost/callback")
+                        .authorizationUri("http://localhost/authorize")
+                        .tokenUri("http://localhost/token")
+                        .build());
     }
 
     @BeforeEach
@@ -80,79 +81,65 @@ class ProjectLifecycleIntegrationTest {
         entityManager.flush();
 
         // --- 1. Create Project ---
-        String projectJson =
-                """
+        String projectJson = """
                                 { "name": "Integration Project" }
                                 """;
 
-        MvcResult projectResult =
-                mockMvc.perform(
-                                post("/api/project")
-                                        .with(authenticatedUser())
-                                        .with(csrf())
-                                        .contentType(MediaType.APPLICATION_JSON)
-                                        .content(projectJson))
-                        .andExpect(status().isCreated())
-                        .andReturn();
+        MvcResult projectResult = mockMvc.perform(post("/api/project")
+                        .with(authenticatedUser())
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(projectJson))
+                .andExpect(status().isCreated())
+                .andReturn();
 
         ProjectDetailsResponse project =
-                objectMapper.readValue(
-                        projectResult.getResponse().getContentAsString(),
-                        ProjectDetailsResponse.class);
+                objectMapper.readValue(projectResult.getResponse().getContentAsString(), ProjectDetailsResponse.class);
         this.projectId = project.id();
 
         // Flush to ensure project is visible to native queries
         entityManager.flush();
 
         // --- 2. Create Directory ---
-        String dirJson =
-                """
+        String dirJson = """
                                 { "name": "Docs" }
                                 """;
 
-        MvcResult dirResult =
-                mockMvc.perform(
-                                post("/api/directory/")
-                                        .with(authenticatedUser())
-                                        .with(csrf())
-                                        .header(ApiConstants.HEADER_PARENT_ID, this.projectId)
-                                        .contentType(MediaType.APPLICATION_JSON)
-                                        .content(dirJson))
-                        .andExpect(status().isCreated())
-                        .andReturn();
+        MvcResult dirResult = mockMvc.perform(post("/api/directory/")
+                        .with(authenticatedUser())
+                        .with(csrf())
+                        .header(ApiConstants.HEADER_PARENT_ID, this.projectId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(dirJson))
+                .andExpect(status().isCreated())
+                .andReturn();
 
         DirectoryDetailsResponse directory =
-                objectMapper.readValue(
-                        dirResult.getResponse().getContentAsString(),
-                        DirectoryDetailsResponse.class);
+                objectMapper.readValue(dirResult.getResponse().getContentAsString(), DirectoryDetailsResponse.class);
         this.dirId = directory.getId();
 
         // Flush to ensure directory is visible to native queries
         entityManager.flush();
 
         // --- 3. Create File ---
-        String fileJson =
-                """
+        String fileJson = """
                                 {
                                     "name": "specs.pdf",
                                     "contentType": "application/pdf"
                                 }
                                 """;
 
-        MvcResult fileResult =
-                mockMvc.perform(
-                                post("/api/file/")
-                                        .with(authenticatedUser())
-                                        .with(csrf())
-                                        .header(ApiConstants.HEADER_PARENT_ID, this.dirId)
-                                        .contentType(MediaType.APPLICATION_JSON)
-                                        .content(fileJson))
-                        .andExpect(status().isCreated())
-                        .andReturn();
+        MvcResult fileResult = mockMvc.perform(post("/api/file/")
+                        .with(authenticatedUser())
+                        .with(csrf())
+                        .header(ApiConstants.HEADER_PARENT_ID, this.dirId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(fileJson))
+                .andExpect(status().isCreated())
+                .andReturn();
 
         FileDetailsResponse file =
-                objectMapper.readValue(
-                        fileResult.getResponse().getContentAsString(), FileDetailsResponse.class);
+                objectMapper.readValue(fileResult.getResponse().getContentAsString(), FileDetailsResponse.class);
         this.fileId = file.getId();
     }
 
@@ -167,12 +154,13 @@ class ProjectLifecycleIntegrationTest {
                 .andExpect(jsonPath("$.contents[0].id").value(dirId));
 
         // Delete Project (Cascading Delete Test)
-        mockMvc.perform(delete("/api/project/" + projectId).with(authenticatedUser()).with(csrf()))
+        mockMvc.perform(delete("/api/project/" + projectId)
+                        .with(authenticatedUser())
+                        .with(csrf()))
                 .andExpect(status().isOk());
 
         // Verify that the file is also gone (Accessing file should return 404)
-        mockMvc.perform(get("/api/file/" + fileId).with(authenticatedUser()))
-                .andExpect(status().isNotFound());
+        mockMvc.perform(get("/api/file/" + fileId).with(authenticatedUser())).andExpect(status().isNotFound());
     }
 
     @Test
@@ -180,21 +168,18 @@ class ProjectLifecycleIntegrationTest {
     void testFileContentOperations() throws Exception {
         // Upload Content (PUT)
         String contentBase64 = "SGVsbG8gV29ybGQ="; // "Hello World" in Base64
-        String updateJson =
-                """
+        String updateJson = """
                                 {\s
                                     "content": "%s",\s
                                     "contentType": "text/plain"\s
                                 }
-                                \s"""
-                        .formatted(contentBase64);
+                                \s""".formatted(contentBase64);
 
-        mockMvc.perform(
-                        put("/api/file/" + fileId + "/content")
-                                .with(authenticatedUser())
-                                .with(csrf())
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(updateJson))
+        mockMvc.perform(put("/api/file/" + fileId + "/content")
+                        .with(authenticatedUser())
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(updateJson))
                 .andExpect(status().isOk());
 
         // 3. Download Content (GET)
@@ -206,57 +191,49 @@ class ProjectLifecycleIntegrationTest {
     @Test
     @DisplayName("E2E: Prevent Duplicate Filenames (Domain Logic Check)")
     void testDuplicateFilenamePrevention() throws Exception {
-        String duplicateFileJson =
-                """
+        String duplicateFileJson = """
                                 {
                                     "name": "specs.pdf",
                                     "contentType": "application/pdf"
                                 }
                                 """;
 
-        mockMvc.perform(
-                        post("/api/file/")
-                                .with(authenticatedUser())
-                                .with(csrf())
-                                .header(ApiConstants.HEADER_PARENT_ID, this.dirId)
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(duplicateFileJson))
+        mockMvc.perform(post("/api/file/")
+                        .with(authenticatedUser())
+                        .with(csrf())
+                        .header(ApiConstants.HEADER_PARENT_ID, this.dirId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(duplicateFileJson))
                 .andExpect(status().isBadRequest())
-                .andExpect(
-                        jsonPath("$.detail")
-                                .value(org.hamcrest.Matchers.containsString("already exists")));
+                .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("already exists")));
     }
 
     @Test
     @DisplayName("E2E: Rename File and Directory")
     void testRenameEntities() throws Exception {
         // 1. Rename File "specs.pdf" -> "architecture.pdf"
-        String renameFileJson =
-                """
+        String renameFileJson = """
                                 { "name": "architecture.pdf" }
                                 """;
 
-        mockMvc.perform(
-                        patch("/api/file/" + this.fileId)
-                                .with(authenticatedUser())
-                                .with(csrf())
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(renameFileJson))
+        mockMvc.perform(patch("/api/file/" + this.fileId)
+                        .with(authenticatedUser())
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(renameFileJson))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("architecture.pdf"));
 
         // 2. Rename Directory "Docs" -> "References"
-        String renameDirJson =
-                """
+        String renameDirJson = """
                                 { "name": "References" }
                                 """;
 
-        mockMvc.perform(
-                        patch("/api/directory/" + this.dirId)
-                                .with(authenticatedUser())
-                                .with(csrf())
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(renameDirJson))
+        mockMvc.perform(patch("/api/directory/" + this.dirId)
+                        .with(authenticatedUser())
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(renameDirJson))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("References"));
     }
@@ -264,38 +241,32 @@ class ProjectLifecycleIntegrationTest {
     @Test
     @DisplayName("E2E: Nested Directories (Deep Hierarchy)")
     void testNestedStructure() throws Exception {
-        String subDirJson =
-                """
+        String subDirJson = """
                                 { "name": "SubFolder" }
                                 """;
 
-        MvcResult result =
-                mockMvc.perform(
-                                post("/api/directory/")
-                                        .with(authenticatedUser())
-                                        .with(csrf())
-                                        .header(ApiConstants.HEADER_PARENT_ID, this.dirId)
-                                        .contentType(MediaType.APPLICATION_JSON)
-                                        .content(subDirJson))
-                        .andExpect(status().isCreated())
-                        .andReturn();
+        MvcResult result = mockMvc.perform(post("/api/directory/")
+                        .with(authenticatedUser())
+                        .with(csrf())
+                        .header(ApiConstants.HEADER_PARENT_ID, this.dirId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(subDirJson))
+                .andExpect(status().isCreated())
+                .andReturn();
 
         DirectoryDetailsResponse subDir =
-                objectMapper.readValue(
-                        result.getResponse().getContentAsString(), DirectoryDetailsResponse.class);
+                objectMapper.readValue(result.getResponse().getContentAsString(), DirectoryDetailsResponse.class);
 
-        String deepFileJson =
-                """
+        String deepFileJson = """
                                 { "name": "deep.txt", "contentType": "text/plain" }
                                 """;
 
-        mockMvc.perform(
-                        post("/api/file/")
-                                .with(authenticatedUser())
-                                .with(csrf())
-                                .header(ApiConstants.HEADER_PARENT_ID, subDir.getId())
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(deepFileJson))
+        mockMvc.perform(post("/api/file/")
+                        .with(authenticatedUser())
+                        .with(csrf())
+                        .header(ApiConstants.HEADER_PARENT_ID, subDir.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(deepFileJson))
                 .andExpect(status().isCreated());
     }
 
@@ -307,7 +278,9 @@ class ProjectLifecycleIntegrationTest {
         mockMvc.perform(get("/api/file/f-999999999-non-existent").with(authenticatedUser()))
                 .andExpect(status().isNotFound()); // Expects 404
 
-        mockMvc.perform(delete("/api/directory/d-999999999").with(authenticatedUser()).with(csrf()))
+        mockMvc.perform(delete("/api/directory/d-999999999")
+                        .with(authenticatedUser())
+                        .with(csrf()))
                 .andExpect(status().isNotFound()); // Expects 404
     }
 }

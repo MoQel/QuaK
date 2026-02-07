@@ -13,9 +13,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class RegisterDtoMapperTest {
-    @Spy private QubitDtoMapperImpl qubitDtoMapper;
+    @Spy
+    private QubitDtoMapperImpl qubitDtoMapper;
 
-    @InjectMocks private RegisterDtoMapperImpl mapper;
+    @InjectMocks
+    private RegisterDtoMapperImpl mapper;
 
     @Test
     void toResponse() {

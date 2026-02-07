@@ -83,8 +83,7 @@ export async function apiRequest<T>(endpoint: string, options: FetchOptions = {}
  * Convenience methods for common HTTP verbs
  */
 export const api = {
-    get: <T>(endpoint: string, options?: FetchOptions) =>
-        apiRequest<T>(endpoint, { ...options, method: 'GET' }),
+    get: <T>(endpoint: string, options?: FetchOptions) => apiRequest<T>(endpoint, { ...options, method: 'GET' }),
 
     post: <T>(endpoint: string, data?: unknown, options?: FetchOptions) =>
         apiRequest<T>(endpoint, {
@@ -109,8 +108,7 @@ export const api = {
         });
     },
 
-    delete: <T>(endpoint: string, options?: FetchOptions) =>
-        apiRequest<T>(endpoint, { ...options, method: 'DELETE' }),
+    delete: <T>(endpoint: string, options?: FetchOptions) => apiRequest<T>(endpoint, { ...options, method: 'DELETE' }),
 
     patch: <T>(endpoint: string, data?: unknown, options?: FetchOptions) =>
         apiRequest<T>(endpoint, {

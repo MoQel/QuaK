@@ -28,8 +28,7 @@ public interface RegisterJpaMapper {
 
     @AfterMapping
     default void linkQubits(@MappingTarget JpaRegister entity) {
-        if (entity instanceof JpaQuantumRegister quantumRegister
-                && quantumRegister.getQubits() != null) {
+        if (entity instanceof JpaQuantumRegister quantumRegister && quantumRegister.getQubits() != null) {
             quantumRegister.getQubits().forEach(qubit -> qubit.setRegister(quantumRegister));
         }
     }

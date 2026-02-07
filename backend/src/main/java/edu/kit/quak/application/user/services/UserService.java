@@ -34,15 +34,13 @@ public class UserService implements UserServicePort {
         // issuer and subject
         return userRepository
                 .findByIssuerAndSub(authenticatedUser.issuer(), authenticatedUser.subject())
-                .orElseThrow(
-                        () -> {
-                            log.warn(
-                                    "User not found for issuer={} sub={}",
-                                    authenticatedUser.issuer(),
-                                    authenticatedUser.subject());
-                            return new UserNotFoundException(
-                                    authenticatedUser.issuer(), authenticatedUser.subject());
-                        });
+                .orElseThrow(() -> {
+                    log.warn(
+                            "User not found for issuer={} sub={}",
+                            authenticatedUser.issuer(),
+                            authenticatedUser.subject());
+                    return new UserNotFoundException(authenticatedUser.issuer(), authenticatedUser.subject());
+                });
     }
 
     @Override
@@ -66,14 +64,12 @@ public class UserService implements UserServicePort {
         // Use the efficient query that only fetches the UUID
         return userRepository
                 .findIdByIssuerAndSub(authenticatedUser.issuer(), authenticatedUser.subject())
-                .orElseThrow(
-                        () -> {
-                            log.warn(
-                                    "User ID not found for issuer={} sub={}",
-                                    authenticatedUser.issuer(),
-                                    authenticatedUser.subject());
-                            return new UserNotFoundException(
-                                    authenticatedUser.issuer(), authenticatedUser.subject());
-                        });
+                .orElseThrow(() -> {
+                    log.warn(
+                            "User ID not found for issuer={} sub={}",
+                            authenticatedUser.issuer(),
+                            authenticatedUser.subject());
+                    return new UserNotFoundException(authenticatedUser.issuer(), authenticatedUser.subject());
+                });
     }
 }

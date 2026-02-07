@@ -11,11 +11,6 @@ public class AccessDeniedException extends RuntimeException {
     }
 
     public AccessDeniedException(String resourceType, String resourceId) {
-        super(
-                "Access denied: You do not have permission to access "
-                        + resourceType
-                        + " with ID '"
-                        + resourceId
-                        + "'");
+        super("Access denied: You do not have permission to access " + resourceType + " with ID '" + resourceId + "'");
     }
 }

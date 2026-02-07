@@ -26,9 +26,11 @@ import org.springframework.context.annotation.Import;
     OperationJpaMapperImpl.class
 })
 class CircuitJpaAdapterTest {
-    @Autowired private CircuitJpaAdapter jpaAdapter;
+    @Autowired
+    private CircuitJpaAdapter jpaAdapter;
 
-    @Autowired private SpringDataJpaCircuitRepository springRepository;
+    @Autowired
+    private SpringDataJpaCircuitRepository springRepository;
 
     @Test
     void saveAndFindCircuit_ShouldPersistData() {

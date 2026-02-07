@@ -26,24 +26,25 @@ import org.springframework.test.web.servlet.MockMvc;
 @WithMockUser(username = "tester", roles = "USER")
 class GateDefinitionDefinitionRestAdapterTest {
 
-    @Autowired MockMvc mockMvc;
+    @Autowired
+    MockMvc mockMvc;
 
-    @MockitoBean GateDefinitionServicePort gateService;
+    @MockitoBean
+    GateDefinitionServicePort gateService;
 
     @Test
     void getGate_returns200AndDto() throws Exception {
         // Arrange
-        GateDefinition gateDefinition =
-                new GateDefinition(
-                        "x", // id
-                        "X", // name
-                        "Pauli", // category
-                        "Bit-Flip", // description
-                        1, // qubitCount
-                        "X", // symbol
-                        List.of(), // parameters
-                        null // inspectorInfo
-                        );
+        GateDefinition gateDefinition = new GateDefinition(
+                "x", // id
+                "X", // name
+                "Pauli", // category
+                "Bit-Flip", // description
+                1, // qubitCount
+                "X", // symbol
+                List.of(), // parameters
+                null // inspectorInfo
+                );
 
         when(gateService.getGateDefinitionById("x")).thenReturn(Optional.of(gateDefinition));
 
@@ -58,23 +59,17 @@ class GateDefinitionDefinitionRestAdapterTest {
     @Test
     void getGate_returns200AndDtoWithInspectorInfo() throws Exception {
         // Arrange
-        GateDefinition.TruthTableEntry entry1 =
-                new GateDefinition.TruthTableEntry("|0\\rangle", "|1\\rangle");
-        GateDefinition.TruthTableEntry entry2 =
-                new GateDefinition.TruthTableEntry("|1\\rangle", "|0\\rangle");
+        GateDefinition.TruthTableEntry entry1 = new GateDefinition.TruthTableEntry("|0\\rangle", "|1\\rangle");
+        GateDefinition.TruthTableEntry entry2 = new GateDefinition.TruthTableEntry("|1\\rangle", "|0\\rangle");
 
-        GateDefinition.MatrixInfo matrixInfo =
-                new GateDefinition.MatrixInfo(
-                        "\\begin{pmatrix} 0 & 1 \\\\ 1 & 0 \\end{pmatrix}",
-                        2,
-                        2,
-                        List.of(List.of("0", "1"), List.of("1", "0")));
+        GateDefinition.MatrixInfo matrixInfo = new GateDefinition.MatrixInfo(
+                "\\begin{pmatrix} 0 & 1 \\\\ 1 & 0 \\end{pmatrix}",
+                2,
+                2,
+                List.of(List.of("0", "1"), List.of("1", "0")));
 
-        GateDefinition.InspectorInfo inspectorInfo =
-                new GateDefinition.InspectorInfo(
-                        "X = |0\\rangle\\langle1| + |1\\rangle\\langle0|",
-                        List.of(entry1, entry2),
-                        matrixInfo);
+        GateDefinition.InspectorInfo inspectorInfo = new GateDefinition.InspectorInfo(
+                "X = |0\\rangle\\langle1| + |1\\rangle\\langle0|", List.of(entry1, entry2), matrixInfo);
 
         GateDefinition gateDefinition =
                 new GateDefinition("x", "X", "Pauli", "Bit-Flip", 1, "X", List.of(), inspectorInfo);
@@ -89,9 +84,8 @@ class GateDefinitionDefinitionRestAdapterTest {
                 .andExpect(jsonPath("$.symbol").value("X"))
                 // Verify InspectorInfo structure
                 .andExpect(jsonPath("$.inspectorInfo").exists())
-                .andExpect(
-                        jsonPath("$.inspectorInfo.operatorDefinition")
-                                .value("X = |0\\rangle\\langle1| + |1\\rangle\\langle0|"))
+                .andExpect(jsonPath("$.inspectorInfo.operatorDefinition")
+                        .value("X = |0\\rangle\\langle1| + |1\\rangle\\langle0|"))
                 // Verify TruthTable
                 .andExpect(jsonPath("$.inspectorInfo.truthTable").isArray())
                 .andExpect(jsonPath("$.inspectorInfo.truthTable[0].input").value("|0\\rangle"))
@@ -100,9 +94,8 @@ class GateDefinitionDefinitionRestAdapterTest {
                 .andExpect(jsonPath("$.inspectorInfo.truthTable[1].output").value("|0\\rangle"))
                 // Verify MatrixInfo
                 .andExpect(jsonPath("$.inspectorInfo.matrix").exists())
-                .andExpect(
-                        jsonPath("$.inspectorInfo.matrix.display")
-                                .value("\\begin{pmatrix} 0 & 1 \\\\ 1 & 0 \\end{pmatrix}"))
+                .andExpect(jsonPath("$.inspectorInfo.matrix.display")
+                        .value("\\begin{pmatrix} 0 & 1 \\\\ 1 & 0 \\end{pmatrix}"))
                 .andExpect(jsonPath("$.inspectorInfo.matrix.rows").value(2))
                 .andExpect(jsonPath("$.inspectorInfo.matrix.cols").value(2))
                 .andExpect(jsonPath("$.inspectorInfo.matrix.computable").isArray())

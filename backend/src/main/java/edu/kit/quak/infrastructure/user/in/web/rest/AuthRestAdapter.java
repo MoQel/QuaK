@@ -8,6 +8,7 @@ import edu.kit.quak.core.user.model.AuthenticatedUser;
 import edu.kit.quak.infrastructure.user.in.web.rest.dto.RestAuthStatusResponse;
 import edu.kit.quak.infrastructure.user.in.web.rest.dto.RestLogoutResponse;
 import edu.kit.quak.infrastructure.user.in.web.rest.mapper.AuthenticationMapper;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpSession;
 import java.util.Optional;
 import org.springframework.security.core.Authentication;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
  */
 @RestController
 @RequestMapping("/api/auth")
+@Tag(name = "Authentication", description = "Authentication and user session management endpoints")
 public class AuthRestAdapter {
 
     private final AuthServicePort authService;

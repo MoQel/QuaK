@@ -22,9 +22,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
 
-    @Mock private UserRepositoryPort userRepository;
+    @Mock
+    private UserRepositoryPort userRepository;
 
-    @InjectMocks private UserService userService;
+    @InjectMocks
+    private UserService userService;
 
     private User testUser;
     private UUID testUserId;
@@ -75,8 +77,7 @@ class UserServiceTest {
         @Test
         @DisplayName("Should return user when issuer and sub match")
         void findByIssuerAndSub_existingUser_returnsUser() {
-            when(userRepository.findByIssuerAndSub("google", "test-sub-123"))
-                    .thenReturn(Optional.of(testUser));
+            when(userRepository.findByIssuerAndSub("google", "test-sub-123")).thenReturn(Optional.of(testUser));
 
             Optional<User> result = userService.findByIssuerAndSub("google", "test-sub-123");
 
@@ -89,8 +90,7 @@ class UserServiceTest {
         @Test
         @DisplayName("Should return empty when issuer and sub do not match")
         void findByIssuerAndSub_nonExistingUser_returnsEmpty() {
-            when(userRepository.findByIssuerAndSub("github", "unknown-sub"))
-                    .thenReturn(Optional.empty());
+            when(userRepository.findByIssuerAndSub("github", "unknown-sub")).thenReturn(Optional.empty());
 
             Optional<User> result = userService.findByIssuerAndSub("github", "unknown-sub");
 
@@ -107,10 +107,8 @@ class UserServiceTest {
         @DisplayName("Should return user when authenticated user exists in database")
         void getAuthenticatedUser_existingUser_returnsUser() {
             // Arrange
-            AuthenticatedUser authenticatedUser =
-                    new AuthenticatedUser(null, "google", "test-sub-123");
-            when(userRepository.findByIssuerAndSub("google", "test-sub-123"))
-                    .thenReturn(Optional.of(testUser));
+            AuthenticatedUser authenticatedUser = new AuthenticatedUser(null, "google", "test-sub-123");
+            when(userRepository.findByIssuerAndSub("google", "test-sub-123")).thenReturn(Optional.of(testUser));
 
             // Act
             User result = userService.getAuthenticatedUser(authenticatedUser);
@@ -125,16 +123,12 @@ class UserServiceTest {
         @DisplayName("Should throw UserNotFoundException when user not found")
         void getAuthenticatedUser_userNotFound_throwsException() {
             // Arrange
-            AuthenticatedUser authenticatedUser =
-                    new AuthenticatedUser(null, "google", "unknown-sub");
-            when(userRepository.findByIssuerAndSub("google", "unknown-sub"))
-                    .thenReturn(Optional.empty());
+            AuthenticatedUser authenticatedUser = new AuthenticatedUser(null, "google", "unknown-sub");
+            when(userRepository.findByIssuerAndSub("google", "unknown-sub")).thenReturn(Optional.empty());
 
             // Act & Assert
-            UserNotFoundException exception =
-                    assertThrows(
-                            UserNotFoundException.class,
-                            () -> userService.getAuthenticatedUser(authenticatedUser));
+            UserNotFoundException exception = assertThrows(
+                    UserNotFoundException.class, () -> userService.getAuthenticatedUser(authenticatedUser));
             assertTrue(exception.getMessage().contains("google"));
             assertTrue(exception.getMessage().contains("unknown-sub"));
         }
