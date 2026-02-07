@@ -16,7 +16,7 @@ import { getFileIcon } from '@/views/project-manager-view/util/FileIcons.tsx';
  * @param file The file-Element
  * @constructor
  */
-export function File(file: IFile) {
+export function File(file: Readonly<IFile>) {
     const { name, id } = file;
     const [open, setOpen] = useState(false);
     const [dialogContent, setDialogContent] = useState(<Skeleton className="h-5 mt-5" />);
@@ -54,7 +54,7 @@ function FileEdit(id: string, trigger: (element: Promise<JSX.Element>) => void) 
             getFile().then((file) => (
                 <>
                     <DialogHeader>
-                        <DialogTitle>Edit Directory</DialogTitle>
+                        <DialogTitle>Edit File</DialogTitle>
                     </DialogHeader>
                     <EditForm file={file} reloadParent={reloadParent} />
                 </>
@@ -65,7 +65,7 @@ function FileEdit(id: string, trigger: (element: Promise<JSX.Element>) => void) 
     return <ContextMenuItem onSelect={dialog}>Edit</ContextMenuItem>;
 }
 
-function EditForm({ file, reloadParent }: { file: IFile; reloadParent: () => void }) {
+function EditForm({ file, reloadParent }: Readonly<{ file: IFile; reloadParent: () => void }>) {
     const onSubmit = (name: string) => {
         const body: RenameFileRequest = { name };
         api.patch('/api/file/' + file.id, body).then(reloadParent);

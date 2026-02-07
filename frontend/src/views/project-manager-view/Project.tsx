@@ -24,7 +24,7 @@ async function fetchProjectContent(id: string) {
  * @param id The id of the project
  * @constructor
  */
-export function Project({ name, id }: { name: string; id: string }) {
+export function Project({ name, id }: Readonly<{ name: string; id: string }>) {
     const icon = (open: boolean) => (open ? <ChevronDown /> : <ChevronRight />);
     return (
         <FileElementContainer
@@ -60,7 +60,7 @@ function ProjectEdit(id: string, trigger: (element: Promise<JSX.Element>) => voi
     return <ContextMenuItem onSelect={dialog}>Edit</ContextMenuItem>;
 }
 
-function EditForm({ project, reloadParent }: { project: Project; reloadParent: () => void }) {
+function EditForm({ project, reloadParent }: Readonly<{ project: Project; reloadParent: () => void }>) {
     const onSubmit = (name: string) => {
         const body: ProjectRequest = { name };
         api.patch('/api/project/' + project.id, body).then(reloadParent);

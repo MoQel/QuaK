@@ -20,7 +20,7 @@ import { EntityForm } from '@/views/project-manager-view/util/FormUtils.tsx';
  * @param id The id of the directory
  * @constructor
  */
-export function Directory({ name, id }: { name: string; id: string }) {
+export function Directory({ name, id }: Readonly<{ name: string; id: string }>) {
     const icon = (open: boolean) => (open ? <FolderOpen /> : <Folder />);
     return (
         <FileElementContainer
@@ -62,7 +62,7 @@ function DirectoryEdit(id: string, openDialog: (element: Promise<JSX.Element>) =
     return <ContextMenuItem onSelect={dialog}>Edit</ContextMenuItem>;
 }
 
-function EditForm({ dir, reloadParent }: { dir: IDirectory; reloadParent: () => void }) {
+function EditForm({ dir, reloadParent }: Readonly<{ dir: IDirectory; reloadParent: () => void }>) {
     const onSubmit = (name: string) => {
         const body: DirectoryRequest = { name };
         api.patch('/api/directory/' + dir.id, body).then(reloadParent);

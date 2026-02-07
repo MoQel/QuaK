@@ -67,7 +67,7 @@ export function CreateDialog({ id, openDialog }: Readonly<CreateDialogProps>) {
     );
 }
 
-function CreateFile({ parent }: { parent: string }) {
+function CreateFile({ parent }: Readonly<{ parent: string }>) {
     // Hook handles ref, focus, and selection logic
     const inputRef = useFocusSelection('new_file.txt', true);
     const reloadParent = useContext(ParentRefresh);
@@ -116,7 +116,7 @@ function CreateFile({ parent }: { parent: string }) {
     );
 }
 
-function CreateDirectory({ parent }: { parent: string }) {
+function CreateDirectory({ parent }: Readonly<{ parent: string }>) {
     const reloadParent = useContext(ParentRefresh);
 
     const onSubmit = (name: string) => {
