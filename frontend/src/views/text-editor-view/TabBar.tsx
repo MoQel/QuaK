@@ -24,36 +24,52 @@ import { useAppDispatch } from '@/hooks/useAppDispatch.ts';
 import { useAppSelector } from '@/hooks/useAppSelector.ts';
 import { languages } from '@/views/text-editor-view/languages/languages.ts';
 import { GenericTabBar } from '@/components/GenericTabBar.tsx';
-import { Button } from '@/components/ui/button.tsx'; // Import the new component
+import { Button } from '@/components/ui/button.tsx';
 
 interface TabBarProps {
-    currentLangId: string | null;
+    groupId: string;
 }
 
-export function TabBar({ currentLangId }: Readonly<TabBarProps>) {
+export function TabBar({ groupId }: Readonly<TabBarProps>) {
     const dispatch = useAppDispatch();
-    const { openTabs, activeTabId } = useAppSelector((state) => state.tabs);
+    const group = useAppSelector((state) => state.tabs.groups.find((g) => g.id === groupId));
+    const globalActiveGroupId = useAppSelector((state) => state.tabs.activeGroupId);
     const dirtyFiles = useAppSelector((state) => state.tabs.dirtyFiles);
+
+    if (!group) return null;
+    const { openTabs, activeTabId } = group;
+    const isThisGroupFocused = globalActiveGroupId === groupId;
 
     return (
         <GenericTabBar
             tabs={openTabs}
             activeTabId={activeTabId}
-            onReorder={(fromId, toId) => dispatch(moveTab({ fromId, toId }))}
-            onTabClick={(tab) => dispatch(setActiveTab(tab.id))}
+            onReorder={(fromId, toId) =>
+                dispatch(
+                    moveTab({
+                        fromId,
+                        fromGroupId: groupId,
+                        toId,
+                        toGroupId: groupId, // Currently only within a group
+                    }),
+                )
+            }
+            onTabClick={(tab) => dispatch(setActiveTab({ tabId: tab.id, groupId }))}
         >
             {(tab, isActive) => {
                 const isDirty = dirtyFiles.includes(tab.id);
 
                 return (
                     <ContextMenu>
-                        <ContextMenuTrigger className="h-full">
+                        <ContextMenuTrigger className="h-full" asChild>
                             <div
                                 className={cn(
                                     'group relative flex h-full rounded-none min-w-[120px] max-w-[200px] cursor-pointer select-none items-center border-r border-border px-3 text-sm font-medium transition-colors',
                                     !isActive &&
                                         'bg-transparent text-text-muted hover:bg-bg hover:text-text border-t-2 border-t-transparent',
-                                    isActive && 'bg-bg text-text border-t-2 border-t-blue-500',
+                                    isActive && 'bg-bg text-text border-t-2',
+                                    isActive && isThisGroupFocused ? 'border-t-blue-500' : 'border-t-transparent',
+                                    isActive && !isThisGroupFocused ? 'opacity-70' : 'opacity-100',
                                 )}
                             >
                                 <span className="mr-2 flex-1 truncate">{tab.title}</span>
@@ -67,7 +83,7 @@ export function TabBar({ currentLangId }: Readonly<TabBarProps>) {
                                     )}
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        dispatch(closeTab(tab.id));
+                                        dispatch(closeTab({ tabId: tab.id, groupId }));
                                     }}
                                 >
                                     <X className="size-3.5 transition-opacity opacity-0 group-hover:opacity-100" />
@@ -82,8 +98,16 @@ export function TabBar({ currentLangId }: Readonly<TabBarProps>) {
 
                         {/* Right Click Menu Content */}
                         <ContextMenuContent className="w-48">
-                            <ContextMenuItem onClick={() => dispatch(closeTab(tab.id))}>Close</ContextMenuItem>
-                            <ContextMenuItem onClick={() => dispatch(closeOthers(tab.id))}>
+                            <ContextMenuItem
+                                onClick={() => {
+                                    // Defer execution to the next tick to allow the context menu to
+                                    // close and clean up its focus management before the tab is unmounted.
+                                    setTimeout(() => dispatch(closeTab({ tabId: tab.id, groupId })), 0);
+                                }}
+                            >
+                                Close
+                            </ContextMenuItem>
+                            <ContextMenuItem onClick={() => dispatch(closeOthers({ tabId: tab.id, groupId }))}>
                                 Close Others
                             </ContextMenuItem>
                             <ContextMenuItem onClick={() => dispatch(closeAll())}>Close All</ContextMenuItem>
@@ -95,18 +119,18 @@ export function TabBar({ currentLangId }: Readonly<TabBarProps>) {
                                     <ContextMenuSubContent className="w-48">
                                         {languages.map((l) => (
                                             <ContextMenuItem
-                                                key={l.languageId}
+                                                key={l.id}
                                                 onClick={() =>
                                                     dispatch(
                                                         requestLanguageChange({
                                                             fileId: tab.id,
-                                                            langId: l.languageId,
+                                                            langId: l.id,
                                                         }),
                                                     )
                                                 }
                                             >
                                                 {l.getName()}
-                                                {l.languageId === currentLangId && (
+                                                {l.id === tab.language && (
                                                     <ContextMenuShortcut>
                                                         <Check className="size-3.5" />
                                                     </ContextMenuShortcut>

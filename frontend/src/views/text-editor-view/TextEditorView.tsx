@@ -2,17 +2,18 @@ import { Card, CardContent } from '@/components/ui/card.tsx';
 import QLPEditor from '@/views/text-editor-view/QLPEditor.tsx';
 import { useAppSelector } from '@/hooks/useAppSelector.ts';
 import { TabBar } from '@/views/text-editor-view/TabBar.tsx';
-import { useCallback, useEffect, useState } from 'react';
-import { DEFAULT_LANG } from '@/views/text-editor-view/languages/languages.ts';
-import { closeAll } from '@/store/slices/tabsSlice.ts';
+import React, { useEffect } from 'react';
+import { closeAll, setActiveGroup } from '@/store/slices/tabsSlice.ts';
 import { useAppDispatch } from '@/hooks/useAppDispatch.ts';
 import { useEditorShortcuts } from '@/hooks/editor/useEditorShortcuts.ts';
+import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 
 export function TextEditorView() {
-    const activeFileId = useAppSelector((state) => state.tabs.activeTabId);
-    const [currentLangId, setCurrentLangId] = useState(DEFAULT_LANG);
+    const { groups, activeGroupId } = useAppSelector((state) => state.tabs);
     const dispatch = useAppDispatch();
-    useEditorShortcuts(activeFileId);
+    const activeGroup = groups.find((g) => g.id === activeGroupId);
+    const activeTabId = activeGroup?.activeTabId || null;
+    useEditorShortcuts(activeTabId);
 
     // Cleanup close all tabs
     useEffect(() => {
@@ -21,17 +22,34 @@ export function TextEditorView() {
         };
     }, [dispatch]);
 
-    const handleLanguageChange = useCallback((langId: string) => {
-        setCurrentLangId(langId);
-    }, []);
-
     return (
         <Card className="h-full flex flex-col p-0 border-none rounded-none">
-            <TabBar currentLangId={currentLangId} />
+            <PanelGroup direction="horizontal">
+                {groups.map((group, index) => (
+                    <React.Fragment key={group.id}>
+                        <Panel minSize={20} defaultSize={100 / groups.length}>
+                            <div
+                                className={`h-full flex flex-col border-r`}
+                                // className={`h-full flex flex-col border-r ${activeGroupId === group.id ? 'ring-1 ring-blue-500 ring-inset' : ''}`}
+                                onClickCapture={() => {
+                                    if (activeGroupId !== group.id) {
+                                        dispatch(setActiveGroup(group.id));
+                                    }
+                                }}
+                            >
+                                <TabBar groupId={group.id} />
 
-            <CardContent className="flex flex-col flex-1 p-0 overflow-hidden relative">
-                <QLPEditor activeFileId={activeFileId} setCurrentLangId={handleLanguageChange} />
-            </CardContent>
+                                <CardContent className="flex flex-col flex-1 p-0 overflow-hidden relative">
+                                    <QLPEditor groupId={group.id} />
+                                </CardContent>
+                            </div>
+                        </Panel>
+                        {index < groups.length - 1 && (
+                            <PanelResizeHandle className="w-1 bg-border hover:bg-blue-500 transition-colors cursor-col-resize" />
+                        )}
+                    </React.Fragment>
+                ))}
+            </PanelGroup>
         </Card>
     );
 }

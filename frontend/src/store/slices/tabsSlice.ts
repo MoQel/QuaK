@@ -1,8 +1,10 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { DEFAULT_LANG, languages } from '@/views/text-editor-view/languages/languages.ts';
 
 export interface Tab {
     id: string; // Unique file id
     title: string; // Filename
+    language: string; // language setting
 }
 
 export interface EditorGroup {
@@ -30,6 +32,12 @@ const initialState: TabsState = {
 
 const isFileOpenAnywhere = (groups: EditorGroup[], fileId: string): boolean => {
     return groups.some((g) => g.openTabs.some((t) => t.id === fileId));
+};
+
+const getLanguageByExtension = (title: string): string => {
+    const ext = title.split('.').pop() || '';
+    const match = languages.find((l) => l.fileExtension === ext.toLowerCase());
+    return match ? match.id : DEFAULT_LANG;
 };
 
 export const tabsSlice = createSlice({
@@ -87,11 +95,17 @@ export const tabsSlice = createSlice({
             const targetGroupId = action.payload.groupId || state.activeGroupId;
             const group = state.groups.find((g) => g.id === targetGroupId);
             if (!group) return;
+
+            const newTab: Tab = {
+                ...action.payload.tab,
+                language: getLanguageByExtension(action.payload.tab.title),
+            };
+
             const exists = group.openTabs.find((t) => t.id === action.payload.tab.id);
             if (!exists) {
-                group.openTabs.push(action.payload.tab);
+                group.openTabs.push(newTab);
             }
-            group.activeTabId = action.payload.tab.id;
+            group.activeTabId = newTab.id;
             state.activeGroupId = targetGroupId;
         },
         closeTab: (state, action: PayloadAction<{ tabId: string; groupId: string }>) => {
@@ -101,16 +115,17 @@ export const tabsSlice = createSlice({
             const index = group.openTabs.findIndex((t) => t.id === action.payload.tabId);
             if (index === -1) return;
 
-            group.openTabs.splice(index, 1);
+            group.openTabs = group.openTabs.filter((t) => t.id !== action.payload.tabId);
+
+            if (group.activeTabId === action.payload.tabId) {
+                const nextTab = group.openTabs[index - 1] || group.openTabs[0];
+                group.activeTabId = nextTab ? nextTab.id : null;
+            }
 
             if (!isFileOpenAnywhere(state.groups, action.payload.tabId)) {
                 state.dirtyFiles = state.dirtyFiles.filter((id) => id !== action.payload.tabId);
             }
-
-            if (group.activeTabId === action.payload.tabId) {
-                const nextTab = group.openTabs[index] || group.openTabs[index - 1]; // Try right, then left
-                group.activeTabId = nextTab ? nextTab.id : null;
-            }
+            state.activeGroupId = action.payload.groupId;
         },
         closeOthers: (state, action: PayloadAction<{ tabId: string; groupId: string }>) => {
             const group = state.groups.find((g) => g.id === action.payload.groupId);
@@ -183,6 +198,13 @@ export const tabsSlice = createSlice({
                 ...action.payload,
                 timestamp: Date.now(),
             };
+            const fileId = action.payload.fileId;
+            state.groups.forEach((group) => {
+                const tab = group.openTabs.find((t) => t.id === fileId);
+                if (tab) {
+                    tab.language = action.payload.langId;
+                }
+            });
         },
         requestSave: (state, action: PayloadAction<string>) => {
             state.lastSaveRequest = {

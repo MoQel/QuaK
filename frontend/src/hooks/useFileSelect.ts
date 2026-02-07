@@ -6,11 +6,6 @@ export const useFileSelect = () => {
     const dispatch = useAppDispatch();
 
     return (file: File) => {
-        dispatch(
-            openTab({
-                id: file.id,
-                title: file.name,
-            }),
-        );
+        dispatch(openTab({ tab: { id: file.id, title: file.name, language: '' } }));
     };
 };

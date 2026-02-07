@@ -1,40 +1,39 @@
 import { Editor, useMonaco } from '@monaco-editor/react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { editor } from 'monaco-editor';
 import { useTheme } from '@/theme';
 import { languages } from '@/views/text-editor-view/languages/languages.ts';
 import { useMonacoTheme } from '@/hooks/editor/useMonacoTheme.ts';
-import { useAppSelector } from '@/hooks/useAppSelector.ts';
 import { useAppDispatch } from '@/hooks/useAppDispatch.ts';
 import { setFileDirty } from '@/store/slices/tabsSlice.ts';
 import { getModelId, savedVersionIds } from '@/views/text-editor-view/util/editorUtils.ts';
-import { useEditorModelManager } from '@/hooks/editor/useEditoModelManager.ts';
+import { useEditorModelManager } from '@/hooks/editor/useEditorModelManager.ts';
 import { useEditorCommands } from '@/hooks/editor/useEditorCommands.ts';
+import { useAppSelector } from '@/hooks/useAppSelector.ts';
+import { useEditorLanguage } from '@/hooks/editor/useEditorLanguage.ts';
 
 interface QLPEditorProps {
-    activeFileId: string | null;
-    setCurrentLangId: (langId: string) => void;
+    groupId: string;
 }
 
-function QLPEditor({ activeFileId, setCurrentLangId }: Readonly<QLPEditorProps>) {
+function QLPEditor({ groupId }: Readonly<QLPEditorProps>) {
     const [editorInstance, setEditorInstance] = useState<editor.IStandaloneCodeEditor | null>(null);
     const monaco = useMonaco();
     const { theme } = useTheme();
     const { applyTheme } = useMonacoTheme(monaco, theme);
 
-    const dispatch = useAppDispatch();
-    const openTabs = useAppSelector((state) => state.tabs.openTabs);
-
-    // region Buisness logic hooks
-    const { isReadOnly, isDirtyRef } = useEditorModelManager(
-        monaco,
-        editorInstance,
-        activeFileId,
-        openTabs,
-        setCurrentLangId,
+    const activeFileId = useAppSelector(
+        (state) => state.tabs.groups.find((g) => g.id === groupId)?.activeTabId ?? null,
     );
 
-    useEditorCommands(monaco, editorInstance, activeFileId, setCurrentLangId);
+    const dispatch = useAppDispatch();
+
+    // region Buisness logic hooks
+    useEditorLanguage(monaco);
+
+    const { isReadOnly, isDirtyRef } = useEditorModelManager(monaco, editorInstance, groupId);
+
+    useEditorCommands(monaco);
     // endregion
 
     // region Editor config and mount
@@ -60,18 +59,6 @@ function QLPEditor({ activeFileId, setCurrentLangId }: Readonly<QLPEditorProps>)
             setEditorInstance(null);
         });
     };
-
-    // Cleanup global on unmount
-    useEffect(() => {
-        return () => {
-            if (monaco) {
-                const models = monaco.editor.getModels();
-                models.forEach((model) => {
-                    model.dispose();
-                });
-            }
-        };
-    }, [monaco]);
     // endregion
 
     return (
