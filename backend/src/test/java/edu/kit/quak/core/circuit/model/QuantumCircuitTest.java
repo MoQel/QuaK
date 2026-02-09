@@ -17,92 +17,143 @@ class QuantumCircuitTest {
 
     @Test
     void constructor_initializesRegisterAndLayer() {
+        // Act
         QuantumCircuit circuit = new QuantumCircuit();
 
-        assertEquals(1, circuit.getRegisters().size());
-        assertTrue(circuit.getRegisters().getFirst().asQuantum().isPresent());
-        assertEquals(INIT_QUBITS, circuit.getRegisters().getFirst().asQuantum().get().getNumberOfQubits());
-        assertEquals(0, circuit.getLayers().size());
-
-        assertInstanceOf(QuantumRegister.class, circuit.getRegisters().getFirst());
+        // Assert
+        assertEquals(1, circuit.getRegisters().size(), "Circuit should initialize with one register.");
+        assertTrue(circuit.getRegisters().getFirst().asQuantum().isPresent(), "The default register should be a QuantumRegister.");
+        assertEquals(INIT_QUBITS, circuit.getRegisters().getFirst().asQuantum().get().getNumberOfQubits(), "The register should have the default number of qubits.");
+        assertEquals(0, circuit.getLayers().size(), "Circuit should start with no layers.");
     }
 
     @Test
     void addAndRemoveQubit() {
+        // Arrange
         QuantumCircuit circuit = new QuantumCircuit();
         QuantumRegister qr = circuit.getRegisters().getFirst().asQuantum().orElseThrow();
 
+        // Act
         circuit.addQubit(qr.getId());
         circuit.addQubit(qr.getId());
-        assertEquals(INIT_QUBITS + 2, qr.getNumberOfQubits());
+        int afterAdding = qr.getNumberOfQubits();
 
         circuit.removeQubit(qr.getId(), 0);
-        assertEquals(INIT_QUBITS + 1, qr.getNumberOfQubits());
-    }
+        int afterRemoving = qr.getNumberOfQubits();
 
-    @Test
-    void removeQubit_removesAffectedOperations() {
-        QuantumCircuit circuit = new QuantumCircuit();
-        String registerId = circuit.getRegisters().getFirst().asQuantum().orElseThrow().getId();
-
-        ElementSelector control = new ElementSelector(registerId, 0);
-        ElementSelector target = new ElementSelector(registerId, 1);
-        QuantumOperation op = new ElementaryQuantumGate(QuantumOperationLibrary.CX,false, List.of(target), List.of(control), 0d);
-
-        circuit.addQuantumOperation(op, 0);
-        assertEquals(1, circuit.getLayers().getFirst().getQuantumOperations().size());
-
-        circuit.removeQubit(registerId, 0);
-
-        assertTrue(circuit.getLayers().isEmpty());
+        // Assert
+        assertEquals(INIT_QUBITS + 2, afterAdding, "Qubit count should increase by two.");
+        assertEquals(INIT_QUBITS + 1, afterRemoving, "Qubit count should decrease by one after removal.");
     }
 
     @Test
     void addQuantumOperation_createsNewLayerIfNecessary() {
+        // Arrange
         QuantumCircuit circuit = new QuantumCircuit();
         String registerId = circuit.getRegisters().getFirst().asQuantum().orElseThrow().getId();
         ElementSelector target = new ElementSelector(registerId, 1);
-        QuantumOperation op = new ElementaryQuantumGate(QuantumOperationLibrary.T,false, List.of(target), List.of(), 0d);
+        QuantumOperation op = new ElementaryQuantumGate(QuantumOperationLibrary.T, false, List.of(target), List.of(), 0d);
 
+        // Act
         circuit.addQuantumOperation(op, 0);
 
-        assertEquals(1, circuit.getLayers().size());
-        assertTrue(circuit.getLayers().getFirst().getQuantumOperations().contains(op));
+        // Assert
+        assertEquals(1, circuit.getLayers().size(), "A new layer should be created when adding the first operation.");
+        assertTrue(circuit.getLayers().getFirst().getQuantumOperations().contains(op), "The operation should be stored in the newly created layer.");
     }
 
     @Test
     void moveQuantumOperation_changesLayerAndSelectors() {
+        // Arrange
         QuantumCircuit circuit = new QuantumCircuit();
         String registerId = circuit.getRegisters().getFirst().asQuantum().orElseThrow().getId();
 
         ElementSelector target = new ElementSelector(registerId, 0);
-        QuantumOperation op = new ElementaryQuantumGate(QuantumOperationLibrary.S,false, List.of(target), List.of(), 0d);
-
+        QuantumOperation op = new ElementaryQuantumGate(QuantumOperationLibrary.S, false, List.of(target), List.of(), 0d);
         circuit.addQuantumOperation(op, 0);
+
+        // Act
         circuit.moveQuantumOperation(op.getId(), 1, List.of(target), List.of());
 
-        assertEquals(2, circuit.getLayers().size());
-        assertTrue(circuit.getLayers().get(1).getQuantumOperations().contains(op));
+        // Assert
+        assertEquals(1, circuit.getLayers().size(), "Source layer should be flushed, leaving only the target layer.");
+        assertTrue(circuit.getLayers().getFirst().getQuantumOperations().contains(op), "The operation should exist in the target layer.");
     }
 
     @Test
     void removeQuantumOperation_byId() {
+        // Arrange
         QuantumCircuit circuit = new QuantumCircuit();
         String registerId = circuit.getRegisters().getFirst().asQuantum().orElseThrow().getId();
 
         ElementSelector target = new ElementSelector(registerId, 1);
-        QuantumOperation op = new ElementaryQuantumGate(QuantumOperationLibrary.H,false, List.of(target), List.of(), 0d);
-
+        QuantumOperation op = new ElementaryQuantumGate(QuantumOperationLibrary.H, false, List.of(target), List.of(), 0d);
         circuit.addQuantumOperation(op, 0);
+
+        // Act
         circuit.removeQuantumOperation(op.getId());
 
-        assertTrue(circuit.getLayers().getFirst().getQuantumOperations().isEmpty());
+        // Assert
+        assertTrue(circuit.getLayers().isEmpty(), "The layer list should be empty after removing the only operation.");
     }
 
     @Test
     void invalidQubitIndexThrowsException() {
+        // Arrange
         QuantumCircuit circuit = new QuantumCircuit();
         String registerId = circuit.getRegisters().getFirst().asQuantum().orElseThrow().getId();
-        assertThrows(IllegalArgumentException.class, () -> circuit.removeQubit(registerId, INIT_QUBITS + 1));
+
+        // Act & Assert
+        assertThrows(IllegalArgumentException.class,
+                () -> circuit.removeQubit(registerId, INIT_QUBITS + 1),
+                "Should throw an exception when trying to remove a qubit with an out-of-bounds index.");
+    }
+
+    @Test
+    void flushLayers_afterRemovingQubit_emptyLayersAreCleanedUp() {
+        // Arrange
+        QuantumCircuit circuit = new QuantumCircuit();
+        String registerId = circuit.getRegisters().getFirst().getId();
+        ElementSelector target = new ElementSelector(registerId, 0);
+        QuantumOperation op = new ElementaryQuantumGate(QuantumOperationLibrary.Z, false, List.of(target), List.of(), 0d);
+        circuit.addQuantumOperation(op, 0);
+
+        // Act
+        circuit.removeQubit(registerId, 0);
+
+        // Assert
+        assertTrue(circuit.getLayers().isEmpty(), "Layers remaining empty after qubit removal must be flushed.");
+    }
+
+    @Test
+    void flushLayers_afterRemovingLastOperation_layerIsRemoved() {
+        // Arrange
+        QuantumCircuit circuit = new QuantumCircuit();
+        String registerId = circuit.getRegisters().getFirst().getId();
+        ElementSelector target = new ElementSelector(registerId, 0);
+        QuantumOperation op = new ElementaryQuantumGate(QuantumOperationLibrary.X, false, List.of(target), List.of(), 0d);
+        circuit.addQuantumOperation(op, 0);
+
+        // Act
+        circuit.removeQuantumOperation(op.getId());
+
+        // Assert
+        assertTrue(circuit.getLayers().isEmpty(), "Empty layers should be automatically removed (flushed).");
+    }
+
+    @Test
+    void flushLayers_afterMovingLastOperation_sourceLayerIsRemoved() {
+        // Arrange
+        QuantumCircuit circuit = new QuantumCircuit();
+        String registerId = circuit.getRegisters().getFirst().getId();
+        ElementSelector target = new ElementSelector(registerId, 0);
+        QuantumOperation op = new ElementaryQuantumGate(QuantumOperationLibrary.H, false, List.of(target), List.of(), 0d);
+        circuit.addQuantumOperation(op, 0);
+
+        // Act
+        circuit.moveQuantumOperation(op.getId(), 1, List.of(target), List.of());
+
+        // Assert
+        assertEquals(1, circuit.getLayers().size(), "Only the target layer should remain; the empty source layer should be flushed.");
     }
 }

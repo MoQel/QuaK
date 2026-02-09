@@ -68,8 +68,7 @@ public class QuantumCircuit extends ElementWithId {
             }
         }
 
-        // Remove all layers that no longer contain any quantum operations.
-        layers.removeIf(layer -> layer.getQuantumOperations().isEmpty());
+        flushLayers();
     }
 
     public void addQuantumOperation(@NonNull QuantumOperation operation, int layerIdx) {
@@ -112,6 +111,8 @@ public class QuantumCircuit extends ElementWithId {
                 }
             }
         }
+
+        flushLayers();
     }
 
     public void removeQuantumOperation(String operationId) {
@@ -123,6 +124,13 @@ public class QuantumCircuit extends ElementWithId {
                 }
             }
         }
+
+        flushLayers();
+    }
+
+    private void flushLayers() {
+        // Remove all layers that no longer contain any quantum operations.
+        layers.removeIf(layer -> layer.getQuantumOperations().isEmpty());
     }
 
     private QuantumRegister findQuantumRegisterById(String registerId) {
