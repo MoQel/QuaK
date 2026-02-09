@@ -13,8 +13,11 @@
  *   <li>The {@code reverse} attribute of {@code QuantumOperationDefinition}</li>
  * </ul>
  *
- * <p><b>Not included due to conscious implementation decisions:</b>
+ * <p><b>Not included or implemented differently due to conscious implementation decisions:</b>
  * <ul>
+ *   <li>A {@code QuantumCircuit} is initialized with 1 {@code QuantumRegister}, containing
+ *       four qubits (to start with a reasonably sized circuit), and no layers (to avoid
+ *       empty layers). </li>
  *   <li>{@code NamedElement} is replaced by {@code ElementWithId}, as naming is currently not
  *       required. This may change in the future (e.g., when supporting multiple circuits per
  *       project with tab-based navigation).</li>

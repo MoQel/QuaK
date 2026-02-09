@@ -17,8 +17,7 @@ public class QuantumCircuit extends ElementWithId {
 
     public QuantumCircuit() {
         super();
-        registers.add(new QuantumRegister("q", 0));
-        layers.add(new Layer(Collections.emptyList()));
+        registers.add(new QuantumRegister("q", 4));
     }
 
     @Builder

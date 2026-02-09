@@ -34,13 +34,13 @@ class CircuitJpaAdapterTest {
 
     @Autowired private SpringDataJpaCircuitRepository springRepository;
 
+    public static final int INIT_QUBITS = 4;
+
     @Test
     void saveAndFindCircuit_ShouldPersistData() {
         // Arrange
         QuantumCircuit domainCircuit = new QuantumCircuit();
         String circuitId = domainCircuit.getId();
-
-        String layerId = domainCircuit.getLayers().getFirst().getId();
 
         String registerId = domainCircuit.getRegisters().getFirst().getId();
         domainCircuit.addQubit(registerId);
@@ -50,6 +50,8 @@ class CircuitJpaAdapterTest {
         double rotationAngle = 0d;
         ElementaryQuantumGate operation = new ElementaryQuantumGate(QuantumOperationLibrary.X, false, List.of(target), null, rotationAngle);
         domainCircuit.addQuantumOperation(operation, 0);
+
+        String layerId = domainCircuit.getLayers().getFirst().getId();
 
         // Act
         jpaAdapter.save(domainCircuit);
@@ -68,7 +70,7 @@ class CircuitJpaAdapterTest {
         assertThat(foundRegister).isInstanceOf(QuantumRegister.class);
 
         QuantumRegister foundQuantumRegister = (QuantumRegister) foundRegister;
-        assertThat(foundQuantumRegister.getNumberOfQubits()).isOne();
+        assertThat(foundQuantumRegister.getNumberOfQubits()).isEqualTo(INIT_QUBITS + 1);
 
         Layer foundLayer = foundCircuit.getLayers().getFirst();
         assertThat(foundLayer.getId()).isEqualTo(layerId);

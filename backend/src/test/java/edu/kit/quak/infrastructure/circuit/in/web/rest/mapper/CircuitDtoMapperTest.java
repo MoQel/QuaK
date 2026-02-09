@@ -35,7 +35,6 @@ class CircuitDtoMapperTest {
         assertEquals(circuit.getId(), response.id());
         assertEquals(1, response.registers().size());
         assertEquals("q", response.registers().getFirst().getName());
-        assertEquals(1, response.layers().size());
-        assertEquals(0, response.layers().getFirst().quantumOperations().size());
+        assertEquals(0, response.layers().size());
     }
 }

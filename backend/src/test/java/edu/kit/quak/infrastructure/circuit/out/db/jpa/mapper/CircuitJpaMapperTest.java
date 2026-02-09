@@ -26,6 +26,8 @@ class CircuitJpaMapperTest {
     @InjectMocks
     private CircuitJpaMapperImpl mapper;
 
+    public static final int INIT_QUBITS = 4;
+
     @Test
     void domainToEntity() {
         // Arrange
@@ -39,12 +41,10 @@ class CircuitJpaMapperTest {
         assertEquals(1, entity.getRegisters().size());
         assertEquals("q", entity.getRegisters().getFirst().getName());
         assertInstanceOf(JpaQuantumRegister.class, entity.getRegisters().getFirst());
-        assertEquals(0, ((JpaQuantumRegister) entity.getRegisters().getFirst()).getNumberOfQubits());
+        assertEquals(INIT_QUBITS, ((JpaQuantumRegister) entity.getRegisters().getFirst()).getNumberOfQubits());
         assertEquals(entity, entity.getRegisters().getFirst().getCircuit()); // AfterMapping
 
-        assertEquals(1, entity.getLayers().size());
-        assertEquals(0, entity.getLayers().getFirst().getQuantumOperations().size());
-        assertEquals(entity, entity.getLayers().getFirst().getCircuit()); // AfterMapping
+        assertEquals(0, entity.getLayers().size());
     }
 
     @Test

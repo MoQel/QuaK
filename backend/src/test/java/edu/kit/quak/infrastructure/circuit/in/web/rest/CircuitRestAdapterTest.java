@@ -42,6 +42,8 @@ class CircuitRestAdapterTest {
     @MockitoBean
     private CircuitServicePort circuitServicePort;
 
+    public static final int INIT_QUBITS = 4;
+
     @Test
     void initCircuit_ShouldReturnCreated() throws Exception {
         // Arrange
@@ -57,9 +59,7 @@ class CircuitRestAdapterTest {
                 .andExpect(jsonPath("$.registers.size()").value(1))
                 .andExpect(jsonPath("$.layers").exists())
                 .andExpect(jsonPath("$.layers").isArray())
-                .andExpect(jsonPath("$.layers[0].quantumOperations").exists())
-                .andExpect(jsonPath("$.layers[0].quantumOperations").isArray())
-                .andExpect(jsonPath("$.layers[0].quantumOperations").isEmpty());
+                .andExpect(jsonPath("$.layers.size()").value(0));
     }
 
     @Test
@@ -94,7 +94,7 @@ class CircuitRestAdapterTest {
                 .andExpect(jsonPath("$.registers[0].name").exists())
                 .andExpect(jsonPath("$.registers[0].name").value("q"))
                 .andExpect(jsonPath("$.registers[0].numberOfQubits").exists())
-                .andExpect(jsonPath("$.registers[0].numberOfQubits").value(1));
+                .andExpect(jsonPath("$.registers[0].numberOfQubits").value(INIT_QUBITS + 1));
     }
 
     @Test
