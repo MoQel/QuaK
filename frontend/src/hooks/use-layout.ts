@@ -1,22 +1,14 @@
-import { useAppDispatch } from "@/hooks/useAppDispatch";
-import { useAppSelector } from "@/hooks/useAppSelector";
-import {
-    togglePanel,
-    toggleMenubar,
-    setMenubarVisibility,
-    resetLayout
-} from "@/store/slices/layoutSlice";
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppSelector } from '@/hooks/useAppSelector';
+import { togglePanel, toggleMenubar, setMenubarVisibility, resetLayout } from '@/store/slices/layoutSlice';
 
-export type PanelKey = "file" | "circuit" | "code" | "results" | "inspector" | "library";
-
+export type PanelKey = 'file' | 'circuit' | 'code' | 'results' | 'inspector' | 'library';
 
 export const useLayout = () => {
     const dispatch = useAppDispatch();
 
     // 1. Centralize State Access
-    const { visiblePanels, isMenubarVisible, topLayout } = useAppSelector(
-        (state) => state.layout
-    );
+    const { visiblePanels, isMenubarVisible, topLayout, layoutResetVersion } = useAppSelector((state) => state.layout);
 
     const onTogglePanel = (panel: PanelKey) => {
         dispatch(togglePanel(panel));
@@ -39,11 +31,12 @@ export const useLayout = () => {
         visiblePanels,
         isMenubarVisible,
         topLayout,
+        layoutResetVersion,
 
         // Actions
         onTogglePanel,
         onToggleMenubar,
         onSetMenubarVisibility,
-        onResetLayout
+        onResetLayout,
     };
 };

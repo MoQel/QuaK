@@ -1,4 +1,4 @@
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 export interface LayoutState {
     visiblePanels: {
@@ -12,6 +12,7 @@ export interface LayoutState {
     topLayout: number[];
     bottomLayout: number[];
     isMenubarVisible: boolean;
+    layoutResetVersion: number;
 }
 
 const initialState: LayoutState = {
@@ -26,25 +27,32 @@ const initialState: LayoutState = {
     topLayout: [20, 50, 30],
     bottomLayout: [33, 34, 33],
     isMenubarVisible: false,
+    layoutResetVersion: 0,
 };
 
 export const layoutSlice = createSlice({
-    name: "layout",
+    name: 'layout',
     initialState,
     reducers: {
-        togglePanel: (state, action: PayloadAction<keyof LayoutState["visiblePanels"]>) => {
+        togglePanel: (state, action: PayloadAction<keyof LayoutState['visiblePanels']>) => {
             state.visiblePanels[action.payload] = !state.visiblePanels[action.payload];
         },
-        resetLayout: () => initialState,
-
+        resetLayout: (state) => {
+            // Restore defaults
+            state.visiblePanels = initialState.visiblePanels;
+            state.topLayout = initialState.topLayout;
+            state.bottomLayout = initialState.bottomLayout;
+            // INCREMENT THIS to signal App.tsx
+            state.layoutResetVersion += 1;
+        },
         toggleMenubar: (state) => {
             state.isMenubarVisible = !state.isMenubarVisible;
         },
         setMenubarVisibility: (state, action: PayloadAction<boolean>) => {
             state.isMenubarVisible = action.payload;
-        }
+        },
     },
 });
 
-export const { togglePanel, resetLayout,  toggleMenubar, setMenubarVisibility   } = layoutSlice.actions;
+export const { togglePanel, resetLayout, toggleMenubar, setMenubarVisibility } = layoutSlice.actions;
 export default layoutSlice.reducer;
