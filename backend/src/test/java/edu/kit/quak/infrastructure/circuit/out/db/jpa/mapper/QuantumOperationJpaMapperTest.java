@@ -16,7 +16,6 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
-import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -46,19 +45,25 @@ class QuantumOperationJpaMapperTest {
         assertInstanceOf(JpaElementaryQuantumGate.class, entityGate);
         JpaElementaryQuantumGate jpaGate = (JpaElementaryQuantumGate) entityGate;
         assertEquals(QuantumOperationLibrary.X, jpaGate.getOperationDefinition());
-        for (JpaElementSelector selector : Stream.concat(jpaGate.getTargetQubits().stream(),
-                                                         jpaGate.getControlQubits().stream()).toList()) {
-            assertEquals(jpaGate, selector.getQuantumOperation()); // AfterMapping
+        for (JpaElementSelector selector : jpaGate.getTargetQubits()) {
+            assertEquals(jpaGate, selector.getQuantumOperationTarget()); // AfterMapping
+        }
+        for (JpaElementSelector selector : jpaGate.getControlQubits()) {
+            assertEquals(jpaGate, selector.getQuantumOperationControl()); // AfterMapping
         }
 
         assertNotNull(entityMeasurement);
         assertInstanceOf(JpaMeasurement.class, entityMeasurement);
         JpaMeasurement jpaMeasurement = (JpaMeasurement) entityMeasurement;
         assertEquals(QuantumOperationLibrary.MEASURE, jpaMeasurement.getOperationDefinition());
-        for (JpaElementSelector selector : Stream.concat(Stream.concat(jpaMeasurement.getTargetQubits().stream(),
-                                                        jpaMeasurement.getControlQubits().stream()),
-                                                        jpaMeasurement.getClassicBits().stream()).toList()) {
-            assertEquals(jpaMeasurement, selector.getQuantumOperation()); // AfterMapping
+        for (JpaElementSelector selector : jpaMeasurement.getTargetQubits()) {
+            assertEquals(jpaMeasurement, selector.getQuantumOperationTarget()); // AfterMapping
+        }
+        for (JpaElementSelector selector : jpaMeasurement.getControlQubits()) {
+            assertEquals(jpaMeasurement, selector.getQuantumOperationControl()); // AfterMapping
+        }
+        for (JpaElementSelector selector : jpaMeasurement.getClassicBits()) {
+            assertEquals(jpaMeasurement, selector.getMeasurement()); // AfterMapping
         }
     }
 
