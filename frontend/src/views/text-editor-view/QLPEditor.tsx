@@ -78,6 +78,15 @@ function QLPEditor({ groupId }: Readonly<QLPEditorProps>) {
                         wordWrap: 'on',
                         readOnly: isReadOnly,
                         automaticLayout: true,
+                        scrollbar: {
+                            vertical: 'auto',
+                            horizontal: 'auto',
+                            verticalScrollbarSize: 8,
+                            horizontalScrollbarSize: 8,
+                            useShadows: false,
+                            verticalHasArrows: false,
+                            horizontalHasArrows: false,
+                        },
                     }}
                 />
             </div>

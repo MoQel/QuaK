@@ -46,6 +46,7 @@ export function GenericTabBar<T extends TabItem>({
     const handleDragStart = (e: React.DragEvent<HTMLDivElement>, id: string) => {
         setDraggingId(id);
         onDragStateChange?.(true);
+        e.stopPropagation();
         e.dataTransfer.setData('tabId', id);
         e.dataTransfer.setData('groupId', groupId);
         e.dataTransfer.effectAllowed = 'move';
@@ -64,11 +65,13 @@ export function GenericTabBar<T extends TabItem>({
 
     const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
+        e.stopPropagation();
         e.dataTransfer.dropEffect = 'move';
     };
 
     const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
+        e.stopPropagation();
 
         const tabId = e.dataTransfer.getData('tabId');
         const sourceGroupId = e.dataTransfer.getData('groupId');
@@ -108,9 +111,10 @@ export function GenericTabBar<T extends TabItem>({
                 ref={containerRef}
                 role="tablist"
                 aria-orientation="horizontal"
-                onDrop={handleDrop}
-                onDragOver={handleDragOver}
-                className="flex w-full flex-row overflow-x-auto border-b border-border bg-bg-light scrollbar-hide"
+                className={cn(
+                    'flex w-full flex-row border-b border-border bg-bg-light scrollbar-hide',
+                    'overflow-x-auto tabs-scrollbar scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent',
+                )}
             >
                 {tabs.map((tab) => {
                     const isActive = tab.id === activeTabId;

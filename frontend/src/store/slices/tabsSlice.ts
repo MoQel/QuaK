@@ -195,6 +195,23 @@ export const tabsSlice = createSlice({
             const fromIndex = fromGroup.openTabs.findIndex((t) => t.id === fromId);
             if (fromIndex === -1) return;
 
+            // Internal reorder
+            if (fromGroupId === toGroupId) {
+                if (!toId) return;
+
+                const toIndex = fromGroup.openTabs.findIndex((t) => t.id === toId);
+                if (toIndex === -1 || fromIndex === toIndex) return;
+
+                const [movedTab] = fromGroup.openTabs.splice(fromIndex, 1);
+                const newToIndex = fromGroup.openTabs.findIndex((t) => t.id === toId);
+                if (fromIndex < toIndex) {
+                    fromGroup.openTabs.splice(newToIndex + 1, 0, movedTab);
+                } else {
+                    fromGroup.openTabs.splice(newToIndex, 0, movedTab);
+                }
+                return;
+            }
+
             // check if already opened in target group. In this case just adjust the focus
             const alreadyInTarget = toGroup.openTabs.find((t) => t.id === fromId);
             if (alreadyInTarget) {

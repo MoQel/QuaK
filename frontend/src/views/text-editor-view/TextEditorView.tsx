@@ -41,7 +41,12 @@ export function TextEditorView() {
         <Card className="h-full flex flex-col p-0 border-none rounded-none relative">
             {/* Top/Bottom split */}
             <PanelGroup direction="vertical" id="outer-group">
-                <Panel id="top-panel-container" defaultSize={hasBottomGroup ? 50 : 100} minSize={20}>
+                <Panel
+                    id="top-panel-container"
+                    defaultSize={hasBottomGroup ? 50 : 100}
+                    minSize={20}
+                    className="relative"
+                >
                     {/* Inner: Horizontal Split (Left vs Right) */}
                     <PanelGroup direction="horizontal" id="inner-group">
                         {/* LEFT (MAIN) - Always exists */}
@@ -50,7 +55,7 @@ export function TextEditorView() {
                         </Panel>
 
                         {/* RIGHT - Conditional Render */}
-                        {groupMap.get(GROUP_RIGHT) && (
+                        {hasRightGroup && (
                             <>
                                 <PanelResizeHandle />
                                 <Panel id="right-panel" minSize={20} defaultSize={50}>
@@ -59,10 +64,13 @@ export function TextEditorView() {
                             </>
                         )}
                     </PanelGroup>
+                    {showRightDropZone && (
+                        <DropZoneSlot targetGroupId={GROUP_RIGHT} label="Drop to split right" direction="horizontal" />
+                    )}
                 </Panel>
 
                 {/* BOTTOM - Conditional Render */}
-                {groupMap.get(GROUP_BOTTOM) && (
+                {hasBottomGroup && (
                     <>
                         <PanelResizeHandle />
                         <Panel id="bottom-panel" minSize={20} defaultSize={50}>
@@ -71,10 +79,6 @@ export function TextEditorView() {
                     </>
                 )}
             </PanelGroup>
-
-            {showRightDropZone && (
-                <DropZoneSlot targetGroupId={GROUP_RIGHT} label="Drop to split right" direction="horizontal" />
-            )}
 
             {showBottomDropZone && (
                 <DropZoneSlot targetGroupId={GROUP_BOTTOM} label="Drop to split bottom" direction="vertical" />
@@ -131,7 +135,7 @@ function DropZoneSlot({
 
     const dimensionStyle =
         direction === 'horizontal'
-            ? cn('top-0 right-0 bottom-0 w-1/2', isOverStyle())
+            ? cn('top-9 right-0 bottom-0 w-1/2', isOverStyle())
             : cn('left-0 right-0 bottom-0 h-1/2', isOverStyle());
 
     const dropzoneClass = cn(baseStyle, dimensionStyle, 'bg-bg');
