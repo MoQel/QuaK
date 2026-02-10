@@ -25,8 +25,10 @@ export function TextEditorView() {
     useEditorShortcuts(activeTabId);
 
     const groupMap = useMemo(() => new Map(groups.map((g) => [g.id, g])), [groups]);
-    const showRightDropZone = isDragging && !groupMap.get(GROUP_RIGHT);
-    const showBottomDropZone = isDragging && !groupMap.get(GROUP_BOTTOM);
+    const hasRightGroup = !!groupMap.get(GROUP_RIGHT);
+    const hasBottomGroup = !!groupMap.get(GROUP_BOTTOM);
+    const showRightDropZone = isDragging && !hasRightGroup;
+    const showBottomDropZone = isDragging && !hasBottomGroup;
 
     // Cleanup close all tabs
     useEffect(() => {
@@ -38,12 +40,12 @@ export function TextEditorView() {
     return (
         <Card className="h-full flex flex-col p-0 border-none rounded-none relative">
             {/* Top/Bottom split */}
-            <PanelGroup direction="vertical">
-                <Panel defaultSize={50} minSize={20}>
+            <PanelGroup direction="vertical" id="outer-group">
+                <Panel id="top-panel-container" defaultSize={hasBottomGroup ? 50 : 100} minSize={20}>
                     {/* Inner: Horizontal Split (Left vs Right) */}
-                    <PanelGroup direction="horizontal">
+                    <PanelGroup direction="horizontal" id="inner-group">
                         {/* LEFT (MAIN) - Always exists */}
-                        <Panel minSize={20} defaultSize={50}>
+                        <Panel id="main-panel" minSize={20} defaultSize={hasRightGroup ? 50 : 100}>
                             <EditorSlot groupId={GROUP_MAIN} />
                         </Panel>
 
@@ -51,7 +53,7 @@ export function TextEditorView() {
                         {groupMap.get(GROUP_RIGHT) && (
                             <>
                                 <PanelResizeHandle />
-                                <Panel minSize={20} defaultSize={50}>
+                                <Panel id="right-panel" minSize={20} defaultSize={50}>
                                     <EditorSlot groupId={GROUP_RIGHT} />
                                 </Panel>
                             </>
@@ -63,7 +65,7 @@ export function TextEditorView() {
                 {groupMap.get(GROUP_BOTTOM) && (
                     <>
                         <PanelResizeHandle />
-                        <Panel minSize={20} defaultSize={50}>
+                        <Panel id="bottom-panel" minSize={20} defaultSize={50}>
                             <EditorSlot groupId={GROUP_BOTTOM} />
                         </Panel>
                     </>
@@ -105,8 +107,6 @@ function DropZoneSlot({
 }>) {
     const dispatch = useAppDispatch();
     const [isOver, setIsOver] = useState(false);
-
-    console.log('Hello');
 
     const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
