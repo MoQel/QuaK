@@ -1,6 +1,10 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { DEFAULT_LANG, languages } from '@/views/text-editor-view/languages/languages.ts';
 
+export const GROUP_MAIN = 'group-main';
+export const GROUP_RIGHT = 'group-right';
+export const GROUP_BOTTOM = 'group-bottom';
+
 export interface Tab {
     id: string; // Unique file id
     title: string; // Filename
@@ -19,15 +23,16 @@ export interface TabsState {
     lastSaveRequest: { fileId: string | null; timestamp: number };
     lastLanguageRequest: { fileId: string | null; langId: string | null; timestamp: number };
     dirtyFiles: string[];
+    isDragging: boolean;
 }
 
-const INITIAL_GROUP_ID = 'group-initial';
 const initialState: TabsState = {
-    groups: [{ id: INITIAL_GROUP_ID, openTabs: [], activeTabId: null }],
-    activeGroupId: INITIAL_GROUP_ID,
+    groups: [{ id: GROUP_MAIN, openTabs: [], activeTabId: null }],
+    activeGroupId: GROUP_MAIN,
     lastSaveRequest: { fileId: null, timestamp: 0 },
     lastLanguageRequest: { fileId: null, langId: null, timestamp: 0 },
     dirtyFiles: [],
+    isDragging: false,
 };
 
 const isFileOpenAnywhere = (groups: EditorGroup[], fileId: string): boolean => {
@@ -48,21 +53,11 @@ export const tabsSlice = createSlice({
         setActiveGroup: (state, action: PayloadAction<string>) => {
             state.activeGroupId = action.payload;
         },
-        splitGroup: (state) => {
-            if (state.groups.length >= 3) return; // We allow only 3 groups
-            const newGroupId = `group-${Date.now()}`;
-
-            const activeGroup = state.groups.find((g) => g.id === state.activeGroupId);
-            const initialTabs = activeGroup?.activeTabId
-                ? activeGroup.openTabs.filter((t) => t.id === activeGroup.activeTabId)
-                : [];
-
-            state.groups.push({
-                id: newGroupId,
-                openTabs: initialTabs,
-                activeTabId: initialTabs[0]?.id || null,
-            });
-            state.activeGroupId = newGroupId;
+        splitGroup: (state, action: PayloadAction<string>) => {
+            if (!state.groups.some((g) => g.id === action.payload)) {
+                state.groups.push({ id: action.payload, openTabs: [], activeTabId: null });
+                state.activeGroupId = action.payload;
+            }
         },
         unsplitGroup: (state) => {
             if (state.groups.length <= 1) return;
@@ -74,12 +69,12 @@ export const tabsSlice = createSlice({
             const currentActiveFileId = state.groups.find((g) => g.id === state.activeGroupId)?.activeTabId;
             state.groups = [
                 {
-                    id: INITIAL_GROUP_ID,
+                    id: GROUP_MAIN,
                     openTabs: mergedTabs,
                     activeTabId: currentActiveFileId || mergedTabs[0]?.id || null,
                 },
             ];
-            state.activeGroupId = INITIAL_GROUP_ID;
+            state.activeGroupId = GROUP_MAIN;
         },
         closeGroup: (state, action: PayloadAction<string>) => {
             if (state.groups.length <= 1) return; // Don't close last group
@@ -125,7 +120,36 @@ export const tabsSlice = createSlice({
             if (!isFileOpenAnywhere(state.groups, action.payload.tabId)) {
                 state.dirtyFiles = state.dirtyFiles.filter((id) => id !== action.payload.tabId);
             }
-            state.activeGroupId = action.payload.groupId;
+
+            // Switch active group and delete empty group if empty
+            if (group.openTabs.length !== 0) {
+                state.activeGroupId = action.payload.groupId;
+                return;
+            }
+
+            if (group.id !== GROUP_MAIN) {
+                state.groups = state.groups.filter((g) => g.id != group.id);
+                state.activeGroupId = GROUP_MAIN;
+            }
+            const fallbackGroups = [GROUP_RIGHT, GROUP_BOTTOM];
+
+            for (const fallbackId of fallbackGroups) {
+                const fallbackGroup = state.groups.find((g) => g.id === fallbackId);
+                if (!fallbackGroup || fallbackGroup.openTabs.length <= 0) continue;
+                const mainGroup = state.groups.find((g) => g.id === GROUP_MAIN);
+                if (mainGroup) {
+                    mainGroup.openTabs = [...fallbackGroup.openTabs];
+                    mainGroup.activeTabId = fallbackGroup.activeTabId;
+                } else {
+                    state.groups.push({
+                        id: GROUP_MAIN,
+                        openTabs: [...fallbackGroup.openTabs],
+                        activeTabId: fallbackGroup.activeTabId,
+                    });
+                }
+                state.groups = state.groups.filter((g) => g.id !== fallbackId);
+                break;
+            }
         },
         closeOthers: (state, action: PayloadAction<{ tabId: string; groupId: string }>) => {
             const group = state.groups.find((g) => g.id === action.payload.groupId);
@@ -154,11 +178,17 @@ export const tabsSlice = createSlice({
         },
         moveTab: (
             state,
-            action: PayloadAction<{ fromId: string; fromGroupId: string; toId: string; toGroupId: string }>,
+            action: PayloadAction<{ fromId: string; fromGroupId: string; toId?: string; toGroupId: string }>,
         ) => {
             const { fromId, fromGroupId, toId, toGroupId } = action.payload;
             const fromGroup = state.groups.find((g) => g.id === fromGroupId);
-            const toGroup = state.groups.find((g) => g.id === toGroupId);
+
+            // open group if it is not there
+            let toGroup = state.groups.find((g) => g.id === toGroupId);
+            if (!toGroup) {
+                toGroup = { id: toGroupId, openTabs: [], activeTabId: null };
+                state.groups.push(toGroup);
+            }
 
             if (!fromGroup || !toGroup) return;
 
@@ -170,6 +200,8 @@ export const tabsSlice = createSlice({
             if (alreadyInTarget) {
                 fromGroup.openTabs.splice(fromIndex, 1);
                 toGroup.activeTabId = fromId;
+
+                state.activeGroupId = toGroupId;
 
                 if (fromGroup.activeTabId === fromId) {
                     fromGroup.activeTabId = fromGroup.openTabs[0]?.id || null;
@@ -183,6 +215,7 @@ export const tabsSlice = createSlice({
                 fromGroup.activeTabId = fromGroup.openTabs[0]?.id || null;
             }
 
+            // returns -1 if toId is null
             const toIndex = toGroup.openTabs.findIndex((t) => t.id === toId);
 
             if (toIndex === -1) {
@@ -192,6 +225,12 @@ export const tabsSlice = createSlice({
             }
             toGroup.activeTabId = movedTab.id;
             state.activeGroupId = toGroupId;
+
+            // Cleanup: Close source group if empty (unless it's MAIN)
+            if (fromGroup.openTabs.length === 0 && fromGroup.id !== GROUP_MAIN) {
+                state.groups = state.groups.filter((g) => g.id !== fromGroup.id);
+                if (state.activeGroupId === fromGroup.id) state.activeGroupId = toGroupId;
+            }
         },
         requestLanguageChange: (state, action: PayloadAction<{ fileId: string; langId: string }>) => {
             state.lastLanguageRequest = {
@@ -221,6 +260,9 @@ export const tabsSlice = createSlice({
                 state.dirtyFiles = state.dirtyFiles.filter((id) => id !== fileId);
             }
         },
+        setDragging: (state, action: PayloadAction<boolean>) => {
+            state.isDragging = action.payload;
+        },
     },
 });
 
@@ -238,5 +280,6 @@ export const {
     requestLanguageChange,
     requestSave,
     setFileDirty,
+    setDragging,
 } = tabsSlice.actions;
 export default tabsSlice.reducer;

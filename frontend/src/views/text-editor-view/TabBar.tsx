@@ -8,6 +8,7 @@ import {
     requestLanguageChange,
     requestSave,
     setActiveTab,
+    setDragging,
 } from '@/store/slices/tabsSlice';
 import {
     ContextMenu,
@@ -42,18 +43,32 @@ export function TabBar({ groupId }: Readonly<TabBarProps>) {
 
     return (
         <GenericTabBar
+            groupId={groupId}
             tabs={openTabs}
             activeTabId={activeTabId}
+            onDragStateChange={(isDragging) => dispatch(setDragging(isDragging))}
             onReorder={(fromId, toId) =>
+                // Reorder within a group
                 dispatch(
                     moveTab({
                         fromId,
                         fromGroupId: groupId,
                         toId,
-                        toGroupId: groupId, // Currently only within a group
+                        toGroupId: groupId,
                     }),
                 )
             }
+            onMoveExternal={(tabId, sourceGroupId, targetTabId) => {
+                dispatch(
+                    moveTab({
+                        fromId: tabId,
+                        fromGroupId: sourceGroupId,
+                        toId: targetTabId,
+                        toGroupId: groupId,
+                    }),
+                );
+                dispatch(setDragging(false));
+            }}
             onTabClick={(tab) => dispatch(setActiveTab({ tabId: tab.id, groupId }))}
         >
             {(tab, isActive) => {
@@ -65,11 +80,10 @@ export function TabBar({ groupId }: Readonly<TabBarProps>) {
                             <div
                                 className={cn(
                                     'group relative flex h-full rounded-none min-w-[120px] max-w-[200px] cursor-pointer select-none items-center border-r border-border px-3 text-sm font-medium transition-colors',
-                                    !isActive &&
-                                        'bg-transparent text-text-muted hover:bg-bg hover:text-text border-t-2 border-t-transparent',
-                                    isActive && 'bg-bg text-text border-t-2',
-                                    isActive && isThisGroupFocused ? 'border-t-blue-500' : 'border-t-transparent',
-                                    isActive && !isThisGroupFocused ? 'opacity-70' : 'opacity-100',
+                                    isActive
+                                        ? 'bg-bg text-text border-t-2'
+                                        : 'bg-transparent text-text-muted hover:bg-bg hover:text-text border-t-2 border-t-transparent',
+                                    isActive && (isThisGroupFocused ? 'border-t-blue-500' : 'border-t-gray-500'),
                                 )}
                             >
                                 <span className="mr-2 flex-1 truncate">{tab.title}</span>
@@ -81,6 +95,7 @@ export function TabBar({ groupId }: Readonly<TabBarProps>) {
                                         'relative flex items-center justify-center p-0.5 rounded-sm h-5 w-5 hover:bg-bg-light ',
                                         'bg-transparent border-none',
                                     )}
+                                    onMouseDown={(e) => e.stopPropagation()}
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         dispatch(closeTab({ tabId: tab.id, groupId }));
