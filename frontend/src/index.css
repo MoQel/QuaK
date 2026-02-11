@@ -95,17 +95,18 @@
 @layer base {
     * {
         @apply border-border;
-        /* firefox */
-        scrollbar-width: thin;
-        scrollbar-color: var(--bg) transparent;
     }
     body {
         @apply bg-bg-dark text-text;
     }
-    html {
-        scrollbar-gutter: stable both-edges;
+    /* Do not set this globally in * Selektor */
+    html,
+    body,
+    .scroll-container {
+        scrollbar-width: thin;
+        scrollbar-color: var(--bg) transparent;
     }
-    /* Works for Chrome, Edge, and Safari */
+    /* Webkit/Safari */
     ::-webkit-scrollbar {
         width: 8px;
         height: 8px;

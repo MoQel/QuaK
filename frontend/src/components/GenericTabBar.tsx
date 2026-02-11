@@ -30,6 +30,9 @@ export function GenericTabBar<T extends TabItem>({
 }: Readonly<GenericTabBarProps<T>>) {
     const containerRef = useRef<HTMLDivElement>(null);
     const tabRefs = useRef<Record<string, HTMLDivElement | null>>({});
+    const [isOverContainer, setIsOverContainer] = useState(false);
+    const [dropPlaceholderIndex, setDropPlaceholderIndex] = useState<number | null>(null);
+    const [draggingId, setDraggingId] = useState<string | null>(null);
 
     useEffect(() => {
         if (!activeTabId || !tabRefs.current[activeTabId]) return;
@@ -40,9 +43,7 @@ export function GenericTabBar<T extends TabItem>({
         });
     }, [activeTabId, tabs]);
 
-    // region Drag and Drop Logic
-    const [draggingId, setDraggingId] = useState<string | null>(null);
-
+    // region internal drag & drop
     const handleDragStart = (e: React.DragEvent<HTMLDivElement>, id: string) => {
         setDraggingId(id);
         onDragStateChange?.(true);
@@ -52,6 +53,7 @@ export function GenericTabBar<T extends TabItem>({
         e.dataTransfer.effectAllowed = 'move';
     };
 
+    // live reordering
     const handleDragEnter = (targetId: string) => {
         if (draggingId && draggingId !== targetId) {
             onReorder(draggingId, targetId);
@@ -68,10 +70,51 @@ export function GenericTabBar<T extends TabItem>({
         e.stopPropagation();
         e.dataTransfer.dropEffect = 'move';
     };
+    // endregion
+
+    // region external drag & drop
+    const handleContainerDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        e.dataTransfer.dropEffect = 'move';
+
+        // If we are dragging internally, ignore placeholder logic (handled by live reorder)
+        if (draggingId) return;
+        setIsOverContainer(true);
+
+        if (!containerRef.current) return;
+
+        const tabElements = Array.from(containerRef.current.children).filter(
+            (child) => child.getAttribute('role') === 'tab',
+        ) as HTMLElement[];
+
+        let foundIndex = tabs.length;
+
+        for (let i = 0; i < tabElements.length; i++) {
+            const rect = tabElements[i].getBoundingClientRect();
+            const tabCenterX = rect.left + rect.width / 2;
+
+            if (e.clientX < tabCenterX) {
+                foundIndex = i;
+                break;
+            }
+        }
+
+        setDropPlaceholderIndex(foundIndex);
+    };
+
+    const handleContainerDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+        if (containerRef.current && !containerRef.current.contains(e.relatedTarget as Node)) {
+            setIsOverContainer(false);
+            setDropPlaceholderIndex(null);
+        }
+    };
 
     const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
         e.stopPropagation();
+        setIsOverContainer(false);
+        setDropPlaceholderIndex(null);
 
         const tabId = e.dataTransfer.getData('tabId');
         const sourceGroupId = e.dataTransfer.getData('groupId');
@@ -81,12 +124,15 @@ export function GenericTabBar<T extends TabItem>({
         setDraggingId(null);
         onDragStateChange?.(false);
 
-        if (sourceGroupId !== groupId) {
-            const targetTabElement = (e.target as HTMLElement).closest('[data-tab-id]');
-            const targetTabId = targetTabElement?.getAttribute('data-tab-id') || undefined;
+        if (sourceGroupId === groupId) return;
 
-            onMoveExternal?.(tabId, sourceGroupId, targetTabId);
+        let targetTabId: string | undefined = undefined;
+
+        if (dropPlaceholderIndex !== null && dropPlaceholderIndex < tabs.length) {
+            targetTabId = tabs[dropPlaceholderIndex].id;
         }
+
+        onMoveExternal?.(tabId, sourceGroupId, targetTabId);
     };
 
     // Keyboard support for A11Y
@@ -111,10 +157,15 @@ export function GenericTabBar<T extends TabItem>({
                 ref={containerRef}
                 role="tablist"
                 aria-orientation="horizontal"
+                onDragOver={handleContainerDragOver}
+                onDragLeave={handleContainerDragLeave}
+                onDrop={handleDrop}
                 className={cn(
                     'flex w-full flex-row border-b border-border bg-bg-light scrollbar-hide',
                     'overflow-x-auto tabs-scrollbar scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent',
+                    isOverContainer ? 'bg-bg-light-hover' : '',
                 )}
+                tabIndex={-1}
             >
                 {tabs.map((tab) => {
                     const isActive = tab.id === activeTabId;
@@ -126,6 +177,7 @@ export function GenericTabBar<T extends TabItem>({
                             aria-selected={isActive}
                             tabIndex={isActive ? 0 : -1}
                             key={tab.id}
+                            data-tab-id={tab.id}
                             ref={(el) => {
                                 tabRefs.current[tab.id] = el;
                             }}
