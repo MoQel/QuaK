@@ -1,9 +1,6 @@
 package edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.layer.operation;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.DiscriminatorValue;
-import jakarta.persistence.Entity;
-import jakarta.persistence.OneToMany;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -14,6 +11,6 @@ import java.util.List;
 @Entity
 @DiscriminatorValue("MEASUREMENT")
 public class JpaMeasurement extends JpaQuantumOperation {
-    @OneToMany(mappedBy = "measurement", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ElementCollection(fetch = FetchType.EAGER)
     private List<JpaElementSelector> classicBits;
 }

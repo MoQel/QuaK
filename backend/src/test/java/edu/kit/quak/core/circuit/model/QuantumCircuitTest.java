@@ -68,16 +68,31 @@ class QuantumCircuitTest {
         QuantumCircuit circuit = new QuantumCircuit();
         String registerId = circuit.getRegisters().getFirst().asQuantum().orElseThrow().getId();
 
-        ElementSelector target = new ElementSelector(registerId, 0);
-        QuantumOperation op = new ElementaryQuantumGate(QuantumOperationLibrary.S, false, List.of(target), List.of(), 0d);
-        circuit.addQuantumOperation(op, 0);
+        ElementSelector target1 = new ElementSelector(registerId, 0);
+        QuantumOperation op1 = new ElementaryQuantumGate(QuantumOperationLibrary.S, false, List.of(target1), List.of(), 0d);
+        circuit.addQuantumOperation(op1, 0);
+
+        ElementSelector target2 = new ElementSelector(registerId, 0);
+        QuantumOperation op2 = new ElementaryQuantumGate(QuantumOperationLibrary.X, false, List.of(target2), List.of(), 0d);
+        circuit.addQuantumOperation(op2, 1);
+
+        ElementSelector target3 = new ElementSelector(registerId, 1);
+        QuantumOperation op3 = new ElementaryQuantumGate(QuantumOperationLibrary.Y, false, List.of(target3), List.of(), 0d);
+        circuit.addQuantumOperation(op3, 0);
+
+        ElementSelector target4 = new ElementSelector(registerId, 1);
+        QuantumOperation op4 = new ElementaryQuantumGate(QuantumOperationLibrary.Z, false, List.of(target4), List.of(), 0d);
+        circuit.addQuantumOperation(op4, 1);
 
         // Act
-        circuit.moveQuantumOperation(op.getId(), 1, List.of(target), List.of());
+        // Move op2 to position of op3 => op3 and op4 should be moved to next layer
+        circuit.moveQuantumOperation(op2.getId(), 0, List.of(new ElementSelector(registerId, 1)), List.of());
 
         // Assert
-        assertEquals(1, circuit.getLayers().size(), "Source layer should be flushed, leaving only the target layer.");
-        assertTrue(circuit.getLayers().getFirst().getQuantumOperations().contains(op), "The operation should exist in the target layer.");
+        assertEquals(3, circuit.getLayers().size(), "Operation movement should create a third layer.");
+        assertTrue(circuit.getLayers().getFirst().getQuantumOperations().contains(op2), "The operation 2 should exist in the target layer.");
+        assertTrue(circuit.getLayers().get(1).getQuantumOperations().contains(op3), "The operation 3 should be moved to the next layer.");
+        assertTrue(circuit.getLayers().get(2).getQuantumOperations().contains(op4), "The operation 4 should be moved to the next layer.");
     }
 
     @Test
@@ -146,14 +161,19 @@ class QuantumCircuitTest {
         // Arrange
         QuantumCircuit circuit = new QuantumCircuit();
         String registerId = circuit.getRegisters().getFirst().getId();
-        ElementSelector target = new ElementSelector(registerId, 0);
-        QuantumOperation op = new ElementaryQuantumGate(QuantumOperationLibrary.H, false, List.of(target), List.of(), 0d);
-        circuit.addQuantumOperation(op, 0);
+
+        ElementSelector target1 = new ElementSelector(registerId, 0);
+        QuantumOperation op1 = new ElementaryQuantumGate(QuantumOperationLibrary.S, false, List.of(target1), List.of(), 0d);
+        circuit.addQuantumOperation(op1, 0);
+
+        ElementSelector target2 = new ElementSelector(registerId, 0);
+        QuantumOperation op2 = new ElementaryQuantumGate(QuantumOperationLibrary.S, false, List.of(target2), List.of(), 0d);
+        circuit.addQuantumOperation(op2, 1);
 
         // Act
-        circuit.moveQuantumOperation(op.getId(), 1, List.of(target), List.of());
+        circuit.moveQuantumOperation(op2.getId(), 0, List.of(new ElementSelector(registerId, 1)), List.of());
 
         // Assert
-        assertEquals(1, circuit.getLayers().size(), "Only the target layer should remain; the empty source layer should be flushed.");
+        assertEquals(1, circuit.getLayers().size(), "Second layer is now empty and should be flushed.");
     }
 }

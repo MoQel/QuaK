@@ -1,19 +1,32 @@
 package edu.kit.quak.core.circuit.model.layer.operation;
 
-import edu.kit.quak.core.circuit.model.ElementWithId;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 
+import java.util.Objects;
+
 @Getter
 @Setter
-public class ElementSelector extends ElementWithId {
+public class ElementSelector {
     private String registerId;
     private int index;
 
     public ElementSelector(@NonNull String registerId, int index) {
-        super();
         this.registerId = registerId;
         this.index = index;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ElementSelector that = (ElementSelector) o;
+        return index == that.index && Objects.equals(registerId, that.registerId);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(registerId, index);
     }
 }

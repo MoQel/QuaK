@@ -1,6 +1,7 @@
 package edu.kit.quak.core.circuit.model.layer;
 
 import edu.kit.quak.core.circuit.model.ElementWithId;
+import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
 import lombok.NonNull;
 
@@ -15,12 +16,25 @@ public class Layer extends ElementWithId {
         this.quantumOperations = new ArrayList<>(quantumOperations);
     }
 
+    /**
+     * Adds a quantum operation to this layer.
+     * * Note: New operations are prepended to the beginning of the operation list.
+     * This ensures that during the {@code reorganizeCircuit()} method in {@link QuantumCircuit},
+     * the most recently added operation takes priority when occupying available qubit slots.
+     *
+     * @param operation The quantum operation to be added.
+     */
     public void addQuantumOperation(@NonNull QuantumOperation operation) {
-        quantumOperations.add(operation);
+        // Insert at index 0 to ensure priority during the circuit reorganization.
+        quantumOperations.addFirst(operation);
     }
 
     public void removeQuantumOperation(@NonNull QuantumOperation operation) {
         quantumOperations.remove(operation);
+    }
+
+    public void clearQuantumOperations() {
+        quantumOperations.clear();
     }
 
     public List<QuantumOperation> getQuantumOperations() {

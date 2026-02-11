@@ -9,6 +9,7 @@ import lombok.Builder;
 import lombok.NonNull;
 
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class QuantumCircuit extends ElementWithId {
@@ -81,6 +82,8 @@ public class QuantumCircuit extends ElementWithId {
         } else {
             layers.get(layerIdx).addQuantumOperation(operation);
         }
+
+        reorganizeCircuit();
     }
 
     public void moveQuantumOperation(@NonNull String operationId,
@@ -97,22 +100,19 @@ public class QuantumCircuit extends ElementWithId {
         for (int idx = 0; idx < layers.size(); idx++) {
             for (QuantumOperation operation : layers.get(idx).getQuantumOperations()) {
                 if (operation.getId().equals(operationId)) {
-
                     // Set new target and control qubits.
                     operation.setTargetQubits(targetQubits);
                     operation.setControlQubits(controlQubits);
 
                     // Move operation to new layer if changed.
                     if (layerIdx != idx) {
-                        addQuantumOperation(operation, layerIdx);
                         layers.get(idx).removeQuantumOperation(operation);
+                        addQuantumOperation(operation, layerIdx);
                     }
                     break;
                 }
             }
         }
-
-        flushLayers();
     }
 
     public void removeQuantumOperation(String operationId) {
@@ -125,7 +125,86 @@ public class QuantumCircuit extends ElementWithId {
             }
         }
 
+        reorganizeCircuit();
+    }
+
+    /**
+     * Re-calculates the position of all operations to ensure they are positioned as far left
+     * as possible (ASAP scheduling) while respecting qubit collisions and preserving
+     * logical dependency barriers.
+     */
+    private void reorganizeCircuit() {
+        // 1. Extract all operations in their original relative order
+        List<QuantumOperation> allOps = layers.stream()
+                .flatMap(l -> l.getQuantumOperations().stream())
+                .toList();
+
+        // 2. Clear current layers
+        layers.forEach(Layer::clearQuantumOperations);
+
+        // Track the last occupied layer index for each specific qubit.
+        // Key: Selector that points to the qubit, Value: Last occupied layer index
+        Map<ElementSelector, Integer> lastLayerPerQubit = new HashMap<>();
+
+        // 3. Re-insert the operations into the first possible layer where it fits
+        // while respecting the "last occupied layer" logic
+        for (QuantumOperation op : allOps) {
+            Set<ElementSelector> involvedQubits = getTargetAndControlQubits(op);
+
+            // Find the earliest possible layer where this operation could be placed
+            // using the maximal last occupied layer index of the affected qubits as the baseline.
+            int minLayerIdx = 0;
+            for (ElementSelector s : involvedQubits) {
+                minLayerIdx = Math.max(minLayerIdx, lastLayerPerQubit.getOrDefault(s, -1));
+            }
+
+            // Search for the first layer (starting from minLayerIdx) that has no collision.
+            int layerIdx = minLayerIdx;
+            while (isQubitCollisionInLayer(op, layerIdx)) {
+                layerIdx++;
+            }
+
+            // Ensure layer exists
+            while (layers.size() <= layerIdx) {
+                layers.add(new Layer(new ArrayList<>()));
+            }
+
+            op.generateNewId(); // Generate new ID because of problems with Hibernate.
+            layers.get(layerIdx).addQuantumOperation(op); // Add operation to target layer
+
+            // Update the last occupied layer index for all involved qubits
+            for (ElementSelector s : involvedQubits) {
+                lastLayerPerQubit.put(s, layerIdx);
+            }
+        }
+
         flushLayers();
+    }
+
+    /**
+     * Checks if a quantum operation conflicts with existing operations in a specific layer.
+     *
+     * @param op The quantum operation to check for potential collisions.
+     * @param layerIdx The index of the layer to inspect.
+     * @return {@code true} if a qubit overlap is detected.
+     */
+    private boolean isQubitCollisionInLayer(QuantumOperation op, int layerIdx) {
+        if (layerIdx >= layers.size()) return false;
+
+        Set<ElementSelector> requiredQubits = getTargetAndControlQubits(op);
+
+        return layers.get(layerIdx).getQuantumOperations().stream()
+                .map(this::getTargetAndControlQubits)
+                .anyMatch(existingQubits -> !Collections.disjoint(requiredQubits, existingQubits));
+    }
+
+    private Set<ElementSelector> getTargetAndControlQubits(QuantumOperation op) {
+        Stream<ElementSelector> targetStream = op.getTargetQubits().stream();
+        Stream<ElementSelector> controlStream =
+                op.getControlQubits() != null ? op.getControlQubits().stream() : Stream.empty();
+
+        return Stream.concat(targetStream, controlStream)
+                .collect(Collectors.toSet());
     }
 
     private void flushLayers() {
