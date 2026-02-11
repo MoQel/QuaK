@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, ReactNode, KeyboardEvent } from 'react';
 import { cn } from '@/lib/utils';
+import { GhostTab } from '@/components/GhostTab.tsx';
 
 export interface TabItem {
     id: string;
@@ -33,6 +34,18 @@ export function GenericTabBar<T extends TabItem>({
     const [isOverContainer, setIsOverContainer] = useState(false);
     const [dropPlaceholderIndex, setDropPlaceholderIndex] = useState<number | null>(null);
     const [draggingId, setDraggingId] = useState<string | null>(null);
+    const tabPositionsRef = useRef<{ left: number; width: number }[]>([]);
+
+    const measureTabs = () => {
+        if (!containerRef.current) return;
+
+        const children = Array.from(containerRef.current.querySelectorAll('[role="tab"]'));
+
+        tabPositionsRef.current = children.map((el) => {
+            const rect = el.getBoundingClientRect();
+            return { left: rect.left, width: rect.width };
+        });
+    };
 
     useEffect(() => {
         if (!activeTabId || !tabRefs.current[activeTabId]) return;
@@ -63,6 +76,8 @@ export function GenericTabBar<T extends TabItem>({
     const handleDragEnd = () => {
         setDraggingId(null);
         onDragStateChange?.(false);
+        setIsOverContainer(false);
+        setDropPlaceholderIndex(null);
     };
 
     const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
@@ -73,38 +88,40 @@ export function GenericTabBar<T extends TabItem>({
     // endregion
 
     // region external drag & drop
-    const handleContainerDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-        e.preventDefault();
-        e.stopPropagation();
-        e.dataTransfer.dropEffect = 'move';
+    const updateDropIndex = (e: React.DragEvent) => {
+        const positions = tabPositionsRef.current;
+        if (!positions.length) return;
 
-        // If we are dragging internally, ignore placeholder logic (handled by live reorder)
-        if (draggingId) return;
-        setIsOverContainer(true);
+        const mouseX = e.clientX;
 
-        if (!containerRef.current) return;
+        let newIndex = positions.length;
 
-        const tabElements = Array.from(containerRef.current.children).filter(
-            (child) => child.getAttribute('role') === 'tab',
-        ) as HTMLElement[];
-
-        let foundIndex = tabs.length;
-
-        for (let i = 0; i < tabElements.length; i++) {
-            const rect = tabElements[i].getBoundingClientRect();
-            const tabCenterX = rect.left + rect.width / 2;
-
-            if (e.clientX < tabCenterX) {
-                foundIndex = i;
+        for (let i = 0; i < positions.length; i++) {
+            const mid = positions[i].left + positions[i].width / 2;
+            if (mouseX < mid) {
+                newIndex = i;
                 break;
             }
         }
 
-        setDropPlaceholderIndex(foundIndex);
+        setDropPlaceholderIndex((prev) => (prev === newIndex ? prev : newIndex));
+    };
+
+    const handleContainerDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        e.dataTransfer.dropEffect = 'move';
+        if (draggingId) return;
+        if (!isOverContainer) {
+            measureTabs();
+        }
+        setIsOverContainer(true);
+
+        updateDropIndex(e);
     };
 
     const handleContainerDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
-        if (containerRef.current && !containerRef.current.contains(e.relatedTarget as Node)) {
+        if (!e.currentTarget.contains(e.relatedTarget as Node)) {
             setIsOverContainer(false);
             setDropPlaceholderIndex(null);
         }
@@ -115,15 +132,13 @@ export function GenericTabBar<T extends TabItem>({
         e.stopPropagation();
         setIsOverContainer(false);
         setDropPlaceholderIndex(null);
+        setDraggingId(null);
+        onDragStateChange?.(false);
 
         const tabId = e.dataTransfer.getData('tabId');
         const sourceGroupId = e.dataTransfer.getData('groupId');
 
         if (!tabId || !sourceGroupId) return;
-
-        setDraggingId(null);
-        onDragStateChange?.(false);
-
         if (sourceGroupId === groupId) return;
 
         let targetTabId: string | undefined = undefined;
@@ -152,7 +167,7 @@ export function GenericTabBar<T extends TabItem>({
     // endregion
 
     return (
-        <div className={cn('flex w-full flex-col', className)}>
+        <div className={cn('relative flex w-full flex-col', className)}>
             <div
                 ref={containerRef}
                 role="tablist"
@@ -163,40 +178,48 @@ export function GenericTabBar<T extends TabItem>({
                 className={cn(
                     'flex w-full flex-row border-b border-border bg-bg-light scrollbar-hide',
                     'overflow-x-auto tabs-scrollbar scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent',
-                    isOverContainer ? 'bg-bg-light-hover' : '',
                 )}
                 tabIndex={-1}
             >
-                {tabs.map((tab) => {
+                {tabs.map((tab, index) => {
                     const isActive = tab.id === activeTabId;
                     const isDragging = tab.id === draggingId;
+                    const showPlaceholder = isOverContainer && !draggingId && dropPlaceholderIndex === index;
 
                     return (
-                        <div
-                            role="tab"
-                            aria-selected={isActive}
-                            tabIndex={isActive ? 0 : -1}
-                            key={tab.id}
-                            data-tab-id={tab.id}
-                            ref={(el) => {
-                                tabRefs.current[tab.id] = el;
-                            }}
-                            draggable
-                            onDragStart={(e) => handleDragStart(e, tab.id)}
-                            onDragEnter={() => handleDragEnter(tab.id)}
-                            onDragOver={handleDragOver}
-                            onDragEnd={handleDragEnd}
-                            onClick={() => onTabClick(tab)}
-                            onKeyDown={(e) => handleKeyDown(e, tab)}
-                            className={cn(
-                                'h-9 flex-shrink-0 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
-                                isDragging ? 'opacity-20' : 'opacity-100',
-                            )}
-                        >
-                            {children(tab, isActive)}
-                        </div>
+                        <React.Fragment key={tab.id}>
+                            {showPlaceholder && <GhostTab />}
+
+                            <div
+                                role="tab"
+                                aria-selected={isActive}
+                                tabIndex={isActive ? 0 : -1}
+                                data-tab-id={tab.id}
+                                ref={(el) => {
+                                    tabRefs.current[tab.id] = el;
+                                }}
+                                draggable
+                                onDragStart={(e) => handleDragStart(e, tab.id)}
+                                onDragEnter={() => handleDragEnter(tab.id)}
+                                onDragOver={(e) => {
+                                    if (draggingId) handleDragOver(e);
+                                }}
+                                onDragEnd={handleDragEnd}
+                                onClick={() => onTabClick(tab)}
+                                onKeyDown={(e) => handleKeyDown(e, tab)}
+                                className={cn(
+                                    'h-9 flex-shrink-0 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
+                                    isDragging ? 'opacity-20' : 'opacity-100',
+                                )}
+                            >
+                                {children(tab, isActive)}
+                            </div>
+                        </React.Fragment>
                     );
                 })}
+
+                {/* Drop at the end */}
+                {isOverContainer && !draggingId && dropPlaceholderIndex === tabs.length && <GhostTab />}
             </div>
         </div>
     );
