@@ -20,15 +20,15 @@ export function useChartData(result: SimulationResult | null, options: Simulatio
 
                     data.push({
                         state: `|${bitString}>`,
-                        prob: ((count as number) / total) * 100,
-                        count: count as number,
+                        prob: (count / total) * 100,
+                        count: count,
                     });
                 }
             } else {
                 data = Object.entries(result.counts).map(([bitString, count]) => ({
                     state: `|${bitString}>`,
-                    prob: ((count as number) / total) * 100,
-                    count: count as number,
+                    prob: (count / total) * 100,
+                    count: count,
                 }));
             }
         } else if (options.mode === 'exact' && result.stateVector) {

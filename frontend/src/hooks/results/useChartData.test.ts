@@ -1,13 +1,13 @@
 import { renderHook } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
-import { useChartData } from './useChartData';
+import { useChartData } from './useChartData.ts';
 import { SimulationOptions, SimulationResult } from '@/simulation/simulation.types.ts';
 
 describe('useChartData Hook', () => {
     it('fills missing states with 0 probability for small circuits (< 4 qubits)', () => {
-        const mockResult = { stateVector: [], counts: { '00': 100 } };
         const options = { mode: 'simulation', sampleCount: 100, maxQubits: 8 };
         const numQubits = 2; // Should create |00>, |01>, |10>, |11>
+        const mockResult = { stateVector: [], counts: { '00': 100 }, simulatedQubits: numQubits };
 
         const { result } = renderHook(() =>
             useChartData(mockResult as SimulationResult, options as SimulationOptions, numQubits),

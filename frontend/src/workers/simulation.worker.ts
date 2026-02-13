@@ -3,7 +3,7 @@ import { initQulacs } from 'qulacs-wasm';
 import { WorkerRequest, WorkerResponse } from './messages.ts';
 
 // TypeScript needs to know this is a Worker context
-const ctx = self as unknown as DedicatedWorkerGlobalScope;
+const ctx = globalThis as unknown as DedicatedWorkerGlobalScope;
 
 let isInitialized: boolean = false;
 let initPromise: Promise<void> | null = null;
@@ -12,11 +12,9 @@ const ensureInitialized = async () => {
     if (isInitialized) return;
 
     // Simple mutex pattern to prevent double init
-    if (!initPromise) {
-        initPromise = initQulacs().then(() => {
-            isInitialized = true;
-        });
-    }
+    initPromise ??= initQulacs().then(() => {
+        isInitialized = true;
+    });
     await initPromise;
 };
 
