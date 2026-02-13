@@ -8,15 +8,15 @@ import {
     MenubarSubContent,
     MenubarSub,
     MenubarCheckboxItem,
-} from "@/components/ui/menubar.tsx";
+} from '@/components/ui/menubar.tsx';
 
 type saver = () => void;
 type language = {
     /** Hook to be called when the language is selected */
-    select: () => void,
-    displayName: string,
+    select: () => void;
+    displayName: string;
     /** True, when the language is selcted */
-    isSelected: boolean
+    isSelected: boolean;
 };
 
 /**
@@ -25,7 +25,7 @@ type language = {
  * @param languages The languages that are selectable
  * @constructor
  */
-export function Menu({onSave, languages}: {onSave: saver, languages: language[]}) {
+export function Menu({ onSave, languages }: { onSave: saver; languages: language[] }) {
     return (
         <Menubar className="rounded-none bg-bg">
             <MenubarMenu>
@@ -40,27 +40,27 @@ export function Menu({onSave, languages}: {onSave: saver, languages: language[]}
                     <MenubarSub>
                         <MenubarSubTrigger>Language</MenubarSubTrigger>
                         <MenubarSubContent>
-                            {
-                                languages.length > 0
-                                    ? formatLanguages(languages)
-                                    : <MenubarItem disabled>Empty</MenubarItem>
-                            }
+                            {languages.length > 0 ? (
+                                formatLanguages(languages)
+                            ) : (
+                                <MenubarItem disabled>Empty</MenubarItem>
+                            )}
                         </MenubarSubContent>
                     </MenubarSub>
                 </MenubarContent>
             </MenubarMenu>
         </Menubar>
-    )
+    );
 }
 
 function formatLanguages(languages: language[]) {
-    const elements = []
+    const elements = [];
     for (const lang of languages) {
         elements.push(
             <MenubarCheckboxItem onSelect={lang.select} checked={lang.isSelected} key={lang.displayName}>
                 {lang.displayName}
-            </MenubarCheckboxItem>
-        )
+            </MenubarCheckboxItem>,
+        );
     }
-    return elements
+    return elements;
 }

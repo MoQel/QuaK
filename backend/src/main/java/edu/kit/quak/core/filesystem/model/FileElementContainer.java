@@ -10,8 +10,7 @@ import java.util.Set;
  *
  * @author Henrik K
  */
-public abstract class FileElementContainer<T extends FileElementContainer<T>>
-        extends FileElement<T> {
+public abstract class FileElementContainer<T extends FileElementContainer<T>> extends FileElement<T> {
 
     protected Set<FileElement<?>> contents = new HashSet<>();
 
@@ -35,11 +34,7 @@ public abstract class FileElementContainer<T extends FileElementContainer<T>>
         // No duplicate names within one parent
         if (hasChildWithName(child.getName())) {
             throw new IllegalArgumentException(
-                    "An element with the name '"
-                            + child.getName()
-                            + "' already exists in '"
-                            + this.getName()
-                            + "'");
+                    "An element with the name '" + child.getName() + "' already exists in '" + this.getName() + "'");
         }
         this.contents.add(child);
 

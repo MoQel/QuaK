@@ -15,9 +15,17 @@
         "dev:frontend": "cd frontend && npm run dev",
         "build": "npm run build:backend",
         "build:backend": "cd backend && ./gradlew buildProduction",
-        "build:frontend": "cd frontend && npm run build"
+        "build:frontend": "cd frontend && npm run build",
+        "prepare": "husky"
+    },
+    "devDependencies": {
+      "husky": "^9.1.0"
     },
     "workspaces": [
         "frontend"
-    ]
+    ],
+    "dependencies": {
+        "@reduxjs/toolkit": "^2.11.2",
+        "react-redux": "^9.2.0"
+    }
 }

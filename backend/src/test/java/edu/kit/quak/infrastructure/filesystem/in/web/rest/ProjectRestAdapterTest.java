@@ -34,21 +34,23 @@ import org.springframework.test.web.servlet.MockMvc;
 @WithMockUser(username = "tester", roles = "USER") // simulates logged-in user
 class ProjectRestAdapterTest {
 
-    @Autowired MockMvc mockMvc;
+    @Autowired
+    MockMvc mockMvc;
 
-    @MockitoBean ProjectServicePort projectService;
+    @MockitoBean
+    ProjectServicePort projectService;
 
-    @MockitoBean UserServicePort userService;
+    @MockitoBean
+    UserServicePort userService;
 
-    @MockitoBean AuthenticationMapper authMapper;
+    @MockitoBean
+    AuthenticationMapper authMapper;
 
     @org.junit.jupiter.api.BeforeEach
     void setUp() {
         // Mock the authMapper to return a test AuthenticatedUser for any Authentication
-        AuthenticatedUser testAuthUser =
-                new AuthenticatedUser(UUID.randomUUID(), "test", "test-sub");
-        User testUser =
-                new User(testAuthUser.userId(), testAuthUser.issuer(), testAuthUser.subject());
+        AuthenticatedUser testAuthUser = new AuthenticatedUser(UUID.randomUUID(), "test", "test-sub");
+        User testUser = new User(testAuthUser.userId(), testAuthUser.issuer(), testAuthUser.subject());
 
         when(authMapper.toDomain(any(org.springframework.security.core.Authentication.class)))
                 .thenReturn(testAuthUser);
@@ -78,19 +80,16 @@ class ProjectRestAdapterTest {
         Project createdProject = new Project("New Project");
         createdProject.setId("p-100");
 
-        when(projectService.createProject(any(Project.class), any(User.class)))
-                .thenReturn(createdProject);
+        when(projectService.createProject(any(Project.class), any(User.class))).thenReturn(createdProject);
 
-        String jsonRequest =
-                """
+        String jsonRequest = """
                                 { "name": "New Project" }
                                 """;
 
-        mockMvc.perform(
-                        post("/api/project")
-                                .with(csrf())
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(jsonRequest))
+        mockMvc.perform(post("/api/project")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonRequest))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value("p-100"))
                 .andExpect(jsonPath("$.name").value("New Project"));
@@ -128,16 +127,14 @@ class ProjectRestAdapterTest {
         when(projectService.renameProject(eq("p-1"), eq("Renamed Project"), any(User.class)))
                 .thenReturn(updatedProject);
 
-        String jsonRequest =
-                """
+        String jsonRequest = """
                                 { "name": "Renamed Project" }
                                 """;
 
-        mockMvc.perform(
-                        patch("/api/project/p-1")
-                                .with(csrf()) // WICHTIG: CSRF Token
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(jsonRequest))
+        mockMvc.perform(patch("/api/project/p-1")
+                        .with(csrf()) // WICHTIG: CSRF Token
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonRequest))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("Renamed Project"));
     }

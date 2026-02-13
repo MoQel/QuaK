@@ -50,11 +50,9 @@ class AuthServiceTest {
         }
 
         @Test
-        @DisplayName(
-                "Should return authenticated=true with user domain model for authenticated user")
+        @DisplayName("Should return authenticated=true with user domain model for authenticated user")
         void getAuthenticationStatus_authenticatedUser_returnsTrueWithUser() {
-            AuthenticatedUser authenticatedUser =
-                    new AuthenticatedUser(TEST_USER_ID, TEST_ISSUER, TEST_SUBJECT);
+            AuthenticatedUser authenticatedUser = new AuthenticatedUser(TEST_USER_ID, TEST_ISSUER, TEST_SUBJECT);
 
             // Create a mock User object
             edu.kit.quak.core.user.model.User mockUser = new edu.kit.quak.core.user.model.User();
@@ -69,8 +67,7 @@ class AuthServiceTest {
             org.mockito.Mockito.when(userRepository.findByIssuerAndSub(TEST_ISSUER, TEST_SUBJECT))
                     .thenReturn(Optional.of(mockUser));
 
-            AuthStatusResponse result =
-                    authService.getAuthenticationStatus(Optional.of(authenticatedUser));
+            AuthStatusResponse result = authService.getAuthenticationStatus(Optional.of(authenticatedUser));
 
             assertTrue(result.authenticated());
             assertNotNull(result.user());

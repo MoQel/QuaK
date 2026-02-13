@@ -30,9 +30,11 @@ import static org.assertj.core.api.Assertions.assertThat;
     ElementSelectorJpaMapperImpl.class,
 })
 class CircuitJpaAdapterTest {
-    @Autowired private CircuitJpaAdapter jpaAdapter;
+    @Autowired
+    private CircuitJpaAdapter jpaAdapter;
 
-    @Autowired private SpringDataJpaCircuitRepository springRepository;
+    @Autowired
+    private SpringDataJpaCircuitRepository springRepository;
 
     public static final int INIT_QUBITS = 4;
 

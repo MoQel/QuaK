@@ -32,6 +32,8 @@ services:
       database:
         condition: service_healthy
     environment:
+      # Enable development profile (uses HTTP Basic Auth instead of OAuth2)
+      SPRING_PROFILES_ACTIVE: dev
       SPRING_DATASOURCE_URL: jdbc:mariadb://database:3306/quak
       SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.mariadb.jdbc.Driver
       SPRING_DATASOURCE_USERNAME: root

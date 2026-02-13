@@ -19,8 +19,7 @@ public class FileElementContainerRepositoryDelegator {
     private final FileElementContainerRepositoryRegistry registry;
 
     @Autowired
-    public FileElementContainerRepositoryDelegator(
-            FileElementContainerRepositoryRegistry registry) {
+    public FileElementContainerRepositoryDelegator(FileElementContainerRepositoryRegistry registry) {
         this.registry = registry;
     }
 
@@ -41,8 +40,7 @@ public class FileElementContainerRepositoryDelegator {
         char prefix = id.charAt(0);
 
         // Resolve repo by prefix and delegate findById call
-        return registry.getRepository(prefix)
-                .flatMap(repo -> repo.findById(id).map(c -> (FileElementContainer<?>) c));
+        return registry.getRepository(prefix).flatMap(repo -> repo.findById(id).map(c -> (FileElementContainer<?>) c));
     }
 
     /**
@@ -59,7 +57,6 @@ public class FileElementContainerRepositoryDelegator {
 
         // Use any repository that supports this query (they all delegate to the same
         // native query)
-        return registry.getRepository(prefix)
-                .flatMap(repo -> repo.findProjectOwnerIdByElementId(elementId));
+        return registry.getRepository(prefix).flatMap(repo -> repo.findProjectOwnerIdByElementId(elementId));
     }
 }

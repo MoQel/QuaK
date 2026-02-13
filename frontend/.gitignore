@@ -1,6 +1,7 @@
 # Environment Variables
 .env
 .env.local
+.env.production
 
 # Logs
 logs
@@ -17,11 +18,6 @@ dist
 dist-ssr
 *.local
 
-# Environment Variables
-.env
-.env.local
-.env.production
-
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -33,3 +29,4 @@ dist-ssr
 *.sln
 *.sw?
 
+.nvm

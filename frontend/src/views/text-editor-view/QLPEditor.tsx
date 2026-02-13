@@ -1,26 +1,26 @@
-import { Editor, loader, Monaco } from "@monaco-editor/react";
-import { RefObject, useEffect, useRef, useState } from "react";
-import { File } from "@/views/project-manager-view/util/FileElement.tsx"
-import { toast } from "sonner";
-import { Menu } from "@/views/text-editor-view/Menu.tsx";
-import { Language } from "@/views/text-editor-view/model/Language.ts";
-import { qrisp } from "@/components/languages/qrisp.ts";
-import { openqasm } from "@/components/languages/openqasm.ts";
-import { api } from "@/api/api.ts";
-import { useTheme } from "@/theme";
-import { FileContentRequest, FileContentResponse, FileDetailsResponse } from "@/api/dto/filesystem.ts";
+import { Editor, loader, Monaco } from '@monaco-editor/react';
+import { RefObject, useEffect, useRef, useState } from 'react';
+import { File } from '@/views/project-manager-view/util/FileElement.tsx';
+import { toast } from 'sonner';
+import { Menu } from '@/views/text-editor-view/Menu.tsx';
+import { Language } from '@/views/text-editor-view/model/Language.ts';
+import { qrisp } from '@/components/languages/qrisp.ts';
+import { openqasm } from '@/components/languages/openqasm.ts';
+import { api } from '@/api/api.ts';
+import { useTheme } from '@/theme';
+import { FileContentRequest, FileContentResponse, FileDetailsResponse } from '@/api/dto/filesystem.ts';
 
 import { Base64 } from 'js-base64';
 
-const DEFAULT_VALUE = "No File Selected";
-const DEFAULT_LANG = "plaintext";
+const DEFAULT_VALUE = 'No File Selected';
+const DEFAULT_LANG = 'plaintext';
 
 const languages = [
-    new Language("plaintext", "txt"),
-    new Language("python", "py"),
-    new Language("qrisp", "qrisp", qrisp),
-    new Language("qasm", "qasm", openqasm),
-]
+    new Language('plaintext', 'txt'),
+    new Language('python', 'py'),
+    new Language('qrisp', 'qrisp', qrisp),
+    new Language('qasm', 'qasm', openqasm),
+];
 
 function QLPEditor({ file }: { file: File | undefined }) {
     const [value, setValue] = useState(DEFAULT_VALUE);
@@ -30,22 +30,21 @@ function QLPEditor({ file }: { file: File | undefined }) {
     const { theme } = useTheme();
 
     const applyMonacoTheme = (monaco: Monaco) => {
-        monaco.editor.defineTheme("my-theme", {
-            base: theme === "dark" ? "vs-dark" : "vs",
+        monaco.editor.defineTheme('my-theme', {
+            base: theme === 'dark' ? 'vs-dark' : 'vs',
             inherit: true,
             rules: [],
             colors: {
-                "editor.background": theme === "dark" ? "#18191B" : "#E6E6E6",
-                "editorLineNumber.foreground": theme === "dark" ? "#858585" : "#666666",
-                "editorLineNumber.activeForeground": theme === "dark" ? "#858585" : "#666666"
+                'editor.background': theme === 'dark' ? '#18191B' : '#E6E6E6',
+                'editorLineNumber.foreground': theme === 'dark' ? '#858585' : '#666666',
+                'editorLineNumber.activeForeground': theme === 'dark' ? '#858585' : '#666666',
             },
         });
 
-        monaco.editor.setTheme("my-theme");
+        monaco.editor.setTheme('my-theme');
     };
 
     const monacoRef = useRef<Monaco | null>(null);
-
 
     const beforeMount = (monaco: Monaco) => {
         monacoRef.current = monaco;
@@ -59,12 +58,11 @@ function QLPEditor({ file }: { file: File | undefined }) {
         applyMonacoTheme(monaco);
     };
 
-
     const onSave = (id: string | undefined) => {
         if (!id) return Promise.resolve();
         const edit = loader.__getMonacoInstance()?.editor.getEditors().at(0);
         if (!edit) {
-            toast("Editor undefined, not saving");
+            toast('Editor undefined, not saving');
             return Promise.resolve();
         }
 
@@ -73,17 +71,18 @@ function QLPEditor({ file }: { file: File | undefined }) {
         // TODO: Make use of ContentType
         const body: FileContentRequest = {
             content: encodedContent,
-            contentType: "text/plain"
-        }
+            contentType: 'text/plain',
+        };
 
-        return api.put(`/api/file/${id}/content`, body)
+        return api
+            .put(`/api/file/${id}/content`, body)
             .then(() => retrieveContent(id))
             .then((newContent) => {
                 if (newContent === null) {
-                    toast.error("Error reloading content after save");
+                    toast.error('Error reloading content after save');
                 } else {
                     setValue(newContent);
-                    toast("Saved successfully");
+                    toast('Saved successfully');
                 }
             });
     };
@@ -115,7 +114,7 @@ function QLPEditor({ file }: { file: File | undefined }) {
             const content = await retrieveContent(file.id);
             if (content === null) {
                 toast.error(`Couldn't load file ${file.name}`);
-                setValue("Error loading file.");
+                setValue('Error loading file.');
             } else {
                 setValue(content);
             }
@@ -133,31 +132,30 @@ function QLPEditor({ file }: { file: File | undefined }) {
     }, [file]);
 
     const formatLanguages = (langs: Language[]) => {
-        return langs.map(l => ({
+        return langs.map((l) => ({
             isSelected: l.languageId === lang,
             select: () => {
                 setLang(l.languageId);
-                toast("Language " + l.getID().toUpperCase());
+                toast('Language ' + l.getID().toUpperCase());
             },
             displayName: l.getID().toUpperCase(),
         }));
     };
 
     function getLanguageOrDefaultByExtension(ext: string): string {
-        const match = languages.find(l => l.fileExtension === ext);
+        const match = languages.find((l) => l.fileExtension === ext);
         return match ? match.id : DEFAULT_LANG; // Default
     }
 
     // TODO: extract file extension from contentType
     function retrieveFileExtension(id: string): Promise<string> {
-        return api.get<FileDetailsResponse>(`/api/file/${id}`)
-            .then((fileElement) => {
-                const filename = fileElement.name;
-                if (!filename?.includes(".")) {
-                    return "txt"; // fallback
-                }
-                return filename.substring(filename.lastIndexOf(".") + 1);
-            });
+        return api.get<FileDetailsResponse>(`/api/file/${id}`).then((fileElement) => {
+            const filename = fileElement.name;
+            if (!filename?.includes('.')) {
+                return 'txt'; // fallback
+            }
+            return filename.substring(filename.lastIndexOf('.') + 1);
+        });
     }
 
     async function retrieveContent(id: string): Promise<string | null> {

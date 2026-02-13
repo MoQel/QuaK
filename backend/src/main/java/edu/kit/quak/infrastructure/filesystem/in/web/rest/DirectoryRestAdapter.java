@@ -9,6 +9,7 @@ import edu.kit.quak.infrastructure.filesystem.in.web.rest.dto.DirectoryDetailsRe
 import edu.kit.quak.infrastructure.filesystem.in.web.rest.dto.DirectoryRequest;
 import edu.kit.quak.infrastructure.filesystem.in.web.rest.mapper.DirectoryDtoMapper;
 import edu.kit.quak.infrastructure.user.in.web.rest.mapper.AuthenticationMapper;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/directory")
+@Tag(name = "Files", description = "File and directory management operations")
 public class DirectoryRestAdapter {
     private final DirectoryServicePort service;
     private final UserServicePort userService;
@@ -48,8 +50,7 @@ public class DirectoryRestAdapter {
 
     @GetMapping("/{dId}")
     @PreAuthorize("isAuthenticated()")
-    public DirectoryContentsResponse retrieveDirectory(
-            @PathVariable String dId, Authentication authentication) {
+    public DirectoryContentsResponse retrieveDirectory(@PathVariable String dId, Authentication authentication) {
         User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
         Directory dir = service.retrieveDirectory(dId, user);
         return mapper.toContentsResponse(dir);
@@ -65,9 +66,7 @@ public class DirectoryRestAdapter {
     @PatchMapping("/{dId}")
     @PreAuthorize("isAuthenticated()")
     public DirectoryDetailsResponse renameDirectory(
-            @PathVariable String dId,
-            @RequestBody DirectoryRequest request,
-            Authentication authentication) {
+            @PathVariable String dId, @RequestBody DirectoryRequest request, Authentication authentication) {
         User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
         Directory updatedDirectory = service.renameDirectory(dId, request.name(), user);
         return mapper.toDetailsResponse(updatedDirectory);
