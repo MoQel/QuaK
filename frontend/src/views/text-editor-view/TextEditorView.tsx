@@ -43,6 +43,7 @@ export function TextEditorView() {
             <PanelGroup direction="vertical" id="outer-group">
                 <Panel
                     id="top-panel-container"
+                    order={0}
                     defaultSize={hasBottomGroup ? 50 : 100}
                     minSize={20}
                     className="relative"
@@ -50,7 +51,7 @@ export function TextEditorView() {
                     {/* Inner: Horizontal Split (Left vs Right) */}
                     <PanelGroup direction="horizontal" id="inner-group">
                         {/* LEFT (MAIN) - Always exists */}
-                        <Panel id="main-panel" minSize={20} defaultSize={hasRightGroup ? 50 : 100}>
+                        <Panel id="main-panel" order={0} minSize={20} defaultSize={hasRightGroup ? 50 : 100}>
                             <EditorSlot groupId={GROUP_MAIN} />
                         </Panel>
 
@@ -58,7 +59,7 @@ export function TextEditorView() {
                         {hasRightGroup && (
                             <>
                                 <PanelResizeHandle />
-                                <Panel id="right-panel" minSize={20} defaultSize={50}>
+                                <Panel id="right-panel" order={1} minSize={20} defaultSize={50}>
                                     <EditorSlot groupId={GROUP_RIGHT} />
                                 </Panel>
                             </>
@@ -73,7 +74,7 @@ export function TextEditorView() {
                 {hasBottomGroup && (
                     <>
                         <PanelResizeHandle />
-                        <Panel id="bottom-panel" minSize={20} defaultSize={50}>
+                        <Panel id="bottom-panel" order={2} minSize={20} defaultSize={50}>
                             <EditorSlot groupId={GROUP_BOTTOM} />
                         </Panel>
                     </>
