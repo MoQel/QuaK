@@ -2,9 +2,8 @@ import { Card, CardContent } from '@/components/ui/card.tsx';
 import QLPEditor from '@/views/text-editor-view/QLPEditor.tsx';
 import { useAppSelector } from '@/hooks/useAppSelector.ts';
 import { TabBar } from '@/views/text-editor-view/TabBar.tsx';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
-    closeAll,
     GROUP_BOTTOM,
     GROUP_MAIN,
     GROUP_RIGHT,
@@ -16,26 +15,22 @@ import { useAppDispatch } from '@/hooks/useAppDispatch.ts';
 import { useEditorShortcuts } from '@/hooks/editor/useEditorShortcuts.ts';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { cn } from '@/lib/utils.ts';
+import { useMonacoGarbageCollector } from '@/hooks/editor/useMonacoGarbageCollector.ts';
+import { useEditorCommands } from '@/hooks/editor/useEditorCommands.ts';
 
 export function TextEditorView() {
     const { groups, activeGroupId, isDragging } = useAppSelector((state) => state.tabs);
-    const dispatch = useAppDispatch();
     const activeGroup = groups.find((g) => g.id === activeGroupId);
     const activeTabId = activeGroup?.activeTabId || null;
     useEditorShortcuts(activeTabId);
+    useMonacoGarbageCollector();
+    useEditorCommands();
 
     const groupMap = useMemo(() => new Map(groups.map((g) => [g.id, g])), [groups]);
     const hasRightGroup = !!groupMap.get(GROUP_RIGHT);
     const hasBottomGroup = !!groupMap.get(GROUP_BOTTOM);
     const showRightDropZone = isDragging && !hasRightGroup;
     const showBottomDropZone = isDragging && !hasBottomGroup;
-
-    // Cleanup close all tabs
-    useEffect(() => {
-        return () => {
-            dispatch(closeAll());
-        };
-    }, [dispatch]);
 
     return (
         <Card className="h-full flex flex-col p-0 border-none rounded-none relative">

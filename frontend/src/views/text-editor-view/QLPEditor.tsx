@@ -8,7 +8,6 @@ import { useAppDispatch } from '@/hooks/useAppDispatch.ts';
 import { setFileDirty } from '@/store/slices/tabsSlice.ts';
 import { getModelId, savedVersionIds } from '@/views/text-editor-view/util/editorUtils.ts';
 import { useEditorModelManager } from '@/hooks/editor/useEditorModelManager.ts';
-import { useEditorCommands } from '@/hooks/editor/useEditorCommands.ts';
 import { useAppSelector } from '@/hooks/useAppSelector.ts';
 import { useEditorLanguage } from '@/hooks/editor/useEditorLanguage.ts';
 
@@ -32,8 +31,6 @@ function QLPEditor({ groupId }: Readonly<QLPEditorProps>) {
     useEditorLanguage(monaco);
 
     const { isReadOnly, isDirtyRef } = useEditorModelManager(monaco, editorInstance, groupId);
-
-    useEditorCommands(monaco);
     // endregion
 
     // region Editor config and mount
@@ -72,6 +69,7 @@ function QLPEditor({ groupId }: Readonly<QLPEditorProps>) {
                     className="h-full"
                     theme="my-theme"
                     onMount={handleEditorDidMount}
+                    keepCurrentModel={true} // keeps models alive between tab groups
                     beforeMount={(m) => languages.forEach((l) => l.base !== undefined && l.register(m))}
                     options={{
                         minimap: { enabled: false },

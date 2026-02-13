@@ -49,25 +49,6 @@ export function useEditorModelManager(
         isDirtyRef.current = isCurrentFileDirty;
     }, [isCurrentFileDirty]);
 
-    // Garbage Collection
-    useEffect(() => {
-        if (!monaco) return;
-
-        const allOpenFiles = new Set<string>();
-        groups.forEach((g) => g.openTabs.forEach((t) => allOpenFiles.add(t.id)));
-        monaco.editor.getModels().forEach((model: editor.ITextModel) => {
-            if (model.uri.scheme !== 'file') return;
-            const modelId = getModelId(model);
-            if (!allOpenFiles.has(modelId)) {
-                if (editorInstance && editorInstance.getModel()?.id === model.id) {
-                    editorInstance.setModel(null);
-                }
-                savedVersionIds.delete(model);
-                model.dispose();
-            }
-        });
-    }, [groups, monaco, activeFileId]);
-
     useEffect(() => {
         if (!monaco || !editorInstance) return;
 

@@ -6,9 +6,10 @@ import { savedVersionIds } from '@/views/text-editor-view/util/editorUtils';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { setFileDirty } from '@/store/slices/tabsSlice';
-import { Monaco } from '@monaco-editor/react';
+import { useMonaco } from '@monaco-editor/react';
 
-export function useEditorCommands(monaco: Monaco) {
+export function useEditorCommands() {
+    const monaco = useMonaco();
     const dispatch = useAppDispatch();
     const saveRequest = useAppSelector((state) => state.tabs.lastSaveRequest);
 
