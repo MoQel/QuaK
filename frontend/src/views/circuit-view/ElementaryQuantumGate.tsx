@@ -13,11 +13,10 @@ interface ElementaryQuantumGateProps {
     registers: RegisterResponse[];
     layerIdx: number;
     isDragging: boolean;
-    setDraggingGateSize: (size: number) => void;
-    onDragStart?: () => void;
-    onDragEnd?: () => void;
-    onDelete?: () => void;
-    shiftedOffset?: number;
+    onDragStart: (operationSize: number) => void;
+    onDragEnd: () => void;
+    onDelete: () => void;
+    shiftedOffset: number;
 }
 
 // --- Helper Functions ---
@@ -38,7 +37,6 @@ export function ElementaryQuantumGate({
     registers,
     layerIdx,
     isDragging,
-    setDraggingGateSize,
     onDragStart,
     onDragEnd,
     onDelete,
@@ -77,11 +75,11 @@ export function ElementaryQuantumGate({
         e.dataTransfer.setData('text/plain', JSON.stringify(data));
         e.dataTransfer.effectAllowed = 'move';
 
-        setDraggingGateSize(getOperationSizeByIdentifier(operation.operationDefinition));
+        const operationSize = getOperationSizeByIdentifier(operation.operationDefinition);
 
         // Use setTimeout to ensure the browser captures the element as the "drag image"
         // before React potentially re-renders or hides it.
-        setTimeout(() => onDragStart?.(), 0);
+        setTimeout(() => onDragStart?.(operationSize), 0);
     };
 
     const handleDragEnd = () => {

@@ -19,14 +19,13 @@ import {
     OperationIdentifier,
 } from '@/api/dto/OperationDefinition.ts';
 import { ElementaryQuantumGate } from '@/views/circuit-view/ElementaryQuantumGate.tsx';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from '@/store/store.ts';
+import { startOperationDrag, stopOperationDrag } from '@/store/slices/dragOperationSlice.ts';
 
 interface CircuitViewProps {
     circuit: CircuitResponse | undefined;
     setCircuit: (circuit: CircuitResponse) => void;
-    isGateDragging: boolean;
-    setIsGateDragging: (value: boolean) => void;
-    draggingGateSize: number;
-    setDraggingGateSize: (size: number) => void;
 }
 
 interface DragData {
@@ -88,14 +87,7 @@ function useCircuitActions(circuit: CircuitResponse | undefined, setCircuit: (ci
     };
 }
 
-export function CircuitView({
-    circuit,
-    setCircuit,
-    isGateDragging,
-    setIsGateDragging,
-    draggingGateSize,
-    setDraggingGateSize,
-}: Readonly<CircuitViewProps>) {
+export function CircuitView({ circuit, setCircuit }: Readonly<CircuitViewProps>) {
     // API State
     const {
         fetchCircuit,
@@ -106,6 +98,9 @@ export function CircuitView({
         moveQuantumOperation,
         removeQuantumOperation,
     } = useCircuitActions(circuit, setCircuit);
+
+    const dispatch = useDispatch();
+    const { isOperationDragging, draggingOperationSize } = useSelector((state: RootState) => state.dragOperation);
 
     // UI State
     const [hoverPos, setHoverPos] = useState<{ qubitIdx: number; layerIdx: number } | null>(null);
@@ -218,9 +213,9 @@ export function CircuitView({
      */
     useLayoutEffect(() => {
         if (hoverPos) {
-            calculateShifting(hoverPos.layerIdx, hoverPos.qubitIdx, draggingGateSize);
+            calculateShifting(hoverPos.layerIdx, hoverPos.qubitIdx, draggingOperationSize);
         }
-    }, [hoverPos, calculateShifting, draggingGateSize]);
+    }, [hoverPos, calculateShifting, draggingOperationSize]);
 
     /**
      * Checks if an operation actually changed position.
@@ -299,13 +294,13 @@ export function CircuitView({
                 console.error('Failed to parse drag data', error);
             } finally {
                 // Cleanup UI state
+                dispatch(stopOperationDrag());
                 setHoverPos(null);
                 setShiftedOperations({});
-                setIsGateDragging(false);
                 setDraggingOperationId(null);
             }
         },
-        [addQuantumOperation, moveQuantumOperation, hasOperationMoved, setIsGateDragging],
+        [addQuantumOperation, moveQuantumOperation, hasOperationMoved, dispatch],
     );
 
     const handleDragOver = (e: React.DragEvent, qubitIdx: number, layerIdx: number) => {
@@ -366,7 +361,7 @@ export function CircuitView({
                     {/* Circuit Content Container (Offset for labels) */}
                     <div className="absolute inset-y-0 right-0" style={{ left: '64px' }}>
                         {/* Quantum Operations */}
-                        <div className={`absolute inset-0 z-20 ${isGateDragging ? 'pointer-events-none' : ''}`}>
+                        <div className={`absolute inset-0 z-20 ${isOperationDragging ? 'pointer-events-none' : ''}`}>
                             {circuit?.layers.map((layer, layerIdx) =>
                                 layer.quantumOperations.map((op) => (
                                     <ElementaryQuantumGate
@@ -375,16 +370,15 @@ export function CircuitView({
                                         registers={circuit.registers}
                                         layerIdx={layerIdx}
                                         isDragging={op.id === draggingOperationId}
-                                        setDraggingGateSize={setDraggingGateSize}
-                                        onDragStart={() => {
-                                            setIsGateDragging(true);
+                                        onDragStart={(operationSize) => {
+                                            dispatch(startOperationDrag(operationSize));
                                             setDraggingOperationId(op.id!);
                                         }}
                                         onDragEnd={() => {
+                                            dispatch(stopOperationDrag());
                                             setHoverPos(null);
                                             setShiftedOperations({});
                                             setDraggingOperationId(null);
-                                            setIsGateDragging(false);
                                         }}
                                         onDelete={() => removeQuantumOperation(op.id!)}
                                         shiftedOffset={shiftedOperations[op.id!] ?? 0}
@@ -430,7 +424,7 @@ export function CircuitView({
                                     top: hoverPos.qubitIdx * QUBIT_HEIGHT,
                                     left: hoverPos.layerIdx * CELL_WIDTH,
                                     width: CELL_WIDTH,
-                                    height: draggingGateSize * QUBIT_HEIGHT,
+                                    height: draggingOperationSize * QUBIT_HEIGHT,
                                 }}
                             />
                         )}

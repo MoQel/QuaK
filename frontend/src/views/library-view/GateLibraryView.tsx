@@ -10,15 +10,9 @@ import { GateDefinitionResponse } from '@/api/dto/library.ts';
 
 interface GateLibraryViewProps {
     onGateSelect: (gate: GateDefinitionResponse) => void;
-    setIsGateDragging: (value: boolean) => void;
-    setDraggingGateSize: (size: number) => void;
 }
 
-export function GateLibraryView({
-    onGateSelect,
-    setIsGateDragging,
-    setDraggingGateSize,
-}: Readonly<GateLibraryViewProps>) {
+export function GateLibraryView({ onGateSelect }: Readonly<GateLibraryViewProps>) {
     const [boxMode, setBoxMode] = useState(true);
     const [gates, setGates] = useState<GateDefinitionResponse[]>([]);
 
@@ -49,14 +43,7 @@ export function GateLibraryView({
             <CardContent className="flex-1 min-h-0 overflow-hidden p-3">
                 <div className="h-full w-full min-h-0">
                     <div className={`h-full ${boxMode ? 'overflow-y-auto' : ''} ${styles.availableGateContainer}`}>
-                        {boxMode && (
-                            <GateLibrary
-                                gates={gates}
-                                onGateClick={handleGateClick}
-                                setIsGateDragging={setIsGateDragging}
-                                setDraggingGateSize={setDraggingGateSize}
-                            />
-                        )}
+                        {boxMode && <GateLibrary gates={gates} onGateClick={handleGateClick} />}
                         {!boxMode && <GateList gates={gates} onGateClick={handleGateClick} />}
                     </div>
                 </div>
