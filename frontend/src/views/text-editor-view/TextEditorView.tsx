@@ -1,7 +1,7 @@
 import { Card, CardContent } from '@/components/ui/card.tsx';
 import QLPEditor from '@/views/text-editor-view/QLPEditor.tsx';
 import { useAppSelector } from '@/hooks/useAppSelector.ts';
-import { TabBar } from '@/views/text-editor-view/TabBar.tsx';
+import { TextEditorTabBar } from '@/views/text-editor-view/TextEditorTabBar.tsx';
 import React, { useMemo, useState } from 'react';
 import {
     GROUP_BOTTOM,
@@ -88,7 +88,7 @@ function EditorSlot({ groupId }: Readonly<{ groupId: string }>) {
 
     return (
         <div className={'h-full flex flex-col border-r'} onClickCapture={() => dispatch(setActiveGroup(groupId))}>
-            <TabBar groupId={groupId} />
+            <TextEditorTabBar groupId={groupId} />
             <CardContent className="flex flex-col flex-1 p-0 overflow-hidden relative">
                 <QLPEditor groupId={groupId} />
             </CardContent>

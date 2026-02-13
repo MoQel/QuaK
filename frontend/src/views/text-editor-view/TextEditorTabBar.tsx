@@ -24,15 +24,15 @@ import {
 import { useAppDispatch } from '@/hooks/useAppDispatch.ts';
 import { useAppSelector } from '@/hooks/useAppSelector.ts';
 import { languages } from '@/views/text-editor-view/languages/languages.ts';
-import { GenericTabBar } from '@/components/GenericTabBar.tsx';
+import { TabBar } from '@/components/TabBar.tsx';
 import { Button } from '@/components/ui/button.tsx';
-import { GroupMenu } from '@/views/text-editor-view/GroupMenu.tsx';
+import { TextEditorGroupMenu } from '@/views/text-editor-view/TextEditorGroupMenu.tsx';
 
 interface TabBarProps {
     groupId: string;
 }
 
-export function TabBar({ groupId }: Readonly<TabBarProps>) {
+export function TextEditorTabBar({ groupId }: Readonly<TabBarProps>) {
     const dispatch = useAppDispatch();
     const group = useAppSelector((state) => state.tabs.groups.find((g) => g.id === groupId));
     const globalActiveGroupId = useAppSelector((state) => state.tabs.activeGroupId);
@@ -44,10 +44,10 @@ export function TabBar({ groupId }: Readonly<TabBarProps>) {
     const isThisGroupFocused = globalActiveGroupId === groupId;
 
     return (
-        <GenericTabBar
+        <TabBar
             groupId={groupId}
             tabs={openTabs}
-            rightSlot={<GroupMenu groupId={groupId} groups={groups} />}
+            rightSlot={<TextEditorGroupMenu groupId={groupId} groups={groups} />}
             activeTabId={activeTabId}
             onDragStateChange={(isDragging) => dispatch(setDragging(isDragging))}
             onReorder={(fromId, toId) =>
@@ -84,7 +84,7 @@ export function TabBar({ groupId }: Readonly<TabBarProps>) {
                                 className={cn(
                                     'group relative flex h-full rounded-none min-w-[120px] max-w-[200px] cursor-pointer select-none items-center border-r border-border px-3 text-sm font-medium transition-colors',
                                     isActive
-                                        ? 'bg-bg text-text border-t-2'
+                                        ? 'bg-bg-dark text-text border-t-2'
                                         : 'bg-transparent text-text-muted hover:bg-bg hover:text-text border-t-2 border-t-transparent',
                                     isActive && (isThisGroupFocused ? 'border-t-blue-500' : 'border-t-gray-500'),
                                 )}
@@ -96,7 +96,7 @@ export function TabBar({ groupId }: Readonly<TabBarProps>) {
                                     aria-label="Close tab"
                                     className={cn(
                                         'relative flex items-center justify-center p-0.5 rounded-sm h-5 w-5 hover:bg-bg-light ',
-                                        'bg-transparent border-none',
+                                        'bg-transparent shadow-none border-none',
                                     )}
                                     onMouseDown={(e) => e.stopPropagation()}
                                     onClick={(e) => {
@@ -164,6 +164,6 @@ export function TabBar({ groupId }: Readonly<TabBarProps>) {
                     </ContextMenu>
                 );
             }}
-        </GenericTabBar>
+        </TabBar>
     );
 }

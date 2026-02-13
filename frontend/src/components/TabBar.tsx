@@ -19,7 +19,7 @@ interface GenericTabBarProps<T extends TabItem> {
     onDragStateChange?: (isDragging: boolean) => void;
 }
 
-export function GenericTabBar<T extends TabItem>({
+export function TabBar<T extends TabItem>({
     groupId,
     tabs,
     rightSlot,
@@ -178,7 +178,7 @@ export function GenericTabBar<T extends TabItem>({
                 onDragLeave={handleContainerDragLeave}
                 onDrop={handleDrop}
                 className={cn(
-                    'flex flex-1 w-full flex-row border-b border-border bg-bg-light scrollbar-hide',
+                    'flex flex-1 w-full flex-row border-b border-border bg-bg scrollbar-hide',
                     'overflow-x-auto tabs-scrollbar scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent',
                 )}
                 tabIndex={-1}
@@ -223,7 +223,7 @@ export function GenericTabBar<T extends TabItem>({
                 {isOverContainer && !draggingId && dropPlaceholderIndex === tabs.length && <GhostTab />}
             </div>
             {rightSlot && tabs.length !== 0 && (
-                <div className="flex items-center flex-shrink-0 border-l border-border bg-bg-light">{rightSlot}</div>
+                <div className="flex items-center flex-shrink-0 border-l border-border bg-bg">{rightSlot}</div>
             )}
         </div>
     );
