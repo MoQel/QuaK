@@ -1,14 +1,5 @@
 package edu.kit.quak.infrastructure.filesystem.in.web.rest;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 import edu.kit.quak.application.filesystem.ports.in.ProjectServicePort;
 import edu.kit.quak.application.user.ports.in.UserServicePort;
 import edu.kit.quak.core.filesystem.model.Project;
@@ -17,8 +8,6 @@ import edu.kit.quak.core.user.model.User;
 import edu.kit.quak.infrastructure.filesystem.in.web.rest.mapper.ProjectDtoMapper;
 import edu.kit.quak.infrastructure.user.in.web.rest.mapper.AuthenticationMapper;
 import edu.kit.quak.shared.tags.IntegrationTest;
-import java.util.List;
-import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +16,18 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+
+import java.util.List;
+import java.util.UUID;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @IntegrationTest
 @WebMvcTest(ProjectRestAdapter.class)
@@ -96,7 +97,7 @@ class ProjectRestAdapterTest {
     }
 
     @Test
-    @DisplayName("GET /project/{quantumOperationId} returns project contents")
+    @DisplayName("GET /project/{id} returns project contents")
     void retrieveProject_success() throws Exception {
         Project project = new Project("MyProject");
         project.setId("p-1");
@@ -110,16 +111,16 @@ class ProjectRestAdapterTest {
     }
 
     @Test
-    @DisplayName("DELETE /project/{quantumOperationId} removes project")
+    @DisplayName("DELETE /project/{id} removes project")
     void deleteProject_success() throws Exception {
-        mockMvc.perform(delete("/api/project/p-1").with(csrf())) // WICHTIG: CSRF Token
+        mockMvc.perform(delete("/api/project/p-1").with(csrf()))
                 .andExpect(status().isOk());
 
         verify(projectService).removeProject(eq("p-1"), any(User.class));
     }
 
     @Test
-    @DisplayName("PATCH /project/{quantumOperationId} renames project")
+    @DisplayName("PATCH /project/{id} renames project")
     void renameProject_success() throws Exception {
         Project updatedProject = new Project("Renamed Project");
         updatedProject.setId("p-1");
@@ -132,7 +133,7 @@ class ProjectRestAdapterTest {
                                 """;
 
         mockMvc.perform(patch("/api/project/p-1")
-                        .with(csrf()) // WICHTIG: CSRF Token
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(jsonRequest))
                 .andExpect(status().isOk())

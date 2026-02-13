@@ -1,14 +1,5 @@
 package edu.kit.quak.infrastructure.filesystem.in.web.rest;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 import edu.kit.quak.application.filesystem.ports.in.DirectoryServicePort;
 import edu.kit.quak.application.user.ports.in.UserServicePort;
 import edu.kit.quak.core.filesystem.model.Directory;
@@ -17,7 +8,6 @@ import edu.kit.quak.core.user.model.User;
 import edu.kit.quak.infrastructure.filesystem.in.web.rest.mapper.DirectoryDtoMapper;
 import edu.kit.quak.infrastructure.user.in.web.rest.mapper.AuthenticationMapper;
 import edu.kit.quak.shared.tags.IntegrationTest;
-import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -27,6 +17,17 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+
+import java.util.UUID;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @IntegrationTest
 @WebMvcTest(DirectoryRestAdapter.class)
@@ -46,12 +47,10 @@ class DirectoryRestAdapterTest {
     @MockitoBean
     AuthenticationMapper authenticationMapper;
 
-    private User testUser;
-
     @BeforeEach
     void setUp() {
         AuthenticatedUser testAuthUser = new AuthenticatedUser(UUID.randomUUID(), "github", "tester");
-        testUser = new User(testAuthUser.userId(), testAuthUser.issuer(), testAuthUser.subject());
+        User testUser = new User(testAuthUser.userId(), testAuthUser.issuer(), testAuthUser.subject());
 
         when(authenticationMapper.toDomain(any())).thenReturn(testAuthUser);
         when(userService.getAuthenticatedUser(any(AuthenticatedUser.class))).thenReturn(testUser);
@@ -80,7 +79,7 @@ class DirectoryRestAdapterTest {
     }
 
     @Test
-    @DisplayName("GET /directory/{quantumOperationId} returns contents")
+    @DisplayName("GET /directory/{id} returns contents")
     void retrieveDirectory() throws Exception {
         Directory dir = new Directory("MyDir", null);
         dir.setId("d-123");
@@ -93,7 +92,7 @@ class DirectoryRestAdapterTest {
     }
 
     @Test
-    @DisplayName("DELETE /directory/{quantumOperationId} calls service")
+    @DisplayName("DELETE /directory/{id} calls service")
     void deleteDirectory() throws Exception {
         mockMvc.perform(delete("/api/directory/d-123").with(csrf())).andExpect(status().isOk());
 
@@ -101,7 +100,7 @@ class DirectoryRestAdapterTest {
     }
 
     @Test
-    @DisplayName("PATCH /directory/{quantumOperationId} renames directory")
+    @DisplayName("PATCH /directory/{id} renames directory")
     void renameDirectory() throws Exception {
         Directory updated = new Directory("Renamed", null);
         updated.setId("d-123");
