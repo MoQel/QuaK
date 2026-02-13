@@ -23,20 +23,20 @@ import {
 import { useAppDispatch } from '@/hooks/useAppDispatch.ts';
 import { useAppSelector } from '@/hooks/useAppSelector.ts';
 import { languages } from '@/views/text-editor-view/languages/languages.ts';
-import { GenericTabBar } from '@/components/GenericTabBar.tsx';
+import { TabBar } from '@/components/TabBar.tsx';
 import { Button } from '@/components/ui/button.tsx'; // Import the new component
 
 interface TabBarProps {
     currentLangId: string | null;
 }
 
-export function TabBar({ currentLangId }: Readonly<TabBarProps>) {
+export function TextEditorTabBar({ currentLangId }: Readonly<TabBarProps>) {
     const dispatch = useAppDispatch();
     const { openTabs, activeTabId } = useAppSelector((state) => state.tabs);
     const dirtyFiles = useAppSelector((state) => state.tabs.dirtyFiles);
 
     return (
-        <GenericTabBar
+        <TabBar
             tabs={openTabs}
             activeTabId={activeTabId}
             onReorder={(fromId, toId) => dispatch(moveTab({ fromId, toId }))}
@@ -53,7 +53,7 @@ export function TabBar({ currentLangId }: Readonly<TabBarProps>) {
                                     'group relative flex h-full rounded-none min-w-[120px] max-w-[200px] cursor-pointer select-none items-center border-r border-border px-3 text-sm font-medium transition-colors',
                                     !isActive &&
                                         'bg-transparent text-text-muted hover:bg-bg hover:text-text border-t-2 border-t-transparent',
-                                    isActive && 'bg-bg text-text border-t-2 border-t-blue-500',
+                                    isActive && 'bg-bg-dark text-text border-t-2 border-t-blue-500',
                                 )}
                             >
                                 <span className="mr-2 flex-1 truncate">{tab.title}</span>
@@ -122,6 +122,6 @@ export function TabBar({ currentLangId }: Readonly<TabBarProps>) {
                     </ContextMenu>
                 );
             }}
-        </GenericTabBar>
+        </TabBar>
     );
 }

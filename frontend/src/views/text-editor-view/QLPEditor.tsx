@@ -8,7 +8,7 @@ import { useAppSelector } from '@/hooks/useAppSelector.ts';
 import { useAppDispatch } from '@/hooks/useAppDispatch.ts';
 import { setFileDirty } from '@/store/slices/tabsSlice.ts';
 import { getModelId, savedVersionIds } from '@/views/text-editor-view/util/editorUtils.ts';
-import { useEditorModelManager } from '@/hooks/editor/useEditoModelManager.ts';
+import { useEditorModelManager } from '@/hooks/editor/useEditorModelManager.ts';
 import { useEditorCommands } from '@/hooks/editor/useEditorCommands.ts';
 
 interface QLPEditorProps {

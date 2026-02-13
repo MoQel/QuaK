@@ -1,7 +1,7 @@
 import { Card, CardContent } from '@/components/ui/card.tsx';
 import QLPEditor from '@/views/text-editor-view/QLPEditor.tsx';
 import { useAppSelector } from '@/hooks/useAppSelector.ts';
-import { TabBar } from '@/views/text-editor-view/TabBar.tsx';
+import { TextEditorTabBar } from '@/views/text-editor-view/TextEditorTabBar.tsx';
 import { useCallback, useEffect, useState } from 'react';
 import { DEFAULT_LANG } from '@/views/text-editor-view/languages/languages.ts';
 import { closeAll } from '@/store/slices/tabsSlice.ts';
@@ -27,7 +27,7 @@ export function TextEditorView() {
 
     return (
         <Card className="h-full flex flex-col p-0 border-none rounded-none">
-            <TabBar currentLangId={currentLangId} />
+            <TextEditorTabBar currentLangId={currentLangId} />
 
             <CardContent className="flex flex-col flex-1 p-0 overflow-hidden relative">
                 <QLPEditor activeFileId={activeFileId} setCurrentLangId={handleLanguageChange} />

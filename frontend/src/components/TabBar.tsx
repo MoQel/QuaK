@@ -14,7 +14,7 @@ interface GenericTabBarProps<T extends TabItem> {
     className?: string;
 }
 
-export function GenericTabBar<T extends TabItem>({
+export function TabBar<T extends TabItem>({
     tabs,
     activeTabId,
     onReorder,
@@ -72,7 +72,7 @@ export function GenericTabBar<T extends TabItem>({
                 ref={containerRef}
                 role="tablist"
                 aria-orientation="horizontal"
-                className="flex w-full flex-row overflow-x-auto border-b border-border bg-bg-light scrollbar-hide"
+                className="flex w-full flex-row overflow-x-auto border-b border-border bg-bg scrollbar-hide"
             >
                 {tabs.map((tab) => {
                     const isActive = tab.id === activeTabId;
