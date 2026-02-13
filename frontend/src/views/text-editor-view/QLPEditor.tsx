@@ -10,6 +10,7 @@ import { getModelId, savedVersionIds } from '@/views/text-editor-view/util/edito
 import { useEditorModelManager } from '@/hooks/editor/useEditorModelManager.ts';
 import { useAppSelector } from '@/hooks/useAppSelector.ts';
 import { useEditorLanguage } from '@/hooks/editor/useEditorLanguage.ts';
+import { cn } from '@/lib/utils.ts';
 
 interface QLPEditorProps {
     groupId: string;
@@ -24,6 +25,7 @@ function QLPEditor({ groupId }: Readonly<QLPEditorProps>) {
     const activeFileId = useAppSelector(
         (state) => state.tabs.groups.find((g) => g.id === groupId)?.activeTabId ?? null,
     );
+    const isDragging = useAppSelector((state) => state.tabs.isDragging);
 
     const dispatch = useAppDispatch();
 
@@ -64,7 +66,10 @@ function QLPEditor({ groupId }: Readonly<QLPEditorProps>) {
                 <div className="absolute inset-0 z-10 flex items-center justify-center text-gray-500">No file open</div>
             )}
 
-            <div className="h-full w-full" style={{ display: activeFileId ? 'block' : 'none' }}>
+            <div
+                className={cn('h-full w-full', isDragging && 'pointer-events-none')}
+                style={{ display: activeFileId ? 'block' : 'none' }}
+            >
                 <Editor
                     className="h-full"
                     theme="my-theme"
