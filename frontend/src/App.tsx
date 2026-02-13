@@ -1,22 +1,24 @@
 import { useState, useEffect } from 'react';
 
-import {ResizableHandle, ResizablePanel, ResizablePanelGroup} from "@/components/ui/resizable.tsx";
-import {GateLibraryView} from "@/views/library-view/GateLibraryView.tsx";
-import {CircuitView} from "@/views/circuit-view/CircuitView.tsx";
-import {TextEditorView} from "@/views/text-editor-view/TextEditorView.tsx";
-import {ProjectManagerView} from "@/views/project-manager-view/ProjectManagerView.tsx";
-import {ResultsView} from "@/views/results-view/ResultsView.tsx";
-import {Toaster} from "@/components/ui/sonner.tsx";
-import {File} from "@/views/project-manager-view/util/FileElement.tsx";
-import {InspectorView} from "@/views/inspector-view/InspectorView.tsx";
-import {GateDefinitionResponse} from "@/api/dto/library.ts";
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable.tsx';
+import { GateLibraryView } from '@/views/library-view/GateLibraryView.tsx';
+import { CircuitView } from '@/views/circuit-view/CircuitView.tsx';
+import { TextEditorView } from '@/views/text-editor-view/TextEditorView.tsx';
+import { ProjectManagerView } from '@/views/project-manager-view/ProjectManagerView.tsx';
+import { ResultsView } from '@/views/results-view/ResultsView.tsx';
+import { Toaster } from '@/components/ui/sonner.tsx';
+import { File } from '@/views/project-manager-view/util/FileElement.tsx';
+import { InspectorView } from '@/views/inspector-view/InspectorView.tsx';
+import { GateDefinitionResponse } from '@/api/dto/library.ts';
+import { CircuitResponse } from '@/api/dto/circuit.ts';
+import { useLayout } from './hooks/use-layout';
 
 function App() {
     const [file, openFile] = useState(undefined as unknown as File);
     const [selectedGate, setSelectedGate] = useState<GateDefinitionResponse | undefined>(undefined);
     const [isGateDragging, setIsGateDragging] = useState(false);
     const [draggingGateSize, setDraggingGateSize] = useState<number>(1);
-    const [circuit, setCircuit] = useState<CircuitResponse | null>(null);
+    const [circuit, setCircuit] = useState<CircuitResponse>();
 
     // Use Hook
     const { visiblePanels, topLayout, onTogglePanel, onSetMenubarVisibility } = useLayout();
@@ -33,7 +35,7 @@ function App() {
     return (
         <div className="flex flex-col h-[calc(100vh-65px)] overflow-hidden bg-background text-foreground">
             <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-                <div className={`w-full ${!isTopVisible ? 'hidden' : isBottomVisible ? 'h-[30%]' : 'flex-1'}`}>
+                <div className={`w-full ${!isTopVisible ? 'hidden' : isBottomVisible ? 'h-[60%]' : 'flex-1'}`}>
                     <ResizablePanelGroup direction="horizontal">
                         {visiblePanels.file && (
                             <>
@@ -104,5 +106,4 @@ function App() {
     );
 }
 
-
-export default App
+export default App;

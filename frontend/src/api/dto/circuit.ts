@@ -1,6 +1,6 @@
 // --- DTOs ---
 
-import {OperationIdentifier} from '@/api/dto/OperationDefinition.ts'
+import { OperationIdentifier } from '@/api/dto/OperationDefinition.ts';
 
 export interface ElementSelectorDto {
     registerId: string;
@@ -46,6 +46,12 @@ export interface QuantumRegisterResponse extends AbstractRegisterResponse {
 }
 
 export type RegisterResponse = ClassicRegisterResponse | QuantumRegisterResponse;
+
+export const getRegisterSize = (reg: RegisterResponse): number => {
+    if ('numberOfQubits' in reg) return reg.numberOfQubits;
+    if ('numberOfBits' in reg) return reg.numberOfBits;
+    return 0;
+};
 
 export interface LayerResponse {
     quantumOperations: QuantumOperationDto[];

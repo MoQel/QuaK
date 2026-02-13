@@ -1,22 +1,22 @@
 package edu.kit.quak.core.circuit.model.layer.operation;
 
 import edu.kit.quak.core.circuit.model.layer.operation.library.QuantumOperationLibrary;
+import java.util.List;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
-
-import java.util.List;
 
 @Getter
 @Setter
 public class Measurement extends QuantumOperation {
     private List<ElementSelector> classicBits;
 
-    public Measurement(@NonNull QuantumOperationLibrary operationDefinition,
-                       boolean inverseForm,
-                       @NonNull List<ElementSelector> targetQubits,
-                       List<ElementSelector> controlQubits,
-                       @NonNull List<ElementSelector> classicBits) {
+    public Measurement(
+            @NonNull QuantumOperationLibrary operationDefinition,
+            boolean inverseForm,
+            @NonNull List<ElementSelector> targetQubits,
+            List<ElementSelector> controlQubits,
+            @NonNull List<ElementSelector> classicBits) {
         super(operationDefinition, inverseForm, targetQubits, controlQubits);
         if (operationDefinition.getDefinition().getType() != getClass()) {
             throw new IllegalArgumentException("Operation definition type is not a measurement.");

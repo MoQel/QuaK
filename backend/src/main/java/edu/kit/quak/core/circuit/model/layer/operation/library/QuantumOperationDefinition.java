@@ -13,10 +13,8 @@ public abstract class QuantumOperationDefinition<T extends QuantumOperation> {
     private int targetQubits;
     private int controlQubits;
 
-    protected QuantumOperationDefinition(@NonNull Class<T> type,
-                                         boolean reversible,
-                                         int targetQubits,
-                                         int controlQubits) {
+    protected QuantumOperationDefinition(
+            @NonNull Class<T> type, boolean reversible, int targetQubits, int controlQubits) {
         this.type = type;
         this.reversible = reversible;
         this.targetQubits = targetQubits;

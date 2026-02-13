@@ -3,11 +3,10 @@ package edu.kit.quak.core.circuit.model.layer;
 import edu.kit.quak.core.circuit.model.ElementWithId;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
-import lombok.NonNull;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import lombok.NonNull;
 
 public class Layer extends ElementWithId {
     private final List<QuantumOperation> quantumOperations;
@@ -50,10 +49,7 @@ public class Layer extends ElementWithId {
             sb.append("  <empty>");
         } else {
             quantumOperations.forEach(op ->
-                    sb.append("  ")
-                            .append(op.toString().replace("\n", "\n  "))
-                            .append("\n")
-            );
+                    sb.append("  ").append(op.toString().replace("\n", "\n  ")).append("\n"));
         }
 
         return sb.toString().trim();

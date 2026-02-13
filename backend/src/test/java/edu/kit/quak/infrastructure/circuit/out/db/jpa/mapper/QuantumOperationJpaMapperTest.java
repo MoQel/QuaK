@@ -1,5 +1,7 @@
 package edu.kit.quak.infrastructure.circuit.out.db.jpa.mapper;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementaryQuantumGate;
 import edu.kit.quak.core.circuit.model.layer.operation.Measurement;
@@ -9,15 +11,12 @@ import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.layer.operation.Jpa
 import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.layer.operation.JpaElementaryQuantumGate;
 import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.layer.operation.JpaMeasurement;
 import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.layer.operation.JpaQuantumOperation;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(MockitoExtension.class)
 class QuantumOperationJpaMapperTest {
@@ -33,8 +32,10 @@ class QuantumOperationJpaMapperTest {
         ElementSelector target = new ElementSelector("reg_id", 0);
         ElementSelector classicBit = new ElementSelector("reg_id", 1);
 
-        ElementaryQuantumGate domainGate = new ElementaryQuantumGate(QuantumOperationLibrary.X, false, List.of(target), List.of(), 0d);
-        Measurement domainMeasurement = new Measurement(QuantumOperationLibrary.MEASURE, false, List.of(target), List.of(), List.of(classicBit));
+        ElementaryQuantumGate domainGate =
+                new ElementaryQuantumGate(QuantumOperationLibrary.X, false, List.of(target), List.of(), 0d);
+        Measurement domainMeasurement = new Measurement(
+                QuantumOperationLibrary.MEASURE, false, List.of(target), List.of(), List.of(classicBit));
 
         // Act
         JpaQuantumOperation entityGate = mapper.toEntity(domainGate);

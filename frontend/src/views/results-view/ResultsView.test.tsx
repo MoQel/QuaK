@@ -14,9 +14,10 @@ const mockCircuit: CircuitResponse = {
         {
             id: 'r1',
             name: 'q',
-            qubits: [{ id: 'q0', gates: [] }], // 1 Qubit
+            numberOfQubits: 1,
         },
     ],
+    layers: [],
 };
 
 const mockSuccessResult: SimulationResult = {
@@ -44,7 +45,7 @@ describe('ResultsView Component', () => {
             error: null,
         });
 
-        render(<ResultsView circuit={null} />);
+        render(<ResultsView circuit={undefined} />);
 
         expect(screen.getByText(/Add qubits to the circuit/i)).toBeInTheDocument();
     });

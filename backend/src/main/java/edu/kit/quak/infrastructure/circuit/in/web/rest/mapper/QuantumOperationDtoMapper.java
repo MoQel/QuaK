@@ -6,8 +6,7 @@ import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.*;
 import org.mapstruct.*;
 
-@Mapper(componentModel = MappingConstants.ComponentModel.SPRING,
-        uses = ElementSelectorDtoMapper.class)
+@Mapper(componentModel = MappingConstants.ComponentModel.SPRING, uses = ElementSelectorDtoMapper.class)
 public interface QuantumOperationDtoMapper {
     @BeanMapping(subclassExhaustiveStrategy = SubclassExhaustiveStrategy.RUNTIME_EXCEPTION)
     @SubclassMapping(source = ElementaryQuantumGate.class, target = ElementaryQuantumGateDto.class)

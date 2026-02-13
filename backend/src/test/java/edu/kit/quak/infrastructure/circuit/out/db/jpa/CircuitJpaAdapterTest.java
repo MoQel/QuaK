@@ -1,5 +1,7 @@
 package edu.kit.quak.infrastructure.circuit.out.db.jpa;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.core.circuit.model.layer.Layer;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
@@ -10,15 +12,12 @@ import edu.kit.quak.core.circuit.model.register.QuantumRegister;
 import edu.kit.quak.core.circuit.model.register.Register;
 import edu.kit.quak.infrastructure.circuit.out.db.jpa.mapper.*;
 import edu.kit.quak.infrastructure.circuit.out.db.jpa.repository.SpringDataJpaCircuitRepository;
+import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
-
-import java.util.List;
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
 @Import({
@@ -50,7 +49,8 @@ class CircuitJpaAdapterTest {
         int qubitIdx = 0;
         ElementSelector target = new ElementSelector(registerId, qubitIdx);
         double rotationAngle = 0d;
-        ElementaryQuantumGate operation = new ElementaryQuantumGate(QuantumOperationLibrary.X, false, List.of(target), null, rotationAngle);
+        ElementaryQuantumGate operation =
+                new ElementaryQuantumGate(QuantumOperationLibrary.X, false, List.of(target), null, rotationAngle);
         domainCircuit.addQuantumOperation(operation, 0);
 
         String layerId = domainCircuit.getLayers().getFirst().getId();
@@ -78,7 +78,8 @@ class CircuitJpaAdapterTest {
         assertThat(foundLayer.getId()).isEqualTo(layerId);
         assertThat(foundLayer.getQuantumOperations()).hasSize(1);
 
-        QuantumOperation foundQuantumOperation = foundLayer.getQuantumOperations().getFirst();
+        QuantumOperation foundQuantumOperation =
+                foundLayer.getQuantumOperations().getFirst();
         assertThat(foundQuantumOperation).isInstanceOf(ElementaryQuantumGate.class);
 
         ElementaryQuantumGate foundGate = (ElementaryQuantumGate) foundQuantumOperation;

@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { SimulationToolbar } from '@/views/results-view/SimulationToolbar.tsx';
 import { CustomTooltipContent } from '@/views/results-view/CustomTooltipContent.tsx';
-import { CircuitResponse } from '@/api/dto/circuit';
+import { CircuitResponse, getRegisterSize } from '@/api/dto/circuit';
 import { useQuantumSimulation } from '@/hooks/useQuantumSimulation.ts';
 import { SimulationOptions } from '@/simulation/simulation.types.ts';
 import { useChartData } from '@/hooks/useChartData.ts';
@@ -21,10 +21,10 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 interface ResultsViewProps {
-    circuit: CircuitResponse | null;
+    circuit: CircuitResponse | undefined;
 }
 
-export function ResultsView({ circuit }: ResultsViewProps) {
+export function ResultsView({ circuit }: Readonly<ResultsViewProps>) {
     const [options, setOptions] = useState<SimulationOptions>({
         mode: 'exact',
         sampleCount: 1024,
@@ -43,12 +43,10 @@ export function ResultsView({ circuit }: ResultsViewProps) {
         const max = options.maxQubits ?? 8;
         let count = 0;
 
-        for (const reg of circuit.registers) {
-            if (count + reg.qubits.length <= max) {
-                count += reg.qubits.length;
-            } else {
-                break;
-            }
+        for (const register of circuit.registers) {
+            const registerSize: number = getRegisterSize(register);
+            if (count + registerSize > max) break;
+            count += registerSize;
         }
         return count;
     }, [circuit, result, options.maxQubits]);

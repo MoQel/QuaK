@@ -1,9 +1,8 @@
 package edu.kit.quak.core.circuit.model;
 
+import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
-
-import java.util.UUID;
 
 @Getter
 @Setter

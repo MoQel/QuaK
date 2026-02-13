@@ -1,14 +1,10 @@
 import React, { useMemo, useRef } from 'react';
-import styles from "@/App.module.css";
-import {
-    QuantumOperationDto,
-    RegisterResponse,
-    ElementSelectorDto
-} from '@/api/dto/circuit.ts';
+import styles from '@/App.module.css';
+import { QuantumOperationDto, RegisterResponse, ElementSelectorDto, getRegisterSize } from '@/api/dto/circuit.ts';
 import {
     getOperationIconByIdentifier,
     getOperationSizeByIdentifier,
-    OperationIdentifier
+    OperationIdentifier,
 } from '@/api/dto/OperationDefinition.ts';
 import { CELL_WIDTH, QUBIT_HEIGHT } from '@/views/circuit-view/layout.ts';
 
@@ -26,12 +22,6 @@ interface ElementaryQuantumGateProps {
 
 // --- Helper Functions ---
 
-const getRegisterSize = (reg: RegisterResponse): number => {
-    if ('numberOfQubits' in reg) return reg.numberOfQubits;
-    if ('numberOfBits' in reg) return reg.numberOfBits;
-    return 0;
-};
-
 const getGlobalIndex = (selector: ElementSelectorDto, registers: RegisterResponse[]): number => {
     let offset = 0;
     for (const reg of registers) {
@@ -44,23 +34,22 @@ const getGlobalIndex = (selector: ElementSelectorDto, registers: RegisterRespons
 // --- Main Component ---
 
 export function ElementaryQuantumGate({
-                                          operation,
-                                          registers,
-                                          layerIdx,
-                                          isDragging,
-                                          setDraggingGateSize,
-                                          onDragStart,
-                                          onDragEnd,
-                                          onDelete,
-                                          shiftedOffset = 0,
-                                      }: Readonly<ElementaryQuantumGateProps>) {
-
+    operation,
+    registers,
+    layerIdx,
+    isDragging,
+    setDraggingGateSize,
+    onDragStart,
+    onDragEnd,
+    onDelete,
+    shiftedOffset = 0,
+}: Readonly<ElementaryQuantumGateProps>) {
     const isDraggingRef = useRef(false);
 
     // Compute geometry (indices, span, bounds)
     const { targetIndices, controlIndices, minY, spanHeight } = useMemo(() => {
-        const tIndices = operation.targetQubits.map(t => getGlobalIndex(t, registers));
-        const cIndices = operation.controlQubits.map(c => getGlobalIndex(c, registers));
+        const tIndices = operation.targetQubits.map((t) => getGlobalIndex(t, registers));
+        const cIndices = operation.controlQubits.map((c) => getGlobalIndex(c, registers));
         const all = [...tIndices, ...cIndices];
         const min = Math.min(...all);
         const max = Math.max(...all);
@@ -69,7 +58,7 @@ export function ElementaryQuantumGate({
             targetIndices: tIndices,
             controlIndices: cIndices,
             minY: min,
-            spanHeight: (max - min) * QUBIT_HEIGHT
+            spanHeight: (max - min) * QUBIT_HEIGHT,
         };
     }, [operation, registers]);
 
@@ -79,14 +68,14 @@ export function ElementaryQuantumGate({
         isDraggingRef.current = true;
 
         const data = {
-            origin: "circuit",
+            origin: 'circuit',
             id: operation.id,
-            operationDefinition: operation.operationDefinition
+            operationDefinition: operation.operationDefinition,
         };
 
         // 'text/plain' is required for Safari browser support
-        e.dataTransfer.setData("text/plain", JSON.stringify(data));
-        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData('text/plain', JSON.stringify(data));
+        e.dataTransfer.effectAllowed = 'move';
 
         setDraggingGateSize(getOperationSizeByIdentifier(operation.operationDefinition));
 
@@ -98,7 +87,9 @@ export function ElementaryQuantumGate({
     const handleDragEnd = () => {
         onDragEnd?.();
         // Prevent immediate click (delete) after drop
-        setTimeout(() => { isDraggingRef.current = false; }, 100);
+        setTimeout(() => {
+            isDraggingRef.current = false;
+        }, 100);
     };
 
     const handleClick = (e: React.MouseEvent) => {
@@ -113,7 +104,7 @@ export function ElementaryQuantumGate({
             onDragEnd={handleDragEnd}
             onClick={handleClick}
             className={`absolute z-30 flex flex-col items-center group pointer-events-none
-                ${isDragging ? "invisible" : "visible"}`}
+                ${isDragging ? 'invisible' : 'visible'}`}
             style={{
                 top: minY * QUBIT_HEIGHT,
                 left: layerIdx * CELL_WIDTH + shiftedOffset,
@@ -122,14 +113,15 @@ export function ElementaryQuantumGate({
             }}
         >
             {/* Connector Line for Multi-Qubit Gates with hitbox container*/}
-            {(targetIndices.length + controlIndices.length) > 1 && (
-                <div className="
+            {targetIndices.length + controlIndices.length > 1 && (
+                <div
+                    className="
                     absolute left-1/2 -translate-x-1/2 w-2
                     pointer-events-auto cursor-grab active:cursor-grabbing"
-                     style={{
-                         top: QUBIT_HEIGHT / 2,
-                         bottom: QUBIT_HEIGHT / 2,
-                     }}
+                    style={{
+                        top: QUBIT_HEIGHT / 2,
+                        bottom: QUBIT_HEIGHT / 2,
+                    }}
                 >
                     <div
                         className="
@@ -141,15 +133,12 @@ export function ElementaryQuantumGate({
             )}
 
             {/* Render Controls */}
-            {controlIndices.map(idx => (
-                <ControlPoint
-                    key={`control-${idx}`}
-                    relativeIdx={idx - minY}
-                />
+            {controlIndices.map((idx) => (
+                <ControlPoint key={`control-${idx}`} relativeIdx={idx - minY} />
             ))}
 
             {/* Render Targets */}
-            {targetIndices.map(idx => (
+            {targetIndices.map((idx) => (
                 <TargetPoint
                     key={`target-${idx}`}
                     relativeIdx={idx - minY}
@@ -172,15 +161,15 @@ function ControlPoint({ relativeIdx }: Readonly<{ relativeIdx: number }>) {
                 pointer-events-auto cursor-grab active:cursor-grabbing
                 group-hover:bg-highlight transition-colors"
             style={{
-                top: (relativeIdx * QUBIT_HEIGHT) + (QUBIT_HEIGHT / 2) - (size / 2),
+                top: relativeIdx * QUBIT_HEIGHT + QUBIT_HEIGHT / 2 - size / 2,
                 width: `${size}px`,
-                height: `${size}px`
+                height: `${size}px`,
             }}
         />
     );
 }
 
-function TargetPoint({ relativeIdx, definition }: Readonly<{ relativeIdx: number, definition: OperationIdentifier }>) {
+function TargetPoint({ relativeIdx, definition }: Readonly<{ relativeIdx: number; definition: OperationIdentifier }>) {
     const Icon = getOperationIconByIdentifier(definition);
 
     return (
@@ -188,7 +177,7 @@ function TargetPoint({ relativeIdx, definition }: Readonly<{ relativeIdx: number
             className="absolute inset-x-0 flex items-center justify-center pointer-events-none"
             style={{
                 top: relativeIdx * QUBIT_HEIGHT,
-                height: QUBIT_HEIGHT
+                height: QUBIT_HEIGHT,
             }}
         >
             {/* Similar to badge.tsx but supporting group-hover */}
@@ -201,7 +190,7 @@ function TargetPoint({ relativeIdx, definition }: Readonly<{ relativeIdx: number
                     group-hover:bg-bg-light transition-colors
                     ${styles.gate}`}
             >
-                <Icon className="size-4 stroke-4" />
+                <Icon className="size-4 stroke-4 items-center justify-center leading-none" />
             </div>
         </div>
     );

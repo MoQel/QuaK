@@ -6,7 +6,8 @@ import org.mapstruct.CollectionMappingStrategy;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingConstants;
 
-@Mapper(componentModel = MappingConstants.ComponentModel.SPRING,
+@Mapper(
+        componentModel = MappingConstants.ComponentModel.SPRING,
         collectionMappingStrategy = CollectionMappingStrategy.TARGET_IMMUTABLE)
 public interface ElementSelectorJpaMapper {
     JpaElementSelector toEntity(ElementSelector domain);

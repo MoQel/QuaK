@@ -1,5 +1,9 @@
 package edu.kit.quak.infrastructure.circuit.out.db.jpa.mapper;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.spy;
+
 import edu.kit.quak.core.circuit.model.layer.Layer;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementaryQuantumGate;
@@ -7,18 +11,13 @@ import edu.kit.quak.core.circuit.model.layer.operation.library.QuantumOperationL
 import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.layer.JpaLayer;
 import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.layer.operation.JpaElementSelector;
 import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.layer.operation.JpaElementaryQuantumGate;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mapstruct.factory.Mappers;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
-
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.Mockito.spy;
 
 @ExtendWith(MockitoExtension.class)
 class LayerJpaMapperTest {
@@ -37,7 +36,8 @@ class LayerJpaMapperTest {
     void domainToEntity() {
         // Arrange
         ElementSelector target = new ElementSelector("reg_id", 0);
-        ElementaryQuantumGate operation = new ElementaryQuantumGate(QuantumOperationLibrary.X, false, List.of(target), null, 0d);
+        ElementaryQuantumGate operation =
+                new ElementaryQuantumGate(QuantumOperationLibrary.X, false, List.of(target), null, 0d);
         Layer layer = new Layer(List.of(operation));
 
         // Act
@@ -46,7 +46,9 @@ class LayerJpaMapperTest {
         // Assert
         assertNotNull(entity);
         assertEquals(1, entity.getQuantumOperations().size());
-        assertEquals(QuantumOperationLibrary.X, entity.getQuantumOperations().getFirst().getOperationDefinition());
+        assertEquals(
+                QuantumOperationLibrary.X,
+                entity.getQuantumOperations().getFirst().getOperationDefinition());
         assertEquals(entity, entity.getQuantumOperations().getFirst().getLayer()); // AfterMapping
     }
 
@@ -72,6 +74,8 @@ class LayerJpaMapperTest {
         // Assert
         assertNotNull(domain);
         assertEquals(1, domain.getQuantumOperations().size());
-        assertEquals(QuantumOperationLibrary.X, domain.getQuantumOperations().getFirst().getOperationDefinition());
+        assertEquals(
+                QuantumOperationLibrary.X,
+                domain.getQuantumOperations().getFirst().getOperationDefinition());
     }
 }

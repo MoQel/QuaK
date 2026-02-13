@@ -1,16 +1,16 @@
 package edu.kit.quak.infrastructure.circuit.out.db.jpa.mapper;
 
-import edu.kit.quak.core.circuit.model.layer.Layer;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
+import edu.kit.quak.core.circuit.model.layer.Layer;
 import edu.kit.quak.core.circuit.model.register.Register;
-import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.layer.JpaLayer;
 import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.JpaQuantumCircuit;
+import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.layer.JpaLayer;
 import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.register.JpaRegister;
+import java.util.List;
 import org.mapstruct.*;
 
-import java.util.List;
-
-@Mapper(componentModel = MappingConstants.ComponentModel.SPRING,
+@Mapper(
+        componentModel = MappingConstants.ComponentModel.SPRING,
         uses = {RegisterJpaMapper.class, LayerJpaMapper.class})
 public interface CircuitJpaMapper {
     @Mapping(target = "id", source = "id")

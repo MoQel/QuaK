@@ -1,9 +1,8 @@
 package edu.kit.quak.core.circuit.model.register;
 
+import java.util.Optional;
 import lombok.Getter;
 import lombok.Setter;
-
-import java.util.Optional;
 
 @Getter
 @Setter

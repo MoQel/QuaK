@@ -9,23 +9,24 @@ import { api } from '@/api/api.ts';
 import { GateDefinitionResponse } from '@/api/dto/library.ts';
 
 interface GateLibraryViewProps {
-    onGateSelect?: (gate: GateDefinitionResponse) => void;
+    onGateSelect: (gate: GateDefinitionResponse) => void;
+    setIsGateDragging: (value: boolean) => void;
+    setDraggingGateSize: (size: number) => void;
 }
 
 export function GateLibraryView({
-                                    onGateSelect,
-                                    setIsGateDragging,
-                                    setDraggingGateSize
-                                }: Readonly<GateLibraryViewProps>) {
-
+    onGateSelect,
+    setIsGateDragging,
+    setDraggingGateSize,
+}: Readonly<GateLibraryViewProps>) {
     const [boxMode, setBoxMode] = useState(true);
     const [gates, setGates] = useState<GateDefinitionResponse[]>([]);
 
     // Load Data centralized (Single Source of Truth)
     useEffect(() => {
-        api.get<GateDefinitionResponse[]>("/api/gates")
+        api.get<GateDefinitionResponse[]>('/api/gates')
             .then((gates) => setGates(gates))
-            .catch((e) => console.error("Failed to fetch gates:", e));
+            .catch((e) => console.error('Failed to fetch gates:', e));
     }, []);
 
     const handleGateClick = (gate: GateDefinitionResponse) => {
@@ -37,9 +38,7 @@ export function GateLibraryView({
     return (
         <Card className="w-full h-full min-h-0 relative flex flex-col overflow-hidden">
             <CardHeader className="w-full flex justify-center items-center relative">
-                <CardTitle className="text-center">
-                    Library
-                </CardTitle>
+                <CardTitle className="text-center">Library</CardTitle>
 
                 <Button onClick={() => setBoxMode(!boxMode)} variant="default" size="icon" className="absolute right-5">
                     {boxMode && <List />}
@@ -50,13 +49,14 @@ export function GateLibraryView({
             <CardContent className="flex-1 min-h-0 overflow-hidden p-3">
                 <div className="h-full w-full min-h-0">
                     <div className={`h-full ${boxMode ? 'overflow-y-auto' : ''} ${styles.availableGateContainer}`}>
-                        {boxMode &&
+                        {boxMode && (
                             <GateLibrary
                                 gates={gates}
                                 onGateClick={handleGateClick}
                                 setIsGateDragging={setIsGateDragging}
                                 setDraggingGateSize={setDraggingGateSize}
-                            />}
+                            />
+                        )}
                         {!boxMode && <GateList gates={gates} onGateClick={handleGateClick} />}
                     </div>
                 </div>

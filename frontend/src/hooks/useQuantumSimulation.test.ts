@@ -43,7 +43,7 @@ describe('useQuantumSimulation Hook', () => {
     });
 
     it('should initialize with default state', () => {
-        const { result } = renderHook(() => useQuantumSimulation(null));
+        const { result } = renderHook(() => useQuantumSimulation(undefined));
 
         expect(result.current.result).toBeNull();
         expect(result.current.error).toBeNull();

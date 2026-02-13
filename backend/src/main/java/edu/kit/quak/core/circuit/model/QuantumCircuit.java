@@ -5,12 +5,11 @@ import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
 import edu.kit.quak.core.circuit.model.register.QuantumRegister;
 import edu.kit.quak.core.circuit.model.register.Register;
-import lombok.Builder;
-import lombok.NonNull;
-
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import lombok.Builder;
+import lombok.NonNull;
 
 public class QuantumCircuit extends ElementWithId {
     private final List<Register> registers = new ArrayList<>();
@@ -60,7 +59,8 @@ public class QuantumCircuit extends ElementWithId {
                         .toList();
 
                 boolean removeOperation = selectors.stream()
-                        .anyMatch(selector -> selector.getRegisterId().equals(registers.getFirst().getId())
+                        .anyMatch(selector -> selector.getRegisterId()
+                                        .equals(registers.getFirst().getId())
                                 && selector.getIndex() == qubitIdx);
 
                 if (removeOperation) {
@@ -86,10 +86,11 @@ public class QuantumCircuit extends ElementWithId {
         reorganizeCircuit();
     }
 
-    public void moveQuantumOperation(@NonNull String operationId,
-                                     int layerIdx,
-                                     @NonNull List<ElementSelector> targetQubits,
-                                     List<ElementSelector> controlQubits) {
+    public void moveQuantumOperation(
+            @NonNull String operationId,
+            int layerIdx,
+            @NonNull List<ElementSelector> targetQubits,
+            List<ElementSelector> controlQubits) {
         if (layerIdx < 0 || layerIdx > layers.size()) {
             throw new IllegalArgumentException("Layer index must be between 0 and " + layers.size());
         }
@@ -135,9 +136,8 @@ public class QuantumCircuit extends ElementWithId {
      */
     private void reorganizeCircuit() {
         // 1. Extract all operations in their original relative order
-        List<QuantumOperation> allOps = layers.stream()
-                .flatMap(l -> l.getQuantumOperations().stream())
-                .toList();
+        List<QuantumOperation> allOps =
+                layers.stream().flatMap(l -> l.getQuantumOperations().stream()).toList();
 
         // 2. Clear current layers
         layers.forEach(Layer::clearQuantumOperations);
@@ -203,8 +203,7 @@ public class QuantumCircuit extends ElementWithId {
         Stream<ElementSelector> controlStream =
                 op.getControlQubits() != null ? op.getControlQubits().stream() : Stream.empty();
 
-        return Stream.concat(targetStream, controlStream)
-                .collect(Collectors.toSet());
+        return Stream.concat(targetStream, controlStream).collect(Collectors.toSet());
     }
 
     private void flushLayers() {
@@ -217,25 +216,25 @@ public class QuantumCircuit extends ElementWithId {
             if (register.getId().equals(registerId)) {
                 Optional<QuantumRegister> quantumRegister = register.asQuantum();
                 if (quantumRegister.isEmpty()) {
-                    throw new IllegalArgumentException("Register with quantumOperationId %s is not a QuantumRegister.".formatted(registerId));
+                    throw new IllegalArgumentException(
+                            "Register with quantumOperationId %s is not a QuantumRegister.".formatted(registerId));
                 }
                 return quantumRegister.get();
             }
         }
-        throw new NoSuchElementException("Could not find quantum register with quantumOperationId %s".formatted(registerId));
+        throw new NoSuchElementException(
+                "Could not find quantum register with quantumOperationId %s".formatted(registerId));
     }
 
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append("QuantumCircuit(quantumOperationId=").append(id).append(")\n");
-        registers.forEach(
-                reg -> sb.append("  ").append(reg.toString().replace("\n", "\n  ")).append("\n")
-        );
+        registers.forEach(reg ->
+                sb.append("  ").append(reg.toString().replace("\n", "\n  ")).append("\n"));
         sb.append("\n");
-        layers.forEach(
-                lay -> sb.append("  ").append(lay.toString().replace("\n", "\n  ")).append("\n")
-        );
+        layers.forEach(lay ->
+                sb.append("  ").append(lay.toString().replace("\n", "\n  ")).append("\n"));
         return sb.toString().trim();
     }
 }

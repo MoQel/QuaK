@@ -1,5 +1,7 @@
 package edu.kit.quak.infrastructure.circuit.in.web.rest.mapper;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementaryQuantumGate;
 import edu.kit.quak.core.circuit.model.layer.operation.Measurement;
@@ -9,21 +11,18 @@ import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.ElementSelectorDto;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.ElementaryQuantumGateDto;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.MeasurementDto;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.QuantumOperationDto;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
-
 @ExtendWith(MockitoExtension.class)
 class QuantumOperationDtoMapperTest {
     @Spy
     private ElementSelectorDtoMapperImpl qubitSelectorDtoMapper;
-    
+
     @InjectMocks
     private QuantumOperationDtoMapperImpl mapper;
 
@@ -33,8 +32,10 @@ class QuantumOperationDtoMapperTest {
         ElementSelector target = new ElementSelector("reg_id", 0);
         ElementSelector classicBit = new ElementSelector("reg_id", 1);
 
-        ElementaryQuantumGate gate = new ElementaryQuantumGate(QuantumOperationLibrary.X, false, List.of(target), null, 0d);
-        Measurement measurement = new Measurement(QuantumOperationLibrary.MEASURE, false, List.of(target), null, List.of(classicBit));
+        ElementaryQuantumGate gate =
+                new ElementaryQuantumGate(QuantumOperationLibrary.X, false, List.of(target), null, 0d);
+        Measurement measurement =
+                new Measurement(QuantumOperationLibrary.MEASURE, false, List.of(target), null, List.of(classicBit));
 
         // Act
         QuantumOperationDto gateResponse = mapper.toResponse(gate);
@@ -56,8 +57,10 @@ class QuantumOperationDtoMapperTest {
         ElementSelectorDto target = new ElementSelectorDto("reg_id", 0);
         ElementSelectorDto classicBit = new ElementSelectorDto("reg_id", 1);
 
-        ElementaryQuantumGateDto gateDto = new ElementaryQuantumGateDto("id", QuantumOperationLibrary.X.name(), false, List.of(target), null, 0d);
-        MeasurementDto measurementDto = new MeasurementDto("id", QuantumOperationLibrary.MEASURE.name(), false, List.of(target), null, List.of(classicBit));
+        ElementaryQuantumGateDto gateDto =
+                new ElementaryQuantumGateDto("id", QuantumOperationLibrary.X.name(), false, List.of(target), null, 0d);
+        MeasurementDto measurementDto = new MeasurementDto(
+                "id", QuantumOperationLibrary.MEASURE.name(), false, List.of(target), null, List.of(classicBit));
 
         // Act
         QuantumOperation gate = mapper.toDomain(gateDto);
