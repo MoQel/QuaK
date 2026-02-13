@@ -1,4 +1,4 @@
-import {Dispatch, SetStateAction, useState} from "react";
+import {useState} from "react";
 
 import {ResizableHandle, ResizablePanel, ResizablePanelGroup} from "@/components/ui/resizable.tsx";
 import {GateLibraryView} from "@/views/library-view/GateLibraryView.tsx";
@@ -14,35 +14,43 @@ import {GateDefinitionResponse} from "@/api/dto/library.ts";
 function App() {
     const [file, openFile] = useState(undefined as unknown as File);
     const [selectedGate, setSelectedGate] = useState<GateDefinitionResponse | undefined>(undefined);
+    const [isGateDragging, setIsGateDragging] = useState(false);
+    const [draggingGateSize, setDraggingGateSize] = useState<number>(1);
 
     return (
         <>
         <div className="h-full min-h-0 overflow-hidden px-[10px] flex flex-col">
             <div className="flex-3 min-h-0 overflow-hidden">
-                        <ResizablePanelGroup direction="horizontal" className="h-full">
-                            <ResizablePanel defaultSize={20} className="h-full overflow-hidden">
-                                <ProjectManagerView onFileSelect={openFile} />
-                            </ResizablePanel>
-                            <ResizableHandle withHandle />
-                            <ResizablePanel className="h-full overflow-hidden">
-                                <CircuitView />
-                            </ResizablePanel>
-                            <ResizableHandle withHandle />
-                            <ResizablePanel className="flex-col h-full overflow-hidden">
-                                <TextEditorView file={file} />
-                            </ResizablePanel>
-                        </ResizablePanelGroup>
-
+                <ResizablePanelGroup direction="horizontal" className="h-full">
+                    <ResizablePanel defaultSize={20} className="h-full overflow-hidden">
+                        <ProjectManagerView onFileSelect={openFile} />
+                    </ResizablePanel>
+                    <ResizableHandle withHandle />
+                    <ResizablePanel className="h-full overflow-hidden">
+                        <CircuitView
+                            isGateDragging={isGateDragging}
+                            setIsGateDragging={setIsGateDragging}
+                            draggingGateSize={draggingGateSize}
+                            setDraggingGateSize={setDraggingGateSize}
+                        />
+                    </ResizablePanel>
+                    <ResizableHandle withHandle />
+                    <ResizablePanel className="flex-col h-full overflow-hidden">
+                        <TextEditorView file={file} />
+                    </ResizablePanel>
+                </ResizablePanelGroup>
             </div>
 
             <div className="flex-4 min-h-0 overflow-hidden flex w-full">
-                <GateLibraryView onGateSelect={setSelectedGate} />
+                <GateLibraryView
+                    onGateSelect={setSelectedGate}
+                    setIsGateDragging={setIsGateDragging}
+                    setDraggingGateSize={setDraggingGateSize}
+                />
                 <InspectorView gate={selectedGate} onClear={() => setSelectedGate(undefined)} />
                 <ResultsView numberQubits={5} />
             </div>
-
         </div>
-
             <Toaster />
         </>
     );

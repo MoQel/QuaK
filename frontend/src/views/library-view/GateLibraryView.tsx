@@ -1,18 +1,24 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card.tsx";
+import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card.tsx";
 import styles from "@/App.module.css";
 import GateLibrary from "@/views/library-view/GateLibrary.tsx";
-import { Button } from "@/components/ui/button"
-import { List, LayoutGrid } from "lucide-react";
+import {Button} from "@/components/ui/button"
+import {List, LayoutGrid} from "lucide-react";
 import GateList from "@/views/library-view/GateList.tsx";
-import { useEffect, useState } from 'react';
-import { api } from "@/api/api.ts";
-import { GateDefinitionResponse } from "@/api/dto/library.ts";
+import {useEffect, useState} from 'react';
+import {api} from "@/api/api.ts";
+import {GateDefinitionResponse} from "@/api/dto/library.ts";
 
 interface GateLibraryViewProps {
-    onGateSelect?: (gate: GateDefinitionResponse) => void;
+    onGateSelect: (gate: GateDefinitionResponse) => void,
+    setIsGateDragging: (value: boolean) => void,
+    setDraggingGateSize: (size: number) => void
 }
 
-export function GateLibraryView({ onGateSelect }: GateLibraryViewProps) {
+export function GateLibraryView({
+                                    onGateSelect,
+                                    setIsGateDragging,
+                                    setDraggingGateSize
+                                }: Readonly<GateLibraryViewProps>) {
 
     const [boxMode, setBoxMode] = useState(true);
     const [gates, setGates] = useState<GateDefinitionResponse[]>([]);
@@ -45,19 +51,26 @@ export function GateLibraryView({ onGateSelect }: GateLibraryViewProps) {
                     size="icon"
                     className="absolute right-5"
                 >
-                    {boxMode && <List />}
-                    {!(boxMode) && <LayoutGrid />}
+                    {boxMode && <List/>}
+                    {!(boxMode) && <LayoutGrid/>}
                 </Button>
             </CardHeader>
 
             <CardContent className="flex-1 min-h-0 overflow-hidden p-3">
                 <div className="h-full w-full min-h-0">
                     <div className={`h-full ${boxMode ? "overflow-y-auto" : ""} ${styles.availableGateContainer}`}>
-                        {boxMode && <GateLibrary gates={gates} onGateClick={handleGateClick} />}
-                        {!(boxMode) && <GateList gates={gates} onGateClick={handleGateClick} />}
+                        {boxMode &&
+                            <GateLibrary
+                                gates={gates}
+                                onGateClick={handleGateClick}
+                                setIsGateDragging={setIsGateDragging}
+                                setDraggingGateSize={setDraggingGateSize}
+                            />
+                        }
+                        {!(boxMode) && <GateList gates={gates} onGateClick={handleGateClick}/>}
                     </div>
                 </div>
-            </CardContent >
-        </Card >
+            </CardContent>
+        </Card>
     )
 }

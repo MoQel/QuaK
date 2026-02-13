@@ -1,7 +1,7 @@
-import {GateDefinitionIdentifier} from '@/api/dto/GateDefinitionIdentifier.ts'
+import {OperationIdentifier} from '@/api/dto/OperationDefinition.ts'
 
 export interface GateDefinitionResponse {
-    id: GateDefinitionIdentifier;
+    id: OperationIdentifier;
     name: string;
     symbol: string;
     category: string;

@@ -1,43 +1,72 @@
-import {GateDefinitionIdentifier} from '@/api/dto/GateDefinitionIdentifier.ts'
+// --- DTOs ---
 
-// --- Requests ---
+import {OperationIdentifier} from '@/api/dto/OperationDefinition.ts'
 
-export interface ChangeQubitNameRequest {
+export interface ElementSelectorDto {
+    registerId: string;
+    index: number;
+}
+
+export type QuantumOperationType = 'ELEMENTARY_QUANTUM_GATE' | 'MEASUREMENT';
+
+export interface AbstractQuantumOperationDto {
+    id?: string; // Only for response
+    type: QuantumOperationType;
+    operationDefinition: OperationIdentifier;
+    inverseForm: boolean;
+    targetQubits: ElementSelectorDto[];
+    controlQubits: ElementSelectorDto[];
+}
+
+export interface ElementaryQuantumGateDto extends AbstractQuantumOperationDto {
+    type: 'ELEMENTARY_QUANTUM_GATE';
+    rotationAngle: number;
+}
+
+export interface MeasurementDto extends AbstractQuantumOperationDto {
+    type: 'MEASUREMENT';
+    classicBits: ElementSelectorDto[];
+}
+
+export type QuantumOperationDto = ElementaryQuantumGateDto | MeasurementDto;
+
+// --- Responses ---
+
+export interface AbstractRegisterResponse {
     id: string;
     name: string;
 }
 
-export interface AddGateRequest {
-    definitionId: GateDefinitionIdentifier;
-    toQubitIdx: number;
-    toPositionIdx: number;
+export interface ClassicRegisterResponse extends AbstractRegisterResponse {
+    numberOfBits: number;
 }
 
-export interface MoveGateRequest {
-    id: string;
-    toQubitIdx: number;
-    toPositionIdx: number;
+export interface QuantumRegisterResponse extends AbstractRegisterResponse {
+    numberOfQubits: number;
 }
 
-// --- Responses ---
+export type RegisterResponse = ClassicRegisterResponse | QuantumRegisterResponse;
+
+export interface LayerResponse {
+    quantumOperations: QuantumOperationDto[];
+}
 
 export interface CircuitResponse {
     id: string;
     registers: RegisterResponse[];
+    layers: LayerResponse[];
 }
 
-export interface RegisterResponse {
-    id: string;
-    name: string;
-    qubits: QubitResponse[];
+// --- Requests ---
+
+export interface AddQuantumOperationRequest {
+    quantumOperation: QuantumOperationDto;
+    layerIdx: number;
 }
 
-export interface QubitResponse {
-    id: string;
-    gates: GateResponse[];
-}
-
-export interface GateResponse {
-    id: string;
-    definitionId: GateDefinitionIdentifier;
+export interface MoveQuantumOperationRequest {
+    quantumOperationId: string;
+    layerIdx: number;
+    targetQubits: ElementSelectorDto[];
+    controlQubits: ElementSelectorDto[];
 }

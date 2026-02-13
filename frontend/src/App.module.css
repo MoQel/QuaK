@@ -1,8 +1,8 @@
 :root {
   margin: 0 auto;
   text-align: center;
-  --gateWidth : 60px;
-  --gateHeight :60px;
+  --gateWidth : 40px;
+  --gateHeight :40px;
   --gateSpacing : 24px;
   --qubitWireSpacing: 8px;
   --colorBack: #2f2e2e;
@@ -44,7 +44,7 @@
 
 .libraryElement {
   padding: 9px 11px;
-  border-radius: 3px;
+  border-radius: 5px;
   margin-top: 0;
   box-sizing: border-box;
   height: var(--gateHeight);
@@ -61,9 +61,9 @@
   -webkit-user-drag: element; /* Prevents Safari from “forgetting” the element when dragging */
 }
 
-.gate, .gate:hover {
+.gate {
   padding: 9px 11px;
-  border-radius: 3px;
+  border-radius: 5px;
   margin-top: 0;
   box-sizing: border-box;
   height: var(--gateHeight);
@@ -73,11 +73,6 @@
   font-weight: bold;
   user-select: none;
   font-size: 20px;
-}
-
-.gate:hover {
-  background-color: var(--bg-light);
-  -webkit-user-drag: element; /* Prevents Safari from “forgetting” the element when dragging */
 }
 
 .dropzoneSpacing {

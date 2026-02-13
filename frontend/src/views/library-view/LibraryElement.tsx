@@ -1,24 +1,29 @@
-import { Badge } from "@/components/ui/badge.tsx";
-import { TextIcon } from "@/views/TextIcon.tsx";
+import {Badge} from "@/components/ui/badge.tsx";
+import {TextIcon} from "@/components/ui/text-icon.tsx";
 import styles from "@/App.module.css";
 import {
     Tooltip,
     TooltipContent,
     TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { BlockMath } from 'react-katex';
+import {BlockMath} from 'react-katex';
 import 'katex/dist/katex.min.css';
-import React, { useState } from "react"; //
-import { GateDefinitionIdentifier } from "@/api/dto/GateDefinitionIdentifier.ts";
+import React, {useState} from "react";
+import {
+    getOperationSizeByIdentifier,
+    OperationIdentifier
+} from '@/api/dto/OperationDefinition.ts'
 
 type LibraryElementProps = {
-    id: GateDefinitionIdentifier;
-    symbol: string;
-    onClick?: () => void;
-    matrix: string;
+    id: OperationIdentifier,
+    symbol: string,
+    onClick?: () => void,
+    matrix: string,
+    setIsGateDragging: (value: boolean) => void,
+    setDraggingGateSize: (size: number) => void
 };
 
-export function LibraryElement({ id, symbol, onClick, matrix }: Readonly<LibraryElementProps>) {
+export function LibraryElement({id, symbol, onClick, matrix, setIsGateDragging, setDraggingGateSize}: Readonly<LibraryElementProps>) {
     const DELAY_DURATION = 700;
     const Icon = TextIcon(symbol);
 
@@ -31,16 +36,20 @@ export function LibraryElement({ id, symbol, onClick, matrix }: Readonly<Library
 
         const data = {
             origin: "library",
-            id: id
+            operationDefinition: id.toUpperCase()
         };
         e.dataTransfer.setData("text/plain", JSON.stringify(data));
         e.dataTransfer.effectAllowed = "copy";
+
+        setIsGateDragging(true);
+        setDraggingGateSize(getOperationSizeByIdentifier(id));
     };
 
     const handleDragEnd = () => {
         // Wait 100ms to avoid opening tooltip after dragging.
         setTimeout(() => {
             setIsDragging(false);
+            setIsGateDragging(false);
         }, 100);
     };
 
@@ -67,7 +76,7 @@ export function LibraryElement({ id, symbol, onClick, matrix }: Readonly<Library
                     className="group cursor-grab active:cursor-grabbing"
                 >
                     <Badge className={styles.libraryElement}>
-                        <Icon />
+                        <Icon/>
                     </Badge>
                 </div>
             </TooltipTrigger>
@@ -80,7 +89,7 @@ export function LibraryElement({ id, symbol, onClick, matrix }: Readonly<Library
                     Matrix Representation
                 </div>
                 <div className="overflow-x-auto flex justify-center">
-                    <BlockMath math={matrix} />
+                    <BlockMath math={matrix}/>
                 </div>
             </TooltipContent>
         </Tooltip>
