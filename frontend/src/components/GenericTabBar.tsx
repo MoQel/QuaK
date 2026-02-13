@@ -9,6 +9,7 @@ export interface TabItem {
 interface GenericTabBarProps<T extends TabItem> {
     groupId: string;
     tabs: T[];
+    rightSlot?: React.ReactNode;
     activeTabId: string | null;
     onReorder: (fromId: string, toId: string) => void;
     onMoveExternal?: (tabId: string, sourceGroupId: string, targetTabId?: string) => void;
@@ -21,6 +22,7 @@ interface GenericTabBarProps<T extends TabItem> {
 export function GenericTabBar<T extends TabItem>({
     groupId,
     tabs,
+    rightSlot,
     activeTabId,
     onReorder,
     onMoveExternal,
@@ -167,7 +169,7 @@ export function GenericTabBar<T extends TabItem>({
     // endregion
 
     return (
-        <div className={cn('relative flex w-full flex-col', className)}>
+        <div className={cn('relative flex w-full flex-row', className)}>
             <div
                 ref={containerRef}
                 role="tablist"
@@ -176,7 +178,7 @@ export function GenericTabBar<T extends TabItem>({
                 onDragLeave={handleContainerDragLeave}
                 onDrop={handleDrop}
                 className={cn(
-                    'flex w-full flex-row border-b border-border bg-bg-light scrollbar-hide',
+                    'flex flex-1 w-full flex-row border-b border-border bg-bg-light scrollbar-hide',
                     'overflow-x-auto tabs-scrollbar scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent',
                 )}
                 tabIndex={-1}
@@ -217,10 +219,12 @@ export function GenericTabBar<T extends TabItem>({
                         </React.Fragment>
                     );
                 })}
-
                 {/* Drop at the end */}
                 {isOverContainer && !draggingId && dropPlaceholderIndex === tabs.length && <GhostTab />}
             </div>
+            {rightSlot && tabs.length !== 0 && (
+                <div className="flex items-center flex-shrink-0 border-l border-border bg-bg-light">{rightSlot}</div>
+            )}
         </div>
     );
 }

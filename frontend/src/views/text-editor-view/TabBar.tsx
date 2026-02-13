@@ -26,6 +26,7 @@ import { useAppSelector } from '@/hooks/useAppSelector.ts';
 import { languages } from '@/views/text-editor-view/languages/languages.ts';
 import { GenericTabBar } from '@/components/GenericTabBar.tsx';
 import { Button } from '@/components/ui/button.tsx';
+import { GroupMenu } from '@/views/text-editor-view/GroupMenu.tsx';
 
 interface TabBarProps {
     groupId: string;
@@ -36,6 +37,7 @@ export function TabBar({ groupId }: Readonly<TabBarProps>) {
     const group = useAppSelector((state) => state.tabs.groups.find((g) => g.id === groupId));
     const globalActiveGroupId = useAppSelector((state) => state.tabs.activeGroupId);
     const dirtyFiles = useAppSelector((state) => state.tabs.dirtyFiles);
+    const { groups } = useAppSelector((state) => state.tabs);
 
     if (!group) return null;
     const { openTabs, activeTabId } = group;
@@ -45,6 +47,7 @@ export function TabBar({ groupId }: Readonly<TabBarProps>) {
         <GenericTabBar
             groupId={groupId}
             tabs={openTabs}
+            rightSlot={<GroupMenu groupId={groupId} groups={groups} />}
             activeTabId={activeTabId}
             onDragStateChange={(isDragging) => dispatch(setDragging(isDragging))}
             onReorder={(fromId, toId) =>

@@ -157,14 +157,54 @@ export const tabsSlice = createSlice({
             state.activeGroupId = action.payload;
         },
 
-        splitGroup: (state, action: PayloadAction<string>) => {
-            if (!state.groups.some((g) => g.id === action.payload)) {
-                state.groups.push({ id: action.payload, openTabs: [], activeTabId: null });
-                state.activeGroupId = action.payload;
+        splitGroup: (state, action: PayloadAction<{ fromGroupId: string; toGroupId: string }>) => {
+            const { fromGroupId, toGroupId } = action.payload;
+            const fromGroup = state.groups.find((g) => g.id === fromGroupId);
+            if (!fromGroup) return;
+            if (!state.groups.some((g) => g.id === toGroupId)) {
+                state.groups.push({ id: toGroupId, openTabs: fromGroup.openTabs, activeTabId: fromGroup.activeTabId });
             }
         },
 
-        unsplitGroup: (state) => {
+        unsplitGroup: (state, action: PayloadAction<string>) => {
+            const groupId = action.payload;
+
+            // Prevent unsplitting the main group
+            if (groupId === GROUP_MAIN) return;
+
+            const sourceGroupIndex = state.groups.findIndex((g) => g.id === groupId);
+            if (sourceGroupIndex === -1) return;
+
+            const sourceGroup = state.groups[sourceGroupIndex];
+            let mainGroup = state.groups.find((g) => g.id === GROUP_MAIN);
+
+            // Fallback if main group is somehow missing
+            if (!mainGroup) {
+                mainGroup = { id: GROUP_MAIN, openTabs: [], activeTabId: null };
+                state.groups.push(mainGroup);
+            }
+
+            // Move tabs to main group without duplicates
+            sourceGroup.openTabs.forEach((tab) => {
+                const exists = mainGroup.openTabs.some((t) => t.id === tab.id);
+                if (!exists) {
+                    mainGroup.openTabs.push(tab);
+                }
+            });
+
+            // Update active focus if the closed group was active
+            if (state.activeGroupId === groupId) {
+                state.activeGroupId = GROUP_MAIN;
+                if (sourceGroup.activeTabId) {
+                    mainGroup.activeTabId = sourceGroup.activeTabId;
+                }
+            }
+
+            // Remove the source group
+            state.groups.splice(sourceGroupIndex, 1);
+        },
+
+        unsplitAllGroups: (state) => {
             if (state.groups.length <= 1) return;
 
             const allTabsMap = new Map<string, Tab>();
@@ -186,13 +226,13 @@ export const tabsSlice = createSlice({
         },
 
         closeGroup: (state, action: PayloadAction<string>) => {
-            if (state.groups.length <= 1) return;
-            state.groups = state.groups.filter((g) => g.id !== action.payload);
-
-            if (state.activeGroupId === action.payload) {
-                state.activeGroupId = state.groups[0].id;
-            }
+            const groupId = action.payload;
+            const group = state.groups.find((g) => g.id === groupId);
+            if (!group) return;
+            group.openTabs = [];
+            group.activeTabId = null;
             state.dirtyFiles = state.dirtyFiles.filter((fId) => isFileOpenAnywhere(state.groups, fId));
+            handleGroupCleanup(state, group);
         },
 
         openTab: (state, action: PayloadAction<{ tab: Tab; groupId?: string }>) => {
@@ -312,6 +352,7 @@ export const {
     setActiveGroup,
     splitGroup,
     unsplitGroup,
+    unsplitAllGroups,
     closeGroup,
     openTab,
     closeTab,
