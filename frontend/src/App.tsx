@@ -8,17 +8,21 @@ import { TextEditorView } from '@/views/text-editor-view/TextEditorView.tsx';
 import { ProjectManagerView } from '@/views/project-manager-view/ProjectManagerView.tsx';
 import { ResultsView } from '@/views/results-view/ResultsView.tsx';
 import { Toaster } from '@/components/ui/sonner.tsx';
-import { File } from '@/views/project-manager-view/util/FileElement.tsx';
 import { InspectorView } from '@/views/inspector-view/InspectorView.tsx';
 import { GateDefinitionResponse } from '@/api/dto/library.ts';
 import { CircuitResponse } from '@/api/dto/circuit.ts';
 import { useLayout } from '@/hooks/use-layout';
+import { useFileSelect } from '@/hooks/useFileSelect.ts';
+import { usePreventKeyboardActions } from '@/hooks/usePreventKeyboardActions.ts';
 
 function App() {
     const { projectId } = useParams<{ projectId: string }>();
-    const [file, openFile] = useState(undefined as unknown as File);
     const [selectedGate, setSelectedGate] = useState<GateDefinitionResponse | undefined>(undefined);
     const [circuit, setCircuit] = useState<CircuitResponse | null>(null);
+    const handleFileSelect = useFileSelect();
+
+    // prevent globally standard browser behavior
+    usePreventKeyboardActions();
 
     // Use Hook
     const { visiblePanels, topLayout, onTogglePanel, onSetMenubarVisibility } = useLayout();
@@ -32,10 +36,13 @@ function App() {
         };
     }, []);
 
+    const topContainerClass = isBottomVisible ? 'h-[30%]' : 'flex-1';
+    const bottomContainerClass = isTopVisible ? 'h-[70%]' : 'flex-1';
+
     return (
         <div className="flex flex-col h-[calc(100vh-65px)] overflow-hidden bg-background text-foreground">
             <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-                <div className={`w-full ${!isTopVisible ? 'hidden' : isBottomVisible ? 'h-[30%]' : 'flex-1'}`}>
+                <div className={`w-full ${isTopVisible ? topContainerClass : 'hidden'}`}>
                     <ResizablePanelGroup direction="horizontal">
                         {visiblePanels.file && (
                             <>
@@ -44,7 +51,7 @@ function App() {
                                     minSize={15}
                                     onClose={() => onTogglePanel('file')}
                                 >
-                                    <ProjectManagerView onFileSelect={openFile} projectId={projectId} />
+                                    <ProjectManagerView onFileSelect={handleFileSelect} projectId={projectId} />
                                 </ResizablePanel>
                                 {(visiblePanels.circuit || visiblePanels.code) && <ResizableHandle withHandle />}
                             </>
@@ -61,14 +68,14 @@ function App() {
 
                         {visiblePanels.code && (
                             <ResizablePanel defaultSize={topLayout[2]} onClose={() => onTogglePanel('code')}>
-                                <TextEditorView file={file} />
+                                <TextEditorView />
                             </ResizablePanel>
                         )}
                     </ResizablePanelGroup>
                 </div>
 
                 <div
-                    className={`w-full flex min-h-0 border-t border-border divide-x divide-border bg-background ${!isBottomVisible ? 'hidden' : isTopVisible ? 'h-[70%]' : 'flex-1'}`}
+                    className={`w-full flex min-h-0 border-t border-border divide-x divide-border bg-background ${isBottomVisible ? bottomContainerClass : 'hidden'}`}
                 >
                     {visiblePanels.library && (
                         <div className="flex-1 overflow-hidden relative">

@@ -14,6 +14,13 @@ import {
 import { DialogCloseButtons, TextInput } from '@/views/project-manager-view/util/FormComponents.tsx';
 import { api } from '@/api/api.ts';
 import { CreateFileRequest, DirectoryRequest } from '@/api/dto/filesystem';
+import { EntityForm } from '@/views/project-manager-view/util/FormUtils.tsx';
+import { useFocusSelection } from '@/hooks/useFocusSelection.ts';
+
+interface CreateDialogProps {
+    id: string;
+    openDialog: (element: Promise<JSX.Element>) => void;
+}
 
 /**
  * Provides a {@link ContextMenuItem} that allows for the creation of {@link FileElement FileElements}.
@@ -21,7 +28,7 @@ import { CreateFileRequest, DirectoryRequest } from '@/api/dto/filesystem';
  * @param openDialog A function that opens a dialog and displays the given elements after their promise resolves.
  * @constructor
  */
-export function CreateDialog({ id, openDialog }: { id: string; openDialog: (element: Promise<JSX.Element>) => void }) {
+export function CreateDialog({ id, openDialog }: Readonly<CreateDialogProps>) {
     const dialog = (e: JSX.Element) => openDialog(Promise.resolve(e));
     return (
         <ContextMenuSub>
@@ -60,13 +67,13 @@ export function CreateDialog({ id, openDialog }: { id: string; openDialog: (elem
     );
 }
 
-function CreateFile({ parent }: { parent: string }) {
+function CreateFile({ parent }: Readonly<{ parent: string }>) {
+    // Hook handles ref, focus, and selection logic
+    const inputRef = useFocusSelection('new_file.txt', true);
     const reloadParent = useContext(ParentRefresh);
 
     const formSchema = z.object({
-        name: z.string().min(1, {
-            message: 'Filename must be at least 1 characters.',
-        }),
+        name: z.string().min(1, { message: 'Filename must be at least 1 characters.' }),
         contentType: z.string(),
     });
 
@@ -83,12 +90,7 @@ function CreateFile({ parent }: { parent: string }) {
             name: values.name,
             contentType: 'text/plain', // TODO: Issue
         };
-
-        api.post('/api/file/', body, {
-            headers: {
-                'parent-id': parent,
-            },
-        }).then(reloadParent);
+        api.post('/api/file/', body, { headers: { 'parent-id': parent } }).then(reloadParent);
     };
 
     return (
@@ -97,7 +99,9 @@ function CreateFile({ parent }: { parent: string }) {
                 <FormField
                     control={form.control}
                     name="name"
-                    render={({ field }) => <TextInput placeholder="new_file.txt" label="Filename" field={field} />}
+                    render={({ field }) => (
+                        <TextInput inputRef={inputRef} placeholder="new_file.txt" label="Filename" field={field} />
+                    )}
                 />
                 <FormField
                     control={form.control}
@@ -112,45 +116,13 @@ function CreateFile({ parent }: { parent: string }) {
     );
 }
 
-function CreateDirectory({ parent }: { parent: string }) {
+function CreateDirectory({ parent }: Readonly<{ parent: string }>) {
     const reloadParent = useContext(ParentRefresh);
-    const formSchema = z.object({
-        name: z.string().min(1, {
-            message: 'Name of the directory must be at least 1 characters.',
-        }),
-    });
 
-    const form = useForm<z.infer<typeof formSchema>>({
-        resolver: zodResolver(formSchema),
-        defaultValues: {
-            name: 'folder',
-        },
-    });
-
-    const onSubmit = (values: z.infer<typeof formSchema>) => {
-        const body: DirectoryRequest = {
-            name: values.name,
-        };
-
-        api.post('/api/directory/', body, {
-            headers: {
-                'parent-id': parent,
-            },
-        }).then(reloadParent);
+    const onSubmit = (name: string) => {
+        const body: DirectoryRequest = { name };
+        api.post('/api/directory/', body, { headers: { 'parent-id': parent } }).then(reloadParent);
     };
 
-    return (
-        <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)}>
-                <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                        <TextInput placeholder="folder" label="Name of the directory" field={field} />
-                    )}
-                />
-                <DialogCloseButtons />
-            </form>
-        </Form>
-    );
+    return <EntityForm defaultName="folder" onSubmit={onSubmit} label="Name of the directory" placeholder="folder" />;
 }

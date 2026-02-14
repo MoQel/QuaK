@@ -1,5 +1,6 @@
 import { configureStore } from '@reduxjs/toolkit';
 import layoutReducer, { LayoutState } from './slices/layoutSlice';
+import tabsReducer from './slices/tabsSlice';
 
 // --- 1. Load State from LocalStorage ---
 const loadState = (): { layout: LayoutState } | undefined => {
@@ -9,8 +10,8 @@ const loadState = (): { layout: LayoutState } | undefined => {
             return undefined;
         }
         return JSON.parse(serializedState);
-    } catch (err) {
-        return undefined;
+    } catch (e) {
+        console.warn('Could not load state', e);
     }
 };
 
@@ -18,6 +19,7 @@ const loadState = (): { layout: LayoutState } | undefined => {
 export const store = configureStore({
     reducer: {
         layout: layoutReducer,
+        tabs: tabsReducer,
     },
     preloadedState: loadState(),
 });

@@ -19,22 +19,25 @@ type CompletionStub = Omit<languages.CompletionItem, 'range'>;
 export class Language {
     id: string;
     fileExtension: string;
+    name: string;
     themeId: string;
     languageId: string;
     base?: languages.IMonarchLanguage;
     #tokenizer: { [name: string]: languages.IMonarchLanguageRule[] };
-    #themeRules: editor.ITokenThemeRule[] = [];
-    #completionItems: CompletionStub[] = [];
+    readonly #themeRules: editor.ITokenThemeRule[] = [];
+    readonly #completionItems: CompletionStub[] = [];
 
     /**
      * Constructs a new language
      * @param id The id of the language
      * @param fileExtension The file extension name of the language
+     * @param name Display name of a language for the UI
      * @param base The optional basis for this language to be an extension of
      */
-    constructor(id: string, fileExtension: string, base?: languages.IMonarchLanguage) {
+    constructor(id: string, fileExtension: string, name: string, base?: languages.IMonarchLanguage) {
         this.id = id;
         this.fileExtension = fileExtension;
+        this.name = name;
         this.themeId = `${id}Theme`;
         this.languageId = `${id}`;
         this.base = base;
@@ -117,9 +120,7 @@ export class Language {
             if (Array.isArray(rule)) {
                 const action: languages.IMonarchLanguageAction = rule[1]; //Position is always the same
                 processAction(action);
-            } else {
-                if (rule.action !== undefined) processAction(rule.action);
-            }
+            } else if (rule.action !== undefined) processAction(rule.action);
         }
     }
 
@@ -140,7 +141,7 @@ export class Language {
         this.#completionItems.push(completion);
     }
 
-    getID() {
-        return this.id.length == 0 ? this.id : this.id;
+    getName() {
+        return this.name;
     }
 }
