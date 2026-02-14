@@ -135,20 +135,28 @@ export function TextEditorTabBar({ groupId }: Readonly<TabBarProps>) {
                                     {optionKey} + W
                                 </span>
                             </ContextMenuItem>
-                            <ContextMenuItem onClick={() => dispatch(closeOthers({ tabId: tab.id, groupId }))}>
+                            <ContextMenuItem
+                                onClick={() => setTimeout(() => dispatch(closeOthers({ tabId: tab.id, groupId })), 0)}
+                            >
                                 Close Others
                             </ContextMenuItem>
-                            <ContextMenuItem onClick={() => dispatch(closeAll())}>Close All</ContextMenuItem>
+                            <ContextMenuItem onClick={() => setTimeout(() => dispatch(closeAll()), 0)}>
+                                Close All
+                            </ContextMenuItem>
                             <ContextMenuSeparator />
                             {groupId != GROUP_MAIN && (
                                 <ContextMenuItem
                                     onClick={() =>
-                                        dispatch(
-                                            moveTab({
-                                                fromId: tab.id,
-                                                fromGroupId: groupId,
-                                                toGroupId: GROUP_MAIN,
-                                            }),
+                                        setTimeout(
+                                            () =>
+                                                dispatch(
+                                                    moveTab({
+                                                        fromId: tab.id,
+                                                        fromGroupId: groupId,
+                                                        toGroupId: GROUP_MAIN,
+                                                    }),
+                                                ),
+                                            0,
                                         )
                                     }
                                 >
@@ -158,12 +166,16 @@ export function TextEditorTabBar({ groupId }: Readonly<TabBarProps>) {
                             {groupId != GROUP_RIGHT && (
                                 <ContextMenuItem
                                     onClick={() =>
-                                        dispatch(
-                                            moveTab({
-                                                fromId: tab.id,
-                                                fromGroupId: groupId,
-                                                toGroupId: GROUP_RIGHT,
-                                            }),
+                                        setTimeout(
+                                            () =>
+                                                dispatch(
+                                                    moveTab({
+                                                        fromId: tab.id,
+                                                        fromGroupId: groupId,
+                                                        toGroupId: GROUP_RIGHT,
+                                                    }),
+                                                ),
+                                            0,
                                         )
                                     }
                                 >
@@ -174,12 +186,16 @@ export function TextEditorTabBar({ groupId }: Readonly<TabBarProps>) {
                             {groupId != GROUP_BOTTOM && (
                                 <ContextMenuItem
                                     onClick={() =>
-                                        dispatch(
-                                            moveTab({
-                                                fromId: tab.id,
-                                                fromGroupId: groupId,
-                                                toGroupId: GROUP_BOTTOM,
-                                            }),
+                                        setTimeout(
+                                            () =>
+                                                dispatch(
+                                                    moveTab({
+                                                        fromId: tab.id,
+                                                        fromGroupId: groupId,
+                                                        toGroupId: GROUP_BOTTOM,
+                                                    }),
+                                                ),
+                                            0,
                                         )
                                     }
                                 >

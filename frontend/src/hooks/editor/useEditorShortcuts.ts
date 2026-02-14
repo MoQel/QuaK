@@ -17,7 +17,6 @@ export function useEditorShortcuts(activeFileId: string | null, activeGroupId: s
             // macOS has this symbol on option + w: ∑
             // therefore we must also accept KeyW
             if (e.altKey && (e.key.toLowerCase() === 'w' || e.code === 'KeyW')) {
-                console.log('Key wurde gedrückt');
                 e.preventDefault();
                 if (activeFileId) {
                     dispatch(closeTab({ tabId: activeFileId, groupId: activeGroupId }));
