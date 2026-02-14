@@ -22,7 +22,7 @@ export function TextEditorView() {
     const { groups, activeGroupId, isDragging } = useAppSelector((state) => state.tabs);
     const activeGroup = groups.find((g) => g.id === activeGroupId);
     const activeTabId = activeGroup?.activeTabId || null;
-    useEditorShortcuts(activeTabId);
+    useEditorShortcuts(activeTabId, activeGroupId);
     useMonacoGarbageCollector();
     useEditorCommands();
 

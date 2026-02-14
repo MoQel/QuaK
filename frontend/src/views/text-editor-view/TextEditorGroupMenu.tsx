@@ -58,11 +58,15 @@ export function TextEditorGroupMenu({ groupId, groups }: Readonly<{ groupId: str
                 {groupId !== GROUP_MAIN && (
                     <DropdownMenuItem onClick={() => dispatch(unsplitGroup(groupId))}>Unsplit</DropdownMenuItem>
                 )}
-                <DropdownMenuItem onClick={() => dispatch(unsplitAllGroups())}>Unsplit All</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => dispatch(unsplitAllGroups())}>
+                    <div className={'mr-2 size-4'} />
+                    Unsplit All
+                </DropdownMenuItem>
 
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => dispatch(closeGroup(groupId))} className="focus:bg-destructive">
-                    Close All Tabs In Group
+                    <div className={'mr-2 size-4'} />
+                    Close Group
                 </DropdownMenuItem>
 
                 <DropdownMenuItem onClick={() => dispatch(closeAll())} className="focus:bg-destructive">

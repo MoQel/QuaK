@@ -27,6 +27,7 @@ import { languages } from '@/views/text-editor-view/languages/languages.ts';
 import { TabBar } from '@/components/TabBar.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import { TextEditorGroupMenu } from '@/views/text-editor-view/TextEditorGroupMenu.tsx';
+import { getKeyLabel, getOptionKeyLabel } from '@/views/text-editor-view/util/getKeyLabel.ts';
 
 interface TabBarProps {
     groupId: string;
@@ -38,6 +39,9 @@ export function TextEditorTabBar({ groupId }: Readonly<TabBarProps>) {
     const globalActiveGroupId = useAppSelector((state) => state.tabs.activeGroupId);
     const dirtyFiles = useAppSelector((state) => state.tabs.dirtyFiles);
     const { groups } = useAppSelector((state) => state.tabs);
+
+    const metaKey = getKeyLabel();
+    const optionKey = getOptionKeyLabel();
 
     if (!group) return null;
     const { openTabs, activeTabId } = group;
@@ -123,7 +127,10 @@ export function TextEditorTabBar({ groupId }: Readonly<TabBarProps>) {
                                     setTimeout(() => dispatch(closeTab({ tabId: tab.id, groupId })), 0);
                                 }}
                             >
-                                Close
+                                <span>Close</span>
+                                <span className="ml-auto tracking-tighter text-muted text-xs opacity-60">
+                                    {optionKey} + W
+                                </span>
                             </ContextMenuItem>
                             <ContextMenuItem onClick={() => dispatch(closeOthers({ tabId: tab.id, groupId }))}>
                                 Close Others
@@ -159,7 +166,15 @@ export function TextEditorTabBar({ groupId }: Readonly<TabBarProps>) {
                                 </ContextMenuSub>
                             )}
                             <ContextMenuSeparator />
-                            <ContextMenuItem onClick={() => dispatch(requestSave(tab.id))}>Save</ContextMenuItem>
+                            <ContextMenuItem
+                                onClick={() => dispatch(requestSave(tab.id))}
+                                className="flex items-center justify-between"
+                            >
+                                <span>Save</span>
+                                <span className="ml-auto tracking-tighter text-muted text-xs opacity-60">
+                                    {metaKey} + S
+                                </span>
+                            </ContextMenuItem>
                         </ContextMenuContent>
                     </ContextMenu>
                 );

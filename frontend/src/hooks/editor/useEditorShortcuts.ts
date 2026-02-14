@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
 import { useAppDispatch } from '@/hooks/useAppDispatch.ts';
-import { requestSave } from '@/store/slices/tabsSlice.ts';
+import { closeTab, requestSave } from '@/store/slices/tabsSlice.ts';
 
-export function useEditorShortcuts(activeFileId: string | null) {
+export function useEditorShortcuts(activeFileId: string | null, activeGroupId: string) {
     const dispatch = useAppDispatch();
 
     useEffect(() => {
@@ -13,9 +13,19 @@ export function useEditorShortcuts(activeFileId: string | null) {
                     dispatch(requestSave(activeFileId));
                 }
             }
+
+            // macOS has this symbol on option + w: ∑
+            // therefore we must also accept KeyW
+            if (e.altKey && (e.key.toLowerCase() === 'w' || e.code === 'KeyW')) {
+                console.log('Key wurde gedrückt');
+                e.preventDefault();
+                if (activeFileId) {
+                    dispatch(closeTab({ tabId: activeFileId, groupId: activeGroupId }));
+                }
+            }
         };
 
         globalThis.addEventListener('keydown', handleKeyDown);
         return () => globalThis.removeEventListener('keydown', handleKeyDown);
-    }, [activeFileId, dispatch]);
+    }, [activeFileId, activeGroupId, dispatch]);
 }
