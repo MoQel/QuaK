@@ -63,7 +63,7 @@ export async function apiRequest<T>(endpoint: string, options: FetchOptions = {}
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.message || `API error: ${response.statusText}`);
+            throw new Error(errorData.detail || errorData.message || `API error: ${response.statusText}`);
         }
 
         // Return parsed JSON or text based on content type

@@ -1,8 +1,7 @@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible.tsx';
-import { JSX, useEffect, useState } from 'react';
-import { CreateDialog } from '@/views/project-manager-view/CreateDialog.tsx';
+import { JSX, useContext, useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton.tsx';
-import { ParentRefresh } from '@/views/project-manager-view/ProjectManagerView.tsx';
+import { ParentRefresh, SelectedFolder, DialogClose } from '@/views/project-manager-view/ProjectManagerView.tsx';
 import './ProjectManagerView.css';
 import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from '@/components/ui/context-menu.tsx';
 import { Dialog, DialogContent } from '@/components/ui/dialog.tsx';
@@ -61,14 +60,28 @@ export function FileElementContainer({
     const reload = () => r(!reloaded);
     const [open, setOpen] = useState(false);
     const [collapsible, toggleCollapsible] = useState(initiallyOpen);
+    const { id: selectedFolderId, setId: setSelectedFolderId, reloadTrigger } = useContext(SelectedFolder);
+    const isSelected = selectedFolderId === id;
 
     useEffect(() => {
         getContent(id).then(setContent);
     }, [id, reloaded, getContent]);
 
+    // Re-fetch contents when the toolbar triggers a reload for the selected folder
+    useEffect(() => {
+        if (isSelected && reloadTrigger > 0) {
+            getContent(id).then(setContent);
+        }
+    }, [reloadTrigger]);
+
     const openDialog = (content: Promise<JSX.Element>) => {
         setOpen(true);
         content.then(setDialogContent);
+    };
+
+    const handleClick = () => {
+        setSelectedFolderId(id);
+        reload();
     };
 
     return (
@@ -76,22 +89,21 @@ export function FileElementContainer({
             <Dialog open={open} onOpenChange={setOpen}>
                 <ContextMenu>
                     <ContextMenuTrigger>
-                        <div className="flex">
-                            <CollapsibleTrigger className="flex-auto h-8 flex" onClick={reload}>
+                        <div className={`flex ${isSelected ? 'selected-entry' : ''}`}>
+                            <CollapsibleTrigger className="flex-auto h-8 flex" onClick={handleClick}>
                                 <ListingElement text={name} icon={icon(collapsible)} />
                             </CollapsibleTrigger>
                         </div>
                     </ContextMenuTrigger>
                     <ContextMenuContent>
-                        <ParentRefresh value={reload}>
-                            <CreateDialog id={id} openDialog={openDialog} />
-                            {edit(id, openDialog)}
-                        </ParentRefresh>
+                        <ParentRefresh value={reload}>{edit(id, openDialog)}</ParentRefresh>
                         <Delete endpoint={deletePath} openDialog={openDialog} />
                     </ContextMenuContent>
                 </ContextMenu>
                 <ParentRefresh value={reload}>
-                    <DialogContent>{dialogContent}</DialogContent>
+                    <DialogClose.Provider value={() => setOpen(false)}>
+                        <DialogContent>{dialogContent}</DialogContent>
+                    </DialogClose.Provider>
                 </ParentRefresh>
             </Dialog>
 

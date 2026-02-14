@@ -56,6 +56,7 @@ public class DirectoryService extends AbstractFileElementService<Directory> impl
         log.info("Renaming directory '{}' to '{}' for user '{}'", dId, newName, user.getId());
         Directory directory = repository.findById(dId).orElseThrow(NoSuchElementException::new);
         verifyOwnershipByParentId(directory.getParentId(), user);
+        checkForDuplicateName(dId, newName);
         return modifyElementInParent(dId, d -> d.rename(newName));
     }
 

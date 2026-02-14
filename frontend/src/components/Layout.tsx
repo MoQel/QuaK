@@ -1,6 +1,7 @@
 import React from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { Navbar } from '@/components/Navbar';
+import { Toaster } from '@/components/ui/sonner.tsx';
 
 export const Layout: React.FC = () => {
     const { pathname } = useLocation();
@@ -16,6 +17,8 @@ export const Layout: React.FC = () => {
             <main className={isIDE ? 'flex-1 min-h-0 overflow-hidden relative' : 'flex-1 w-full'}>
                 <Outlet />
             </main>
+
+            <Toaster />
         </div>
     );
 };

@@ -1,6 +1,6 @@
 import { FileElementContainer } from '@/views/project-manager-view/FileElementContainer.tsx';
 import { DialogHeader, DialogTitle } from '@/components/ui/dialog.tsx';
-import { ParentRefresh } from '@/views/project-manager-view/ProjectManagerView.tsx';
+import { ParentRefresh, DialogClose } from '@/views/project-manager-view/ProjectManagerView.tsx';
 import { JSX, useContext } from 'react';
 import { ContextMenuItem } from '@/components/ui/context-menu.tsx';
 import { Folder, FolderOpen } from 'lucide-react';
@@ -13,6 +13,7 @@ import {
 import { api } from '@/api/api.ts';
 import { DirectoryContentsResponse, DirectoryRequest } from '@/api/dto/filesystem.ts';
 import { EntityForm } from '@/views/project-manager-view/util/FormUtils.tsx';
+import { toast } from 'sonner';
 
 /**
  * Displays a {@link IDirectory Directory}
@@ -63,9 +64,17 @@ function DirectoryEdit(id: string, openDialog: (element: Promise<JSX.Element>) =
 }
 
 function EditForm({ dir, reloadParent }: Readonly<{ dir: IDirectory; reloadParent: () => void }>) {
+    const close = useContext(DialogClose);
     const onSubmit = (name: string) => {
         const body: DirectoryRequest = { name };
-        api.patch('/api/directory/' + dir.id, body).then(reloadParent);
+        api.patch('/api/directory/' + dir.id, body)
+            .then(() => {
+                reloadParent();
+                close();
+            })
+            .catch((err) => {
+                toast.error(err.message || 'Failed to rename directory');
+            });
     };
 
     return <EntityForm defaultName={dir.name} onSubmit={onSubmit} label="Directory Name" />;

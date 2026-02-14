@@ -7,7 +7,6 @@ import { CircuitView } from '@/views/circuit-view/CircuitView.tsx';
 import { TextEditorView } from '@/views/text-editor-view/TextEditorView.tsx';
 import { ProjectManagerView } from '@/views/project-manager-view/ProjectManagerView.tsx';
 import { ResultsView } from '@/views/results-view/ResultsView.tsx';
-import { Toaster } from '@/components/ui/sonner.tsx';
 import { InspectorView } from '@/views/inspector-view/InspectorView.tsx';
 import { GateDefinitionResponse } from '@/api/dto/library.ts';
 import { CircuitResponse } from '@/api/dto/circuit.ts';
@@ -95,8 +94,6 @@ function App() {
                         </div>
                     )}
                 </div>
-
-                <Toaster />
             </div>
         </div>
     );

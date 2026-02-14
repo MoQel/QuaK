@@ -7,6 +7,15 @@
     text-decoration: underline;
 }
 
+.selected-entry {
+    background-color: hsl(217 91% 60% / 0.15);
+    border-radius: 0.375rem;
+}
+
+.selected-entry .entry {
+    color: hsl(217 91% 60%);
+}
+
 .entry .lucide,
 .create-project .lucide {
     height: revert-layer;
