@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Home, User, Settings, LogOut, Menu, Pencil, Trash2 } from 'lucide-react';
+import UserAvatar from '@/components/UserAvatar';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCurrentUser } from '@/hooks/useUser';
 import ThemeSwitch from '@/components/ThemeSwitch';
@@ -116,8 +117,8 @@ export const Navbar: React.FC = () => {
 
                 {/* Right section */}
                 {user && (
-                    <div className="flex items-center gap-4 justify-end">
-                        <Tabs value={getActiveTab()} className="w-auto">
+                    <div className="flex items-center gap-4 justify-end flex-nowrap">
+                        <Tabs value={getActiveTab()} className="w-auto shrink-0">
                             <TabsList>
                                 <Link to="/">
                                     <TabsTrigger value="home" className="gap-2">
@@ -140,17 +141,11 @@ export const Navbar: React.FC = () => {
                             </TabsList>
                         </Tabs>
                         <ThemeSwitch />
-                        <div className="flex items-center gap-3">
-                            {user.avatarUrl && (
-                                <img
-                                    src={user.avatarUrl}
-                                    alt={user.name}
-                                    className="w-9 h-9 rounded-full border-2 border-blue-500"
-                                />
-                            )}
-                            <div className="flex flex-col">
-                                <span className="text-sm font-medium text-text">{user.name}</span>
-                                <span className="text-xs text-text-muted">{user.email}</span>
+                        <div className="flex items-center gap-3 shrink-0">
+                            <UserAvatar avatarUrl={user.avatarUrl} alt={user.name} size="sm" />
+                            <div className="flex flex-col min-w-0">
+                                <span className="text-sm font-medium text-text truncate">{user.name}</span>
+                                <span className="text-xs text-text-muted truncate">{user.email}</span>
                             </div>
                         </div>
 

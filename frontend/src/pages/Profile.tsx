@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { User as UserIcon, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
+import UserAvatar from '@/components/UserAvatar';
 import { api } from '@/api/api';
 
 interface UserDto {
@@ -59,13 +60,7 @@ export const Profile: React.FC = () => {
                 <Card>
                     <CardHeader>
                         <div className="flex items-start gap-6">
-                            <div className="w-24 h-24 bg-gradient-to-br from-blue-400 to-blue-700 rounded-full flex items-center justify-center overflow-hidden">
-                                {user.avatarUrl ? (
-                                    <img src={user.avatarUrl} alt={user.name} className="w-full h-full object-cover" />
-                                ) : (
-                                    <UserIcon className="w-12 h-12 text-white" />
-                                )}
-                            </div>
+                            <UserAvatar avatarUrl={user.avatarUrl} alt={user.name} size="lg" />
                             <div className="flex-1">
                                 <CardTitle className="text-2xl mb-2">{user.name}</CardTitle>
                                 <CardDescription className="text-base mb-3">{user.email}</CardDescription>
