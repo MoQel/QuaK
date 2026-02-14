@@ -137,7 +137,7 @@ function DropZoneSlot({
     const dropzoneClass = cn(baseStyle, dimensionStyle, 'bg-bg');
 
     return (
-        <div
+        <section
             aria-label={label}
             className={dropzoneClass}
             onDragOver={(e) => {

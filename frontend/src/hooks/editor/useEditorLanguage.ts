@@ -15,7 +15,7 @@ export function useEditorLanguage(monaco: Monaco | null) {
 
         const models = monaco.editor.getModels();
         const targetModel = models.find((m: Monaco) => {
-            return m.uri.path.endsWith(lastRequest.fileId!) || m.uri.fsPath === lastRequest.fileId;
+            return m.uri.path.endsWith(lastRequest.fileId) || m.uri.fsPath === lastRequest.fileId;
         });
 
         if (targetModel && !targetModel.isDisposed()) {
