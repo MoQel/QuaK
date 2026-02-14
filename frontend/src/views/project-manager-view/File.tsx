@@ -3,7 +3,7 @@ import {
     ParentRefresh,
     SelectedFolder,
     DialogClose,
-} from '@/views/project-manager-view/ProjectManagerView.tsx';
+} from '@/views/project-manager-view/ProjectManagerContexts.ts';
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu.tsx';
 import { Delete } from '@/views/project-manager-view/Delete.tsx';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog.tsx';

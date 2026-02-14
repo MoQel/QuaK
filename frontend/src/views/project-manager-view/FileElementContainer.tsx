@@ -1,7 +1,7 @@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible.tsx';
 import { JSX, useContext, useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton.tsx';
-import { ParentRefresh, SelectedFolder, DialogClose } from '@/views/project-manager-view/ProjectManagerView.tsx';
+import { DialogClose, ParentRefresh, SelectedFolder } from '@/views/project-manager-view/ProjectManagerContexts.ts';
 import './ProjectManagerView.css';
 import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from '@/components/ui/context-menu.tsx';
 import { Dialog, DialogContent } from '@/components/ui/dialog.tsx';

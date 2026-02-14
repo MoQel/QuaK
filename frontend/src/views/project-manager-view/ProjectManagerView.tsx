@@ -2,7 +2,7 @@ import { Card, CardContent } from '@/components/ui/card.tsx';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog.tsx';
 import { Project } from '@/views/project-manager-view/Project.tsx';
 import { Button } from '@/components/ui/button.tsx';
-import { Context, createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { Form, FormField } from '@/components/ui/form.tsx';
 import { z, ZodObject, ZodRawShape } from 'zod';
 import { DefaultValues, FieldPath, useForm } from 'react-hook-form';
@@ -17,41 +17,34 @@ import { api } from '@/api/api.ts';
 import { ProjectDetailsResponse, ProjectRequest, ProjectContentsResponse } from '@/api/dto/filesystem.ts';
 import { toast } from 'sonner';
 
-export const ParentRefresh = createContext(() => {});
-export const DialogClose = createContext(() => {});
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export const FileSelect: Context<(file: File) => void> = createContext((_) => {});
-
-export interface SelectedFolderState {
-    id: string | null;
-    setId: (id: string | null) => void;
-    reloadTrigger: number;
-    triggerReload: () => void;
-}
-export const SelectedFolder = createContext<SelectedFolderState>({
-    id: null,
-    setId: () => {},
-    reloadTrigger: 0,
-    triggerReload: () => {},
-});
+import { FileSelect, ParentRefresh, SelectedFolder } from '@/views/project-manager-view/ProjectManagerContexts.ts';
 
 /**
  * Displays a tree-view of the projects inside a {@link Card}
  * @constructor
  */
-export function ProjectManagerView({
-    onFileSelect,
-    projectId,
-}: {
+interface ProjectManagerViewProps {
     onFileSelect: (file: File) => void;
     projectId?: string;
-}) {
+}
+
+export function ProjectManagerView({ onFileSelect, projectId }: Readonly<ProjectManagerViewProps>) {
     const [content, setContent] = useState([<Skeleton className="h-4" key="LOADING" />]);
     const [reloaded, r] = useState(false);
-    const reload = () => r(!reloaded);
+    const reload = useCallback(() => r((prev) => !prev), []);
     const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
     const [selectedFolderReloadTrigger, setSelectedFolderReloadTrigger] = useState(0);
-    const triggerSelectedFolderReload = () => setSelectedFolderReloadTrigger((prev) => prev + 1);
+    const triggerSelectedFolderReload = useCallback(() => setSelectedFolderReloadTrigger((prev) => prev + 1), []);
+
+    const selectedFolderValue = useMemo(
+        () => ({
+            id: selectedFolderId,
+            setId: setSelectedFolderId,
+            reloadTrigger: selectedFolderReloadTrigger,
+            triggerReload: triggerSelectedFolderReload,
+        }),
+        [selectedFolderId, selectedFolderReloadTrigger, triggerSelectedFolderReload],
+    );
 
     useEffect(() => {
         fetchProjects(projectId).then(setContent);
@@ -59,21 +52,23 @@ export function ProjectManagerView({
 
     return (
         <Card className="h-full border-0 rounded-none bg-background shadow-none p-0 gap-0">
-            <SelectedFolder
-                value={{
-                    id: selectedFolderId,
-                    setId: setSelectedFolderId,
-                    reloadTrigger: selectedFolderReloadTrigger,
-                    triggerReload: triggerSelectedFolderReload,
-                }}
-            >
+            <SelectedFolder value={selectedFolderValue}>
                 <div className="flex flex-col h-full">
                     {projectId && <ProjectToolbar projectId={projectId} reload={reload} />}
                     <CardContent className="overflow-auto p-0 flex-1 min-h-0">
                         <div
                             className="p-4 pt-2 min-h-full"
+                            role="button"
+                            tabIndex={0}
+                            aria-label="Clear folder selection"
                             onClick={(e) => {
                                 if (e.target === e.currentTarget) setSelectedFolderId(null);
+                            }}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    setSelectedFolderId(null);
+                                }
                             }}
                         >
                             <FileSelect value={onFileSelect}>
@@ -121,19 +116,15 @@ async function fetchProjects(projectId?: string) {
     }
 }
 
-function ToolbarDialog({
-    icon: Icon,
-    title,
-    parentId,
-    reloadAll,
-    children,
-}: {
+interface ToolbarDialogProps {
     icon: LucideIcon;
     title: string;
     parentId: string;
     reloadAll: () => void;
     children: (props: { parent: string; onClose: () => void }) => ReactNode;
-}) {
+}
+
+function ToolbarDialog({ icon: Icon, title, parentId, reloadAll, children }: Readonly<ToolbarDialogProps>) {
     const [open, setOpen] = useState(false);
 
     return (
@@ -155,7 +146,12 @@ function ToolbarDialog({
     );
 }
 
-function ProjectToolbar({ projectId, reload }: { projectId: string; reload: () => void }) {
+interface ProjectToolbarProps {
+    projectId: string;
+    reload: () => void;
+}
+
+function ProjectToolbar({ projectId, reload }: Readonly<ProjectToolbarProps>) {
     const { id: selectedFolderId, triggerReload } = useContext(SelectedFolder);
 
     // Use the selected folder as parent if one is highlighted, otherwise fall back to projectId
@@ -188,6 +184,17 @@ interface FormFieldConfig<T extends ZodRawShape> {
     label: string;
 }
 
+interface CreateElementFormProps<T extends ZodRawShape> {
+    parent: string;
+    onClose: () => void;
+    schema: ZodObject<T>;
+    defaults: DefaultValues<z.infer<ZodObject<T>>>;
+    apiEndpoint: string;
+    errorMessage: string;
+    fields: FormFieldConfig<T>[];
+    buildBody?: (values: z.infer<ZodObject<T>>) => Record<string, unknown>;
+}
+
 function CreateElementForm<T extends ZodRawShape>({
     parent,
     onClose,
@@ -197,16 +204,7 @@ function CreateElementForm<T extends ZodRawShape>({
     errorMessage,
     fields,
     buildBody,
-}: {
-    parent: string;
-    onClose: () => void;
-    schema: ZodObject<T>;
-    defaults: DefaultValues<z.infer<ZodObject<T>>>;
-    apiEndpoint: string;
-    errorMessage: string;
-    fields: FormFieldConfig<T>[];
-    buildBody?: (values: z.infer<ZodObject<T>>) => Record<string, unknown>;
-}) {
+}: Readonly<CreateElementFormProps<T>>) {
     const reloadParent = useContext(ParentRefresh);
 
     const form = useForm<z.infer<ZodObject<T>>>({
@@ -291,15 +289,13 @@ function CreateDirectoryForm({ parent, onClose }: { parent: string; onClose: () 
     );
 }
 
-export function CreateProject({
-    reload,
-    onSuccess,
-    children,
-}: {
+interface CreateProjectProps {
     reload?: () => void;
     onSuccess?: (project: ProjectDetailsResponse) => void;
     children?: React.ReactNode;
-}) {
+}
+
+export function CreateProject({ reload, onSuccess, children }: Readonly<CreateProjectProps>) {
     const [open, setOpen] = useState(false);
     const formSchema = z.object({
         name: z.string().min(1, {

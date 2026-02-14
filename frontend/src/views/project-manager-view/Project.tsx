@@ -1,6 +1,6 @@
 import { DialogHeader, DialogTitle } from '@/components/ui/dialog.tsx';
 import { FileElementContainer } from '@/views/project-manager-view/FileElementContainer.tsx';
-import { ParentRefresh, DialogClose } from '@/views/project-manager-view/ProjectManagerView.tsx';
+import { DialogClose, ParentRefresh } from '@/views/project-manager-view/ProjectManagerContexts.ts';
 import { JSX, useContext } from 'react';
 import { ContextMenuItem } from '@/components/ui/context-menu.tsx';
 import { ChevronDown, ChevronRight } from 'lucide-react';

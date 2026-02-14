@@ -1,6 +1,6 @@
 import { ContextMenuItem } from '@/components/ui/context-menu.tsx';
 import { FormEvent, JSX, useContext } from 'react';
-import { ParentRefresh, DialogClose } from '@/views/project-manager-view/ProjectManagerView.tsx';
+import { DialogClose, ParentRefresh } from '@/views/project-manager-view/ProjectManagerContexts.ts';
 import { DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog.tsx';
 import { DialogCloseButtons } from '@/views/project-manager-view/util/FormComponents.tsx';
 import { api } from '@/api/api.ts';

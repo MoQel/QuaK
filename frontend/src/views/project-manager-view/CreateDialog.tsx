@@ -3,7 +3,7 @@ import { Form, FormField } from '@/components/ui/form.tsx';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ParentRefresh } from '@/views/project-manager-view/ProjectManagerView.tsx';
+import { ParentRefresh } from '@/views/project-manager-view/ProjectManagerContexts.ts';
 import { JSX, useContext } from 'react';
 import {
     ContextMenuItem,
