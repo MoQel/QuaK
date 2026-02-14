@@ -2,15 +2,15 @@ import { Card, CardContent } from '@/components/ui/card.tsx';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog.tsx';
 import { Project } from '@/views/project-manager-view/Project.tsx';
 import { Button } from '@/components/ui/button.tsx';
-import { Context, createContext, useContext, useEffect, useState } from 'react';
+import { Context, createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Form, FormField } from '@/components/ui/form.tsx';
-import { z } from 'zod';
-import { useForm } from 'react-hook-form';
+import { z, ZodObject, ZodRawShape } from 'zod';
+import { DefaultValues, FieldPath, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Skeleton } from '@/components/ui/skeleton.tsx';
 import { sort, getElementForFileElement } from '@/views/project-manager-view/util/FileElement.tsx';
 import { DialogCloseButtons, TextInput } from '@/views/project-manager-view/util/FormComponents.tsx';
-import { Plus, FilePlus, FolderPlus } from 'lucide-react';
+import { Plus, FilePlus, FolderPlus, LucideIcon } from 'lucide-react';
 import { Empty } from '@/views/project-manager-view/util/TreeComponents.tsx';
 import { File } from '@/views/project-manager-view/util/FileElement.tsx';
 import { api } from '@/api/api.ts';
@@ -121,9 +121,41 @@ async function fetchProjects(projectId?: string) {
     }
 }
 
+function ToolbarDialog({
+    icon: Icon,
+    title,
+    parentId,
+    reloadAll,
+    children,
+}: {
+    icon: LucideIcon;
+    title: string;
+    parentId: string;
+    reloadAll: () => void;
+    children: (props: { parent: string; onClose: () => void }) => ReactNode;
+}) {
+    const [open, setOpen] = useState(false);
+
+    return (
+        <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+                <Button variant="ghost" size="icon" title={title} className="h-8 w-8 hover:bg-accent">
+                    <Icon className="h-4 w-4" />
+                </Button>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>{title}</DialogTitle>
+                </DialogHeader>
+                <ParentRefresh value={reloadAll}>
+                    {children({ parent: parentId, onClose: () => setOpen(false) })}
+                </ParentRefresh>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
 function ProjectToolbar({ projectId, reload }: { projectId: string; reload: () => void }) {
-    const [fileDialogOpen, setFileDialogOpen] = useState(false);
-    const [folderDialogOpen, setFolderDialogOpen] = useState(false);
     const { id: selectedFolderId, triggerReload } = useContext(SelectedFolder);
 
     // Use the selected folder as parent if one is highlighted, otherwise fall back to projectId
@@ -139,132 +171,123 @@ function ProjectToolbar({ projectId, reload }: { projectId: string; reload: () =
 
     return (
         <div className="flex items-center gap-1 px-2 py-1.5 border-b border-border bg-muted/20">
-            <Dialog open={fileDialogOpen} onOpenChange={setFileDialogOpen}>
-                <DialogTrigger asChild>
-                    <Button variant="ghost" size="icon" title="New File" className="h-8 w-8 hover:bg-accent">
-                        <FilePlus className="h-4 w-4" />
-                    </Button>
-                </DialogTrigger>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Create a new file</DialogTitle>
-                    </DialogHeader>
-                    <ParentRefresh value={reloadAll}>
-                        <CreateFileForm parent={parentId} onClose={() => setFileDialogOpen(false)} />
-                    </ParentRefresh>
-                </DialogContent>
-            </Dialog>
+            <ToolbarDialog icon={FilePlus} title="Create a new file" parentId={parentId} reloadAll={reloadAll}>
+                {(props) => <CreateFileForm {...props} />}
+            </ToolbarDialog>
 
-            <Dialog open={folderDialogOpen} onOpenChange={setFolderDialogOpen}>
-                <DialogTrigger asChild>
-                    <Button variant="ghost" size="icon" title="New Folder" className="h-8 w-8 hover:bg-accent">
-                        <FolderPlus className="h-4 w-4" />
-                    </Button>
-                </DialogTrigger>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Create a new Directory</DialogTitle>
-                    </DialogHeader>
-                    <ParentRefresh value={reloadAll}>
-                        <CreateDirectoryForm parent={parentId} onClose={() => setFolderDialogOpen(false)} />
-                    </ParentRefresh>
-                </DialogContent>
-            </Dialog>
+            <ToolbarDialog icon={FolderPlus} title="Create a new Directory" parentId={parentId} reloadAll={reloadAll}>
+                {(props) => <CreateDirectoryForm {...props} />}
+            </ToolbarDialog>
         </div>
     );
 }
 
-function CreateFileForm({ parent, onClose }: { parent: string; onClose: () => void }) {
+interface FormFieldConfig<T extends ZodRawShape> {
+    name: FieldPath<z.infer<ZodObject<T>>>;
+    placeholder: string;
+    label: string;
+}
+
+function CreateElementForm<T extends ZodRawShape>({
+    parent,
+    onClose,
+    schema,
+    defaults,
+    apiEndpoint,
+    errorMessage,
+    fields,
+    buildBody,
+}: {
+    parent: string;
+    onClose: () => void;
+    schema: ZodObject<T>;
+    defaults: DefaultValues<z.infer<ZodObject<T>>>;
+    apiEndpoint: string;
+    errorMessage: string;
+    fields: FormFieldConfig<T>[];
+    buildBody?: (values: z.infer<ZodObject<T>>) => Record<string, unknown>;
+}) {
     const reloadParent = useContext(ParentRefresh);
 
-    const formSchema = z.object({
-        name: z.string().min(1, { message: 'Filename must be at least 1 characters.' }),
-        contentType: z.string(),
+    const form = useForm<z.infer<ZodObject<T>>>({
+        resolver: zodResolver(schema),
+        defaultValues: defaults,
     });
 
-    const form = useForm<z.infer<typeof formSchema>>({
-        resolver: zodResolver(formSchema),
-        defaultValues: {
-            name: 'untitled.txt',
-            contentType: 'text/plain',
-        },
-    });
-
-    const onSubmit = (values: z.infer<typeof formSchema>) => {
-        const body = {
-            name: values.name,
-            contentType: values.contentType,
-        };
-        api.post('/api/file/', body, { headers: { 'parent-id': parent } })
+    const onSubmit = (values: z.infer<ZodObject<T>>) => {
+        const body = buildBody ? buildBody(values) : values;
+        api.post(apiEndpoint, body, { headers: { 'parent-id': parent } })
             .then(() => {
                 reloadParent();
                 onClose();
             })
             .catch((err) => {
-                toast.error(err.message || 'Failed to create file');
+                toast.error(err.message || errorMessage);
             });
     };
 
     return (
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)}>
-                <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => <TextInput placeholder="new_file.txt" label="Filename" field={field} />}
-                />
-                <FormField
-                    control={form.control}
-                    name="contentType"
-                    render={({ field }) => (
-                        <TextInput placeholder="application/json" label="Content-Type" field={field} />
-                    )}
-                />
+                {fields.map((fieldConfig) => (
+                    <FormField
+                        key={fieldConfig.name}
+                        control={form.control}
+                        name={fieldConfig.name}
+                        render={({ field }) => (
+                            <TextInput placeholder={fieldConfig.placeholder} label={fieldConfig.label} field={field} />
+                        )}
+                    />
+                ))}
                 <DialogCloseButtons />
             </form>
         </Form>
     );
 }
 
-function CreateDirectoryForm({ parent, onClose }: { parent: string; onClose: () => void }) {
-    const reloadParent = useContext(ParentRefresh);
+const fileSchema = z.object({
+    name: z.string().min(1, { message: 'Filename must be at least 1 characters.' }),
+    contentType: z.string(),
+});
 
-    const formSchema = z.object({
-        name: z.string().min(1, { message: 'Directory name must be at least 1 character.' }),
-    });
+const fileFields: FormFieldConfig<typeof fileSchema.shape>[] = [
+    { name: 'name', placeholder: 'new_file.txt', label: 'Filename' },
+    { name: 'contentType', placeholder: 'application/json', label: 'Content-Type' },
+];
 
-    const form = useForm<z.infer<typeof formSchema>>({
-        resolver: zodResolver(formSchema),
-        defaultValues: {
-            name: 'new_folder',
-        },
-    });
-
-    const onSubmit = (values: z.infer<typeof formSchema>) => {
-        const body = { name: values.name };
-        api.post('/api/directory/', body, { headers: { 'parent-id': parent } })
-            .then(() => {
-                reloadParent();
-                onClose();
-            })
-            .catch((err) => {
-                toast.error(err.message || 'Failed to create directory');
-            });
-    };
-
+function CreateFileForm({ parent, onClose }: { parent: string; onClose: () => void }) {
     return (
-        <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)}>
-                <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                        <TextInput placeholder="folder" label="Name of the directory" field={field} />
-                    )}
-                />
-                <DialogCloseButtons />
-            </form>
-        </Form>
+        <CreateElementForm
+            parent={parent}
+            onClose={onClose}
+            schema={fileSchema}
+            defaults={{ name: 'untitled.txt', contentType: 'text/plain' }}
+            apiEndpoint="/api/file/"
+            errorMessage="Failed to create file"
+            fields={fileFields}
+        />
+    );
+}
+
+const directorySchema = z.object({
+    name: z.string().min(1, { message: 'Directory name must be at least 1 character.' }),
+});
+
+const directoryFields: FormFieldConfig<typeof directorySchema.shape>[] = [
+    { name: 'name', placeholder: 'folder', label: 'Name of the directory' },
+];
+
+function CreateDirectoryForm({ parent, onClose }: { parent: string; onClose: () => void }) {
+    return (
+        <CreateElementForm
+            parent={parent}
+            onClose={onClose}
+            schema={directorySchema}
+            defaults={{ name: 'new_folder' }}
+            apiEndpoint="/api/directory/"
+            errorMessage="Failed to create directory"
+            fields={directoryFields}
+        />
     );
 }
 
