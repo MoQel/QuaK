@@ -17,6 +17,7 @@ const ProjectContext = createContext<ProjectContextType>({
     refreshProject: async () => {},
 });
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useProject = () => useContext(ProjectContext);
 
 export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {

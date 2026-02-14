@@ -27,7 +27,7 @@ export function CircuitView({ circuit, setCircuit }: CircuitViewProps) {
 
     useEffect(() => {
         api.post<CircuitResponse>('/api/circuit').then(setCircuit);
-    }, []);
+    }, [setCircuit]);
 
     const addQubit = async () => {
         if (circuit != null) {

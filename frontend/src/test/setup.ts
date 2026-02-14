@@ -31,7 +31,7 @@ global.IntersectionObserver = class IntersectionObserver {
         return [];
     }
     unobserve() {}
-} as any;
+} as unknown as typeof IntersectionObserver;
 
 // Global hack for Recharts (ResponsiveContainer)
 // JSDOM does not have a ResizeObserver, simulate it here

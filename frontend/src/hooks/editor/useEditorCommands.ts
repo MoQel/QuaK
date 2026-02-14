@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { editor, Uri } from 'monaco-editor';
 import { toast } from 'sonner';
 import { saveFileContent } from '@/views/text-editor-view/util/fileService';
@@ -20,27 +20,30 @@ export function useEditorCommands(
     const lastHandledLangRequest = useRef<number>(0);
 
     // Handle Save
-    const handleSave = async (targetFileId: string) => {
-        if (!monaco) return;
-        const model = monaco.editor.getModel(Uri.file(targetFileId));
-        if (!model || model.isDisposed()) return;
+    const handleSave = useCallback(
+        async (targetFileId: string) => {
+            if (!monaco) return;
+            const model = monaco.editor.getModel(Uri.file(targetFileId));
+            if (!model || model.isDisposed()) return;
 
-        try {
-            await saveFileContent(targetFileId, model.getValue());
-            savedVersionIds.set(model, model.getAlternativeVersionId());
-            dispatch(setFileDirty({ fileId: targetFileId, isDirty: false }));
-            toast.success('Saved successfully');
-        } catch (e) {
-            toast.error('Save failed');
-            console.error(e);
-        }
-    };
+            try {
+                await saveFileContent(targetFileId, model.getValue());
+                savedVersionIds.set(model, model.getAlternativeVersionId());
+                dispatch(setFileDirty({ fileId: targetFileId, isDirty: false }));
+                toast.success('Saved successfully');
+            } catch (e) {
+                toast.error('Save failed');
+                console.error(e);
+            }
+        },
+        [monaco, dispatch],
+    );
 
     useEffect(() => {
         if (saveRequest.timestamp > 0 && saveRequest.fileId) {
             void handleSave(saveRequest.fileId);
         }
-    }, [saveRequest.timestamp]);
+    }, [saveRequest.timestamp, saveRequest.fileId, handleSave]);
 
     // Handle Language Change
     useEffect(() => {
@@ -57,5 +60,13 @@ export function useEditorCommands(
                 toast.info(`Language changed to ${langRequest.langId.toUpperCase()}`);
             }
         }
-    }, [langRequest.timestamp, activeFileId, editorInstance]);
+    }, [
+        langRequest.timestamp,
+        activeFileId,
+        editorInstance,
+        langRequest.fileId,
+        langRequest.langId,
+        monaco,
+        setCurrentLangId,
+    ]);
 }

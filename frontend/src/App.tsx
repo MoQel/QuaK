@@ -33,7 +33,7 @@ function App() {
         return () => {
             onSetMenubarVisibility(false);
         };
-    }, []);
+    }, [onSetMenubarVisibility]);
 
     const topContainerClass = isBottomVisible ? 'h-[30%]' : 'flex-1';
     const bottomContainerClass = isTopVisible ? 'h-[70%]' : 'flex-1';

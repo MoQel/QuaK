@@ -79,6 +79,7 @@ export function useQuantumSimulation(circuit: CircuitResponse | null, options: S
                 clearTimeout(debounceTimerRef.current);
             }
         };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [circuit, options.mode, options.sampleCount, options.maxQubits]);
     // Note: We decompose 'options' in deps to avoid re-runs on new object references
 

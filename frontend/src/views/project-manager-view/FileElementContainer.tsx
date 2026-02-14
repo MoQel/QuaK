@@ -72,7 +72,7 @@ export function FileElementContainer({
         if (isSelected && reloadTrigger > 0) {
             getContent(id).then(setContent);
         }
-    }, [reloadTrigger]);
+    }, [reloadTrigger, isSelected, getContent, id]);
 
     const openDialog = (content: Promise<JSX.Element>) => {
         setOpen(true);
