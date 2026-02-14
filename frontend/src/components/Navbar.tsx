@@ -1,7 +1,7 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Home, User, Settings, LogOut, Menu } from 'lucide-react';
+import { Home, User, Settings, LogOut, Menu, Pencil, Trash2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCurrentUser } from '@/hooks/useUser';
 import ThemeSwitch from '@/components/ThemeSwitch';
@@ -9,12 +9,16 @@ import { Button } from '@/components/ui/button';
 import { IdeMenubar } from '@/components/MenuBar';
 import { useLayout } from '@/hooks/use-layout';
 import { useProject } from '@/contexts/ProjectContext';
+import { useProjectActionsDialog } from '@/components/projects/useProjectActionsDialog.tsx';
 
 export const Navbar: React.FC = () => {
     const location = useLocation();
+    const navigate = useNavigate();
     const { logout } = useAuth();
     const { user } = useCurrentUser();
-    const { projectName } = useProject();
+    const { projectName, projectId, refreshProject } = useProject();
+
+    const { dialog, openRenameProjectDialog, openDeleteProjectDialog } = useProjectActionsDialog();
 
     const { visiblePanels, isMenubarVisible, onToggleMenubar, onTogglePanel, onResetLayout } = useLayout();
 
@@ -35,6 +39,7 @@ export const Navbar: React.FC = () => {
 
     return (
         <nav className="bg-bg-dark border-b border-border px-6 py-4 sticky top-0 z-50">
+            {dialog}
             <div className="grid grid-cols-3 items-center">
                 {/* Left section */}
                 <div className="flex items-center gap-4">
@@ -68,8 +73,44 @@ export const Navbar: React.FC = () => {
 
                 {/* Center section - Project Name */}
                 <div className="flex justify-center">
-                    {isIdeView && projectName && (
-                        <span className="text-lg font-bold text-foreground">{projectName}</span>
+                    {isIdeView && projectName && projectId && (
+                        <div className="group flex items-center gap-2">
+                            <span className="text-lg font-bold text-foreground">{projectName}</span>
+                            <div className="flex items-center gap-1 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity">
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    title="Rename project"
+                                    aria-label="Rename project"
+                                    onClick={() =>
+                                        openRenameProjectDialog(
+                                            { id: projectId, name: projectName },
+                                            { onRenamed: () => refreshProject() },
+                                        )
+                                    }
+                                >
+                                    <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-destructive hover:text-destructive"
+                                    title="Delete project"
+                                    aria-label="Delete project"
+                                    onClick={() =>
+                                        openDeleteProjectDialog(
+                                            { id: projectId, name: projectName },
+                                            { onDeleted: () => navigate('/') },
+                                        )
+                                    }
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        </div>
                     )}
                 </div>
 

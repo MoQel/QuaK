@@ -52,7 +52,7 @@ export const Profile: React.FC = () => {
 
     return (
         <div className="p-8 max-w-4xl mx-auto">
-            <h1 className="text-4xl font-bold mb-6">Profile</h1>
+            <h1 className="text-3xl font-bold mb-6">Profile</h1>
 
             <div className="grid gap-6">
                 {/* Profile Overview Card */}

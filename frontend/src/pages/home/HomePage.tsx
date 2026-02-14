@@ -1,22 +1,13 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FolderOpen, Plus, Users } from 'lucide-react';
 
 import { Button } from '@/components/ui/button.tsx';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog.tsx';
-import { toast } from 'sonner';
+import { useProjectActionsDialog } from '@/components/projects/useProjectActionsDialog.tsx';
 
 import { api } from '@/api/api.ts';
-import type { ProjectDetailsResponse, ProjectRequest } from '@/api/dto/filesystem.ts';
+import type { ProjectDetailsResponse } from '@/api/dto/filesystem.ts';
 import { CreateProject } from '@/views/project-manager-view/ProjectManagerView.tsx';
-import { EntityForm } from '@/views/project-manager-view/util/FormUtils.tsx';
 
 import type { SortMode } from './types';
 import { readPinnedProjectIds, readSortMode, writePinnedProjectIds, writeSortMode } from './utils/storage';
@@ -33,8 +24,7 @@ export function HomePage() {
     const [pinnedProjectIds, setPinnedProjectIds] = useState<string[]>(() => readPinnedProjectIds());
     const [sortMode, setSortMode] = useState<SortMode>(() => readSortMode());
 
-    const [dialogOpen, setDialogOpen] = useState(false);
-    const [dialogContent, setDialogContent] = useState<React.ReactNode>(null);
+    const { dialog, openRenameProjectDialog, openDeleteProjectDialog } = useProjectActionsDialog();
 
     const navigate = useNavigate();
 
@@ -64,13 +54,6 @@ export function HomePage() {
         writeSortMode(sortMode);
     }, [sortMode]);
 
-    const openDialog = (content: React.ReactNode) => {
-        setDialogContent(content);
-        setDialogOpen(true);
-    };
-
-    const closeDialog = () => setDialogOpen(false);
-
     const isPinned = (projectId: string) => pinnedProjectIds.includes(projectId);
 
     const togglePin = (projectId: string) => {
@@ -80,66 +63,19 @@ export function HomePage() {
         });
     };
 
-    const openRenameProjectDialog = (project: ProjectDetailsResponse) => {
-        openDialog(
-            <>
-                <DialogHeader>
-                    <DialogTitle>Rename Project</DialogTitle>
-                    <DialogDescription>Choose a new name for “{project.name}”.</DialogDescription>
-                </DialogHeader>
-                <EntityForm
-                    defaultName={project.name}
-                    label="Project Name"
-                    onSubmit={(name) => {
-                        const body: ProjectRequest = { name };
-                        api.patch(`/api/project/${project.id}`, body)
-                            .then(() => {
-                                closeDialog();
-                                fetchProjects();
-                            })
-                            .catch((err) => {
-                                toast.error(err.message || 'Failed to rename project');
-                            });
-                    }}
-                />
-            </>,
-        );
+    const handleRename = (project: ProjectDetailsResponse) => {
+        openRenameProjectDialog(project, {
+            onRenamed: () => fetchProjects(),
+        });
     };
 
-    const openDeleteProjectDialog = (project: ProjectDetailsResponse) => {
-        openDialog(
-            <>
-                <DialogHeader>
-                    <DialogTitle>Delete Project</DialogTitle>
-                    <DialogDescription>
-                        This will permanently delete “{project.name}”. This action cannot be undone.
-                    </DialogDescription>
-                </DialogHeader>
-                <form
-                    onSubmit={(e) => {
-                        e.preventDefault();
-                        api.delete(`/api/project/${project.id}`)
-                            .then(() => {
-                                closeDialog();
-                                setPinnedProjectIds((prev) => prev.filter((id) => id !== project.id));
-                                fetchProjects();
-                            })
-                            .catch((err) => {
-                                toast.error(err.message || 'Failed to delete project');
-                            });
-                    }}
-                >
-                    <DialogFooter>
-                        <Button type="button" variant="secondary" onClick={closeDialog}>
-                            Cancel
-                        </Button>
-                        <Button type="submit" variant="destructive">
-                            Delete
-                        </Button>
-                    </DialogFooter>
-                </form>
-            </>,
-        );
+    const handleDelete = (project: ProjectDetailsResponse) => {
+        openDeleteProjectDialog(project, {
+            onDeleted: () => {
+                setPinnedProjectIds((prev) => prev.filter((id) => id !== project.id));
+                return fetchProjects();
+            },
+        });
     };
 
     const displayedOwnProjects = useMemo(() => {
@@ -164,9 +100,7 @@ export function HomePage() {
 
     return (
         <div className="p-8 max-w-[1600px] mx-auto">
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                <DialogContent>{dialogContent}</DialogContent>
-            </Dialog>
+            {dialog}
 
             <div className="mb-6">
                 <h1 className="text-3xl font-bold mb-2 text-text leading-tight py-1">Projects</h1>
@@ -206,8 +140,8 @@ export function HomePage() {
                                         key={p.id}
                                         project={p}
                                         pinned={isPinned(p.id)}
-                                        onRename={openRenameProjectDialog}
-                                        onDelete={openDeleteProjectDialog}
+                                        onRename={handleRename}
+                                        onDelete={handleDelete}
                                         onTogglePin={togglePin}
                                     />
                                 ))}
@@ -245,8 +179,8 @@ export function HomePage() {
                                         key={p.id}
                                         project={p}
                                         pinned={isPinned(p.id)}
-                                        onRename={openRenameProjectDialog}
-                                        onDelete={openDeleteProjectDialog}
+                                        onRename={handleRename}
+                                        onDelete={handleDelete}
                                         onTogglePin={togglePin}
                                     />
                                 ))}
