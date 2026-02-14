@@ -1,188 +1,97 @@
-import { Editor, loader, Monaco } from '@monaco-editor/react';
-import { RefObject, useEffect, useRef, useState } from 'react';
-import { File } from '@/views/project-manager-view/util/FileElement.tsx';
-import { toast } from 'sonner';
-import { Menu } from '@/views/text-editor-view/Menu.tsx';
-import { Language } from '@/views/text-editor-view/model/Language.ts';
-import { qrisp } from '@/components/languages/qrisp.ts';
-import { openqasm } from '@/components/languages/openqasm.ts';
-import { api } from '@/api/api.ts';
+import { Editor, useMonaco } from '@monaco-editor/react';
+import { useEffect, useState } from 'react';
+import { editor } from 'monaco-editor';
 import { useTheme } from '@/theme';
-import { FileContentRequest, FileContentResponse, FileDetailsResponse } from '@/api/dto/filesystem.ts';
+import { languages } from '@/views/text-editor-view/languages/languages.ts';
+import { useMonacoTheme } from '@/hooks/editor/useMonacoTheme.ts';
+import { useAppSelector } from '@/hooks/useAppSelector.ts';
+import { useAppDispatch } from '@/hooks/useAppDispatch.ts';
+import { setFileDirty } from '@/store/slices/tabsSlice.ts';
+import { getModelId, savedVersionIds } from '@/views/text-editor-view/util/editorUtils.ts';
+import { useEditorModelManager } from '@/hooks/editor/useEditorModelManager.ts';
+import { useEditorCommands } from '@/hooks/editor/useEditorCommands.ts';
 
-import { Base64 } from 'js-base64';
+interface QLPEditorProps {
+    activeFileId: string | null;
+    setCurrentLangId: (langId: string) => void;
+}
 
-const DEFAULT_VALUE = 'No File Selected';
-const DEFAULT_LANG = 'plaintext';
-
-const languages = [
-    new Language('plaintext', 'txt'),
-    new Language('python', 'py'),
-    new Language('qrisp', 'qrisp', qrisp),
-    new Language('qasm', 'qasm', openqasm),
-];
-
-function QLPEditor({ file }: { file: File | undefined }) {
-    const [value, setValue] = useState(DEFAULT_VALUE);
-    const [lang, setLang] = useState(DEFAULT_LANG);
-    const [readOnly, setReadOnly] = useState<boolean>(true);
-    const contentId: RefObject<string | undefined> = useRef(undefined);
+function QLPEditor({ activeFileId, setCurrentLangId }: Readonly<QLPEditorProps>) {
+    const [editorInstance, setEditorInstance] = useState<editor.IStandaloneCodeEditor | null>(null);
+    const monaco = useMonaco();
     const { theme } = useTheme();
+    const { applyTheme } = useMonacoTheme(monaco, theme);
 
-    const applyMonacoTheme = (monaco: Monaco) => {
-        monaco.editor.defineTheme('my-theme', {
-            base: theme === 'dark' ? 'vs-dark' : 'vs',
-            inherit: true,
-            rules: [],
-            colors: {
-                'editor.background': theme === 'dark' ? '#18191B' : '#E6E6E6',
-                'editorLineNumber.foreground': theme === 'dark' ? '#858585' : '#666666',
-                'editorLineNumber.activeForeground': theme === 'dark' ? '#858585' : '#666666',
-            },
+    const dispatch = useAppDispatch();
+    const openTabs = useAppSelector((state) => state.tabs.openTabs);
+
+    // region Buisness logic hooks
+    const { isReadOnly, isDirtyRef } = useEditorModelManager(
+        monaco,
+        editorInstance,
+        activeFileId,
+        openTabs,
+        setCurrentLangId,
+    );
+
+    useEditorCommands(monaco, editorInstance, activeFileId, setCurrentLangId);
+    // endregion
+
+    // region Editor config and mount
+    const handleEditorDidMount = (editor: editor.IStandaloneCodeEditor) => {
+        setEditorInstance(editor);
+        applyTheme();
+
+        const disposable = editor.onDidChangeModelContent(() => {
+            const model = editor.getModel();
+            if (!model) return;
+            const currentVersion = model.getAlternativeVersionId();
+            const savedVersion = savedVersionIds.get(model);
+            const isDirty = savedVersion !== undefined && currentVersion !== savedVersion;
+
+            if (isDirty !== isDirtyRef.current) {
+                isDirtyRef.current = isDirty;
+                dispatch(setFileDirty({ fileId: getModelId(model), isDirty: isDirty }));
+            }
         });
 
-        monaco.editor.setTheme('my-theme');
+        editor.onDidDispose(() => {
+            disposable.dispose();
+            setEditorInstance(null);
+        });
     };
 
-    const monacoRef = useRef<Monaco | null>(null);
-
-    const beforeMount = (monaco: Monaco) => {
-        monacoRef.current = monaco;
-
-        for (const language of languages) {
-            if (language.base !== undefined) {
-                language.register(monaco);
+    // Cleanup global on unmount
+    useEffect(() => {
+        return () => {
+            if (monaco) {
+                const models = monaco.editor.getModels();
+                models.forEach((model) => {
+                    model.dispose();
+                });
             }
-        }
-
-        applyMonacoTheme(monaco);
-    };
-
-    const onSave = (id: string | undefined) => {
-        if (!id) return Promise.resolve();
-        const edit = loader.__getMonacoInstance()?.editor.getEditors().at(0);
-        if (!edit) {
-            toast('Editor undefined, not saving');
-            return Promise.resolve();
-        }
-
-        const encodedContent = Base64.encode(edit.getValue());
-
-        // TODO: Make use of ContentType
-        const body: FileContentRequest = {
-            content: encodedContent,
-            contentType: 'text/plain',
         };
-
-        return api
-            .put(`/api/file/${id}/content`, body)
-            .then(() => retrieveContent(id))
-            .then((newContent) => {
-                if (newContent === null) {
-                    toast.error('Error reloading content after save');
-                } else {
-                    setValue(newContent);
-                    toast('Saved successfully');
-                }
-            });
-    };
-
-    useEffect(() => {
-        if (monacoRef.current) {
-            applyMonacoTheme(monacoRef.current);
-        }
-    }, [theme]);
-
-    useEffect(() => {
-        if (!file?.id) {
-            contentId.current = undefined;
-            setValue(DEFAULT_VALUE);
-            setLang(DEFAULT_LANG);
-            setReadOnly(true);
-            return;
-        }
-
-        (async () => {
-            const prev = contentId.current;
-
-            // Save previous file before switching
-            if (prev && prev !== file.id) {
-                await onSave(prev);
-            }
-
-            // Set new content
-            const content = await retrieveContent(file.id);
-            if (content === null) {
-                toast.error(`Couldn't load file ${file.name}`);
-                setValue('Error loading file.');
-            } else {
-                setValue(content);
-            }
-
-            // Set new language
-            const ext: string = await retrieveFileExtension(file.id);
-            setLang(getLanguageOrDefaultByExtension(ext));
-
-            // Enable writing
-            setReadOnly(false);
-
-            // Update reference
-            contentId.current = file.id;
-        })();
-    }, [file]);
-
-    const formatLanguages = (langs: Language[]) => {
-        return langs.map((l) => ({
-            isSelected: l.languageId === lang,
-            select: () => {
-                setLang(l.languageId);
-                toast('Language ' + l.getID().toUpperCase());
-            },
-            displayName: l.getID().toUpperCase(),
-        }));
-    };
-
-    function getLanguageOrDefaultByExtension(ext: string): string {
-        const match = languages.find((l) => l.fileExtension === ext);
-        return match ? match.id : DEFAULT_LANG; // Default
-    }
-
-    // TODO: extract file extension from contentType
-    function retrieveFileExtension(id: string): Promise<string> {
-        return api.get<FileDetailsResponse>(`/api/file/${id}`).then((fileElement) => {
-            const filename = fileElement.name;
-            if (!filename?.includes('.')) {
-                return 'txt'; // fallback
-            }
-            return filename.substring(filename.lastIndexOf('.') + 1);
-        });
-    }
-
-    async function retrieveContent(id: string): Promise<string | null> {
-        try {
-            const response = await api.get<FileContentResponse>(`/api/file/${id}/content`);
-            return Base64.decode(response.content);
-        } catch (error) {
-            console.error(`Failed to retrieve content for file ${id}`, error);
-            return null;
-        }
-    }
+    }, [monaco]);
+    // endregion
 
     return (
-        <div className="h-full flex flex-col p-0">
-            <Menu onSave={() => onSave(file?.id)} languages={formatLanguages(languages)} />
-            <div className="h-full">
+        <div className="h-full flex flex-col p-0 relative">
+            {!activeFileId && (
+                <div className="absolute inset-0 z-10 flex items-center justify-center text-gray-500">No file open</div>
+            )}
+
+            <div className="h-full w-full" style={{ display: activeFileId ? 'block' : 'none' }}>
                 <Editor
-                    language={lang}
+                    className="h-full"
                     theme="my-theme"
-                    value={value}
-                    onChange={(value) => setValue(value || '')}
+                    onMount={handleEditorDidMount}
+                    beforeMount={(m) => languages.forEach((l) => l.base !== undefined && l.register(m))}
                     options={{
                         minimap: { enabled: false },
                         wordWrap: 'on',
-                        readOnly: readOnly,
+                        readOnly: isReadOnly,
+                        automaticLayout: true,
                     }}
-                    beforeMount={beforeMount}
                 />
             </div>
         </div>

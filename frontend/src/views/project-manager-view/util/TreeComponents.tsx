@@ -1,11 +1,11 @@
-import {JSX} from "react";
+import { JSX } from 'react';
 
 /**
  * Displays empty content
  * @constructor
  */
 export function Empty() {
-    return (<p className="text-center p-1 opacity-70 italic">Empty</p>)
+    return <p className="text-center p-1 opacity-70 italic">Empty</p>;
 }
 
 /**
@@ -14,9 +14,11 @@ export function Empty() {
  * @param icon The icon to use for the element
  * @constructor
  */
-export function ListingElement({text, icon}: { text: string, icon: JSX.Element }) {
-    return (<div className="flex self-center entry">
-        {<icon.type {...icon.props} className="mr-1 h-5 w-5 self-center"/>}
-        {text}
-    </div>)
+export function ListingElement({ text, icon }: Readonly<{ text: string; icon: JSX.Element }>) {
+    return (
+        <div className="flex self-center entry">
+            {<icon.type {...icon.props} className="mr-1 h-5 w-5 self-center" />}
+            {text}
+        </div>
+    );
 }

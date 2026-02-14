@@ -1,10 +1,6 @@
 import { FileElementContainer } from '@/views/project-manager-view/FileElementContainer.tsx';
-import { DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog.tsx';
+import { DialogHeader, DialogTitle } from '@/components/ui/dialog.tsx';
 import { ParentRefresh } from '@/views/project-manager-view/ProjectManagerView.tsx';
-import { z } from 'zod';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Form, FormField } from '@/components/ui/form.tsx';
 import { JSX, useContext } from 'react';
 import { ContextMenuItem } from '@/components/ui/context-menu.tsx';
 import { Folder, FolderOpen } from 'lucide-react';
@@ -14,9 +10,9 @@ import {
     sort,
 } from '@/views/project-manager-view/util/FileElement.tsx';
 
-import { DialogCloseButtons, TextInput } from '@/views/project-manager-view/util/FormComponents.tsx';
 import { api } from '@/api/api.ts';
 import { DirectoryContentsResponse, DirectoryRequest } from '@/api/dto/filesystem.ts';
+import { EntityForm } from '@/views/project-manager-view/util/FormUtils.tsx';
 
 /**
  * Displays a {@link IDirectory Directory}
@@ -24,7 +20,7 @@ import { DirectoryContentsResponse, DirectoryRequest } from '@/api/dto/filesyste
  * @param id The id of the directory
  * @constructor
  */
-export function Directory({ name, id }: { name: string; id: string }) {
+export function Directory({ name, id }: Readonly<{ name: string; id: string }>) {
     const icon = (open: boolean) => (open ? <FolderOpen /> : <Folder />);
     return (
         <FileElementContainer
@@ -56,9 +52,6 @@ function DirectoryEdit(id: string, openDialog: (element: Promise<JSX.Element>) =
                 <>
                     <DialogHeader>
                         <DialogTitle>Edit Directory</DialogTitle>
-                        <DialogDescription>
-                            Edit directory with id <i>{id}</i>.
-                        </DialogDescription>
                     </DialogHeader>
                     <EditForm dir={dir} reloadParent={reloadParent} />
                 </>
@@ -69,39 +62,13 @@ function DirectoryEdit(id: string, openDialog: (element: Promise<JSX.Element>) =
     return <ContextMenuItem onSelect={dialog}>Edit</ContextMenuItem>;
 }
 
-function EditForm({ dir, reloadParent }: { dir: IDirectory; reloadParent: () => void }) {
-    const formSchema = z.object({
-        name: z.string().min(1, {
-            message: 'Directory name must be at least 1 characters.',
-        }),
-    });
-
-    const form = useForm<z.infer<typeof formSchema>>({
-        resolver: zodResolver(formSchema),
-        defaultValues: {
-            name: dir.name,
-        },
-    });
-
-    const onSubmit = (values: z.infer<typeof formSchema>) => {
-        const body: DirectoryRequest = {
-            name: values.name,
-        };
-
+function EditForm({ dir, reloadParent }: Readonly<{ dir: IDirectory; reloadParent: () => void }>) {
+    const onSubmit = (name: string) => {
+        const body: DirectoryRequest = { name };
         api.patch('/api/directory/' + dir.id, body).then(reloadParent);
     };
-    return (
-        <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)}>
-                <FormField
-                    name="name"
-                    control={form.control}
-                    render={({ field }) => <TextInput placeholder="Enter a new name" label="Name" field={field} />}
-                />
-                <DialogCloseButtons submit="Save" />
-            </form>
-        </Form>
-    );
+
+    return <EntityForm defaultName={dir.name} onSubmit={onSubmit} label="Directory Name" />;
 }
 
 async function fetchDirectoryContent(id: string) {

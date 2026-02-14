@@ -7,9 +7,9 @@ import { Badge } from '@/components/ui/badge';
 import { SimulationToolbar } from '@/views/results-view/SimulationToolbar.tsx';
 import { CustomTooltipContent } from '@/views/results-view/CustomTooltipContent.tsx';
 import { CircuitResponse, getRegisterSize } from '@/api/dto/circuit';
-import { useQuantumSimulation } from '@/hooks/useQuantumSimulation.ts';
+import { useQuantumSimulation } from '@/hooks/results/useQuantumSimulation.ts';
 import { SimulationOptions } from '@/simulation/simulation.types.ts';
-import { useChartData } from '@/hooks/useChartData.ts';
+import { useChartData } from '@/hooks/results/useChartData.ts';
 import { getBarColor } from '@/views/results-view/util/quantum-utils.ts';
 import { Button } from '@/components/ui/button';
 
@@ -58,7 +58,6 @@ export function ResultsView({ circuit }: Readonly<ResultsViewProps>) {
 
     const visibleData = useMemo(() => {
         if (showZero) return chartData;
-        console.log(chartData);
         return chartData.filter((d) => d.prob >= minProbability);
     }, [chartData, showZero, minProbability]);
 
@@ -79,9 +78,7 @@ export function ResultsView({ circuit }: Readonly<ResultsViewProps>) {
                     <CardTitle>Simulation</CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center justify-center h-[50vh] text-muted-foreground text-sm italic">
-                    <div className="bg-bg p-4 rounded-full mb-4 ring-1 ring-border">
-                        <RefreshCcw className="w-8 h-8 text-text-muted/50" />
-                    </div>
+                    <RefreshCcw className="w-12 h-12 mb-4 opacity-20" />
                     <p>Add qubits to the circuit to see results.</p>
                 </CardContent>
             </Card>

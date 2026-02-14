@@ -1,11 +1,33 @@
+import { vi, describe, it, expect, beforeEach, Mock } from 'vitest';
+
+globalThis.ResizeObserver = vi.fn().mockImplementation(() => ({
+    observe: vi.fn(),
+    unobserve: vi.fn(),
+    disconnect: vi.fn(),
+}));
+
 import { render, screen } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach, Mock, beforeAll } from 'vitest';
 import { ResultsView } from './ResultsView';
 import { CircuitResponse } from '@/api/dto/circuit';
 import { SimulationResult } from '@/simulation/simulation.types';
-import { useQuantumSimulation } from '@/hooks/useQuantumSimulation.ts';
+import { useQuantumSimulation } from '@/hooks/results/useQuantumSimulation.ts';
+import { ReactNode } from 'react';
 
-vi.mock('@/hooks/useQuantumSimulation');
+vi.mock('@/hooks/results/useQuantumSimulation.ts');
+
+vi.mock('@/hooks/results/useChartData.ts', () => ({
+    useChartData: vi.fn(() => []),
+}));
+
+vi.mock('recharts', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('recharts')>();
+    return {
+        ...actual,
+        ResponsiveContainer: ({ children }: { children: ReactNode }) => (
+            <div className="recharts-responsive-container">{children}</div>
+        ),
+    };
+});
 
 // Mock-Data
 const mockCircuit: CircuitResponse = {
@@ -30,10 +52,6 @@ const mockSuccessResult: SimulationResult = {
 };
 
 describe('ResultsView Component', () => {
-    beforeAll(() => {
-        window.ResizeObserver = ResizeObserver;
-    });
-
     beforeEach(() => {
         vi.resetAllMocks();
     });
@@ -59,8 +77,8 @@ describe('ResultsView Component', () => {
 
         render(<ResultsView circuit={mockCircuit} />);
 
-        expect(screen.getByText(/Calculating/i)).toBeInTheDocument();
         const badge = screen.getByText(/Calculating/i);
+        expect(badge).toBeInTheDocument();
         expect(badge).toHaveClass('animate-pulse');
     });
 
@@ -86,9 +104,8 @@ describe('ResultsView Component', () => {
 
         render(<ResultsView circuit={mockCircuit} />);
 
-        expect(screen.getByText('Simulation Results')).toBeInTheDocument();
+        expect(screen.getByText(/Simulation Results/i)).toBeInTheDocument();
         expect(screen.getByText('|q0>')).toBeInTheDocument();
-        expect(screen.getByText('Exact State')).toBeInTheDocument();
-        expect(screen.getByText('Settings')).toBeInTheDocument();
+        expect(screen.getByText(/Basis:/i)).toBeInTheDocument();
     });
 });
