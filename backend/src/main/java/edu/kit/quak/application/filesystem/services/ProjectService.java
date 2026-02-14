@@ -96,8 +96,7 @@ public class ProjectService implements ProjectServicePort {
                 .anyMatch(p -> p.getName().equalsIgnoreCase(name));
 
         if (nameExists) {
-            throw new IllegalArgumentException(
-                    "A project with the name '" + name + "' already exists");
+            throw new IllegalArgumentException("A project with the name '" + name + "' already exists");
         }
     }
 }
