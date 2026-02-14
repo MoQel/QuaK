@@ -56,7 +56,10 @@ export function TextEditorGroupMenu({ groupId, groups }: Readonly<{ groupId: str
                     </DropdownMenuItem>
                 )}
                 {groupId !== GROUP_MAIN && (
-                    <DropdownMenuItem onClick={() => dispatch(unsplitGroup(groupId))}>Unsplit</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => dispatch(unsplitGroup(groupId))}>
+                        <div className={'mr-2 size-4'} />
+                        Unsplit
+                    </DropdownMenuItem>
                 )}
                 <DropdownMenuItem onClick={() => dispatch(unsplitAllGroups())}>
                     <div className={'mr-2 size-4'} />

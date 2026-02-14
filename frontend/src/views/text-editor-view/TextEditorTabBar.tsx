@@ -4,6 +4,9 @@ import {
     closeAll,
     closeOthers,
     closeTab,
+    GROUP_BOTTOM,
+    GROUP_MAIN,
+    GROUP_RIGHT,
     moveTab,
     requestLanguageChange,
     requestSave,
@@ -136,6 +139,53 @@ export function TextEditorTabBar({ groupId }: Readonly<TabBarProps>) {
                                 Close Others
                             </ContextMenuItem>
                             <ContextMenuItem onClick={() => dispatch(closeAll())}>Close All</ContextMenuItem>
+                            <ContextMenuSeparator />
+                            {groupId != GROUP_MAIN && (
+                                <ContextMenuItem
+                                    onClick={() =>
+                                        dispatch(
+                                            moveTab({
+                                                fromId: tab.id,
+                                                fromGroupId: groupId,
+                                                toGroupId: GROUP_MAIN,
+                                            }),
+                                        )
+                                    }
+                                >
+                                    Move Left
+                                </ContextMenuItem>
+                            )}
+                            {groupId != GROUP_RIGHT && (
+                                <ContextMenuItem
+                                    onClick={() =>
+                                        dispatch(
+                                            moveTab({
+                                                fromId: tab.id,
+                                                fromGroupId: groupId,
+                                                toGroupId: GROUP_RIGHT,
+                                            }),
+                                        )
+                                    }
+                                >
+                                    Move Right
+                                </ContextMenuItem>
+                            )}
+
+                            {groupId != GROUP_BOTTOM && (
+                                <ContextMenuItem
+                                    onClick={() =>
+                                        dispatch(
+                                            moveTab({
+                                                fromId: tab.id,
+                                                fromGroupId: groupId,
+                                                toGroupId: GROUP_BOTTOM,
+                                            }),
+                                        )
+                                    }
+                                >
+                                    Move Down
+                                </ContextMenuItem>
+                            )}
 
                             {isActive && <ContextMenuSeparator />}
                             {isActive && (
