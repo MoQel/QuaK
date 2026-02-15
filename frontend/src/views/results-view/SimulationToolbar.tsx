@@ -24,7 +24,7 @@ export function SimulationToolbar({
     setShowZero,
     minProbability,
     setMinProbability,
-}: ToolbarProps) {
+}: Readonly<ToolbarProps>) {
     const updateOption = (field: keyof SimulationOptions, val: number) => {
         setOptions((prev) => ({ ...prev, [field]: val }));
     };

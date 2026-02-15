@@ -92,6 +92,101 @@ export function ResultsView({ circuit }: Readonly<ResultsViewProps>) {
         );
     }
 
+    const renderChartArea = () => {
+        if (error) {
+            return (
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-destructive bg-bg-dark/95 z-10 p-4 text-center">
+                    <span className="font-bold mb-2">Simulation Error</span>
+                    <span className="text-sm">{error}</span>
+                </div>
+            );
+        }
+
+        if (isFilteredOut) {
+            return (
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-text-muted z-10 p-4 text-center animate-in fade-in zoom-in-95 duration-200">
+                    <div className="bg-bg-light p-4 rounded-full mb-4 ring-1 ring-border shadow-sm">
+                        <FilterX className="w-8 h-8 text-text-muted" />
+                    </div>
+                    <h3 className="font-semibold text-text mb-1">No states visible</h3>
+                    <p className="text-sm max-w-[250px] mb-4">
+                        All states are below the current threshold of {minProbability.toFixed(1)}%.
+                    </p>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setMinProbability(0.1)}
+                        className="bg-bg-light border-border hover:bg-bg-light-hover text-text"
+                    >
+                        Reset Filter
+                    </Button>
+                </div>
+            );
+        }
+
+        return (
+            <div className="w-full h-full overflow-x-auto overflow-y-hidden custom-scrollbar">
+                <div
+                    style={{
+                        minWidth: shouldScroll ? `${computedMinWidth}px` : '100%',
+                        width: '100%',
+                        height: '100%',
+                    }}
+                    className="h-full p-4 pb-2"
+                >
+                    <ChartContainer config={chartConfig} className="h-full w-full aspect-auto">
+                        <BarChart
+                            data={visibleData}
+                            margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                            accessibilityLayer
+                        >
+                            <CartesianGrid
+                                vertical={false}
+                                strokeDasharray="3 3"
+                                stroke="var(--border)"
+                                opacity={0.8}
+                            />
+                            <XAxis
+                                dataKey="state"
+                                tickLine={false}
+                                axisLine={{ stroke: 'var(--border)', strokeWidth: 1 }}
+                                interval={0}
+                                angle={-45}
+                                textAnchor="end"
+                                height={60}
+                                tick={{
+                                    fontSize: 11,
+                                    fontFamily: 'monospace',
+                                    fill: 'var(--text-muted)',
+                                }}
+                            />
+                            <YAxis
+                                domain={[0, 100]}
+                                tick={{ fontSize: 10, fill: 'var(--text-muted)' }}
+                                axisLine={{ stroke: 'var(--border)', strokeWidth: 1 }}
+                                tickLine={false}
+                                ticks={[0, 25, 50, 75, 100]}
+                                tickFormatter={(value) => `${value}%`}
+                                width={35}
+                            />
+
+                            <ChartTooltip
+                                cursor={{ fill: 'var(--bg-light-hover)', opacity: 0.3 }}
+                                content={<CustomTooltipContent sampleCount={options.sampleCount} />}
+                            />
+
+                            <Bar dataKey="prob" radius={[4, 4, 0, 0]}>
+                                {visibleData.map((entry) => (
+                                    <Cell key={entry.state} fill={getBarColor(entry.phase)} strokeWidth={0} />
+                                ))}
+                            </Bar>
+                        </BarChart>
+                    </ChartContainer>
+                </div>
+            </div>
+        );
+    };
+
     return (
         <Card className="w-full h-full border-l rounded-none flex flex-col min-w-0">
             <CardHeader className="pb-2 border-b bg-card z-10 shrink-0">
@@ -148,94 +243,7 @@ export function ResultsView({ circuit }: Readonly<ResultsViewProps>) {
             </CardHeader>
 
             <CardContent className="flex-1 p-0 relative overflow-hidden flex flex-col min-h-0 bg-bg-dark">
-                {error ? (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center text-destructive bg-bg-dark/95 z-10 p-4 text-center">
-                        <span className="font-bold mb-2">Simulation Error</span>
-                        <span className="text-sm">{error}</span>
-                    </div>
-                ) : isFilteredOut ? (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center text-text-muted z-10 p-4 text-center animate-in fade-in zoom-in-95 duration-200">
-                        <div className="bg-bg-light p-4 rounded-full mb-4 ring-1 ring-border shadow-sm">
-                            <FilterX className="w-8 h-8 text-text-muted" />
-                        </div>
-                        <h3 className="font-semibold text-text mb-1">No states visible</h3>
-                        <p className="text-sm max-w-[250px] mb-4">
-                            All states are below the current threshold of {minProbability.toFixed(1)}%.
-                        </p>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setMinProbability(0.1)}
-                            className="bg-bg-light border-border hover:bg-bg-light-hover text-text"
-                        >
-                            Reset Filter
-                        </Button>
-                    </div>
-                ) : (
-                    <div className="w-full h-full overflow-x-auto overflow-y-hidden custom-scrollbar">
-                        <div
-                            style={{
-                                minWidth: shouldScroll ? `${computedMinWidth}px` : '100%',
-                                width: '100%',
-                                height: '100%',
-                            }}
-                            className="h-full p-4 pb-2"
-                        >
-                            <ChartContainer config={chartConfig} className="h-full w-full aspect-auto">
-                                <BarChart
-                                    data={visibleData}
-                                    margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
-                                    accessibilityLayer
-                                >
-                                    <CartesianGrid
-                                        vertical={false}
-                                        strokeDasharray="3 3"
-                                        stroke="var(--border)"
-                                        opacity={0.8}
-                                    />
-                                    <XAxis
-                                        dataKey="state"
-                                        tickLine={false}
-                                        axisLine={{ stroke: 'var(--border)', strokeWidth: 1 }}
-                                        interval={0}
-                                        angle={-45}
-                                        textAnchor="end"
-                                        height={60}
-                                        tick={{
-                                            fontSize: 11,
-                                            fontFamily: 'monospace',
-                                            fill: 'var(--text-muted)',
-                                        }}
-                                    />
-                                    <YAxis
-                                        domain={[0, 100]}
-                                        tick={{ fontSize: 10, fill: 'var(--text-muted)' }}
-                                        axisLine={{ stroke: 'var(--border)', strokeWidth: 1 }}
-                                        tickLine={false}
-                                        ticks={[0, 25, 50, 75, 100]}
-                                        tickFormatter={(value) => `${value}%`}
-                                        width={35}
-                                    />
-
-                                    <ChartTooltip
-                                        cursor={{ fill: 'var(--bg-light-hover)', opacity: 0.3 }}
-                                        content={<CustomTooltipContent sampleCount={options.sampleCount} />}
-                                    />
-
-                                    <Bar dataKey="prob" radius={[4, 4, 0, 0]}>
-                                        {visibleData.map((entry, index) => (
-                                            <Cell
-                                                key={`cell-${index}`}
-                                                fill={getBarColor(entry.phase)}
-                                                strokeWidth={0}
-                                            />
-                                        ))}
-                                    </Bar>
-                                </BarChart>
-                            </ChartContainer>
-                        </div>
-                    </div>
-                )}
+                {renderChartArea()}
 
                 {/* Loading State Overlay */}
                 {isCalculating && (
