@@ -32,9 +32,9 @@ export class CircuitTranslator {
         const numQubits = this.getTotalQubitCount(circuitData);
 
         // Early return if no circuit is present
-        if (numQubits === 0) this.createEmptyResult(numQubits);
+        if (numQubits === 0) return this.createEmptyResult(numQubits);
         if (numQubits > maxQubits) {
-            throw new Error(`Circuit exceeds maximum simulation limit of ${maxQubits} qubits.`);
+            throw new Error(`Circuit exceeds maximum limit of ${maxQubits} qubits.`);
         }
 
         // Initialize offset Map
@@ -133,27 +133,20 @@ export class CircuitTranslator {
             case 'Z':
                 circuit.add_Z_gate(targets[0]);
                 break;
-            // Wrong mapping in Qulacs version 0.0.5
             case 'S':
-                this.addMatrixGate(circuit, targets[0], [
-                    [1, 0],
-                    [0, { real: 0, imag: 1 }],
-                ]);
+                circuit.add_S_gate(targets[0]);
                 break;
             case 'T':
                 circuit.add_T_gate(targets[0]);
                 break;
-            // Inverted rotation direction in Qulacs version 0.0.5
             case 'RX':
-                circuit.add_RX_gate(targets[0], -(angle || 0));
+                circuit.add_RotX_gate(targets[0], angle);
                 break;
-            // Inverted rotation direction in Qulacs version 0.0.5
             case 'RY':
-                circuit.add_RY_gate(targets[0], -(angle || 0));
+                circuit.add_RotY_gate(targets[0], angle);
                 break;
-            // Inverted rotation direction in Qulacs version 0.0.5
             case 'RZ':
-                circuit.add_RZ_gate(targets[0], -(angle || 0));
+                circuit.add_RotZ_gate(targets[0], angle);
                 break;
             case 'CX':
                 circuit.add_CNOT_gate(controls[0], targets[0]);
@@ -244,15 +237,6 @@ export class CircuitTranslator {
         }
 
         return counts;
-    }
-
-    private static addMatrixGate(
-        circuit: qulacs.QuantumCircuit,
-        target_index_list: number | number[],
-        matrix: (Complex | number)[][],
-    ) {
-        const gate = qulacs.DenseMatrix(target_index_list, matrix);
-        circuit.add_gate(gate);
     }
 
     private static createEmptyResult(numQubits: number): SimulationResult {

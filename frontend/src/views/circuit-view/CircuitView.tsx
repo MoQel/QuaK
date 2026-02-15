@@ -270,7 +270,7 @@ export function CircuitView({ circuit, setCircuit }: Readonly<CircuitViewProps>)
                             inverseForm: false,
                             targetQubits,
                             controlQubits,
-                            rotationAngle: 0,
+                            rotationAngle: Math.PI / 2, // standard rotation
                         };
                         addQuantumOperation({ quantumOperation: gate, layerIdx });
                         break;
