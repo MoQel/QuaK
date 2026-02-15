@@ -207,8 +207,8 @@ export class CircuitTranslator {
             const prob = real * real + imag * imag;
 
             // Qulacs Index 'i' is calculated as: sum(q_k * 2^k)
-            // i.toString(2) produces MSB on the left (Big Endian standard)
-            // Example: Qubit 0 = 1, Qubit 1 = 0 -> Index 1 -> "01" -> |q1 q0>
+            // toString(2) provides the binary representation where the LSB (Qubit 0)
+            // is the rightmost character. This is equivalent to Little Endian representation |q_(n-1)...q_0>.
             const binaryString = i.toString(2).padStart(numQubits, '0');
 
             return {

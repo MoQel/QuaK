@@ -9,9 +9,10 @@ import { CustomTooltipContent } from '@/views/results-view/CustomTooltipContent.
 import { CircuitResponse, getRegisterSize } from '@/api/dto/circuit';
 import { useQuantumSimulation } from '@/hooks/results/useQuantumSimulation.ts';
 import { SimulationOptions } from '@/simulation/simulation.types.ts';
-import { useChartData } from '@/hooks/results/useChartData.ts';
+import { Endianness, useChartData } from '@/hooks/results/useChartData.ts';
 import { getBarColor } from '@/views/results-view/util/quantum-utils.ts';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select.tsx';
 
 const chartConfig = {
     prob: {
@@ -30,6 +31,7 @@ export function ResultsView({ circuit }: Readonly<ResultsViewProps>) {
         sampleCount: 1024,
         maxQubits: 8,
     });
+    const [endianness, setEndianness] = useState<Endianness>('big');
 
     const { result, isCalculating, error } = useQuantumSimulation(circuit, options);
 
@@ -51,7 +53,7 @@ export function ResultsView({ circuit }: Readonly<ResultsViewProps>) {
         return count;
     }, [circuit, result, options.maxQubits]);
 
-    const chartData = useChartData(result, options, numQubits);
+    const chartData = useChartData(result, options, numQubits, endianness);
 
     const [showZero, setShowZero] = useState(false);
     const [minProbability, setMinProbability] = useState(0.1); //standard is 0,1%
@@ -68,7 +70,12 @@ export function ResultsView({ circuit }: Readonly<ResultsViewProps>) {
     const computedMinWidth = Math.max(100, visibleData.length * minBarWidth);
     const shouldScroll = visibleData.length > 12;
 
-    const basisLabel = numQubits > 1 ? `|q${numQubits - 1}...q0>` : numQubits === 1 ? '|q0>' : '';
+    const basisLabel = useMemo(() => {
+        if (numQubits === 0) return '';
+        if (numQubits === 1) return '|q0>';
+
+        return endianness === 'big' ? `|q0...q${numQubits - 1}>` : `|q${numQubits - 1}...q0>`;
+    }, [numQubits, endianness]);
 
     // Empty State
     if (!circuit || (numQubits === 0 && !isCalculating)) {
@@ -101,12 +108,33 @@ export function ResultsView({ circuit }: Readonly<ResultsViewProps>) {
                                 </Badge>
                             )}
                         </CardTitle>
-                        <p className="text-xs text-text-muted mt-1 font-mono">
-                            Basis: Big Endian{' '}
-                            <span className="bg-bg px-1.5 py-0.5 rounded text-text border border-border-muted">
-                                {basisLabel}
-                            </span>
-                        </p>
+                        <div className="flex flex-row gap-3 items-center">
+                            <p className="text-text-muted text-sm font-mono tracking-wide">Basis:</p>
+                            <Select value={endianness} onValueChange={(val: Endianness) => setEndianness(val)}>
+                                <SelectTrigger className="w-[125px] bg-card hover:bg-bg-light-hover text-xs text-text">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent className="bg-bg-light border-border text-text">
+                                    <SelectItem
+                                        value="big"
+                                        className="text-xs rounded cursor-pointer focus:bg-highlight focus:text-text"
+                                    >
+                                        Big Endian
+                                    </SelectItem>
+                                    <SelectItem
+                                        value="little"
+                                        className="text-xs rounded cursor-pointer focus:bg-highlight focus:text-text"
+                                    >
+                                        Little Endian
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <p className="text-xs text-text-muted mt-1 font-mono">
+                                <span className="bg-bg px-1.5 py-0.5 rounded text-text border border-border-muted">
+                                    {basisLabel}
+                                </span>
+                            </p>
+                        </div>
                     </div>
                     <SimulationToolbar
                         options={options}
