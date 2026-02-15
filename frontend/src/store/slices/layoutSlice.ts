@@ -38,11 +38,15 @@ export const layoutSlice = createSlice({
             state.visiblePanels[action.payload] = !state.visiblePanels[action.payload];
         },
         resetLayout: (state) => {
-            // Restore defaults
-            state.visiblePanels = initialState.visiblePanels;
-            state.topLayout = initialState.topLayout;
-            state.bottomLayout = initialState.bottomLayout;
-            // INCREMENT THIS to signal App.tsx
+            state.visiblePanels = {
+                file: true,
+                circuit: true,
+                code: true,
+                results: true,
+                inspector: true,
+                library: true,
+            };
+
             state.layoutResetVersion += 1;
         },
         toggleMenubar: (state) => {

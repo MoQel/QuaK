@@ -96,3 +96,24 @@
         background-color: var(--border);
     }
 }
+
+/* Force Active Tab to be Dark/Light (Content Color) */
+.dockview-theme-custom .dv-tab.dv-active-tab {
+    background-color: var(--bg-dark) !important;
+    color: var(--text) !important;
+    border-top: 2px solid var(--special) !important; /* Optional accent line */
+    border-bottom: none !important; /* Connect to content */
+}
+
+/* Force the Panel Content Container to match */
+.dockview-theme-custom .dv-content-container,
+.dockview-theme-custom .dv-group-view {
+    background-color: var(--bg-dark) !important;
+}
+
+/* 1. The Header Strip (Background behind the tabs) */
+.dockview-theme-custom .dv-tabs-and-actions-container {
+    /* Use your secondary gray (--bg) instead of the default blue */
+    background-color: var(--bg) !important;
+    border-bottom: 1px solid var(--border) !important;
+}

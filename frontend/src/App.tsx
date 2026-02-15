@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useMemo, useCallback } from 'react'; // Add useRef
 import { createContext, useContext } from 'react';
-import { DockviewReact, DockviewReadyEvent, DockviewApi } from 'dockview-react'; // Add DockviewApi
+import { DockviewReact, DockviewReadyEvent, DockviewApi } from 'dockview-react';
 import { GateLibraryView } from '@/views/library-view/GateLibraryView.tsx';
 import { CircuitView } from '@/views/circuit-view/CircuitView.tsx';
 import { TextEditorView } from '@/views/text-editor-view/TextEditorView.tsx';
@@ -84,8 +84,22 @@ function App() {
     const [circuit, setCircuit] = useState<CircuitResponse | null>(null);
     // 2. Redux State (We pull the Reset Version now)
     const { visiblePanels, onTogglePanel, layoutResetVersion } = useLayout();
-    // We track the last handled reset version to avoid double-resets on mount
+    // --- REFS FOR STABILITY (The Fix for Desync) ---
+    // We use Refs to ensure the event listeners always see the LATEST data/functions
+    // without needing to remove/add the listener constantly.
+    const visiblePanelsRef = useRef(visiblePanels);
+    const onTogglePanelRef = useRef(onTogglePanel);
+    const apiRef = useRef<DockviewApi | null>(null);
+    const isResettingRef = useRef(false);
     const lastResetVersionRef = useRef(layoutResetVersion);
+
+    // Keep Refs synced
+    useEffect(() => {
+        visiblePanelsRef.current = visiblePanels;
+    }, [visiblePanels]);
+    useEffect(() => {
+        onTogglePanelRef.current = onTogglePanel;
+    }, [onTogglePanel]);
 
     // -- Context Value --
     // We wrap this in useMemo so the object reference is stable
@@ -102,67 +116,137 @@ function App() {
         [file, circuit, selectedGate],
     );
 
-    const apiRef = useRef<DockviewApi | null>(null);
+    // --- SMART PLACEMENT LOGIC ---
+    // This function decides where a panel should go based on who else is currently open.
+    const getOptimalPosition = (panelId: PanelKey, api: DockviewApi) => {
+        const exists = (id: string) => !!api.getPanel(id);
 
-    // -- Helper: Default Layout (The Grid) --
-    // We wrap this in useCallback so we can use it in onReady and potentially pass it to buttons
+        const tryPos = (neighborId: string, direction: 'above' | 'below' | 'left' | 'right') => {
+            if (exists(neighborId)) {
+                return { referencePanel: api.getPanel(neighborId)!, direction };
+            }
+            return null;
+        };
+
+        // PRIORITIES:
+        // 1. Vertical Neighbor (Restore the Column)
+        // 2. Left Neighbor (Attach to left side)
+        // 3. Right Neighbor (Attach to right side)
+
+        switch (panelId) {
+            case 'file': // Top Left
+                return (
+                    tryPos('library', 'above') ||
+                    tryPos('circuit', 'left') ||
+                    tryPos('inspector', 'left') ||
+                    tryPos('code', 'left')
+                );
+
+            case 'library': // Bottom Left
+                return tryPos('file', 'below') || tryPos('inspector', 'left') || tryPos('circuit', 'left');
+
+            case 'circuit': // Top Middle
+                return (
+                    tryPos('inspector', 'above') || // Best: Rejoin Inspector
+                    tryPos('file', 'right') || // Next: Stick to File
+                    tryPos('library', 'right') ||
+                    tryPos('code', 'left') || // Next: Stick to Code
+                    tryPos('results', 'left')
+                );
+
+            case 'inspector': // Bottom Middle
+                return (
+                    tryPos('circuit', 'below') || // Best: Rejoin Circuit
+                    tryPos('library', 'right') ||
+                    tryPos('file', 'right') ||
+                    tryPos('results', 'left') ||
+                    tryPos('code', 'left')
+                );
+
+            case 'code': // Top Right
+                return (
+                    tryPos('results', 'above') ||
+                    tryPos('circuit', 'right') ||
+                    tryPos('inspector', 'right') ||
+                    tryPos('file', 'right')
+                );
+
+            case 'results': // Bottom Right
+                return tryPos('code', 'below') || tryPos('inspector', 'right') || tryPos('circuit', 'right');
+
+            default:
+                return null;
+        }
+    };
+
     const loadDefaultLayout = useCallback((api: DockviewApi) => {
+        // 1. Lock the system
+        isResettingRef.current = true;
+
+        // 2. Clear the grid AND Storage
         api.clear();
-        // --- TOP ROW ---
+        localStorage.removeItem(LAYOUT_STORAGE_KEY);
 
-        // A. Add the "Anchor" panel (Project Manager)
-        const pFile = api.addPanel({
-            id: 'file', // Unique ID
-            component: 'file', // Must match the key in 'componentRegistry'
-            title: 'Project',
-        });
+        // 3. THE FIX: Wait 1 tick (50ms) before rebuilding.
+        // This allows Dockview to flush the old JSON-loaded IDs
+        // before we try to reuse them.
+        setTimeout(() => {
+            if (!api) return; // Safety check
 
-        // B. Add Circuit to the RIGHT of File
-        const pCircuit = api.addPanel({
-            id: 'circuit',
-            component: 'circuit',
-            title: 'Circuit',
-            position: { referencePanel: pFile, direction: 'right' },
-        });
+            // --- REBUILD LAYOUT (Same logic as before) ---
 
-        // C. Add Code to the RIGHT of Circuit
-        const pCode = api.addPanel({
-            id: 'code',
-            component: 'code',
-            title: 'Code Editor',
-            position: { referencePanel: pCircuit, direction: 'right' },
-        });
+            // 1. Top Row Anchors
+            const circuit = api.addPanel({
+                id: 'circuit',
+                component: 'circuit',
+                title: 'Circuit',
+            });
 
-        // --- BOTTOM ROW ---
+            const file = api.addPanel({
+                id: 'file',
+                component: 'file',
+                title: 'Project',
+                position: { referencePanel: circuit, direction: 'left' },
+            });
 
-        // D. Add Library BELOW the File panel
-        // This creates the vertical split between Top and Bottom rows
-        const pLibrary = api.addPanel({
-            id: 'library',
-            component: 'library',
-            title: 'Library',
-            position: { referencePanel: pFile, direction: 'below' },
-        });
+            const code = api.addPanel({
+                id: 'code',
+                component: 'code',
+                title: 'Code Editor',
+                position: { referencePanel: circuit, direction: 'right' },
+            });
 
-        // E. Add Inspector to the RIGHT of Library
-        const pInspector = api.addPanel({
-            id: 'inspector',
-            component: 'inspector',
-            title: 'Inspector',
-            position: { referencePanel: pCircuit, direction: 'below' },
-        });
+            // 2. Bottom Row Splits
+            api.addPanel({
+                id: 'library',
+                component: 'library',
+                title: 'Library',
+                position: { referencePanel: file, direction: 'below' },
+            });
 
-        // F. Add Results to the RIGHT of Inspector
-        const pResults = api.addPanel({
-            id: 'results',
-            component: 'results',
-            title: 'Results',
-            position: { referencePanel: pCode, direction: 'below' },
-        });
+            api.addPanel({
+                id: 'inspector',
+                component: 'inspector',
+                title: 'Inspector',
+                position: { referencePanel: circuit, direction: 'below' },
+            });
 
-        // Optional: Attempt to set relative sizes (approximate 70/30 split)
-        // Note: Dockview layout is dynamic, but we can nudge it.
-        // Usually, users resize themselves, but we start 50/50 by default.
+            api.addPanel({
+                id: 'results',
+                component: 'results',
+                title: 'Results',
+                position: { referencePanel: code, direction: 'below' },
+            });
+
+            // 4. Focus and Unlock
+            const circuitPanel = api.getPanel('circuit');
+            if (circuitPanel) circuitPanel.focus();
+
+            // Unlock slightly after render
+            setTimeout(() => {
+                isResettingRef.current = false;
+            }, 100);
+        }, 50); // <--- The magic delay
     }, []);
 
     // --- EFFECT: Handle "Reset" from Navbar ---
@@ -180,92 +264,102 @@ function App() {
         }
     }, [layoutResetVersion, loadDefaultLayout]);
 
-    // -- Persistence Logic --
-    const onReady = (event: DockviewReadyEvent) => {
-        const api = event.api;
-        apiRef.current = api;
-
-        // A. Try to load from LocalStorage
-        const savedLayout = localStorage.getItem(LAYOUT_STORAGE_KEY);
-        let success = false;
-
-        if (savedLayout) {
-            try {
-                // Dockview restores the window positions
-                api.fromJSON(JSON.parse(savedLayout));
-                success = true;
-            } catch (err) {
-                console.error('Failed to load layout:', err);
-                // If corrupted, clear it so next refresh is clean
-                localStorage.removeItem(LAYOUT_STORAGE_KEY);
-            }
-        }
-
-        // B. If no save found (or load failed), use Default
-        if (!success) {
-            loadDefaultLayout(api);
-        }
-
-        // C. Setup Auto-Save
-        // We debounce the save to avoid writing to disk on every pixel of resize
-        let debounceTimer: ReturnType<typeof setTimeout>;
-
-        const saveFn = () => {
-            clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(() => {
-                const json = api.toJSON();
-                localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(json));
-            }, 500); // Wait 500ms after last change to save
-        };
-
-        // Listen to layout changes (resize, move, close, open)
-        api.onDidLayoutChange(saveFn);
-    };
-
+    // 2. Sync Redux -> Dockview (Using Smart Placement)
     useEffect(() => {
         const api = apiRef.current;
-        if (!api) return;
 
-        // Iterate over your visiblePanels state
+        // GUARD CLAUSE:
+        // If api is missing, OR we are currently resetting,
+        // OR a reset is pending (Redux version > local version),
+        // DO NOT attempt to manually place panels. Let loadDefaultLayout handle it.
+        if (!api || isResettingRef.current || layoutResetVersion > lastResetVersionRef.current) return;
+
         (Object.keys(visiblePanels) as PanelKey[]).forEach((key) => {
             const shouldBeVisible = visiblePanels[key];
             const panel = api.getPanel(key);
 
             if (shouldBeVisible && !panel) {
-                // REDUX says SHOW, but Dockview missing -> Add it
-                // We need basic fallback positioning logic here if the layout is empty
-                // (Simple approach: Try to place right of 'file', or default)
-                const reference = api.panels[0];
+                // ... existing logic to add panel ...
+                let position = getOptimalPosition(key, api);
+
+                if (!position && api.panels.length > 0) {
+                    position = { referencePanel: api.panels[0], direction: 'right' };
+                }
 
                 api.addPanel({
                     id: key,
                     component: key,
-                    title: key.charAt(0).toUpperCase() + key.slice(1), // "file" -> "File"
-                    position: reference ? { referencePanel: reference, direction: 'right' } : undefined,
+                    title: key.charAt(0).toUpperCase() + key.slice(1),
+                    position: position || undefined,
                 });
             } else if (!shouldBeVisible && panel) {
-                // REDUX says HIDE, but Dockview has it -> Remove it
                 api.removePanel(panel);
             }
         });
-    }, [visiblePanels]); // Run whenever Redux state changes
+    }, [visiblePanels, layoutResetVersion]); // Add layoutResetVersion to dependencies
+
+    // --- ON READY ---
+    const onReady = (event: DockviewReadyEvent) => {
+        const api = event.api;
+        apiRef.current = api;
+
+        // 1. Attach Event Listener Manually (FIX FOR CHECKMARK ISSUE)
+        // We do this here so we can use the Refs inside the callback safely
+        api.onDidRemovePanel((e) => {
+            // If we are programmatically resetting, ignore this event
+            if (isResettingRef.current) return;
+
+            const id = e.id as PanelKey;
+
+            // Check the REF (Live State) not the stale closure state
+            if (visiblePanelsRef.current[id]) {
+                // Call the REF (Live Function)
+                onTogglePanelRef.current(id);
+            }
+        });
+
+        // 2. Load Layout
+        const savedLayout = localStorage.getItem(LAYOUT_STORAGE_KEY);
+        let success = false;
+
+        if (savedLayout) {
+            try {
+                isResettingRef.current = true;
+                api.fromJSON(JSON.parse(savedLayout));
+                success = true;
+                setTimeout(() => {
+                    isResettingRef.current = false;
+                }, 200);
+            } catch (err) {
+                console.error('Layout error', err);
+                localStorage.removeItem(LAYOUT_STORAGE_KEY);
+                isResettingRef.current = false;
+            }
+        }
+
+        if (!success) {
+            loadDefaultLayout(api);
+        }
+
+        // 3. Auto-save
+        let debounceTimer: ReturnType<typeof setTimeout>;
+        api.onDidLayoutChange(() => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                if (isResettingRef.current) return;
+                localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(api.toJSON()));
+            }, 500);
+        });
+    };
 
     return (
         <PanelDataContext.Provider value={contextValue}>
-            {/* NO NAVBAR HERE - It's in Layout.tsx */}
             <div className="flex flex-col h-full w-full bg-background text-foreground overflow-hidden">
                 <div className="flex-1 h-full w-full relative">
                     <DockviewReact
                         components={componentRegistry}
                         onReady={onReady}
-                        className="dockview-theme-abyss h-full w-full"
-                        // Sync: User closed tab -> Update Redux
-                        onDidRemovePanel={(e) => {
-                            const id = e.id as PanelKey;
-                            if (visiblePanels[id]) {
-                                onTogglePanel(id);
-                            }
-                        }}
+                        className="dockview-theme-custom h-full w-full"
                     />
                 </div>
                 <Toaster />
