@@ -1,7 +1,8 @@
 import {
     CircuitResponse,
     ElementaryQuantumGateDto,
-    QuantumRegisterResponse,
+    getTotalQubitCount,
+    isQuantumRegister,
     RegisterResponse,
 } from '@/api/dto/circuit.ts';
 import * as qulacs from 'qulacs-wasm';
@@ -19,7 +20,7 @@ type RegisterOffsets = Record<string, number>;
 export class CircuitTranslator {
     // Default values, if options not set
     private static readonly SAMPLE_COUNT = 1024;
-    private static readonly MAX_SIMULATION_QUBITS = 8;
+    private static readonly MAX_SIMULATION_QUBITS = 12;
     private static readonly DEFAULT_MODE: SimulationMode = 'exact';
     /**
      * Maps backend Circuit representation into qualacs simulation
@@ -29,7 +30,7 @@ export class CircuitTranslator {
         const sampleCount = options.sampleCount ?? this.SAMPLE_COUNT;
         const mode: SimulationMode = options.mode ?? this.DEFAULT_MODE;
 
-        const numQubits = this.getTotalQubitCount(circuitData);
+        const numQubits = getTotalQubitCount(circuitData);
 
         // Early return if no circuit is present
         if (numQubits === 0) return this.createEmptyResult(numQubits);
@@ -63,22 +64,12 @@ export class CircuitTranslator {
         }
     }
 
-    private static isQuantumRegister(reg: RegisterResponse): reg is QuantumRegisterResponse {
-        return 'numberOfQubits' in reg;
-    }
-
-    private static getTotalQubitCount(circuitData: CircuitResponse): number {
-        return circuitData.registers.reduce((sum, reg) => {
-            return this.isQuantumRegister(reg) ? sum + reg.numberOfQubits : sum;
-        }, 0);
-    }
-
     private static calculateRegisterOffsets(registers: RegisterResponse[]): RegisterOffsets {
         const offsets: RegisterOffsets = {};
         let offsetCount = 0;
 
         for (const reg of registers) {
-            if (this.isQuantumRegister(reg)) {
+            if (isQuantumRegister(reg)) {
                 offsets[reg.id] = offsetCount;
                 offsetCount += reg.numberOfQubits;
             }

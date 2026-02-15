@@ -53,6 +53,16 @@ export const getRegisterSize = (reg: RegisterResponse): number => {
     return 0;
 };
 
+export const isQuantumRegister = (reg: RegisterResponse): reg is QuantumRegisterResponse => {
+    return 'numberOfQubits' in reg;
+};
+
+export const getTotalQubitCount = (circuitData: CircuitResponse): number => {
+    return circuitData.registers.reduce((sum, reg) => {
+        return isQuantumRegister(reg) ? sum + reg.numberOfQubits : sum;
+    }, 0);
+};
+
 export interface LayerResponse {
     quantumOperations: QuantumOperationDto[];
 }

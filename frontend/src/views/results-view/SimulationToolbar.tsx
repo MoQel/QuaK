@@ -1,5 +1,5 @@
 import { Dispatch, SetStateAction } from 'react';
-import { Settings2, Eye, Filter, Cpu, Target } from 'lucide-react';
+import { Settings2, Eye, Filter, Cpu, Target, AlertTriangle } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { SimulationMode, SimulationOptions } from '@/simulation/simulation.types';
 import { SmartInput } from '@/views/results-view/SmartInput.tsx';
 import { Switch } from '@/components/ui/switch.tsx';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip.tsx';
 
 interface ToolbarProps {
     options: SimulationOptions;
@@ -80,11 +81,27 @@ export function SimulationToolbar({
                                 <h5 className="text-xs font-medium text-text-muted uppercase tracking-wider flex items-center gap-2">
                                     <Cpu className="w-3 h-3" /> Simulation
                                 </h5>
-
                                 <div className="flex items-center justify-between">
-                                    <Label htmlFor="maxQubits" className="text-sm text-text font-normal">
-                                        Max Qubits
-                                    </Label>
+                                    <div className="flex">
+                                        <Label htmlFor="maxQubits" className="text-sm text-text font-normal">
+                                            Max Circuit Size
+                                        </Label>
+                                        {(options.maxQubits ?? 12) >= 16 && (
+                                            <Tooltip>
+                                                <TooltipTrigger>
+                                                    <Button variant="ghost" size="icon">
+                                                        <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0 text-yellow-500" />
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent className="bg-destructive">
+                                                    <p className="text-text text-sm leading-tight">
+                                                        <p>High qubit counts may cause your browser</p>
+                                                        <p>to freeze or crash due to high memory usage.</p>
+                                                    </p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        )}
+                                    </div>
                                     <div className="w-24">
                                         <SmartInput
                                             id="maxQubits"

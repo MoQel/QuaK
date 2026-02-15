@@ -1,18 +1,28 @@
 import { useMemo, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Cell } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartConfig } from '@/components/ui/chart';
-import { RefreshCcw, FilterX } from 'lucide-react';
+import { RefreshCcw, FilterX, AlertTriangle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { SimulationToolbar } from '@/views/results-view/SimulationToolbar.tsx';
 import { CustomTooltipContent } from '@/views/results-view/CustomTooltipContent.tsx';
-import { CircuitResponse, getRegisterSize } from '@/api/dto/circuit';
+import { CircuitResponse, getRegisterSize, getTotalQubitCount } from '@/api/dto/circuit';
 import { useQuantumSimulation } from '@/hooks/results/useQuantumSimulation.ts';
 import { SimulationOptions } from '@/simulation/simulation.types.ts';
 import { Endianness, useChartData } from '@/hooks/results/useChartData.ts';
 import { getBarColor } from '@/views/results-view/util/quantum-utils.ts';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select.tsx';
+import {
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog.tsx';
 
 const chartConfig = {
     prob: {
@@ -29,11 +39,16 @@ export function ResultsView({ circuit }: Readonly<ResultsViewProps>) {
     const [options, setOptions] = useState<SimulationOptions>({
         mode: 'exact',
         sampleCount: 1024,
-        maxQubits: 8,
+        maxQubits: 12,
     });
     const [endianness, setEndianness] = useState<Endianness>('big');
 
     const { result, isCalculating, error } = useQuantumSimulation(circuit, options);
+
+    const totalQubits = useMemo(() => {
+        if (!circuit) return 0;
+        return getTotalQubitCount(circuit);
+    }, [circuit]);
 
     const numQubits = useMemo(() => {
         if (result?.simulatedQubits) {
@@ -92,7 +107,74 @@ export function ResultsView({ circuit }: Readonly<ResultsViewProps>) {
         );
     }
 
+    const isCircuitTooLarge = totalQubits > (options.maxQubits ?? 12);
+
     const renderChartArea = () => {
+        if (isCircuitTooLarge) {
+            return (
+                <CardContent className="flex flex-col items-center justify-center h-[50vh] text-muted-foreground text-sm italic">
+                    <AlertTriangle className="w-12 h-12 mb-4 opacity-20" />
+                    <h3 className="font-semibold text-text mb-2 text-lg">Circuit Too Large</h3>
+                    <p className="text-sm text-text-muted max-w-[320px] mb-6">
+                        This circuit requires <strong>{totalQubits} qubits</strong>, but your simulation limit is set to{' '}
+                        {options.maxQubits}.
+                    </p>
+                    <Dialog>
+                        <DialogTrigger asChild>
+                            <Button
+                                variant="default"
+                                className="bg-special hover:bg-special-hover text-white shadow-md"
+                            >
+                                Increase limit to {totalQubits}
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle className="flex items-center gap-2 text-warning">
+                                    <AlertTriangle className="w-5 h-5" />
+                                    High Memory Warning
+                                </DialogTitle>
+                                <DialogDescription className="text-text-muted mt-3">
+                                    You are about to increase the simulation limit to{' '}
+                                    <strong>{totalQubits} qubits</strong>.
+                                    <br />
+                                    <br />
+                                    Quantum state simulation scales exponentially: a system with n qubits requires
+                                    storing 2ⁿ complex amplitudes.
+                                    <br />
+                                    <br />
+                                    Each additional qubit doubles the required memory. Setting this limit too high
+                                    (typically above 16–20 qubits) may cause your browser to freeze, crash, or run out
+                                    of memory.
+                                    <br />
+                                    <br />
+                                    Are you sure you want to proceed?
+                                </DialogDescription>
+                            </DialogHeader>
+                            <DialogFooter className="mt-4 gap-2 sm:gap-0">
+                                <DialogClose asChild>
+                                    <Button
+                                        variant="outline"
+                                        className="bg-bg border-border text-text hover:bg-bg-light-hover"
+                                    >
+                                        Cancel
+                                    </Button>
+                                </DialogClose>
+                                <DialogClose asChild>
+                                    <Button
+                                        variant="destructive"
+                                        onClick={() => setOptions((prev) => ({ ...prev, maxQubits: totalQubits }))}
+                                    >
+                                        Continue anyway
+                                    </Button>
+                                </DialogClose>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+                </CardContent>
+            );
+        }
+
         if (error) {
             return (
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-destructive bg-bg-dark/95 z-10 p-4 text-center">
@@ -203,7 +285,11 @@ export function ResultsView({ circuit }: Readonly<ResultsViewProps>) {
                                 </Badge>
                             )}
                         </CardTitle>
-                        <div className="flex flex-row gap-3 items-center">
+                        <div
+                            className={`flex flex-row gap-3 items-center transition-opacity duration-200 ${
+                                isCircuitTooLarge ? 'opacity-50 pointer-events-none grayscale' : ''
+                            }`}
+                        >
                             <p className="text-text-muted text-sm font-mono tracking-wide">Basis:</p>
                             <Select value={endianness} onValueChange={(val: Endianness) => setEndianness(val)}>
                                 <SelectTrigger className="w-[125px] bg-card hover:bg-bg-light-hover text-xs text-text">
@@ -231,14 +317,20 @@ export function ResultsView({ circuit }: Readonly<ResultsViewProps>) {
                             </p>
                         </div>
                     </div>
-                    <SimulationToolbar
-                        options={options}
-                        setOptions={setOptions}
-                        showZero={showZero}
-                        setShowZero={setShowZero}
-                        minProbability={minProbability}
-                        setMinProbability={setMinProbability}
-                    />
+                    <div
+                        className={`transition-opacity duration-200 ${
+                            isCircuitTooLarge ? 'opacity-50 pointer-events-none grayscale' : ''
+                        }`}
+                    >
+                        <SimulationToolbar
+                            options={options}
+                            setOptions={setOptions}
+                            showZero={showZero}
+                            setShowZero={setShowZero}
+                            minProbability={minProbability}
+                            setMinProbability={setMinProbability}
+                        />
+                    </div>
                 </div>
             </CardHeader>
 
