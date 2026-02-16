@@ -31,26 +31,44 @@ export interface MeasurementDto extends AbstractQuantumOperationDto {
 export type QuantumOperationDto = ElementaryQuantumGateDto | MeasurementDto;
 
 // --- Responses ---
+type RegisterType = 'Quantum_Register' | 'Classic_Register';
 
 export interface AbstractRegisterResponse {
     id: string;
     name: string;
+    type: RegisterType;
 }
 
 export interface ClassicRegisterResponse extends AbstractRegisterResponse {
+    type: 'Classic_Register';
     numberOfBits: number;
 }
 
 export interface QuantumRegisterResponse extends AbstractRegisterResponse {
+    type: 'Quantum_Register';
     numberOfQubits: number;
 }
 
 export type RegisterResponse = ClassicRegisterResponse | QuantumRegisterResponse;
 
 export const getRegisterSize = (reg: RegisterResponse): number => {
-    if ('numberOfQubits' in reg) return reg.numberOfQubits;
-    if ('numberOfBits' in reg) return reg.numberOfBits;
+    if (isQuantumRegister(reg)) return reg.numberOfQubits;
+    if (isClassicRegister(reg)) return reg.numberOfBits;
     return 0;
+};
+
+export const isQuantumRegister = (reg: RegisterResponse): reg is QuantumRegisterResponse => {
+    return reg.type === 'Quantum_Register';
+};
+
+export const isClassicRegister = (reg: RegisterResponse): reg is ClassicRegisterResponse => {
+    return reg.type === 'Classic_Register';
+};
+
+export const getTotalQubitCount = (circuitData: CircuitResponse): number => {
+    return circuitData.registers.reduce((sum, reg) => {
+        return isQuantumRegister(reg) ? sum + reg.numberOfQubits : sum;
+    }, 0);
 };
 
 export interface LayerResponse {
