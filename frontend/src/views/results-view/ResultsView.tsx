@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Cell } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartConfig } from '@/components/ui/chart';
 import { RefreshCcw, FilterX } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { SimulationToolbar } from '@/views/results-view/SimulationToolbar.tsx';
 import { CustomTooltipContent } from '@/views/results-view/CustomTooltipContent.tsx';
@@ -77,9 +77,6 @@ export function ResultsView({ circuit }: ResultsViewProps) {
     if (!circuit || (numQubits === 0 && !isCalculating)) {
         return (
             <Card className="w-full h-full border-l rounded-none bg-muted/10">
-                <CardHeader>
-                    <CardTitle>Simulation</CardTitle>
-                </CardHeader>
                 <CardContent className="flex flex-col items-center justify-center h-[50vh] text-muted-foreground text-sm italic">
                     <div className="bg-bg p-4 rounded-full mb-4 ring-1 ring-border">
                         <RefreshCcw className="w-8 h-8 text-text-muted/50" />
@@ -95,17 +92,12 @@ export function ResultsView({ circuit }: ResultsViewProps) {
             <CardHeader className="pb-2 border-b bg-card z-10 shrink-0">
                 <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
                     <div>
-                        <CardTitle className="flex items-center gap-2 text-lg text-text">
-                            Simulation Results
-                            {isCalculating && (
-                                <Badge
-                                    variant="secondary"
-                                    className="animate-pulse text-xs bg-bg-light text-text-muted"
-                                >
-                                    Calculating...
-                                </Badge>
-                            )}
-                        </CardTitle>
+                        Simulation Results
+                        {isCalculating && (
+                            <Badge variant="secondary" className="animate-pulse text-xs bg-bg-light text-text-muted">
+                                Calculating...
+                            </Badge>
+                        )}
                         <p className="text-xs text-text-muted mt-1 font-mono">
                             Basis: Big Endian{' '}
                             <span className="bg-bg px-1.5 py-0.5 rounded text-text border border-border-muted">

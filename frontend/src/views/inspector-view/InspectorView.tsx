@@ -37,9 +37,6 @@ function InspectorViewComponent({ gate, onClear }: InspectorViewProps) {
     if (!gate) {
         return (
             <Card className="w-full h-full border-l rounded-none bg-muted/10">
-                <CardHeader>
-                    <CardTitle>Inspector</CardTitle>
-                </CardHeader>
                 <CardContent className="flex flex-col items-center justify-center h-[50vh] text-muted-foreground text-sm italic">
                     <Microscope className="w-12 h-12 mb-4 opacity-20" />
                     <p>Select a gate from the Library</p>
@@ -53,7 +50,7 @@ function InspectorViewComponent({ gate, onClear }: InspectorViewProps) {
     const info = gate.inspectorInfo;
 
     return (
-        <Card className="w-full h-full border-l rounded-none flex flex-col">
+        <Card className="w-full h-full border-l rounded-none flex flex-col overflow-hidden bg-card">
             <CardHeader className="pb-2 border-b bg-card z-10 shrink-0">
                 <div className="flex items-start justify-between gap-2">
                     <div className="flex flex-col gap-1">
@@ -63,9 +60,7 @@ function InspectorViewComponent({ gate, onClear }: InspectorViewProps) {
                                 {gate.symbol}
                             </span>
                         </div>
-                        <p className="text-xs text-muted-foreground line-clamp-2">
-                            {gate.description}
-                        </p>
+                        <p className="text-xs text-muted-foreground line-clamp-2">{gate.description}</p>
                     </div>
 
                     {/* Close Button */}
@@ -149,10 +144,7 @@ function InspectorViewComponent({ gate, onClear }: InspectorViewProps) {
                                     </thead>
                                     <tbody className="divide-y">
                                         {info.truthTable.map((row, idx) => (
-                                            <tr
-                                                key={idx}
-                                                className="hover:bg-muted/20 transition-colors"
-                                            >
+                                            <tr key={idx} className="hover:bg-muted/20 transition-colors">
                                                 <td className="px-3 py-2 font-mono text-xs">
                                                     <SafeInlineMath math={row.input} />
                                                 </td>

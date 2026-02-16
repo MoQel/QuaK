@@ -97,6 +97,50 @@
     }
 }
 
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    html {
+        /* Default for large screens (1080p monitors and up) */
+        font-size: 16px;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    /*
+       Laptop Mode (13" / 14" Laptops)
+       Shrinks UI to ~87.5%.
+       1rem becomes 14px.
+    */
+    @media (max-width: 1440px) {
+        html {
+            font-size: 14px;
+        }
+    }
+
+    /*
+       Tablet / Small Laptop Mode
+       Shrinks UI to ~81%.
+       1rem becomes 13px.
+    */
+    @media (max-width: 1024px) {
+        html {
+            font-size: 13px;
+        }
+    }
+
+    /*
+       Mobile Mode
+       Shrinks UI to ~75%.
+    */
+    @media (max-width: 768px) {
+        html {
+            font-size: 12px;
+        }
+    }
+}
+
 /* Force Active Tab to be Dark/Light (Content Color) */
 .dockview-theme-custom .dv-tab.dv-active-tab {
     background-color: var(--bg-dark) !important;
