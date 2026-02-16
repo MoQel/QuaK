@@ -16,8 +16,6 @@ import { usePreventKeyboardActions } from '@/hooks/usePreventKeyboardActions.ts'
 
 function App() {
     const [selectedGate, setSelectedGate] = useState<GateDefinitionResponse | undefined>(undefined);
-    const [isGateDragging, setIsGateDragging] = useState(false);
-    const [draggingGateSize, setDraggingGateSize] = useState<number>(1);
     const [circuit, setCircuit] = useState<CircuitResponse>();
 
     const handleFileSelect = useFileSelect();
@@ -61,14 +59,7 @@ function App() {
                         {visiblePanels.circuit && (
                             <>
                                 <ResizablePanel defaultSize={topLayout[1]} onClose={() => onTogglePanel('circuit')}>
-                                    <CircuitView
-                                        circuit={circuit}
-                                        setCircuit={setCircuit}
-                                        isGateDragging={isGateDragging}
-                                        setIsGateDragging={setIsGateDragging}
-                                        draggingGateSize={draggingGateSize}
-                                        setDraggingGateSize={setDraggingGateSize}
-                                    />
+                                    <CircuitView circuit={circuit} setCircuit={setCircuit} />
                                 </ResizablePanel>
                                 {visiblePanels.code && <ResizableHandle withHandle />}
                             </>
@@ -87,11 +78,7 @@ function App() {
                 >
                     {visiblePanels.library && (
                         <div className="flex-1 overflow-hidden relative">
-                            <GateLibraryView
-                                onGateSelect={setSelectedGate}
-                                setIsGateDragging={setIsGateDragging}
-                                setDraggingGateSize={setDraggingGateSize}
-                            />
+                            <GateLibraryView onGateSelect={setSelectedGate} />
                         </div>
                     )}
 
