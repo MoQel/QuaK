@@ -31,7 +31,7 @@ export function SimulationToolbar({
     };
 
     return (
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
             <Select
                 value={options.mode}
                 onValueChange={(val) =>
@@ -41,7 +41,7 @@ export function SimulationToolbar({
                     }))
                 }
             >
-                <SelectTrigger className="w-[140px] h-8 bg-bg-light hover:bg-bg-light-hover border-border text-text">
+                <SelectTrigger className="w-full sm:w-[140px] h-8 bg-bg-light hover:bg-bg-light-hover border-border text-text">
                     <SelectValue placeholder="Mode" />
                 </SelectTrigger>
                 <SelectContent className="bg-bg-light border-border text-text">

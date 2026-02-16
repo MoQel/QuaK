@@ -12,7 +12,6 @@ import { SimulationOptions } from '@/simulation/simulation.types.ts';
 import { Endianness, useChartData } from '@/hooks/results/useChartData.ts';
 import { getBarColor } from '@/views/results-view/util/quantum-utils.ts';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select.tsx';
 import {
     Dialog,
     DialogClose,
@@ -23,6 +22,7 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog.tsx';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle';
 
 const chartConfig = {
     prob: {
@@ -112,7 +112,7 @@ export function ResultsView({ circuit }: Readonly<ResultsViewProps>) {
     const renderChartArea = () => {
         if (isCircuitTooLarge) {
             return (
-                <CardContent className="flex flex-col items-center justify-center h-[50vh] text-muted-foreground text-sm italic">
+                <div className="flex-1 flex flex-col items-center justify-center h-[50vh] text-muted-foreground text-sm italic">
                     <AlertTriangle className="w-12 h-12 mb-4 opacity-20" />
                     <h3 className="font-semibold text-text mb-2 text-lg">Circuit Too Large</h3>
                     <p className="text-sm text-text-muted max-w-[320px] mb-6">
@@ -128,7 +128,7 @@ export function ResultsView({ circuit }: Readonly<ResultsViewProps>) {
                                 Increase limit to {totalQubits}
                             </Button>
                         </DialogTrigger>
-                        <DialogContent>
+                        <DialogContent className="max-h-[90vh] overflow-y-auto">
                             <DialogHeader>
                                 <DialogTitle className="flex items-center gap-2 text-warning">
                                     <AlertTriangle className="w-5 h-5" />
@@ -171,7 +171,7 @@ export function ResultsView({ circuit }: Readonly<ResultsViewProps>) {
                             </DialogFooter>
                         </DialogContent>
                     </Dialog>
-                </CardContent>
+                </div>
             );
         }
 
@@ -272,8 +272,8 @@ export function ResultsView({ circuit }: Readonly<ResultsViewProps>) {
     return (
         <Card className="w-full h-full border-l rounded-none flex flex-col min-w-0">
             <CardHeader className="pb-2 border-b bg-card z-10 shrink-0">
-                <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
-                    <div>
+                <div className="flex flex-col gap-4 lg:flex-row lg:justify-between lg:items-center">
+                    <div className="flex flex-col gap-2">
                         <CardTitle className="flex items-center gap-2 text-lg text-text">
                             Simulation Results
                             {isCalculating && (
@@ -285,40 +285,38 @@ export function ResultsView({ circuit }: Readonly<ResultsViewProps>) {
                                 </Badge>
                             )}
                         </CardTitle>
+
                         <div
-                            className={`flex flex-row gap-3 items-center transition-opacity duration-200 ${
+                            className={`flex flex-col gap-1 transition-opacity duration-200 ${
                                 isCircuitTooLarge ? 'opacity-50 pointer-events-none grayscale' : ''
                             }`}
                         >
-                            <p className="text-text-muted text-sm font-mono tracking-wide">Basis:</p>
-                            <Select value={endianness} onValueChange={(val: Endianness) => setEndianness(val)}>
-                                <SelectTrigger className="w-[125px] bg-card hover:bg-bg-light-hover text-xs text-text">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent className="bg-bg-light border-border text-text">
-                                    <SelectItem
-                                        value="big"
-                                        className="text-xs rounded cursor-pointer focus:bg-highlight focus:text-text"
-                                    >
-                                        Big Endian
-                                    </SelectItem>
-                                    <SelectItem
-                                        value="little"
-                                        className="text-xs rounded cursor-pointer focus:bg-highlight focus:text-text"
-                                    >
-                                        Little Endian
-                                    </SelectItem>
-                                </SelectContent>
-                            </Select>
-                            <p className="text-xs text-text-muted mt-1 font-mono">
-                                <span className="bg-bg px-1.5 py-0.5 rounded text-text border border-border-muted">
+                            <div className="flex items-center gap-3">
+                                <span className="text-text-muted text-sm font-mono w-[70px]">Endian:</span>
+                                <ToggleGroup
+                                    type="single"
+                                    value={endianness}
+                                    onValueChange={(val) => {
+                                        if (val) setEndianness(val as Endianness);
+                                    }}
+                                    disabled={isCircuitTooLarge}
+                                >
+                                    <ToggleGroupItem value="big">Big</ToggleGroupItem>
+
+                                    <ToggleGroupItem value="little">Little</ToggleGroupItem>
+                                </ToggleGroup>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <span className="text-xs text-text-muted font-mono w-[70px]">Basis:</span>
+                                <span className="text-xs font-mono bg-bg px-2 py-0.5 rounded border border-border-muted text-text">
                                     {basisLabel}
                                 </span>
-                            </p>
+                            </div>
                         </div>
                     </div>
+
                     <div
-                        className={`transition-opacity duration-200 ${
+                        className={`w-full md:w-auto flex justify-start md:justify-end transition-opacity duration-200 ${
                             isCircuitTooLarge ? 'opacity-50 pointer-events-none grayscale' : ''
                         }`}
                     >
