@@ -90,8 +90,8 @@ describe('CircuitTranslator', () => {
             expect(result.stateVector).toHaveLength(2);
 
             expect(result.stateVector[0].state).toBe('|0>');
-            expect(result.stateVector[0].prob).toBeCloseTo(1.0);
-            expect(result.stateVector[1].prob).toBeCloseTo(0.0);
+            expect(result.stateVector[0].prob).toBeCloseTo(1);
+            expect(result.stateVector[1].prob).toBeCloseTo(0);
         });
     });
 
@@ -103,7 +103,7 @@ describe('CircuitTranslator', () => {
 
             expect(result.stateVector[0].prob).toBeCloseTo(0.0);
             expect(result.stateVector[1].state).toBe('|1>');
-            expect(result.stateVector[1].prob).toBeCloseTo(1.0);
+            expect(result.stateVector[1].prob).toBeCloseTo(1);
         });
 
         it('should apply H gate (Superposition)', () => {
@@ -153,11 +153,11 @@ describe('CircuitTranslator', () => {
 
         it('validates X gate (Pauli-X)', () => {
             let circuit = createCircuit(1, [gate('X', 0)]);
-            expect(findState(CircuitTranslator.translateAndRun(circuit), '|1>').prob).toBeCloseTo(1.0);
+            expect(findState(CircuitTranslator.translateAndRun(circuit), '|1>').prob).toBeCloseTo(1);
 
             // 1 -> 0
             circuit = createCircuit(1, [gate('X', 0), gate('X', 0)]);
-            expect(findState(CircuitTranslator.translateAndRun(circuit), '|0>').prob).toBeCloseTo(1.0);
+            expect(findState(CircuitTranslator.translateAndRun(circuit), '|0>').prob).toBeCloseTo(1);
         });
 
         it('validates H gate (Hadamard)', () => {
@@ -171,7 +171,7 @@ describe('CircuitTranslator', () => {
             const circuit = createCircuit(1, [gate('Y', 0)]);
             const result = CircuitTranslator.translateAndRun(circuit);
             const state1 = findState(result, '|1>');
-            expect(state1.prob).toBeCloseTo(1.0);
+            expect(state1.prob).toBeCloseTo(1);
             expect(state1.phase).toBeCloseTo(Math.PI / 2);
         });
 
@@ -233,11 +233,11 @@ describe('CircuitTranslator', () => {
         it('validates CX (CNOT) gate exhaustively', () => {
             // Case 1: Control = 0 -> Target stays 0 -> |00>
             let circuit = createCircuit(2, [multiGate('CX', [0], [1])]);
-            expect(findState(CircuitTranslator.translateAndRun(circuit), '|00>').prob).toBeCloseTo(1.0);
+            expect(findState(CircuitTranslator.translateAndRun(circuit), '|00>').prob).toBeCloseTo(1);
 
             // Case 2: Control = 1 -> Target flips to 1 -> |11>
             circuit = createCircuit(2, [gate('X', 0), multiGate('CX', [0], [1])]);
-            expect(findState(CircuitTranslator.translateAndRun(circuit), '|11>').prob).toBeCloseTo(1.0);
+            expect(findState(CircuitTranslator.translateAndRun(circuit), '|11>').prob).toBeCloseTo(1);
         });
 
         it('validates CZ gate exhaustively', () => {
@@ -255,37 +255,37 @@ describe('CircuitTranslator', () => {
         it('validates SWAP gate exhaustively', () => {
             // Case 1: |01> (Q0=1, Q1=0) -> SWAP -> |10>
             let circuit = createCircuit(2, [gate('X', 0), multiGate('SWAP', [], [0, 1])]);
-            expect(findState(CircuitTranslator.translateAndRun(circuit), '|10>').prob).toBeCloseTo(1.0);
+            expect(findState(CircuitTranslator.translateAndRun(circuit), '|10>').prob).toBeCloseTo(1);
 
             // Case 2: |10> (Q0=0, Q1=1) -> SWAP -> |01>
             circuit = createCircuit(2, [gate('X', 1), multiGate('SWAP', [], [0, 1])]);
-            expect(findState(CircuitTranslator.translateAndRun(circuit), '|01>').prob).toBeCloseTo(1.0);
+            expect(findState(CircuitTranslator.translateAndRun(circuit), '|01>').prob).toBeCloseTo(1);
 
             // Case 3: |11> -> SWAP -> |11> (should do nothing if both are 1)
             circuit = createCircuit(2, [gate('X', 0), gate('X', 1), multiGate('SWAP', [], [0, 1])]);
-            expect(findState(CircuitTranslator.translateAndRun(circuit), '|11>').prob).toBeCloseTo(1.0);
+            expect(findState(CircuitTranslator.translateAndRun(circuit), '|11>').prob).toBeCloseTo(1);
         });
 
         it('validates CCX (Toffoli) gate exhaustively', () => {
             // Case 1: Controls = 00 -> Target stays 0 -> |000>
             let circuit = createCircuit(3, [multiGate('CCX', [0, 1], [2])]);
-            expect(findState(CircuitTranslator.translateAndRun(circuit), '|000>').prob).toBeCloseTo(1.0);
+            expect(findState(CircuitTranslator.translateAndRun(circuit), '|000>').prob).toBeCloseTo(1);
 
             // Case 2: Controls = 10 (Q0=1) -> Target stays 0 -> |001>
             circuit = createCircuit(3, [gate('X', 0), multiGate('CCX', [0, 1], [2])]);
-            expect(findState(CircuitTranslator.translateAndRun(circuit), '|001>').prob).toBeCloseTo(1.0);
+            expect(findState(CircuitTranslator.translateAndRun(circuit), '|001>').prob).toBeCloseTo(1);
 
             // Case 3: Controls = 01 (Q1=1) -> Target stays 0 -> |010>
             circuit = createCircuit(3, [gate('X', 1), multiGate('CCX', [0, 1], [2])]);
-            expect(findState(CircuitTranslator.translateAndRun(circuit), '|010>').prob).toBeCloseTo(1.0);
+            expect(findState(CircuitTranslator.translateAndRun(circuit), '|010>').prob).toBeCloseTo(1);
 
             // Case 4: Controls = 11 -> Target flips to 1 -> |111>
             circuit = createCircuit(3, [gate('X', 0), gate('X', 1), multiGate('CCX', [0, 1], [2])]);
-            expect(findState(CircuitTranslator.translateAndRun(circuit), '|111>').prob).toBeCloseTo(1.0);
+            expect(findState(CircuitTranslator.translateAndRun(circuit), '|111>').prob).toBeCloseTo(1);
 
             // Case 5: Target is already 1, Controls = 11 -> Target flips to 0 -> |011>
             circuit = createCircuit(3, [gate('X', 0), gate('X', 1), gate('X', 2), multiGate('CCX', [0, 1], [2])]);
-            expect(findState(CircuitTranslator.translateAndRun(circuit), '|011>').prob).toBeCloseTo(1.0);
+            expect(findState(CircuitTranslator.translateAndRun(circuit), '|011>').prob).toBeCloseTo(1);
         });
     });
 });
