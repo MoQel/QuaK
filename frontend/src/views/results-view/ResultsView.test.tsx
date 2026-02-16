@@ -36,6 +36,7 @@ const mockCircuit: CircuitResponse = {
         {
             id: 'r1',
             name: 'q',
+            type: 'Quantum_Register',
             numberOfQubits: 1,
         },
     ],

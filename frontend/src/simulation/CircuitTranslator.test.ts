@@ -22,6 +22,7 @@ const createCircuit = (numQubits: number, operations: QuantumOperationDto[] = []
         {
             id: 'qreg-0',
             name: 'q',
+            type: 'Quantum_Register',
             numberOfQubits: numQubits,
         },
     ];
