@@ -2,16 +2,17 @@ package edu.kit.quak.application.filesystem.services;
 
 import edu.kit.quak.application.filesystem.delegator.FileElementContainerRepositoryDelegator;
 import edu.kit.quak.application.filesystem.exceptions.AccessDeniedException;
+import edu.kit.quak.application.user.ports.in.ProjectRoleServicePort;
 import edu.kit.quak.core.filesystem.model.FileElement;
 import edu.kit.quak.core.filesystem.model.FileElementContainer;
+import edu.kit.quak.core.user.model.ProjectRole;
 import edu.kit.quak.core.user.model.User;
-import java.util.UUID;
 import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
 
 /**
  * Abstract base class for file element services that provides common
- * functionality for ownership
+ * functionality for access
  * verification, parent retrieval, and element modification operations.
  *
  * <p>
@@ -20,7 +21,7 @@ import lombok.extern.slf4j.Slf4j;
  * shared logic for:
  *
  * <ul>
- * <li>Ownership verification using efficient recursive CTE queries
+ * <li>Role-based access verification using the project role system
  * <li>Parent container retrieval
  * <li>Finding elements within parent containers
  * <li>Modifying elements within their parent context
@@ -34,42 +35,86 @@ import lombok.extern.slf4j.Slf4j;
 public abstract class AbstractFileElementService<T extends FileElement<T>> {
 
     protected final FileElementContainerRepositoryDelegator delegator;
+    protected final ProjectRoleServicePort roleService;
 
-    protected AbstractFileElementService(FileElementContainerRepositoryDelegator delegator) {
+    protected AbstractFileElementService(
+            FileElementContainerRepositoryDelegator delegator, ProjectRoleServicePort roleService) {
         this.delegator = delegator;
+        this.roleService = roleService;
     }
 
     /**
-     * Verifies that the given user owns the project containing the file/directory.
-     * Uses a single
-     * efficient database query with recursive CTE to find the root project's owner,
-     * avoiding N+1
-     * queries when traversing deep hierarchies.
+     * Verifies that the given user has OWNER access to the project containing the
+     * file/directory.
+     * Uses a single efficient database query with recursive CTE to find the root
+     * project,
+     * then checks the user's role on that project.
      *
      * @param parentId the ID of the parent container
      * @param user     the user to verify ownership for
-     * @throws AccessDeniedException if user doesn't own the project
+     * @throws AccessDeniedException if user is not the owner of the project
      */
     protected void verifyOwnershipByParentId(String parentId, User user) {
         if (parentId == null) {
             throw new IllegalStateException("Cannot verify ownership: element has no parent");
         }
 
-        // Use efficient single-query ownership lookup
-        UUID projectOwnerId = delegator
-                .findProjectOwnerIdByElementId(parentId)
-                .orElseThrow(() -> new IllegalStateException(
-                        "Could not find root project for element with" + " parent ID: " + parentId));
-
-        if (!projectOwnerId.equals(user.getId())) {
+        String projectId = resolveProjectId(parentId);
+        if (!roleService.hasMinimumRole(projectId, user.getId(), ProjectRole.OWNER)) {
             log.warn(
-                    "Access denied: User '{}' is not owner of project '{}' ({} parent: '{}')",
+                    "Access denied: User '{}' is not OWNER of project containing {} (parent: '{}')",
                     user.getId(),
-                    projectOwnerId,
                     getElementTypeName(),
                     parentId);
             throw new AccessDeniedException(getElementTypeName(), parentId);
         }
+    }
+
+    /**
+     * Verifies that the given user has at least VIEWER access to the project
+     * containing the file/directory. Both OWNER and VIEWER roles will pass this
+     * check.
+     *
+     * @param parentId the ID of the parent container
+     * @param user     the user to verify access for
+     * @throws AccessDeniedException if user has no role on the project
+     */
+    protected void verifyAccessByParentId(String parentId, User user) {
+        if (parentId == null) {
+            throw new IllegalStateException("Cannot verify access: element has no parent");
+        }
+
+        String projectId = resolveProjectId(parentId);
+        if (!roleService.hasMinimumRole(projectId, user.getId(), ProjectRole.VIEWER)) {
+            log.warn(
+                    "Access denied: User '{}' has no role on project containing {} (parent: '{}')",
+                    user.getId(),
+                    getElementTypeName(),
+                    parentId);
+            throw new AccessDeniedException(getElementTypeName(), parentId);
+        }
+    }
+
+    /**
+     * Resolves the root project ID for a given element/parent ID. First checks if
+     * the ID itself is a project ID (starts with 'p'), otherwise traverses up the
+     * hierarchy.
+     *
+     * @param elementId the element or parent ID
+     * @return the project ID
+     */
+    private String resolveProjectId(String elementId) {
+        // If the parent is a project, use it directly
+        if (elementId.charAt(0) == 'p') {
+            return elementId;
+        }
+
+        // Otherwise, find the project owner via recursive CTE and get the project ID
+        // We look up via the delegator
+        return delegator
+                .findProjectIdByElementId(elementId)
+                .orElseThrow(() ->
+                        new IllegalStateException("Could not find root project for element with ID: " + elementId));
     }
 
     /**

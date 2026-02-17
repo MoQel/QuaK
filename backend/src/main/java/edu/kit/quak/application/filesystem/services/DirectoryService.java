@@ -3,6 +3,7 @@ package edu.kit.quak.application.filesystem.services;
 import edu.kit.quak.application.filesystem.delegator.FileElementContainerRepositoryDelegator;
 import edu.kit.quak.application.filesystem.ports.in.DirectoryServicePort;
 import edu.kit.quak.application.filesystem.ports.out.DirectoryRepositoryPort;
+import edu.kit.quak.application.user.ports.in.ProjectRoleServicePort;
 import edu.kit.quak.core.filesystem.model.Directory;
 import edu.kit.quak.core.filesystem.model.FileElement;
 import edu.kit.quak.core.filesystem.model.FileElementContainer;
@@ -18,8 +19,11 @@ public class DirectoryService extends AbstractFileElementService<Directory> impl
 
     private final DirectoryRepositoryPort repository;
 
-    public DirectoryService(DirectoryRepositoryPort repository, FileElementContainerRepositoryDelegator delegator) {
-        super(delegator);
+    public DirectoryService(
+            DirectoryRepositoryPort repository,
+            FileElementContainerRepositoryDelegator delegator,
+            ProjectRoleServicePort roleService) {
+        super(delegator, roleService);
         this.repository = repository;
     }
 
@@ -43,7 +47,8 @@ public class DirectoryService extends AbstractFileElementService<Directory> impl
     public Directory retrieveDirectory(String id, User user) {
         log.debug("Retrieving directory '{}' for user '{}'", id, user.getId());
         Directory directory = repository.findById(id).orElseThrow(NoSuchElementException::new);
-        verifyOwnershipByParentId(directory.getParentId(), user);
+        // Both OWNER and VIEWER can retrieve a directory
+        verifyAccessByParentId(directory.getParentId(), user);
         return directory;
     }
 

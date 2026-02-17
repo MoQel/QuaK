@@ -4,6 +4,7 @@ import edu.kit.quak.application.filesystem.delegator.FileElementContainerReposit
 import edu.kit.quak.application.filesystem.ports.in.FileServicePort;
 import edu.kit.quak.application.filesystem.ports.out.FileContentRepositoryPort;
 import edu.kit.quak.application.filesystem.ports.out.FileRepositoryPort;
+import edu.kit.quak.application.user.ports.in.ProjectRoleServicePort;
 import edu.kit.quak.core.filesystem.model.File;
 import edu.kit.quak.core.filesystem.model.FileElement;
 import edu.kit.quak.core.filesystem.model.FileElementContainer;
@@ -23,8 +24,9 @@ public class FileService extends AbstractFileElementService<File> implements Fil
     public FileService(
             FileRepositoryPort repository,
             FileContentRepositoryPort contentRepository,
-            FileElementContainerRepositoryDelegator delegator) {
-        super(delegator);
+            FileElementContainerRepositoryDelegator delegator,
+            ProjectRoleServicePort roleService) {
+        super(delegator, roleService);
         this.repository = repository;
         this.contentRepository = contentRepository;
     }
@@ -52,7 +54,8 @@ public class FileService extends AbstractFileElementService<File> implements Fil
     public File retrieveFile(String id, User user) {
         log.debug("Retrieving file '{}' for user '{}'", id, user.getId());
         File file = repository.findById(id).orElseThrow(NoSuchElementException::new);
-        verifyOwnershipByParentId(file.getParentId(), user);
+        // Both OWNER and VIEWER can retrieve a file
+        verifyAccessByParentId(file.getParentId(), user);
         return file;
     }
 
@@ -61,7 +64,8 @@ public class FileService extends AbstractFileElementService<File> implements Fil
     public byte[] getFileContent(String fId, User user) {
         log.debug("Retrieving content for file '{}'", fId);
         File file = repository.findById(fId).orElseThrow(() -> new NoSuchElementException("File not found: " + fId));
-        verifyOwnershipByParentId(file.getParentId(), user);
+        // Both OWNER and VIEWER can read file content
+        verifyAccessByParentId(file.getParentId(), user);
         return contentRepository.loadContent(fId).orElseThrow(NoSuchElementException::new);
     }
 

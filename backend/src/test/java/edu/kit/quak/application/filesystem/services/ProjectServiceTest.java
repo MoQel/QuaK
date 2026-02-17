@@ -8,6 +8,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import edu.kit.quak.application.filesystem.ports.out.ProjectRepositoryPort;
+import edu.kit.quak.application.user.ports.in.ProjectRoleServicePort;
+import edu.kit.quak.application.user.ports.out.ProjectRoleRepositoryPort;
 import edu.kit.quak.core.filesystem.model.Project;
 import edu.kit.quak.core.user.model.User;
 import edu.kit.quak.shared.tags.UnitTest;
@@ -27,12 +29,18 @@ class ProjectServiceTest {
     @Mock
     private ProjectRepositoryPort repository;
 
+    @Mock
+    private ProjectRoleServicePort roleService;
+
+    @Mock
+    private ProjectRoleRepositoryPort roleRepository;
+
     private ProjectService service;
     private User testUser;
 
     @BeforeEach
     void setUp() {
-        service = new ProjectService(repository);
+        service = new ProjectService(repository, roleService, roleRepository);
         testUser = new User();
         testUser.setId(UUID.randomUUID());
     }
@@ -46,6 +54,7 @@ class ProjectServiceTest {
 
         assertEquals(testUser.getId(), result.getOwnerId());
         verify(repository).save(p);
+        verify(roleRepository).save(any());
     }
 
     @Test
@@ -54,6 +63,7 @@ class ProjectServiceTest {
         Project p = new Project("Old", testUser.getId());
         when(repository.findById("1")).thenReturn(Optional.of(p));
         when(repository.save(any(Project.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(roleService.hasMinimumRole(any(), any(), any())).thenReturn(true);
 
         // Act
         service.renameProject("1", "New", testUser);

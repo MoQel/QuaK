@@ -7,10 +7,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
- * Routes repository operations for polymorphic {@link FileElementContainer} types.
+ * Routes repository operations for polymorphic {@link FileElementContainer}
+ * types.
  *
- * <p>Resolves the appropriate repository via the {@link FileElementContainerRepositoryRegistry}
- * based on the ID prefix. This centralizes persistence orchestration and shields application
+ * <p>
+ * Resolves the appropriate repository via the
+ * {@link FileElementContainerRepositoryRegistry}
+ * based on the ID prefix. This centralizes persistence orchestration and
+ * shields application
  * services from routing logic.
  */
 @Component
@@ -24,7 +28,8 @@ public class FileElementContainerRepositoryDelegator {
     }
 
     public <T extends FileElementContainer<?>> T save(T container) {
-        if (container == null) return null;
+        if (container == null)
+            return null;
 
         char prefix = container.getIdPrefix();
 
@@ -35,7 +40,8 @@ public class FileElementContainerRepositoryDelegator {
     }
 
     public Optional<FileElementContainer<?>> findContainerById(String id) {
-        if (id == null || id.isBlank()) return Optional.empty();
+        if (id == null || id.isBlank())
+            return Optional.empty();
 
         char prefix = id.charAt(0);
 
@@ -44,19 +50,46 @@ public class FileElementContainerRepositoryDelegator {
     }
 
     /**
-     * Efficiently finds the owner ID of the root project containing the given element. Uses a
-     * single database query with recursive CTE to traverse the hierarchy, avoiding N+1 queries.
+     * Efficiently finds the owner ID of the root project containing the given
+     * element. Uses a
+     * single database query with recursive CTE to traverse the hierarchy, avoiding
+     * N+1 queries.
      *
      * @param elementId The ID of any file element (file, directory, or project)
      * @return The UUID of the user who owns the root project
      */
     public Optional<UUID> findProjectOwnerIdByElementId(String elementId) {
-        if (elementId == null || elementId.isBlank()) return Optional.empty();
+        if (elementId == null || elementId.isBlank())
+            return Optional.empty();
 
         char prefix = elementId.charAt(0);
 
         // Use any repository that supports this query (they all delegate to the same
         // native query)
         return registry.getRepository(prefix).flatMap(repo -> repo.findProjectOwnerIdByElementId(elementId));
+    }
+
+    /**
+     * Finds the root project ID for the given element by traversing up the
+     * hierarchy. If the
+     * element ID already belongs to a project (prefix 'p'), it returns the ID
+     * directly.
+     *
+     * @param elementId The ID of any file element (file, directory, or project)
+     * @return The project ID of the root project
+     */
+    public Optional<String> findProjectIdByElementId(String elementId) {
+        if (elementId == null || elementId.isBlank())
+            return Optional.empty();
+
+        // If it's already a project, return it directly
+        if (elementId.charAt(0) == 'p') {
+            return Optional.of(elementId);
+        }
+
+        char prefix = elementId.charAt(0);
+
+        // Use the repository to find the project ID via recursive CTE
+        return registry.getRepository(prefix).flatMap(repo -> repo.findProjectIdByElementId(elementId));
     }
 }

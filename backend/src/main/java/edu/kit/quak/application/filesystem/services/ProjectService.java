@@ -3,10 +3,15 @@ package edu.kit.quak.application.filesystem.services;
 import edu.kit.quak.application.filesystem.exceptions.AccessDeniedException;
 import edu.kit.quak.application.filesystem.ports.in.ProjectServicePort;
 import edu.kit.quak.application.filesystem.ports.out.ProjectRepositoryPort;
+import edu.kit.quak.application.user.ports.in.ProjectRoleServicePort;
+import edu.kit.quak.application.user.ports.out.ProjectRoleRepositoryPort;
 import edu.kit.quak.core.filesystem.model.Project;
+import edu.kit.quak.core.user.model.ProjectRole;
+import edu.kit.quak.core.user.model.ProjectRoleAssignment;
 import edu.kit.quak.core.user.model.User;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,9 +22,16 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProjectService implements ProjectServicePort {
 
     private final ProjectRepositoryPort repository;
+    private final ProjectRoleServicePort roleService;
+    private final ProjectRoleRepositoryPort roleRepository;
 
-    public ProjectService(ProjectRepositoryPort repository) {
+    public ProjectService(
+            ProjectRepositoryPort repository,
+            ProjectRoleServicePort roleService,
+            ProjectRoleRepositoryPort roleRepository) {
         this.repository = repository;
+        this.roleService = roleService;
+        this.roleRepository = roleRepository;
     }
 
     @Override
@@ -27,7 +39,15 @@ public class ProjectService implements ProjectServicePort {
         log.info("Creating project '{}' for user '{}'", project.getName(), user.getId());
         checkForDuplicateProjectName(project.getName(), null, user);
         project.setOwnerId(user.getId());
-        return repository.save(project);
+        Project savedProject = repository.save(project);
+
+        // Auto-assign OWNER role to the creator
+        ProjectRoleAssignment ownerRole = new ProjectRoleAssignment(user.getId(), savedProject.getId(),
+                ProjectRole.OWNER);
+        roleRepository.save(ownerRole);
+        log.info("Assigned OWNER role to user '{}' for project '{}'", user.getId(), savedProject.getId());
+
+        return savedProject;
     }
 
     @Override
@@ -35,7 +55,7 @@ public class ProjectService implements ProjectServicePort {
         log.info("Renaming project '{}' to '{}' for user '{}'", pId, newName, user.getId());
         Project project = repository.findById(pId).orElseThrow(NoSuchElementException::new);
 
-        verifyOwnership(project, user);
+        verifyOwnerAccess(project, user);
         checkForDuplicateProjectName(newName, pId, user);
 
         project.rename(newName);
@@ -47,8 +67,10 @@ public class ProjectService implements ProjectServicePort {
         log.info("Removing project '{}' for user '{}'", id, user.getId());
         Project project = repository.findById(id).orElseThrow(NoSuchElementException::new);
 
-        verifyOwnership(project, user);
+        verifyOwnerAccess(project, user);
 
+        // Clean up all role assignments for this project
+        roleRepository.deleteAllByProjectId(id);
         repository.deleteById(id);
     }
 
@@ -57,25 +79,58 @@ public class ProjectService implements ProjectServicePort {
         log.debug("Retrieving project '{}' for user '{}'", id, user.getId());
         Project project = repository.findById(id).orElseThrow(NoSuchElementException::new);
 
-        verifyOwnership(project, user);
+        // Both OWNER and VIEWER can retrieve a project
+        verifyAccess(project, user);
 
         return project;
     }
 
+    // TODO - Maybe seperate this into multiple methods (one for owned projects, one
+    // for viewer projects).
     @Override
     public List<Project> listProjects(User user) {
         log.debug("Listing projects for user '{}'", user.getId());
-        return repository.getProjectsByOwnerId(user.getId());
+
+        // Get projects owned by the user
+        List<Project> ownedProjects = repository.getProjectsByOwnerId(user.getId());
+
+        // Get projects where the user has VIEWER role
+        List<ProjectRoleAssignment> viewerAssignments = roleRepository.findAllByUserIdAndRole(user.getId(),
+                ProjectRole.VIEWER);
+
+        List<Project> viewerProjects = viewerAssignments.stream()
+                .map(assignment -> repository.findById(assignment.getProjectId()))
+                .filter(java.util.Optional::isPresent)
+                .map(java.util.Optional::get)
+                .toList();
+
+        // Merge both lists, avoiding duplicates
+        return Stream.concat(ownedProjects.stream(), viewerProjects.stream())
+                .distinct()
+                .toList();
     }
 
     /**
-     * Verifies that the given user owns the given project.
+     * Verifies that the given user has at least VIEWER access to the project (OWNER
+     * or VIEWER).
      *
-     * @throws AccessDeniedException if user doesn't own the project
+     * @throws AccessDeniedException if user has no role on the project
      */
-    private void verifyOwnership(Project project, User user) {
-        if (project.getOwnerId() == null || !project.getOwnerId().equals(user.getId())) {
-            log.warn("Access denied: User '{}' does not own project '{}'", user.getId(), project.getId());
+    private void verifyAccess(Project project, User user) {
+        if (!roleService.hasMinimumRole(project.getId(), user.getId(), ProjectRole.VIEWER)) {
+            log.warn("Access denied: User '{}' has no role on project '{}'", user.getId(), project.getId());
+            throw new AccessDeniedException("project", project.getId());
+        }
+    }
+
+    /**
+     * Verifies that the given user is the OWNER of the project.
+     *
+     * @throws AccessDeniedException if user is not the owner
+     */
+    private void verifyOwnerAccess(Project project, User user) {
+        if (!roleService.hasMinimumRole(project.getId(), user.getId(), ProjectRole.OWNER)) {
+            log.warn("Access denied: User '{}' is not OWNER of project '{}'", user.getId(), project.getId());
             throw new AccessDeniedException("project", project.getId());
         }
     }

@@ -65,4 +65,9 @@ public class ProjectJpaAdapter implements ProjectRepositoryPort {
     public Optional<UUID> findProjectOwnerIdByElementId(String elementId) {
         return containerRepository.findProjectOwnerIdByElementId(elementId).map(JpaUtils::convertToUuid);
     }
+
+    @Override
+    public Optional<String> findProjectIdByElementId(String elementId) {
+        return containerRepository.findProjectIdByElementId(elementId);
+    }
 }
