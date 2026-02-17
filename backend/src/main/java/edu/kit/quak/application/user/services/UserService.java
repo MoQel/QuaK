@@ -5,13 +5,15 @@ import edu.kit.quak.application.user.ports.in.UserServicePort;
 import edu.kit.quak.application.user.ports.out.UserRepositoryPort;
 import edu.kit.quak.core.user.model.AuthenticatedUser;
 import edu.kit.quak.core.user.model.User;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 /**
- * Service for user-related business logic. Handles user authentication, authorization, and user
+ * Service for user-related business logic. Handles user authentication,
+ * authorization, and user
  * data operations.
  */
 @Service
@@ -71,5 +73,14 @@ public class UserService implements UserServicePort {
                             authenticatedUser.subject());
                     return new UserNotFoundException(authenticatedUser.issuer(), authenticatedUser.subject());
                 });
+    }
+
+    @Override
+    public List<User> searchByEmail(String emailQuery) {
+        log.debug("Searching users by email query: {}", emailQuery);
+        if (emailQuery == null || emailQuery.isBlank()) {
+            return List.of();
+        }
+        return userRepository.searchByEmail(emailQuery);
     }
 }

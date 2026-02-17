@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FolderOpen, MoreVertical, Pencil, Pin, PinOff, Trash2 } from 'lucide-react';
+import { FolderOpen, MoreVertical, Pencil, Pin, PinOff, Trash2, Users } from 'lucide-react';
 
 import { Button } from '@/components/ui/button.tsx';
 import { Card, CardContent } from '@/components/ui/card.tsx';
@@ -13,12 +13,16 @@ export function ProjectCard({
     onRename,
     onDelete,
     onTogglePin,
+    onManageAccess,
+    isOwner = true,
 }: {
     project: ProjectDetailsResponse;
     pinned: boolean;
     onRename: (project: ProjectDetailsResponse) => void;
     onDelete: (project: ProjectDetailsResponse) => void;
     onTogglePin: (projectId: string) => void;
+    onManageAccess?: (project: ProjectDetailsResponse) => void;
+    isOwner?: boolean;
 }) {
     const [actionsOpen, setActionsOpen] = useState(false);
 
@@ -48,17 +52,19 @@ export function ProjectCard({
                             </PopoverTrigger>
                             <PopoverContent className="w-56 p-2">
                                 <div className="flex flex-col gap-1">
-                                    <Button
-                                        variant="ghost"
-                                        className="justify-start"
-                                        onClick={() => {
-                                            setActionsOpen(false);
-                                            onRename(project);
-                                        }}
-                                    >
-                                        <Pencil className="size-4" />
-                                        Rename
-                                    </Button>
+                                    {isOwner && (
+                                        <Button
+                                            variant="ghost"
+                                            className="justify-start"
+                                            onClick={() => {
+                                                setActionsOpen(false);
+                                                onRename(project);
+                                            }}
+                                        >
+                                            <Pencil className="size-4" />
+                                            Rename
+                                        </Button>
+                                    )}
                                     <Button
                                         variant="ghost"
                                         className="justify-start"
@@ -70,18 +76,35 @@ export function ProjectCard({
                                         {pinned ? <PinOff className="size-4" /> : <Pin className="size-4" />}
                                         {pinned ? 'Unpin' : 'Pin'}
                                     </Button>
-                                    <div className="h-px bg-border my-1" />
-                                    <Button
-                                        variant="destructive"
-                                        className="justify-start"
-                                        onClick={() => {
-                                            setActionsOpen(false);
-                                            onDelete(project);
-                                        }}
-                                    >
-                                        <Trash2 className="size-4" />
-                                        Delete
-                                    </Button>
+                                    {isOwner && onManageAccess && (
+                                        <Button
+                                            variant="ghost"
+                                            className="justify-start"
+                                            onClick={() => {
+                                                setActionsOpen(false);
+                                                onManageAccess(project);
+                                            }}
+                                        >
+                                            <Users className="size-4" />
+                                            Manage Access
+                                        </Button>
+                                    )}
+                                    {isOwner && (
+                                        <>
+                                            <div className="h-px bg-border my-1" />
+                                            <Button
+                                                variant="destructive"
+                                                className="justify-start"
+                                                onClick={() => {
+                                                    setActionsOpen(false);
+                                                    onDelete(project);
+                                                }}
+                                            >
+                                                <Trash2 className="size-4" />
+                                                Delete
+                                            </Button>
+                                        </>
+                                    )}
                                 </div>
                             </PopoverContent>
                         </Popover>

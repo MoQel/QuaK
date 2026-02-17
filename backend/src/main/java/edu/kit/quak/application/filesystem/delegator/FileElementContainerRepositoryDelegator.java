@@ -28,8 +28,7 @@ public class FileElementContainerRepositoryDelegator {
     }
 
     public <T extends FileElementContainer<?>> T save(T container) {
-        if (container == null)
-            return null;
+        if (container == null) return null;
 
         char prefix = container.getIdPrefix();
 
@@ -40,8 +39,7 @@ public class FileElementContainerRepositoryDelegator {
     }
 
     public Optional<FileElementContainer<?>> findContainerById(String id) {
-        if (id == null || id.isBlank())
-            return Optional.empty();
+        if (id == null || id.isBlank()) return Optional.empty();
 
         char prefix = id.charAt(0);
 
@@ -59,8 +57,7 @@ public class FileElementContainerRepositoryDelegator {
      * @return The UUID of the user who owns the root project
      */
     public Optional<UUID> findProjectOwnerIdByElementId(String elementId) {
-        if (elementId == null || elementId.isBlank())
-            return Optional.empty();
+        if (elementId == null || elementId.isBlank()) return Optional.empty();
 
         char prefix = elementId.charAt(0);
 
@@ -79,8 +76,7 @@ public class FileElementContainerRepositoryDelegator {
      * @return The project ID of the root project
      */
     public Optional<String> findProjectIdByElementId(String elementId) {
-        if (elementId == null || elementId.isBlank())
-            return Optional.empty();
+        if (elementId == null || elementId.isBlank()) return Optional.empty();
 
         // If it's already a project, return it directly
         if (elementId.charAt(0) == 'p') {

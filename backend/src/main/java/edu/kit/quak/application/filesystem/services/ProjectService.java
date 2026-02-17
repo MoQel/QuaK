@@ -42,8 +42,8 @@ public class ProjectService implements ProjectServicePort {
         Project savedProject = repository.save(project);
 
         // Auto-assign OWNER role to the creator
-        ProjectRoleAssignment ownerRole = new ProjectRoleAssignment(user.getId(), savedProject.getId(),
-                ProjectRole.OWNER);
+        ProjectRoleAssignment ownerRole =
+                new ProjectRoleAssignment(user.getId(), savedProject.getId(), ProjectRole.OWNER);
         roleRepository.save(ownerRole);
         log.info("Assigned OWNER role to user '{}' for project '{}'", user.getId(), savedProject.getId());
 
@@ -95,8 +95,8 @@ public class ProjectService implements ProjectServicePort {
         List<Project> ownedProjects = repository.getProjectsByOwnerId(user.getId());
 
         // Get projects where the user has VIEWER role
-        List<ProjectRoleAssignment> viewerAssignments = roleRepository.findAllByUserIdAndRole(user.getId(),
-                ProjectRole.VIEWER);
+        List<ProjectRoleAssignment> viewerAssignments =
+                roleRepository.findAllByUserIdAndRole(user.getId(), ProjectRole.VIEWER);
 
         List<Project> viewerProjects = viewerAssignments.stream()
                 .map(assignment -> repository.findById(assignment.getProjectId()))
