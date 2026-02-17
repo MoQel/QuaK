@@ -1,7 +1,7 @@
 import {
     CircuitResponse,
     ElementaryQuantumGateDto,
-    getTotalQubitCount,
+    getCircuitWidth,
     isQuantumRegister,
     RegisterResponse,
 } from '@/api/dto/circuit.ts';
@@ -20,29 +20,29 @@ type RegisterOffsets = Record<string, number>;
 export class CircuitTranslator {
     // Default values, if options not set
     private static readonly SAMPLE_COUNT = 1024;
-    private static readonly MAX_SIMULATION_QUBITS = 12;
+    private static readonly MAX_CIRCUIT_WIDTH = 12;
     private static readonly DEFAULT_MODE: SimulationMode = 'exact';
     /**
      * Maps backend Circuit representation into qualacs simulation
      */
     static translateAndRun(circuitData: CircuitResponse, options: SimulationOptions = {}): SimulationResult {
-        const maxQubits = options.maxQubits ?? this.MAX_SIMULATION_QUBITS;
+        const maxCircuitWidth = options.maxCircuitWidth ?? this.MAX_CIRCUIT_WIDTH;
         const sampleCount = options.sampleCount ?? this.SAMPLE_COUNT;
         const mode: SimulationMode = options.mode ?? this.DEFAULT_MODE;
 
-        const numQubits = getTotalQubitCount(circuitData);
+        const circuitWidth = getCircuitWidth(circuitData);
 
         // Early return if no circuit is present
-        if (numQubits === 0) return this.createEmptyResult(numQubits);
-        if (numQubits > maxQubits) {
-            throw new Error(`Circuit exceeds maximum limit of ${maxQubits} qubits.`);
+        if (circuitWidth === 0) return this.createEmptyResult(circuitWidth);
+        if (circuitWidth > maxCircuitWidth) {
+            throw new Error(`Circuit exceeds maximum limit of ${maxCircuitWidth} qubits.`);
         }
 
         // Initialize offset Map
         const offsets = this.calculateRegisterOffsets(circuitData.registers);
         // Initialize Qulacs Circuit instances
-        const state = new qulacs.QuantumState(numQubits);
-        const circuit = new qulacs.QuantumCircuit(numQubits);
+        const state = new qulacs.QuantumState(circuitWidth);
+        const circuit = new qulacs.QuantumCircuit(circuitWidth);
 
         try {
             // Build
@@ -53,10 +53,10 @@ export class CircuitTranslator {
             circuit.update_quantum_state(state);
 
             // Process
-            return this.processResults(state, numQubits, mode, sampleCount);
+            return this.processResults(state, circuitWidth, mode, sampleCount);
         } catch (error) {
             console.error('Simulation failed:', error);
-            return this.createEmptyResult(numQubits);
+            return this.createEmptyResult(circuitWidth);
         } finally {
             // Secure cast on our disposable interface for cleanup (type does not exist)
             (state as unknown as Disposable).delete();

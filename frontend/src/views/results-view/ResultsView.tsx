@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { SimulationToolbar } from '@/views/results-view/SimulationToolbar.tsx';
 import { CustomTooltipContent } from '@/views/results-view/CustomTooltipContent.tsx';
-import { CircuitResponse, getRegisterSize, getTotalQubitCount } from '@/api/dto/circuit';
+import { CircuitResponse, getCircuitWidth } from '@/api/dto/circuit';
 import { useQuantumSimulation } from '@/hooks/results/useQuantumSimulation.ts';
 import { SimulationOptions } from '@/simulation/simulation.types.ts';
 import { Endianness, useChartData } from '@/hooks/results/useChartData.ts';
@@ -39,36 +39,26 @@ export function ResultsView({ circuit }: Readonly<ResultsViewProps>) {
     const [options, setOptions] = useState<SimulationOptions>({
         mode: 'exact',
         sampleCount: 1024,
-        maxQubits: 12,
+        maxCircuitWidth: 12,
     });
     const [endianness, setEndianness] = useState<Endianness>('big');
 
     const { result, isCalculating, error } = useQuantumSimulation(circuit, options);
 
-    const totalQubits = useMemo(() => {
+    const circuitWidth = useMemo(() => {
         if (!circuit) return 0;
-        return getTotalQubitCount(circuit);
+        return getCircuitWidth(circuit);
     }, [circuit]);
 
-    const numQubits = useMemo(() => {
+    const simulatedCircuitWidth = useMemo(() => {
         if (result?.simulatedQubits) {
             return result.simulatedQubits;
         }
 
-        if (!circuit) return 0;
+        return circuitWidth;
+    }, [result, circuitWidth]);
 
-        const max = options.maxQubits ?? 8;
-        let count = 0;
-
-        for (const register of circuit.registers) {
-            const registerSize: number = getRegisterSize(register);
-            if (count + registerSize > max) break;
-            count += registerSize;
-        }
-        return count;
-    }, [circuit, result, options.maxQubits]);
-
-    const chartData = useChartData(result, options, numQubits, endianness);
+    const chartData = useChartData(result, options, simulatedCircuitWidth, endianness);
 
     const [showZero, setShowZero] = useState(false);
     const [minProbability, setMinProbability] = useState(0.1); //standard is 0,1%
@@ -86,14 +76,14 @@ export function ResultsView({ circuit }: Readonly<ResultsViewProps>) {
     const shouldScroll = visibleData.length > 12;
 
     const basisLabel = useMemo(() => {
-        if (numQubits === 0) return '';
-        if (numQubits === 1) return '|q0>';
+        if (simulatedCircuitWidth === 0) return '';
+        if (simulatedCircuitWidth === 1) return '|q0>';
 
-        return endianness === 'big' ? `|q0...q${numQubits - 1}>` : `|q${numQubits - 1}...q0>`;
-    }, [numQubits, endianness]);
+        return endianness === 'big' ? `|q0...q${simulatedCircuitWidth - 1}>` : `|q${simulatedCircuitWidth - 1}...q0>`;
+    }, [simulatedCircuitWidth, endianness]);
 
     // Empty State
-    if (!circuit || (numQubits === 0 && !isCalculating)) {
+    if (!circuit || (simulatedCircuitWidth === 0 && !isCalculating)) {
         return (
             <Card className="w-full h-full border-l rounded-none bg-muted/10">
                 <CardHeader>
@@ -107,7 +97,7 @@ export function ResultsView({ circuit }: Readonly<ResultsViewProps>) {
         );
     }
 
-    const isCircuitTooLarge = totalQubits > (options.maxQubits ?? 12);
+    const isCircuitTooLarge = circuitWidth > (options.maxCircuitWidth ?? 12);
 
     const renderChartArea = () => {
         if (isCircuitTooLarge) {
@@ -116,8 +106,8 @@ export function ResultsView({ circuit }: Readonly<ResultsViewProps>) {
                     <AlertTriangle className="w-12 h-12 mb-4 opacity-20" />
                     <h3 className="font-semibold text-text mb-2 text-lg">Circuit Too Large</h3>
                     <p className="text-sm text-text-muted max-w-[320px] mb-6">
-                        This circuit requires <strong>{totalQubits} qubits</strong>, but your simulation limit is set to{' '}
-                        {options.maxQubits}.
+                        This circuit requires <strong>{circuitWidth} qubits</strong>, but your simulation limit is set
+                        to {options.maxCircuitWidth}.
                     </p>
                     <Dialog>
                         <DialogTrigger asChild>
@@ -125,7 +115,7 @@ export function ResultsView({ circuit }: Readonly<ResultsViewProps>) {
                                 variant="default"
                                 className="bg-special hover:bg-special-hover text-white shadow-md"
                             >
-                                Increase limit to {totalQubits}
+                                Increase limit to {circuitWidth}
                             </Button>
                         </DialogTrigger>
                         <DialogContent className="max-h-[90vh] overflow-y-auto">
@@ -136,7 +126,7 @@ export function ResultsView({ circuit }: Readonly<ResultsViewProps>) {
                                 </DialogTitle>
                                 <DialogDescription className="text-text-muted mt-3">
                                     You are about to increase the simulation limit to{' '}
-                                    <strong>{totalQubits} qubits</strong>.
+                                    <strong>{circuitWidth} qubits</strong>.
                                     <br />
                                     <br />
                                     Quantum state simulation scales exponentially: a system with n qubits requires
@@ -163,7 +153,9 @@ export function ResultsView({ circuit }: Readonly<ResultsViewProps>) {
                                 <DialogClose asChild>
                                     <Button
                                         variant="destructive"
-                                        onClick={() => setOptions((prev) => ({ ...prev, maxQubits: totalQubits }))}
+                                        onClick={() =>
+                                            setOptions((prev) => ({ ...prev, maxCircuitWidth: circuitWidth }))
+                                        }
                                     >
                                         Continue anyway
                                     </Button>

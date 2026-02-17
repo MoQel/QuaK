@@ -79,7 +79,7 @@ export function useQuantumSimulation(circuit: CircuitResponse | undefined, optio
                 clearTimeout(debounceTimerRef.current);
             }
         };
-    }, [circuit, options.mode, options.sampleCount, options.maxQubits]);
+    }, [circuit, options.mode, options.sampleCount, options.maxCircuitWidth]);
     // Note: We decompose 'options' in deps to avoid re-runs on new object references
 
     return { result, isCalculating, error };

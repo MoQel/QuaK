@@ -118,12 +118,12 @@ describe('CircuitTranslator', () => {
     });
 
     describe('Configuration & Limits', () => {
-        it('should throw an error if circuit exceeds maxQubits limit', () => {
+        it('should throw an error if circuit exceeds max circuit width', () => {
             const circuit = createCircuit(3, [gate('X', 0), gate('X', 1), gate('X', 2)]);
 
             expect(() => {
                 CircuitTranslator.translateAndRun(circuit, {
-                    maxQubits: 2,
+                    maxCircuitWidth: 2,
                 });
             }).toThrow(/Circuit exceeds maximum limit/);
         });

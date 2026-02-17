@@ -83,10 +83,10 @@ export function SimulationToolbar({
                                 </h5>
                                 <div className="flex items-center justify-between">
                                     <div className="flex">
-                                        <Label htmlFor="maxQubits" className="text-sm text-text font-normal">
-                                            Max Circuit Size
+                                        <Label htmlFor="maxWidth" className="text-sm text-text font-normal">
+                                            Max Circuit Width
                                         </Label>
-                                        {(options.maxQubits ?? 12) >= 16 && (
+                                        {(options.maxCircuitWidth ?? 12) >= 16 && (
                                             <Tooltip>
                                                 <TooltipTrigger>
                                                     <Button variant="ghost" size="icon">
@@ -95,7 +95,7 @@ export function SimulationToolbar({
                                                 </TooltipTrigger>
                                                 <TooltipContent className="bg-destructive">
                                                     <p className="text-text text-sm leading-tight">
-                                                        <p>High qubit counts may cause your browser</p>
+                                                        <p>High circuit widths may cause your browser</p>
                                                         <p>to freeze or crash due to high memory usage.</p>
                                                     </p>
                                                 </TooltipContent>
@@ -104,9 +104,9 @@ export function SimulationToolbar({
                                     </div>
                                     <div className="w-24">
                                         <SmartInput
-                                            id="maxQubits"
-                                            value={options.maxQubits ?? 24}
-                                            onChange={(v) => updateOption('maxQubits', v)}
+                                            id="maxCircuitWidth"
+                                            value={options.maxCircuitWidth ?? 24}
+                                            onChange={(v) => updateOption('maxCircuitWidth', v)}
                                             min={1}
                                             max={24}
                                         />

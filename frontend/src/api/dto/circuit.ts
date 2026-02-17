@@ -65,7 +65,7 @@ export const isClassicRegister = (reg: RegisterResponse): reg is ClassicRegister
     return reg.type === 'Classic_Register';
 };
 
-export const getTotalQubitCount = (circuitData: CircuitResponse): number => {
+export const getCircuitWidth = (circuitData: CircuitResponse): number => {
     return circuitData.registers.reduce((sum, reg) => {
         return isQuantumRegister(reg) ? sum + reg.numberOfQubits : sum;
     }, 0);

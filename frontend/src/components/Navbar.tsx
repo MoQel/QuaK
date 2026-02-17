@@ -93,6 +93,7 @@ export const Navbar: React.FC = () => {
                                 src={user.avatarUrl}
                                 alt={user.name}
                                 className="w-9 h-9 rounded-full border-2 border-blue-500"
+                                crossOrigin="anonymous" /* Needed for cross-origin isolation (SharedArrayBuffer) */
                             />
                         )}
                         <div className="flex flex-col">
