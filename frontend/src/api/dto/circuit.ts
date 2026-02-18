@@ -7,7 +7,9 @@ export interface ElementSelectorDto {
     index: number;
 }
 
-export type QuantumOperationType = 'ELEMENTARY_QUANTUM_GATE' | 'MEASUREMENT';
+export const getSelectorKey = (sel: ElementSelectorDto): string => `${sel.registerId}-${sel.index}`;
+
+export type QuantumOperationType = 'ELEMENTARY_QUANTUM_GATE' | 'MEASUREMENT' | 'DUMMY';
 
 export interface AbstractQuantumOperationDto {
     id?: string; // Only for response
@@ -28,7 +30,20 @@ export interface MeasurementDto extends AbstractQuantumOperationDto {
     classicBits: ElementSelectorDto[];
 }
 
-export type QuantumOperationDto = ElementaryQuantumGateDto | MeasurementDto;
+// Temporary placeholder only — must never appear in a finalized or submitted circuit.
+export interface DummyDto extends AbstractQuantumOperationDto {
+    type: 'DUMMY';
+}
+
+export type QuantumOperationDto = ElementaryQuantumGateDto | MeasurementDto | DummyDto;
+
+export const getInvolvedSelectors = (op: QuantumOperationDto): ElementSelectorDto[] => {
+    const selectors = [...op.targetQubits];
+    if (op.controlQubits) {
+        selectors.push(...op.controlQubits);
+    }
+    return selectors;
+};
 
 // --- Responses ---
 

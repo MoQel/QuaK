@@ -15,7 +15,8 @@ export type OperationIdentifier =
     | 'RX'
     | 'RY'
     | 'RZ'
-    | 'MEASURE';
+    | 'MEASURE'
+    | 'DUMMY'; // Temporary placeholder only — must never appear in a finalized or submitted circuit.
 
 export const getOperationSizeByIdentifier = (identifier: OperationIdentifier): number => {
     switch (identifier.toUpperCase()) {

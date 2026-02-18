@@ -12,11 +12,9 @@ interface ElementaryQuantumGateProps {
     operation: QuantumOperationDto;
     registers: RegisterResponse[];
     layerIdx: number;
-    isDragging: boolean;
     onDragStart: (operationSize: number) => void;
     onDragEnd: () => void;
     onDelete: () => void;
-    shiftedOffset: number;
 }
 
 // --- Helper Functions ---
@@ -36,11 +34,9 @@ export function ElementaryQuantumGate({
     operation,
     registers,
     layerIdx,
-    isDragging,
     onDragStart,
     onDragEnd,
     onDelete,
-    shiftedOffset = 0,
 }: Readonly<ElementaryQuantumGateProps>) {
     const isDraggingRef = useRef(false);
 
@@ -101,11 +97,10 @@ export function ElementaryQuantumGate({
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
             onClick={handleClick}
-            className={`absolute z-30 flex flex-col items-center group pointer-events-none
-                ${isDragging ? 'invisible' : 'visible'}`}
+            className="absolute z-30 flex flex-col items-center group pointer-events-none"
             style={{
                 top: minY * QUBIT_HEIGHT,
-                left: layerIdx * CELL_WIDTH + shiftedOffset,
+                left: layerIdx * CELL_WIDTH,
                 width: CELL_WIDTH,
                 height: spanHeight + QUBIT_HEIGHT,
             }}

@@ -35,8 +35,8 @@ function App() {
         };
     }, []);
 
-    const topContainerClass = isBottomVisible ? 'h-[30%]' : 'flex-1';
-    const bottomContainerClass = isTopVisible ? 'h-[70%]' : 'flex-1';
+    const topContainerClass = isBottomVisible ? 'h-[50%]' : 'flex-1';
+    const bottomContainerClass = isTopVisible ? 'h-[50%]' : 'flex-1';
 
     return (
         <div className="flex flex-col h-[calc(100vh-65px)] overflow-hidden bg-background text-foreground">
