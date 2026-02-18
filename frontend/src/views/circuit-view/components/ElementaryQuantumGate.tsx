@@ -6,7 +6,7 @@ import {
     getOperationSizeByIdentifier,
     OperationIdentifier,
 } from '@/api/dto/OperationDefinition.ts';
-import { CELL_WIDTH, QUBIT_HEIGHT } from '@/views/circuit-view/layout.ts';
+import { CELL_WIDTH, QUBIT_HEIGHT } from '@/views/circuit-view/util/layout.ts';
 
 interface ElementaryQuantumGateProps {
     operation: QuantumOperationDto;

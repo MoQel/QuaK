@@ -1,118 +1,34 @@
 import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Minus, Plus, Trash } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import styles from '@/App.module.css';
-import { api } from '@/api/api';
+import { useEffect, useMemo, useState } from 'react';
 import {
-    AddQuantumOperationRequest,
     CircuitResponse,
-    ElementaryQuantumGateDto,
     ElementSelectorDto,
     getInvolvedSelectors,
     getRegisterSize,
     getSelectorKey,
-    MoveQuantumOperationRequest,
-    QuantumOperationDto,
 } from '@/api/dto/circuit';
-import { CELL_WIDTH, QUBIT_HEIGHT } from '@/views/circuit-view/layout.ts';
-import {
-    getOperationControlSizeByIdentifier,
-    getOperationTargetSizeByIdentifier,
-    OperationIdentifier,
-} from '@/api/dto/OperationDefinition.ts';
-import { ElementaryQuantumGate } from '@/views/circuit-view/ElementaryQuantumGate.tsx';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store.ts';
-import { startOperationDrag, stopOperationDrag } from '@/store/slices/dragOperationSlice.ts';
+import { CircuitToolbar } from './components/CircuitToolbar.tsx';
+import { CircuitWires } from './components/CircuitWires.tsx';
+import { QuantumOperationGrid } from './components/QuantumOperationGrid.tsx';
+import { DropzoneGrid } from './components/DropzoneGrid.tsx';
+import { DropPlaceholder } from './components/DropPlaceholder.tsx';
+import { CircuitFooter } from './components/CircuitFooter.tsx';
+import { HoverPos, UiLayer, UiQuantumOperation } from './util/types.ts';
+import { createCircuitService } from '@/views/circuit-view/util/circuitService.ts';
 
 interface CircuitViewProps {
     circuit: CircuitResponse | undefined;
     setCircuit: (circuit: CircuitResponse) => void;
 }
 
-interface DragData {
-    origin: 'library' | 'circuit';
-    operationDefinition: OperationIdentifier;
-    id?: string;
-}
-
-type UiLayer = {
-    quantumOperations: UiQuantumOperation[];
-};
-
-type UiQuantumOperation = QuantumOperationDto & {
-    originalLayerIdx: number;
-};
-
-function useCircuitActions(circuit: CircuitResponse | undefined, setCircuit: (circuit: CircuitResponse) => void) {
-    const initCircuit = useCallback(() => {
-        api.post<CircuitResponse>('/api/circuit').then(setCircuit);
-    }, []);
-
-    const addQubit = () => {
-        if (!circuit) return;
-        const lastReg = circuit.registers.at(-1);
-        if (lastReg) {
-            api.post<CircuitResponse>(`/api/circuit/${circuit.id}/register/${lastReg.id}`).then(setCircuit);
-        }
-    };
-
-    const deleteLastQubit = () => {
-        if (!circuit) return;
-        const lastReg = circuit.registers.at(-1);
-        if (lastReg) {
-            api.delete<CircuitResponse>(`/api/circuit/${circuit.id}/register/${lastReg.id}`).then(setCircuit);
-        }
-    };
-
-    const resetCircuit = () => {
-        if (!circuit) return;
-        api.delete(`/api/circuit/${circuit.id}`).then(initCircuit);
-    };
-
-    const addQuantumOperation = (payload: AddQuantumOperationRequest) => {
-        if (!circuit) return;
-        api.post<CircuitResponse>(`/api/circuit/${circuit.id}/operation`, payload).then(setCircuit);
-    };
-
-    const moveQuantumOperation = (payload: MoveQuantumOperationRequest) => {
-        if (!circuit) return;
-        api.patch<CircuitResponse>(`/api/circuit/${circuit.id}/operation`, payload).then(setCircuit);
-    };
-
-    const removeQuantumOperation = (operationId: string) => {
-        if (!circuit) return;
-        api.delete<CircuitResponse>(`/api/circuit/${circuit.id}/operation/${operationId}`).then(setCircuit);
-    };
-
-    return {
-        initCircuit,
-        addQubit,
-        deleteLastQubit,
-        resetCircuit,
-        addQuantumOperation,
-        moveQuantumOperation,
-        removeQuantumOperation,
-    };
-}
-
 export function CircuitView({ circuit, setCircuit }: Readonly<CircuitViewProps>) {
-    const {
-        initCircuit,
-        addQubit,
-        deleteLastQubit,
-        resetCircuit,
-        addQuantumOperation,
-        moveQuantumOperation,
-        removeQuantumOperation,
-    } = useCircuitActions(circuit, setCircuit);
+    const { initCircuit, removeQuantumOperation } = createCircuitService(circuit, setCircuit);
 
-    const dispatch = useDispatch();
     const { isOperationDragging, draggingOperationSize } = useSelector((state: RootState) => state.dragOperation);
 
-    // UI State
-    const [hoverPos, setHoverPos] = useState<{ qubitIdx: number; layerIdx: number } | null>(null);
+    const [hoverPos, setHoverPos] = useState<HoverPos | null>(null);
     const [draggingOperationId, setDraggingOperationId] = useState<string | null>(null);
 
     useEffect(() => initCircuit(), []);
@@ -137,6 +53,26 @@ export function CircuitView({ circuit, setCircuit }: Readonly<CircuitViewProps>)
     }, [circuit?.registers]);
 
     /**
+     * Determines whether a quantum operation would cause a qubit collision
+     * within the specified layer.
+     *
+     * A collision occurs if at least one selector (qubit) required by the given
+     * operation is already occupied by an existing operation in the layer.
+     *
+     * @param op - The operation to be checked.
+     * @param layer - The layer in which the operation would be placed.
+     * @returns True if any involved qubit is already used in the layer; otherwise false.
+     */
+    const isQubitCollisionInLayer = (op: UiQuantumOperation, layer: UiLayer): boolean => {
+        const requiredKeys = new Set(getInvolvedSelectors(op).map(getSelectorKey));
+
+        return layer.quantumOperations.some((existingOp) => {
+            const existingKeys = getInvolvedSelectors(existingOp).map(getSelectorKey);
+            return existingKeys.some((key) => requiredKeys.has(key));
+        });
+    };
+
+    /**
      * Applies ASAP (as-soon-as-possible) left-justified scheduling to a flat list of operations.
      * Each operation is placed in the earliest layer where none of its qubits are already occupied.
      * If a dummy operation is present, it is additionally constrained to the layer indicated by the
@@ -148,17 +84,6 @@ export function CircuitView({ circuit, setCircuit }: Readonly<CircuitViewProps>)
     const rescheduleOperations = (allOps: UiQuantumOperation[]): UiLayer[] => {
         const newLayers: UiLayer[] = [];
         const lastLayerPerQubit = new Map<string, number>();
-
-        const isQubitCollisionInLayer = (op: UiQuantumOperation, layerIdx: number): boolean => {
-            if (layerIdx >= newLayers.length) return false;
-
-            const requiredKeys = new Set(getInvolvedSelectors(op).map(getSelectorKey));
-
-            return newLayers[layerIdx].quantumOperations.some((existingOp) => {
-                const existingKeys = getInvolvedSelectors(existingOp).map(getSelectorKey);
-                return existingKeys.some((key) => requiredKeys.has(key));
-            });
-        };
 
         for (const op of allOps) {
             const involvedKeys = getInvolvedSelectors(op).map(getSelectorKey);
@@ -176,7 +101,7 @@ export function CircuitView({ circuit, setCircuit }: Readonly<CircuitViewProps>)
 
             // Advance to the right until there is no qubit collision.
             let layerIdx = minLayerIdx;
-            while (isQubitCollisionInLayer(op, layerIdx)) {
+            while (layerIdx < newLayers.length && isQubitCollisionInLayer(op, newLayers[layerIdx])) {
                 layerIdx++;
             }
 
@@ -262,14 +187,7 @@ export function CircuitView({ circuit, setCircuit }: Readonly<CircuitViewProps>)
     const uiLayers: UiLayer[] = useMemo(() => {
         if (!circuit?.registers) return [];
 
-        let allOps: UiQuantumOperation[] = circuit.layers.flatMap((layer, layerIdx) =>
-            layer.quantumOperations
-                .filter((op) => op.id !== draggingOperationId)
-                .map((op) => ({ ...op, originalLayerIdx: layerIdx })),
-        );
-
-        const organizedCircuitWithoutDraggingOperation = rescheduleOperations(allOps);
-        allOps = organizedCircuitWithoutDraggingOperation.flatMap((layer, layerIdx) =>
+        const allOps: UiQuantumOperation[] = layersWithoutDragOp.flatMap((layer, layerIdx) =>
             layer.quantumOperations.map((op) => ({ ...op, originalLayerIdx: layerIdx })),
         );
 
@@ -305,263 +223,41 @@ export function CircuitView({ circuit, setCircuit }: Readonly<CircuitViewProps>)
         return rescheduleOperations(allOps);
     }, [circuit, hoverPos]);
 
-    /**
-     * Compares the current circuit state against the UI layer representation to determine
-     * whether any operation has shifted to a different layer or qubit position.
-     * Used to avoid sending unnecessary move requests to the API when nothing has changed.
-     */
-    const hasCircuitStateChanged = useCallback(
-        (operationToMove: MoveQuantumOperationRequest): boolean => {
-            if (!circuit) return false;
-
-            // Lookup map of the server-side circuit state.
-            const originalPositions = new Map<
-                string,
-                {
-                    layerIdx: number;
-                    targetQubits: ElementSelectorDto[];
-                    controlQubits: ElementSelectorDto[];
-                }
-            >();
-
-            for (const [layerIdx, layer] of circuit.layers.entries()) {
-                for (const op of layer.quantumOperations) {
-                    originalPositions.set(op.id!, {
-                        layerIdx,
-                        targetQubits: op.targetQubits,
-                        controlQubits: op.controlQubits,
-                    });
-                }
-            }
-
-            // Check if the operation to move has moved.
-            const original = originalPositions.get(operationToMove.quantumOperationId);
-            if (!original) return false;
-
-            const isSameLayer = original.layerIdx === operationToMove.layerIdx;
-            const isSameTarget = JSON.stringify(original.targetQubits) === JSON.stringify(operationToMove.targetQubits);
-            const isSameControl =
-                JSON.stringify(original.controlQubits) === JSON.stringify(operationToMove.controlQubits);
-
-            if (!(isSameLayer && isSameTarget && isSameControl)) return true;
-
-            // Check if any other operation has moved (due to temporary detachment of the operation to move).
-            for (let layerIdx = 0; layerIdx < uiLayers.length; layerIdx++) {
-                for (const op of uiLayers[layerIdx].quantumOperations) {
-                    if (op.type === 'DUMMY') continue;
-
-                    const original = originalPositions.get(op.id!);
-                    if (!original) continue;
-
-                    const isSameLayer = original.layerIdx === layerIdx;
-                    const isSameTarget = JSON.stringify(original.targetQubits) === JSON.stringify(op.targetQubits);
-                    const isSameControl = JSON.stringify(original.controlQubits) === JSON.stringify(op.controlQubits);
-
-                    if (!(isSameLayer && isSameTarget && isSameControl)) return true;
-                }
-            }
-
-            return false;
-        },
-        [circuit, uiLayers],
-    );
-
-    const handleDrop = useCallback(
-        (e: React.DragEvent<HTMLDivElement>, regId: string, regIdx: number, layerIdx: number) => {
-            e.preventDefault();
-            try {
-                const data: DragData = JSON.parse(e.dataTransfer.getData('text/plain'));
-                const controlSize = getOperationControlSizeByIdentifier(data.operationDefinition);
-                const targetSize = getOperationTargetSizeByIdentifier(data.operationDefinition);
-
-                const controlQubits: ElementSelectorDto[] = Array.from({ length: controlSize }, (_, i) => ({
-                    registerId: regId,
-                    index: regIdx + i,
-                }));
-
-                const targetQubits: ElementSelectorDto[] = Array.from({ length: targetSize }, (_, i) => ({
-                    registerId: regId,
-                    index: regIdx + controlSize + i,
-                }));
-
-                switch (data.origin) {
-                    case 'library': {
-                        const gate: ElementaryQuantumGateDto = {
-                            type: 'ELEMENTARY_QUANTUM_GATE',
-                            operationDefinition: data.operationDefinition,
-                            inverseForm: false,
-                            targetQubits,
-                            controlQubits,
-                            rotationAngle: Math.PI / 2, // standard rotation
-                        };
-                        addQuantumOperation({ quantumOperation: gate, layerIdx });
-                        break;
-                    }
-                    case 'circuit': {
-                        const payload: MoveQuantumOperationRequest = {
-                            quantumOperationId: data.id!,
-                            layerIdx,
-                            targetQubits,
-                            controlQubits,
-                        };
-                        if (hasCircuitStateChanged(payload)) {
-                            moveQuantumOperation(payload);
-                        }
-                        break;
-                    }
-                    default:
-                        console.error(`Unknown drag origin: ${(data as any).origin}`);
-                        break;
-                }
-            } catch (error) {
-                console.error('Failed to parse drag data', error);
-            } finally {
-                dispatch(stopOperationDrag());
-                setHoverPos(null);
-                setDraggingOperationId(null);
-            }
-        },
-        [addQuantumOperation, moveQuantumOperation, hasCircuitStateChanged, dispatch],
-    );
-
-    const handleDragOver = (e: React.DragEvent, qubitIdx: number, layerIdx: number) => {
-        e.preventDefault();
-        // Use a functional update to access the latest state without triggering unnecessary re-renders.
-        // Returning the previous value unchanged causes React to bail out of the render cycle,
-        // preventing performance degradation from rapid mousemove events (render thrashing).
-        setHoverPos((prev) => {
-            if (prev?.qubitIdx === qubitIdx && prev?.layerIdx === layerIdx) {
-                return prev;
-            }
-            return { qubitIdx, layerIdx };
-        });
-    };
-
     return (
         <Card className="h-full overflow-hidden">
             <CardContent className="flex flex-col h-full">
-                {/* Toolbar */}
-                <div className="pb-5 flex justify-end space-x-3">
-                    <Button onClick={addQubit} size="icon" className="size-8">
-                        <Plus />
-                    </Button>
-                    <Button onClick={deleteLastQubit} size="icon" className="size-8" variant="destructive">
-                        <Minus />
-                    </Button>
-                    <Button onClick={() => resetCircuit()} size="icon" className="size-8" variant="destructive">
-                        <Trash />
-                    </Button>
-                </div>
+                <CircuitToolbar circuit={circuit} setCircuit={setCircuit} />
 
                 {/* Circuit Canvas */}
                 <div className="relative flex-1 overflow-auto">
-                    {/* Wires & Labels */}
-                    {flatQubits.map((q, i) => (
-                        <div
-                            key={`wire-${q.regName}-${q.relQubitIdx}`}
-                            className="absolute left-0 right-0"
-                            style={{ top: i * QUBIT_HEIGHT, height: QUBIT_HEIGHT }}
-                        >
-                            <div
-                                className="absolute left-2 flex items-center font-mono text-[12px]"
-                                style={{ height: QUBIT_HEIGHT, width: '60px' }}
-                            >
-                                {q.regName}[{q.relQubitIdx}]
-                            </div>
-                            <div
-                                className="absolute border-b"
-                                style={{
-                                    top: QUBIT_HEIGHT / 2,
-                                    left: '64px',
-                                    right: 0,
-                                    height: '1px',
-                                }}
-                            />
-                        </div>
-                    ))}
+                    <CircuitWires flatQubits={flatQubits} />
 
                     {/* Circuit Content Container (Offset for labels) */}
                     <div className="absolute inset-y-0 right-0" style={{ left: '64px' }}>
-                        {/* Quantum Operations */}
-                        <div className={`absolute inset-0 z-20 ${isOperationDragging ? 'pointer-events-none' : ''}`}>
-                            {uiLayers.map((layer, layerIdx) =>
-                                layer.quantumOperations.map((op) => {
-                                    if (op.type === 'DUMMY') return null;
+                        <QuantumOperationGrid
+                            uiLayers={uiLayers}
+                            registers={circuit?.registers ?? []}
+                            isOperationDragging={isOperationDragging}
+                            removeQuantumOperation={removeQuantumOperation}
+                            setDraggingOperationId={setDraggingOperationId}
+                            setHoverPos={setHoverPos}
+                        />
 
-                                    return (
-                                        <ElementaryQuantumGate
-                                            key={op.id}
-                                            operation={op}
-                                            registers={circuit!.registers}
-                                            layerIdx={layerIdx}
-                                            onDragStart={(operationSize) => {
-                                                dispatch(startOperationDrag(operationSize));
-                                                setDraggingOperationId(op.id!);
-                                            }}
-                                            onDragEnd={() => {
-                                                dispatch(stopOperationDrag());
-                                                setHoverPos(null);
-                                                setDraggingOperationId(null);
-                                            }}
-                                            onDelete={() => removeQuantumOperation(op.id!)}
-                                        />
-                                    );
-                                }),
-                            )}
-                        </div>
+                        <DropzoneGrid
+                            circuit={circuit}
+                            setCircuit={setCircuit}
+                            flatQubits={flatQubits}
+                            uiLayers={uiLayers}
+                            activeDropZones={activeDropZones}
+                            setHoverPos={setHoverPos}
+                            setDraggingOperationId={setDraggingOperationId}
+                        />
 
-                        {/* 3. Drop Zone Grid */}
-                        <div className="absolute inset-0 z-10">
-                            {flatQubits.map((qubit, qIdx) =>
-                                Array.from({ length: uiLayers.length + 1 }).map((_, layerIdx) => {
-                                    const isZoneActive = activeDropZones.has(`${qIdx}-${layerIdx}`);
-                                    if (!isZoneActive) return null;
-
-                                    return (
-                                        <div
-                                            key={`drop-${qIdx}-${layerIdx}`}
-                                            style={{
-                                                position: 'absolute',
-                                                left: layerIdx * CELL_WIDTH,
-                                                top: qIdx * QUBIT_HEIGHT,
-                                                width: CELL_WIDTH,
-                                                height: QUBIT_HEIGHT,
-                                            }}
-                                            onDragOver={(e) => handleDragOver(e, qIdx, layerIdx)}
-                                            onDragLeave={() => setHoverPos(null)}
-                                            onDrop={(e) => handleDrop(e, qubit.regId, qubit.relQubitIdx, layerIdx)}
-                                        />
-                                    );
-                                }),
-                            )}
-                        </div>
-
-                        {/* 4. Drop Placeholder (Visual Feedback) */}
-                        {hoverPos && (
-                            <div
-                                className="absolute border-2 border-dashed pointer-events-none z-50 border-primary/50 bg-primary/10"
-                                style={{
-                                    top: hoverPos.qubitIdx * QUBIT_HEIGHT,
-                                    left: hoverPos.layerIdx * CELL_WIDTH,
-                                    width: CELL_WIDTH,
-                                    height: draggingOperationSize * QUBIT_HEIGHT,
-                                }}
-                            />
-                        )}
+                        <DropPlaceholder hoverPos={hoverPos} draggingOperationSize={draggingOperationSize} />
                     </div>
                 </div>
 
-                {/* Gate Layer Indexing (Footer) */}
-                <div className={`${styles.gateIndexSpacing} flex font-mono text-sm border-l border-gray-500`}>
-                    {Array.from({ length: uiLayers.length }, (_, i) => (
-                        <span
-                            key={i}
-                            className={`${styles.gateIndexSize} text-text shrink-0 flex justify-center border-r border-border`}
-                        >
-                            {i + 1}
-                        </span>
-                    ))}
-                </div>
+                <CircuitFooter uiLayers={uiLayers} />
             </CardContent>
         </Card>
     );
