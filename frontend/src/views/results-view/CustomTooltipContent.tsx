@@ -17,7 +17,7 @@ export interface ChartDataPoint {
 }
 
 export const CustomTooltipContent = ({ active, payload, sampleCount }: CustomTooltipProps) => {
-    if (!active || !payload || !payload.length) return null;
+    if (!active || !payload?.length) return null;
     const d = payload[0].payload as ChartDataPoint;
 
     return (
