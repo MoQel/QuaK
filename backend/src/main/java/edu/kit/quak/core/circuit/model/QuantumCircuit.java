@@ -5,11 +5,12 @@ import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
 import edu.kit.quak.core.circuit.model.register.QuantumRegister;
 import edu.kit.quak.core.circuit.model.register.Register;
+import lombok.Builder;
+import lombok.NonNull;
+
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import lombok.Builder;
-import lombok.NonNull;
 
 public class QuantumCircuit extends ElementWithId {
     private final List<Register> registers = new ArrayList<>();
@@ -83,7 +84,7 @@ public class QuantumCircuit extends ElementWithId {
             layers.get(layerIdx).addQuantumOperation(operation);
         }
 
-        reorganizeCircuit();
+        rescheduleOperations();
     }
 
     public void moveQuantumOperation(
@@ -105,11 +106,10 @@ public class QuantumCircuit extends ElementWithId {
                     operation.setTargetQubits(targetQubits);
                     operation.setControlQubits(controlQubits);
 
-                    // Move operation to new layer if changed.
-                    if (layerIdx != idx) {
-                        layers.get(idx).removeQuantumOperation(operation);
-                        addQuantumOperation(operation, layerIdx);
-                    }
+                    // Move operation to new layer.
+                    layers.get(idx).removeQuantumOperation(operation);
+                    rescheduleOperations();
+                    addQuantumOperation(operation, layerIdx); // Add and reorganize again.
                     break;
                 }
             }
@@ -126,7 +126,7 @@ public class QuantumCircuit extends ElementWithId {
             }
         }
 
-        reorganizeCircuit();
+        rescheduleOperations();
     }
 
     /**
@@ -134,7 +134,7 @@ public class QuantumCircuit extends ElementWithId {
      * as possible (ASAP scheduling) while respecting qubit collisions and preserving
      * logical dependency barriers.
      */
-    private void reorganizeCircuit() {
+    private void rescheduleOperations() {
         // 1. Extract all operations in their original relative order
         List<QuantumOperation> allOps =
                 layers.stream().flatMap(l -> l.getQuantumOperations().stream()).toList();
