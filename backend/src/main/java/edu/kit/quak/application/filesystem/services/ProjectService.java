@@ -73,10 +73,7 @@ public class ProjectService implements ProjectServicePort {
      */
     private void verifyOwnership(Project project, User user) {
         if (project.getOwnerId() == null || !project.getOwnerId().equals(user.getId())) {
-            log.warn(
-                    "Access denied: User '{}' does not own project '{}'",
-                    user.getId(),
-                    project.getId());
+            log.warn("Access denied: User '{}' does not own project '{}'", user.getId(), project.getId());
             throw new AccessDeniedException("project", project.getId());
         }
     }

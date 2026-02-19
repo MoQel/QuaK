@@ -23,9 +23,7 @@ interface CircuitViewProps {
 export function CircuitView({ circuit, setCircuit }: CircuitViewProps) {
     const [isPopoverOpen, setIsPopoverOpen] = useState(false);
 
-    const maxWireLength = Math.max(
-        ...(circuit?.registers.map((reg) => reg.qubits.at(0)?.gates.length ?? 0) ?? [0]),
-    );
+    const maxWireLength = Math.max(...(circuit?.registers.map((reg) => reg.qubits.at(0)?.gates.length ?? 0) ?? [0]));
 
     useEffect(() => {
         api.post<CircuitResponse>('/api/circuit').then(setCircuit);
@@ -39,17 +37,13 @@ export function CircuitView({ circuit, setCircuit }: CircuitViewProps) {
 
     const changeQubitName = async (payload: ChangeQubitNameRequest) => {
         if (circuit != null) {
-            setCircuit(
-                await api.patch<CircuitResponse>(`/api/circuit/${circuit.id}/qubit`, payload),
-            );
+            setCircuit(await api.patch<CircuitResponse>(`/api/circuit/${circuit.id}/qubit`, payload));
         }
     };
 
     const deleteQubit = async (qubitId: string) => {
         if (circuit != null) {
-            setCircuit(
-                await api.delete<CircuitResponse>(`/api/circuit/${circuit.id}/qubit/${qubitId}`),
-            );
+            setCircuit(await api.delete<CircuitResponse>(`/api/circuit/${circuit.id}/qubit/${qubitId}`));
         }
     };
 
@@ -77,17 +71,13 @@ export function CircuitView({ circuit, setCircuit }: CircuitViewProps) {
 
     const moveGate = async (payload: MoveGateRequest) => {
         if (circuit != null) {
-            setCircuit(
-                await api.patch<CircuitResponse>(`/api/circuit/${circuit.id}/gate`, payload),
-            );
+            setCircuit(await api.patch<CircuitResponse>(`/api/circuit/${circuit.id}/gate`, payload));
         }
     };
 
     const deleteGate = async (gateId: string) => {
         if (circuit != null) {
-            setCircuit(
-                await api.delete<CircuitResponse>(`/api/circuit/${circuit.id}/gate/${gateId}`),
-            );
+            setCircuit(await api.delete<CircuitResponse>(`/api/circuit/${circuit.id}/gate/${gateId}`));
         }
     };
 
@@ -99,12 +89,7 @@ export function CircuitView({ circuit, setCircuit }: CircuitViewProps) {
                     <Button onClick={addQubit} size="icon" className="size-8">
                         <Plus />
                     </Button>
-                    <Button
-                        onClick={deleteLastQubit}
-                        size="icon"
-                        className="size-8"
-                        variant="destructive"
-                    >
+                    <Button onClick={deleteLastQubit} size="icon" className="size-8" variant="destructive">
                         <Minus />
                     </Button>
                     <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
@@ -131,11 +116,7 @@ export function CircuitView({ circuit, setCircuit }: CircuitViewProps) {
                                     >
                                         Yes, reset everything
                                     </Button>
-                                    <Button
-                                        variant="secondary"
-                                        size="sm"
-                                        onClick={() => setIsPopoverOpen(false)}
-                                    >
+                                    <Button variant="secondary" size="sm" onClick={() => setIsPopoverOpen(false)}>
                                         Cancel
                                     </Button>
                                 </div>
@@ -161,9 +142,7 @@ export function CircuitView({ circuit, setCircuit }: CircuitViewProps) {
                         />
                     ))}
                     {/* Gate Indexing of form: | 1 | 2 | ... */}
-                    <div
-                        className={`${styles.gateIndexSpacing} flex font-mono text-sm border-l border-gray-500`}
-                    >
+                    <div className={`${styles.gateIndexSpacing} flex font-mono text-sm border-l border-gray-500`}>
                         {Array.from({ length: maxWireLength }, (_, i) => (
                             <Fragment key={i}>
                                 <span

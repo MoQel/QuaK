@@ -1,13 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button.tsx';
-import {
-    Card,
-    CardContent,
-    CardHeader,
-    CardTitle,
-    CardDescription,
-} from '@/components/ui/card.tsx';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card.tsx';
 import { FolderOpen, Users } from 'lucide-react';
 
 export const Home: React.FC = () => {
@@ -72,9 +66,7 @@ export const Home: React.FC = () => {
                             </div>
                             <div className="flex-1">
                                 <CardTitle className="text-2xl text-left">Own Projects</CardTitle>
-                                <CardDescription className="text-left">
-                                    Projects you created and own
-                                </CardDescription>
+                                <CardDescription className="text-left">Projects you created and own</CardDescription>
                             </div>
                         </div>
                     </CardHeader>
@@ -107,9 +99,7 @@ export const Home: React.FC = () => {
                                 <Users className="w-5 h-5 text-purple-500" />
                             </div>
                             <div className="flex-1">
-                                <CardTitle className="text-2xl text-left">
-                                    Invited Projects
-                                </CardTitle>
+                                <CardTitle className="text-2xl text-left">Invited Projects</CardTitle>
                                 <CardDescription className="text-left">
                                     Projects shared with you by collaborators
                                 </CardDescription>
@@ -128,9 +118,7 @@ export const Home: React.FC = () => {
                         ) : (
                             <div className="text-center py-12">
                                 <Users className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-                                <p className="text-sm text-muted-foreground">
-                                    You have no invited projects.
-                                </p>
+                                <p className="text-sm text-muted-foreground">You have no invited projects.</p>
                             </div>
                         )}
                     </CardContent>

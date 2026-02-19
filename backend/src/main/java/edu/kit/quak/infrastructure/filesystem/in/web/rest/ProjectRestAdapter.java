@@ -9,6 +9,7 @@ import edu.kit.quak.infrastructure.filesystem.in.web.rest.dto.ProjectDetailsResp
 import edu.kit.quak.infrastructure.filesystem.in.web.rest.dto.ProjectRequest;
 import edu.kit.quak.infrastructure.filesystem.in.web.rest.mapper.ProjectDtoMapper;
 import edu.kit.quak.infrastructure.user.in.web.rest.mapper.AuthenticationMapper;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
  */
 @RestController
 @RequestMapping("/api/project")
+@Tag(name = "Projects", description = "Project management operations")
 public class ProjectRestAdapter {
 
     private final ProjectServicePort service;
@@ -50,8 +52,7 @@ public class ProjectRestAdapter {
     @PostMapping({"", "/"})
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("isAuthenticated()")
-    public ProjectDetailsResponse createProject(
-            @RequestBody ProjectRequest request, Authentication authentication) {
+    public ProjectDetailsResponse createProject(@RequestBody ProjectRequest request, Authentication authentication) {
         User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
         Project projectToCreate = mapper.toDomain(request);
         Project createdProject = service.createProject(projectToCreate, user);
@@ -60,8 +61,7 @@ public class ProjectRestAdapter {
 
     @GetMapping("/{pId}")
     @PreAuthorize("isAuthenticated()")
-    public ProjectContentsResponse retrieveProject(
-            @PathVariable String pId, Authentication authentication) {
+    public ProjectContentsResponse retrieveProject(@PathVariable String pId, Authentication authentication) {
         User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
         Project project = service.retrieveProject(pId, user);
         return mapper.toContentsResponse(project);
@@ -77,9 +77,7 @@ public class ProjectRestAdapter {
     @PatchMapping("/{pId}")
     @PreAuthorize("isAuthenticated()")
     public ProjectDetailsResponse renameProject(
-            @PathVariable String pId,
-            @RequestBody ProjectRequest request,
-            Authentication authentication) {
+            @PathVariable String pId, @RequestBody ProjectRequest request, Authentication authentication) {
         User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
         Project updatedProject = service.renameProject(pId, request.name(), user);
         return mapper.toDetailsResponse(updatedProject);

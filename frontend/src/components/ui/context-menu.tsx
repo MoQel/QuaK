@@ -8,9 +8,7 @@ function ContextMenu({ ...props }: React.ComponentProps<typeof ContextMenuPrimit
     return <ContextMenuPrimitive.Root data-slot="context-menu" {...props} />;
 }
 
-function ContextMenuTrigger({
-    ...props
-}: React.ComponentProps<typeof ContextMenuPrimitive.Trigger>) {
+function ContextMenuTrigger({ ...props }: React.ComponentProps<typeof ContextMenuPrimitive.Trigger>) {
     return <ContextMenuPrimitive.Trigger data-slot="context-menu-trigger" {...props} />;
 }
 
@@ -26,9 +24,7 @@ function ContextMenuSub({ ...props }: React.ComponentProps<typeof ContextMenuPri
     return <ContextMenuPrimitive.Sub data-slot="context-menu-sub" {...props} />;
 }
 
-function ContextMenuRadioGroup({
-    ...props
-}: React.ComponentProps<typeof ContextMenuPrimitive.RadioGroup>) {
+function ContextMenuRadioGroup({ ...props }: React.ComponentProps<typeof ContextMenuPrimitive.RadioGroup>) {
     return <ContextMenuPrimitive.RadioGroup data-slot="context-menu-radio-group" {...props} />;
 }
 
@@ -58,10 +54,7 @@ function ContextMenuSubTrigger({
     );
 }
 
-function ContextMenuSubContent({
-    className,
-    ...props
-}: React.ComponentProps<typeof ContextMenuPrimitive.SubContent>) {
+function ContextMenuSubContent({ className, ...props }: React.ComponentProps<typeof ContextMenuPrimitive.SubContent>) {
     return (
         <ContextMenuPrimitive.SubContent
             data-slot="context-menu-sub-content"
@@ -76,10 +69,7 @@ function ContextMenuSubContent({
     );
 }
 
-function ContextMenuContent({
-    className,
-    ...props
-}: React.ComponentProps<typeof ContextMenuPrimitive.Content>) {
+function ContextMenuContent({ className, ...props }: React.ComponentProps<typeof ContextMenuPrimitive.Content>) {
     return (
         <ContextMenuPrimitive.Portal>
             <ContextMenuPrimitive.Content
@@ -192,10 +182,7 @@ function ContextMenuLabel({
     );
 }
 
-function ContextMenuSeparator({
-    className,
-    ...props
-}: React.ComponentProps<typeof ContextMenuPrimitive.Separator>) {
+function ContextMenuSeparator({ className, ...props }: React.ComponentProps<typeof ContextMenuPrimitive.Separator>) {
     return (
         <ContextMenuPrimitive.Separator
             data-slot="context-menu-separator"

@@ -20,11 +20,14 @@ import org.springframework.context.annotation.Import;
 @Import({FileContentJpaAdapter.class, ProjectJpaAdapter.class, DirectoryJpaAdapter.class})
 class FileContentJpaAdapterTest {
 
-    @Autowired private FileContentJpaAdapter contentAdapter;
+    @Autowired
+    private FileContentJpaAdapter contentAdapter;
 
-    @Autowired private ProjectJpaAdapter projectAdapter;
+    @Autowired
+    private ProjectJpaAdapter projectAdapter;
 
-    @Autowired private DirectoryJpaAdapter directoryAdapter;
+    @Autowired
+    private DirectoryJpaAdapter directoryAdapter;
 
     private String validFileId;
 
@@ -57,8 +60,7 @@ class FileContentJpaAdapterTest {
     @Test
     void saveContent_throws_whenMetadataMissing() {
         assertThrows(
-                IllegalArgumentException.class,
-                () -> contentAdapter.saveContent("invalid-id", new byte[] {1, 2, 3}));
+                IllegalArgumentException.class, () -> contentAdapter.saveContent("invalid-id", new byte[] {1, 2, 3}));
     }
 
     @Test

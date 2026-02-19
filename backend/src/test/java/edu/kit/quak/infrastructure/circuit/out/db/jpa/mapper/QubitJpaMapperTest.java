@@ -18,17 +18,18 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class QubitJpaMapperTest {
 
-    @Spy private OperationJpaMapperImpl operationJpaMapper;
+    @Spy
+    private OperationJpaMapperImpl operationJpaMapper;
 
-    @InjectMocks private QubitJpaMapperImpl mapper;
+    @InjectMocks
+    private QubitJpaMapperImpl mapper;
 
     @Test
     void domainToEntity() {
         // Arrange
         Qubit domain = new Qubit();
         domain.addOperation(
-                domain.getOperations().size(),
-                new ElementaryQuantumGate(ElementaryQuantumGateDefinitionIdentifier.CX));
+                domain.getOperations().size(), new ElementaryQuantumGate(ElementaryQuantumGateDefinitionIdentifier.CX));
 
         // Act
         JpaQubit entity = mapper.toEntity(domain);

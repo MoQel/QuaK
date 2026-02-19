@@ -19,9 +19,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class FileElementContainerRepositoryDelegatorTest {
 
-    @Mock FileElementContainerRepositoryRegistry registry;
+    @Mock
+    FileElementContainerRepositoryRegistry registry;
 
-    @Mock FileElementContainerRepositoryPort<Project> projectRepo;
+    @Mock
+    FileElementContainerRepositoryPort<Project> projectRepo;
 
     FileElementContainerRepositoryDelegator delegator;
 

@@ -23,10 +23,7 @@ export const CustomTooltipContent = ({ active, payload, sampleCount }: CustomToo
     return (
         <div className="bg-bg-light/95 border border-border text-text p-3 rounded-lg shadow-xl text-sm backdrop-blur-sm">
             <div className="flex items-center gap-2 mb-2">
-                <span
-                    className="w-2 h-2 rounded-full"
-                    style={{ backgroundColor: getBarColor(d.phase) }}
-                />
+                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: getBarColor(d.phase) }} />
                 <p className="font-bold font-mono text-base tracking-wider">{d.state}</p>
             </div>
 
@@ -59,9 +56,7 @@ export const CustomTooltipContent = ({ active, payload, sampleCount }: CustomToo
                         </div>
                         <div className="flex justify-between gap-6 items-center">
                             <span className="text-text-muted">Phase:</span>
-                            <span className="font-mono text-text">
-                                {((d.phase! * 180) / Math.PI).toFixed(1)}°
-                            </span>
+                            <span className="font-mono text-text">{((d.phase! * 180) / Math.PI).toFixed(1)}°</span>
                         </div>
                     </>
                 )}

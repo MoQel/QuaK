@@ -14,13 +14,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
-public class DirectoryService extends AbstractFileElementService<Directory>
-        implements DirectoryServicePort {
+public class DirectoryService extends AbstractFileElementService<Directory> implements DirectoryServicePort {
 
     private final DirectoryRepositoryPort repository;
 
-    public DirectoryService(
-            DirectoryRepositoryPort repository, FileElementContainerRepositoryDelegator delegator) {
+    public DirectoryService(DirectoryRepositoryPort repository, FileElementContainerRepositoryDelegator delegator) {
         super(delegator);
         this.repository = repository;
     }
@@ -29,11 +27,7 @@ public class DirectoryService extends AbstractFileElementService<Directory>
     @Override
     @Transactional
     public Directory createDirectory(Directory container, String parentId, User user) {
-        log.info(
-                "Creating directory '{}' in parent '{}' for user '{}'",
-                container.getName(),
-                parentId,
-                user.getId());
+        log.info("Creating directory '{}' in parent '{}' for user '{}'", container.getName(), parentId, user.getId());
         verifyOwnershipByParentId(parentId, user);
 
         FileElementContainer<?> parent = getParentById(parentId);

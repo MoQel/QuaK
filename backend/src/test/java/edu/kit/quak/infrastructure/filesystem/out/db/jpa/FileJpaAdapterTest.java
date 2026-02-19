@@ -19,11 +19,14 @@ import org.springframework.context.annotation.Import;
 @Import({FileJpaAdapter.class, DirectoryJpaAdapter.class, ProjectJpaAdapter.class})
 class FileJpaAdapterTest {
 
-    @Autowired private FileJpaAdapter fileAdapter;
+    @Autowired
+    private FileJpaAdapter fileAdapter;
 
-    @Autowired private DirectoryJpaAdapter directoryAdapter;
+    @Autowired
+    private DirectoryJpaAdapter directoryAdapter;
 
-    @Autowired private ProjectJpaAdapter projectAdapter;
+    @Autowired
+    private ProjectJpaAdapter projectAdapter;
 
     @Test
     void findById_returnsFile_whenExists() {
@@ -35,12 +38,11 @@ class FileJpaAdapterTest {
 
         Directory savedDir = directoryAdapter.save(dir);
 
-        String fileId =
-                savedDir.getContents().stream()
-                        .filter(e -> e.getName().equals("TestFile.txt"))
-                        .findFirst()
-                        .orElseThrow()
-                        .getId();
+        String fileId = savedDir.getContents().stream()
+                .filter(e -> e.getName().equals("TestFile.txt"))
+                .findFirst()
+                .orElseThrow()
+                .getId();
 
         // 2. Act
         Optional<File> loaded = fileAdapter.findById(fileId);

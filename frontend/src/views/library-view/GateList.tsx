@@ -63,9 +63,7 @@ function GateList({ gates, onGateClick }: GateListProps) {
                                     </div>
 
                                     <div className="text-left">
-                                        <div className="font-semibold text-sm text-text mb-2px">
-                                            {gate.name}
-                                        </div>
+                                        <div className="font-semibold text-sm text-text mb-2px">{gate.name}</div>
                                         {gate.description && (
                                             <div className="text-xs text-text-muted leading-tight">
                                                 {gate.description}

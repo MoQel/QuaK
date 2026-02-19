@@ -13,13 +13,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class CircuitGateDefinitionDtoMapperTest {
-    @InjectMocks private GateDtoMapperImpl mapper;
+    @InjectMocks
+    private GateDtoMapperImpl mapper;
 
     @Test
     void toResponse() {
         // Arrange
-        ElementaryQuantumGate gate =
-                new ElementaryQuantumGate(ElementaryQuantumGateDefinitionIdentifier.X);
+        ElementaryQuantumGate gate = new ElementaryQuantumGate(ElementaryQuantumGateDefinitionIdentifier.X);
 
         // Act
         GateResponse response = mapper.toResponse(gate);

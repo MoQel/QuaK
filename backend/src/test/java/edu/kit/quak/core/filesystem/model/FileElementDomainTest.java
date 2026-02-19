@@ -74,8 +74,7 @@ class FileElementDomainTest {
         file.rename("NewName");
 
         assertEquals("NewName", file.getName());
-        assertTrue(
-                file.getLastAccess().isAfter(beforeRename), "LastAccess should update on rename");
+        assertTrue(file.getLastAccess().isAfter(beforeRename), "LastAccess should update on rename");
     }
 
     @Test
@@ -126,8 +125,7 @@ class FileElementDomainTest {
         // Assert
         assertFalse(sourceDir.getContents().contains(file));
         assertTrue(targetDir.getContents().contains(file));
-        assertEquals(
-                targetDir.getId(), file.getParentId(), "ParentID must be updated to new container");
+        assertEquals(targetDir.getId(), file.getParentId(), "ParentID must be updated to new container");
     }
 
     @Test
@@ -138,8 +136,7 @@ class FileElementDomainTest {
 
         File f2 = new File("Config.txt", dir.getId());
 
-        IllegalArgumentException ex =
-                assertThrows(IllegalArgumentException.class, () -> dir.addChild(f2));
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> dir.addChild(f2));
 
         assertTrue(ex.getMessage().toLowerCase().contains("exists"));
     }
