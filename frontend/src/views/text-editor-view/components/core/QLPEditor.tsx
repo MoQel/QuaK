@@ -1,7 +1,7 @@
 import { Editor, useMonaco } from '@monaco-editor/react';
 import { useState } from 'react';
 import { editor } from 'monaco-editor';
-import { useTheme } from '@/theme';
+import { useTheme } from '@/theme.tsx';
 import { languages } from '@/views/text-editor-view/languages/languages.ts';
 import { useMonacoTheme } from '@/hooks/editor/useMonacoTheme.ts';
 import { useAppDispatch } from '@/hooks/useAppDispatch.ts';
@@ -29,7 +29,7 @@ function QLPEditor({ groupId }: Readonly<QLPEditorProps>) {
 
     const dispatch = useAppDispatch();
 
-    // region Buisness logic hooks
+    // region Business logic hooks
     useEditorLanguage(monaco);
 
     const { isReadOnly, isDirtyRef } = useEditorModelManager(monaco, editorInstance, groupId);

@@ -20,7 +20,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu.tsx';
 
-export function TextEditorGroupMenu({ groupId, groups }: Readonly<{ groupId: string; groups: EditorGroup[] }>) {
+export function EditorGroupMenu({ groupId, groups }: Readonly<{ groupId: string; groups: EditorGroup[] }>) {
     const dispatch = useAppDispatch();
 
     const showSplitRight = groupId !== GROUP_RIGHT && !groups.some((g) => g.id === GROUP_RIGHT);

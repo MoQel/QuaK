@@ -1,22 +1,13 @@
-import { Card, CardContent } from '@/components/ui/card.tsx';
-import QLPEditor from '@/views/text-editor-view/QLPEditor.tsx';
+import { Card } from '@/components/ui/card.tsx';
 import { useAppSelector } from '@/hooks/useAppSelector.ts';
-import { TextEditorTabBar } from '@/views/text-editor-view/TextEditorTabBar.tsx';
-import React, { useMemo, useState } from 'react';
-import {
-    GROUP_BOTTOM,
-    GROUP_MAIN,
-    GROUP_RIGHT,
-    moveTab,
-    setActiveGroup,
-    setDragging,
-} from '@/store/slices/tabsSlice.ts';
-import { useAppDispatch } from '@/hooks/useAppDispatch.ts';
+import { useMemo } from 'react';
+import { GROUP_BOTTOM, GROUP_MAIN, GROUP_RIGHT } from '@/store/slices/tabsSlice.ts';
 import { useEditorShortcuts } from '@/hooks/editor/useEditorShortcuts.ts';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
-import { cn } from '@/lib/utils.ts';
 import { useMonacoGarbageCollector } from '@/hooks/editor/useMonacoGarbageCollector.ts';
 import { useEditorCommands } from '@/hooks/editor/useEditorCommands.ts';
+import { EditorDropZoneSlot } from '@/views/text-editor-view/components/layout/EditorDropZoneSlot.tsx';
+import { EditorSlot } from '@/views/text-editor-view/components/layout/EditorSlot.tsx';
 
 export function TextEditorView() {
     const { groups, activeGroupId, isDragging } = useAppSelector((state) => state.tabs);
@@ -61,7 +52,11 @@ export function TextEditorView() {
                         )}
                     </PanelGroup>
                     {showRightDropZone && (
-                        <DropZoneSlot targetGroupId={GROUP_RIGHT} label="Drop to split right" direction="horizontal" />
+                        <EditorDropZoneSlot
+                            targetGroupId={GROUP_RIGHT}
+                            label="Drop to split right"
+                            direction="horizontal"
+                        />
                     )}
                 </Panel>
 
@@ -77,75 +72,8 @@ export function TextEditorView() {
             </PanelGroup>
 
             {showBottomDropZone && (
-                <DropZoneSlot targetGroupId={GROUP_BOTTOM} label="Drop to split bottom" direction="vertical" />
+                <EditorDropZoneSlot targetGroupId={GROUP_BOTTOM} label="Drop to split bottom" direction="vertical" />
             )}
         </Card>
-    );
-}
-
-function EditorSlot({ groupId }: Readonly<{ groupId: string }>) {
-    const dispatch = useAppDispatch();
-
-    return (
-        <div className={'h-full flex flex-col border-r'} onClickCapture={() => dispatch(setActiveGroup(groupId))}>
-            <TextEditorTabBar groupId={groupId} />
-            <CardContent className="flex flex-col flex-1 p-0 overflow-hidden relative">
-                <QLPEditor groupId={groupId} />
-            </CardContent>
-        </div>
-    );
-}
-
-function DropZoneSlot({
-    targetGroupId,
-    label,
-    direction,
-}: Readonly<{
-    targetGroupId: string;
-    label: string;
-    direction: 'horizontal' | 'vertical';
-}>) {
-    const dispatch = useAppDispatch();
-    const [isOver, setIsOver] = useState(false);
-
-    const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-        e.preventDefault();
-        setIsOver(false);
-        const tabId = e.dataTransfer?.getData('tabId');
-        const sourceGroupId = e.dataTransfer?.getData('groupId');
-
-        if (tabId && sourceGroupId) {
-            dispatch(
-                moveTab({
-                    fromId: tabId,
-                    fromGroupId: sourceGroupId,
-                    toGroupId: targetGroupId,
-                }),
-            );
-        }
-        dispatch(setDragging(false));
-    };
-
-    const baseStyle = 'absolute z-50 flex items-center justify-center transition-all duration-200 pointer-events-auto';
-    const isOverStyle = () => (isOver ? 'opacity-55 border-primary' : 'opacity-0 hover:opacity-50');
-
-    const dimensionStyle =
-        direction === 'horizontal'
-            ? cn('top-9 right-0 bottom-0 w-1/2', isOverStyle())
-            : cn('left-0 right-0 bottom-0 h-1/2', isOverStyle());
-
-    const dropzoneClass = cn(baseStyle, dimensionStyle, 'bg-bg');
-
-    return (
-        <section
-            aria-label={label}
-            className={dropzoneClass}
-            onDragOver={(e) => {
-                e.preventDefault();
-                setIsOver(true);
-            }}
-            onDragLeave={() => setIsOver(false)}
-            onDrop={handleDrop}
-        />
     );
 }
