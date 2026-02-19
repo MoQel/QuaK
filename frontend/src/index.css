@@ -161,3 +161,16 @@
     background-color: var(--bg) !important;
     border-bottom: 1px solid var(--border) !important;
 }
+
+/* INACTIVE TABS */
+.dockview-theme-custom .dv-tab {
+    background-color: var(--bg-light) !important;
+    color: var(--text-muted) !important;
+    border-right: 1px solid var(--border) !important;
+}
+
+/* INACTIVE TAB HOVER */
+.dockview-theme-custom .dv-tab:hover {
+    background-color: var(--bg-light-hover) !important;
+    color: var(--text) !important;
+}
