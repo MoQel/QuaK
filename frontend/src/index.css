@@ -174,3 +174,13 @@
     background-color: var(--bg-light-hover) !important;
     color: var(--text) !important;
 }
+
+/* PANEL DIVIDER (SASH) */
+.dockview-theme-custom .dv-sash {
+    background-color: var(--border) !important;
+}
+
+/* Hover effect */
+.dockview-theme-custom .dv-sash:hover {
+    background-color: var(--special) !important;
+}
