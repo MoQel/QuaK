@@ -206,12 +206,11 @@ export function ResultsView({ circuit }: Readonly<ResultsViewProps>) {
                         width: '100%',
                         height: '100%',
                     }}
-                    className="h-full p-4 pb-2"
                 >
                     <ChartContainer config={chartConfig} className="h-full w-full aspect-auto">
                         <BarChart
                             data={visibleData}
-                            margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                            margin={{ top: 15, right: 10, left: 15, bottom: 10 }}
                             accessibilityLayer
                         >
                             <CartesianGrid
@@ -233,6 +232,7 @@ export function ResultsView({ circuit }: Readonly<ResultsViewProps>) {
                                     fontFamily: 'monospace',
                                     fill: 'var(--text-muted)',
                                 }}
+                                tickMargin={5}
                             />
                             <YAxis
                                 domain={[0, 100]}
@@ -241,7 +241,7 @@ export function ResultsView({ circuit }: Readonly<ResultsViewProps>) {
                                 tickLine={false}
                                 ticks={[0, 25, 50, 75, 100]}
                                 tickFormatter={(value) => `${value}%`}
-                                width={35}
+                                width={30}
                             />
 
                             <ChartTooltip
@@ -249,7 +249,7 @@ export function ResultsView({ circuit }: Readonly<ResultsViewProps>) {
                                 content={<CustomTooltipContent sampleCount={options.sampleCount} />}
                             />
 
-                            <Bar dataKey="prob" radius={[4, 4, 0, 0]}>
+                            <Bar dataKey="prob" radius={[4, 4, 0, 0]} maxBarSize={128}>
                                 {visibleData.map((entry) => (
                                     <Cell key={entry.state} fill={getBarColor(entry.phase)} strokeWidth={0} />
                                 ))}
@@ -263,10 +263,10 @@ export function ResultsView({ circuit }: Readonly<ResultsViewProps>) {
 
     return (
         <Card className="w-full h-full border-l rounded-none flex flex-col min-w-0">
-            <CardHeader className="pb-2 border-b bg-card z-10 shrink-0">
+            <CardHeader className="border-b bg-card z-10 shrink-0 [.border-b]:pb-2">
                 <div className="flex flex-col gap-4 lg:flex-row lg:justify-between lg:items-center">
                     <div className="flex flex-col gap-2">
-                        <CardTitle className="flex items-center gap-2 text-lg text-text">
+                        <CardTitle className="flex items-center gap-2 text-text">
                             Simulation Results
                             {isCalculating && (
                                 <Badge
@@ -284,8 +284,11 @@ export function ResultsView({ circuit }: Readonly<ResultsViewProps>) {
                             }`}
                         >
                             <div className="flex items-center gap-3">
-                                <span className="text-text-muted text-sm font-mono w-[70px]">Endian:</span>
+                                <span className="text-text-muted text-[10px] sm:text-xs font-mono w-[45px] sm:w-[60px] w-[70px]">
+                                    Endian:
+                                </span>
                                 <ToggleGroup
+                                    className="scale-[0.55] sm:scale-95 lg:scale-100"
                                     type="single"
                                     value={endianness}
                                     onValueChange={(val) => {
@@ -299,8 +302,10 @@ export function ResultsView({ circuit }: Readonly<ResultsViewProps>) {
                                 </ToggleGroup>
                             </div>
                             <div className="flex items-center gap-3">
-                                <span className="text-xs text-text-muted font-mono w-[70px]">Basis:</span>
-                                <span className="text-xs font-mono bg-bg px-2 py-0.5 rounded border border-border-muted text-text">
+                                <span className="text-[10px] sm:text-xs text-text-muted font-mono w-[70px]">
+                                    Basis:
+                                </span>
+                                <span className="text-[10px] sm:text-xs font-mono bg-bg px-2 py-0.5 rounded border border-border-muted text-text">
                                     {basisLabel}
                                 </span>
                             </div>
