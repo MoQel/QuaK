@@ -1,8 +1,8 @@
 import { cn } from '@/lib/utils.ts';
 import { Button } from '@/components/ui/button.tsx';
-import { Tab } from '@/store/slices/tabsSlice.ts';
 import { X } from 'lucide-react';
 import React from 'react';
+import { Tab } from '@/store/tabs/tabsTypes.ts';
 
 interface EditorTabLabelProps extends React.HTMLAttributes<HTMLDivElement> {
     tab: Tab;

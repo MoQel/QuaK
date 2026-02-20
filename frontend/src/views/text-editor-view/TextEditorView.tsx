@@ -1,13 +1,14 @@
 import { Card } from '@/components/ui/card.tsx';
 import { useAppSelector } from '@/hooks/useAppSelector.ts';
 import { useMemo } from 'react';
-import { GROUP_BOTTOM, GROUP_MAIN, GROUP_RIGHT } from '@/store/slices/tabsSlice.ts';
+import { GROUP_BOTTOM, GROUP_MAIN, GROUP_RIGHT } from '@/store/tabs/tabsSlice.ts';
 import { useEditorShortcuts } from '@/hooks/editor/useEditorShortcuts.ts';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { useMonacoGarbageCollector } from '@/hooks/editor/useMonacoGarbageCollector.ts';
 import { useEditorCommands } from '@/hooks/editor/useEditorCommands.ts';
 import { EditorDropZoneSlot } from '@/views/text-editor-view/components/layout/EditorDropZoneSlot.tsx';
 import { EditorSlot } from '@/views/text-editor-view/components/layout/EditorSlot.tsx';
+import { UnsavedChangesAlertDialog } from '@/views/text-editor-view/components/utils/UnsavedChangesAlertDialog.tsx';
 
 export function TextEditorView() {
     const { groups, activeGroupId, isDragging } = useAppSelector((state) => state.tabs);
@@ -25,6 +26,7 @@ export function TextEditorView() {
 
     return (
         <Card className="h-full flex flex-col p-0 border-none rounded-none relative">
+            <UnsavedChangesAlertDialog />
             {/* Top/Bottom split */}
             <PanelGroup direction="vertical" id="outer-group">
                 <Panel

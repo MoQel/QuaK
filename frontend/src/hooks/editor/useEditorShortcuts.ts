@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useAppDispatch } from '@/hooks/useAppDispatch.ts';
-import { closeTab, requestSave } from '@/store/slices/tabsSlice.ts';
+import { requestSave } from '@/store/tabs/tabsSlice.ts';
+import { safeCloseTab } from '@/store/tabs/tabsThunks.ts';
 
 export function useEditorShortcuts(activeFileId: string | null, activeGroupId: string) {
     const dispatch = useAppDispatch();
@@ -19,7 +20,7 @@ export function useEditorShortcuts(activeFileId: string | null, activeGroupId: s
             if (e.altKey && (e.key.toLowerCase() === 'w' || e.code === 'KeyW')) {
                 e.preventDefault();
                 if (activeFileId) {
-                    dispatch(closeTab({ tabId: activeFileId, groupId: activeGroupId }));
+                    dispatch(safeCloseTab({ tabId: activeFileId, groupId: activeGroupId }));
                 }
             }
         };

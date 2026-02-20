@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { editor, Uri } from 'monaco-editor';
 import { toast } from 'sonner';
-import { fetchFileContent } from '@/views/text-editor-view/util/fileService';
+import { fetchFileContent } from '@/views/text-editor-view/utils/fileService';
 import { DEFAULT_LANG, languages } from '@/views/text-editor-view/languages/languages';
-import { getModelId, savedVersionIds } from '@/views/text-editor-view/util/editorUtils';
+import { getModelId, savedVersionIds } from '@/views/text-editor-view/utils/editorUtils';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { setFileDirty } from '@/store/slices/tabsSlice';
+import { setFileDirty } from '@/store/tabs/tabsSlice.ts';
 import { useAppSelector } from '@/hooks/useAppSelector.ts';
 import { Monaco } from '@monaco-editor/react';
 

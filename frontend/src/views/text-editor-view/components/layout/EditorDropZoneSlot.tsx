@@ -1,6 +1,6 @@
 import { useAppDispatch } from '@/hooks/useAppDispatch.ts';
 import React, { useState } from 'react';
-import { moveTab, setDragging } from '@/store/slices/tabsSlice.ts';
+import { moveTab, setDragging } from '@/store/tabs/tabsSlice.ts';
 import { cn } from '@/lib/utils.ts';
 
 export function EditorDropZoneSlot({

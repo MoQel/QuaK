@@ -1,10 +1,10 @@
 // Garbage Collection
 import { useEffect } from 'react';
-import { getModelId, savedVersionIds } from '@/views/text-editor-view/util/editorUtils.ts';
+import { getModelId, savedVersionIds } from '@/views/text-editor-view/utils/editorUtils.ts';
 import { useMonaco } from '@monaco-editor/react';
 import { useAppSelector } from '@/hooks/useAppSelector.ts';
 import { useAppDispatch } from '@/hooks/useAppDispatch.ts';
-import { closeAll } from '@/store/slices/tabsSlice.ts';
+import { closeAll } from '@/store/tabs/tabsSlice.ts';
 import { editor } from 'monaco-editor';
 
 export function useMonacoGarbageCollector() {

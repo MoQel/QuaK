@@ -1,30 +1,10 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { DEFAULT_LANG, languages } from '@/views/text-editor-view/languages/languages.ts';
+import { EditorGroup, PendingClose, Tab, TabsState } from '@/store/tabs/tabsTypes.ts';
 
 export const GROUP_MAIN = 'group-main';
 export const GROUP_RIGHT = 'group-right';
 export const GROUP_BOTTOM = 'group-bottom';
-
-export interface Tab {
-    id: string; // Unique file id
-    title: string; // Filename
-    language: string; // language setting
-}
-
-export interface EditorGroup {
-    id: string;
-    openTabs: Tab[];
-    activeTabId: string | null;
-}
-
-export interface TabsState {
-    groups: EditorGroup[];
-    activeGroupId: string;
-    lastSaveRequest: { fileId: string | null; timestamp: number };
-    lastLanguageRequest: { fileId: string | null; langId: string | null; timestamp: number };
-    dirtyFiles: string[];
-    isDragging: boolean;
-}
 
 const initialState: TabsState = {
     groups: [{ id: GROUP_MAIN, openTabs: [], activeTabId: null }],
@@ -33,6 +13,7 @@ const initialState: TabsState = {
     lastLanguageRequest: { fileId: null, langId: null, timestamp: 0 },
     dirtyFiles: [],
     isDragging: false,
+    pendingCloseAction: null,
 };
 
 // region Helpers
@@ -344,6 +325,9 @@ export const tabsSlice = createSlice({
         setDragging: (state, action: PayloadAction<boolean>) => {
             state.isDragging = action.payload;
         },
+        setPendingClose: (state, action: PayloadAction<PendingClose | null>) => {
+            state.pendingCloseAction = action.payload;
+        },
     },
 });
 // endregion
@@ -364,6 +348,7 @@ export const {
     requestSave,
     setFileDirty,
     setDragging,
+    setPendingClose,
 } = tabsSlice.actions;
 
 export default tabsSlice.reducer;

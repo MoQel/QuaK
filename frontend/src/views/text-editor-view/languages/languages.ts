@@ -1,5 +1,5 @@
 import { openqasm3 } from '@/views/text-editor-view/languages/openqasm.ts';
-import { Language } from '@/views/text-editor-view/model/Language.ts';
+import { Language } from '@/views/text-editor-view/languages/Language.ts';
 
 export const DEFAULT_LANG = 'plaintext';
 

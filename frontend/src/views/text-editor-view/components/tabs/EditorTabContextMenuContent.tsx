@@ -7,10 +7,11 @@ import {
     ContextMenuSubContent,
     ContextMenuSubTrigger,
 } from '@/components/ui/context-menu.tsx';
-import { GROUP_BOTTOM, GROUP_MAIN, GROUP_RIGHT, Tab } from '@/store/slices/tabsSlice.ts';
+import { GROUP_BOTTOM, GROUP_MAIN, GROUP_RIGHT } from '@/store/tabs/tabsSlice.ts';
 import { languages } from '@/views/text-editor-view/languages/languages.ts';
 import { Check } from 'lucide-react';
-import { getKeyLabel, getOptionKeyLabel } from '@/views/text-editor-view/util/getKeyLabel.ts';
+import { getKeyLabel, getOptionKeyLabel } from '@/views/text-editor-view/utils/getKeyLabel.ts';
+import { Tab } from '@/store/tabs/tabsTypes.ts';
 
 interface TabContextMenuProps {
     tab: Tab;

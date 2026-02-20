@@ -1,15 +1,12 @@
 import { useAppDispatch } from '@/hooks/useAppDispatch.ts';
 import {
-    closeAll,
-    splitGroup,
-    GROUP_RIGHT,
     GROUP_BOTTOM,
-    closeGroup,
     GROUP_MAIN,
+    GROUP_RIGHT,
+    splitGroup,
     unsplitAllGroups,
     unsplitGroup,
-    EditorGroup,
-} from '@/store/slices/tabsSlice.ts';
+} from '@/store/tabs/tabsSlice.ts';
 import { Button } from '@/components/ui/button.tsx';
 import { MoreVertical, SplitSquareHorizontal, SplitSquareVertical, X } from 'lucide-react';
 import {
@@ -19,6 +16,8 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu.tsx';
+import { EditorGroup } from '@/store/tabs/tabsTypes.ts';
+import { safeCloseAll, safeCloseGroup } from '@/store/tabs/tabsThunks.ts';
 
 export function EditorGroupMenu({ groupId, groups }: Readonly<{ groupId: string; groups: EditorGroup[] }>) {
     const dispatch = useAppDispatch();
@@ -67,12 +66,12 @@ export function EditorGroupMenu({ groupId, groups }: Readonly<{ groupId: string;
                 </DropdownMenuItem>
 
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => dispatch(closeGroup(groupId))} className="focus:bg-destructive">
+                <DropdownMenuItem onClick={() => dispatch(safeCloseGroup(groupId))} className="focus:bg-destructive">
                     <div className={'mr-2 size-4'} />
                     Close Group
                 </DropdownMenuItem>
 
-                <DropdownMenuItem onClick={() => dispatch(closeAll())} className="focus:bg-destructive">
+                <DropdownMenuItem onClick={() => dispatch(safeCloseAll())} className="focus:bg-destructive">
                     <X className="mr-2 size-4" />
                     Close All
                 </DropdownMenuItem>

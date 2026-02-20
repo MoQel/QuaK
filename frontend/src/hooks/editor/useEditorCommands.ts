@@ -1,11 +1,11 @@
 import { useEffect } from 'react';
 import { Uri } from 'monaco-editor';
 import { toast } from 'sonner';
-import { saveFileContent } from '@/views/text-editor-view/util/fileService';
-import { savedVersionIds } from '@/views/text-editor-view/util/editorUtils';
+import { saveFileContent } from '@/views/text-editor-view/utils/fileService';
+import { savedVersionIds } from '@/views/text-editor-view/utils/editorUtils';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { setFileDirty } from '@/store/slices/tabsSlice';
+import { setFileDirty } from '@/store/tabs/tabsSlice.ts';
 import { useMonaco } from '@monaco-editor/react';
 
 export function useEditorCommands() {

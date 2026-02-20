@@ -1,13 +1,4 @@
-import {
-    closeAll,
-    closeOthers,
-    closeTab,
-    moveTab,
-    requestLanguageChange,
-    requestSave,
-    setActiveTab,
-    setDragging,
-} from '@/store/slices/tabsSlice.ts';
+import { moveTab, requestLanguageChange, requestSave, setActiveTab, setDragging } from '@/store/tabs/tabsSlice.ts';
 import { ContextMenu, ContextMenuTrigger } from '@/components/ui/context-menu.tsx';
 import { useAppDispatch } from '@/hooks/useAppDispatch.ts';
 import { useAppSelector } from '@/hooks/useAppSelector.ts';
@@ -15,10 +6,15 @@ import { TabBar } from '@/components/TabBar.tsx';
 import { EditorGroupMenu } from '@/views/text-editor-view/components/layout/EditorGroupMenu.tsx';
 import { EditorTabContextMenuContent } from '@/views/text-editor-view/components/tabs/EditorTabContextMenuContent.tsx';
 import { EditorTabLabel } from '@/views/text-editor-view/components/tabs/EditorTabLabel.tsx';
+import { safeCloseAll, safeCloseOthers, safeCloseTab } from '@/store/tabs/tabsThunks.ts';
+import { AppDispatch, RootState } from '@/store/store.ts';
+import { UnknownAction } from 'redux';
 
 interface TabBarProps {
     groupId: string;
 }
+
+type EditorAction = UnknownAction | ((dispatch: AppDispatch, getState: () => RootState) => void);
 
 export function EditorTabBar({ groupId }: Readonly<TabBarProps>) {
     const dispatch = useAppDispatch();
@@ -31,7 +27,10 @@ export function EditorTabBar({ groupId }: Readonly<TabBarProps>) {
     const { openTabs, activeTabId } = group;
     const isThisGroupFocused = globalActiveGroupId === groupId;
 
-    const dispatchDeferred = (action: Parameters<typeof dispatch>[0]) => setTimeout(() => dispatch(action), 0);
+    // Defers Redux actions to the next tick.
+    // This prevents Radix UI focus management from crashing when the tab's DOM element
+    // is unmounted synchronously before the context menu finishes closing.
+    const dispatchDeferred = (action: EditorAction) => setTimeout(() => dispatch(action), 0);
 
     return (
         <TabBar
@@ -75,7 +74,7 @@ export function EditorTabBar({ groupId }: Readonly<TabBarProps>) {
                                 isActive={isActive}
                                 isDirty={isDirty}
                                 isThisGroupFocused={isThisGroupFocused}
-                                onClose={() => dispatch(closeTab({ tabId: tab.id, groupId }))}
+                                onClose={() => dispatch(safeCloseTab({ tabId: tab.id, groupId }))}
                             />
                         </ContextMenuTrigger>
 
@@ -84,9 +83,9 @@ export function EditorTabBar({ groupId }: Readonly<TabBarProps>) {
                             tab={tab}
                             groupId={groupId}
                             isActive={isActive}
-                            onClose={() => dispatchDeferred(closeTab({ tabId: tab.id, groupId }))}
-                            onCloseOthers={() => dispatchDeferred(closeOthers({ tabId: tab.id, groupId }))}
-                            onCloseAll={() => dispatchDeferred(closeAll())}
+                            onClose={() => dispatchDeferred(safeCloseTab({ tabId: tab.id, groupId }))}
+                            onCloseOthers={() => dispatchDeferred(safeCloseOthers({ tabId: tab.id, groupId }))}
+                            onCloseAll={() => dispatchDeferred(safeCloseAll())}
                             onMoveTab={(toGroupId) =>
                                 dispatchDeferred(
                                     moveTab({

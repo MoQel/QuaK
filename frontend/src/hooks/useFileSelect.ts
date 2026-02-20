@@ -1,5 +1,5 @@
 import { File } from '@/views/project-manager-view/util/FileElement.tsx';
-import { openTab } from '@/store/slices/tabsSlice.ts';
+import { openTab } from '@/store/tabs/tabsSlice.ts';
 import { useAppDispatch } from '@/hooks/useAppDispatch.ts';
 
 export const useFileSelect = () => {
