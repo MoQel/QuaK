@@ -4,7 +4,6 @@ import edu.kit.quak.application.common.exceptions.AccessDeniedException;
 import edu.kit.quak.application.common.exceptions.ResourceNotFoundException;
 import edu.kit.quak.application.user.exceptions.UserNotFoundException;
 import edu.kit.quak.core.common.exception.DomainRuleViolationException;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -13,6 +12,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.util.stream.Collectors;
+
 /**
  * Global exception handler that translates domain exceptions to HTTP responses. Follows RFC-7807
  * Problem Details for HTTP APIs.
@@ -20,6 +21,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    public static final String INTERNAL_SERVER_ERROR = "Internal Server Error";
 
     /**
      * Handles validation failures from @Valid annotations.
@@ -105,8 +108,9 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(IllegalStateException.class)
     public ProblemDetail handleIllegalState(IllegalStateException ex) {
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage());
-        problem.setTitle("Internal Server Error");
+        log.error(ex.getMessage(), ex);
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR);
+        problem.setTitle(INTERNAL_SERVER_ERROR);
         return problem;
     }
 
@@ -118,8 +122,9 @@ public class GlobalExceptionHandler {
     public ProblemDetail handleGeneralError(Exception ex) {
         log.error("An unexpected error occurred", ex);
 
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred.");
-        problem.setTitle("Internal Server Error");
+        ProblemDetail problem =
+                ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred.");
+        problem.setTitle(INTERNAL_SERVER_ERROR);
         return problem;
     }
 }

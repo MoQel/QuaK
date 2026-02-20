@@ -6,11 +6,12 @@ import edu.kit.quak.application.circuit.ports.out.CircuitRepositoryPort;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
-import java.util.List;
-import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.function.Consumer;
 
 @Slf4j
 @Service
@@ -65,14 +66,14 @@ public class CircuitService implements CircuitServicePort {
     }
 
     public QuantumCircuit moveQuantumOperation(
-        String circuitId,
-        String operationId,
-        int layerIdx,
-        List<ElementSelector> targetQubits,
-        List<ElementSelector> controlQubits
-    ) {
-        log.info("Removing operation. circuitId={}, operationId={}", circuitId, operationId);
-        return updateCircuit(circuitId, circuit -> circuit.moveQuantumOperation(operationId, layerIdx, targetQubits, controlQubits));
+            String circuitId,
+            String operationId,
+            int layerIdx,
+            List<ElementSelector> targetQubits,
+            List<ElementSelector> controlQubits) {
+        log.info("Moving quantum operation. circuitId={}, operationId={}", circuitId, operationId);
+        return updateCircuit(
+                circuitId, circuit -> circuit.moveQuantumOperation(operationId, layerIdx, targetQubits, controlQubits));
     }
 
     @Override

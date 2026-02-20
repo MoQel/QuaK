@@ -1,8 +1,5 @@
 package edu.kit.quak.application.circuit;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
-
 import edu.kit.quak.application.circuit.exceptions.CircuitNotFoundException;
 import edu.kit.quak.application.circuit.ports.out.CircuitRepositoryPort;
 import edu.kit.quak.application.circuit.services.CircuitService;
@@ -10,13 +7,18 @@ import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
 import edu.kit.quak.shared.tags.UnitTest;
-import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 @UnitTest
 @ExtendWith(MockitoExtension.class)
@@ -184,12 +186,17 @@ class CircuitServiceTest {
 
     @Test
     void updateCircuitMethods_throwException_whenCircuitNotFound() {
-        // setup
+        // Arrange
         String circuitId = "unknown";
-        when(repository.findById(circuitId)).thenReturn(Optional.empty());
+        List<ElementSelector> emptyTargets = new ArrayList<>();
+        List<ElementSelector> emptyControls = new ArrayList<>();
 
-        // execute & verify exception
-        CircuitNotFoundException exception = assertThrows(CircuitNotFoundException.class, () -> service.get(circuitId));
+        // Act & Assert
+        CircuitNotFoundException exception = assertThrows(
+                CircuitNotFoundException.class,
+                () -> service.moveQuantumOperation(circuitId, "H", 0, emptyTargets, emptyControls)
+        );
+
         // verify context data (RFC 7807)
         assertEquals("Circuit", exception.getResourceType());
         assertEquals(circuitId, exception.getResourceId());
