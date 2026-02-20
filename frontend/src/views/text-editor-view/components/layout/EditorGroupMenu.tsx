@@ -66,12 +66,12 @@ export function EditorGroupMenu({ groupId, groups }: Readonly<{ groupId: string;
                 </DropdownMenuItem>
 
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => dispatch(safeCloseGroup(groupId))} className="focus:bg-destructive">
+                <DropdownMenuItem onClick={() => dispatch(safeCloseGroup(groupId))}>
                     <div className={'mr-2 size-4'} />
                     Close Group
                 </DropdownMenuItem>
 
-                <DropdownMenuItem onClick={() => dispatch(safeCloseAll())} className="focus:bg-destructive">
+                <DropdownMenuItem onClick={() => dispatch(safeCloseAll())}>
                     <X className="mr-2 size-4" />
                     Close All
                 </DropdownMenuItem>
