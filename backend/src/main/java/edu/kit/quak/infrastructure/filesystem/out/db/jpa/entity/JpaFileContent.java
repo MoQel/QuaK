@@ -16,7 +16,9 @@ public class JpaFileContent {
     @Column(name = "file_id", nullable = false, updatable = false)
     private String fileId;
 
-    @Lob @Setter private byte[] content;
+    @Lob
+    @Setter
+    private byte[] content;
 
     protected JpaFileContent() {}
 

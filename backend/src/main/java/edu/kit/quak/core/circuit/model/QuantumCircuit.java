@@ -25,32 +25,24 @@ public class QuantumCircuit extends ElementWithId {
     }
 
     public QuantumRegister addQuantumRegister() {
-        int nextIndex =
-                registers.stream()
-                                .map(Register::getName)
-                                .filter(name -> name.startsWith(REGISTER_PREFIX))
-                                .map(name -> name.substring(REGISTER_PREFIX.length()))
-                                .mapToInt(Integer::parseInt)
-                                .max()
-                                .orElse(-1)
-                        + 1;
+        int nextIndex = registers.stream()
+                        .map(Register::getName)
+                        .filter(name -> name.startsWith(REGISTER_PREFIX))
+                        .map(name -> name.substring(REGISTER_PREFIX.length()))
+                        .mapToInt(Integer::parseInt)
+                        .max()
+                        .orElse(-1)
+                + 1;
         QuantumRegister register = new QuantumRegister(REGISTER_PREFIX + nextIndex);
         registers.add(register);
         return register;
     }
 
     public void deleteQuantumRegister(String qubitId) {
-        registers.removeIf(
-                register ->
-                        register.asQuantum()
-                                .map(
-                                        qReg ->
-                                                !qReg.getQubits().isEmpty()
-                                                        && qReg.getQubits()
-                                                                .getFirst()
-                                                                .getId()
-                                                                .equals(qubitId))
-                                .orElse(false));
+        registers.removeIf(register -> register.asQuantum()
+                .map(qReg -> !qReg.getQubits().isEmpty()
+                        && qReg.getQubits().getFirst().getId().equals(qubitId))
+                .orElse(false));
     }
 
     public void addQubit() {
@@ -60,24 +52,19 @@ public class QuantumCircuit extends ElementWithId {
 
     public void changeQubitName(String qubitId, String name) {
         for (Register register : registers) {
-            register.asQuantum()
-                    .ifPresent(
-                            qReg -> {
-                                boolean qubitFound =
-                                        qReg.getQubits().stream()
-                                                .anyMatch(qubit -> qubit.getId().equals(qubitId));
+            register.asQuantum().ifPresent(qReg -> {
+                boolean qubitFound = qReg.getQubits().stream()
+                        .anyMatch(qubit -> qubit.getId().equals(qubitId));
 
-                                if (qubitFound) {
-                                    qReg.setName(name);
-                                }
-                            });
+                if (qubitFound) {
+                    qReg.setName(name);
+                }
+            });
         }
     }
 
     public void addElementaryQuantumGate(
-            ElementaryQuantumGateDefinitionIdentifier definitionId,
-            int registerIdx,
-            int positionIdx) {
+            ElementaryQuantumGateDefinitionIdentifier definitionId, int registerIdx, int positionIdx) {
         if (registerIdx < 0 || registerIdx >= registers.size()) {
             throw new IllegalArgumentException("Register index out of bounds: " + registerIdx);
         }
@@ -85,27 +72,17 @@ public class QuantumCircuit extends ElementWithId {
         registers
                 .get(registerIdx)
                 .asQuantum()
-                .ifPresentOrElse(
-                        qReg -> qReg.addElementaryQuantumGate(definitionId, positionIdx),
-                        () -> {
-                            throw new IllegalArgumentException(
-                                    String.format(
-                                            "Register at index %d is not a quantum register (cannot"
-                                                    + " add gate).",
-                                            registerIdx));
-                        });
+                .ifPresentOrElse(qReg -> qReg.addElementaryQuantumGate(definitionId, positionIdx), () -> {
+                    throw new IllegalArgumentException(String.format(
+                            "Register at index %d is not a quantum register (cannot" + " add gate).", registerIdx));
+                });
     }
 
     public void moveQuantumOperation(String operationId, int targetRegisterIdx, int positionIdx) {
         // search for tuple (Qubit, Operation)
-        var location =
-                findOperationLocation(operationId)
-                        .orElseThrow(
-                                () ->
-                                        new IllegalArgumentException(
-                                                String.format(
-                                                        "Operation %s not found within circuit %s.",
-                                                        operationId, id)));
+        var location = findOperationLocation(operationId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        String.format("Operation %s not found within circuit %s.", operationId, id)));
 
         Qubit sourceQubit = location.qubit();
         QuantumOperation operationToMove = location.operation();
@@ -114,14 +91,10 @@ public class QuantumCircuit extends ElementWithId {
             throw new IllegalArgumentException("Target register index out of bounds.");
         }
 
-        QuantumRegister targetReg =
-                registers
-                        .get(targetRegisterIdx)
-                        .asQuantum()
-                        .orElseThrow(
-                                () ->
-                                        new IllegalArgumentException(
-                                                "Target register is not a quantum register."));
+        QuantumRegister targetReg = registers
+                .get(targetRegisterIdx)
+                .asQuantum()
+                .orElseThrow(() -> new IllegalArgumentException("Target register is not a quantum register."));
 
         if (targetReg.getQubits().isEmpty()) {
             throw new IllegalStateException("Target register has no qubits.");
@@ -136,14 +109,12 @@ public class QuantumCircuit extends ElementWithId {
     }
 
     public void deleteQuantumOperation(String operationId) {
-        boolean removed =
-                findOperationLocation(operationId)
-                        .map(
-                                loc -> {
-                                    loc.qubit().removeOperation(loc.operation());
-                                    return true;
-                                })
-                        .orElse(false);
+        boolean removed = findOperationLocation(operationId)
+                .map(loc -> {
+                    loc.qubit().removeOperation(loc.operation());
+                    return true;
+                })
+                .orElse(false);
 
         if (!removed) {
             throw new IllegalArgumentException(
@@ -155,8 +126,8 @@ public class QuantumCircuit extends ElementWithId {
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append("QuantumCircuit(id=").append(id).append(")\n");
-        registers.forEach(
-                reg -> sb.append("  ").append(reg.toString().replace("\n", "\n  ")).append("\n"));
+        registers.forEach(reg ->
+                sb.append("  ").append(reg.toString().replace("\n", "\n  ")).append("\n"));
         return sb.toString().trim();
     }
 
@@ -166,11 +137,9 @@ public class QuantumCircuit extends ElementWithId {
         return registers.stream()
                 .flatMap(reg -> reg.asQuantum().stream())
                 .flatMap(qReg -> qReg.getQubits().stream())
-                .flatMap(
-                        qubit ->
-                                qubit.getOperations().stream()
-                                        .filter(op -> op.getId().equals(operationId))
-                                        .map(op -> new OperationLocation(qubit, op)))
+                .flatMap(qubit -> qubit.getOperations().stream()
+                        .filter(op -> op.getId().equals(operationId))
+                        .map(op -> new OperationLocation(qubit, op)))
                 .findFirst();
     }
 }

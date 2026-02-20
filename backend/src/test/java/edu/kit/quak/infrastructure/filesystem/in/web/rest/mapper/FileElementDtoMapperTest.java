@@ -22,19 +22,21 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class FileElementDtoMapperTest {
 
-    @Mock private FileDtoMapper fileMapper;
+    @Mock
+    private FileDtoMapper fileMapper;
 
-    @Mock private DirectoryDtoMapper directoryMapper;
+    @Mock
+    private DirectoryDtoMapper directoryMapper;
 
-    @InjectMocks private FileElementDtoMapper mapper;
+    @InjectMocks
+    private FileElementDtoMapper mapper;
 
     @Test
     @DisplayName("Should map File entity to FileDetailsResponse")
     void testMapFile() {
         File file = new File("test.txt", null);
         FileDetailsResponse expectedResponse =
-                new FileDetailsResponse(
-                        file.getId(), "test.txt", "file", null, Instant.now(), Instant.now());
+                new FileDetailsResponse(file.getId(), "test.txt", "file", null, Instant.now(), Instant.now());
 
         when(fileMapper.toDetailsResponse(any(File.class))).thenReturn(expectedResponse);
 
@@ -50,8 +52,7 @@ class FileElementDtoMapperTest {
     void testMapDirectory() {
         Directory dir = new Directory("docs", null);
         DirectoryDetailsResponse expectedResponse =
-                new DirectoryDetailsResponse(
-                        dir.getId(), "docs", "directory", Instant.now(), Instant.now());
+                new DirectoryDetailsResponse(dir.getId(), "docs", "directory", Instant.now(), Instant.now());
 
         when(directoryMapper.toDetailsResponse(any(Directory.class))).thenReturn(expectedResponse);
 

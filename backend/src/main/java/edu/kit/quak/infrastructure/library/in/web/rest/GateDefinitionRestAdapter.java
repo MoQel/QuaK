@@ -19,8 +19,7 @@ public class GateDefinitionRestAdapter {
     private final GateDefinitionServicePort gateService;
     private final GateDefinitionDtoMapper mapper;
 
-    public GateDefinitionRestAdapter(
-            GateDefinitionServicePort gateService, GateDefinitionDtoMapper mapper) {
+    public GateDefinitionRestAdapter(GateDefinitionServicePort gateService, GateDefinitionDtoMapper mapper) {
         this.gateService = gateService;
         this.mapper = mapper;
     }

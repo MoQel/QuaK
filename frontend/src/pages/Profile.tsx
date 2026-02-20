@@ -61,20 +61,14 @@ export const Profile: React.FC = () => {
                         <div className="flex items-start gap-6">
                             <div className="w-24 h-24 bg-gradient-to-br from-blue-400 to-blue-700 rounded-full flex items-center justify-center overflow-hidden">
                                 {user.avatarUrl ? (
-                                    <img
-                                        src={user.avatarUrl}
-                                        alt={user.name}
-                                        className="w-full h-full object-cover"
-                                    />
+                                    <img src={user.avatarUrl} alt={user.name} className="w-full h-full object-cover" />
                                 ) : (
                                     <UserIcon className="w-12 h-12 text-white" />
                                 )}
                             </div>
                             <div className="flex-1">
                                 <CardTitle className="text-2xl mb-2">{user.name}</CardTitle>
-                                <CardDescription className="text-base mb-3">
-                                    {user.email}
-                                </CardDescription>
+                                <CardDescription className="text-base mb-3">{user.email}</CardDescription>
                                 <div className="flex gap-2 flex-wrap">
                                     {user.emailVerified && (
                                         <Badge

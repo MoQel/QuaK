@@ -53,16 +53,15 @@ public class OidcUserSyncService implements OidcSyncServicePort {
 
     private User createUser(String issuer, String sub, OidcUserInfo userInfo) {
         log.info("Creating new user for issuer='{}' sub='{}'", issuer, sub);
-        User user =
-                User.createFromOidc(
-                        issuer,
-                        sub,
-                        userInfo.email(),
-                        userInfo.emailVerified(),
-                        userInfo.fullName(),
-                        userInfo.givenName(),
-                        userInfo.familyName(),
-                        userInfo.picture());
+        User user = User.createFromOidc(
+                issuer,
+                sub,
+                userInfo.email(),
+                userInfo.emailVerified(),
+                userInfo.fullName(),
+                userInfo.givenName(),
+                userInfo.familyName(),
+                userInfo.picture());
         return userRepository.save(user);
     }
 }

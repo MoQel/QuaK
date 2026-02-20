@@ -25,9 +25,11 @@ import org.springframework.test.web.servlet.MockMvc;
 @AutoConfigureMockMvc
 class UserIntegrationTest {
 
-    @Autowired private MockMvc mockMvc;
+    @Autowired
+    private MockMvc mockMvc;
 
-    @Autowired private SpringDataUserRepository userRepository;
+    @Autowired
+    private SpringDataUserRepository userRepository;
 
     private JpaUser testUser;
 
@@ -36,39 +38,32 @@ class UserIntegrationTest {
         // Create a test user if not exists
         // The oidcLogin() mock uses "test" as the registration ID by default in our
         // tests
-        testUser =
-                userRepository
-                        .findByIssuerAndSub("test", "test-sub")
-                        .orElseGet(
-                                () -> {
-                                    JpaUser user = new JpaUser();
-                                    user.setIssuer(
-                                            "test"); // Match the test's OIDC mock registration ID
-                                    user.setSub("test-sub");
-                                    user.setEmail("test@example.com");
-                                    user.setName("Test User");
-                                    user.setEmailVerified(true);
-                                    return userRepository.save(user);
-                                });
+        testUser = userRepository.findByIssuerAndSub("test", "test-sub").orElseGet(() -> {
+            JpaUser user = new JpaUser();
+            user.setIssuer("test"); // Match the test's OIDC mock registration ID
+            user.setSub("test-sub");
+            user.setEmail("test@example.com");
+            user.setName("Test User");
+            user.setEmailVerified(true);
+            return userRepository.save(user);
+        });
     }
 
-    private org.springframework.security.test.web.servlet.request
-                    .SecurityMockMvcRequestPostProcessors.OidcLoginRequestPostProcessor
+    private org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors
+                    .OidcLoginRequestPostProcessor
             authenticatedUser() {
         return oidcLogin()
-                .idToken(
-                        token ->
-                                token.claim("sub", "test-sub")
-                                        .claim("email", "test@example.com")
-                                        .claim("name", "Test User")
-                                        .claim("picture", "https://example.com/avatar.jpg"))
+                .idToken(token -> token.claim("sub", "test-sub")
+                        .claim("email", "test@example.com")
+                        .claim("name", "Test User")
+                        .claim("picture", "https://example.com/avatar.jpg"))
                 .clientRegistration(
-                        org.springframework.security.oauth2.client.registration.ClientRegistration
-                                .withRegistrationId("test")
+                        org.springframework.security.oauth2.client.registration.ClientRegistration.withRegistrationId(
+                                        "test")
                                 .clientId("test-client-id")
                                 .authorizationGrantType(
-                                        org.springframework.security.oauth2.core
-                                                .AuthorizationGrantType.AUTHORIZATION_CODE)
+                                        org.springframework.security.oauth2.core.AuthorizationGrantType
+                                                .AUTHORIZATION_CODE)
                                 .redirectUri("http://localhost/callback")
                                 .authorizationUri("http://localhost/authorize")
                                 .tokenUri("http://localhost/token")

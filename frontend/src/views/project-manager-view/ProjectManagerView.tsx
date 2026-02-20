@@ -1,11 +1,5 @@
 import { Card, CardContent } from '@/components/ui/card.tsx';
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from '@/components/ui/dialog.tsx';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog.tsx';
 import { Project } from '@/views/project-manager-view/Project.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import { Context, createContext, useEffect, useState } from 'react';
@@ -15,10 +9,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Skeleton } from '@/components/ui/skeleton.tsx';
 import { sort } from '@/views/project-manager-view/util/FileElement.tsx';
-import {
-    DialogCloseButtons,
-    TextInput,
-} from '@/views/project-manager-view/util/FormComponents.tsx';
+import { DialogCloseButtons, TextInput } from '@/views/project-manager-view/util/FormComponents.tsx';
 import { Plus } from 'lucide-react';
 import { Empty } from '@/views/project-manager-view/util/TreeComponents.tsx';
 import { File } from '@/views/project-manager-view/util/FileElement.tsx';
@@ -115,11 +106,7 @@ function CreateProject({ reload }: { reload: () => void }) {
                             control={form.control}
                             name="name"
                             render={({ field }) => (
-                                <TextInput
-                                    placeholder="New Project"
-                                    label="Name of the Project"
-                                    field={field}
-                                />
+                                <TextInput placeholder="New Project" label="Name of the Project" field={field} />
                             )}
                         />
                         <DialogCloseButtons submit={'Save'} />

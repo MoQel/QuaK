@@ -16,9 +16,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class FileElementContainerRepositoryRegistryTest {
 
-    @Mock FileElementContainerRepositoryPort<?> repoP;
+    @Mock
+    FileElementContainerRepositoryPort<?> repoP;
 
-    @Mock FileElementContainerRepositoryPort<?> repoD;
+    @Mock
+    FileElementContainerRepositoryPort<?> repoD;
 
     @Test
     @DisplayName("Registry maps repositories correctly by their prefix")
@@ -44,8 +46,6 @@ class FileElementContainerRepositoryRegistryTest {
 
         List<FileElementContainerRepositoryPort<?>> repos = List.of(repoP, repoD);
 
-        assertThrows(
-                IllegalStateException.class,
-                () -> new FileElementContainerRepositoryRegistry(repos));
+        assertThrows(IllegalStateException.class, () -> new FileElementContainerRepositoryRegistry(repos));
     }
 }

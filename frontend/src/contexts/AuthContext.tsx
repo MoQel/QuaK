@@ -10,7 +10,7 @@ interface AuthContextType {
     user: User | null;
     isAuthenticated: boolean;
     isLoading: boolean;
-    login: () => void;
+    login: (provider?: 'google' | 'github') => void;
     logout: () => void;
     checkAuthStatus: () => Promise<void>;
 }
@@ -64,9 +64,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         checkAuthStatus();
     }, []);
 
-    const login = () => {
+    const login = (provider: 'google' | 'github' = 'google') => {
         // Redirect to backend OAuth2 login endpoint
-        window.location.href = `${API_BASE_URL}/oauth2/authorization/google`;
+        window.location.href = `${API_BASE_URL}/oauth2/authorization/${provider}`;
     };
 
     const logout = async () => {

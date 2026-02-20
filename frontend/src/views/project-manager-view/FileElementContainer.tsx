@@ -1,18 +1,10 @@
-import {
-    Collapsible,
-    CollapsibleContent,
-    CollapsibleTrigger,
-} from '@/components/ui/collapsible.tsx';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible.tsx';
 import { JSX, useEffect, useState } from 'react';
 import { CreateDialog } from '@/views/project-manager-view/CreateDialog.tsx';
 import { Skeleton } from '@/components/ui/skeleton.tsx';
 import { ParentRefresh } from '@/views/project-manager-view/ProjectManagerView.tsx';
 import './ProjectManagerView.css';
-import {
-    ContextMenu,
-    ContextMenuContent,
-    ContextMenuTrigger,
-} from '@/components/ui/context-menu.tsx';
+import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from '@/components/ui/context-menu.tsx';
 import { Dialog, DialogContent } from '@/components/ui/dialog.tsx';
 import { Delete } from '@/views/project-manager-view/Delete.tsx';
 import { Empty, ListingElement } from '@/views/project-manager-view/util/TreeComponents.tsx';

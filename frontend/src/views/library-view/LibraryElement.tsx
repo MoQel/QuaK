@@ -64,13 +64,8 @@ export function LibraryElement({ id, symbol, onClick, matrix }: Readonly<Library
                 </div>
             </TooltipTrigger>
 
-            <TooltipContent
-                side="right"
-                className="bg-bg-light text-text border shadow-xl p-3 min-w-[150px] z-[9999]"
-            >
-                <div className="text-xs text-text-muted mb-2 text-center font-semibold">
-                    Matrix Representation
-                </div>
+            <TooltipContent side="right" className="bg-bg-light text-text border shadow-xl p-3 min-w-[150px] z-[9999]">
+                <div className="text-xs text-text-muted mb-2 text-center font-semibold">Matrix Representation</div>
                 <div className="overflow-x-auto flex justify-center">
                     <BlockMath math={matrix} />
                 </div>

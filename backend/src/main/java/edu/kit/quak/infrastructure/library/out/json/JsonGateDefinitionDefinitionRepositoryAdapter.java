@@ -26,8 +26,7 @@ public class JsonGateDefinitionDefinitionRepositoryAdapter implements GateDefini
     // Constructor Injection with property
     public JsonGateDefinitionDefinitionRepositoryAdapter(
             ObjectMapper objectMapper,
-            @Value("${quak.library.gates-file:gatedefinitions.json}")
-                    String gateDefinitionsFilePath) {
+            @Value("${quak.library.gates-file:gatedefinitions.json}") String gateDefinitionsFilePath) {
         this.objectMapper = objectMapper;
         this.gateDefinitionsFilePath = gateDefinitionsFilePath;
     }
@@ -51,20 +50,15 @@ public class JsonGateDefinitionDefinitionRepositoryAdapter implements GateDefini
         try {
             ClassPathResource resource = new ClassPathResource(gateDefinitionsFilePath);
             if (!resource.exists()) {
-                throw new IllegalStateException(
-                        "Gate library file not found: " + gateDefinitionsFilePath);
+                throw new IllegalStateException("Gate library file not found: " + gateDefinitionsFilePath);
             }
 
             try (InputStream is = resource.getInputStream()) {
-                JsonGateDefinitionDto[] dtos =
-                        objectMapper.readValue(is, JsonGateDefinitionDto[].class);
-                return Arrays.stream(dtos)
-                        .map(JsonGateDefinitionDto::toDomain)
-                        .collect(Collectors.toList());
+                JsonGateDefinitionDto[] dtos = objectMapper.readValue(is, JsonGateDefinitionDto[].class);
+                return Arrays.stream(dtos).map(JsonGateDefinitionDto::toDomain).collect(Collectors.toList());
             }
         } catch (IOException e) {
-            throw new IllegalStateException(
-                    "Failed to parse gate library from " + gateDefinitionsFilePath, e);
+            throw new IllegalStateException("Failed to parse gate library from " + gateDefinitionsFilePath, e);
         }
     }
 
@@ -98,14 +92,17 @@ public class JsonGateDefinitionDefinitionRepositoryAdapter implements GateDefini
             return new GateDefinition.InspectorInfo(
                     operatorDefinition,
                     truthTable != null
-                            ? truthTable.stream().map(JsonTruthTableEntryDto::toDomain).toList()
+                            ? truthTable.stream()
+                                    .map(JsonTruthTableEntryDto::toDomain)
+                                    .toList()
                             : Collections.emptyList(),
                     matrix != null ? matrix.toDomain() : null);
         }
     }
 
     private record JsonTruthTableEntryDto(
-            @JsonProperty("input") String input, @JsonProperty("output") String output) {
+            @JsonProperty("input") String input,
+            @JsonProperty("output") String output) {
         GateDefinition.TruthTableEntry toDomain() {
             return new GateDefinition.TruthTableEntry(input, output);
         }

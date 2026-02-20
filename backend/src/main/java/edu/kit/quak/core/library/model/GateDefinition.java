@@ -30,8 +30,7 @@ public record GateDefinition(
      * @param matrix Matrix representation of the gate with both LaTeX display format and computable
      *     values
      */
-    public record InspectorInfo(
-            String operatorDefinition, List<TruthTableEntry> truthTable, MatrixInfo matrix) {
+    public record InspectorInfo(String operatorDefinition, List<TruthTableEntry> truthTable, MatrixInfo matrix) {
         // ensures non-null
         public InspectorInfo {
             truthTable = truthTable != null ? Collections.unmodifiableList(truthTable) : List.of();

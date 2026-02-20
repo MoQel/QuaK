@@ -32,12 +32,7 @@ public class User {
 
     // Business Methods
     public void updateFromOidc(
-            String email,
-            Boolean emailVerified,
-            String name,
-            String givenName,
-            String familyName,
-            String avatarUrl) {
+            String email, Boolean emailVerified, String name, String givenName, String familyName, String avatarUrl) {
         this.email = email;
         this.emailVerified = emailVerified;
         this.name = name;

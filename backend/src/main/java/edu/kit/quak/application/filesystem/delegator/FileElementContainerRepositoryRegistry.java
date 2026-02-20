@@ -19,12 +19,10 @@ import org.springframework.stereotype.Component;
 @Component
 public class FileElementContainerRepositoryRegistry {
 
-    private final Map<Character, FileElementContainerRepositoryPort<?>> repoByPrefix =
-            new HashMap<>();
+    private final Map<Character, FileElementContainerRepositoryPort<?>> repoByPrefix = new HashMap<>();
 
     @Autowired
-    public FileElementContainerRepositoryRegistry(
-            List<FileElementContainerRepositoryPort<?>> repositories) {
+    public FileElementContainerRepositoryRegistry(List<FileElementContainerRepositoryPort<?>> repositories) {
         for (FileElementContainerRepositoryPort<?> repo : repositories) {
             char prefix = repo.idPrefix();
 
@@ -36,9 +34,8 @@ public class FileElementContainerRepositoryRegistry {
     }
 
     @SuppressWarnings("unchecked")
-    public <T extends FileElementContainer<?>>
-            Optional<FileElementContainerRepositoryPort<T>> getRepository(char prefix) {
-        return Optional.ofNullable(
-                (FileElementContainerRepositoryPort<T>) repoByPrefix.get(prefix));
+    public <T extends FileElementContainer<?>> Optional<FileElementContainerRepositoryPort<T>> getRepository(
+            char prefix) {
+        return Optional.ofNullable((FileElementContainerRepositoryPort<T>) repoByPrefix.get(prefix));
     }
 }

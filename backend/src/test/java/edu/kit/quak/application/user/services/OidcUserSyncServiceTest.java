@@ -22,9 +22,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class OidcUserSyncServiceTest {
 
-    @Mock private UserRepositoryPort userRepository;
+    @Mock
+    private UserRepositoryPort userRepository;
 
-    @InjectMocks private OidcUserSyncService oidcUserSyncService;
+    @InjectMocks
+    private OidcUserSyncService oidcUserSyncService;
 
     private OidcUserInfo createUserInfo() {
         return new OidcUserInfo(
@@ -46,8 +48,7 @@ class OidcUserSyncServiceTest {
         void syncUser_newUser_createsUser() {
             OidcUserInfo userInfo = createUserInfo();
             // Arrange
-            when(userRepository.findByIssuerAndSub("google", "test-sub-123"))
-                    .thenReturn(Optional.empty());
+            when(userRepository.findByIssuerAndSub("google", "test-sub-123")).thenReturn(Optional.empty());
 
             User savedUser = new User(UUID.randomUUID(), "google", "test-sub-123");
             savedUser.setEmail("test@example.com");
@@ -79,13 +80,10 @@ class OidcUserSyncServiceTest {
         @DisplayName("Should handle user with minimal OIDC claims")
         void syncUser_minimalClaims_createsUser() {
             // Arrange
-            OidcUserInfo minimalUserInfo =
-                    new OidcUserInfo("minimal-sub", null, null, null, null, null, null);
+            OidcUserInfo minimalUserInfo = new OidcUserInfo("minimal-sub", null, null, null, null, null, null);
 
-            when(userRepository.findByIssuerAndSub("github", "minimal-sub"))
-                    .thenReturn(Optional.empty());
-            when(userRepository.save(any(User.class)))
-                    .thenAnswer(invocation -> invocation.getArgument(0));
+            when(userRepository.findByIssuerAndSub("github", "minimal-sub")).thenReturn(Optional.empty());
+            when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
             // Act
             User result = oidcUserSyncService.syncUser("github", minimalUserInfo);
@@ -112,10 +110,8 @@ class OidcUserSyncServiceTest {
             existingUser.setEmail("old@example.com");
             existingUser.setName("Old Name");
 
-            when(userRepository.findByIssuerAndSub("google", "test-sub-123"))
-                    .thenReturn(Optional.of(existingUser));
-            when(userRepository.save(any(User.class)))
-                    .thenAnswer(invocation -> invocation.getArgument(0));
+            when(userRepository.findByIssuerAndSub("google", "test-sub-123")).thenReturn(Optional.of(existingUser));
+            when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
             // Act
             User result = oidcUserSyncService.syncUser("google", userInfo);
@@ -139,10 +135,8 @@ class OidcUserSyncServiceTest {
             UUID existingUserId = UUID.randomUUID();
             User existingUser = new User(existingUserId, "google", "test-sub-123");
 
-            when(userRepository.findByIssuerAndSub("google", "test-sub-123"))
-                    .thenReturn(Optional.of(existingUser));
-            when(userRepository.save(any(User.class)))
-                    .thenAnswer(invocation -> invocation.getArgument(0));
+            when(userRepository.findByIssuerAndSub("google", "test-sub-123")).thenReturn(Optional.of(existingUser));
+            when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
             // Act
             User result = oidcUserSyncService.syncUser("google", userInfo);
@@ -162,13 +156,10 @@ class OidcUserSyncServiceTest {
         @DisplayName("Should throw IllegalArgumentException when subject is null")
         void syncUser_nullSubject_throwsException() {
             // Arrange
-            OidcUserInfo nullSubUserInfo =
-                    new OidcUserInfo(null, null, null, null, null, null, null);
+            OidcUserInfo nullSubUserInfo = new OidcUserInfo(null, null, null, null, null, null, null);
 
             // Act & Assert
-            assertThrows(
-                    IllegalArgumentException.class,
-                    () -> oidcUserSyncService.syncUser("google", nullSubUserInfo));
+            assertThrows(IllegalArgumentException.class, () -> oidcUserSyncService.syncUser("google", nullSubUserInfo));
 
             verify(userRepository, never()).save(any());
         }
@@ -183,17 +174,13 @@ class OidcUserSyncServiceTest {
         void syncUser_differentIssuers_createsSeparateUsers() {
             OidcUserInfo userInfo = createUserInfo();
             // Arrange
-            when(userRepository.findByIssuerAndSub("google", "test-sub-123"))
-                    .thenReturn(Optional.empty());
-            when(userRepository.findByIssuerAndSub("github", "test-sub-123"))
-                    .thenReturn(Optional.empty());
-            when(userRepository.save(any(User.class)))
-                    .thenAnswer(
-                            invocation -> {
-                                User u = invocation.getArgument(0);
-                                u.setId(UUID.randomUUID());
-                                return u;
-                            });
+            when(userRepository.findByIssuerAndSub("google", "test-sub-123")).thenReturn(Optional.empty());
+            when(userRepository.findByIssuerAndSub("github", "test-sub-123")).thenReturn(Optional.empty());
+            when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
+                User u = invocation.getArgument(0);
+                u.setId(UUID.randomUUID());
+                return u;
+            });
 
             // Act
             User googleUser = oidcUserSyncService.syncUser("google", userInfo);

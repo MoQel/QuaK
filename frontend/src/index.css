@@ -29,7 +29,7 @@
     --text: hsl(0 0% 20%); /* primary text  */
     --text-muted: hsl(0 0% 30%); /* secondary / muted text */
 
-    --border: hsl(0 0 70%); /* standard borders */
+    --border: hsl(0 0 60%); /* standard borders */
     --border-muted: hsl(300 0% 82%); /* very subtle / disabled borders */
 
     --highlight: hsl(0 0% 50%); /* neutral highlight / emphasis */
@@ -43,6 +43,10 @@
 
     --logo-start: hsl(217 91% 40%);
     --logo-end: hsl(217 91% 60%);
+
+    /* monaco editor needs hex codes */
+    --editor-bg: #e6e6e6;
+    --editor-line-number: #666666;
 }
 
 .dark {
@@ -54,7 +58,7 @@
     --text: hsl(0 0% 95%); /* primary text (almost white) */
     --text-muted: hsl(0 0% 70%); /* secondary / muted text */
 
-    --border: hsl(0 0 30%); /* standard borders (dark gray) */
+    --border: hsl(0 0 20%); /* standard borders (dark gray) */
     --border-muted: hsl(300 0% 18%); /* very subtle / disabled borders */
 
     --highlight: hsl(0 0% 50%); /* neutral highlight / emphasis */
@@ -68,6 +72,10 @@
 
     --logo-start: hsl(217 100% 85%);
     --logo-end: hsl(217 91% 60%);
+
+    /* monaco editor needs hex codes */
+    --editor-bg: #18191b;
+    --editor-line-number: #858585;
 }
 
 @layer base {

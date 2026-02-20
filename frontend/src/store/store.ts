@@ -1,16 +1,17 @@
-import { configureStore } from "@reduxjs/toolkit";
-import layoutReducer, { LayoutState } from "./slices/layoutSlice";
+import { configureStore } from '@reduxjs/toolkit';
+import layoutReducer, { LayoutState } from './slices/layoutSlice';
+import tabsReducer from './slices/tabsSlice';
 
 // --- 1. Load State from LocalStorage ---
 const loadState = (): { layout: LayoutState } | undefined => {
     try {
-        const serializedState = localStorage.getItem("ide-layout-settings");
+        const serializedState = localStorage.getItem('ide-layout-settings');
         if (serializedState === null) {
             return undefined;
         }
         return JSON.parse(serializedState);
-    } catch (err) {
-        return undefined;
+    } catch (e) {
+        console.warn('Could not load state', e);
     }
 };
 
@@ -18,25 +19,23 @@ const loadState = (): { layout: LayoutState } | undefined => {
 export const store = configureStore({
     reducer: {
         layout: layoutReducer,
+        tabs: tabsReducer,
     },
     preloadedState: loadState(),
 });
 
-
 const saveState = (state: RootState) => {
     try {
         const serializedState = JSON.stringify({ layout: state.layout });
-        localStorage.setItem("ide-layout", serializedState);
+        localStorage.setItem('ide-layout', serializedState);
     } catch (e) {
-        console.warn("Could not save state", e);
+        console.warn('Could not save state', e);
     }
 };
 
 let debounceTimer: ReturnType<typeof setTimeout>;
 
-
 store.subscribe(() => {
-
     if (debounceTimer) {
         clearTimeout(debounceTimer);
     }

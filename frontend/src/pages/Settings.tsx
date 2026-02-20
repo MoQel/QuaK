@@ -40,9 +40,7 @@ export const Settings: React.FC = () => {
                         <div className="flex items-center justify-between">
                             <div className="space-y-0.5">
                                 <Label className="text-base">Dark mode</Label>
-                                <p className="text-sm text-muted-foreground">
-                                    Use dark theme for the interface
-                                </p>
+                                <p className="text-sm text-muted-foreground">Use dark theme for the interface</p>
                             </div>
                             <input
                                 type="checkbox"
@@ -57,14 +55,9 @@ export const Settings: React.FC = () => {
                         <div className="flex items-center justify-between">
                             <div className="space-y-0.5">
                                 <Label className="text-base">Email updates</Label>
-                                <p className="text-sm text-muted-foreground">
-                                    Receive weekly digest of your activity
-                                </p>
+                                <p className="text-sm text-muted-foreground">Receive weekly digest of your activity</p>
                             </div>
-                            <input
-                                type="checkbox"
-                                className="h-4 w-4 rounded border-gray-300 cursor-pointer"
-                            />
+                            <input type="checkbox" className="h-4 w-4 rounded border-gray-300 cursor-pointer" />
                         </div>
                     </CardContent>
                 </Card>
@@ -73,9 +66,7 @@ export const Settings: React.FC = () => {
                 <Card>
                     <CardHeader>
                         <CardTitle>Privacy</CardTitle>
-                        <CardDescription>
-                            Control who can see your profile and projects
-                        </CardDescription>
+                        <CardDescription>Control who can see your profile and projects</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="space-y-3">
@@ -98,12 +89,7 @@ export const Settings: React.FC = () => {
                             </div>
 
                             <div className="flex items-center gap-3">
-                                <input
-                                    type="radio"
-                                    name="privacy"
-                                    id="private"
-                                    className="h-4 w-4 cursor-pointer"
-                                />
+                                <input type="radio" name="privacy" id="private" className="h-4 w-4 cursor-pointer" />
                                 <div className="flex-1">
                                     <Label htmlFor="private" className="text-base cursor-pointer">
                                         Private profile
@@ -127,9 +113,7 @@ export const Settings: React.FC = () => {
                         <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
                             <div>
                                 <p className="font-medium">Account Status</p>
-                                <p className="text-sm text-muted-foreground">
-                                    Your account is active
-                                </p>
+                                <p className="text-sm text-muted-foreground">Your account is active</p>
                             </div>
                             <Badge variant="outline">Active</Badge>
                         </div>

@@ -23,9 +23,13 @@ import org.springframework.stereotype.Component;
 @Component
 public class FileElementDtoMapper {
 
-    @Autowired @Lazy protected FileDtoMapper fileMapper;
+    @Autowired
+    @Lazy
+    protected FileDtoMapper fileMapper;
 
-    @Autowired @Lazy protected DirectoryDtoMapper directoryMapper;
+    @Autowired
+    @Lazy
+    protected DirectoryDtoMapper directoryMapper;
 
     public FileElementDto toDto(FileElement<?> element) {
         if (element instanceof File file) {
@@ -33,8 +37,7 @@ public class FileElementDtoMapper {
         } else if (element instanceof Directory dir) {
             return directoryMapper.toDetailsResponse(dir);
         } else {
-            throw new IllegalArgumentException(
-                    "Unknown FileElement definitionId: " + element.getClass());
+            throw new IllegalArgumentException("Unknown FileElement definitionId: " + element.getClass());
         }
     }
 

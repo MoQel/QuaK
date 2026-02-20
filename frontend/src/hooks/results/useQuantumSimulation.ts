@@ -1,16 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
-import SimulationWorker from '@/workers/simulation.worker?worker';
-import { CircuitResponse } from '@/api/dto/circuit';
-import { WorkerRequest, WorkerResponse } from '@/workers/messages';
-import { SimulationResult, SimulationOptions } from '@/simulation/simulation.types';
+import SimulationWorker from '@/workers/simulation.worker.ts?worker';
+import { CircuitResponse } from '@/api/dto/circuit.ts';
+import { WorkerRequest, WorkerResponse } from '@/workers/messages.ts';
+import { SimulationResult, SimulationOptions } from '@/simulation/simulation.types.ts';
 
 // Debounce delay in milliseconds
 const SIMULATION_DELAY_MS = 300;
 
-export function useQuantumSimulation(
-    circuit: CircuitResponse | null,
-    options: SimulationOptions = {},
-) {
+export function useQuantumSimulation(circuit: CircuitResponse | null, options: SimulationOptions = {}) {
     const [result, setResult] = useState<SimulationResult | null>(null);
     const [isCalculating, setIsCalculating] = useState(false);
     const [error, setError] = useState<string | null>(null);

@@ -39,8 +39,7 @@ function InspectorViewComponent({ gate, onClear }: InspectorViewProps) {
             <Card className="w-full h-full border-l rounded-none bg-muted/10">
                 <CardContent className="flex flex-col items-center justify-center h-[50vh] text-muted-foreground text-sm italic">
                     <Microscope className="w-12 h-12 mb-4 opacity-20" />
-                    <p>Select a gate from the Library</p>
-                    <p>or out of the Circuit.</p>
+                    <p>Select a gate from the Library.</p>
                 </CardContent>
             </Card>
         );

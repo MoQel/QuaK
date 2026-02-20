@@ -4,12 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Input } from '@/components/ui/input.tsx';
 import React, { Fragment, useState } from 'react';
-import {
-    AddGateRequest,
-    ChangeQubitNameRequest,
-    MoveGateRequest,
-    QubitResponse,
-} from '@/api/dto/circuit.ts';
+import { AddGateRequest, ChangeQubitNameRequest, MoveGateRequest, QubitResponse } from '@/api/dto/circuit.ts';
 
 interface QubitProps extends QubitResponse {
     name: string;
@@ -103,12 +98,7 @@ export function Qubit({
                 <PopoverContent>
                     <form onSubmit={onSave} className="flex flex-col space-y-2">
                         <div className="flex flex-row space-x-2">
-                            <Input
-                                id="qubitName"
-                                value={tempName}
-                                onChange={onNameInputChange}
-                                className="font-mono"
-                            />
+                            <Input id="qubitName" value={tempName} onChange={onNameInputChange} className="font-mono" />
                             <Button
                                 type="submit"
                                 className="w-16 h-8 font-mono text-sm font-bold select-none bg-special text-white hover:bg-special-hover"
@@ -148,15 +138,8 @@ export function Qubit({
                                 onDrop={(e) => handleDrop(e, qubitIndex, index)}
                             >
                                 {hoverIndex === index && (
-                                    <div
-                                        className={styles.dropZonePlaceHolderMargin}
-                                        style={{ pointerEvents: 'none' }}
-                                    >
-                                        <Gate
-                                            key="placeholder"
-                                            id="placeholder"
-                                            definitionId="PLACEHOLDER"
-                                        />
+                                    <div className={styles.dropZonePlaceHolderMargin} style={{ pointerEvents: 'none' }}>
+                                        <Gate key="placeholder" id="placeholder" definitionId="PLACEHOLDER" />
                                     </div>
                                 )}
                             </div>
@@ -189,15 +172,8 @@ export function Qubit({
                         onDrop={(e) => handleDrop(e, qubitIndex, visibleGates.length)}
                     >
                         {hoverIndex === visibleGates.length && (
-                            <div
-                                className={styles.dropZoneLastPlaceHolderMargin}
-                                style={{ pointerEvents: 'none' }}
-                            >
-                                <Gate
-                                    key="placeholder"
-                                    id="placeholder"
-                                    definitionId="PLACEHOLDER"
-                                />
+                            <div className={styles.dropZoneLastPlaceHolderMargin} style={{ pointerEvents: 'none' }}>
+                                <Gate key="placeholder" id="placeholder" definitionId="PLACEHOLDER" />
                             </div>
                         )}
                     </div>
