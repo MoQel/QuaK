@@ -145,7 +145,6 @@
 .dockview-theme-custom .dv-tab.dv-active-tab {
     background-color: var(--bg-dark) !important;
     color: var(--text) !important;
-    border-top: 2px solid var(--special) !important; /* Optional accent line */
     border-bottom: none !important; /* Connect to content */
 }
 
