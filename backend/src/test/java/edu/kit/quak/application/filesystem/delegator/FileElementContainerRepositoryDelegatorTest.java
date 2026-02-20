@@ -66,12 +66,12 @@ class FileElementContainerRepositoryDelegatorTest {
     }
 
     @Test
-    @DisplayName("save() throws IllegalArgumentException if no repo is registered")
+    @DisplayName("save() throws IllegalStateException if no repo is registered")
     void save_throwsWhenNoRepoFound() {
         Project project = new Project("Test");
         when(registry.getRepository('p')).thenReturn(Optional.empty());
 
-        assertThrows(IllegalArgumentException.class, () -> delegator.save(project));
+        assertThrows(IllegalStateException.class, () -> delegator.save(project));
     }
 
     @Test

@@ -1,13 +1,13 @@
 package edu.kit.quak.application.filesystem.services;
 
 import edu.kit.quak.application.filesystem.delegator.FileElementContainerRepositoryDelegator;
+import edu.kit.quak.application.filesystem.exception.DirectoryNotFoundException;
 import edu.kit.quak.application.filesystem.ports.in.DirectoryServicePort;
 import edu.kit.quak.application.filesystem.ports.out.DirectoryRepositoryPort;
 import edu.kit.quak.core.filesystem.model.Directory;
 import edu.kit.quak.core.filesystem.model.FileElement;
 import edu.kit.quak.core.filesystem.model.FileElementContainer;
 import edu.kit.quak.core.user.model.User;
-import java.util.NoSuchElementException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,9 +40,10 @@ public class DirectoryService extends AbstractFileElementService<Directory> impl
 
     // region Read
     @Override
-    public Directory retrieveDirectory(String id, User user) {
-        log.debug("Retrieving directory '{}' for user '{}'", id, user.getId());
-        Directory directory = repository.findById(id).orElseThrow(NoSuchElementException::new);
+    public Directory retrieveDirectory(String dId, User user) {
+        log.debug("Retrieving directory '{}' for user '{}'", dId, user.getId());
+        Directory directory = retrieveWithoutAuth(dId);
+
         verifyOwnershipByParentId(directory.getParentId(), user);
         return directory;
     }
@@ -54,7 +55,7 @@ public class DirectoryService extends AbstractFileElementService<Directory> impl
     @Transactional
     public Directory renameDirectory(String dId, String newName, User user) {
         log.info("Renaming directory '{}' to '{}' for user '{}'", dId, newName, user.getId());
-        Directory directory = repository.findById(dId).orElseThrow(NoSuchElementException::new);
+        Directory directory = retrieveWithoutAuth(dId);
         verifyOwnershipByParentId(directory.getParentId(), user);
         checkForDuplicateName(dId, newName);
         return modifyElementInParent(dId, d -> d.rename(newName));
@@ -81,7 +82,12 @@ public class DirectoryService extends AbstractFileElementService<Directory> impl
 
     @Override
     protected Directory retrieveWithoutAuth(String id) {
-        return repository.findById(id).orElseThrow(NoSuchElementException::new);
+        return repository
+            .findById(id)
+            .orElseThrow(() -> {
+                log.warn("Directory not found. directoryId={}", id);
+                return new DirectoryNotFoundException(id);
+            });
     }
 
     @Override

@@ -1,8 +1,10 @@
 package edu.kit.quak.application.library.exceptions;
 
-public class OperationDefinitionNotFoundException extends RuntimeException {
+import edu.kit.quak.application.common.exceptions.ResourceNotFoundException;
 
-    public OperationDefinitionNotFoundException(String name) {
-        super("Operation Definition with name '" + name + "' not found.");
+public class OperationDefinitionNotFoundException extends ResourceNotFoundException {
+
+    public OperationDefinitionNotFoundException(String id) {
+        super("Operation Definition", id);
     }
 }

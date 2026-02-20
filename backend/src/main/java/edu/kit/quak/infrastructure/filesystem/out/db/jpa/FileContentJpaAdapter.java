@@ -5,8 +5,10 @@ import edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity.JpaFileContent;
 import edu.kit.quak.infrastructure.filesystem.out.db.jpa.repository.SpringDataFileContentRepository;
 import edu.kit.quak.infrastructure.filesystem.out.db.jpa.repository.SpringDataJpaFileRepository;
 import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 
+@Slf4j
 @Repository
 public class FileContentJpaAdapter implements FileContentRepositoryPort {
 
@@ -21,7 +23,8 @@ public class FileContentJpaAdapter implements FileContentRepositoryPort {
     @Override
     public void saveContent(String fileId, byte[] content) {
         if (!fileRepository.existsById(fileId)) {
-            throw new IllegalArgumentException("Cannot save content. File Metadata not found for ID: " + fileId);
+            log.error("Data inconsistency: Cannot save content. File metadata missing. fileId={}", fileId);
+            throw new IllegalStateException("File metadata missing for content save operation");
         }
 
         JpaFileContent entity = contentRepository

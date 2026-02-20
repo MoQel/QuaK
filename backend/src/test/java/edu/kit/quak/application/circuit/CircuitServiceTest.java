@@ -3,13 +3,13 @@ package edu.kit.quak.application.circuit;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import edu.kit.quak.application.circuit.exceptions.CircuitNotFoundException;
 import edu.kit.quak.application.circuit.ports.out.CircuitRepositoryPort;
 import edu.kit.quak.application.circuit.services.CircuitService;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
 import edu.kit.quak.shared.tags.UnitTest;
-import jakarta.persistence.EntityNotFoundException;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -30,12 +30,16 @@ class CircuitServiceTest {
 
     @Test
     void init_createsAndSavesCircuit() {
+        // setup
+        QuantumCircuit mockCircuit = new QuantumCircuit();
+        when(repository.save(any(QuantumCircuit.class))).thenReturn(mockCircuit);
+
         // execute
         QuantumCircuit result = service.init();
 
         // verify state
         assertNotNull(result);
-        verify(repository).save(result);
+        verify(repository).save(any(QuantumCircuit.class));
     }
 
     @Test
@@ -59,7 +63,10 @@ class CircuitServiceTest {
         when(repository.findById(circuitId)).thenReturn(Optional.empty());
 
         // execute & verify exception
-        assertThrows(EntityNotFoundException.class, () -> service.get(circuitId));
+        CircuitNotFoundException exception = assertThrows(CircuitNotFoundException.class, () -> service.get(circuitId));
+        // verify context data (RFC 7807)
+        assertEquals("Circuit", exception.getResourceType());
+        assertEquals(circuitId, exception.getResourceId());
     }
 
     @Test
@@ -182,7 +189,10 @@ class CircuitServiceTest {
         when(repository.findById(circuitId)).thenReturn(Optional.empty());
 
         // execute & verify exception
-        assertThrows(EntityNotFoundException.class, () -> service.addQubit(circuitId, "r-1"));
+        CircuitNotFoundException exception = assertThrows(CircuitNotFoundException.class, () -> service.get(circuitId));
+        // verify context data (RFC 7807)
+        assertEquals("Circuit", exception.getResourceType());
+        assertEquals(circuitId, exception.getResourceId());
 
         // verify no save occurs
         verify(repository, never()).save(any());

@@ -10,11 +10,13 @@ import edu.kit.quak.infrastructure.filesystem.in.web.rest.dto.DirectoryRequest;
 import edu.kit.quak.infrastructure.filesystem.in.web.rest.mapper.DirectoryDtoMapper;
 import edu.kit.quak.infrastructure.user.in.web.rest.mapper.AuthenticationMapper;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/directory")
 @Tag(name = "Files", description = "File and directory management operations")
@@ -45,6 +47,7 @@ public class DirectoryRestAdapter {
         @RequestHeader(name = ApiConstants.HEADER_PARENT_ID) String parentId,
         Authentication authentication
     ) {
+        log.info("REST request to create directory '{}' in parent '{}'", request.name(), parentId);
         User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
         Directory directoryToCreate = mapper.toDomain(request);
         Directory createdDirectory = service.createDirectory(directoryToCreate, parentId, user);
@@ -54,6 +57,7 @@ public class DirectoryRestAdapter {
     @GetMapping("/{dId}")
     @PreAuthorize("isAuthenticated()")
     public DirectoryContentsResponse retrieveDirectory(@PathVariable String dId, Authentication authentication) {
+        log.debug("REST request to retrieve directory '{}'", dId);
         User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
         Directory dir = service.retrieveDirectory(dId, user);
         return mapper.toContentsResponse(dir);
@@ -62,6 +66,7 @@ public class DirectoryRestAdapter {
     @DeleteMapping("/{dId}")
     @PreAuthorize("isAuthenticated()")
     public void deleteDirectory(@PathVariable String dId, Authentication authentication) {
+        log.debug("REST request to delete directory '{}'", dId);
         User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
         service.removeDirectory(dId, user);
     }
@@ -73,6 +78,7 @@ public class DirectoryRestAdapter {
         @RequestBody DirectoryRequest request,
         Authentication authentication
     ) {
+        log.debug("REST request to rename directory '{}'", dId);
         User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
         Directory updatedDirectory = service.renameDirectory(dId, request.name(), user);
         return mapper.toDetailsResponse(updatedDirectory);

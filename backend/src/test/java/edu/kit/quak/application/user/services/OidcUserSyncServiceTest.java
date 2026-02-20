@@ -146,13 +146,13 @@ class OidcUserSyncServiceTest {
     class ErrorHandlingTests {
 
         @Test
-        @DisplayName("Should throw IllegalArgumentException when subject is null")
+        @DisplayName("Should throw IllegalStateException when subject is null")
         void syncUser_nullSubject_throwsException() {
             // Arrange
             OidcUserInfo nullSubUserInfo = new OidcUserInfo(null, null, null, null, null, null, null);
 
             // Act & Assert
-            assertThrows(IllegalArgumentException.class, () -> oidcUserSyncService.syncUser("google", nullSubUserInfo));
+            assertThrows(IllegalStateException.class, () -> oidcUserSyncService.syncUser("google", nullSubUserInfo));
 
             verify(userRepository, never()).save(any());
         }

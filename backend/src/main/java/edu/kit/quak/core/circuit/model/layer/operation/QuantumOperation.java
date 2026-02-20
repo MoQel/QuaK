@@ -1,5 +1,6 @@
 package edu.kit.quak.core.circuit.model.layer.operation;
 
+import edu.kit.quak.core.circuit.exceptions.EmptyTargetQubitsException;
 import edu.kit.quak.core.circuit.model.ElementWithId;
 import edu.kit.quak.core.circuit.model.layer.operation.library.QuantumOperationLibrary;
 import java.util.List;
@@ -26,7 +27,7 @@ public abstract class QuantumOperation extends ElementWithId {
         this.operationDefinition = operationDefinition;
         this.inverseForm = inverseForm;
         if (targetQubits.isEmpty()) {
-            throw new IllegalArgumentException("A quantum operation must have at least one target qubit.");
+            throw new EmptyTargetQubitsException();
         }
         this.targetQubits = targetQubits;
         this.controlQubits = controlQubits;

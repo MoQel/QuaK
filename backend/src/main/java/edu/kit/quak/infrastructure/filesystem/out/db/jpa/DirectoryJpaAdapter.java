@@ -9,8 +9,10 @@ import edu.kit.quak.infrastructure.filesystem.out.db.jpa.repository.SpringDataDi
 import edu.kit.quak.infrastructure.filesystem.out.db.jpa.repository.SpringDataFileElementContainerRepository;
 import java.util.Optional;
 import java.util.UUID;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 
+@Slf4j
 @Repository
 public class DirectoryJpaAdapter implements DirectoryRepositoryPort {
 
@@ -47,7 +49,10 @@ public class DirectoryJpaAdapter implements DirectoryRepositoryPort {
         if (container.getParentId() != null) {
             JpaFileElementContainer<?> parent = parentRepository
                 .findById(container.getParentId())
-                .orElseThrow(() -> new IllegalArgumentException("Parent not found: " + container.getParentId()));
+                .orElseThrow(() -> {
+                    log.error("Data inconsistency: Parent not found in DB during directory save. parentId={}", container.getParentId());
+                    return new IllegalStateException("Parent container missing during save operation");
+                });
             jpaDirectory.setParent(parent);
         }
         return directoryMapper.toDomainEntity(directoryRepository.save(jpaDirectory));

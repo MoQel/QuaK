@@ -7,11 +7,11 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import edu.kit.quak.application.filesystem.exception.ProjectNotFoundException;
 import edu.kit.quak.application.filesystem.ports.out.ProjectRepositoryPort;
 import edu.kit.quak.core.filesystem.model.Project;
 import edu.kit.quak.core.user.model.User;
 import edu.kit.quak.shared.tags.UnitTest;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -67,6 +67,6 @@ class ProjectServiceTest {
     void renameProject_throws_whenNotFound() {
         when(repository.findById(anyString())).thenReturn(Optional.empty());
 
-        assertThrows(NoSuchElementException.class, () -> service.renameProject("99", "New", testUser));
+        assertThrows(ProjectNotFoundException.class, () -> service.renameProject("99", "New", testUser));
     }
 }
