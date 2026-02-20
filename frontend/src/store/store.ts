@@ -1,5 +1,5 @@
 import { configureStore } from '@reduxjs/toolkit';
-import layoutReducer, { LayoutState } from './slices/layoutSlice';
+import layoutReducer, { LayoutState } from '@/store/layout/layoutSlice';
 import tabsReducer from './tabs/tabsSlice.ts';
 
 // --- 1. Load State from LocalStorage ---

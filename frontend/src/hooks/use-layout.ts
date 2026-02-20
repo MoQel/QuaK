@@ -1,6 +1,6 @@
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import { togglePanel, toggleMenubar, setMenubarVisibility, resetLayout } from '@/store/slices/layoutSlice';
+import { togglePanel, toggleMenubar, setMenubarVisibility, resetLayout } from '@/store/layout/layoutSlice';
 
 export type PanelKey = 'file' | 'circuit' | 'code' | 'results' | 'inspector' | 'library';
 
