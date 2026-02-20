@@ -3,14 +3,16 @@ package edu.kit.quak.infrastructure;
 import edu.kit.quak.application.filesystem.exceptions.AccessDeniedException;
 import edu.kit.quak.application.library.exceptions.GateDefinitionNotFoundException;
 import edu.kit.quak.application.user.exceptions.UserNotFoundException;
-import java.util.NoSuchElementException;
-import java.util.stream.Collectors;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
 
 /**
  * Global exception handler that translates domain exceptions to HTTP responses. Follows RFC-7807
@@ -53,6 +55,14 @@ public class GlobalExceptionHandler {
     // Catches standard Optional.orElseThrow() -> 404 Not Found
     @ExceptionHandler(NoSuchElementException.class)
     public ProblemDetail handleNotFound(NoSuchElementException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        problem.setTitle("Resource Not Found");
+        return problem;
+    }
+
+    // Catches JPA entity lookups failing -> 404 Not Found
+    @ExceptionHandler(EntityNotFoundException.class)
+    public ProblemDetail handleEntityNotFound(EntityNotFoundException ex) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
         problem.setTitle("Resource Not Found");
         return problem;
