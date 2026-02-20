@@ -104,15 +104,15 @@ public class QuantumCircuit extends ElementWithId {
             throw new IllegalArgumentException("Must provide at least one qubit to target.");
         }
 
-        for (int idx = 0; idx < layers.size(); idx++) {
-            for (QuantumOperation operation : layers.get(idx).getQuantumOperations()) {
+        for (Layer layer : layers) {
+            for (QuantumOperation operation : layer.getQuantumOperations()) {
                 if (operation.getId().equals(operationId)) {
                     // Set new target and control qubits.
                     operation.setTargetQubits(targetQubits);
                     operation.setControlQubits(controlQubits);
 
                     // Move operation to new layer.
-                    layers.get(idx).removeQuantumOperation(operation);
+                    layer.removeQuantumOperation(operation);
                     rescheduleOperations();
                     addQuantumOperation(operation, layerIdx); // Add and reorganize again.
                     break;
