@@ -10,13 +10,14 @@ import {
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store.ts';
 import { CircuitToolbar } from './components/CircuitToolbar.tsx';
-import { CircuitWires } from './components/CircuitWires.tsx';
+import { QubitWires } from './components/QubitWires.tsx';
 import { QuantumOperationGrid } from './components/QuantumOperationGrid.tsx';
 import { DropzoneGrid } from './components/DropzoneGrid.tsx';
 import { DropPlaceholder } from './components/DropPlaceholder.tsx';
 import { CircuitFooter } from './components/CircuitFooter.tsx';
 import { HoverPos, UiLayer, UiQuantumOperation } from './util/types.ts';
 import { createCircuitService } from '@/views/circuit-view/util/circuitService.ts';
+import { LABEL_WIDTH } from '@/views/circuit-view/util/layout.ts';
 
 interface CircuitViewProps {
     circuit: CircuitResponse | undefined;
@@ -230,10 +231,10 @@ export function CircuitView({ circuit, setCircuit }: Readonly<CircuitViewProps>)
 
                 {/* Circuit Canvas */}
                 <div className="relative flex-1 overflow-auto">
-                    <CircuitWires flatQubits={flatQubits} />
+                    <QubitWires circuit={circuit} setCircuit={setCircuit} flatQubits={flatQubits} />
 
                     {/* Circuit Content Container (Offset for labels) */}
-                    <div className="absolute inset-y-0 right-0" style={{ left: '64px' }}>
+                    <div className="absolute inset-y-0 right-0" style={{ left: LABEL_WIDTH }}>
                         <QuantumOperationGrid
                             uiLayers={uiLayers}
                             registers={circuit?.registers ?? []}

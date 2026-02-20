@@ -1,5 +1,10 @@
 import { api } from '@/api/api.ts';
-import { AddQuantumOperationRequest, CircuitResponse, MoveQuantumOperationRequest } from '@/api/dto/circuit.ts';
+import {
+    AddQuantumOperationRequest,
+    CircuitResponse,
+    isQuantumRegister,
+    MoveQuantumOperationRequest,
+} from '@/api/dto/circuit.ts';
 
 export function createCircuitService(
     circuit: CircuitResponse | undefined,
@@ -11,17 +16,24 @@ export function createCircuitService(
 
     const addQubit = () => {
         if (!circuit) return;
-        const lastReg = circuit.registers.at(-1);
-        if (lastReg) {
-            api.post<CircuitResponse>(`/api/circuit/${circuit.id}/register/${lastReg.id}`).then(setCircuit);
+        const lastQR = circuit.registers.findLast(isQuantumRegister);
+        if (lastQR) {
+            api.post<CircuitResponse>(`/api/circuit/${circuit.id}/register/${lastQR.id}`).then(setCircuit);
         }
+    };
+
+    const deleteQubit = (registerId: string, qubitIdx: number) => {
+        if (!circuit) return;
+        api.delete<CircuitResponse>(`/api/circuit/${circuit.id}/register/${registerId}/${qubitIdx}`).then(setCircuit);
     };
 
     const deleteLastQubit = () => {
         if (!circuit) return;
-        const lastReg = circuit.registers.at(-1);
-        if (lastReg) {
-            api.delete<CircuitResponse>(`/api/circuit/${circuit.id}/register/${lastReg.id}`).then(setCircuit);
+        const lastQR = circuit.registers.findLast(isQuantumRegister);
+        if (lastQR && lastQR.numberOfQubits > 0) {
+            api.delete<CircuitResponse>(
+                `/api/circuit/${circuit.id}/register/${lastQR.id}/${lastQR.numberOfQubits - 1}`,
+            ).then(setCircuit);
         }
     };
 
@@ -48,6 +60,7 @@ export function createCircuitService(
     return {
         initCircuit,
         addQubit,
+        deleteQubit,
         deleteLastQubit,
         resetCircuit,
         addQuantumOperation,

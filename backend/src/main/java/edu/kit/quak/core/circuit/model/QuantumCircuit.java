@@ -52,21 +52,26 @@ public class QuantumCircuit extends ElementWithId {
         // Remove qubit.
         quantumRegister.removeQubit();
 
-        // Remove all quantum operations that had this qubit either as target or as control.
         for (Layer layer : layers) {
             for (QuantumOperation operation : new ArrayList<>(layer.getQuantumOperations())) {
                 List<ElementSelector> selectors = Stream.of(operation.getTargetQubits(), operation.getControlQubits())
                         .flatMap(Collection::stream)
                         .toList();
 
+                // Remove all quantum operations that had this qubit either as target or as control.
                 boolean removeOperation = selectors.stream()
                         .anyMatch(selector -> selector.getRegisterId()
-                                        .equals(registers.getFirst().getId())
+                                .equals(registers.getFirst().getId())
                                 && selector.getIndex() == qubitIdx);
-
                 if (removeOperation) {
                     layer.removeQuantumOperation(operation);
+                    continue;
                 }
+
+                // Update selector indices. Decrease index by 1 to account for the removal of the qubit.
+                selectors.stream()
+                        .filter(sel -> sel.getRegisterId().equals(registerId) && sel.getIndex() > qubitIdx)
+                        .forEach(ElementSelector::decreaseIndex);
             }
         }
 
