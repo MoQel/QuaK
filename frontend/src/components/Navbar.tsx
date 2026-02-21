@@ -8,15 +8,30 @@ import ThemeSwitch from '@/components/ThemeSwitch';
 import { Button } from '@/components/ui/button';
 import { IdeMenubar } from '@/components/MenuBar';
 import { useLayout } from '@/hooks/use-layout';
+import { useDockviewOptional } from '@/contexts/DockviewContext';
 
 export const Navbar: React.FC = () => {
     const location = useLocation();
     const { logout } = useAuth();
     const { user } = useCurrentUser();
-
-    const { visiblePanels, isMenubarVisible, onToggleMenubar, onTogglePanel, onResetLayout } = useLayout();
+    const { isMenubarVisible, onToggleMenubar } = useLayout();
 
     const isIdeView = location.pathname.startsWith('/project');
+
+    const dockview = useDockviewOptional();
+    React.useEffect(() => {
+        if (!isIdeView) return;
+        console.log('[Dockview] api ready?', !!dockview?.api, 'openPanels:', Array.from(dockview?.openPanels ?? []));
+    }, [dockview?.api, dockview?.openPanels, isIdeView]);
+
+    const dockviewVisiblePanels = {
+        file: !!dockview?.openPanels?.has('file'),
+        circuit: !!dockview?.openPanels?.has('circuit'),
+        code: !!dockview?.openPanels?.has('code'),
+        results: !!dockview?.openPanels?.has('results'),
+        inspector: !!dockview?.openPanels?.has('inspector'),
+        library: !!dockview?.openPanels?.has('library'),
+    };
 
     const getActiveTab = () => {
         if (location.pathname === '/' || location.pathname.startsWith('/home')) {
@@ -53,9 +68,9 @@ export const Navbar: React.FC = () => {
 
                         {isMenubarVisible && (
                             <IdeMenubar
-                                visiblePanels={visiblePanels}
-                                togglePanel={(key) => onTogglePanel(key)}
-                                resetLayout={() => onResetLayout()}
+                                visiblePanels={dockviewVisiblePanels}
+                                togglePanel={(key) => dockview?.togglePanel?.(key)}
+                                resetLayout={() => dockview?.resetLayout?.()}
                             />
                         )}
                     </div>

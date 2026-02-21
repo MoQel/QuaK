@@ -32,10 +32,9 @@ const CircuitPanel = () => {
 };
 
 const CodePanel = () => {
-    const { file } = usePanelData();
     return (
         <PanelWrapper>
-            <TextEditorView file={file} />
+            <TextEditorView />
         </PanelWrapper>
     );
 };

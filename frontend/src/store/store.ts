@@ -5,7 +5,7 @@ import tabsReducer from './slices/tabsSlice';
 // --- 1. Load State from LocalStorage ---
 const loadState = (): { layout: LayoutState } | undefined => {
     try {
-        const serializedState = localStorage.getItem('ide-layout-settings');
+        const serializedState = localStorage.getItem('ide-layout');
         if (serializedState === null) {
             return undefined;
         }

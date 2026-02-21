@@ -1,13 +1,14 @@
 import React from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { Navbar } from '@/components/Navbar';
+import { DockviewProvider } from '@/contexts/DockviewContext';
 
 export const Layout: React.FC = () => {
     const { pathname } = useLocation();
 
     const isIDE = pathname.startsWith('/project');
 
-    return (
+    const content = (
         <div className={isIDE ? 'h-screen flex flex-col overflow-hidden' : 'min-h-screen flex flex-col'}>
             <Navbar />
 
@@ -16,6 +17,8 @@ export const Layout: React.FC = () => {
             </main>
         </div>
     );
+
+    return isIDE ? <DockviewProvider>{content}</DockviewProvider> : content;
 };
 
 export default Layout;
