@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useMemo, useRef, useState } from 'react';
-import { buildDefaultLayout, LAYOUT_STORAGE_KEY } from '@/lib/layout/layout-utils';
+import { buildDefaultLayout, LAYOUT_STORAGE_KEY, getOptimalPosition } from '@/lib/layout/layout-utils';
 import type { DockviewApi } from 'dockview-react';
-import { getOptimalPosition } from '@/lib/layout/layout-utils';
 
 export type PanelKey = 'file' | 'circuit' | 'code' | 'results' | 'inspector' | 'library';
 
@@ -95,7 +94,7 @@ export const DockviewProvider = ({ children }: { children: React.ReactNode }) =>
             resetLayout,
             isResetting: () => isResettingRef.current,
         };
-    }, [api, openPanels]);
+    }, [api]);
 
     return <DockviewContext.Provider value={value}>{children}</DockviewContext.Provider>;
 };

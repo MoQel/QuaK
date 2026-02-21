@@ -5,66 +5,35 @@ import { TextEditorView } from '@/views/text-editor-view/TextEditorView';
 import { ProjectManagerView } from '@/views/project-manager-view/ProjectManagerView';
 import { ResultsView } from '@/views/results-view/ResultsView';
 import { InspectorView } from '@/views/inspector-view/InspectorView';
-
-// --- Wrapper Components ---
-
-// HELPER: Ensures the panel never triggers an outer scrollbar
-const PanelWrapper = ({ children }: { children: React.ReactNode }) => (
-    <div className="h-full w-full overflow-hidden relative">{children}</div>
-);
+import { useFileSelect } from '@/hooks/useFileSelect';
 
 const ProjectPanel = () => {
-    const { openFile } = usePanelData();
-    return (
-        <PanelWrapper>
-            <ProjectManagerView onFileSelect={openFile} />
-        </PanelWrapper>
-    );
+    const handleFileSelect = useFileSelect();
+    return <ProjectManagerView onFileSelect={handleFileSelect} />;
 };
 
 const CircuitPanel = () => {
     const { circuit, setCircuit } = usePanelData();
-    return (
-        <PanelWrapper>
-            <CircuitView circuit={circuit} setCircuit={setCircuit} />
-        </PanelWrapper>
-    );
+    return <CircuitView circuit={circuit} setCircuit={setCircuit} />;
 };
 
 const CodePanel = () => {
-    return (
-        <PanelWrapper>
-            <TextEditorView />
-        </PanelWrapper>
-    );
+    return <TextEditorView />;
 };
 
 const LibraryPanel = () => {
     const { setSelectedGate } = usePanelData();
-    return (
-        <PanelWrapper>
-            <GateLibraryView onGateSelect={setSelectedGate} />
-        </PanelWrapper>
-    );
+    return <GateLibraryView onGateSelect={setSelectedGate} />;
 };
 
 const InspectorPanel = () => {
     const { selectedGate, setSelectedGate } = usePanelData();
-    return (
-        <PanelWrapper>
-            {/* The wrapper clips any 1px border leaks from InspectorView */}
-            <InspectorView gate={selectedGate} onClear={() => setSelectedGate(undefined)} />
-        </PanelWrapper>
-    );
+    return <InspectorView gate={selectedGate} onClear={() => setSelectedGate(undefined)} />;
 };
 
 const ResultsPanel = () => {
     const { circuit } = usePanelData();
-    return (
-        <PanelWrapper>
-            <ResultsView circuit={circuit} />
-        </PanelWrapper>
-    );
+    return <ResultsView circuit={circuit} />;
 };
 
 // --- Registry Export ---
