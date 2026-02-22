@@ -9,7 +9,7 @@ type DockviewContextType = {
     setApi: (api: DockviewApi | null) => void;
 
     openPanels: Set<PanelKey>;
-    setOpenPanels: React.Dispatch<React.SetStateAction<Set<PanelKey>>>;
+    syncOpenPanelsFromApi: (api: DockviewApi) => void;
 
     openPanel: (id: PanelKey) => void;
     closePanel: (id: PanelKey) => void;
@@ -25,6 +25,8 @@ export const useDockview = () => {
     if (!ctx) throw new Error('useDockview must be used within DockviewProvider');
     return ctx;
 };
+
+//this is for the navbar because it appears all the time not only in the IDE
 export const useDockviewOptional = () => {
     return useContext(DockviewContext);
 };
@@ -35,6 +37,10 @@ export const DockviewProvider = ({ children }: { children: React.ReactNode }) =>
     const isResettingRef = useRef(false);
 
     const value = useMemo<DockviewContextType>(() => {
+        const syncOpenPanelsFromApi = (apiInstance: DockviewApi) => {
+            setOpenPanels(new Set(apiInstance.panels.map((p) => p.id as PanelKey)));
+        };
+
         const openPanel = (id: PanelKey) => {
             if (!api) return;
             if (api.getPanel(id)) return;
@@ -79,7 +85,7 @@ export const DockviewProvider = ({ children }: { children: React.ReactNode }) =>
             api.clear();
             localStorage.removeItem(LAYOUT_STORAGE_KEY);
             buildDefaultLayout(api);
-            setOpenPanels(new Set(api.panels.map((p) => p.id as PanelKey)));
+            syncOpenPanelsFromApi(api);
             isResettingRef.current = false;
         };
 
@@ -87,7 +93,7 @@ export const DockviewProvider = ({ children }: { children: React.ReactNode }) =>
             api,
             setApi,
             openPanels,
-            setOpenPanels,
+            syncOpenPanelsFromApi,
             openPanel,
             closePanel,
             togglePanel,

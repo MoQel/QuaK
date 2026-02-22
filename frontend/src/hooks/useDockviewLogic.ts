@@ -1,49 +1,40 @@
 import { useCallback } from 'react';
-import { useDockview, PanelKey } from '@/contexts/DockviewContext';
+import { useDockview } from '@/contexts/DockviewContext';
 import { DockviewReadyEvent } from 'dockview-react';
 
-import { LAYOUT_STORAGE_KEY } from '@/lib/layout/layout-utils';
+import { LAYOUT_STORAGE_KEY, buildDefaultLayout } from '@/lib/layout/layout-utils';
 
 export const useDockviewLogic = () => {
-    const { setApi, setOpenPanels, isResetting, resetLayout } = useDockview();
-
-    const syncOpenPanelsFromApi = useCallback(
-        (api: DockviewReadyEvent['api']) => {
-            setOpenPanels(new Set(api.panels.map((p) => p.id as PanelKey)));
-        },
-        [setOpenPanels],
-    );
+    const { setApi, isResetting, resetLayout, syncOpenPanelsFromApi } = useDockview();
 
     const onReady = useCallback(
         (event: DockviewReadyEvent) => {
             const api = event.api;
             setApi(api);
 
-            api.onDidRemovePanel((e) => {
+            api.onDidRemovePanel(() => {
                 if (isResetting()) return;
-                setOpenPanels((prev) => {
-                    const next = new Set(prev);
-                    next.delete(e.id as PanelKey);
-                    return next;
-                });
+                syncOpenPanelsFromApi(api);
             });
 
             const savedLayout = localStorage.getItem(LAYOUT_STORAGE_KEY);
-            let success = false;
 
             if (savedLayout) {
                 try {
                     api.fromJSON(JSON.parse(savedLayout));
                     syncOpenPanelsFromApi(api);
-                    success = true;
                 } catch (err) {
                     console.error('Layout load error', err);
                     localStorage.removeItem(LAYOUT_STORAGE_KEY);
-                }
-            }
 
-            if (!success) {
-                resetLayout();
+                    // fallback to default
+                    buildDefaultLayout(api);
+                    syncOpenPanelsFromApi(api);
+                }
+            } else {
+                // first-time load (no browser data)
+                buildDefaultLayout(api);
+                syncOpenPanelsFromApi(api);
             }
 
             let debounceTimer: ReturnType<typeof setTimeout>;
@@ -59,7 +50,7 @@ export const useDockviewLogic = () => {
                 }, 500);
             });
         },
-        [resetLayout, setApi, setOpenPanels, syncOpenPanelsFromApi, isResetting],
+        [resetLayout, setApi, isResetting, syncOpenPanelsFromApi],
     );
 
     return { onReady };

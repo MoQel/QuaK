@@ -104,10 +104,4 @@ export const buildDefaultLayout = (api: DockviewApi) => {
         title: 'Results',
         position: { referencePanel: code, direction: 'below' },
     });
-
-    // 3. Set Focus
-    setTimeout(() => {
-        const circuitPanel = api.getPanel('circuit');
-        if (circuitPanel) circuitPanel.focus();
-    }, 50);
 };

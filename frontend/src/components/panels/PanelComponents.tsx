@@ -1,4 +1,4 @@
-import { usePanelData } from '@/contexts/PanelContext';
+import { usePanelData } from '@/contexts/panel/PanelDataContext';
 import { GateLibraryView } from '@/views/library-view/GateLibraryView';
 import { CircuitView } from '@/views/circuit-view/CircuitView';
 import { TextEditorView } from '@/views/text-editor-view/TextEditorView';
@@ -7,41 +7,39 @@ import { ResultsView } from '@/views/results-view/ResultsView';
 import { InspectorView } from '@/views/inspector-view/InspectorView';
 import { useFileSelect } from '@/hooks/useFileSelect';
 
-const ProjectPanel = () => {
+const PanelWrapper = ({ children }: { children: React.ReactNode }) => (
+    <div className="h-full w-full overflow-hidden relative">{children}</div>
+);
+
+export const ProjectPanel = () => {
     const handleFileSelect = useFileSelect();
     return <ProjectManagerView onFileSelect={handleFileSelect} />;
 };
 
-const CircuitPanel = () => {
+export const CircuitPanel = () => {
     const { circuit, setCircuit } = usePanelData();
     return <CircuitView circuit={circuit} setCircuit={setCircuit} />;
 };
 
-const CodePanel = () => {
+export const CodePanel = () => {
     return <TextEditorView />;
 };
 
-const LibraryPanel = () => {
+export const LibraryPanel = () => {
     const { setSelectedGate } = usePanelData();
     return <GateLibraryView onGateSelect={setSelectedGate} />;
 };
 
-const InspectorPanel = () => {
+export const InspectorPanel = () => {
     const { selectedGate, setSelectedGate } = usePanelData();
-    return <InspectorView gate={selectedGate} onClear={() => setSelectedGate(undefined)} />;
+    return (
+        <PanelWrapper>
+            <InspectorView gate={selectedGate} onClear={() => setSelectedGate(undefined)} />
+        </PanelWrapper>
+    );
 };
 
-const ResultsPanel = () => {
+export const ResultsPanel = () => {
     const { circuit } = usePanelData();
     return <ResultsView circuit={circuit} />;
-};
-
-// --- Registry Export ---
-export const componentRegistry = {
-    file: ProjectPanel,
-    circuit: CircuitPanel,
-    code: CodePanel,
-    library: LibraryPanel,
-    inspector: InspectorPanel,
-    results: ResultsPanel,
 };

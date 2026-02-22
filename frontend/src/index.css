@@ -152,6 +152,14 @@
     }
 }
 
+.dockview-theme-custom .dv-watermark {
+    background: var(--bg-dark) !important;
+}
+
+.dockview-theme-custom .--dv-group-view-background-color {
+    background: var(--bg-dark) !important;
+}
+
 /* INACTIVE TABS */
 .dockview-theme-custom .dv-tab {
     background-color: transparent !important;

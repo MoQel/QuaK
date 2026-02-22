@@ -1,6 +1,6 @@
 import { DockviewReact } from 'dockview-react';
-import { PanelDataProvider } from '@/contexts/PanelContext';
-import { componentRegistry } from '@/components/PanelRegistry';
+import { PanelDataProvider } from '@/contexts/panel/PanelDataProvider';
+import { componentRegistry } from '@/components/panels/componentRegistry';
 import { useDockviewLogic } from '@/hooks/useDockviewLogic';
 import 'dockview-core/dist/styles/dockview.css';
 import { DockviewProvider } from '@/contexts/DockviewContext';
@@ -11,7 +11,7 @@ export const IdeLayout = () => {
     return (
         <PanelDataProvider>
             <DockviewProvider>
-                <div className="flex-1 h-full w-full relative bg-background text-foreground">
+                <div className="flex-1 h-full w-full relative bg-bg-dark">
                     <DockviewReact
                         components={componentRegistry}
                         onReady={onReady}

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Home, User, Settings, LogOut, Menu } from 'lucide-react';
@@ -7,22 +7,17 @@ import { useCurrentUser } from '@/hooks/useUser';
 import ThemeSwitch from '@/components/ThemeSwitch';
 import { Button } from '@/components/ui/button';
 import { IdeMenubar } from '@/components/MenuBar';
-import { useLayout } from '@/hooks/use-layout';
 import { useDockviewOptional } from '@/contexts/DockviewContext';
 
 export const Navbar: React.FC = () => {
     const location = useLocation();
     const { logout } = useAuth();
     const { user } = useCurrentUser();
-    const { isMenubarVisible, onToggleMenubar } = useLayout();
+    const [isMenubarVisible, setIsMenubarVisible] = useState(false);
 
     const isIdeView = location.pathname.startsWith('/project');
 
     const dockview = useDockviewOptional();
-    React.useEffect(() => {
-        if (!isIdeView) return;
-        console.log('[Dockview] api ready?', !!dockview?.api, 'openPanels:', Array.from(dockview?.openPanels ?? []));
-    }, [dockview?.api, dockview?.openPanels, isIdeView]);
 
     const dockviewVisiblePanels = {
         file: !!dockview?.openPanels?.has('file'),
@@ -61,7 +56,7 @@ export const Navbar: React.FC = () => {
                             variant={isMenubarVisible ? 'secondary' : 'ghost'}
                             size="icon"
                             className="h-8 w-8"
-                            onClick={() => onToggleMenubar()}
+                            onClick={() => setIsMenubarVisible((prev) => !prev)}
                         >
                             <Menu className="h-4 w-4" />
                         </Button>
