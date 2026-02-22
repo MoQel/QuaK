@@ -1,37 +1,81 @@
-import { Card, CardContent } from '@/components/ui/card.tsx';
-import QLPEditor from '@/views/text-editor-view/QLPEditor.tsx';
+import { Card } from '@/components/ui/card.tsx';
 import { useAppSelector } from '@/hooks/useAppSelector.ts';
-import { TextEditorTabBar } from '@/views/text-editor-view/TextEditorTabBar.tsx';
-import { useCallback, useEffect, useState } from 'react';
-import { DEFAULT_LANG } from '@/views/text-editor-view/languages/languages.ts';
-import { closeAll } from '@/store/slices/tabsSlice.ts';
-import { useAppDispatch } from '@/hooks/useAppDispatch.ts';
+import { useMemo } from 'react';
+import { GROUP_BOTTOM, GROUP_MAIN, GROUP_RIGHT } from '@/store/tabs/tabsSlice.ts';
 import { useEditorShortcuts } from '@/hooks/editor/useEditorShortcuts.ts';
+import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
+import { useMonacoGarbageCollector } from '@/hooks/editor/useMonacoGarbageCollector.ts';
+import { useEditorCommands } from '@/hooks/editor/useEditorCommands.ts';
+import { EditorDropZoneSlot } from '@/views/text-editor-view/components/layout/EditorDropZoneSlot.tsx';
+import { EditorSlot } from '@/views/text-editor-view/components/layout/EditorSlot.tsx';
+import { UnsavedChangesAlertDialog } from '@/views/text-editor-view/components/utils/UnsavedChangesAlertDialog.tsx';
 
 export function TextEditorView() {
-    const activeFileId = useAppSelector((state) => state.tabs.activeTabId);
-    const [currentLangId, setCurrentLangId] = useState(DEFAULT_LANG);
-    const dispatch = useAppDispatch();
-    useEditorShortcuts(activeFileId);
+    const { groups, activeGroupId, isDragging } = useAppSelector((state) => state.tabs);
+    const activeGroup = groups.find((g) => g.id === activeGroupId);
+    const activeTabId = activeGroup?.activeTabId || null;
+    useEditorShortcuts(activeTabId, activeGroupId);
+    useMonacoGarbageCollector();
+    useEditorCommands();
 
-    // Cleanup close all tabs
-    useEffect(() => {
-        return () => {
-            dispatch(closeAll());
-        };
-    }, [dispatch]);
-
-    const handleLanguageChange = useCallback((langId: string) => {
-        setCurrentLangId(langId);
-    }, []);
+    const groupMap = useMemo(() => new Map(groups.map((g) => [g.id, g])), [groups]);
+    const hasRightGroup = !!groupMap.get(GROUP_RIGHT);
+    const hasBottomGroup = !!groupMap.get(GROUP_BOTTOM);
+    const showRightDropZone = isDragging && !hasRightGroup;
+    const showBottomDropZone = isDragging && !hasBottomGroup;
 
     return (
-        <Card className="h-full flex flex-col p-0 border-none rounded-none bg-bg-subtle">
-            <TextEditorTabBar currentLangId={currentLangId} />
+        <Card className="h-full flex flex-col p-0 border-none rounded-none relative">
+            <UnsavedChangesAlertDialog />
+            {/* Top/Bottom split */}
+            <PanelGroup direction="vertical" id="outer-group">
+                <Panel
+                    id="top-panel-container"
+                    order={0}
+                    defaultSize={hasBottomGroup ? 50 : 100}
+                    minSize={20}
+                    className="relative"
+                >
+                    {/* Inner: Horizontal Split (Left vs Right) */}
+                    <PanelGroup direction="horizontal" id="inner-group">
+                        {/* LEFT (MAIN) - Always exists */}
+                        <Panel id="main-panel" order={0} minSize={20} defaultSize={hasRightGroup ? 50 : 100}>
+                            <EditorSlot groupId={GROUP_MAIN} />
+                        </Panel>
 
-            <CardContent className="flex flex-col flex-1 p-0 overflow-hidden relative">
-                <QLPEditor activeFileId={activeFileId} setCurrentLangId={handleLanguageChange} />
-            </CardContent>
+                        {/* RIGHT - Conditional Render */}
+                        {hasRightGroup && (
+                            <>
+                                <PanelResizeHandle />
+                                <Panel id="right-panel" order={1} minSize={20} defaultSize={50}>
+                                    <EditorSlot groupId={GROUP_RIGHT} />
+                                </Panel>
+                            </>
+                        )}
+                    </PanelGroup>
+                    {showRightDropZone && (
+                        <EditorDropZoneSlot
+                            targetGroupId={GROUP_RIGHT}
+                            label="Drop to split right"
+                            direction="horizontal"
+                        />
+                    )}
+                </Panel>
+
+                {/* BOTTOM - Conditional Render */}
+                {hasBottomGroup && (
+                    <>
+                        <PanelResizeHandle />
+                        <Panel id="bottom-panel" order={2} minSize={20} defaultSize={50}>
+                            <EditorSlot groupId={GROUP_BOTTOM} />
+                        </Panel>
+                    </>
+                )}
+            </PanelGroup>
+
+            {showBottomDropZone && (
+                <EditorDropZoneSlot targetGroupId={GROUP_BOTTOM} label="Drop to split bottom" direction="vertical" />
+            )}
         </Card>
     );
 }

@@ -20,6 +20,9 @@ export function useMonacoTheme(monaco: Monaco | null, theme: 'dark' | 'light') {
                     'editor.background': getCssVar('--editor-bg'),
                     'editorLineNumber.foreground': getCssVar('--editor-line-number'),
                     'editorLineNumber.activeForeground': getCssVar('--editor-line-number'),
+                    'scrollbar.background': '#4b556340',
+                    'scrollbarSlider.hoverBackground': '#4b556380',
+                    'scrollbarSlider.activeBackground': '#4b5563aa',
                 },
             });
 

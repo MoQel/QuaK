@@ -49,6 +49,10 @@
     /* monaco editor needs hex codes */
     --editor-bg: #e6e6e6;
     --editor-line-number: #666666;
+    --scrollbar-background: #00000000;
+    --scrollbarSlider-background: #0000001a;
+    --scrollbarSlider-hoverBackground: #00000033;
+    --scrollbarSlider-activeBackground: #0000004d;
 }
 
 .dark {
@@ -79,6 +83,16 @@
     /* monaco editor needs hex codes */
     --editor-bg: #18191b;
     --editor-line-number: #858585;
+    --scrollbar-background: #00000000;
+    --scrollbarSlider-background: #ffffff1a;
+    --scrollbarSlider-hoverBackground: #ffffff33;
+    --scrollbarSlider-activeBackground: #ffffff4d;
+}
+
+/* smaller layout for chrome, edge and safari */
+.tabs-scrollbar::-webkit-scrollbar {
+    height: 2px;
+    width: 2px;
 }
 
 @layer base {
@@ -88,7 +102,14 @@
     body {
         @apply bg-bg-dark text-text;
     }
-    /* Works for Chrome, Edge, and Safari */
+    /* Do not set this globally in * Selektor */
+    html,
+    body,
+    .scroll-container {
+        scrollbar-width: thin;
+        scrollbar-color: var(--bg) transparent;
+    }
+    /* Webkit/Safari */
     ::-webkit-scrollbar {
         width: 8px;
         height: 8px;
