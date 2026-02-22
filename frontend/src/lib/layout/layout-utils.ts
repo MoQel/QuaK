@@ -17,7 +17,6 @@ export const getOptimalPosition = (panelId: string, api: DockviewApi) => {
     };
 
     switch (panelId) {
-        // --- TOP ROW PANELS (Anchor to Center/Circuit First) ---
         case 'file':
             return (
                 tryPos('circuit', 'left') ||

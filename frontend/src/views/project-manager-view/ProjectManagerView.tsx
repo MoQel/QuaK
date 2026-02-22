@@ -34,7 +34,7 @@ export function ProjectManagerView({ onFileSelect }: { onFileSelect: (file: File
     }, [reloaded]);
 
     return (
-        <Card className="h-full">
+        <Card className="h-full bg-bg-subtle border-none">
             <CardContent className="overflow-auto">
                 <div className="flex-col">
                     <FileSelect value={onFileSelect}>

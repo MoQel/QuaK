@@ -94,7 +94,7 @@ export const DockviewProvider = ({ children }: { children: React.ReactNode }) =>
             resetLayout,
             isResetting: () => isResettingRef.current,
         };
-    }, [api]);
+    }, [api, openPanels]);
 
     return <DockviewContext.Provider value={value}>{children}</DockviewContext.Provider>;
 };

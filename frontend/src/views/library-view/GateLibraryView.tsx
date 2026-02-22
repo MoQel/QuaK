@@ -30,7 +30,7 @@ export function GateLibraryView({ onGateSelect }: GateLibraryViewProps) {
     };
 
     return (
-        <Card className="w-full h-full min-h-0 relative flex flex-col overflow-hidden">
+        <Card className="w-full h-full min-h-0 relative border-none flex flex-col overflow-hidden">
             <CardHeader className="w-full flex justify-center items-center relative">
                 <Button onClick={() => setBoxMode(!boxMode)} variant="default" size="icon" className="absolute right-5">
                     {boxMode && <List />}

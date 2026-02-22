@@ -18,6 +18,7 @@
     --color-logo-start: var(--logo-start);
     --color-logo-end: var(--logo-end);
     --color-destructive-text: var(--destructive-text);
+    --color-bg-subtle: var(--bg-subtle);
 }
 
 :root {
@@ -25,6 +26,7 @@
     --bg: hsl(0 0% 80%); /* secondary surfaces / panels */
     --bg-light: hsl(0 0% 70%); /* raised elements / cards / hover surfaces */
     --bg-light-hover: hsl(0 0% 60%);
+    --bg-subtle: hsl(0 0% 88%); /* subtle panel variant between bg-dark and bg */
 
     --text: hsl(0 0% 20%); /* primary text  */
     --text-muted: hsl(0 0% 30%); /* secondary / muted text */
@@ -50,10 +52,11 @@
 }
 
 .dark {
-    --bg-dark: hsl(220, 6%, 10%); /* main page background (black) */
-    --bg: hsl(0 0% 20%); /* secondary surfaces / panels */
-    --bg-light: hsl(0 0% 30%); /* raised elements / cards / hover surfaces */
+    --bg-dark: hsl(220 6% 10%); /* main page background (black) */
+    --bg: hsl(220 6% 20%); /* secondary surfaces / panels */
+    --bg-light: hsl(220 6% 30%); /* raised elements / cards / hover surfaces */
     --bg-light-hover: hsl(0 0% 60%);
+    --bg-subtle: hsl(220 6% 15%); /* midpoint between 10% (bg-dark) and 20% (bg) */
 
     --text: hsl(0 0% 95%); /* primary text (almost white) */
     --text-muted: hsl(0 0% 70%); /* secondary / muted text */
@@ -149,11 +152,22 @@
     }
 }
 
-/* Force Active Tab to be Dark/Light (Content Color) */
-.dockview-theme-custom .dv-tab.dv-active-tab {
-    background-color: var(--bg-dark) !important;
+/* INACTIVE TABS */
+.dockview-theme-custom .dv-tab {
+    background-color: transparent !important;
+    color: var(--text-muted) !important;
+    border: none !important;
+}
+
+/* INACTIVE TAB HOVER */
+.dockview-theme-custom .dv-tab:hover {
+    background-color: var(--bg) !important;
     color: var(--text) !important;
-    border-bottom: none !important; /* Connect to content */
+}
+
+.dockview-theme-custom .dv-tab.dv-active-tab {
+    background-color: var(--bg) !important;
+    color: var(--text) !important;
 }
 
 /* Force the Panel Content Container to match */
@@ -162,32 +176,48 @@
     background-color: var(--bg-dark) !important;
 }
 
+/* Default group: no strong outline */
+.dockview-theme-custom .dv-group-view {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+/* Active group: subtle left accent (NOT a full border box) */
+.dockview-theme-custom .dv-group-view.dv-active-group {
+    box-shadow: inset 2px 0 0 0 color-mix(in srgb, var(--special) 55%, transparent) !important;
+}
+
 /* 1. The Header Strip (Background behind the tabs) */
 .dockview-theme-custom .dv-tabs-and-actions-container {
-    /* Use your secondary gray (--bg) instead of the default blue */
-    background-color: var(--bg) !important;
+    background-color: var(--bg-subtle) !important;
     border-bottom: 1px solid var(--border) !important;
 }
 
-/* INACTIVE TABS */
-.dockview-theme-custom .dv-tab {
-    background-color: var(--bg-light) !important;
-    color: var(--text-muted) !important;
-    border-right: 1px solid var(--border) !important;
-}
-
-/* INACTIVE TAB HOVER */
-.dockview-theme-custom .dv-tab:hover {
-    background-color: var(--bg-light-hover) !important;
-    color: var(--text) !important;
-}
-
-/* PANEL DIVIDER (SASH) */
+/* SASH: keep hitzone, only draw a thin line */
 .dockview-theme-custom .dv-sash {
-    background-color: var(--border) !important;
+    background: transparent !important;
+    position: relative;
 }
 
-/* Hover effect */
-.dockview-theme-custom .dv-sash:hover {
-    background-color: var(--special) !important;
+/* Default: vertical divider (left/right split) */
+.dockview-theme-custom .dv-sash::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: 2.5px; /* thickness */
+    height: 100%;
+    background: var(--bg-light);
+    pointer-events: none;
+}
+
+/* If the split container is dv-vertical, the divider is horizontal (top/bottom) */
+.dockview-theme-custom .dv-split-view-container.dv-vertical > .dv-sash-container > .dv-sash::after {
+    width: 100%;
+    height: 2.5px;
+}
+
+/* Hover: recolor (works for both) */
+.dockview-theme-custom .dv-sash:hover::after {
+    background: var(--special);
 }

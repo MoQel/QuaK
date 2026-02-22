@@ -26,7 +26,7 @@ export function TextEditorView() {
     }, []);
 
     return (
-        <Card className="h-full flex flex-col p-0 border-none rounded-none">
+        <Card className="h-full flex flex-col p-0 border-none rounded-none bg-bg-subtle">
             <TextEditorTabBar currentLangId={currentLangId} />
 
             <CardContent className="flex flex-col flex-1 p-0 overflow-hidden relative">

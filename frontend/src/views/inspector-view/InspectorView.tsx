@@ -36,7 +36,7 @@ function InspectorViewComponent({ gate, onClear }: InspectorViewProps) {
     // Case 1: nothing selected
     if (!gate) {
         return (
-            <Card className="w-full h-full border-l rounded-none bg-muted/10">
+            <Card className="w-full h-full border-none rounded-none bg-muted/10">
                 <CardContent className="flex flex-col items-center justify-center h-[50vh] text-muted-foreground text-sm italic">
                     <Microscope className="w-12 h-12 mb-4 opacity-20" />
                     <p>Select a gate from the Library.</p>
@@ -49,7 +49,7 @@ function InspectorViewComponent({ gate, onClear }: InspectorViewProps) {
     const info = gate.inspectorInfo;
 
     return (
-        <Card className="w-full h-full border-l rounded-none flex flex-col overflow-hidden bg-card">
+        <Card className="w-full h-full border-none rounded-none flex flex-col overflow-hidden bg-card">
             <CardHeader className="pb-2 border-b bg-card z-10 shrink-0">
                 <div className="flex items-start justify-between gap-2">
                     <div className="flex flex-col gap-1">

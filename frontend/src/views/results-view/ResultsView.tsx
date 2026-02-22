@@ -75,7 +75,7 @@ export function ResultsView({ circuit }: ResultsViewProps) {
     // Empty State
     if (!circuit || (numQubits === 0 && !isCalculating)) {
         return (
-            <Card className="w-full h-full border-l rounded-none bg-muted/10">
+            <Card className="w-full h-full border-none rounded-none bg-muted/10">
                 <CardContent className="flex flex-col items-center justify-center h-[50vh] text-muted-foreground text-sm italic">
                     <RefreshCcw className="w-12 h-12 mb-4 opacity-20" />
                     <p>Add qubits to the circuit to see results.</p>
@@ -85,7 +85,7 @@ export function ResultsView({ circuit }: ResultsViewProps) {
     }
 
     return (
-        <Card className="w-full h-full border-l rounded-none flex flex-col min-w-0">
+        <Card className="w-full h-full border-none rounded-none flex flex-col min-w-0">
             <CardHeader className="pb-2 border-b bg-card z-10 shrink-0">
                 <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
                     <div>
