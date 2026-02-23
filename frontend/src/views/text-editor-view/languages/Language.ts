@@ -32,14 +32,21 @@ export class Language {
      * @param id The id of the language
      * @param fileExtension The file extension name of the language
      * @param name Display name of a language for the UI
+     * @param languageId Id needed for monaco editor
      * @param base The optional basis for this language to be an extension of
      */
-    constructor(id: string, fileExtension: string, name: string, base?: languages.IMonarchLanguage) {
+    constructor(
+        id: string,
+        fileExtension: string,
+        name: string,
+        languageId: string,
+        base?: languages.IMonarchLanguage,
+    ) {
         this.id = id;
         this.fileExtension = fileExtension;
         this.name = name;
         this.themeId = `${id}Theme`;
-        this.languageId = `${id}`;
+        this.languageId = languageId;
         this.base = base;
         this.#tokenizer = base?.tokenizer || {};
     }
