@@ -35,7 +35,7 @@ public class UserService implements UserServicePort {
         return userRepository
                 .findByIssuerAndSub(authenticatedUser.issuer(), authenticatedUser.subject())
                 .orElseThrow(() -> {
-                    log.warn(
+                    log.debug(
                             "User not found for issuer={} sub={}",
                             authenticatedUser.issuer(),
                             authenticatedUser.subject());
@@ -65,7 +65,7 @@ public class UserService implements UserServicePort {
         return userRepository
                 .findIdByIssuerAndSub(authenticatedUser.issuer(), authenticatedUser.subject())
                 .orElseThrow(() -> {
-                    log.warn(
+                    log.debug(
                             "User ID not found for issuer={} sub={}",
                             authenticatedUser.issuer(),
                             authenticatedUser.subject());

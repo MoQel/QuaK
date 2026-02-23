@@ -62,7 +62,7 @@ public abstract class AbstractFileElementService<T extends FileElement<T>> {
                         "Could not find root project for element with" + " parent ID: " + parentId));
 
         if (!projectOwnerId.equals(user.getId())) {
-            log.warn(
+            log.debug(
                     "Access denied: User '{}' is not owner of project '{}' ({} parent: '{}')",
                     user.getId(),
                     projectOwnerId,
