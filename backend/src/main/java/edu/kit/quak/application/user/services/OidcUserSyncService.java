@@ -9,7 +9,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Service for synchronizing OIDC user information with the database. This service is called after
+ * Service for synchronizing OIDC user information with the database. This
+ * service is called after
  * successful OAuth2 login to ensure user data is up-to-date.
  */
 @Service
@@ -34,34 +35,49 @@ public class OidcUserSyncService implements OidcSyncServicePort {
         log.debug("Syncing user for issuer='{}' sub='{}'", issuer, sub);
 
         return userRepository
-                .findByIssuerAndSub(issuer, sub)
-                .map(existingUser -> updateUser(existingUser, userInfo))
-                .orElseGet(() -> createUser(issuer, sub, userInfo));
+            .findByIssuerAndSub(issuer, sub)
+            .map(existingUser -> updateUser(existingUser, userInfo))
+            .orElseGet(() -> {
+                if (userInfo.email() != null && !userInfo.email().isBlank()) {
+                    userRepository
+                        .findByEmail(userInfo.email())
+                        .ifPresent(existing -> {
+                            log.error(
+                                "Prevented login: Email '{}' is already associated with a different provider",
+                                userInfo.email()
+                            );
+                            throw new IllegalArgumentException("Email is already associated with a different provider");
+                        });
+                }
+                return createUser(issuer, sub, userInfo);
+            });
     }
 
     private User updateUser(User user, OidcUserInfo userInfo) {
         log.info("Updating existing user '{}' from OIDC data", user.getId());
         user.updateFromOidc(
-                userInfo.email(),
-                userInfo.emailVerified(),
-                userInfo.fullName(),
-                userInfo.givenName(),
-                userInfo.familyName(),
-                userInfo.picture());
+            userInfo.email(),
+            userInfo.emailVerified(),
+            userInfo.fullName(),
+            userInfo.givenName(),
+            userInfo.familyName(),
+            userInfo.picture()
+        );
         return userRepository.save(user);
     }
 
     private User createUser(String issuer, String sub, OidcUserInfo userInfo) {
         log.info("Creating new user for issuer='{}' sub='{}'", issuer, sub);
         User user = User.createFromOidc(
-                issuer,
-                sub,
-                userInfo.email(),
-                userInfo.emailVerified(),
-                userInfo.fullName(),
-                userInfo.givenName(),
-                userInfo.familyName(),
-                userInfo.picture());
+            issuer,
+            sub,
+            userInfo.email(),
+            userInfo.emailVerified(),
+            userInfo.fullName(),
+            userInfo.givenName(),
+            userInfo.familyName(),
+            userInfo.picture()
+        );
         return userRepository.save(user);
     }
 }

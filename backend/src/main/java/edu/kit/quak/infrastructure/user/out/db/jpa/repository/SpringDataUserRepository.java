@@ -14,6 +14,8 @@ import org.springframework.stereotype.Repository;
 public interface SpringDataUserRepository extends JpaRepository<JpaUser, UUID> {
     Optional<JpaUser> findByIssuerAndSub(String issuer, String sub);
 
+    Optional<JpaUser> findByEmail(String email);
+
     /**
      * Efficiently retrieves only the user's UUID without loading the full entity.
      * This is ideal for

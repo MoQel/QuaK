@@ -44,6 +44,11 @@ public class UserJpaAdapter implements UserRepositoryPort {
     }
 
     @Override
+    public Optional<User> findByEmail(String email) {
+        return repository.findByEmail(email).map(mapper::toDomain);
+    }
+
+    @Override
     public void deleteById(UUID id) {
         repository.deleteById(id);
     }
@@ -55,8 +60,6 @@ public class UserJpaAdapter implements UserRepositoryPort {
 
     @Override
     public List<User> searchByEmail(String email) {
-        return repository.findByEmailContainingIgnoreCase(email).stream()
-                .map(mapper::toDomain)
-                .toList();
+        return repository.findByEmailContainingIgnoreCase(email).stream().map(mapper::toDomain).toList();
     }
 }

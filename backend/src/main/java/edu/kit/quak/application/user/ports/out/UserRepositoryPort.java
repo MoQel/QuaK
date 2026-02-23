@@ -13,6 +13,8 @@ public interface UserRepositoryPort {
 
     Optional<User> findByIssuerAndSub(String issuer, String sub);
 
+    Optional<User> findByEmail(String email);
+
     /**
      * Efficiently retrieves only the user's UUID without loading the full entity.
      * Use this when
