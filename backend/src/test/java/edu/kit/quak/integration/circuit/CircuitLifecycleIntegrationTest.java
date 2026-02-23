@@ -1,5 +1,11 @@
 package edu.kit.quak.integration.circuit;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.oidcLogin;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.CircuitResponse;
@@ -16,12 +22,6 @@ import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequ
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
-
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.oidcLogin;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @IntegrationTest
 @SpringBootTest
@@ -40,13 +40,14 @@ class CircuitLifecycleIntegrationTest {
     void testFullCircuitLifecycle() throws Exception {
 
         // 1. Create circuit
-        MvcResult initResult = mockMvc.perform(post("/api/circuit").with(authenticatedUser()).with(csrf()))
+        MvcResult initResult = mockMvc.perform(
+                        post("/api/circuit").with(authenticatedUser()).with(csrf()))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").exists())
                 .andReturn();
 
-        CircuitResponse circuit = objectMapper.readValue(
-                initResult.getResponse().getContentAsString(), CircuitResponse.class);
+        CircuitResponse circuit =
+                objectMapper.readValue(initResult.getResponse().getContentAsString(), CircuitResponse.class);
         String circuitId = circuit.id();
         String registerId = circuit.registers().getFirst().getId();
 
@@ -79,7 +80,8 @@ class CircuitLifecycleIntegrationTest {
                 .andExpect(status().isCreated())
                 .andReturn();
 
-        JsonNode cxGateNode = objectMapper.readTree(addCxGateResult.getResponse().getContentAsString());
+        JsonNode cxGateNode =
+                objectMapper.readTree(addCxGateResult.getResponse().getContentAsString());
         String cxGateId = cxGateNode.at("/layers/0/quantumOperations/1/id").asText();
 
         // 5. Move CX-Gate to target Qubit 0.
@@ -96,22 +98,33 @@ class CircuitLifecycleIntegrationTest {
         mockMvc.perform(get("/api/circuit/" + circuitId).with(authenticatedUser()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.layers.length()").value(2)) // Now correctly separated
-                .andExpect(jsonPath("$.layers[0].quantumOperations[0].identifier").value("H"))
-                .andExpect(jsonPath("$.layers[1].quantumOperations[0].identifier").value("CX"))
-                .andExpect(jsonPath("$.layers[1].quantumOperations[0].targetQubits[0].index").value(0));
+                .andExpect(
+                        jsonPath("$.layers[0].quantumOperations[0].identifier").value("H"))
+                .andExpect(
+                        jsonPath("$.layers[1].quantumOperations[0].identifier").value("CX"))
+                .andExpect(jsonPath("$.layers[1].quantumOperations[0].targetQubits[0].index")
+                        .value(0));
 
         // 7. Remove operations
-        mockMvc.perform(delete("/api/circuit/" + circuitId + "/operation/" + hGateId).with(authenticatedUser()).with(csrf()))
+        mockMvc.perform(delete("/api/circuit/" + circuitId + "/operation/" + hGateId)
+                        .with(authenticatedUser())
+                        .with(csrf()))
                 .andExpect(status().isOk());
-        mockMvc.perform(delete("/api/circuit/" + circuitId + "/operation/" + cxGateId).with(authenticatedUser()).with(csrf()))
+        mockMvc.perform(delete("/api/circuit/" + circuitId + "/operation/" + cxGateId)
+                        .with(authenticatedUser())
+                        .with(csrf()))
                 .andExpect(status().isOk());
 
         // 8. Remove qubit
-        mockMvc.perform(delete("/api/circuit/" + circuitId + "/register/" + registerId + "/0").with(authenticatedUser()).with(csrf()))
+        mockMvc.perform(delete("/api/circuit/" + circuitId + "/register/" + registerId + "/0")
+                        .with(authenticatedUser())
+                        .with(csrf()))
                 .andExpect(status().isOk());
 
         // 9. Delete circuit
-        mockMvc.perform(delete("/api/circuit/" + circuitId).with(authenticatedUser()).with(csrf()))
+        mockMvc.perform(delete("/api/circuit/" + circuitId)
+                        .with(authenticatedUser())
+                        .with(csrf()))
                 .andExpect(status().isOk());
 
         // 10. Verify deletion (Expect 404)
@@ -125,8 +138,7 @@ class CircuitLifecycleIntegrationTest {
      * Builds JSON for adding an elementary quantum gate.
      */
     private String buildGateJson(String gateName, String registerId, int targetIdx, Integer controlIdx) {
-        String controlQubitsArray = controlIdx == null ? "[]" :
-                """
+        String controlQubitsArray = controlIdx == null ? "[]" : """
                 [ { "registerId": "%s", "index": %d } ]
                 """.formatted(registerId, controlIdx);
 

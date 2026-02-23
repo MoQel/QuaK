@@ -4,15 +4,14 @@ import edu.kit.quak.application.filesystem.exceptions.AccessDeniedException;
 import edu.kit.quak.application.library.exceptions.GateDefinitionNotFoundException;
 import edu.kit.quak.application.user.exceptions.UserNotFoundException;
 import jakarta.persistence.EntityNotFoundException;
+import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-
-import java.util.NoSuchElementException;
-import java.util.stream.Collectors;
 
 /**
  * Global exception handler that translates domain exceptions to HTTP responses. Follows RFC-7807

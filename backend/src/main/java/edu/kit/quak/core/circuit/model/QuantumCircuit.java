@@ -5,12 +5,11 @@ import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
 import edu.kit.quak.core.circuit.model.register.QuantumRegister;
 import edu.kit.quak.core.circuit.model.register.Register;
-import lombok.Builder;
-import lombok.NonNull;
-
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import lombok.Builder;
+import lombok.NonNull;
 
 public class QuantumCircuit extends ElementWithId {
     private final List<Register> registers = new ArrayList<>();
@@ -61,7 +60,7 @@ public class QuantumCircuit extends ElementWithId {
                 // Remove all quantum operations that had this qubit either as target or as control.
                 boolean removeOperation = selectors.stream()
                         .anyMatch(selector -> selector.getRegisterId()
-                                .equals(registers.getFirst().getId())
+                                        .equals(registers.getFirst().getId())
                                 && selector.getIndex() == qubitIdx);
                 if (removeOperation) {
                     layer.removeQuantumOperation(operation);

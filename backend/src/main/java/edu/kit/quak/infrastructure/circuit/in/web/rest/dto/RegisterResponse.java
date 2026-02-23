@@ -5,13 +5,10 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
 import lombok.Setter;
 
-@JsonTypeInfo(
-        use = JsonTypeInfo.Id.NAME,
-        property = "type"
-)
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSubTypes({
-        @JsonSubTypes.Type(value = QuantumRegisterResponse.class, name = "Quantum_Register"),
-        @JsonSubTypes.Type(value = ClassicRegisterResponse.class, name = "Classic_Register")
+    @JsonSubTypes.Type(value = QuantumRegisterResponse.class, name = "Quantum_Register"),
+    @JsonSubTypes.Type(value = ClassicRegisterResponse.class, name = "Classic_Register")
 })
 @Getter
 @Setter

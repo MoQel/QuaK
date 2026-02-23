@@ -1,5 +1,8 @@
 package edu.kit.quak.application.circuit;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
 import edu.kit.quak.application.circuit.ports.out.CircuitRepositoryPort;
 import edu.kit.quak.application.circuit.services.CircuitService;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
@@ -7,17 +10,13 @@ import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
 import edu.kit.quak.shared.tags.UnitTest;
 import jakarta.persistence.EntityNotFoundException;
+import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.List;
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 @UnitTest
 @ExtendWith(MockitoExtension.class)
@@ -149,7 +148,8 @@ class CircuitServiceTest {
         when(repository.save(circuitMock)).thenReturn(circuitMock);
 
         // execute
-        QuantumCircuit result = service.moveQuantumOperation(circuitId, operationId, layerIdx, targetQubits, controlQubits);
+        QuantumCircuit result =
+                service.moveQuantumOperation(circuitId, operationId, layerIdx, targetQubits, controlQubits);
 
         // verify delegation and save
         verify(circuitMock).moveQuantumOperation(operationId, layerIdx, targetQubits, controlQubits);

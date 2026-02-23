@@ -1,10 +1,9 @@
 package edu.kit.quak.core.circuit.model.layer.operation;
 
+import java.util.Objects;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
-
-import java.util.Objects;
 
 @Getter
 @Setter

@@ -1,9 +1,8 @@
 package edu.kit.quak.infrastructure.circuit.in.web.rest.dto;
 
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
-
-import java.util.List;
 
 @Getter
 @Setter
