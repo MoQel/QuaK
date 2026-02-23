@@ -50,7 +50,7 @@ export function ProjectCard({
                                 <div className="flex flex-col gap-1">
                                     <Button
                                         variant="ghost"
-                                        className="justify-start"
+                                        className="justify-start hover:bg-bg-light"
                                         onClick={() => {
                                             setActionsOpen(false);
                                             onRename(project);
@@ -61,7 +61,7 @@ export function ProjectCard({
                                     </Button>
                                     <Button
                                         variant="ghost"
-                                        className="justify-start"
+                                        className="justify-start hover:bg-bg-light"
                                         onClick={() => {
                                             setActionsOpen(false);
                                             onTogglePin(project.id);
