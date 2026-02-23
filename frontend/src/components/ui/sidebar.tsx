@@ -656,7 +656,6 @@ function SidebarMenuSubButton({
     );
 }
 
-/* eslint-disable react-refresh/only-export-components */
 export {
     Sidebar,
     SidebarContent,

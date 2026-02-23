@@ -105,7 +105,6 @@ export function useEditorModelManager(
         return () => {
             isCancelled = true;
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activeFileId, monaco, editorInstance]);
 
     return { isReadOnly, isDirtyRef };
