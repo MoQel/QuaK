@@ -118,7 +118,7 @@ public class ProjectService implements ProjectServicePort {
      */
     private void verifyAccess(Project project, User user) {
         if (!roleService.hasMinimumRole(project.getId(), user.getId(), ProjectRole.VIEWER)) {
-            log.warn("Access denied: User '{}' has no role on project '{}'", user.getId(), project.getId());
+            log.debug("Access denied: User '{}' has no role on project '{}'", user.getId(), project.getId());
             throw new AccessDeniedException("project", project.getId());
         }
     }
@@ -130,7 +130,7 @@ public class ProjectService implements ProjectServicePort {
      */
     private void verifyOwnerAccess(Project project, User user) {
         if (!roleService.hasMinimumRole(project.getId(), user.getId(), ProjectRole.OWNER)) {
-            log.warn("Access denied: User '{}' is not OWNER of project '{}'", user.getId(), project.getId());
+            log.debug("Access denied: User '{}' is not OWNER of project '{}'", user.getId(), project.getId());
             throw new AccessDeniedException("project", project.getId());
         }
     }

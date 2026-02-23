@@ -112,7 +112,7 @@ public class ProjectRoleService implements ProjectRoleServicePort {
      */
     private void verifyOwnerRole(String projectId, User requestingUser) {
         if (!hasMinimumRole(projectId, requestingUser.getId(), ProjectRole.OWNER)) {
-            log.warn("Access denied: User '{}' is not OWNER of project '{}'", requestingUser.getId(), projectId);
+            log.debug("Access denied: User '{}' is not OWNER of project '{}'", requestingUser.getId(), projectId);
             throw new AccessDeniedException("project", projectId);
         }
     }
