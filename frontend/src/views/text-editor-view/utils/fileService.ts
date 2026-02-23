@@ -11,7 +11,6 @@ export async function fetchFileContent(id: string): Promise<{ content: string; e
     const content = Base64.decode(contentRes.content);
     const filename = detailsRes.name || '';
     const ext = filename.includes('.') ? filename.split('.').pop()! : 'txt';
-
     return { content, ext };
 }
 

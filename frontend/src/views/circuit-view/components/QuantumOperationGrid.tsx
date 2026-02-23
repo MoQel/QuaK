@@ -2,7 +2,7 @@ import { RegisterResponse } from '@/api/dto/circuit.ts';
 import { ElementaryQuantumGate } from '@/views/circuit-view/components/ElementaryQuantumGate.tsx';
 import { UiLayer } from '@/views/circuit-view/util/types.ts';
 import { useDispatch } from 'react-redux';
-import { startOperationDrag, stopOperationDrag } from '@/store/slices/dragOperationSlice.ts';
+import { startOperationDrag, stopOperationDrag } from '@/store/circuit/dragOperationSlice.ts';
 
 interface QuantumOperationGridProps {
     uiLayers: UiLayer[];

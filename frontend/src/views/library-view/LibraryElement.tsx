@@ -4,7 +4,7 @@ import { BlockMath } from 'react-katex';
 import 'katex/dist/katex.min.css';
 import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { startOperationDrag, stopOperationDrag } from '@/store/slices/dragOperationSlice.ts';
+import { startOperationDrag, stopOperationDrag } from '@/store/circuit/dragOperationSlice.ts';
 import { getOperationDefinition, OperationIdentifier } from '@/lib/operations.ts';
 import { DragData } from '@/views/circuit-view/util/types.ts';
 import { TextIcon } from '@/components/ui/text-icon.tsx';

@@ -1,6 +1,6 @@
 import React, { useCallback } from 'react';
 import { useDispatch } from 'react-redux';
-import { stopOperationDrag } from '@/store/slices/dragOperationSlice.ts';
+import { stopOperationDrag } from '@/store/circuit/dragOperationSlice.ts';
 import { CELL_WIDTH, QUBIT_HEIGHT } from '@/views/circuit-view/util/layout.ts';
 import {
     CircuitResponse,

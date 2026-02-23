@@ -1,40 +1,38 @@
 import { Editor, useMonaco } from '@monaco-editor/react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { editor } from 'monaco-editor';
-import { useTheme } from '@/theme';
+import { useTheme } from '@/theme.tsx';
 import { languages } from '@/views/text-editor-view/languages/languages.ts';
 import { useMonacoTheme } from '@/hooks/editor/useMonacoTheme.ts';
-import { useAppSelector } from '@/hooks/useAppSelector.ts';
 import { useAppDispatch } from '@/hooks/useAppDispatch.ts';
-import { setFileDirty } from '@/store/slices/tabsSlice.ts';
-import { getModelId, savedVersionIds } from '@/views/text-editor-view/util/editorUtils.ts';
+import { setFileDirty } from '@/store/tabs/tabsSlice.ts';
+import { getModelId, savedVersionIds } from '@/views/text-editor-view/utils/editorUtils.ts';
 import { useEditorModelManager } from '@/hooks/editor/useEditorModelManager.ts';
-import { useEditorCommands } from '@/hooks/editor/useEditorCommands.ts';
+import { useAppSelector } from '@/hooks/useAppSelector.ts';
+import { useEditorLanguage } from '@/hooks/editor/useEditorLanguage.ts';
+import { cn } from '@/lib/utils.ts';
 
 interface QLPEditorProps {
-    activeFileId: string | null;
-    setCurrentLangId: (langId: string) => void;
+    groupId: string;
 }
 
-function QLPEditor({ activeFileId, setCurrentLangId }: Readonly<QLPEditorProps>) {
+function QLPEditor({ groupId }: Readonly<QLPEditorProps>) {
     const [editorInstance, setEditorInstance] = useState<editor.IStandaloneCodeEditor | null>(null);
     const monaco = useMonaco();
     const { theme } = useTheme();
     const { applyTheme } = useMonacoTheme(monaco, theme);
 
-    const dispatch = useAppDispatch();
-    const openTabs = useAppSelector((state) => state.tabs.openTabs);
-
-    // region Buisness logic hooks
-    const { isReadOnly, isDirtyRef } = useEditorModelManager(
-        monaco,
-        editorInstance,
-        activeFileId,
-        openTabs,
-        setCurrentLangId,
+    const activeFileId = useAppSelector(
+        (state) => state.tabs.groups.find((g) => g.id === groupId)?.activeTabId ?? null,
     );
+    const isDragging = useAppSelector((state) => state.tabs.isDragging);
 
-    useEditorCommands(monaco, editorInstance, activeFileId, setCurrentLangId);
+    const dispatch = useAppDispatch();
+
+    // region Business logic hooks
+    useEditorLanguage(monaco);
+
+    const { isReadOnly, isDirtyRef } = useEditorModelManager(monaco, editorInstance, groupId);
     // endregion
 
     // region Editor config and mount
@@ -60,18 +58,6 @@ function QLPEditor({ activeFileId, setCurrentLangId }: Readonly<QLPEditorProps>)
             setEditorInstance(null);
         });
     };
-
-    // Cleanup global on unmount
-    useEffect(() => {
-        return () => {
-            if (monaco) {
-                const models = monaco.editor.getModels();
-                models.forEach((model) => {
-                    model.dispose();
-                });
-            }
-        };
-    }, [monaco]);
     // endregion
 
     return (
@@ -80,17 +66,30 @@ function QLPEditor({ activeFileId, setCurrentLangId }: Readonly<QLPEditorProps>)
                 <div className="absolute inset-0 z-10 flex items-center justify-center text-gray-500">No file open</div>
             )}
 
-            <div className="h-full w-full" style={{ display: activeFileId ? 'block' : 'none' }}>
+            <div
+                className={cn('h-full w-full', isDragging && 'pointer-events-none')}
+                style={{ display: activeFileId ? 'block' : 'none' }}
+            >
                 <Editor
                     className="h-full"
                     theme="my-theme"
                     onMount={handleEditorDidMount}
+                    keepCurrentModel={true} // keeps models alive between tab groups
                     beforeMount={(m) => languages.forEach((l) => l.base !== undefined && l.register(m))}
                     options={{
                         minimap: { enabled: false },
                         wordWrap: 'on',
                         readOnly: isReadOnly,
                         automaticLayout: true,
+                        scrollbar: {
+                            vertical: 'auto',
+                            horizontal: 'auto',
+                            verticalScrollbarSize: 8,
+                            horizontalScrollbarSize: 8,
+                            useShadows: false,
+                            verticalHasArrows: false,
+                            horizontalHasArrows: false,
+                        },
                     }}
                 />
             </div>
