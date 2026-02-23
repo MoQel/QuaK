@@ -130,7 +130,7 @@ function ToolbarDialog({ icon: Icon, title, parentId, reloadAll, children }: Rea
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button variant="ghost" size="icon" title={title} className="h-8 w-8 hover:bg-accent">
+                <Button variant="ghost" size="icon" title={title} className="h-8 w-8">
                     <Icon className="h-4 w-4" />
                 </Button>
             </DialogTrigger>

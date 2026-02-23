@@ -41,10 +41,10 @@ export const Navbar: React.FC = () => {
     return (
         <nav className="bg-bg-dark border-b border-border px-6 py-4 sticky top-0 z-50">
             {dialog}
-            <div className="grid grid-cols-3 items-center">
+            <div className="flex items-center justify-between w-full gap-4 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                 {/* Left section */}
-                <div className="flex items-center gap-4">
-                    <Link to="/" className="flex items-center gap-2">
+                <div className="flex items-center gap-4 shrink-0">
+                    <Link to="/" className="flex items-center gap-2 shrink-0">
                         <h1 className="text-3xl font-bold bg-gradient-to-r from-logo-start to-logo-end bg-clip-text text-transparent">
                             QuaK
                         </h1>
@@ -73,11 +73,11 @@ export const Navbar: React.FC = () => {
                 </div>
 
                 {/* Center section - Project Name */}
-                <div className="flex justify-center">
+                <div className="flex justify-center flex-1 min-w-0 px-2 lg:px-4">
                     {isIdeView && projectName && projectId && (
-                        <div className="group flex items-center gap-2">
-                            <span className="text-lg font-bold text-foreground">{projectName}</span>
-                            <div className="flex items-center gap-1 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity">
+                        <div className="group flex items-center gap-2 min-w-0">
+                            <span className="text-lg font-bold text-foreground truncate">{projectName}</span>
+                            <div className="flex items-center gap-1 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity shrink-0">
                                 <Button
                                     type="button"
                                     variant="ghost"
@@ -117,7 +117,7 @@ export const Navbar: React.FC = () => {
 
                 {/* Right section */}
                 {user && (
-                    <div className="flex items-center gap-4 justify-end flex-nowrap">
+                    <div className="flex items-center gap-2 md:gap-4 justify-end flex-nowrap shrink-0">
                         <Tabs value={getActiveTab()} className="w-auto shrink-0">
                             <TabsList>
                                 <Link to="/">

@@ -1,25 +1,30 @@
-// hooks/editor/useEditorModelManager.ts
 import { useEffect, useRef, useState } from 'react';
 import { editor, Uri } from 'monaco-editor';
 import { toast } from 'sonner';
-import { fetchFileContent } from '@/views/text-editor-view/util/fileService';
+import { fetchFileContent } from '@/views/text-editor-view/utils/fileService';
 import { DEFAULT_LANG, languages } from '@/views/text-editor-view/languages/languages';
-import { getModelId, savedVersionIds } from '@/views/text-editor-view/util/editorUtils';
+import { getModelId, savedVersionIds } from '@/views/text-editor-view/utils/editorUtils';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { setFileDirty, Tab } from '@/store/slices/tabsSlice';
+import { setFileDirty } from '@/store/tabs/tabsSlice.ts';
 import { useAppSelector } from '@/hooks/useAppSelector.ts';
 import { Monaco } from '@monaco-editor/react';
 
 export function useEditorModelManager(
     monaco: Monaco,
     editorInstance: editor.IStandaloneCodeEditor | null,
-    activeFileId: string | null,
-    openTabs: Tab[],
-    setCurrentLangId: (id: string) => void,
+    groupId: string,
 ) {
     const [isReadOnly, setIsReadOnly] = useState(true);
     const dispatch = useAppDispatch();
+    const groups = useAppSelector((state) => state.tabs.groups);
     const dirtyFiles = useAppSelector((state) => state.tabs.dirtyFiles);
+    const activeFileId = useAppSelector(
+        (state) => state.tabs.groups.find((g) => g.id === groupId)?.activeTabId ?? null,
+    );
+    const activeTab =
+        useAppSelector((state) =>
+            state.tabs.groups.find((g) => g.id === groupId)?.openTabs.find((t) => t.id === activeFileId),
+        ) ?? null;
     const isCurrentFileDirty = activeFileId ? dirtyFiles.includes(activeFileId) : false;
     const isDirtyRef = useRef(isCurrentFileDirty);
 
@@ -35,22 +40,14 @@ export function useEditorModelManager(
         }
     };
 
+    const getTechnicalId = (logicalId: string) => {
+        const langConfig = languages.find((l) => l.id === logicalId);
+        return langConfig ? langConfig.languageId : logicalId;
+    };
+
     useEffect(() => {
         isDirtyRef.current = isCurrentFileDirty;
     }, [isCurrentFileDirty]);
-
-    // 1. Garbage Collection
-    useEffect(() => {
-        if (!monaco) return;
-        const openTabIds = new Set(openTabs.map((t) => t.id));
-
-        monaco.editor.getModels().forEach((model: editor.ITextModel) => {
-            const modelId = getModelId(model);
-            if (modelId !== activeFileId && !openTabIds.has(modelId)) {
-                model.dispose();
-            }
-        });
-    }, [openTabs, monaco, activeFileId]);
 
     useEffect(() => {
         if (!monaco || !editorInstance) return;
@@ -68,10 +65,13 @@ export function useEditorModelManager(
         if (model && !model.isDisposed()) {
             editorInstance.setModel(model);
             syncDirtyState(model, false);
-            setCurrentLangId(model.getLanguageId());
             setIsReadOnly(false);
             return;
         }
+
+        // Prevent re-fetching if the tab was just closed but the effect runs one last time with the old activeFileId.
+        const isStillInTabs = groups.find((g) => g.id === groupId)?.openTabs.some((t) => t.id === activeFileId);
+        if (!isStillInTabs) return;
 
         // Fetch content (Miss)
         setIsReadOnly(true);
@@ -85,15 +85,13 @@ export function useEditorModelManager(
                 model = monaco.editor.getModel(modelUri);
 
                 if (!model || model.isDisposed()) {
-                    const langMatch = languages.find((l) => l.fileExtension === data.ext);
-                    const langId = langMatch ? langMatch.id : DEFAULT_LANG;
+                    const techId = getTechnicalId(activeTab?.language || DEFAULT_LANG);
 
-                    model = monaco.editor.createModel(data.content, langId, modelUri);
+                    model = monaco.editor.createModel(data.content, techId, modelUri);
                     savedVersionIds.set(model, model.getAlternativeVersionId());
                 }
 
                 editorInstance.setModel(model);
-                setCurrentLangId(model.getLanguageId());
                 syncDirtyState(model);
                 setIsReadOnly(false);
             })
@@ -105,7 +103,6 @@ export function useEditorModelManager(
         return () => {
             isCancelled = true;
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activeFileId, monaco, editorInstance]);
 
     return { isReadOnly, isDirtyRef };

@@ -3,7 +3,6 @@ import { File } from '@/views/project-manager-view/util/FileElement.tsx';
 
 export const ParentRefresh = createContext<() => void>(() => {});
 export const DialogClose = createContext<() => void>(() => {});
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const FileSelect: Context<(file: File) => void> = createContext((_) => {});
 
 export interface SelectedFolderState {

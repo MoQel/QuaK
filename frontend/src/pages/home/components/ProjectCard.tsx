@@ -55,7 +55,7 @@ export function ProjectCard({
                                     {isOwner && (
                                         <Button
                                             variant="ghost"
-                                            className="justify-start"
+                                            className="justify-start hover:bg-bg-light"
                                             onClick={() => {
                                                 setActionsOpen(false);
                                                 onRename(project);
@@ -67,7 +67,7 @@ export function ProjectCard({
                                     )}
                                     <Button
                                         variant="ghost"
-                                        className="justify-start"
+                                        className="justify-start hover:bg-bg-light"
                                         onClick={() => {
                                             setActionsOpen(false);
                                             onTogglePin(project.id);
