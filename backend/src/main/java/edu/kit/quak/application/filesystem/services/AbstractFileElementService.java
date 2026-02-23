@@ -61,7 +61,7 @@ public abstract class AbstractFileElementService<T extends FileElement<T>> {
 
         String projectId = resolveProjectId(parentId);
         if (!roleService.hasMinimumRole(projectId, user.getId(), ProjectRole.OWNER)) {
-            log.warn(
+            log.debug(
                     "Access denied: User '{}' is not OWNER of project containing {} (parent: '{}')",
                     user.getId(),
                     getElementTypeName(),
@@ -86,7 +86,7 @@ public abstract class AbstractFileElementService<T extends FileElement<T>> {
 
         String projectId = resolveProjectId(parentId);
         if (!roleService.hasMinimumRole(projectId, user.getId(), ProjectRole.VIEWER)) {
-            log.warn(
+            log.debug(
                     "Access denied: User '{}' has no role on project containing {} (parent: '{}')",
                     user.getId(),
                     getElementTypeName(),
