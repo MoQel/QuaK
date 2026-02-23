@@ -7,7 +7,7 @@ interface GateListProps {
     onGateClick: (gate: GateDefinitionResponse) => void;
 }
 
-function GateList({ gates, onGateClick }: GateListProps) {
+function GateList({ gates, onGateClick }: Readonly<GateListProps>) {
     // Group and sort by type and then by name
     const groupedGates = useMemo(() => {
         const groups: Record<string, GateDefinitionResponse[]> = {};
@@ -55,8 +55,7 @@ function GateList({ gates, onGateClick }: GateListProps) {
                                 <div className="flex items-center gap-4">
                                     <div className="w-12 min-w-48px flex justify-center items-center">
                                         <LibraryElement
-                                            id={gate.id}
-                                            symbol={gate.symbol}
+                                            identifier={gate.symbol}
                                             matrix={gate.inspectorInfo.matrix.display}
                                             onClick={() => onGateClick(gate)}
                                         />

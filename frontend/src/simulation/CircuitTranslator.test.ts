@@ -8,7 +8,7 @@ import {
     QuantumOperationDto,
     QuantumRegisterResponse,
 } from '@/api/dto/circuit';
-import { OperationIdentifier } from '@/api/dto/OperationDefinition.ts';
+import { OperationIdentifier } from '@/lib/operations.ts';
 import { SimulationResult } from '@/simulation/simulation.types.ts';
 
 // --- Test Helpers ---
@@ -46,7 +46,7 @@ const gate = (
 ): ElementaryQuantumGateDto => ({
     id: crypto.randomUUID(),
     type: 'ELEMENTARY_QUANTUM_GATE',
-    operationDefinition: definitionId,
+    identifier: definitionId,
     inverseForm: false,
     rotationAngle: rotationAngle,
     targetQubits: [{ registerId: 'qreg-0', index: targetIndex }],
@@ -60,7 +60,7 @@ const multiGate = (
 ): ElementaryQuantumGateDto => ({
     id: 'test-id-multi',
     type: 'ELEMENTARY_QUANTUM_GATE',
-    operationDefinition: definitionId,
+    identifier: definitionId,
     inverseForm: false,
     rotationAngle: 0,
     targetQubits: targets.map((idx) => ({ registerId: 'qreg-0', index: idx })),

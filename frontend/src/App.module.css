@@ -51,7 +51,7 @@
     font-family: var(--font-mono), monospace;
     font-weight: bold;
     user-select: none;
-    font-size: 15px;
+    font-size: 16px;
 }
 
 .libraryElement:hover {
@@ -68,7 +68,7 @@
     font-family: var(--font-mono), monospace;
     font-weight: bold;
     user-select: none;
-    font-size: 15px;
+    font-size: 16px;
 }
 
 .dropzoneSpacing {

@@ -6,14 +6,12 @@ import {
     CircuitResponse,
     ElementaryQuantumGateDto,
     ElementSelectorDto,
+    MeasurementDto,
     MoveQuantumOperationRequest,
 } from '@/api/dto/circuit.ts';
-import {
-    getOperationControlSizeByIdentifier,
-    getOperationTargetSizeByIdentifier,
-} from '@/api/dto/OperationDefinition.ts';
 import { DragData, FlatQubit, HoverPos, UiLayer } from '@/views/circuit-view/util/types.ts';
 import { createCircuitService } from '@/views/circuit-view/util/circuitService.ts';
+import { getOperationDefinition } from '@/lib/operations.ts';
 
 interface DropzoneGridProps {
     circuit: CircuitResponse | undefined;
@@ -122,8 +120,9 @@ export function DropzoneGrid({
             e.preventDefault();
             try {
                 const data: DragData = JSON.parse(e.dataTransfer.getData('text/plain'));
-                const controlSize = getOperationControlSizeByIdentifier(data.operationDefinition);
-                const targetSize = getOperationTargetSizeByIdentifier(data.operationDefinition);
+                const operationDefinition = getOperationDefinition(data.operationIdentifier);
+                const controlSize = operationDefinition.controlSize;
+                const targetSize = operationDefinition.targetSize;
 
                 const controlQubits: ElementSelectorDto[] = Array.from({ length: controlSize }, (_, i) => ({
                     registerId: regId,
@@ -137,15 +136,27 @@ export function DropzoneGrid({
 
                 switch (data.origin) {
                     case 'library': {
-                        const gate: ElementaryQuantumGateDto = {
-                            type: 'ELEMENTARY_QUANTUM_GATE',
-                            operationDefinition: data.operationDefinition,
-                            inverseForm: false,
-                            targetQubits,
-                            controlQubits,
-                            rotationAngle: Math.PI / 2, // standard rotation
-                        };
-                        addQuantumOperation({ quantumOperation: gate, layerIdx });
+                        if (operationDefinition.type === 'ELEMENTARY_QUANTUM_GATE') {
+                            const operation: ElementaryQuantumGateDto = {
+                                type: 'ELEMENTARY_QUANTUM_GATE',
+                                identifier: data.operationIdentifier,
+                                inverseForm: false,
+                                targetQubits,
+                                controlQubits,
+                                rotationAngle: Math.PI / 2, // standard rotation
+                            };
+                            addQuantumOperation({ quantumOperation: operation, layerIdx });
+                        } else if (operationDefinition.type === 'MEASUREMENT') {
+                            const operation: MeasurementDto = {
+                                type: 'MEASUREMENT',
+                                identifier: data.operationIdentifier,
+                                inverseForm: false,
+                                targetQubits,
+                                controlQubits,
+                                classicBits: [],
+                            };
+                            addQuantumOperation({ quantumOperation: operation, layerIdx });
+                        }
                         break;
                     }
                     case 'circuit': {

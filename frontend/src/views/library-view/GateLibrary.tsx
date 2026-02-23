@@ -12,8 +12,7 @@ function GateLibrary({ gates, onGateClick }: Readonly<GateLibraryProps>) {
             {gates.map((gate: GateDefinitionResponse) => (
                 <LibraryElement
                     key={`${gate.id}`}
-                    id={gate.id}
-                    symbol={gate.symbol}
+                    identifier={gate.symbol}
                     matrix={gate.inspectorInfo.matrix.display}
                     onClick={() => onGateClick(gate)}
                 />

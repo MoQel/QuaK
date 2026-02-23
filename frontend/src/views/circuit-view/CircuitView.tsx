@@ -207,7 +207,7 @@ export function CircuitView({ circuit, setCircuit }: Readonly<CircuitViewProps>)
                 allOps.unshift({
                     id: 'dummy',
                     type: 'DUMMY',
-                    operationDefinition: 'DUMMY',
+                    identifier: 'DUMMY',
                     inverseForm: false,
                     targetQubits: dummySelectors,
                     controlQubits: [],

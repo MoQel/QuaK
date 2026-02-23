@@ -44,11 +44,11 @@ class QuantumOperationDtoMapperTest {
         // Assert
         assertNotNull(gateResponse);
         assertEquals(gate.getId(), gateResponse.getId());
-        assertEquals(QuantumOperationLibrary.X.name(), gateResponse.getOperationDefinition());
+        assertEquals(QuantumOperationLibrary.X.name(), gateResponse.getIdentifier());
 
         assertNotNull(measurementResponse);
         assertEquals(measurement.getId(), measurementResponse.getId());
-        assertEquals(QuantumOperationLibrary.MEASURE.name(), measurementResponse.getOperationDefinition());
+        assertEquals(QuantumOperationLibrary.MEASURE.name(), measurementResponse.getIdentifier());
     }
 
     @Test

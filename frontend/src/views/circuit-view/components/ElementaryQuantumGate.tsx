@@ -1,12 +1,10 @@
 import React, { useMemo, useRef } from 'react';
 import styles from '@/App.module.css';
 import { QuantumOperationDto, RegisterResponse, ElementSelectorDto, getRegisterSize } from '@/api/dto/circuit.ts';
-import {
-    getOperationIconByIdentifier,
-    getOperationSizeByIdentifier,
-    OperationIdentifier,
-} from '@/api/dto/OperationDefinition.ts';
+import { getOperationDefinition, OperationDefinition } from '@/lib/operations.ts';
 import { CELL_WIDTH, QUBIT_HEIGHT } from '@/views/circuit-view/util/layout.ts';
+import { TextIcon } from '@/components/ui/text-icon.tsx';
+import { DragData } from '../util/types';
 
 interface ElementaryQuantumGateProps {
     operation: QuantumOperationDto;
@@ -17,8 +15,6 @@ interface ElementaryQuantumGateProps {
     onDelete: () => void;
 }
 
-// --- Helper Functions ---
-
 const getGlobalIndex = (selector: ElementSelectorDto, registers: RegisterResponse[]): number => {
     let offset = 0;
     for (const reg of registers) {
@@ -28,8 +24,6 @@ const getGlobalIndex = (selector: ElementSelectorDto, registers: RegisterRespons
     return 0;
 };
 
-// --- Main Component ---
-
 export function ElementaryQuantumGate({
     operation,
     registers,
@@ -38,6 +32,7 @@ export function ElementaryQuantumGate({
     onDragEnd,
     onDelete,
 }: Readonly<ElementaryQuantumGateProps>) {
+    const definition = getOperationDefinition(operation.identifier);
     const isDraggingRef = useRef(false);
 
     // Compute geometry (indices, span, bounds)
@@ -56,26 +51,22 @@ export function ElementaryQuantumGate({
         };
     }, [operation, registers]);
 
-    // --- Drag & Click Handlers ---
-
     const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
         isDraggingRef.current = true;
 
-        const data = {
+        const data: DragData = {
             origin: 'circuit',
+            operationIdentifier: operation.identifier,
             id: operation.id,
-            operationDefinition: operation.operationDefinition,
         };
 
         // 'text/plain' is required for Safari browser support
         e.dataTransfer.setData('text/plain', JSON.stringify(data));
         e.dataTransfer.effectAllowed = 'move';
 
-        const operationSize = getOperationSizeByIdentifier(operation.operationDefinition);
-
         // Use setTimeout to ensure the browser captures the element as the "drag image"
         // before React potentially re-renders or hides it.
-        setTimeout(() => onDragStart?.(operationSize), 0);
+        setTimeout(() => onDragStart?.(definition.totalSize), 0);
     };
 
     const handleDragEnd = () => {
@@ -120,14 +111,19 @@ export function ElementaryQuantumGate({
                         className="
                             absolute left-1/2 -translate-x-1/2 h-full w-[2px]
                             bg-bg-light border-border
-                            group-hover:bg-highlight transition-colors"
+                            group-hover:brightness-90 dark:group-hover:brightness-125 transition-colors"
+                        style={
+                            operation.identifier === 'SWAP'
+                                ? { backgroundColor: definition.secondaryColor }
+                                : { backgroundColor: definition.primaryColor }
+                        }
                     />
                 </div>
             )}
 
             {/* Render Controls */}
             {controlIndices.map((idx) => (
-                <ControlPoint key={`control-${idx}`} relativeIdx={idx - minY} />
+                <ControlPoint key={`control-${idx}`} relativeIdx={idx - minY} definition={definition} />
             ))}
 
             {/* Render Targets */}
@@ -135,16 +131,15 @@ export function ElementaryQuantumGate({
                 <TargetPoint
                     key={`target-${idx}`}
                     relativeIdx={idx - minY}
-                    definition={operation.operationDefinition}
+                    definition={definition}
+                    isSWAP={operation.identifier === 'SWAP'}
                 />
             ))}
         </div>
     );
 }
 
-// --- Sub-Components ---
-
-function ControlPoint({ relativeIdx }: Readonly<{ relativeIdx: number }>) {
+function ControlPoint({ relativeIdx, definition }: Readonly<{ relativeIdx: number; definition: OperationDefinition }>) {
     const size: number = 12;
     return (
         <div
@@ -152,8 +147,9 @@ function ControlPoint({ relativeIdx }: Readonly<{ relativeIdx: number }>) {
                 absolute left-1/2 -translate-x-1/2 rounded-full
                 bg-bg-light border-border
                 pointer-events-auto cursor-grab active:cursor-grabbing
-                group-hover:bg-highlight transition-colors"
+                group-hover:brightness-90 dark:group-hover:brightness-125 transition-colors"
             style={{
+                backgroundColor: definition.primaryColor,
                 top: relativeIdx * QUBIT_HEIGHT + QUBIT_HEIGHT / 2 - size / 2,
                 width: `${size}px`,
                 height: `${size}px`,
@@ -162,28 +158,37 @@ function ControlPoint({ relativeIdx }: Readonly<{ relativeIdx: number }>) {
     );
 }
 
-function TargetPoint({ relativeIdx, definition }: Readonly<{ relativeIdx: number; definition: OperationIdentifier }>) {
-    const Icon = getOperationIconByIdentifier(definition);
+function TargetPoint({
+    relativeIdx,
+    definition,
+    isSWAP,
+}: Readonly<{ relativeIdx: number; definition: OperationDefinition; isSWAP: boolean }>) {
+    let icon: React.ReactNode;
+
+    if (definition.icon.type === 'component') {
+        const ComponentIcon = definition.icon.component;
+        icon = <ComponentIcon className="size-4 stroke-4" />;
+    } else {
+        const TextIconComponent = TextIcon(definition.icon.text);
+        icon = <TextIconComponent />;
+    }
 
     return (
         <div
             className="absolute inset-x-0 flex items-center justify-center pointer-events-none"
-            style={{
-                top: relativeIdx * QUBIT_HEIGHT,
-                height: QUBIT_HEIGHT,
-            }}
+            style={{ top: relativeIdx * QUBIT_HEIGHT, height: QUBIT_HEIGHT }}
         >
             {/* Similar to badge.tsx but supporting group-hover */}
             <div
                 className={`
+                    ${definition.formClass}
                     flex items-center justify-center
-                    bg-bg text-text
-                    border border-border
                     pointer-events-auto cursor-grab active:cursor-grabbing
-                    group-hover:bg-bg-light transition-colors
-                    ${styles.gate}`}
+                    group-hover:brightness-90 dark:group-hover:brightness-125 transition-colors
+                    ${isSWAP ? '' : styles.gate}`}
+                style={{ backgroundColor: definition.primaryColor, color: definition.secondaryColor }}
             >
-                <Icon className="size-4 stroke-4 items-center justify-center leading-none" />
+                {icon}
             </div>
         </div>
     );

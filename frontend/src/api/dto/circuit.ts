@@ -1,6 +1,6 @@
 // --- DTOs ---
 
-import { OperationIdentifier } from '@/api/dto/OperationDefinition.ts';
+import { OperationIdentifier } from '@/lib/operations.ts';
 
 export interface ElementSelectorDto {
     registerId: string;
@@ -14,7 +14,7 @@ export type QuantumOperationType = 'ELEMENTARY_QUANTUM_GATE' | 'MEASUREMENT' | '
 export interface AbstractQuantumOperationDto {
     id?: string; // Only for response
     type: QuantumOperationType;
-    operationDefinition: OperationIdentifier;
+    identifier: OperationIdentifier;
     inverseForm: boolean;
     targetQubits: ElementSelectorDto[];
     controlQubits: ElementSelectorDto[];

@@ -1,9 +1,9 @@
-import {OperationIdentifier} from '@/api/dto/OperationDefinition.ts'
+import { OperationIdentifier } from '@/lib/operations.ts';
 
 export interface GateDefinitionResponse {
-    id: OperationIdentifier;
+    id: string;
     name: string;
-    symbol: string;
+    symbol: OperationIdentifier;
     category: string;
     description: string;
     qubitCount: number;

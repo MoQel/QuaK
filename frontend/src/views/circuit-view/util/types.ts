@@ -1,5 +1,5 @@
 import { QuantumOperationDto } from '@/api/dto/circuit.ts';
-import { OperationIdentifier } from '@/api/dto/OperationDefinition.ts';
+import { OperationIdentifier } from '@/lib/operations.ts';
 
 export type UiLayer = {
     quantumOperations: UiQuantumOperation[];
@@ -11,7 +11,7 @@ export type UiQuantumOperation = QuantumOperationDto & {
 
 export type DragData = {
     origin: 'library' | 'circuit';
-    operationDefinition: OperationIdentifier;
+    operationIdentifier: OperationIdentifier;
     id?: string;
 };
 

@@ -47,6 +47,14 @@
     /* monaco editor needs hex codes */
     --editor-bg: #e6e6e6;
     --editor-line-number: #666666;
+
+    /* Quantum Operation Colors */
+    --hadamard: hsl(357 95% 64%);
+    --classical: hsl(218 100% 64%);
+    --phase: hsl(202 100% 86%);
+    --quantum: hsl(334 100% 75%);
+    --non-unitary-and-modifiers: hsl(0 0% 70%);
+    --operation-text: hsl(220 6% 10%);
 }
 
 .dark {

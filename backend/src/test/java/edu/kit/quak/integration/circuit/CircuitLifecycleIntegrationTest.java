@@ -96,8 +96,8 @@ class CircuitLifecycleIntegrationTest {
         mockMvc.perform(get("/api/circuit/" + circuitId).with(authenticatedUser()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.layers.length()").value(2)) // Now correctly separated
-                .andExpect(jsonPath("$.layers[0].quantumOperations[0].operationDefinition").value("H"))
-                .andExpect(jsonPath("$.layers[1].quantumOperations[0].operationDefinition").value("CX"))
+                .andExpect(jsonPath("$.layers[0].quantumOperations[0].identifier").value("H"))
+                .andExpect(jsonPath("$.layers[1].quantumOperations[0].identifier").value("CX"))
                 .andExpect(jsonPath("$.layers[1].quantumOperations[0].targetQubits[0].index").value(0));
 
         // 7. Remove operations
@@ -135,7 +135,7 @@ class CircuitLifecycleIntegrationTest {
           "layerIdx": %d,
           "quantumOperation": {
             "type": "ELEMENTARY_QUANTUM_GATE",
-            "operationDefinition": "%s",
+            "identifier": "%s",
             "inverseForm": false,
             "targetQubits": [
               { "registerId": "%s", "index": %d }

@@ -336,7 +336,7 @@
   {
     "id": "measure",
     "name": "Measure",
-    "symbol": "M",
+    "symbol": "MEASURE",
     "category": "Non-Unitary",
     "description": "Measures the qubit in the Z-basis and collapses the wavefunction.",
     "qubitCount": 1,

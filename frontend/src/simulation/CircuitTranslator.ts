@@ -105,7 +105,7 @@ export class CircuitTranslator {
      * which is a workaround for custom gates from their unitary matrix.
      */
     private static applyGate(circuit: qulacs.QuantumCircuit, op: ElementaryQuantumGateDto, offsets: RegisterOffsets) {
-        const type = op.operationDefinition;
+        const type = op.identifier;
         const angle = op.rotationAngle;
         // Resolve global indices
         const targets = op.targetQubits.map((t) => offsets[t.registerId] + t.index);
