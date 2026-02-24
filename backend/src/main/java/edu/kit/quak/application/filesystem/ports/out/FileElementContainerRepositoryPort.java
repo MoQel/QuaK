@@ -15,9 +15,7 @@ import java.util.UUID;
  *
  * @param <T> the concrete container aggregate type
  */
-public interface FileElementContainerRepositoryPort<T extends FileElementContainer<?>>
-        extends FileElementRepositoryPort {
-
+public interface FileElementContainerRepositoryPort<T extends FileElementContainer<?>> extends FileElementRepositoryPort {
     /**
      * Returns the unique ID prefix handled by this repository.
      *

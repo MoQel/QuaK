@@ -33,9 +33,10 @@ public class FileElementContainerRepositoryDelegator {
         char prefix = container.getIdPrefix();
 
         // Use registry to find the matching repository
-        return registry.<T>getRepository(prefix)
-                .map(repo -> repo.save(container))
-                .orElseThrow(() -> new IllegalArgumentException("No repo for prefix: " + prefix));
+        return registry
+            .<T>getRepository(prefix)
+            .map(repo -> repo.save(container))
+            .orElseThrow(() -> new IllegalArgumentException("No repo for prefix: " + prefix));
     }
 
     public Optional<FileElementContainer<?>> findContainerById(String id) {

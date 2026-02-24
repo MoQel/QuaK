@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 
 public class ClassicRegister extends Register {
+
     private List<Boolean> bits = new ArrayList<>();
 
     public ClassicRegister(String name) {

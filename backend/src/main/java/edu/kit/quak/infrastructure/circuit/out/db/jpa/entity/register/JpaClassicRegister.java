@@ -10,6 +10,7 @@ import java.util.List;
 @Entity
 @DiscriminatorValue("CLASSIC")
 public class JpaClassicRegister extends JpaRegister {
+
     @ElementCollection
     @CollectionTable
     private List<Boolean> bits = new ArrayList<>();

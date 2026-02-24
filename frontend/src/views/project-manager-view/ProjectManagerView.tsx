@@ -16,6 +16,7 @@ import { File } from '@/views/project-manager-view/util/FileElement.tsx';
 import { api } from '@/api/api.ts';
 import { ProjectDetailsResponse, ProjectRequest, ProjectContentsResponse } from '@/api/dto/filesystem.ts';
 import { toast } from 'sonner';
+import { getContentType } from '@/lib/utils.ts';
 
 import { FileSelect, ParentRefresh, SelectedFolder } from '@/views/project-manager-view/ProjectManagerContexts.ts';
 
@@ -245,12 +246,10 @@ function CreateElementForm<T extends ZodRawShape>({
 
 const fileSchema = z.object({
     name: z.string().min(1, { message: 'Filename must be at least 1 characters.' }),
-    contentType: z.string(),
 });
 
 const fileFields: FormFieldConfig<typeof fileSchema.shape>[] = [
     { name: 'name', placeholder: 'new_file.txt', label: 'Filename' },
-    { name: 'contentType', placeholder: 'application/json', label: 'Content-Type' },
 ];
 
 function CreateFileForm({ parent, onClose }: { parent: string; onClose: () => void }) {
@@ -259,10 +258,11 @@ function CreateFileForm({ parent, onClose }: { parent: string; onClose: () => vo
             parent={parent}
             onClose={onClose}
             schema={fileSchema}
-            defaults={{ name: 'untitled.txt', contentType: 'text/plain' }}
+            defaults={{ name: 'untitled.txt' }}
             apiEndpoint="/api/file/"
             errorMessage="Failed to create file"
             fields={fileFields}
+            buildBody={(values) => ({ name: values.name, contentType: getContentType(values.name) })}
         />
     );
 }

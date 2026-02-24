@@ -19,16 +19,18 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/directory")
 @Tag(name = "Files", description = "File and directory management operations")
 public class DirectoryRestAdapter {
+
     private final DirectoryServicePort service;
     private final UserServicePort userService;
     private final DirectoryDtoMapper mapper;
     private final AuthenticationMapper authMapper;
 
     public DirectoryRestAdapter(
-            DirectoryServicePort service,
-            UserServicePort userService,
-            DirectoryDtoMapper mapper,
-            AuthenticationMapper authMapper) {
+        DirectoryServicePort service,
+        UserServicePort userService,
+        DirectoryDtoMapper mapper,
+        AuthenticationMapper authMapper
+    ) {
         this.service = service;
         this.userService = userService;
         this.mapper = mapper;
@@ -39,9 +41,10 @@ public class DirectoryRestAdapter {
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("isAuthenticated()")
     public DirectoryDetailsResponse createDirectory(
-            @RequestBody DirectoryRequest request,
-            @RequestHeader(name = ApiConstants.HEADER_PARENT_ID) String parentId,
-            Authentication authentication) {
+        @RequestBody DirectoryRequest request,
+        @RequestHeader(name = ApiConstants.HEADER_PARENT_ID) String parentId,
+        Authentication authentication
+    ) {
         User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
         Directory directoryToCreate = mapper.toDomain(request);
         Directory createdDirectory = service.createDirectory(directoryToCreate, parentId, user);
@@ -66,7 +69,10 @@ public class DirectoryRestAdapter {
     @PatchMapping("/{dId}")
     @PreAuthorize("isAuthenticated()")
     public DirectoryDetailsResponse renameDirectory(
-            @PathVariable String dId, @RequestBody DirectoryRequest request, Authentication authentication) {
+        @PathVariable String dId,
+        @RequestBody DirectoryRequest request,
+        Authentication authentication
+    ) {
         User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
         Directory updatedDirectory = service.renameDirectory(dId, request.name(), user);
         return mapper.toDetailsResponse(updatedDirectory);

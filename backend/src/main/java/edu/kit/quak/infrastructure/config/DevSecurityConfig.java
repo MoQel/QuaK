@@ -66,51 +66,45 @@ public class DevSecurityConfig {
 
     @Bean
     public SecurityFilterChain devSecurityFilterChain(
-        HttpSecurity http,
-        OAuth2UserEnrichmentService oAuth2UserEnrichmentService
-    ) throws Exception {
+            HttpSecurity http,
+            OAuth2UserEnrichmentService oAuth2UserEnrichmentService) throws Exception {
         http
-            .cors(cors -> cors.configurationSource(devCorsConfigurationSource()))
-            // Disable CSRF for easier API testing in development
-            .csrf(csrf -> csrf.disable())
-            .authorizeHttpRequests(auth ->
-                auth
-                    .requestMatchers(
-                        "/",
-                        "/login/**",
-                        "/oauth2/**",
-                        "/error",
-                        "/*.js",
-                        "/*.css",
-                        "/*.html",
-                        "/*.ico",
-                        "/*.png",
-                        "/*.jpg",
-                        "/assets/**",
-                        // OpenAPI / Swagger endpoints
-                        "/swagger-ui/**",
-                        "/swagger-ui.html",
-                        "/api-docs/**",
-                        "/api-docs.yaml",
-                        "/v3/api-docs/**",
-                        // H2 Console for development
-                        "/h2-console/**",
-                        // Auth status endpoint
-                        "/api/auth/user"
-                    )
-                    .permitAll()
-                    .anyRequest()
-                    .authenticated()
-            )
-            // Use HTTP Basic Auth AND OAuth2 for development
-            .httpBasic(Customizer.withDefaults())
-            .oauth2Login(oauth2 ->
-                oauth2
-                    .userInfoEndpoint(userInfo -> userInfo.userService(oAuth2UserEnrichmentService))
-                    .successHandler(devAuthenticationSuccessHandler())
-            )
-            // Allow frames for H2 console
-            .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()));
+                .cors(cors -> cors.configurationSource(devCorsConfigurationSource()))
+                // Disable CSRF for easier API testing in development
+                .csrf(csrf -> csrf.disable())
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(
+                                "/",
+                                "/login/**",
+                                "/oauth2/**",
+                                "/error",
+                                "/*.js",
+                                "/*.css",
+                                "/*.html",
+                                "/*.ico",
+                                "/*.png",
+                                "/*.jpg",
+                                "/assets/**",
+                                // OpenAPI / Swagger endpoints
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/api-docs/**",
+                                "/api-docs.yaml",
+                                "/v3/api-docs/**",
+                                // H2 Console for development
+                                "/h2-console/**",
+                                // Auth status endpoint
+                                "/api/auth/user")
+                        .permitAll()
+                        .anyRequest()
+                        .authenticated())
+                // Use HTTP Basic Auth AND OAuth2 for development
+                .httpBasic(Customizer.withDefaults())
+                .oauth2Login(oauth2 -> oauth2
+                        .userInfoEndpoint(userInfo -> userInfo.userService(oAuth2UserEnrichmentService))
+                        .successHandler(devAuthenticationSuccessHandler()))
+                // Allow frames for H2 console
+                .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()));
 
         return http.build();
     }
@@ -141,42 +135,38 @@ public class DevSecurityConfig {
     }
 
     private OidcUserInfo mapToUserInfo(OAuth2User principal) {
-        String sub =
-            principal.getAttribute("sub") != null
+        String sub = principal.getAttribute("sub") != null
                 ? principal.getAttribute("sub").toString()
                 : (principal.getAttribute("id") != null ? principal.getAttribute("id").toString() : null);
 
-        Boolean emailVerified =
-            principal.getAttribute("email_verified") != null
+        Boolean emailVerified = principal.getAttribute("email_verified") != null
                 ? (Boolean) principal.getAttribute("email_verified")
                 : true;
 
-        String picture =
-            principal.getAttribute("picture") != null
+        String picture = principal.getAttribute("picture") != null
                 ? principal.getAttribute("picture").toString()
                 : (principal.getAttribute("avatar_url") != null
-                      ? principal.getAttribute("avatar_url").toString()
-                      : null);
+                        ? principal.getAttribute("avatar_url").toString()
+                        : null);
 
         // Logic to handle different attribute names across providers
         return new OidcUserInfo(
-            sub,
-            principal.getAttribute("email"),
-            emailVerified,
-            principal.getAttribute("name"),
-            principal.getAttribute("given_name"),
-            principal.getAttribute("family_name"),
-            picture
-        );
+                sub,
+                principal.getAttribute("email"),
+                emailVerified,
+                principal.getAttribute("name"),
+                principal.getAttribute("given_name"),
+                principal.getAttribute("family_name"),
+                picture);
     }
 
     @Bean
     public UserDetailsService devUserDetailsService() {
         UserDetails devUser = User.builder()
-            .username(devUsername)
-            .password(passwordEncoder().encode(devPassword))
-            .roles("USER", "ADMIN")
-            .build();
+                .username(devUsername)
+                .password(passwordEncoder().encode(devPassword))
+                .roles("USER", "ADMIN")
+                .build();
 
         return new InMemoryUserDetailsManager(devUser);
     }

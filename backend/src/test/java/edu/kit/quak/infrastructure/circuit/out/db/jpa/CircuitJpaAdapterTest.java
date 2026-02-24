@@ -18,14 +18,17 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
 
 @DataJpaTest
-@Import({
-    CircuitJpaAdapter.class,
-    CircuitJpaMapperImpl.class,
-    RegisterJpaMapperImpl.class,
-    QubitJpaMapperImpl.class,
-    OperationJpaMapperImpl.class
-})
+@Import(
+    {
+        CircuitJpaAdapter.class,
+        CircuitJpaMapperImpl.class,
+        RegisterJpaMapperImpl.class,
+        QubitJpaMapperImpl.class,
+        OperationJpaMapperImpl.class,
+    }
+)
 class CircuitJpaAdapterTest {
+
     @Autowired
     private CircuitJpaAdapter jpaAdapter;
 

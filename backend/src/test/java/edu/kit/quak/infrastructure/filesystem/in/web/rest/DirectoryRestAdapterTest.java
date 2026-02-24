@@ -30,7 +30,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 @IntegrationTest
 @WebMvcTest(DirectoryRestAdapter.class)
-@org.springframework.context.annotation.ComponentScan(basePackageClasses = {DirectoryDtoMapper.class})
+@org.springframework.context.annotation.ComponentScan(basePackageClasses = { DirectoryDtoMapper.class })
 @WithMockUser(username = "tester", roles = "USER") // <--- Simulates logged-in user
 class DirectoryRestAdapterTest {
 
@@ -63,20 +63,22 @@ class DirectoryRestAdapterTest {
         Directory createdDir = new Directory("NewDir", null);
         createdDir.setId("d-123");
 
-        when(directoryService.createDirectory(any(Directory.class), eq("p-1"), any(User.class)))
-                .thenReturn(createdDir);
+        when(directoryService.createDirectory(any(Directory.class), eq("p-1"), any(User.class))).thenReturn(createdDir);
 
         String json = """
-                                { "name": "NewDir" }
-                                """;
+            { "name": "NewDir" }
+            """;
 
-        mockMvc.perform(post("/api/directory/")
-                        .with(csrf())
-                        .header(ApiConstants.HEADER_PARENT_ID, "p-1")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(json))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").value("d-123"));
+        mockMvc
+            .perform(
+                post("/api/directory/")
+                    .with(csrf())
+                    .header(ApiConstants.HEADER_PARENT_ID, "p-1")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(json)
+            )
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.id").value("d-123"));
     }
 
     @Test
@@ -87,9 +89,7 @@ class DirectoryRestAdapterTest {
 
         when(directoryService.retrieveDirectory(eq("d-123"), any(User.class))).thenReturn(dir);
 
-        mockMvc.perform(get("/api/directory/d-123"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value("d-123"));
+        mockMvc.perform(get("/api/directory/d-123")).andExpect(status().isOk()).andExpect(jsonPath("$.id").value("d-123"));
     }
 
     @Test
@@ -106,18 +106,15 @@ class DirectoryRestAdapterTest {
         Directory updated = new Directory("Renamed", null);
         updated.setId("d-123");
 
-        when(directoryService.renameDirectory(eq("d-123"), eq("Renamed"), any(User.class)))
-                .thenReturn(updated);
+        when(directoryService.renameDirectory(eq("d-123"), eq("Renamed"), any(User.class))).thenReturn(updated);
 
         String json = """
-                                { "name": "Renamed" }
-                                """;
+            { "name": "Renamed" }
+            """;
 
-        mockMvc.perform(patch("/api/directory/d-123")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(json))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("Renamed"));
+        mockMvc
+            .perform(patch("/api/directory/d-123").with(csrf()).contentType(MediaType.APPLICATION_JSON).content(json))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.name").value("Renamed"));
     }
 }

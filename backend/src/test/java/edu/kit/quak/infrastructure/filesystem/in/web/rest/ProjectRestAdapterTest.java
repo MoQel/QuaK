@@ -30,7 +30,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 @IntegrationTest
 @WebMvcTest(ProjectRestAdapter.class)
-@org.springframework.context.annotation.ComponentScan(basePackageClasses = {ProjectDtoMapper.class})
+@org.springframework.context.annotation.ComponentScan(basePackageClasses = { ProjectDtoMapper.class })
 @WithMockUser(username = "tester", roles = "USER") // simulates logged-in user
 class ProjectRestAdapterTest {
 
@@ -52,8 +52,7 @@ class ProjectRestAdapterTest {
         AuthenticatedUser testAuthUser = new AuthenticatedUser(UUID.randomUUID(), "test", "test-sub");
         User testUser = new User(testAuthUser.userId(), testAuthUser.issuer(), testAuthUser.subject());
 
-        when(authMapper.toDomain(any(org.springframework.security.core.Authentication.class)))
-                .thenReturn(testAuthUser);
+        when(authMapper.toDomain(any(org.springframework.security.core.Authentication.class))).thenReturn(testAuthUser);
         when(userService.getAuthenticatedUser(any(AuthenticatedUser.class))).thenReturn(testUser);
     }
 
@@ -67,11 +66,12 @@ class ProjectRestAdapterTest {
 
         when(projectService.listProjects(any(User.class))).thenReturn(List.of(p1, p2));
 
-        mockMvc.perform(get("/api/project"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(2))
-                .andExpect(jsonPath("$[0].name").value("Alpha"))
-                .andExpect(jsonPath("$[1].name").value("Beta"));
+        mockMvc
+            .perform(get("/api/project"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.length()").value(2))
+            .andExpect(jsonPath("$[0].name").value("Alpha"))
+            .andExpect(jsonPath("$[1].name").value("Beta"));
     }
 
     @Test
@@ -83,16 +83,14 @@ class ProjectRestAdapterTest {
         when(projectService.createProject(any(Project.class), any(User.class))).thenReturn(createdProject);
 
         String jsonRequest = """
-                                { "name": "New Project" }
-                                """;
+            { "name": "New Project" }
+            """;
 
-        mockMvc.perform(post("/api/project")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonRequest))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").value("p-100"))
-                .andExpect(jsonPath("$.name").value("New Project"));
+        mockMvc
+            .perform(post("/api/project").with(csrf()).contentType(MediaType.APPLICATION_JSON).content(jsonRequest))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.id").value("p-100"))
+            .andExpect(jsonPath("$.name").value("New Project"));
     }
 
     @Test
@@ -103,17 +101,19 @@ class ProjectRestAdapterTest {
 
         when(projectService.retrieveProject(eq("p-1"), any(User.class))).thenReturn(project);
 
-        mockMvc.perform(get("/api/project/p-1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value("p-1"))
-                .andExpect(jsonPath("$.name").value("MyProject"));
+        mockMvc
+            .perform(get("/api/project/p-1"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value("p-1"))
+            .andExpect(jsonPath("$.name").value("MyProject"));
     }
 
     @Test
     @DisplayName("DELETE /project/{id} removes project")
     void deleteProject_success() throws Exception {
-        mockMvc.perform(delete("/api/project/p-1").with(csrf())) // WICHTIG: CSRF Token
-                .andExpect(status().isOk());
+        mockMvc
+            .perform(delete("/api/project/p-1").with(csrf())) // WICHTIG: CSRF Token
+            .andExpect(status().isOk());
 
         verify(projectService).removeProject(eq("p-1"), any(User.class));
     }
@@ -124,18 +124,20 @@ class ProjectRestAdapterTest {
         Project updatedProject = new Project("Renamed Project");
         updatedProject.setId("p-1");
 
-        when(projectService.renameProject(eq("p-1"), eq("Renamed Project"), any(User.class)))
-                .thenReturn(updatedProject);
+        when(projectService.renameProject(eq("p-1"), eq("Renamed Project"), any(User.class))).thenReturn(updatedProject);
 
         String jsonRequest = """
-                                { "name": "Renamed Project" }
-                                """;
+            { "name": "Renamed Project" }
+            """;
 
-        mockMvc.perform(patch("/api/project/p-1")
-                        .with(csrf()) // WICHTIG: CSRF Token
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonRequest))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("Renamed Project"));
+        mockMvc
+            .perform(
+                patch("/api/project/p-1")
+                    .with(csrf()) // WICHTIG: CSRF Token
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(jsonRequest)
+            )
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.name").value("Renamed Project"));
     }
 }

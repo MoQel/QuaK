@@ -14,9 +14,8 @@ import org.springframework.context.annotation.Import;
 
 @IntegrationTest
 @DataJpaTest
-@org.springframework.context.annotation.ComponentScan(
-        basePackages = "edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper")
-@Import({FileJpaAdapter.class, DirectoryJpaAdapter.class, ProjectJpaAdapter.class})
+@org.springframework.context.annotation.ComponentScan(basePackages = "edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper")
+@Import({ FileJpaAdapter.class, DirectoryJpaAdapter.class, ProjectJpaAdapter.class })
 class FileJpaAdapterTest {
 
     @Autowired
@@ -38,11 +37,13 @@ class FileJpaAdapterTest {
 
         Directory savedDir = directoryAdapter.save(dir);
 
-        String fileId = savedDir.getContents().stream()
-                .filter(e -> e.getName().equals("TestFile.txt"))
-                .findFirst()
-                .orElseThrow()
-                .getId();
+        String fileId = savedDir
+            .getContents()
+            .stream()
+            .filter(e -> e.getName().equals("TestFile.txt"))
+            .findFirst()
+            .orElseThrow()
+            .getId();
 
         // 2. Act
         Optional<File> loaded = fileAdapter.findById(fileId);

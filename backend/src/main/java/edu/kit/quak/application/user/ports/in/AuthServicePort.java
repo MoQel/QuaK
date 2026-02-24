@@ -10,7 +10,6 @@ import java.util.Optional;
  * concepts.
  */
 public interface AuthServicePort {
-
     /**
      * Builds authentication status response from the provided authenticated user.
      *

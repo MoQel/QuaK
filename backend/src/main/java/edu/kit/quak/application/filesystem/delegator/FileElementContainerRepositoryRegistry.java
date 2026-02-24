@@ -34,8 +34,7 @@ public class FileElementContainerRepositoryRegistry {
     }
 
     @SuppressWarnings("unchecked")
-    public <T extends FileElementContainer<?>> Optional<FileElementContainerRepositoryPort<T>> getRepository(
-            char prefix) {
+    public <T extends FileElementContainer<?>> Optional<FileElementContainerRepositoryPort<T>> getRepository(char prefix) {
         return Optional.ofNullable((FileElementContainerRepositoryPort<T>) repoByPrefix.get(prefix));
     }
 }

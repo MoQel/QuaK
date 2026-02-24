@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.UUID;
 
 public interface ProjectRepositoryPort extends FileElementContainerRepositoryPort<Project> {
-
     /**
      * Lists all projects owned by a specific user.
      *

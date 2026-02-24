@@ -4,6 +4,7 @@ import java.time.Instant;
 
 // Basis-DTO
 public abstract class FileElementDto {
+
     private final String id;
     private final String name;
     private final String type;

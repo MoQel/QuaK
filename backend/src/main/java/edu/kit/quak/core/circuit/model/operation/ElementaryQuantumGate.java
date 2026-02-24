@@ -1,6 +1,7 @@
 package edu.kit.quak.core.circuit.model.operation;
 
 public class ElementaryQuantumGate extends QuantumOperation {
+
     private final ElementaryQuantumGateDefinitionIdentifier definitionId;
 
     private double theta;

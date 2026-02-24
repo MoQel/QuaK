@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class CircuitService implements CircuitServicePort {
+
     private final CircuitRepositoryPort repository;
 
     public CircuitService(CircuitRepositoryPort repository) {
@@ -49,10 +50,8 @@ public class CircuitService implements CircuitServicePort {
     }
 
     @Override
-    public QuantumCircuit addGate(
-            String circuitId, ElementaryQuantumGateDefinitionIdentifier definitionId, int qubitIdx, int positionIdx) {
-        return updateCircuit(
-                circuitId, circuit -> circuit.addElementaryQuantumGate(definitionId, qubitIdx, positionIdx));
+    public QuantumCircuit addGate(String circuitId, ElementaryQuantumGateDefinitionIdentifier definitionId, int qubitIdx, int positionIdx) {
+        return updateCircuit(circuitId, circuit -> circuit.addElementaryQuantumGate(definitionId, qubitIdx, positionIdx));
     }
 
     @Override
@@ -67,8 +66,8 @@ public class CircuitService implements CircuitServicePort {
 
     private QuantumCircuit updateCircuit(String circuitId, Consumer<QuantumCircuit> action) {
         QuantumCircuit circuit = repository
-                .findById(circuitId)
-                .orElseThrow(() -> new EntityNotFoundException("Circuit not found: " + circuitId));
+            .findById(circuitId)
+            .orElseThrow(() -> new EntityNotFoundException("Circuit not found: " + circuitId));
 
         action.accept(circuit);
 

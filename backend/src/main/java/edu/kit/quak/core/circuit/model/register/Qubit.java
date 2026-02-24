@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.List;
 
 public class Qubit extends ElementWithId {
+
     private List<QuantumOperation> operations = new ArrayList<>();
 
     public Qubit() {

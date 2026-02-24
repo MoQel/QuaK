@@ -127,8 +127,9 @@ class UserServiceTest {
             when(userRepository.findByIssuerAndSub("google", "unknown-sub")).thenReturn(Optional.empty());
 
             // Act & Assert
-            UserNotFoundException exception = assertThrows(
-                    UserNotFoundException.class, () -> userService.getAuthenticatedUser(authenticatedUser));
+            UserNotFoundException exception = assertThrows(UserNotFoundException.class, () ->
+                userService.getAuthenticatedUser(authenticatedUser)
+            );
             assertTrue(exception.getMessage().contains("google"));
             assertTrue(exception.getMessage().contains("unknown-sub"));
         }

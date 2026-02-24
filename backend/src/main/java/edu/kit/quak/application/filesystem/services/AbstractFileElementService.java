@@ -113,8 +113,8 @@ public abstract class AbstractFileElementService<T extends FileElement<T>> {
         // We look up via the delegator
         return delegator
                 .findProjectIdByElementId(elementId)
-                .orElseThrow(() ->
-                        new IllegalStateException("Could not find root project for element with ID: " + elementId));
+                .orElseThrow(() -> new IllegalStateException(
+                        "Could not find root project for element with ID: " + elementId));
     }
 
     /**
@@ -128,8 +128,7 @@ public abstract class AbstractFileElementService<T extends FileElement<T>> {
         if (parentId == null) {
             throw new IllegalStateException(getElementTypeName() + " has no parent - corrupt state");
         }
-        return delegator
-                .findContainerById(parentId)
+        return delegator.findContainerById(parentId)
                 .orElseThrow(() -> new IllegalStateException("Parent not found with ID: " + parentId));
     }
 
@@ -142,7 +141,9 @@ public abstract class AbstractFileElementService<T extends FileElement<T>> {
      * @throws IllegalStateException if element is not found in parent
      */
     protected T findElementInParent(FileElementContainer<?> parent, String elementId) {
-        return parent.getContents().stream()
+        return parent
+                .getContents()
+                .stream()
                 .filter(c -> c.getId().equals(elementId))
                 .filter(this::isCorrectType)
                 .map(this::castToType)

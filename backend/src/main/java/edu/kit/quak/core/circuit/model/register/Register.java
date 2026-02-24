@@ -4,6 +4,7 @@ import edu.kit.quak.core.circuit.model.ElementWithId;
 import java.util.Optional;
 
 public abstract class Register extends ElementWithId {
+
     protected String name;
 
     protected Register(String name) {

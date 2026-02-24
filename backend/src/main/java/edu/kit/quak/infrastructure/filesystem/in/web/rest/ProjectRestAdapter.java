@@ -31,17 +31,18 @@ public class ProjectRestAdapter {
     private final AuthenticationMapper authMapper;
 
     public ProjectRestAdapter(
-            ProjectServicePort service,
-            UserServicePort userService,
-            ProjectDtoMapper mapper,
-            AuthenticationMapper authMapper) {
+        ProjectServicePort service,
+        UserServicePort userService,
+        ProjectDtoMapper mapper,
+        AuthenticationMapper authMapper
+    ) {
         this.service = service;
         this.userService = userService;
         this.mapper = mapper;
         this.authMapper = authMapper;
     }
 
-    @GetMapping({"", "/"})
+    @GetMapping({ "", "/" })
     @PreAuthorize("isAuthenticated()")
     public List<ProjectDetailsResponse> getProjects(Authentication authentication) {
         User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
@@ -49,7 +50,7 @@ public class ProjectRestAdapter {
         return mapper.toDetailsResponseList(projects);
     }
 
-    @PostMapping({"", "/"})
+    @PostMapping({ "", "/" })
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("isAuthenticated()")
     public ProjectDetailsResponse createProject(@RequestBody ProjectRequest request, Authentication authentication) {
@@ -77,7 +78,10 @@ public class ProjectRestAdapter {
     @PatchMapping("/{pId}")
     @PreAuthorize("isAuthenticated()")
     public ProjectDetailsResponse renameProject(
-            @PathVariable String pId, @RequestBody ProjectRequest request, Authentication authentication) {
+        @PathVariable String pId,
+        @RequestBody ProjectRequest request,
+        Authentication authentication
+    ) {
         User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
         Project updatedProject = service.renameProject(pId, request.name(), user);
         return mapper.toDetailsResponse(updatedProject);
