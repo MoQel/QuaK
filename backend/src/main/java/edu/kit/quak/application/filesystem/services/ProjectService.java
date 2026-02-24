@@ -91,9 +91,11 @@ public class ProjectService implements ProjectServicePort {
      * @throws IllegalArgumentException if a duplicate name exists
      */
     private void checkForDuplicateProjectName(String name, String excludeProjectId, User user) {
-        boolean nameExists = repository.getProjectsByOwnerId(user.getId()).stream()
-                .filter(p -> excludeProjectId == null || !p.getId().equals(excludeProjectId))
-                .anyMatch(p -> p.getName().equalsIgnoreCase(name));
+        boolean nameExists = repository
+            .getProjectsByOwnerId(user.getId())
+            .stream()
+            .filter(p -> excludeProjectId == null || !p.getId().equals(excludeProjectId))
+            .anyMatch(p -> p.getName().equalsIgnoreCase(name));
 
         if (nameExists) {
             throw new IllegalArgumentException("A project with the name '" + name + "' already exists");

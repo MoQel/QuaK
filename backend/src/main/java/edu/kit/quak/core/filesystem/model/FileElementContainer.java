@@ -35,7 +35,8 @@ public abstract class FileElementContainer<T extends FileElementContainer<T>> ex
         // No duplicate names within one parent
         if (hasChildWithName(child.getName(), null)) {
             throw new IllegalArgumentException(
-                    "An element with the name '" + child.getName() + "' already exists in '" + this.getName() + "'");
+                "An element with the name '" + child.getName() + "' already exists in '" + this.getName() + "'"
+            );
         }
         this.contents.add(child);
 
@@ -60,8 +61,9 @@ public abstract class FileElementContainer<T extends FileElementContainer<T>> ex
      * @return {@code true} if a matching child exists
      */
     public boolean hasChildWithName(String name, String excludeId) {
-        return contents.stream()
-                .filter(existing -> excludeId == null || !existing.getId().equals(excludeId))
-                .anyMatch(existing -> existing.getName().equalsIgnoreCase(name));
+        return contents
+            .stream()
+            .filter(existing -> excludeId == null || !existing.getId().equals(excludeId))
+            .anyMatch(existing -> existing.getName().equalsIgnoreCase(name));
     }
 }
