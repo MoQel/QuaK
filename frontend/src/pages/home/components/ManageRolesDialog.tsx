@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Crown, Search, Trash2, Users, X, Loader2 } from 'lucide-react';
+import { Search, Trash2, Users, X, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { api } from '@/api/api.ts';
@@ -256,31 +256,15 @@ function RoleMemberRow({
     isOwner?: boolean;
     onRemove?: () => void;
 }) {
-    // We only have the userId at this point. In a real scenario we'd also fetch user details.
-    // For now, just show the userId truncated.
-    const [userInfo, setUserInfo] = useState<UserSearchResult | null>(null);
-
-    useEffect(() => {
-        // Try to look up user info (there's no direct getById endpoint, so we do a search)
-        // For now, we display the userId. A real implementation would cache user lookups.
-        setUserInfo(null);
-    }, [role.userId]);
-
-    const displayName = userInfo?.name || userInfo?.email || role.userId;
-    const displayDetail = userInfo?.email || '';
-    const isUuid = !userInfo;
+    const displayName = role.name || role.email || role.userId;
+    const displayDetail = role.email || '';
+    const hasUserInfo = !!(role.name || role.email);
 
     return (
         <div className="flex items-center gap-3 px-3 py-2.5 hover:bg-bg-light/50 transition-colors">
-            <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                    isOwner ? 'bg-amber-500/20' : 'bg-special/20'
-                }`}
-            >
-                {isOwner ? <Crown className="size-3.5 text-amber-500" /> : <Users className="size-3.5 text-special" />}
-            </div>
+            <UserAvatar avatarUrl={role.avatarUrl} alt={displayName} className="w-8 h-8" size="sm" />
             <div className="flex-1 min-w-0">
-                <div className={`text-sm font-medium text-text truncate ${isUuid ? 'font-mono text-xs' : ''}`}>
+                <div className={`text-sm font-medium text-text truncate ${!hasUserInfo ? 'font-mono text-xs' : ''}`}>
                     {displayName}
                 </div>
                 {displayDetail && <div className="text-xs text-text-muted truncate">{displayDetail}</div>}

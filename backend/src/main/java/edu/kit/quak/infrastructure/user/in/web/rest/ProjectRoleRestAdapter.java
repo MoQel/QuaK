@@ -92,8 +92,10 @@ public class ProjectRoleRestAdapter {
         ProjectRole role = roleService.getUserRoleForProject(pId, user.getId());
 
         if (role == null) {
-            return new ProjectRoleResponse(user.getId(), pId, null);
+            return new ProjectRoleResponse(user.getId(), pId, null, user.getEmail(), user.getName(),
+                    user.getAvatarUrl());
         }
-        return new ProjectRoleResponse(user.getId(), pId, role.name());
+        return new ProjectRoleResponse(user.getId(), pId, role.name(), user.getEmail(), user.getName(),
+                user.getAvatarUrl());
     }
 }
