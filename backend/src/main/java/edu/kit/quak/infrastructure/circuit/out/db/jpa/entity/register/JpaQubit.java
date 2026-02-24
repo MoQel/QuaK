@@ -8,6 +8,7 @@ import java.util.List;
 
 @Entity
 public class JpaQubit extends JpaElementWithId {
+
     @ManyToOne
     @JoinColumn(name = "register_id", referencedColumnName = "id")
     private JpaQuantumRegister register;

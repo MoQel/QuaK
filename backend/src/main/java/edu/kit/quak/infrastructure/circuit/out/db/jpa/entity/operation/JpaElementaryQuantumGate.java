@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 @Entity
 @DiscriminatorValue("ELEMENTARY_GATE")
 public class JpaElementaryQuantumGate extends JpaQuantumOperation {
+
     @Enumerated(EnumType.STRING)
     private ElementaryQuantumGateDefinitionIdentifier definitionId;
 

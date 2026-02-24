@@ -3,6 +3,7 @@ package edu.kit.quak.core.circuit.model;
 import java.util.UUID;
 
 public abstract class ElementWithId {
+
     protected String id;
 
     protected ElementWithId() {

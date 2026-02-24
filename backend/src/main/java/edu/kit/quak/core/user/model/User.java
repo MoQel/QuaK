@@ -11,6 +11,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 public class User {
+
     private UUID id;
     private String issuer;
     private String sub;
@@ -31,8 +32,7 @@ public class User {
     }
 
     // Business Methods
-    public void updateFromOidc(
-            String email, Boolean emailVerified, String name, String givenName, String familyName, String avatarUrl) {
+    public void updateFromOidc(String email, Boolean emailVerified, String name, String givenName, String familyName, String avatarUrl) {
         this.email = email;
         this.emailVerified = emailVerified;
         this.name = name;
@@ -43,14 +43,15 @@ public class User {
     }
 
     public static User createFromOidc(
-            String issuer,
-            String sub,
-            String email,
-            Boolean emailVerified,
-            String name,
-            String givenName,
-            String familyName,
-            String avatarUrl) {
+        String issuer,
+        String sub,
+        String email,
+        Boolean emailVerified,
+        String name,
+        String givenName,
+        String familyName,
+        String avatarUrl
+    ) {
         User user = new User();
         user.setIssuer(issuer);
         user.setSub(sub);

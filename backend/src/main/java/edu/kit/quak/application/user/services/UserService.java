@@ -11,7 +11,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 /**
- * Service for user-related business logic. Handles user authentication, authorization, and user
+ * Service for user-related business logic. Handles user authentication,
+ * authorization, and user
  * data operations.
  */
 @Service
@@ -26,9 +27,7 @@ public class UserService implements UserServicePort {
 
     @Override
     public User getAuthenticatedUser(AuthenticatedUser authenticatedUser) {
-        log.debug(
-                "Fetching authenticated user details for issuer={} sub={}",
-                authenticatedUser.issuer(),
+        log.debug("Fetching authenticated user details for issuer={} sub={}", authenticatedUser.issuer(),
                 authenticatedUser.subject());
         // Look up the full user from the repository using the authenticated user's
         // issuer and subject
@@ -57,9 +56,7 @@ public class UserService implements UserServicePort {
 
     @Override
     public UUID getAuthenticatedUserId(AuthenticatedUser authenticatedUser) {
-        log.debug(
-                "Fetching authenticated user ID for issuer={} sub={}",
-                authenticatedUser.issuer(),
+        log.debug("Fetching authenticated user ID for issuer={} sub={}", authenticatedUser.issuer(),
                 authenticatedUser.subject());
         // Use the efficient query that only fetches the UUID
         return userRepository

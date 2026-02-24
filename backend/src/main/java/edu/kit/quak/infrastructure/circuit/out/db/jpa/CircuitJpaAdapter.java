@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public class CircuitJpaAdapter implements CircuitRepositoryPort {
+
     private final SpringDataJpaCircuitRepository repository;
     private final CircuitJpaMapper mapper;
 

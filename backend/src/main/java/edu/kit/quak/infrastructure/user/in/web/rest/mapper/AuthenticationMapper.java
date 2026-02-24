@@ -34,7 +34,9 @@ public class AuthenticationMapper {
     public AuthenticatedUser toDomain(Authentication authentication) {
         if (authentication == null) {
             throw new edu.kit.quak.application.user.exceptions.UserNotFoundException(
-                    "No authentication found", "User is not authenticated");
+                "No authentication found",
+                "User is not authenticated"
+            );
         }
 
         if (authentication instanceof OAuth2AuthenticationToken oauthToken) {
@@ -43,23 +45,22 @@ public class AuthenticationMapper {
 
             // GitHub uses "id" as the unique identifier, Google (OIDC) uses "sub"
             Object subAttr = principal.getAttribute("sub");
-            String subject = subAttr != null
-                    ? subAttr.toString()
-                    : principal.getAttribute("id").toString();
+            String subject = subAttr != null ? subAttr.toString() : principal.getAttribute("id").toString();
 
             return new AuthenticatedUser(null, issuer, subject);
         }
 
         // Handle Dev Mode / Basic Auth
-        if (authentication
-                instanceof org.springframework.security.authentication.UsernamePasswordAuthenticationToken basicAuth) {
+        if (authentication instanceof org.springframework.security.authentication.UsernamePasswordAuthenticationToken basicAuth) {
             String issuer = "local";
             String subject = basicAuth.getName(); // the username (e.g., 'admin')
             return new AuthenticatedUser(null, issuer, subject);
         }
 
         throw new edu.kit.quak.application.user.exceptions.UserNotFoundException(
-                "Invalid authentication type", "Expected OAuth2 or Basic authentication");
+            "Invalid authentication type",
+            "Expected OAuth2 or Basic authentication"
+        );
     }
 
     /**

@@ -24,9 +24,10 @@ class GateDefinitionIntegrationTest {
 
     @Test
     void getAllGates_endToEnd() throws Exception {
-        mockMvc.perform(get("/api/gates").contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$[0].name").exists());
+        mockMvc
+            .perform(get("/api/gates").contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$").isArray())
+            .andExpect(jsonPath("$[0].name").exists());
     }
 }

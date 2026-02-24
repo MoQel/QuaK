@@ -83,8 +83,7 @@ public abstract class AbstractFileElementService<T extends FileElement<T>> {
         if (parentId == null) {
             throw new IllegalStateException(getElementTypeName() + " has no parent - corrupt state");
         }
-        return delegator
-                .findContainerById(parentId)
+        return delegator.findContainerById(parentId)
                 .orElseThrow(() -> new IllegalStateException("Parent not found with ID: " + parentId));
     }
 
@@ -97,7 +96,9 @@ public abstract class AbstractFileElementService<T extends FileElement<T>> {
      * @throws IllegalStateException if element is not found in parent
      */
     protected T findElementInParent(FileElementContainer<?> parent, String elementId) {
-        return parent.getContents().stream()
+        return parent
+                .getContents()
+                .stream()
                 .filter(c -> c.getId().equals(elementId))
                 .filter(this::isCorrectType)
                 .map(this::castToType)

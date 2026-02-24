@@ -38,36 +38,37 @@ class UserIntegrationTest {
         // Create a test user if not exists
         // The oidcLogin() mock uses "test" as the registration ID by default in our
         // tests
-        testUser = userRepository.findByIssuerAndSub("test", "test-sub").orElseGet(() -> {
-            JpaUser user = new JpaUser();
-            user.setIssuer("test"); // Match the test's OIDC mock registration ID
-            user.setSub("test-sub");
-            user.setEmail("test@example.com");
-            user.setName("Test User");
-            user.setEmailVerified(true);
-            return userRepository.save(user);
-        });
+        testUser = userRepository
+            .findByIssuerAndSub("test", "test-sub")
+            .orElseGet(() -> {
+                JpaUser user = new JpaUser();
+                user.setIssuer("test"); // Match the test's OIDC mock registration ID
+                user.setSub("test-sub");
+                user.setEmail("test@example.com");
+                user.setName("Test User");
+                user.setEmailVerified(true);
+                return userRepository.save(user);
+            });
     }
 
-    private org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors
-                    .OidcLoginRequestPostProcessor
-            authenticatedUser() {
+    private org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.OidcLoginRequestPostProcessor authenticatedUser() {
         return oidcLogin()
-                .idToken(token -> token.claim("sub", "test-sub")
-                        .claim("email", "test@example.com")
-                        .claim("name", "Test User")
-                        .claim("picture", "https://example.com/avatar.jpg"))
-                .clientRegistration(
-                        org.springframework.security.oauth2.client.registration.ClientRegistration.withRegistrationId(
-                                        "test")
-                                .clientId("test-client-id")
-                                .authorizationGrantType(
-                                        org.springframework.security.oauth2.core.AuthorizationGrantType
-                                                .AUTHORIZATION_CODE)
-                                .redirectUri("http://localhost/callback")
-                                .authorizationUri("http://localhost/authorize")
-                                .tokenUri("http://localhost/token")
-                                .build());
+            .idToken(token ->
+                token
+                    .claim("sub", "test-sub")
+                    .claim("email", "test@example.com")
+                    .claim("name", "Test User")
+                    .claim("picture", "https://example.com/avatar.jpg")
+            )
+            .clientRegistration(
+                org.springframework.security.oauth2.client.registration.ClientRegistration.withRegistrationId("test")
+                    .clientId("test-client-id")
+                    .authorizationGrantType(org.springframework.security.oauth2.core.AuthorizationGrantType.AUTHORIZATION_CODE)
+                    .redirectUri("http://localhost/callback")
+                    .authorizationUri("http://localhost/authorize")
+                    .tokenUri("http://localhost/token")
+                    .build()
+            );
     }
 
     @Nested
@@ -83,12 +84,13 @@ class UserIntegrationTest {
         @Test
         @DisplayName("Should return user data when authenticated")
         void getMeEndpoint_authenticated_returnsUserData() throws Exception {
-            mockMvc.perform(get("/api/me").with(authenticatedUser()))
-                    .andExpect(status().isOk())
-                    .andExpect(content().contentType("application/json"))
-                    .andExpect(jsonPath("$.userId").exists())
-                    .andExpect(jsonPath("$.email").value("test@example.com"))
-                    .andExpect(jsonPath("$.name").value("Test User"));
+            mockMvc
+                .perform(get("/api/me").with(authenticatedUser()))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("application/json"))
+                .andExpect(jsonPath("$.userId").exists())
+                .andExpect(jsonPath("$.email").value("test@example.com"))
+                .andExpect(jsonPath("$.name").value("Test User"));
         }
     }
 
@@ -99,18 +101,17 @@ class UserIntegrationTest {
         @Test
         @DisplayName("Should return authenticated=false when not logged in")
         void authStatus_notLoggedIn_returnsFalse() throws Exception {
-            mockMvc.perform(get("/api/auth/user"))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.authenticated").value(false));
+            mockMvc.perform(get("/api/auth/user")).andExpect(status().isOk()).andExpect(jsonPath("$.authenticated").value(false));
         }
 
         @Test
         @DisplayName("Should return authenticated=true when logged in")
         void authStatus_loggedIn_returnsTrue() throws Exception {
-            mockMvc.perform(get("/api/auth/user").with(authenticatedUser()))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.authenticated").value(true))
-                    .andExpect(jsonPath("$.userId").value(testUser.getId().toString()));
+            mockMvc
+                .perform(get("/api/auth/user").with(authenticatedUser()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.authenticated").value(true))
+                .andExpect(jsonPath("$.userId").value(testUser.getId().toString()));
         }
     }
 
@@ -121,8 +122,7 @@ class UserIntegrationTest {
         @Test
         @DisplayName("Should successfully logout authenticated user")
         void logout_authenticated_success() throws Exception {
-            mockMvc.perform(post("/api/auth/logout").with(csrf()).with(authenticatedUser()))
-                    .andExpect(status().isOk());
+            mockMvc.perform(post("/api/auth/logout").with(csrf()).with(authenticatedUser())).andExpect(status().isOk());
         }
 
         @Test

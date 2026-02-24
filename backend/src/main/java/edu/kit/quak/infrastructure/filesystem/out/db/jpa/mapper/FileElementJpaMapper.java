@@ -17,6 +17,7 @@ import org.springframework.context.annotation.Lazy;
 
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING)
 public abstract class FileElementJpaMapper {
+
     @Autowired
     @Lazy
     protected FileJpaMapper fileMapper;
@@ -33,10 +34,8 @@ public abstract class FileElementJpaMapper {
     public JpaFileElement<?> toJpaEntity(FileElement<?> domain) {
         if (domain instanceof File f) {
             return fileMapper.toJpaEntity(f);
-
         } else if (domain instanceof Directory d) {
             return directoryMapper.toJpaEntity(d);
-
         } else if (domain instanceof Project p) {
             return projectMapper.toJpaEntity(p);
         }
@@ -47,10 +46,8 @@ public abstract class FileElementJpaMapper {
     public FileElement<?> toDomainEntity(JpaFileElement<?> jpa) {
         if (jpa instanceof JpaFile f) {
             return fileMapper.toDomainEntity(f);
-
         } else if (jpa instanceof JpaDirectory d) {
             return directoryMapper.toDomainEntity(d);
-
         } else if (jpa instanceof JpaProject p) {
             return projectMapper.toDomainEntity(p);
         }
