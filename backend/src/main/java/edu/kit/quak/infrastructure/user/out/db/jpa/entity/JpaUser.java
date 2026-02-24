@@ -11,9 +11,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 /** JPA entity for User persistence. */
 @Entity
-@Table(
-        name = "users",
-        uniqueConstraints = {@UniqueConstraint(columnNames = {"issuer", "sub"})})
+@Table(name = "users", uniqueConstraints = { @UniqueConstraint(columnNames = { "issuer", "sub" }) })
 @Getter
 @Setter
 @NoArgsConstructor

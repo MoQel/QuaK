@@ -8,11 +8,8 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
 
-@Mapper(
-        componentModel = MappingConstants.ComponentModel.SPRING,
-        uses = {FileElementDtoMapper.class})
+@Mapper(componentModel = MappingConstants.ComponentModel.SPRING, uses = { FileElementDtoMapper.class })
 public interface DirectoryDtoMapper {
-
     @Mapping(target = "parentId", ignore = true)
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "contents", ignore = true)

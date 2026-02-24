@@ -64,8 +64,7 @@ class AuthServiceTest {
             mockUser.setAvatarUrl("https://example.com/avatar.jpg");
 
             // Mock the repository to return the user
-            org.mockito.Mockito.when(userRepository.findByIssuerAndSub(TEST_ISSUER, TEST_SUBJECT))
-                    .thenReturn(Optional.of(mockUser));
+            org.mockito.Mockito.when(userRepository.findByIssuerAndSub(TEST_ISSUER, TEST_SUBJECT)).thenReturn(Optional.of(mockUser));
 
             AuthStatusResponse result = authService.getAuthenticationStatus(Optional.of(authenticatedUser));
 

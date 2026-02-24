@@ -30,7 +30,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 @IntegrationTest
 @WebMvcTest(FileRestAdapter.class)
-@org.springframework.context.annotation.ComponentScan(basePackageClasses = {FileDtoMapper.class})
+@org.springframework.context.annotation.ComponentScan(basePackageClasses = { FileDtoMapper.class })
 @WithMockUser(username = "tester", roles = "USER") // Simulates logged-in user
 class FileRestAdapterTest {
 
@@ -63,25 +63,27 @@ class FileRestAdapterTest {
         File createdFile = new File("test.txt", null);
         createdFile.setId("f-123");
 
-        when(fileService.createFile(any(File.class), eq("d-1"), any(User.class)))
-                .thenReturn(createdFile);
+        when(fileService.createFile(any(File.class), eq("d-1"), any(User.class))).thenReturn(createdFile);
 
         String jsonRequest = """
-                {
-                    "name": "test.txt",
-                    "contentType": "text/plain"
-                }
-                """;
+            {
+                "name": "test.txt",
+                "contentType": "text/plain"
+            }
+            """;
 
-        mockMvc.perform(post("/api/file/")
-                        .with(csrf())
-                        .header(ApiConstants.HEADER_PARENT_ID, "d-1")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonRequest))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").value("f-123"))
-                .andExpect(jsonPath("$.name").value("test.txt"))
-                .andExpect(jsonPath("$.type").value("file"));
+        mockMvc
+            .perform(
+                post("/api/file/")
+                    .with(csrf())
+                    .header(ApiConstants.HEADER_PARENT_ID, "d-1")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(jsonRequest)
+            )
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.id").value("f-123"))
+            .andExpect(jsonPath("$.name").value("test.txt"))
+            .andExpect(jsonPath("$.type").value("file"));
     }
 
     @Test
@@ -89,20 +91,23 @@ class FileRestAdapterTest {
     void createFile_validationError() throws Exception {
         // "invalid-type" does not match the regex in the DTO
         String jsonRequest = """
-                {
-                    "name": "test.txt",
-                    "contentType": "invalid-type"
-                }
-                """;
+            {
+                "name": "test.txt",
+                "contentType": "invalid-type"
+            }
+            """;
 
-        mockMvc.perform(post("/api/file/")
-                        .with(csrf())
-                        .header(ApiConstants.HEADER_PARENT_ID, "d-1")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonRequest))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.title").exists())
-                .andExpect(jsonPath("$.status").value(400));
+        mockMvc
+            .perform(
+                post("/api/file/")
+                    .with(csrf())
+                    .header(ApiConstants.HEADER_PARENT_ID, "d-1")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(jsonRequest)
+            )
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.title").exists())
+            .andExpect(jsonPath("$.status").value(400));
     }
 
     @Test
@@ -113,10 +118,11 @@ class FileRestAdapterTest {
 
         when(fileService.retrieveFile(eq("f-555"), any(User.class))).thenReturn(file);
 
-        mockMvc.perform(get("/api/file/f-555"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value("f-555"))
-                .andExpect(jsonPath("$.name").value("image.png"));
+        mockMvc
+            .perform(get("/api/file/f-555"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value("f-555"))
+            .andExpect(jsonPath("$.name").value("image.png"));
     }
 
     @Test
@@ -133,19 +139,16 @@ class FileRestAdapterTest {
         File updatedFile = new File("renamed.txt", null);
         updatedFile.setId("f-123");
 
-        when(fileService.renameFile(eq("f-123"), eq("renamed.txt"), any(User.class)))
-                .thenReturn(updatedFile);
+        when(fileService.renameFile(eq("f-123"), eq("renamed.txt"), any(User.class))).thenReturn(updatedFile);
 
         String jsonRequest = """
-                { "name": "renamed.txt" }
-                """;
+            { "name": "renamed.txt" }
+            """;
 
-        mockMvc.perform(patch("/api/file/f-123")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonRequest))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("renamed.txt"));
+        mockMvc
+            .perform(patch("/api/file/f-123").with(csrf()).contentType(MediaType.APPLICATION_JSON).content(jsonRequest))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.name").value("renamed.txt"));
     }
 
     @Test
@@ -154,10 +157,11 @@ class FileRestAdapterTest {
         byte[] content = "Hello World".getBytes();
         when(fileService.getFileContent(eq("f-123"), any(User.class))).thenReturn(content);
 
-        mockMvc.perform(get("/api/file/f-123/content"))
-                .andExpect(status().isOk())
-                // Jackson automatically serializes byte[] as a Base64 string
-                .andExpect(jsonPath("$.content").isNotEmpty());
+        mockMvc
+            .perform(get("/api/file/f-123/content"))
+            .andExpect(status().isOk())
+            // Jackson automatically serializes byte[] as a Base64 string
+            .andExpect(jsonPath("$.content").isNotEmpty());
     }
 
     @Test
@@ -165,17 +169,15 @@ class FileRestAdapterTest {
     void setFileContent_success() throws Exception {
         // "SGVsbG8=" ist Base64 für "Hello"
         String jsonRequest = """
-                {
-                    "content": "SGVsbG8=",
-                    "contentType": "text/plain"
-                }
-                """;
+            {
+                "content": "SGVsbG8=",
+                "contentType": "text/plain"
+            }
+            """;
 
-        mockMvc.perform(put("/api/file/f-123/content")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonRequest))
-                .andExpect(status().isOk());
+        mockMvc
+            .perform(put("/api/file/f-123/content").with(csrf()).contentType(MediaType.APPLICATION_JSON).content(jsonRequest))
+            .andExpect(status().isOk());
 
         verify(fileService).setFileContent(eq("f-123"), any(byte[].class), eq("text/plain"), any(User.class));
     }

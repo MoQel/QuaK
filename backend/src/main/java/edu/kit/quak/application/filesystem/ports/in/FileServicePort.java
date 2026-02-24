@@ -4,7 +4,6 @@ import edu.kit.quak.core.filesystem.model.File;
 import edu.kit.quak.core.user.model.User;
 
 public interface FileServicePort {
-
     File createFile(File element, String parentId, User user);
 
     File renameFile(String fId, String newName, User user);

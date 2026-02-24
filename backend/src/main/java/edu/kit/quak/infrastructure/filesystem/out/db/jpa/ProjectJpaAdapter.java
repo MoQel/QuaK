@@ -19,9 +19,10 @@ public class ProjectJpaAdapter implements ProjectRepositoryPort {
     private final ProjectJpaMapper projectMapper;
 
     ProjectJpaAdapter(
-            SpringDataProjectRepository repository,
-            SpringDataFileElementContainerRepository containerRepository,
-            ProjectJpaMapper projectMapper) {
+        SpringDataProjectRepository repository,
+        SpringDataFileElementContainerRepository containerRepository,
+        ProjectJpaMapper projectMapper
+    ) {
         this.repository = repository;
         this.containerRepository = containerRepository;
         this.projectMapper = projectMapper;
@@ -46,9 +47,7 @@ public class ProjectJpaAdapter implements ProjectRepositoryPort {
 
     @Override
     public List<Project> getProjectsByOwnerId(UUID ownerId) {
-        return repository.findAllByOwnerId(ownerId).stream()
-                .map(projectMapper::toDomainEntity)
-                .toList();
+        return repository.findAllByOwnerId(ownerId).stream().map(projectMapper::toDomainEntity).toList();
     }
 
     @Override

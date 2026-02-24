@@ -25,8 +25,9 @@ public class JsonGateDefinitionDefinitionRepositoryAdapter implements GateDefini
 
     // Constructor Injection with property
     public JsonGateDefinitionDefinitionRepositoryAdapter(
-            ObjectMapper objectMapper,
-            @Value("${quak.library.gates-file:gatedefinitions.json}") String gateDefinitionsFilePath) {
+        ObjectMapper objectMapper,
+        @Value("${quak.library.gates-file:gatedefinitions.json}") String gateDefinitionsFilePath
+    ) {
         this.objectMapper = objectMapper;
         this.gateDefinitionsFilePath = gateDefinitionsFilePath;
     }
@@ -43,7 +44,10 @@ public class JsonGateDefinitionDefinitionRepositoryAdapter implements GateDefini
 
     @Override
     public Optional<GateDefinition> findGateDefinitionById(String id) {
-        return cachedGateDefinitions.stream().filter(g -> g.id().equals(id)).findFirst();
+        return cachedGateDefinitions
+            .stream()
+            .filter(g -> g.id().equals(id))
+            .findFirst();
     }
 
     private List<GateDefinition> loadGateDefinitionsFromJson() {
@@ -63,56 +67,55 @@ public class JsonGateDefinitionDefinitionRepositoryAdapter implements GateDefini
     }
 
     private record JsonGateDefinitionDto(
-            @JsonProperty("id") String id,
-            @JsonProperty("name") String name,
-            @JsonProperty("symbol") String symbol,
-            @JsonProperty("category") String category,
-            @JsonProperty("description") String description,
-            @JsonProperty("qubitCount") int qubitCount,
-            @JsonProperty("parameters") List<String> parameters,
-            @JsonProperty("inspectorInfo") JsonInspectorInfoDto inspectorInfo) {
+        @JsonProperty("id") String id,
+        @JsonProperty("name") String name,
+        @JsonProperty("symbol") String symbol,
+        @JsonProperty("category") String category,
+        @JsonProperty("description") String description,
+        @JsonProperty("qubitCount") int qubitCount,
+        @JsonProperty("parameters") List<String> parameters,
+        @JsonProperty("inspectorInfo") JsonInspectorInfoDto inspectorInfo
+    ) {
         GateDefinition toDomain() {
             return new GateDefinition(
-                    id,
-                    name,
-                    category,
-                    description,
-                    qubitCount,
-                    symbol,
-                    parameters != null ? parameters : Collections.emptyList(),
-                    inspectorInfo != null ? inspectorInfo.toDomain() : null);
+                id,
+                name,
+                category,
+                description,
+                qubitCount,
+                symbol,
+                parameters != null ? parameters : Collections.emptyList(),
+                inspectorInfo != null ? inspectorInfo.toDomain() : null
+            );
         }
     }
 
     private record JsonInspectorInfoDto(
-            @JsonProperty("operatorDefinition") String operatorDefinition,
-            @JsonProperty("truthTable") List<JsonTruthTableEntryDto> truthTable,
-            @JsonProperty("matrix") JsonMatrixDto matrix) {
+        @JsonProperty("operatorDefinition") String operatorDefinition,
+        @JsonProperty("truthTable") List<JsonTruthTableEntryDto> truthTable,
+        @JsonProperty("matrix") JsonMatrixDto matrix
+    ) {
         GateDefinition.InspectorInfo toDomain() {
             return new GateDefinition.InspectorInfo(
-                    operatorDefinition,
-                    truthTable != null
-                            ? truthTable.stream()
-                                    .map(JsonTruthTableEntryDto::toDomain)
-                                    .toList()
-                            : Collections.emptyList(),
-                    matrix != null ? matrix.toDomain() : null);
+                operatorDefinition,
+                truthTable != null ? truthTable.stream().map(JsonTruthTableEntryDto::toDomain).toList() : Collections.emptyList(),
+                matrix != null ? matrix.toDomain() : null
+            );
         }
     }
 
-    private record JsonTruthTableEntryDto(
-            @JsonProperty("input") String input,
-            @JsonProperty("output") String output) {
+    private record JsonTruthTableEntryDto(@JsonProperty("input") String input, @JsonProperty("output") String output) {
         GateDefinition.TruthTableEntry toDomain() {
             return new GateDefinition.TruthTableEntry(input, output);
         }
     }
 
     private record JsonMatrixDto(
-            @JsonProperty("display") String display,
-            @JsonProperty("rows") int rows,
-            @JsonProperty("cols") int cols,
-            @JsonProperty("computable") List<List<String>> computable) {
+        @JsonProperty("display") String display,
+        @JsonProperty("rows") int rows,
+        @JsonProperty("cols") int cols,
+        @JsonProperty("computable") List<List<String>> computable
+    ) {
         GateDefinition.MatrixInfo toDomain() {
             return new GateDefinition.MatrixInfo(display, rows, cols, computable);
         }

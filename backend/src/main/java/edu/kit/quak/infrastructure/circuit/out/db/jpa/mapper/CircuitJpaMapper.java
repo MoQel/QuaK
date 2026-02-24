@@ -8,9 +8,10 @@ import java.util.List;
 import org.mapstruct.*;
 
 @Mapper(
-        componentModel = MappingConstants.ComponentModel.SPRING,
-        collectionMappingStrategy = CollectionMappingStrategy.TARGET_IMMUTABLE,
-        uses = {RegisterJpaMapper.class})
+    componentModel = MappingConstants.ComponentModel.SPRING,
+    collectionMappingStrategy = CollectionMappingStrategy.TARGET_IMMUTABLE,
+    uses = { RegisterJpaMapper.class }
+)
 public interface CircuitJpaMapper {
     @Mapping(target = "id", source = "id")
     JpaQuantumCircuit toEntity(QuantumCircuit domain);

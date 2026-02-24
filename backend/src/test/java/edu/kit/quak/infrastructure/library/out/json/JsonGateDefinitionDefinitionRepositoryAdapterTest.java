@@ -42,8 +42,7 @@ class JsonGateDefinitionDefinitionRepositoryAdapterTest {
         // Deep checks for InspectorInfo
         assertNotNull(hGateDefinition.inspectorInfo(), "InspectorInfo should be mapped");
         assertFalse(hGateDefinition.inspectorInfo().truthTable().isEmpty(), "TruthTable should contain entries");
-        assertEquals(
-                "|0⟩", hGateDefinition.inspectorInfo().truthTable().getFirst().input());
+        assertEquals("|0⟩", hGateDefinition.inspectorInfo().truthTable().getFirst().input());
     }
 
     @Test

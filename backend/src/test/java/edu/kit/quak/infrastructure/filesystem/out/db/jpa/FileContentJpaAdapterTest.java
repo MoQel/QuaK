@@ -15,9 +15,8 @@ import org.springframework.context.annotation.Import;
 
 @IntegrationTest
 @DataJpaTest
-@org.springframework.context.annotation.ComponentScan(
-        basePackages = "edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper")
-@Import({FileContentJpaAdapter.class, ProjectJpaAdapter.class, DirectoryJpaAdapter.class})
+@org.springframework.context.annotation.ComponentScan(basePackages = "edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper")
+@Import({ FileContentJpaAdapter.class, ProjectJpaAdapter.class, DirectoryJpaAdapter.class })
 class FileContentJpaAdapterTest {
 
     @Autowired
@@ -59,8 +58,7 @@ class FileContentJpaAdapterTest {
 
     @Test
     void saveContent_throws_whenMetadataMissing() {
-        assertThrows(
-                IllegalArgumentException.class, () -> contentAdapter.saveContent("invalid-id", new byte[] {1, 2, 3}));
+        assertThrows(IllegalArgumentException.class, () -> contentAdapter.saveContent("invalid-id", new byte[] { 1, 2, 3 }));
     }
 
     @Test

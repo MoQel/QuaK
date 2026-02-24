@@ -8,7 +8,6 @@ import java.util.List;
  * Input port for project-related use cases. Uses only domain concepts, no framework dependencies.
  */
 public interface ProjectServicePort {
-
     /** Creates a new project owned by the user. */
     Project createProject(Project container, User user);
 

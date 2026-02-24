@@ -5,9 +5,10 @@ import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.register.JpaQubit;
 import org.mapstruct.*;
 
 @Mapper(
-        componentModel = MappingConstants.ComponentModel.SPRING,
-        collectionMappingStrategy = CollectionMappingStrategy.TARGET_IMMUTABLE,
-        uses = {OperationJpaMapper.class})
+    componentModel = MappingConstants.ComponentModel.SPRING,
+    collectionMappingStrategy = CollectionMappingStrategy.TARGET_IMMUTABLE,
+    uses = { OperationJpaMapper.class }
+)
 public interface QubitJpaMapper {
     @Mapping(target = "id", source = "id")
     @Mapping(target = "register", ignore = true)

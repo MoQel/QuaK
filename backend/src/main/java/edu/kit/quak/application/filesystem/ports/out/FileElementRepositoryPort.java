@@ -5,7 +5,6 @@ package edu.kit.quak.application.filesystem.ports.out;
  * used by Application Services and implemented by a JPA Adapter.
  */
 public interface FileElementRepositoryPort {
-
     /**
      * Search a FileElement by its ID.
      *
