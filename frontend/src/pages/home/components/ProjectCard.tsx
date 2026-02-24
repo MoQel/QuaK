@@ -5,7 +5,9 @@ import { FolderOpen, MoreVertical, Pencil, Pin, PinOff, Trash2, Users } from 'lu
 import { Button } from '@/components/ui/button.tsx';
 import { Card, CardContent } from '@/components/ui/card.tsx';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover.tsx';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip.tsx';
 import type { ProjectDetailsResponse } from '@/api/dto/filesystem.ts';
+import UserAvatar from '@/components/UserAvatar.tsx';
 
 export function ProjectCard({
     project,
@@ -25,6 +27,8 @@ export function ProjectCard({
     isOwner?: boolean;
 }) {
     const [actionsOpen, setActionsOpen] = useState(false);
+
+    const owner = project.owner;
 
     return (
         <Card className="min-w-[16rem] flex-shrink-0 hover:shadow-lg transition-shadow">
@@ -110,8 +114,52 @@ export function ProjectCard({
                         </Popover>
                     </div>
 
-                    <div className="text-sm text-text-muted">
-                        Last modified: {new Date(project.lastAccess).toLocaleDateString()}
+                    {/* Metadata Footer */}
+                    <div className="flex items-center justify-between pt-3 mt-1 border-t border-border/40">
+                        <div className="flex flex-col gap-0.5">
+                            <span className="text-[10px] uppercase font-bold tracking-tight text-text-muted/50">
+                                Modified
+                            </span>
+                            <span className="text-xs font-medium text-text-muted">
+                                {new Date(project.lastAccess).toLocaleDateString()}
+                            </span>
+                        </div>
+
+                        {!isOwner && owner && (
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <div className="flex flex-col items-end gap-0.5 group cursor-help">
+                                            <span className="text-[10px] uppercase font-bold tracking-tight text-text-muted/50 group-hover:text-purple-500 transition-colors">
+                                                Owner
+                                            </span>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-xs font-medium text-text-muted truncate max-w-[90px]">
+                                                    {owner.name?.split(' ')[0] ?? owner.email}
+                                                </span>
+                                                <UserAvatar
+                                                    avatarUrl={owner.avatarUrl}
+                                                    alt={owner.name ?? owner.email}
+                                                    size="sm"
+                                                    className="w-5 h-5 ring-1 ring-border shadow-sm border border-background"
+                                                />
+                                            </div>
+                                        </div>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="bottom" className="text-xs">
+                                        <div className="flex flex-col gap-1">
+                                            <p className="font-semibold">{owner.name ?? owner.email}</p>
+                                            {owner.name && <p className="text-text-muted">{owner.email}</p>}
+                                            <div className="h-px bg-border my-0.5" />
+                                            <p className="flex items-center gap-1 text-purple-500 font-medium">
+                                                <Users className="size-3" />
+                                                Project owner
+                                            </p>
+                                        </div>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        )}
                     </div>
                     <div className="mt-2">
                         <Link to={`/project/${project.id}`}>

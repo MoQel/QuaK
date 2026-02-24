@@ -8,7 +8,9 @@ import edu.kit.quak.infrastructure.filesystem.in.web.rest.dto.ProjectContentsRes
 import edu.kit.quak.infrastructure.filesystem.in.web.rest.dto.ProjectDetailsResponse;
 import edu.kit.quak.infrastructure.filesystem.in.web.rest.dto.ProjectRequest;
 import edu.kit.quak.infrastructure.filesystem.in.web.rest.mapper.ProjectDtoMapper;
+import edu.kit.quak.infrastructure.user.in.web.rest.dto.UserResponse;
 import edu.kit.quak.infrastructure.user.in.web.rest.mapper.AuthenticationMapper;
+import edu.kit.quak.infrastructure.user.in.web.rest.mapper.UserDtoMapper;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -17,7 +19,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * REST adapter for project-related endpoints. Handles HTTP-specific concerns and converts framework
+ * REST adapter for project-related endpoints. Handles HTTP-specific concerns
+ * and converts framework
  * types to domain types.
  */
 @RestController
@@ -29,17 +32,19 @@ public class ProjectRestAdapter {
     private final UserServicePort userService;
     private final ProjectDtoMapper mapper;
     private final AuthenticationMapper authMapper;
+    private final UserDtoMapper userDtoMapper;
 
     public ProjectRestAdapter(
-        ProjectServicePort service,
-        UserServicePort userService,
-        ProjectDtoMapper mapper,
-        AuthenticationMapper authMapper
-    ) {
+            ProjectServicePort service,
+            UserServicePort userService,
+            ProjectDtoMapper mapper,
+            AuthenticationMapper authMapper,
+            UserDtoMapper userDtoMapper) {
         this.service = service;
         this.userService = userService;
         this.mapper = mapper;
         this.authMapper = authMapper;
+        this.userDtoMapper = userDtoMapper;
     }
 
     @GetMapping({ "", "/" })
@@ -47,7 +52,15 @@ public class ProjectRestAdapter {
     public List<ProjectDetailsResponse> getProjects(Authentication authentication) {
         User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
         List<Project> projects = service.listProjects(user);
-        return mapper.toDetailsResponseList(projects);
+        return projects.stream()
+                .map(project -> {
+                    UserResponse ownerResponse = project.getOwnerId() == null ? null
+                            : userService.findById(project.getOwnerId())
+                                    .map(userDtoMapper::toResponse)
+                                    .orElse(null);
+                    return mapper.toDetailsResponse(project, ownerResponse);
+                })
+                .toList();
     }
 
     @PostMapping({ "", "/" })
@@ -78,10 +91,9 @@ public class ProjectRestAdapter {
     @PatchMapping("/{pId}")
     @PreAuthorize("isAuthenticated()")
     public ProjectDetailsResponse renameProject(
-        @PathVariable String pId,
-        @RequestBody ProjectRequest request,
-        Authentication authentication
-    ) {
+            @PathVariable String pId,
+            @RequestBody ProjectRequest request,
+            Authentication authentication) {
         User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
         Project updatedProject = service.renameProject(pId, request.name(), user);
         return mapper.toDetailsResponse(updatedProject);
