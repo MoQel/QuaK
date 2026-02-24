@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Optional;
 
 public class QuantumRegister extends Register {
+
     private List<Qubit> qubits = new ArrayList<>();
 
     public QuantumRegister(String name) {

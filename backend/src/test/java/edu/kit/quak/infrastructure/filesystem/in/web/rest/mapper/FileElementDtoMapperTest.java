@@ -35,8 +35,14 @@ class FileElementDtoMapperTest {
     @DisplayName("Should map File entity to FileDetailsResponse")
     void testMapFile() {
         File file = new File("test.txt", null);
-        FileDetailsResponse expectedResponse =
-                new FileDetailsResponse(file.getId(), "test.txt", "file", null, Instant.now(), Instant.now());
+        FileDetailsResponse expectedResponse = new FileDetailsResponse(
+            file.getId(),
+            "test.txt",
+            "file",
+            null,
+            Instant.now(),
+            Instant.now()
+        );
 
         when(fileMapper.toDetailsResponse(any(File.class))).thenReturn(expectedResponse);
 
@@ -51,8 +57,13 @@ class FileElementDtoMapperTest {
     @DisplayName("Should map Directory entity to DirectoryDetailsResponse")
     void testMapDirectory() {
         Directory dir = new Directory("docs", null);
-        DirectoryDetailsResponse expectedResponse =
-                new DirectoryDetailsResponse(dir.getId(), "docs", "directory", Instant.now(), Instant.now());
+        DirectoryDetailsResponse expectedResponse = new DirectoryDetailsResponse(
+            dir.getId(),
+            "docs",
+            "directory",
+            Instant.now(),
+            Instant.now()
+        );
 
         when(directoryMapper.toDetailsResponse(any(Directory.class))).thenReturn(expectedResponse);
 

@@ -1,5 +1,12 @@
 {
   "dependencies": {
     "react-native": "^0.82.1"
+  },
+  "scripts": {
+    "format": "prettier --write \"src/**/*.java\""
+  },
+  "devDependencies": {
+    "prettier": "^3.8.1",
+    "prettier-plugin-java": "^2.8.1"
   }
 }

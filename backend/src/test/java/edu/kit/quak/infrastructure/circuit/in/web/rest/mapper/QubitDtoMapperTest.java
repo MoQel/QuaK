@@ -15,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class QubitDtoMapperTest {
+
     @Spy
     private GateDtoMapperImpl gateDtoMapper;
 
@@ -25,8 +26,7 @@ class QubitDtoMapperTest {
     void toResponse() {
         // Arrange
         Qubit qubit = new Qubit();
-        qubit.addOperation(
-                qubit.getOperations().size(), new ElementaryQuantumGate(ElementaryQuantumGateDefinitionIdentifier.H));
+        qubit.addOperation(qubit.getOperations().size(), new ElementaryQuantumGate(ElementaryQuantumGateDefinitionIdentifier.H));
 
         // Act
         QubitResponse response = mapper.toResponse(qubit);
@@ -34,8 +34,6 @@ class QubitDtoMapperTest {
         // Assert
         assertNotNull(response);
         assertEquals(1, response.gates().size());
-        assertEquals(
-                ElementaryQuantumGateDefinitionIdentifier.H,
-                response.gates().getFirst().definitionId());
+        assertEquals(ElementaryQuantumGateDefinitionIdentifier.H, response.gates().getFirst().definitionId());
     }
 }

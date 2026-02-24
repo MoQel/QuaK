@@ -51,17 +51,17 @@ public abstract class AbstractFileElementService<T extends FileElement<T>> {
 
         // Use efficient single-query ownership lookup
         UUID projectOwnerId = delegator
-                .findProjectOwnerIdByElementId(parentId)
-                .orElseThrow(() -> new IllegalStateException(
-                        "Could not find root project for element with" + " parent ID: " + parentId));
+            .findProjectOwnerIdByElementId(parentId)
+            .orElseThrow(() -> new IllegalStateException("Could not find root project for element with" + " parent ID: " + parentId));
 
         if (!projectOwnerId.equals(user.getId())) {
             log.warn(
-                    "Access denied: User '{}' is not owner of project '{}' ({} parent: '{}')",
-                    user.getId(),
-                    projectOwnerId,
-                    getElementTypeName(),
-                    parentId);
+                "Access denied: User '{}' is not owner of project '{}' ({} parent: '{}')",
+                user.getId(),
+                projectOwnerId,
+                getElementTypeName(),
+                parentId
+            );
             throw new AccessDeniedException(getElementTypeName(), parentId);
         }
     }
@@ -77,9 +77,7 @@ public abstract class AbstractFileElementService<T extends FileElement<T>> {
         if (parentId == null) {
             throw new IllegalStateException(getElementTypeName() + " has no parent - corrupt state");
         }
-        return delegator
-                .findContainerById(parentId)
-                .orElseThrow(() -> new IllegalStateException("Parent not found with ID: " + parentId));
+        return delegator.findContainerById(parentId).orElseThrow(() -> new IllegalStateException("Parent not found with ID: " + parentId));
     }
 
     /**
@@ -91,13 +89,14 @@ public abstract class AbstractFileElementService<T extends FileElement<T>> {
      * @throws IllegalStateException if element is not found in parent
      */
     protected T findElementInParent(FileElementContainer<?> parent, String elementId) {
-        return parent.getContents().stream()
-                .filter(c -> c.getId().equals(elementId))
-                .filter(this::isCorrectType)
-                .map(this::castToType)
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException(
-                        getElementTypeName() + " not found in parent container (ID: " + elementId + ")"));
+        return parent
+            .getContents()
+            .stream()
+            .filter(c -> c.getId().equals(elementId))
+            .filter(this::isCorrectType)
+            .map(this::castToType)
+            .findFirst()
+            .orElseThrow(() -> new IllegalStateException(getElementTypeName() + " not found in parent container (ID: " + elementId + ")"));
     }
 
     /**

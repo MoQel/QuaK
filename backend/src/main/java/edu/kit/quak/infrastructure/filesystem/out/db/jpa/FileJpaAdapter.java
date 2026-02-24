@@ -14,6 +14,7 @@ import org.springframework.stereotype.Repository;
  */
 @Repository
 public class FileJpaAdapter implements FileRepositoryPort {
+
     private final SpringDataJpaFileRepository fileRepository;
     private final FileJpaMapper fileMapper;
 

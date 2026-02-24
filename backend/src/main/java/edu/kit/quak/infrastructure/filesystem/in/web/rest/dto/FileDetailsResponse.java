@@ -6,8 +6,7 @@ public class FileDetailsResponse extends FileElementDto {
 
     private final String contentType;
 
-    public FileDetailsResponse(
-            String id, String name, String type, String contentType, Instant createdOn, Instant lastAccess) {
+    public FileDetailsResponse(String id, String name, String type, String contentType, Instant createdOn, Instant lastAccess) {
         super(id, name, type, createdOn, lastAccess);
         this.contentType = contentType;
     }

@@ -1,0 +1,15 @@
+# Build and dependency directories
+/build
+/node_modules
+/.gradle
+/.idea
+
+# Environment and secrets
+.env
+.env.example
+
+# OS files
+.DS_Store
+
+# Static assets
+src/main/resources/static/

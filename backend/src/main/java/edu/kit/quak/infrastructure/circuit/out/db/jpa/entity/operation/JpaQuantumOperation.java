@@ -8,6 +8,7 @@ import jakarta.persistence.*;
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "operation_type", discriminatorType = DiscriminatorType.STRING)
 public abstract class JpaQuantumOperation extends JpaElementWithId {
+
     @ManyToOne
     @JoinColumn(name = "qubit_id", referencedColumnName = "id")
     protected JpaQubit qubit;

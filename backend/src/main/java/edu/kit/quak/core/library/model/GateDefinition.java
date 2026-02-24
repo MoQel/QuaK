@@ -4,14 +4,15 @@ import java.util.Collections;
 import java.util.List;
 
 public record GateDefinition(
-        String id,
-        String name,
-        String category,
-        String description,
-        int qubitCount,
-        String symbol,
-        List<String> parameters,
-        InspectorInfo inspectorInfo) {
+    String id,
+    String name,
+    String category,
+    String description,
+    int qubitCount,
+    String symbol,
+    List<String> parameters,
+    InspectorInfo inspectorInfo
+) {
     // Compact constructor to ensure non-null lists and handle optional
     // InspectorInfo
     public GateDefinition {
@@ -55,16 +56,19 @@ public record GateDefinition(
             if (!computable.isEmpty()) {
                 if (computable.size() != rows) {
                     throw new IllegalArgumentException(
-                            "MatrixInfo dimension mismatch: expected %d rows but computable matrix has %d rows"
-                                    .formatted(rows, computable.size()));
+                        "MatrixInfo dimension mismatch: expected %d rows but computable matrix has %d rows".formatted(
+                            rows,
+                            computable.size()
+                        )
+                    );
                 }
                 // Validate all rows have the same number of columns
                 for (int i = 0; i < computable.size(); i++) {
                     List<String> row = computable.get(i);
                     if (row.size() != cols) {
                         throw new IllegalArgumentException(
-                                "MatrixInfo dimension mismatch: expected %d cols but row %d has %d elements"
-                                        .formatted(cols, i, row.size()));
+                            "MatrixInfo dimension mismatch: expected %d cols but row %d has %d elements".formatted(cols, i, row.size())
+                        );
                     }
                 }
             }
