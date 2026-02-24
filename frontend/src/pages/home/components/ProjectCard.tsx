@@ -79,7 +79,7 @@ export function ProjectCard({
                                     {isOwner && onManageAccess && (
                                         <Button
                                             variant="ghost"
-                                            className="justify-start"
+                                            className="justify-start hover:bg-bg-light"
                                             onClick={() => {
                                                 setActionsOpen(false);
                                                 onManageAccess(project);

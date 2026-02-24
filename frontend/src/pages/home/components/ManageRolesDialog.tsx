@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Crown, Search, Trash2, UserPlus, Users, X, Loader2 } from 'lucide-react';
+import { Crown, Search, Trash2, Users, X, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { api } from '@/api/api.ts';
@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button.tsx';
 import { Input } from '@/components/ui/input.tsx';
 import { Badge } from '@/components/ui/badge.tsx';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog.tsx';
+import UserAvatar from '@/components/UserAvatar.tsx';
 
 interface ManageRolesDialogProps {
     project: ProjectDetailsResponse;
@@ -181,9 +182,12 @@ export function ManageRolesDialog({ project, open, onOpenChange }: ManageRolesDi
                                         onClick={() => handleInvite(user)}
                                         className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-bg-light transition-colors text-left"
                                     >
-                                        <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center flex-shrink-0">
-                                            <UserPlus className="size-3.5 text-purple-500" />
-                                        </div>
+                                        <UserAvatar
+                                            avatarUrl={user.avatarUrl}
+                                            alt={user.name || user.email}
+                                            className="w-8 h-8"
+                                            size="sm"
+                                        />
                                         <div className="flex-1 min-w-0">
                                             <div className="text-sm font-medium text-text truncate">
                                                 {user.name || user.email}
