@@ -20,15 +20,18 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
 
 @DataJpaTest
-@Import({
-    CircuitJpaAdapter.class,
-    CircuitJpaMapperImpl.class,
-    RegisterJpaMapperImpl.class,
-    LayerJpaMapperImpl.class,
-    QuantumOperationJpaMapperImpl.class,
-    ElementSelectorJpaMapperImpl.class,
-})
+@Import(
+    {
+        CircuitJpaAdapter.class,
+        CircuitJpaMapperImpl.class,
+        RegisterJpaMapperImpl.class,
+        LayerJpaMapperImpl.class,
+        QuantumOperationJpaMapperImpl.class,
+        ElementSelectorJpaMapperImpl.class,
+    }
+)
 class CircuitJpaAdapterTest {
+
     @Autowired
     private CircuitJpaAdapter jpaAdapter;
 
@@ -49,8 +52,7 @@ class CircuitJpaAdapterTest {
         int qubitIdx = 0;
         ElementSelector target = new ElementSelector(registerId, qubitIdx);
         double rotationAngle = 0d;
-        ElementaryQuantumGate operation =
-                new ElementaryQuantumGate(QuantumOperationLibrary.X, false, List.of(target), null, rotationAngle);
+        ElementaryQuantumGate operation = new ElementaryQuantumGate(QuantumOperationLibrary.X, false, List.of(target), null, rotationAngle);
         domainCircuit.addQuantumOperation(operation, 0);
 
         String layerId = domainCircuit.getLayers().getFirst().getId();
@@ -78,8 +80,7 @@ class CircuitJpaAdapterTest {
         assertThat(foundLayer.getId()).isEqualTo(layerId);
         assertThat(foundLayer.getQuantumOperations()).hasSize(1);
 
-        QuantumOperation foundQuantumOperation =
-                foundLayer.getQuantumOperations().getFirst();
+        QuantumOperation foundQuantumOperation = foundLayer.getQuantumOperations().getFirst();
         assertThat(foundQuantumOperation).isInstanceOf(ElementaryQuantumGate.class);
 
         ElementaryQuantumGate foundGate = (ElementaryQuantumGate) foundQuantumOperation;

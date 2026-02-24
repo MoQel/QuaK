@@ -10,5 +10,6 @@ import lombok.Setter;
 @Entity
 @DiscriminatorValue("CLASSIC")
 public class JpaClassicRegister extends JpaRegister {
+
     private int numberOfBits;
 }

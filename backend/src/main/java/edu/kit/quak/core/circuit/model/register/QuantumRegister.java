@@ -7,6 +7,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public class QuantumRegister extends Register {
+
     private int numberOfQubits;
 
     public QuantumRegister(String name, int numberOfQubits) {

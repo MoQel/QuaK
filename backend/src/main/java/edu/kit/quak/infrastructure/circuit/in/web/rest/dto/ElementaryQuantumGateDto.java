@@ -7,15 +7,17 @@ import lombok.Setter;
 @Getter
 @Setter
 public class ElementaryQuantumGateDto extends QuantumOperationDto {
+
     private double rotationAngle;
 
     public ElementaryQuantumGateDto(
-            String id,
-            String identifier,
-            boolean inverseForm,
-            List<ElementSelectorDto> targetQubits,
-            List<ElementSelectorDto> controlQubits,
-            double rotationAngle) {
+        String id,
+        String identifier,
+        boolean inverseForm,
+        List<ElementSelectorDto> targetQubits,
+        List<ElementSelectorDto> controlQubits,
+        double rotationAngle
+    ) {
         super(id, identifier, inverseForm, targetQubits, controlQubits);
         this.rotationAngle = rotationAngle;
     }

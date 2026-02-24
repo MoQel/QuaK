@@ -7,6 +7,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public abstract class ElementWithId {
+
     protected String id;
 
     protected ElementWithId() {

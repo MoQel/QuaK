@@ -9,14 +9,16 @@ import lombok.Setter;
 @Getter
 @Setter
 public class ElementaryQuantumGate extends QuantumOperation {
+
     private double rotationAngle;
 
     public ElementaryQuantumGate(
-            @NonNull QuantumOperationLibrary operationDefinition,
-            boolean inverseForm,
-            @NonNull List<ElementSelector> targetQubits,
-            List<ElementSelector> controlQubits,
-            double rotationAngle) {
+        @NonNull QuantumOperationLibrary operationDefinition,
+        boolean inverseForm,
+        @NonNull List<ElementSelector> targetQubits,
+        List<ElementSelector> controlQubits,
+        double rotationAngle
+    ) {
         super(operationDefinition, inverseForm, targetQubits, controlQubits);
         this.rotationAngle = rotationAngle;
         if (operationDefinition.getDefinition().getType() != getClass()) {

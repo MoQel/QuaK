@@ -18,9 +18,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 @IntegrationTest
 @DataJpaTest
-@org.springframework.context.annotation.ComponentScan(
-        basePackages = "edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper")
-@Import({ProjectJpaAdapter.class})
+@org.springframework.context.annotation.ComponentScan(basePackages = "edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper")
+@Import({ ProjectJpaAdapter.class })
 @Transactional
 public class ProjectJpaAdapterTest {
 

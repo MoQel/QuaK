@@ -10,5 +10,6 @@ import lombok.Setter;
 @Entity
 @DiscriminatorValue("QUANTUM")
 public class JpaQuantumRegister extends JpaRegister {
+
     private int numberOfQubits;
 }

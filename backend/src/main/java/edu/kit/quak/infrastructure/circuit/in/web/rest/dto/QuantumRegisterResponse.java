@@ -6,5 +6,6 @@ import lombok.Setter;
 @Getter
 @Setter
 public class QuantumRegisterResponse extends RegisterResponse {
+
     private int numberOfQubits;
 }

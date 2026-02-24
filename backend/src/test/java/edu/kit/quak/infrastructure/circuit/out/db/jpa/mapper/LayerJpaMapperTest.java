@@ -21,6 +21,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class LayerJpaMapperTest {
+
     private LayerJpaMapper mapper;
 
     @BeforeEach
@@ -36,8 +37,7 @@ class LayerJpaMapperTest {
     void domainToEntity() {
         // Arrange
         ElementSelector target = new ElementSelector("reg_id", 0);
-        ElementaryQuantumGate operation =
-                new ElementaryQuantumGate(QuantumOperationLibrary.X, false, List.of(target), null, 0d);
+        ElementaryQuantumGate operation = new ElementaryQuantumGate(QuantumOperationLibrary.X, false, List.of(target), null, 0d);
         Layer layer = new Layer(List.of(operation));
 
         // Act
@@ -46,9 +46,7 @@ class LayerJpaMapperTest {
         // Assert
         assertNotNull(entity);
         assertEquals(1, entity.getQuantumOperations().size());
-        assertEquals(
-                QuantumOperationLibrary.X,
-                entity.getQuantumOperations().getFirst().getOperationDefinition());
+        assertEquals(QuantumOperationLibrary.X, entity.getQuantumOperations().getFirst().getOperationDefinition());
         assertEquals(entity, entity.getQuantumOperations().getFirst().getLayer()); // AfterMapping
     }
 
@@ -74,8 +72,6 @@ class LayerJpaMapperTest {
         // Assert
         assertNotNull(domain);
         assertEquals(1, domain.getQuantumOperations().size());
-        assertEquals(
-                QuantumOperationLibrary.X,
-                domain.getQuantumOperations().getFirst().getOperationDefinition());
+        assertEquals(QuantumOperationLibrary.X, domain.getQuantumOperations().getFirst().getOperationDefinition());
     }
 }

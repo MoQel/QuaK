@@ -10,6 +10,7 @@ import lombok.Setter;
 @Entity
 @DiscriminatorValue("MEASUREMENT")
 public class JpaMeasurement extends JpaQuantumOperation {
+
     @ElementCollection(fetch = FetchType.EAGER)
     private List<JpaElementSelector> classicBits;
 }

@@ -8,10 +8,11 @@ import java.util.List;
 import org.mapstruct.*;
 
 @Mapper(
-        componentModel = MappingConstants.ComponentModel.SPRING,
-        collectionMappingStrategy = CollectionMappingStrategy.TARGET_IMMUTABLE,
-        nullValueMappingStrategy = NullValueMappingStrategy.RETURN_DEFAULT,
-        uses = {QuantumOperationJpaMapper.class})
+    componentModel = MappingConstants.ComponentModel.SPRING,
+    collectionMappingStrategy = CollectionMappingStrategy.TARGET_IMMUTABLE,
+    nullValueMappingStrategy = NullValueMappingStrategy.RETURN_DEFAULT,
+    uses = { QuantumOperationJpaMapper.class }
+)
 public interface LayerJpaMapper {
     @Mapping(target = "id", source = "id")
     @Mapping(target = "circuit", ignore = true)

@@ -8,6 +8,7 @@ import lombok.Setter;
 @Setter
 @Embeddable
 public class JpaElementSelector {
+
     private String registerId;
 
     @Column(name = "qubit_index")

@@ -8,7 +8,6 @@ import org.mapstruct.MappingConstants;
 
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING)
 public interface GateDefinitionDtoMapper {
-
     GateDefinitionResponse toResponse(GateDefinition gateDefinition);
 
     List<GateDefinitionResponse> toResponseList(List<GateDefinition> gateDefinitions);

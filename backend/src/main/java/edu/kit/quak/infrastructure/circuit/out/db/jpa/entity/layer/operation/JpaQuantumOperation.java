@@ -14,6 +14,7 @@ import lombok.Setter;
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "operation_type", discriminatorType = DiscriminatorType.STRING)
 public abstract class JpaQuantumOperation extends JpaElementWithId {
+
     @ManyToOne
     @JoinColumn(name = "layer_id", referencedColumnName = "id")
     protected JpaLayer layer;

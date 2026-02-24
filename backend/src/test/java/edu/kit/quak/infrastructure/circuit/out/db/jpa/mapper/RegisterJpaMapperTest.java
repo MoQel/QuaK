@@ -15,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class RegisterJpaMapperTest {
+
     @InjectMocks
     private RegisterJpaMapperImpl mapper;
 

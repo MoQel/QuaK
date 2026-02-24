@@ -11,9 +11,7 @@ import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.layer.operation.Jpa
 import java.util.List;
 import org.mapstruct.*;
 
-@Mapper(
-        componentModel = MappingConstants.ComponentModel.SPRING,
-        uses = {ElementSelectorJpaMapper.class})
+@Mapper(componentModel = MappingConstants.ComponentModel.SPRING, uses = { ElementSelectorJpaMapper.class })
 public interface QuantumOperationJpaMapper {
     @BeanMapping(subclassExhaustiveStrategy = SubclassExhaustiveStrategy.RUNTIME_EXCEPTION)
     @SubclassMapping(source = ElementaryQuantumGate.class, target = JpaElementaryQuantumGate.class)

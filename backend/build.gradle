@@ -25,8 +25,7 @@ spotless {
 		target 'src/*/java/**/*.java'
 		importOrder()
 		removeUnusedImports()
-		palantirJavaFormat()
-		formatAnnotations()
+		prettier(['prettier-plugin-java': '2.8.1']).configFile('.prettierrc.yaml')
 	}
 }
 

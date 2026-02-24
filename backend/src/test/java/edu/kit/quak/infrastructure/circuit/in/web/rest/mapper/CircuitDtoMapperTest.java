@@ -13,6 +13,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class CircuitDtoMapperTest {
+
     @Spy
     private RegisterDtoMapperImpl registerDtoMapper;
 

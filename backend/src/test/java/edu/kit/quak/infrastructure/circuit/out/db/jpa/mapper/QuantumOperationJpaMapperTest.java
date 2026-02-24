@@ -20,6 +20,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class QuantumOperationJpaMapperTest {
+
     @Spy
     private ElementSelectorJpaMapperImpl elementSelectorJpaMapper;
 
@@ -32,10 +33,14 @@ class QuantumOperationJpaMapperTest {
         ElementSelector target = new ElementSelector("reg_id", 0);
         ElementSelector classicBit = new ElementSelector("reg_id", 1);
 
-        ElementaryQuantumGate domainGate =
-                new ElementaryQuantumGate(QuantumOperationLibrary.X, false, List.of(target), List.of(), 0d);
+        ElementaryQuantumGate domainGate = new ElementaryQuantumGate(QuantumOperationLibrary.X, false, List.of(target), List.of(), 0d);
         Measurement domainMeasurement = new Measurement(
-                QuantumOperationLibrary.MEASURE, false, List.of(target), List.of(), List.of(classicBit));
+            QuantumOperationLibrary.MEASURE,
+            false,
+            List.of(target),
+            List.of(),
+            List.of(classicBit)
+        );
 
         // Act
         JpaQuantumOperation entityGate = mapper.toEntity(domainGate);

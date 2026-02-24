@@ -20,6 +20,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class QuantumOperationDtoMapperTest {
+
     @Spy
     private ElementSelectorDtoMapperImpl qubitSelectorDtoMapper;
 
@@ -32,10 +33,8 @@ class QuantumOperationDtoMapperTest {
         ElementSelector target = new ElementSelector("reg_id", 0);
         ElementSelector classicBit = new ElementSelector("reg_id", 1);
 
-        ElementaryQuantumGate gate =
-                new ElementaryQuantumGate(QuantumOperationLibrary.X, false, List.of(target), null, 0d);
-        Measurement measurement =
-                new Measurement(QuantumOperationLibrary.MEASURE, false, List.of(target), null, List.of(classicBit));
+        ElementaryQuantumGate gate = new ElementaryQuantumGate(QuantumOperationLibrary.X, false, List.of(target), null, 0d);
+        Measurement measurement = new Measurement(QuantumOperationLibrary.MEASURE, false, List.of(target), null, List.of(classicBit));
 
         // Act
         QuantumOperationDto gateResponse = mapper.toResponse(gate);
@@ -57,10 +56,22 @@ class QuantumOperationDtoMapperTest {
         ElementSelectorDto target = new ElementSelectorDto("reg_id", 0);
         ElementSelectorDto classicBit = new ElementSelectorDto("reg_id", 1);
 
-        ElementaryQuantumGateDto gateDto =
-                new ElementaryQuantumGateDto("id", QuantumOperationLibrary.X.name(), false, List.of(target), null, 0d);
+        ElementaryQuantumGateDto gateDto = new ElementaryQuantumGateDto(
+            "id",
+            QuantumOperationLibrary.X.name(),
+            false,
+            List.of(target),
+            null,
+            0d
+        );
         MeasurementDto measurementDto = new MeasurementDto(
-                "id", QuantumOperationLibrary.MEASURE.name(), false, List.of(target), null, List.of(classicBit));
+            "id",
+            QuantumOperationLibrary.MEASURE.name(),
+            false,
+            List.of(target),
+            null,
+            List.of(classicBit)
+        );
 
         // Act
         QuantumOperation gate = mapper.toDomain(gateDto);

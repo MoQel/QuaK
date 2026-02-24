@@ -12,6 +12,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ElementSelectorJpaMapperTest {
+
     @InjectMocks
     private ElementSelectorJpaMapperImpl mapper;
 

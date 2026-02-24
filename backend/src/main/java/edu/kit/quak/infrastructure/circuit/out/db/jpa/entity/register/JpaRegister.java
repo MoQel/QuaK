@@ -12,6 +12,7 @@ import lombok.Setter;
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "register_type", discriminatorType = DiscriminatorType.STRING)
 public abstract class JpaRegister extends JpaElementWithId {
+
     @ManyToOne
     @JoinColumn(name = "circuit_id", referencedColumnName = "id")
     protected JpaQuantumCircuit circuit;

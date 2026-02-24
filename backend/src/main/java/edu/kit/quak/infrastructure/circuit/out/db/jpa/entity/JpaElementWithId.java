@@ -9,6 +9,7 @@ import lombok.Setter;
 @Setter
 @MappedSuperclass
 public abstract class JpaElementWithId {
+
     @Id
     protected String id;
 }

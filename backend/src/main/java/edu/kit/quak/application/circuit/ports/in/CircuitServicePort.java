@@ -19,11 +19,12 @@ public interface CircuitServicePort {
     QuantumCircuit addQuantumOperation(String circuitId, QuantumOperation operation, int layerIdx);
 
     QuantumCircuit moveQuantumOperation(
-            String circuitId,
-            String operationId,
-            int layerIdx,
-            List<ElementSelector> targetQubits,
-            List<ElementSelector> controlQubits);
+        String circuitId,
+        String operationId,
+        int layerIdx,
+        List<ElementSelector> targetQubits,
+        List<ElementSelector> controlQubits
+    );
 
     QuantumCircuit removeQuantumOperation(String circuitId, String operationId);
 }

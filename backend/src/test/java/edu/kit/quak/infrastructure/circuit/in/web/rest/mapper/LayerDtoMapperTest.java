@@ -19,6 +19,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class LayerDtoMapperTest {
+
     private LayerDtoMapper mapper;
 
     @BeforeEach
@@ -34,8 +35,7 @@ class LayerDtoMapperTest {
     void toResponse() {
         // Arrange
         ElementSelector target = new ElementSelector("id", 0);
-        ElementaryQuantumGate operation =
-                new ElementaryQuantumGate(QuantumOperationLibrary.H, false, List.of(target), null, 0d);
+        ElementaryQuantumGate operation = new ElementaryQuantumGate(QuantumOperationLibrary.H, false, List.of(target), null, 0d);
         Layer layer = new Layer(List.of(operation));
 
         // Act

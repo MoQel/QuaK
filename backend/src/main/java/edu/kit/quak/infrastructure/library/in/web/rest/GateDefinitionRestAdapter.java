@@ -33,9 +33,9 @@ public class GateDefinitionRestAdapter {
     @GetMapping("/{id}")
     public ResponseEntity<GateDefinitionResponse> getGateById(@PathVariable String id) {
         return gateService
-                .getGateDefinitionById(id)
-                .map(mapper::toResponse) // Mapping Domain -> DTO
-                .map(ResponseEntity::ok)
-                .orElseThrow(() -> new GateDefinitionNotFoundException(id));
+            .getGateDefinitionById(id)
+            .map(mapper::toResponse) // Mapping Domain -> DTO
+            .map(ResponseEntity::ok)
+            .orElseThrow(() -> new GateDefinitionNotFoundException(id));
     }
 }

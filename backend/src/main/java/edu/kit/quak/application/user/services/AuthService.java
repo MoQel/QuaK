@@ -41,9 +41,9 @@ public class AuthService implements AuthServicePort {
         log.debug("Fetching full user details for issuer: {}, sub: {}", domainUser.issuer(), domainUser.subject());
 
         return userRepository
-                .findByIssuerAndSub(domainUser.issuer(), domainUser.subject())
-                .map(user -> new AuthStatusResponse(true, user))
-                .orElse(new AuthStatusResponse(false, null));
+            .findByIssuerAndSub(domainUser.issuer(), domainUser.subject())
+            .map(user -> new AuthStatusResponse(true, user))
+            .orElse(new AuthStatusResponse(false, null));
     }
 
     @Override

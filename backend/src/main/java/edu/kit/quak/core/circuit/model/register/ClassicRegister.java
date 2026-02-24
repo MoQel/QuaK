@@ -7,6 +7,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public class ClassicRegister extends Register {
+
     private int numberOfBits;
 
     public ClassicRegister(String name, int numberOfBits) {

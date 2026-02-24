@@ -9,14 +9,16 @@ import lombok.Setter;
 @Getter
 @Setter
 public class Measurement extends QuantumOperation {
+
     private List<ElementSelector> classicBits;
 
     public Measurement(
-            @NonNull QuantumOperationLibrary operationDefinition,
-            boolean inverseForm,
-            @NonNull List<ElementSelector> targetQubits,
-            List<ElementSelector> controlQubits,
-            @NonNull List<ElementSelector> classicBits) {
+        @NonNull QuantumOperationLibrary operationDefinition,
+        boolean inverseForm,
+        @NonNull List<ElementSelector> targetQubits,
+        List<ElementSelector> controlQubits,
+        @NonNull List<ElementSelector> classicBits
+    ) {
         super(operationDefinition, inverseForm, targetQubits, controlQubits);
         if (operationDefinition.getDefinition().getType() != getClass()) {
             throw new IllegalArgumentException("Operation definition type is not a measurement.");

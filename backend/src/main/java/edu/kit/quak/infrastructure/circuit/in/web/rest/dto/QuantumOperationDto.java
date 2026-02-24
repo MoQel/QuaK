@@ -8,13 +8,16 @@ import lombok.Getter;
 import lombok.Setter;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
-@JsonSubTypes({
-    @JsonSubTypes.Type(value = ElementaryQuantumGateDto.class, name = "ELEMENTARY_QUANTUM_GATE"),
-    @JsonSubTypes.Type(value = MeasurementDto.class, name = "MEASUREMENT")
-})
+@JsonSubTypes(
+    {
+        @JsonSubTypes.Type(value = ElementaryQuantumGateDto.class, name = "ELEMENTARY_QUANTUM_GATE"),
+        @JsonSubTypes.Type(value = MeasurementDto.class, name = "MEASUREMENT"),
+    }
+)
 @Getter
 @Setter
 public abstract class QuantumOperationDto {
+
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     protected String id; // Is only returned within response, not expected within request.
 
@@ -24,11 +27,12 @@ public abstract class QuantumOperationDto {
     protected List<ElementSelectorDto> controlQubits;
 
     protected QuantumOperationDto(
-            String id,
-            String identifier,
-            boolean inverseForm,
-            List<ElementSelectorDto> targetQubits,
-            List<ElementSelectorDto> controlQubits) {
+        String id,
+        String identifier,
+        boolean inverseForm,
+        List<ElementSelectorDto> targetQubits,
+        List<ElementSelectorDto> controlQubits
+    ) {
         this.id = id;
         this.identifier = identifier;
         this.inverseForm = inverseForm;

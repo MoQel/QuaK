@@ -17,16 +17,18 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/circuit")
 public class CircuitRestAdapter {
+
     private final CircuitServicePort service;
     private final CircuitDtoMapper mapper;
     private final QuantumOperationDtoMapper quantumOperationDtoMapper;
     private final ElementSelectorDtoMapper elementSelectorDtoMapper;
 
     public CircuitRestAdapter(
-            CircuitServicePort service,
-            CircuitDtoMapper mapper,
-            QuantumOperationDtoMapper quantumOperationDtoMapper,
-            ElementSelectorDtoMapper elementSelectorDtoMapper) {
+        CircuitServicePort service,
+        CircuitDtoMapper mapper,
+        QuantumOperationDtoMapper quantumOperationDtoMapper,
+        ElementSelectorDtoMapper elementSelectorDtoMapper
+    ) {
         this.service = service;
         this.mapper = mapper;
         this.quantumOperationDtoMapper = quantumOperationDtoMapper;
@@ -59,32 +61,30 @@ public class CircuitRestAdapter {
     }
 
     @DeleteMapping("/{circuitId}/register/{registerId}/{qubitIdx}")
-    public CircuitResponse removeQubit(
-            @PathVariable String circuitId, @PathVariable String registerId, @PathVariable int qubitIdx) {
+    public CircuitResponse removeQubit(@PathVariable String circuitId, @PathVariable String registerId, @PathVariable int qubitIdx) {
         QuantumCircuit circuit = service.removeQubit(circuitId, registerId, qubitIdx);
         return mapper.toResponse(circuit);
     }
 
     @PostMapping("/{circuitId}/operation")
     @ResponseStatus(HttpStatus.CREATED)
-    public CircuitResponse addQuantumOperation(
-            @PathVariable String circuitId, @RequestBody AddQuantumOperationRequest request) {
+    public CircuitResponse addQuantumOperation(@PathVariable String circuitId, @RequestBody AddQuantumOperationRequest request) {
         QuantumOperation operation = quantumOperationDtoMapper.toDomain(request.quantumOperation());
         QuantumCircuit circuit = service.addQuantumOperation(circuitId, operation, request.layerIdx());
         return mapper.toResponse(circuit);
     }
 
     @PatchMapping("/{circuitId}/operation")
-    public CircuitResponse moveQuantumOperation(
-            @PathVariable String circuitId, @RequestBody MoveQuantumOperationRequest request) {
-        List<ElementSelector> targetQubits = request.targetQubits().stream()
-                .map(elementSelectorDtoMapper::toDomain)
-                .toList();
-        List<ElementSelector> controlQubits = request.controlQubits().stream()
-                .map(elementSelectorDtoMapper::toDomain)
-                .toList();
+    public CircuitResponse moveQuantumOperation(@PathVariable String circuitId, @RequestBody MoveQuantumOperationRequest request) {
+        List<ElementSelector> targetQubits = request.targetQubits().stream().map(elementSelectorDtoMapper::toDomain).toList();
+        List<ElementSelector> controlQubits = request.controlQubits().stream().map(elementSelectorDtoMapper::toDomain).toList();
         QuantumCircuit circuit = service.moveQuantumOperation(
-                circuitId, request.quantumOperationId(), request.layerIdx(), targetQubits, controlQubits);
+            circuitId,
+            request.quantumOperationId(),
+            request.layerIdx(),
+            targetQubits,
+            controlQubits
+        );
         return mapper.toResponse(circuit);
     }
 

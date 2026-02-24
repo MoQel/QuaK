@@ -10,5 +10,6 @@ import lombok.Setter;
 @Entity
 @DiscriminatorValue("ELEMENTARY_GATE")
 public class JpaElementaryQuantumGate extends JpaQuantumOperation {
+
     private double rotationAngle;
 }

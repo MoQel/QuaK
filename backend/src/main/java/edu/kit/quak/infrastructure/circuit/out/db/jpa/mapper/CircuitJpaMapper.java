@@ -9,9 +9,7 @@ import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.register.JpaRegiste
 import java.util.List;
 import org.mapstruct.*;
 
-@Mapper(
-        componentModel = MappingConstants.ComponentModel.SPRING,
-        uses = {RegisterJpaMapper.class, LayerJpaMapper.class})
+@Mapper(componentModel = MappingConstants.ComponentModel.SPRING, uses = { RegisterJpaMapper.class, LayerJpaMapper.class })
 public interface CircuitJpaMapper {
     @Mapping(target = "id", source = "id")
     JpaQuantumCircuit toEntity(QuantumCircuit domain);

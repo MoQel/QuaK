@@ -8,6 +8,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public class ElementSelector {
+
     private String registerId;
     private int index;
 

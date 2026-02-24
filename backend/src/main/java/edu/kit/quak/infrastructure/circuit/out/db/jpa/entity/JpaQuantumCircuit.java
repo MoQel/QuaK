@@ -12,6 +12,7 @@ import lombok.Setter;
 @Setter
 @Entity
 public class JpaQuantumCircuit extends JpaElementWithId {
+
     @OneToMany(mappedBy = "circuit", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderColumn(name = "register_pos")
     private List<JpaRegister> registers = new ArrayList<>();

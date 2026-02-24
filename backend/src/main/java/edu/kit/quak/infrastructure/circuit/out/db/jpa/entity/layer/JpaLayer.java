@@ -12,6 +12,7 @@ import lombok.Setter;
 @Setter
 @Entity
 public class JpaLayer extends JpaElementWithId {
+
     @ManyToOne
     @JoinColumn(name = "circuit_id", referencedColumnName = "id")
     private JpaQuantumCircuit circuit;

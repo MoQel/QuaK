@@ -9,6 +9,7 @@ import java.util.List;
 import lombok.NonNull;
 
 public class Layer extends ElementWithId {
+
     private final List<QuantumOperation> quantumOperations;
 
     public Layer(@NonNull List<QuantumOperation> quantumOperations) {
@@ -48,8 +49,7 @@ public class Layer extends ElementWithId {
         if (quantumOperations.isEmpty()) {
             sb.append("  <empty>");
         } else {
-            quantumOperations.forEach(op ->
-                    sb.append("  ").append(op.toString().replace("\n", "\n  ")).append("\n"));
+            quantumOperations.forEach(op -> sb.append("  ").append(op.toString().replace("\n", "\n  ")).append("\n"));
         }
 
         return sb.toString().trim();

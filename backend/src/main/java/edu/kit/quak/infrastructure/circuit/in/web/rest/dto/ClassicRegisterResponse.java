@@ -6,5 +6,6 @@ import lombok.Setter;
 @Getter
 @Setter
 public class ClassicRegisterResponse extends RegisterResponse {
+
     private int numberOfBits;
 }

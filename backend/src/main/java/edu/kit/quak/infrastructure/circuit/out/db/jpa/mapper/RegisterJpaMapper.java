@@ -8,9 +8,7 @@ import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.register.JpaQuantum
 import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.register.JpaRegister;
 import org.mapstruct.*;
 
-@Mapper(
-        componentModel = MappingConstants.ComponentModel.SPRING,
-        collectionMappingStrategy = CollectionMappingStrategy.TARGET_IMMUTABLE)
+@Mapper(componentModel = MappingConstants.ComponentModel.SPRING, collectionMappingStrategy = CollectionMappingStrategy.TARGET_IMMUTABLE)
 public interface RegisterJpaMapper {
     @BeanMapping(subclassExhaustiveStrategy = SubclassExhaustiveStrategy.RUNTIME_EXCEPTION)
     @SubclassMapping(source = QuantumRegister.class, target = JpaQuantumRegister.class)

@@ -14,6 +14,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class RegisterDtoMapperTest {
+
     @InjectMocks
     private RegisterDtoMapperImpl mapper;
 

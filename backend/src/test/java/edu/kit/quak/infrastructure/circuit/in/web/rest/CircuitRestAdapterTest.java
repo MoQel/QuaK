@@ -26,15 +26,18 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(CircuitRestAdapter.class)
-@Import({
-    CircuitDtoMapperImpl.class,
-    RegisterDtoMapperImpl.class,
-    LayerDtoMapperImpl.class,
-    QuantumOperationDtoMapperImpl.class,
-    ElementSelectorDtoMapperImpl.class
-})
+@Import(
+    {
+        CircuitDtoMapperImpl.class,
+        RegisterDtoMapperImpl.class,
+        LayerDtoMapperImpl.class,
+        QuantumOperationDtoMapperImpl.class,
+        ElementSelectorDtoMapperImpl.class,
+    }
+)
 @WithMockUser(username = "tester", roles = "USER")
 class CircuitRestAdapterTest {
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -50,15 +53,16 @@ class CircuitRestAdapterTest {
         given(circuitServicePort.init()).willReturn(circuit);
 
         // Act & Assert
-        mockMvc.perform(post("/api/circuit").with(csrf()).contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").value(circuit.getId()))
-                .andExpect(jsonPath("$.registers").exists())
-                .andExpect(jsonPath("$.registers").isArray())
-                .andExpect(jsonPath("$.registers.size()").value(1))
-                .andExpect(jsonPath("$.layers").exists())
-                .andExpect(jsonPath("$.layers").isArray())
-                .andExpect(jsonPath("$.layers.size()").value(0));
+        mockMvc
+            .perform(post("/api/circuit").with(csrf()).contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.id").value(circuit.getId()))
+            .andExpect(jsonPath("$.registers").exists())
+            .andExpect(jsonPath("$.registers").isArray())
+            .andExpect(jsonPath("$.registers.size()").value(1))
+            .andExpect(jsonPath("$.layers").exists())
+            .andExpect(jsonPath("$.layers").isArray())
+            .andExpect(jsonPath("$.layers.size()").value(0));
     }
 
     @Test
@@ -69,9 +73,7 @@ class CircuitRestAdapterTest {
         given(circuitServicePort.get(circuitId)).willReturn(circuit);
 
         // Act & Assert
-        mockMvc.perform(get("/api/circuit/{circuitId}", circuitId))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").exists());
+        mockMvc.perform(get("/api/circuit/{circuitId}", circuitId)).andExpect(status().isOk()).andExpect(jsonPath("$.id").exists());
     }
 
     @Test
@@ -84,16 +86,19 @@ class CircuitRestAdapterTest {
         given(circuitServicePort.addQubit(circuitId, registerId)).willReturn(circuit);
 
         // Act & Assert
-        mockMvc.perform(post("/api/circuit/{circuitId}/register/{registerId}", circuitId, registerId)
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.registers").exists())
-                .andExpect(jsonPath("$.registers").isArray())
-                .andExpect(jsonPath("$.registers[0].name").exists())
-                .andExpect(jsonPath("$.registers[0].name").value("q"))
-                .andExpect(jsonPath("$.registers[0].numberOfQubits").exists())
-                .andExpect(jsonPath("$.registers[0].numberOfQubits").value(INIT_QUBITS + 1));
+        mockMvc
+            .perform(
+                post("/api/circuit/{circuitId}/register/{registerId}", circuitId, registerId)
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+            )
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.registers").exists())
+            .andExpect(jsonPath("$.registers").isArray())
+            .andExpect(jsonPath("$.registers[0].name").exists())
+            .andExpect(jsonPath("$.registers[0].name").value("q"))
+            .andExpect(jsonPath("$.registers[0].numberOfQubits").exists())
+            .andExpect(jsonPath("$.registers[0].numberOfQubits").value(INIT_QUBITS + 1));
     }
 
     @Test
@@ -106,15 +111,14 @@ class CircuitRestAdapterTest {
         given(circuitServicePort.removeQubit(circuitId, registerId, qubitIdx)).willReturn(updatedCircuit);
 
         // Act & Assert
-        mockMvc.perform(delete(
-                                "/api/circuit/{circuitId}/register/{registerId}/{qubitIdx}",
-                                circuitId,
-                                registerId,
-                                qubitIdx)
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(updatedCircuit.getId()));
+        mockMvc
+            .perform(
+                delete("/api/circuit/{circuitId}/register/{registerId}/{qubitIdx}", circuitId, registerId, qubitIdx)
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+            )
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(updatedCircuit.getId()));
     }
 
     @Test
@@ -125,40 +129,38 @@ class CircuitRestAdapterTest {
         String registerId = circuit.getRegisters().getFirst().getId();
         circuit.addQubit(registerId);
         ElementSelector target = new ElementSelector(registerId, 0);
-        ElementaryQuantumGate operation =
-                new ElementaryQuantumGate(QuantumOperationLibrary.H, false, List.of(target), null, 0d);
+        ElementaryQuantumGate operation = new ElementaryQuantumGate(QuantumOperationLibrary.H, false, List.of(target), null, 0d);
         int layerIdx = 0;
         circuit.addQuantumOperation(operation, layerIdx);
-        given(circuitServicePort.addQuantumOperation(eq(circuitId), any(QuantumOperation.class), eq(layerIdx)))
-                .willReturn(circuit);
+        given(circuitServicePort.addQuantumOperation(eq(circuitId), any(QuantumOperation.class), eq(layerIdx))).willReturn(circuit);
         String payload = """
-                {
-                    "quantumOperation": {
-                        "type": "ELEMENTARY_QUANTUM_GATE",
-                        "identifier": "H",
-                        "inverseForm": false,
-                        "targetQubits": [{
-                            "registerId": "%s",
-                            "index": 0
-                        }],
-                        "controlQubits": null,
-                        "rotationAngle": 0.0
-                    },
-                    "layerIdx": 0
-                }
-                """.formatted(registerId);
+            {
+                "quantumOperation": {
+                    "type": "ELEMENTARY_QUANTUM_GATE",
+                    "identifier": "H",
+                    "inverseForm": false,
+                    "targetQubits": [{
+                        "registerId": "%s",
+                        "index": 0
+                    }],
+                    "controlQubits": null,
+                    "rotationAngle": 0.0
+                },
+                "layerIdx": 0
+            }
+            """.formatted(registerId);
 
         // Act & Assert
-        mockMvc.perform(post("/api/circuit/{circuitId}/operation", circuitId)
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(payload))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.layers").exists())
-                .andExpect(jsonPath("$.layers").isArray())
-                .andExpect(jsonPath("$.layers[0].quantumOperations").exists())
-                .andExpect(jsonPath("$.layers[0].quantumOperations").isArray())
-                .andExpect(jsonPath("$.layers[0].quantumOperations[0]").exists())
-                .andExpect(jsonPath("$.layers[0].quantumOperations[0].id").value(operation.getId()));
+        mockMvc
+            .perform(
+                post("/api/circuit/{circuitId}/operation", circuitId).with(csrf()).contentType(MediaType.APPLICATION_JSON).content(payload)
+            )
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.layers").exists())
+            .andExpect(jsonPath("$.layers").isArray())
+            .andExpect(jsonPath("$.layers[0].quantumOperations").exists())
+            .andExpect(jsonPath("$.layers[0].quantumOperations").isArray())
+            .andExpect(jsonPath("$.layers[0].quantumOperations[0]").exists())
+            .andExpect(jsonPath("$.layers[0].quantumOperations[0].id").value(operation.getId()));
     }
 }
