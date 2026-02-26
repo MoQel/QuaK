@@ -35,4 +35,12 @@ public interface UserServicePort {
      * @throws UserNotFoundException if user doesn't exist
      */
     UUID getAuthenticatedUserId(AuthenticatedUser authenticatedUser);
+
+    /**
+     * Finds all users with the given IDs.
+     *
+     * @param ids The list of user IDs to find
+     * @return A list of found users
+     */
+    List<User> findAllByIds(List<UUID> ids);
 }

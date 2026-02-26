@@ -79,4 +79,13 @@ public class UserService implements UserServicePort {
         }
         return userRepository.searchByEmail(emailQuery);
     }
+
+    @Override
+    public List<User> findAllByIds(List<UUID> ids) {
+        log.debug("Finding users by IDs: {}", ids);
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+        return userRepository.findAllByIds(ids);
+    }
 }

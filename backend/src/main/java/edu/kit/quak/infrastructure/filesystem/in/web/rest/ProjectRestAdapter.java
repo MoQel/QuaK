@@ -13,6 +13,11 @@ import edu.kit.quak.infrastructure.user.in.web.rest.mapper.AuthenticationMapper;
 import edu.kit.quak.infrastructure.user.in.web.rest.mapper.UserDtoMapper;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -52,12 +57,23 @@ public class ProjectRestAdapter {
     public List<ProjectDetailsResponse> getProjects(Authentication authentication) {
         User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
         List<Project> projects = service.listProjects(user);
+
+        // Collect all unique owner IDs
+        List<UUID> ownerIds = projects.stream()
+                .map(Project::getOwnerId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+
+        // Fetch owners in a single batch call to avoid N+1 problem
+        Map<UUID, UserResponse> ownersMap = userService.findAllByIds(ownerIds).stream()
+                .map(userDtoMapper::toResponse)
+                .collect(Collectors.toMap(UserResponse::userId, Function.identity()));
+
         return projects.stream()
                 .map(project -> {
                     UserResponse ownerResponse = project.getOwnerId() == null ? null
-                            : userService.findById(project.getOwnerId())
-                                    .map(userDtoMapper::toResponse)
-                                    .orElse(null);
+                            : ownersMap.get(project.getOwnerId());
                     return mapper.toDetailsResponse(project, ownerResponse);
                 })
                 .toList();

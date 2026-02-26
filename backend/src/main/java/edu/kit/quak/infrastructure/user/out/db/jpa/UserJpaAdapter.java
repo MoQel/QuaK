@@ -62,4 +62,9 @@ public class UserJpaAdapter implements UserRepositoryPort {
     public List<User> searchByEmail(String email) {
         return repository.findByEmailContainingIgnoreCase(email).stream().map(mapper::toDomain).toList();
     }
+
+    @Override
+    public List<User> findAllByIds(List<UUID> ids) {
+        return repository.findAllById(ids).stream().map(mapper::toDomain).toList();
+    }
 }

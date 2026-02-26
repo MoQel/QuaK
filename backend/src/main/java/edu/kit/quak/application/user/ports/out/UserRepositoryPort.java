@@ -36,4 +36,12 @@ public interface UserRepositoryPort {
     List<User> searchByEmail(String email);
 
     void deleteById(UUID id);
+
+    /**
+     * Finds all users with the given IDs.
+     *
+     * @param ids The list of user IDs to find
+     * @return A list of found users
+     */
+    List<User> findAllByIds(List<UUID> ids);
 }
