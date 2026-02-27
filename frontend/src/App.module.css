@@ -1,15 +1,15 @@
 :root {
     margin: 0 auto;
     text-align: center;
-    --gateWidth: 60px;
-    --gateHeight: 60px;
-    --gateSpacing: 24px;
+    --quantumOperationWidth: 40px;
+    --quantumOperationHeight: 40px;
+    --quantumOperationSpacing: 24px;
     --qubitWireSpacing: 8px;
     --colorBack: #2f2e2e;
     --colorFront: #1e1616;
-    --qubitWidth: var(--gateWidth);
-    --qubitHeight: var(--gateHeight);
-    --spacingBetweenGates: 3px;
+    --qubitWidth: var(--quantumOperationWidth);
+    --qubitHeight: var(--quantumOperationHeight);
+    --spacingBetweenOperations: 3px;
 }
 
 .main {
@@ -44,16 +44,14 @@
 
 .libraryElement {
     padding: 9px 11px;
-    border-radius: 3px;
-    margin-top: 0;
     box-sizing: border-box;
-    height: var(--gateHeight);
-    width: var(--gateWidth);
+    height: var(--quantumOperationHeight);
+    width: var(--quantumOperationWidth);
     text-align: center;
     font-family: var(--font-mono), monospace;
     font-weight: bold;
     user-select: none;
-    font-size: 20px;
+    font-size: 16px;
 }
 
 .libraryElement:hover {
@@ -61,35 +59,27 @@
     -webkit-user-drag: element; /* Prevents Safari from “forgetting” the element when dragging */
 }
 
-.gate,
-.gate:hover {
+.quantumOperation {
     padding: 9px 11px;
-    border-radius: 3px;
-    margin-top: 0;
     box-sizing: border-box;
-    height: var(--gateHeight);
-    width: var(--gateWidth);
+    height: var(--quantumOperationHeight);
+    width: var(--quantumOperationWidth);
     text-align: center;
     font-family: var(--font-mono), monospace;
     font-weight: bold;
     user-select: none;
-    font-size: 20px;
-}
-
-.gate:hover {
-    background-color: var(--bg-light);
-    -webkit-user-drag: element; /* Prevents Safari from “forgetting” the element when dragging */
+    font-size: 16px;
 }
 
 .dropzoneSpacing {
-    min-width: var(--gateSpacing);
+    min-width: var(--quantumOperationSpacing);
 }
 
 .dropZonePlaceHolderMargin {
-    margin-inline: var(--gateSpacing);
+    margin-inline: var(--quantumOperationSpacing);
 }
 .dropZoneLastPlaceHolderMargin {
-    margin-left: var(--gateSpacing);
+    margin-left: var(--quantumOperationSpacing);
 }
 
 .qubit {
@@ -101,13 +91,13 @@
     margin-left: var(--qubitWireSpacing);
 }
 
-.gateIndexSpacing {
-    margin-left: calc(var(--qubitWidth) + var(--qubitWireSpacing) + var(--gateSpacing) / 2);
+.quantumOperationIndexSpacing {
+    margin-left: calc(var(--qubitWidth) + var(--qubitWireSpacing) + var(--quantumOperationSpacing) / 2);
 }
-.gateIndexSize {
-    width: calc(var(--gateWidth) + var(--gateSpacing));
+.quantumOperationIndexSize {
+    width: calc(var(--quantumOperationWidth) + var(--quantumOperationSpacing));
 }
-.availableGateContainer {
+.availableQuantumOperationContainer {
     padding: 9px 11px;
     display: flex;
     grid-auto-flow: column;

@@ -15,7 +15,6 @@ import edu.kit.quak.infrastructure.user.out.db.jpa.entity.JpaUser;
 import edu.kit.quak.infrastructure.user.out.db.jpa.repository.SpringDataUserRepository;
 import edu.kit.quak.shared.tags.IntegrationTest;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -295,8 +294,6 @@ class ProjectLifecycleIntegrationTest {
 
     @Test
     @DisplayName("E2E: Accessing Non-Existent Resource returns 404")
-    @Disabled
-    // TODO: Fix Exception Handling
     void testNotFoundHandling() throws Exception {
         mockMvc.perform(get("/api/file/f-999999999-non-existent").with(authenticatedUser())).andExpect(status().isNotFound()); // Expects 404
 
