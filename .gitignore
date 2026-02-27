@@ -9,3 +9,4 @@ Thumbs.db
 # Global dependencies
 node_modules/
 .vscode/settings.json
+docs/api/

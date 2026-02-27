@@ -5,6 +5,7 @@ import edu.kit.quak.application.library.ports.in.GateDefinitionServicePort;
 import edu.kit.quak.core.library.model.GateDefinition;
 import edu.kit.quak.infrastructure.library.in.web.rest.dto.GateDefinitionResponse;
 import edu.kit.quak.infrastructure.library.in.web.rest.mapper.GateDefinitionDtoMapper;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/gates")
+@Tag(name = "Gates")
 public class GateDefinitionRestAdapter {
 
     private final GateDefinitionServicePort gateService;
