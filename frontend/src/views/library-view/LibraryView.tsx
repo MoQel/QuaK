@@ -1,9 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.tsx';
 import styles from '@/App.module.css';
-import QuantumOperationLibrary from '@/views/library-view/QuantumOperationLibrary.tsx';
+import LibraryBoxView from '@/views/library-view/LibraryBoxView.tsx';
 import { Button } from '@/components/ui/button';
 import { List, LayoutGrid } from 'lucide-react';
-import QuantumOperationList from '@/views/library-view/QuantumOperationList.tsx';
+import LibraryListView from '@/views/library-view/LibraryListView.tsx';
 import { useEffect, useState } from 'react';
 import { api } from '@/api/api.ts';
 import { OperationDefinitionResponse } from '@/api/dto/library.ts';
@@ -46,13 +46,13 @@ export function LibraryView({ onOperationSelect }: Readonly<LibraryViewProps>) {
                         className={`h-full ${boxMode ? 'overflow-y-auto' : ''} ${styles.availableQuantumOperationContainer}`}
                     >
                         {boxMode && (
-                            <QuantumOperationLibrary
+                            <LibraryBoxView
                                 quantumOperations={quantumOperations}
                                 onOperationClick={handleOperationClick}
                             />
                         )}
                         {!boxMode && (
-                            <QuantumOperationList
+                            <LibraryListView
                                 quantumOperations={quantumOperations}
                                 onOperationClick={handleOperationClick}
                             />

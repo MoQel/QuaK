@@ -1,48 +1,29 @@
-import { useMemo } from 'react';
 import { LibraryElement } from '@/views/library-view/LibraryElement.tsx';
 import { OperationDefinitionResponse } from '@/api/dto/library.ts';
 
-interface QuantumOperationListProps {
+interface LibraryListViewProps {
     quantumOperations: OperationDefinitionResponse[];
     onOperationClick: (operation: OperationDefinitionResponse) => void;
 }
 
-function QuantumOperationList({ quantumOperations, onOperationClick }: Readonly<QuantumOperationListProps>) {
-    // Group and sort by type and then by name
-    const groupedQuantumOperations = useMemo(() => {
-        const groups: Record<string, OperationDefinitionResponse[]> = {};
-
-        for (const quantumOperation of quantumOperations) {
-            const type = quantumOperation.category;
-            if (!groups[type]) {
-                groups[type] = [];
-            }
-            groups[type].push(quantumOperation);
-        }
-
-        return Object.entries(groups)
-            .sort(([typeA], [typeB]) => typeA.localeCompare(typeB))
-            .map(([type, operationsInGroup]) => ({
-                type,
-                operations: operationsInGroup.toSorted((a, b) => a.name.localeCompare(b.name)),
-            }));
-    }, [quantumOperations]);
-
+function LibraryListView({ quantumOperations, onOperationClick }: Readonly<LibraryListViewProps>) {
     return (
         <div className="w-full h-full overflow-y-auto will-change-transform transform-gpu border border-border rounded-md bg-bg-dark">
-            {groupedQuantumOperations.map((group, index) => (
-                <section key={group.type}>
-                    <div
-                        className="sticky top-0 z-10 bg-bg text-text border-b border-border font-semibold text-sm px-4 py-3"
-                        style={{
-                            borderTop: index === 0 ? 'none' : '1px solid var(--border)',
-                        }}
-                    >
-                        {group.type}
-                    </div>
+            <ul className="list-none m-0 p-0">
+                {quantumOperations.map((operation, index) => {
+                    const isNewCategory = index === 0 || quantumOperations[index - 1].category !== operation.category;
 
-                    <ul className="list-none m-0 p-0">
-                        {group.operations.map((operation) => (
+                    return (
+                        <>
+                            {isNewCategory && (
+                                <div
+                                    key={operation.category}
+                                    className="sticky top-0 z-10 bg-bg text-text border-b border-border font-semibold text-sm px-4 py-3"
+                                    style={{ borderTop: index === 0 ? 'none' : '1px solid var(--border)' }}
+                                >
+                                    {operation.category}
+                                </div>
+                            )}
                             <li
                                 key={operation.name}
                                 className="
@@ -71,12 +52,12 @@ function QuantumOperationList({ quantumOperations, onOperationClick }: Readonly<
                                     </div>
                                 </div>
                             </li>
-                        ))}
-                    </ul>
-                </section>
-            ))}
+                        </>
+                    );
+                })}
+            </ul>
         </div>
     );
 }
 
-export default QuantumOperationList;
+export default LibraryListView;

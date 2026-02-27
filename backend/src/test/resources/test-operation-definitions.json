@@ -3,7 +3,7 @@
     "id": "h",
     "name": "Hadamard",
     "symbol": "H",
-    "category": "Superposition",
+    "category": "Hadamard",
     "description": "Creates an equal superposition of |0⟩ and |1⟩.",
     "qubitCount": 1,
     "inspectorInfo": {
@@ -27,7 +27,7 @@
     "id": "cx",
     "name": "CNOT",
     "symbol": "CNOT",
-    "category": "Multi-Qubit",
+    "category": "Classical",
     "description": "Controlled-NOT. Flips the target qubit if the control qubit is |1⟩.",
     "qubitCount": 2,
     "inspectorInfo": {

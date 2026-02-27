@@ -1,12 +1,12 @@
 import { LibraryElement } from '@/views/library-view/LibraryElement.tsx';
 import { OperationDefinitionResponse } from '@/api/dto/library.ts';
 
-interface QuantumOperationLibraryProps {
+interface LibraryBoxViewProps {
     quantumOperations: OperationDefinitionResponse[];
     onOperationClick: (operation: OperationDefinitionResponse) => void;
 }
 
-function QuantumOperationLibrary({ quantumOperations, onOperationClick }: Readonly<QuantumOperationLibraryProps>) {
+function LibraryBoxView({ quantumOperations, onOperationClick }: Readonly<LibraryBoxViewProps>) {
     return (
         <div className="grid grid-cols-5 gap-4 content-start">
             {quantumOperations.map((operation: OperationDefinitionResponse) => (
@@ -21,4 +21,4 @@ function QuantumOperationLibrary({ quantumOperations, onOperationClick }: Readon
     );
 }
 
-export default QuantumOperationLibrary;
+export default LibraryBoxView;
