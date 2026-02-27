@@ -53,12 +53,11 @@
     --scrollbarSlider-activeBackground: #0000004d;
 
     /* Quantum Operation Colors */
-    --hadamard: hsl(357 95% 64%);
-    --classical: hsl(218 100% 64%);
-    --phase: hsl(202 100% 86%);
-    --quantum: hsl(334 100% 75%);
-    --non-unitary-and-modifiers: hsl(0 0% 70%);
-    --operation-text: hsl(220 6% 10%);
+    --hadamard: hsl(357 95% 45%);
+    --classical: hsl(223 100% 31%);
+    --phase: hsl(203 100% 60%);
+    --quantum: hsl(334 74% 36%);
+    --non-unitary-and-modifiers: hsl(0 0% 50%);
 }
 
 .dark {
@@ -92,6 +91,13 @@
     --scrollbarSlider-background: #ffffff1a;
     --scrollbarSlider-hoverBackground: #ffffff33;
     --scrollbarSlider-activeBackground: #ffffff4d;
+
+    /* Quantum Operation Colors */
+    --hadamard: hsl(357 95% 64%);
+    --classical: hsl(218 100% 64%);
+    --phase: hsl(202 100% 86%);
+    --quantum: hsl(334 100% 75%);
+    --non-unitary-and-modifiers: hsl(0 0% 70%);
 }
 
 /* smaller layout for chrome, edge and safari */

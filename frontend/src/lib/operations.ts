@@ -31,8 +31,7 @@ export type OperationDefinition = {
     icon: { type: 'component'; component: ComponentType<any> } | { type: 'text'; text: string };
     label?: string;
     formClass: ShapeClass;
-    primaryColor: Color;
-    secondaryColor: Color;
+    color: Color;
 };
 
 const H: OperationDefinition = {
@@ -42,8 +41,7 @@ const H: OperationDefinition = {
     totalSize: 1,
     icon: { type: 'text', text: 'H' },
     formClass: 'rounded-none',
-    primaryColor: 'var(--hadamard)',
-    secondaryColor: 'var(--operation-text)',
+    color: 'var(--hadamard)',
 };
 
 const X: OperationDefinition = {
@@ -53,8 +51,7 @@ const X: OperationDefinition = {
     totalSize: 1,
     icon: { type: 'component', component: Plus },
     formClass: 'rounded-full',
-    primaryColor: 'var(--classical)',
-    secondaryColor: 'var(--operation-text)',
+    color: 'var(--classical)',
 };
 
 const Y: OperationDefinition = {
@@ -64,8 +61,7 @@ const Y: OperationDefinition = {
     totalSize: 1,
     icon: { type: 'text', text: 'Y' },
     formClass: 'rounded-none',
-    primaryColor: 'var(--quantum)',
-    secondaryColor: 'var(--operation-text)',
+    color: 'var(--quantum)',
 };
 
 const Z: OperationDefinition = {
@@ -75,8 +71,7 @@ const Z: OperationDefinition = {
     totalSize: 1,
     icon: { type: 'text', text: 'Z' },
     formClass: 'rounded-none',
-    primaryColor: 'var(--phase)',
-    secondaryColor: 'var(--operation-text)',
+    color: 'var(--phase)',
 };
 
 const CX: OperationDefinition = {
@@ -86,8 +81,7 @@ const CX: OperationDefinition = {
     totalSize: 2,
     icon: { type: 'component', component: Plus },
     formClass: 'rounded-full',
-    primaryColor: 'var(--classical)',
-    secondaryColor: 'var(--operation-text)',
+    color: 'var(--classical)',
 };
 
 const CCX: OperationDefinition = {
@@ -97,8 +91,7 @@ const CCX: OperationDefinition = {
     totalSize: 3,
     icon: { type: 'component', component: Plus },
     formClass: 'rounded-full',
-    primaryColor: 'var(--classical)',
-    secondaryColor: 'var(--operation-text)',
+    color: 'var(--classical)',
 };
 
 const CZ: OperationDefinition = {
@@ -108,8 +101,7 @@ const CZ: OperationDefinition = {
     totalSize: 2,
     icon: { type: 'text', text: 'Z' },
     formClass: 'rounded-none',
-    primaryColor: 'var(--phase)',
-    secondaryColor: 'var(--operation-text)',
+    color: 'var(--phase)',
 };
 
 const SWAP: OperationDefinition = {
@@ -119,8 +111,7 @@ const SWAP: OperationDefinition = {
     totalSize: 2,
     icon: { type: 'component', component: LucideX },
     formClass: 'rounded-none',
-    primaryColor: 'transparent',
-    secondaryColor: 'var(--classical)',
+    color: 'var(--classical)',
 };
 
 const S: OperationDefinition = {
@@ -130,8 +121,7 @@ const S: OperationDefinition = {
     totalSize: 1,
     icon: { type: 'text', text: 'S' },
     formClass: 'rounded-none',
-    primaryColor: 'var(--phase)',
-    secondaryColor: 'var(--operation-text)',
+    color: 'var(--phase)',
 };
 
 const T: OperationDefinition = {
@@ -141,8 +131,7 @@ const T: OperationDefinition = {
     totalSize: 1,
     icon: { type: 'text', text: 'T' },
     formClass: 'rounded-none',
-    primaryColor: 'var(--phase)',
-    secondaryColor: 'var(--operation-text)',
+    color: 'var(--phase)',
 };
 
 const RX: OperationDefinition = {
@@ -152,8 +141,7 @@ const RX: OperationDefinition = {
     totalSize: 1,
     icon: { type: 'text', text: 'RX' },
     formClass: 'rounded-none',
-    primaryColor: 'var(--quantum)',
-    secondaryColor: 'var(--operation-text)',
+    color: 'var(--quantum)',
 };
 
 const RY: OperationDefinition = {
@@ -163,8 +151,7 @@ const RY: OperationDefinition = {
     totalSize: 1,
     icon: { type: 'text', text: 'RY' },
     formClass: 'rounded-none',
-    primaryColor: 'var(--quantum)',
-    secondaryColor: 'var(--operation-text)',
+    color: 'var(--quantum)',
 };
 
 const RZ: OperationDefinition = {
@@ -174,8 +161,7 @@ const RZ: OperationDefinition = {
     totalSize: 1,
     icon: { type: 'text', text: 'RZ' },
     formClass: 'rounded-none',
-    primaryColor: 'var(--quantum)',
-    secondaryColor: 'var(--operation-text)',
+    color: 'var(--quantum)',
 };
 
 const MEASURE: OperationDefinition = {
@@ -185,8 +171,7 @@ const MEASURE: OperationDefinition = {
     totalSize: 1,
     icon: { type: 'component', component: Gauge },
     formClass: 'rounded-none',
-    primaryColor: 'var(--non-unitary-and-modifiers)',
-    secondaryColor: 'var(--operation-text)',
+    color: 'var(--non-unitary-and-modifiers)',
 };
 
 const DUMMY: OperationDefinition = {
@@ -196,8 +181,7 @@ const DUMMY: OperationDefinition = {
     totalSize: 1,
     icon: { type: 'text', text: '' },
     formClass: 'rounded-none',
-    primaryColor: 'var(--non-unitary-and-modifiers)',
-    secondaryColor: 'var(--operation-text)',
+    color: 'var(--non-unitary-and-modifiers)',
 };
 
 const OPERATION_DEFINITIONS: Record<OperationIdentifier, OperationDefinition> = {

@@ -112,11 +112,7 @@ export function ElementaryQuantumGate({
                             absolute left-1/2 -translate-x-1/2 h-full w-[2px]
                             bg-bg-light border-border
                             group-hover:brightness-90 dark:group-hover:brightness-125 transition-colors"
-                        style={
-                            operation.identifier === 'SWAP'
-                                ? { backgroundColor: definition.secondaryColor }
-                                : { backgroundColor: definition.primaryColor }
-                        }
+                        style={{ backgroundColor: definition.color }}
                     />
                 </div>
             )}
@@ -149,7 +145,7 @@ function ControlPoint({ relativeIdx, definition }: Readonly<{ relativeIdx: numbe
                 pointer-events-auto cursor-grab active:cursor-grabbing
                 group-hover:brightness-90 dark:group-hover:brightness-125 transition-colors"
             style={{
-                backgroundColor: definition.primaryColor,
+                backgroundColor: definition.color,
                 top: relativeIdx * QUBIT_HEIGHT + QUBIT_HEIGHT / 2 - size / 2,
                 width: `${size}px`,
                 height: `${size}px`,
@@ -186,7 +182,11 @@ function TargetPoint({
                     pointer-events-auto cursor-grab active:cursor-grabbing
                     group-hover:brightness-90 dark:group-hover:brightness-125 transition-colors
                     ${isSWAP ? '' : styles.quantumOperation}`}
-                style={{ backgroundColor: definition.primaryColor, color: definition.secondaryColor }}
+                style={
+                    isSWAP
+                        ? { backgroundColor: 'transparent', color: definition.color }
+                        : { backgroundColor: definition.color, color: 'var(--bg-dark)' }
+                }
             >
                 {icon}
             </div>

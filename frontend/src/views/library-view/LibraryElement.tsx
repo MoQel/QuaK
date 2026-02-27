@@ -77,11 +77,7 @@ export function LibraryElement({ identifier, onClick, matrix }: Readonly<Library
                         flex items-center justify-center
                         hover:brightness-90 dark:hover:brightness-125 transition-colors
                         ${styles.libraryElement}`}
-                    style={
-                        identifier === 'SWAP'
-                            ? { backgroundColor: definition.secondaryColor, color: '#18191b' }
-                            : { backgroundColor: definition.primaryColor, color: definition.secondaryColor }
-                    }
+                    style={{ backgroundColor: definition.color, color: 'var(--bg-dark)' }}
                 >
                     {icon}
                 </div>
