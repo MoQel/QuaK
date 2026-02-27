@@ -2,7 +2,7 @@ package edu.kit.quak.infrastructure.library.in.web.rest.dto;
 
 import java.util.List;
 
-public record GateDefinitionResponse(
+public record OperationDefinitionResponse(
     String id,
     String name,
     String category,
@@ -13,7 +13,7 @@ public record GateDefinitionResponse(
     InspectorInfoResponse inspectorInfo
 ) {
     // Ensure parameters list is not null
-    public GateDefinitionResponse {
+    public OperationDefinitionResponse {
         if (parameters == null) {
             parameters = List.of();
         }

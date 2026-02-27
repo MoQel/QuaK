@@ -7,11 +7,11 @@ interface CircuitFooterProps {
 
 export function CircuitFooter({ uiLayers }: Readonly<CircuitFooterProps>) {
     return (
-        <div className={`${styles.gateIndexSpacing} flex font-mono text-sm border-l border-gray-500`}>
+        <div className={`${styles.quantumOperationIndexSpacing} flex font-mono text-sm border-l border-gray-500`}>
             {Array.from({ length: uiLayers.length }, (_, i) => (
                 <span
                     key={i}
-                    className={`${styles.gateIndexSize} text-text shrink-0 flex justify-center border-r border-border`}
+                    className={`${styles.quantumOperationIndexSize} text-text shrink-0 flex justify-center border-r border-border`}
                 >
                     {i + 1}
                 </span>

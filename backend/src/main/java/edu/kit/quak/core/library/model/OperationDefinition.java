@@ -3,7 +3,7 @@ package edu.kit.quak.core.library.model;
 import java.util.Collections;
 import java.util.List;
 
-public record GateDefinition(
+public record OperationDefinition(
     String id,
     String name,
     String category,
@@ -13,23 +13,20 @@ public record GateDefinition(
     List<String> parameters,
     InspectorInfo inspectorInfo
 ) {
-    // Compact constructor to ensure non-null lists and handle optional
-    // InspectorInfo
-    public GateDefinition {
+    // Compact constructor to ensure non-null lists and handle optional InspectorInfo
+    public OperationDefinition {
         parameters = parameters != null ? Collections.unmodifiableList(parameters) : List.of();
-        // InspectorInfo can be null - it's optional for gates that don't need inspector
-        // details
+        // InspectorInfo can be null - it's optional for gates that don't need inspector details
     }
 
     /**
-     * Contains detailed information about a gate for display in the Inspector view. All string
+     * Contains detailed information about an operation for display in the Inspector view. All string
      * fields containing mathematical notation should use LaTeX format.
      *
-     * @param operatorDefinition LaTeX string representing the gate's operator definition (e.g., "H
+     * @param operatorDefinition LaTeX string representing the operations operator definition (e.g., "H
      *     = |0\rangle\langle0| + |1\rangle\langle1|")
-     * @param truthTable List of input/output state mappings for the gate
-     * @param matrix Matrix representation of the gate with both LaTeX display format and computable
-     *     values
+     * @param truthTable List of input/output state mappings for the operation
+     * @param matrix Matrix representation of the operation with both LaTeX display format and computable values
      */
     public record InspectorInfo(String operatorDefinition, List<TruthTableEntry> truthTable, MatrixInfo matrix) {
         // ensures non-null

@@ -69,7 +69,7 @@ export function LibraryElement({ identifier, onClick, matrix }: Readonly<Library
                 <div
                     id={identifier.toLowerCase()}
                     onClick={onClick}
-                    draggable={identifier !== 'MEASURE'} // Disable Measure Gate, as it is currently not working.
+                    draggable={identifier !== 'MEASURE'} // Disable Measurement Operation, as it is currently not working.
                     onDragStart={identifier === 'MEASURE' ? undefined : handleDragStart}
                     onDragEnd={identifier === 'MEASURE' ? undefined : handleDragEnd}
                     className={`

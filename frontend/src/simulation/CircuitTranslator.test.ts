@@ -37,7 +37,7 @@ const createCircuit = (numQubits: number, operations: QuantumOperationDto[] = []
 };
 
 /**
- * Helper to create a Gate object.
+ * Helper to create an ElementaryQuantumGate object.
  */
 const gate = (
     definitionId: OperationIdentifier,

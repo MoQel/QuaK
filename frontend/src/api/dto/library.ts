@@ -1,6 +1,6 @@
 import { OperationIdentifier } from '@/lib/operations.ts';
 
-export interface GateDefinitionResponse {
+export interface OperationDefinitionResponse {
     id: string;
     name: string;
     symbol: OperationIdentifier;

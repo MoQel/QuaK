@@ -17,15 +17,15 @@ import org.springframework.test.web.servlet.MockMvc;
 @SpringBootTest
 @AutoConfigureMockMvc
 @WithMockUser(username = "tester", roles = "USER")
-class GateDefinitionIntegrationTest {
+class OperationDefinitionIntegrationTest {
 
     @Autowired
     MockMvc mockMvc;
 
     @Test
-    void getAllGates_endToEnd() throws Exception {
+    void getAllOperationDefinitions_endToEnd() throws Exception {
         mockMvc
-            .perform(get("/api/gates").contentType(MediaType.APPLICATION_JSON))
+            .perform(get("/api/operations").contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$").isArray())
             .andExpect(jsonPath("$[0].name").exists());

@@ -185,7 +185,7 @@ function TargetPoint({
                     flex items-center justify-center
                     pointer-events-auto cursor-grab active:cursor-grabbing
                     group-hover:brightness-90 dark:group-hover:brightness-125 transition-colors
-                    ${isSWAP ? '' : styles.gate}`}
+                    ${isSWAP ? '' : styles.quantumOperation}`}
                 style={{ backgroundColor: definition.primaryColor, color: definition.secondaryColor }}
             >
                 {icon}

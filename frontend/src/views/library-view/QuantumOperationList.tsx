@@ -1,36 +1,36 @@
 import { useMemo } from 'react';
 import { LibraryElement } from '@/views/library-view/LibraryElement.tsx';
-import { GateDefinitionResponse } from '@/api/dto/library.ts';
+import { OperationDefinitionResponse } from '@/api/dto/library.ts';
 
-interface GateListProps {
-    gates: GateDefinitionResponse[];
-    onGateClick: (gate: GateDefinitionResponse) => void;
+interface QuantumOperationListProps {
+    quantumOperations: OperationDefinitionResponse[];
+    onOperationClick: (operation: OperationDefinitionResponse) => void;
 }
 
-function GateList({ gates, onGateClick }: Readonly<GateListProps>) {
+function QuantumOperationList({ quantumOperations, onOperationClick }: Readonly<QuantumOperationListProps>) {
     // Group and sort by type and then by name
-    const groupedGates = useMemo(() => {
-        const groups: Record<string, GateDefinitionResponse[]> = {};
+    const groupedQuantumOperations = useMemo(() => {
+        const groups: Record<string, OperationDefinitionResponse[]> = {};
 
-        for (const gate of gates) {
-            const type = gate.category;
+        for (const quantumOperation of quantumOperations) {
+            const type = quantumOperation.category;
             if (!groups[type]) {
                 groups[type] = [];
             }
-            groups[type].push(gate);
+            groups[type].push(quantumOperation);
         }
 
         return Object.entries(groups)
             .sort(([typeA], [typeB]) => typeA.localeCompare(typeB))
-            .map(([type, gatesInGroup]) => ({
+            .map(([type, operationsInGroup]) => ({
                 type,
-                gates: gatesInGroup.sort((a, b) => a.name.localeCompare(b.name)),
+                operations: operationsInGroup.toSorted((a, b) => a.name.localeCompare(b.name)),
             }));
-    }, [gates]);
+    }, [quantumOperations]);
 
     return (
         <div className="w-full h-full overflow-y-auto will-change-transform transform-gpu border border-border rounded-md bg-bg-dark">
-            {groupedGates.map((group, index) => (
+            {groupedQuantumOperations.map((group, index) => (
                 <section key={group.type}>
                     <div
                         className="sticky top-0 z-10 bg-bg text-text border-b border-border font-semibold text-sm px-4 py-3"
@@ -42,30 +42,30 @@ function GateList({ gates, onGateClick }: Readonly<GateListProps>) {
                     </div>
 
                     <ul className="list-none m-0 p-0">
-                        {group.gates.map((gate) => (
+                        {group.operations.map((operation) => (
                             <li
-                                key={gate.name}
+                                key={operation.name}
                                 className="
                                     border-b border-border
                                     last:border-b-0
                                     hover:bg-bg transition-colors
                                     cursor-pointer px-4 py-3"
-                                onClick={() => onGateClick(gate)}
+                                onClick={() => onOperationClick(operation)}
                             >
                                 <div className="flex items-center gap-4">
                                     <div className="w-12 min-w-48px flex justify-center items-center">
                                         <LibraryElement
-                                            identifier={gate.symbol}
-                                            matrix={gate.inspectorInfo.matrix.display}
-                                            onClick={() => onGateClick(gate)}
+                                            identifier={operation.symbol}
+                                            matrix={operation.inspectorInfo.matrix.display}
+                                            onClick={() => onOperationClick(operation)}
                                         />
                                     </div>
 
                                     <div className="text-left">
-                                        <div className="font-semibold text-sm text-text mb-2px">{gate.name}</div>
-                                        {gate.description && (
+                                        <div className="font-semibold text-sm text-text mb-2px">{operation.name}</div>
+                                        {operation.description && (
                                             <div className="text-xs text-text-muted leading-tight">
-                                                {gate.description}
+                                                {operation.description}
                                             </div>
                                         )}
                                     </div>
@@ -79,4 +79,4 @@ function GateList({ gates, onGateClick }: Readonly<GateListProps>) {
     );
 }
 
-export default GateList;
+export default QuantumOperationList;

@@ -1,7 +1,7 @@
 package edu.kit.quak.infrastructure;
 
 import edu.kit.quak.application.filesystem.exceptions.AccessDeniedException;
-import edu.kit.quak.application.library.exceptions.GateDefinitionNotFoundException;
+import edu.kit.quak.application.library.exceptions.OperationDefinitionNotFoundException;
 import edu.kit.quak.application.user.exceptions.UserNotFoundException;
 import jakarta.persistence.EntityNotFoundException;
 import java.util.NoSuchElementException;
@@ -88,12 +88,11 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
-    // TODO: Seperate library related and filesystem related exceptions
-    @ExceptionHandler(GateDefinitionNotFoundException.class)
+    @ExceptionHandler(OperationDefinitionNotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND) // 404
-    public ProblemDetail handleGateNotFound(GateDefinitionNotFoundException ex) {
+    public ProblemDetail handleOperationDefinitionNotFound(OperationDefinitionNotFoundException ex) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
-        problem.setTitle("Gate Not Found");
+        problem.setTitle("Operation Definition Not Found");
         return problem;
     }
 

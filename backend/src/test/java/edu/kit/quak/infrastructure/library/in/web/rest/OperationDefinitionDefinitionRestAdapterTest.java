@@ -5,10 +5,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import edu.kit.quak.application.library.ports.in.GateDefinitionServicePort;
-import edu.kit.quak.core.library.model.GateDefinition;
+import edu.kit.quak.application.library.ports.in.OperationDefinitionServicePort;
+import edu.kit.quak.core.library.model.OperationDefinition;
 import edu.kit.quak.infrastructure.GlobalExceptionHandler;
-import edu.kit.quak.infrastructure.library.in.web.rest.mapper.GateDefinitionDtoMapperImpl;
+import edu.kit.quak.infrastructure.library.in.web.rest.mapper.OperationDefinitionDtoMapperImpl;
 import edu.kit.quak.shared.tags.IntegrationTest;
 import java.util.List;
 import java.util.Optional;
@@ -21,21 +21,21 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 @IntegrationTest
-@WebMvcTest(GateDefinitionRestAdapter.class)
-@Import({ GateDefinitionDtoMapperImpl.class, GlobalExceptionHandler.class })
+@WebMvcTest(OperationDefinitionRestAdapter.class)
+@Import({ OperationDefinitionDtoMapperImpl.class, GlobalExceptionHandler.class })
 @WithMockUser(username = "tester", roles = "USER")
-class GateDefinitionDefinitionRestAdapterTest {
+class OperationDefinitionDefinitionRestAdapterTest {
 
     @Autowired
     MockMvc mockMvc;
 
     @MockitoBean
-    GateDefinitionServicePort gateService;
+    OperationDefinitionServicePort operationDefinitionService;
 
     @Test
-    void getGate_returns200AndDto() throws Exception {
+    void getOperationDefinition_returns200AndDto() throws Exception {
         // Arrange
-        GateDefinition gateDefinition = new GateDefinition(
+        OperationDefinition operationDefinition = new OperationDefinition(
             "x", // id
             "X", // name
             "Pauli", // category
@@ -46,11 +46,11 @@ class GateDefinitionDefinitionRestAdapterTest {
             null // inspectorInfo
         );
 
-        when(gateService.getGateDefinitionById("x")).thenReturn(Optional.of(gateDefinition));
+        when(operationDefinitionService.getOperationDefinitionById("x")).thenReturn(Optional.of(operationDefinition));
 
         // Act & Assert
         mockMvc
-            .perform(get("/api/gates/x"))
+            .perform(get("/api/operations/x"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.id").value("x"))
             .andExpect(jsonPath("$.name").value("X"))
@@ -58,31 +58,15 @@ class GateDefinitionDefinitionRestAdapterTest {
     }
 
     @Test
-    void getGate_returns200AndDtoWithInspectorInfo() throws Exception {
+    void getOperationDefinition_returns200AndDtoWithInspectorInfo() throws Exception {
         // Arrange
-        GateDefinition.TruthTableEntry entry1 = new GateDefinition.TruthTableEntry("|0\\rangle", "|1\\rangle");
-        GateDefinition.TruthTableEntry entry2 = new GateDefinition.TruthTableEntry("|1\\rangle", "|0\\rangle");
+        OperationDefinition operationDefinition = buildOperationDefinition();
 
-        GateDefinition.MatrixInfo matrixInfo = new GateDefinition.MatrixInfo(
-            "\\begin{pmatrix} 0 & 1 \\\\ 1 & 0 \\end{pmatrix}",
-            2,
-            2,
-            List.of(List.of("0", "1"), List.of("1", "0"))
-        );
-
-        GateDefinition.InspectorInfo inspectorInfo = new GateDefinition.InspectorInfo(
-            "X = |0\\rangle\\langle1| + |1\\rangle\\langle0|",
-            List.of(entry1, entry2),
-            matrixInfo
-        );
-
-        GateDefinition gateDefinition = new GateDefinition("x", "X", "Pauli", "Bit-Flip", 1, "X", List.of(), inspectorInfo);
-
-        when(gateService.getGateDefinitionById("x")).thenReturn(Optional.of(gateDefinition));
+        when(operationDefinitionService.getOperationDefinitionById("x")).thenReturn(Optional.of(operationDefinition));
 
         // Act & Assert
         mockMvc
-            .perform(get("/api/gates/x"))
+            .perform(get("/api/operations/x"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.id").value("x"))
             .andExpect(jsonPath("$.name").value("X"))
@@ -108,15 +92,36 @@ class GateDefinitionDefinitionRestAdapterTest {
             .andExpect(jsonPath("$.inspectorInfo.matrix.computable[1][1]").value("0"));
     }
 
+    private static OperationDefinition buildOperationDefinition() {
+        OperationDefinition.TruthTableEntry entry1 = new OperationDefinition.TruthTableEntry("|0\\rangle", "|1\\rangle");
+        OperationDefinition.TruthTableEntry entry2 = new OperationDefinition.TruthTableEntry("|1\\rangle", "|0\\rangle");
+
+        OperationDefinition.MatrixInfo matrixInfo = new OperationDefinition.MatrixInfo(
+            "\\begin{pmatrix} 0 & 1 \\\\ 1 & 0 \\end{pmatrix}",
+            2,
+            2,
+            List.of(List.of("0", "1"), List.of("1", "0"))
+        );
+
+        OperationDefinition.InspectorInfo inspectorInfo = new OperationDefinition.InspectorInfo(
+            "X = |0\\rangle\\langle1| + |1\\rangle\\langle0|",
+            List.of(entry1, entry2),
+            matrixInfo
+        );
+
+        return new OperationDefinition("x", "X", "Pauli", "Bit-Flip", 1, "X", List.of(), inspectorInfo);
+    }
+
     @Test
-    void getGate_returns404_whenNotFound() throws Exception {
+    void getOperationDefinition_returns404_whenNotFound() throws Exception {
         // Arrange
-        when(gateService.getGateDefinitionById("GibtsNicht")).thenReturn(Optional.empty());
+        String id = "nonExistent";
+        when(operationDefinitionService.getOperationDefinitionById(id)).thenReturn(Optional.empty());
 
         // Act & Assert
         mockMvc
-            .perform(get("/api/gates/GibtsNicht"))
+            .perform(get("/api/operations/nonExistent"))
             .andExpect(status().isNotFound())
-            .andExpect(jsonPath("$.title").value("Gate Not Found"));
+            .andExpect(jsonPath("$.title").value("Operation Definition Not Found"));
     }
 }
