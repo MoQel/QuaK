@@ -1,5 +1,5 @@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible.tsx';
-import { JSX, useContext, useEffect, useState } from 'react';
+import { JSX, useCallback, useContext, useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton.tsx';
 import { DialogClose, ParentRefresh, SelectedFolder } from '@/views/project-manager-view/ProjectManagerContexts.ts';
 import './ProjectManagerView.css';
@@ -84,6 +84,8 @@ export function FileElementContainer({
         reload();
     };
 
+    const handleClose = useCallback(() => setOpen(false), []);
+
     return (
         <Collapsible open={collapsible} onOpenChange={toggleCollapsible}>
             <Dialog open={open} onOpenChange={setOpen}>
@@ -101,7 +103,7 @@ export function FileElementContainer({
                     </ContextMenuContent>
                 </ContextMenu>
                 <ParentRefresh value={reload}>
-                    <DialogClose.Provider value={() => setOpen(false)}>
+                    <DialogClose.Provider value={handleClose}>
                         <DialogContent>{dialogContent}</DialogContent>
                     </DialogClose.Provider>
                 </ParentRefresh>

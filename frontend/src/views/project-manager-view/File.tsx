@@ -7,7 +7,7 @@ import {
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu.tsx';
 import { Delete } from '@/views/project-manager-view/Delete.tsx';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog.tsx';
-import { JSX, useContext, useState } from 'react';
+import { JSX, useCallback, useContext, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton.tsx';
 import { File as IFile } from '@/views/project-manager-view/util/FileElement.tsx';
 import { ListingElement } from '@/views/project-manager-view/util/TreeComponents.tsx';
@@ -39,6 +39,8 @@ export function File(file: Readonly<IFile>) {
         choose(file);
     };
 
+    const handleClose = useCallback(() => setOpen(false), []);
+
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <ContextMenu>
@@ -51,7 +53,7 @@ export function File(file: Readonly<IFile>) {
                 </ContextMenuContent>
             </ContextMenu>
             <DialogContent>
-                <DialogClose.Provider value={() => setOpen(false)}>{dialogContent}</DialogClose.Provider>
+                <DialogClose.Provider value={handleClose}>{dialogContent}</DialogClose.Provider>
             </DialogContent>
         </Dialog>
     );
