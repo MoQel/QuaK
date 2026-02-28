@@ -1,7 +1,9 @@
 package edu.kit.quak.application.circuit.ports.in;
 
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
-import edu.kit.quak.core.circuit.model.operation.ElementaryQuantumGateDefinitionIdentifier;
+import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
+import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
+import java.util.List;
 
 public interface CircuitServicePort {
     QuantumCircuit init();
@@ -10,15 +12,19 @@ public interface CircuitServicePort {
 
     void delete(String circuitId);
 
-    QuantumCircuit addQubit(String circuitId);
+    QuantumCircuit addQubit(String circuitId, String registerId);
 
-    QuantumCircuit changeQubitName(String circuitId, String qubitId, String name);
+    QuantumCircuit removeQubit(String circuitId, String registerId, int qubitIdx);
 
-    QuantumCircuit deleteQubit(String circuitId, String qubitId);
+    QuantumCircuit addQuantumOperation(String circuitId, QuantumOperation operation, int layerIdx);
 
-    QuantumCircuit addGate(String circuitId, ElementaryQuantumGateDefinitionIdentifier definitionId, int qubitIdx, int positionIdx);
+    QuantumCircuit moveQuantumOperation(
+        String circuitId,
+        String operationId,
+        int layerIdx,
+        List<ElementSelector> targetQubits,
+        List<ElementSelector> controlQubits
+    );
 
-    QuantumCircuit moveGate(String circuitId, String id, int qubitIdx, int positionIdx);
-
-    QuantumCircuit deleteGate(String circuitId, String gateId);
+    QuantumCircuit removeQuantumOperation(String circuitId, String operationId);
 }

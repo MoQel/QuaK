@@ -2,13 +2,13 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable.tsx';
-import { GateLibraryView } from '@/views/library-view/GateLibraryView.tsx';
+import { LibraryView } from '@/views/library-view/LibraryView.tsx';
 import { CircuitView } from '@/views/circuit-view/CircuitView.tsx';
 import { TextEditorView } from '@/views/text-editor-view/TextEditorView.tsx';
 import { ProjectManagerView } from '@/views/project-manager-view/ProjectManagerView.tsx';
 import { ResultsView } from '@/views/results-view/ResultsView.tsx';
 import { InspectorView } from '@/views/inspector-view/InspectorView.tsx';
-import { GateDefinitionResponse } from '@/api/dto/library.ts';
+import { OperationDefinitionResponse } from '@/api/dto/library.ts';
 import { CircuitResponse } from '@/api/dto/circuit.ts';
 import { useLayout } from '@/hooks/use-layout';
 import { useFileSelect } from '@/hooks/useFileSelect.ts';
@@ -16,8 +16,8 @@ import { usePreventKeyboardActions } from '@/hooks/usePreventKeyboardActions.ts'
 
 function App() {
     const { projectId } = useParams<{ projectId: string }>();
-    const [selectedGate, setSelectedGate] = useState<GateDefinitionResponse | undefined>(undefined);
-    const [circuit, setCircuit] = useState<CircuitResponse | null>(null);
+    const [selectedOperation, setSelectedOperation] = useState<OperationDefinitionResponse | undefined>(undefined);
+    const [circuit, setCircuit] = useState<CircuitResponse | undefined>(undefined);
     const handleFileSelect = useFileSelect();
 
     // prevent globally standard browser behavior
@@ -35,8 +35,8 @@ function App() {
         };
     }, [onSetMenubarVisibility]);
 
-    const topContainerClass = isBottomVisible ? 'h-[30%]' : 'flex-1';
-    const bottomContainerClass = isTopVisible ? 'h-[70%]' : 'flex-1';
+    const topContainerClass = isBottomVisible ? 'h-[50%]' : 'flex-1';
+    const bottomContainerClass = isTopVisible ? 'h-[50%]' : 'flex-1';
 
     return (
         <div className="flex flex-col h-[calc(100vh-65px)] overflow-hidden bg-background text-foreground">
@@ -78,13 +78,16 @@ function App() {
                 >
                     {visiblePanels.library && (
                         <div className="flex-1 overflow-hidden relative">
-                            <GateLibraryView onGateSelect={setSelectedGate} />
+                            <LibraryView onOperationSelect={setSelectedOperation} />
                         </div>
                     )}
 
                     {visiblePanels.inspector && (
                         <div className="flex-1 overflow-hidden relative">
-                            <InspectorView gate={selectedGate} onClear={() => setSelectedGate(undefined)} />
+                            <InspectorView
+                                operationDefinition={selectedOperation}
+                                onClear={() => setSelectedOperation(undefined)}
+                            />
                         </div>
                     )}
 

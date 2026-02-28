@@ -1,8 +1,9 @@
 package edu.kit.quak.infrastructure;
 
 import edu.kit.quak.application.filesystem.exceptions.AccessDeniedException;
-import edu.kit.quak.application.library.exceptions.GateDefinitionNotFoundException;
+import edu.kit.quak.application.library.exceptions.OperationDefinitionNotFoundException;
 import edu.kit.quak.application.user.exceptions.UserNotFoundException;
+import jakarta.persistence.EntityNotFoundException;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
@@ -61,6 +62,14 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
+    // Catches JPA entity lookups failing -> 404 Not Found
+    @ExceptionHandler(EntityNotFoundException.class)
+    public ProblemDetail handleEntityNotFound(EntityNotFoundException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        problem.setTitle("Resource Not Found");
+        return problem;
+    }
+
     // Catches user authentication failures -> 401 Unauthorized
     @ExceptionHandler(UserNotFoundException.class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
@@ -79,12 +88,11 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
-    // TODO: Seperate library related and filesystem related exceptions
-    @ExceptionHandler(GateDefinitionNotFoundException.class)
+    @ExceptionHandler(OperationDefinitionNotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND) // 404
-    public ProblemDetail handleGateNotFound(GateDefinitionNotFoundException ex) {
+    public ProblemDetail handleOperationDefinitionNotFound(OperationDefinitionNotFoundException ex) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
-        problem.setTitle("Gate Not Found");
+        problem.setTitle("Operation Definition Not Found");
         return problem;
     }
 

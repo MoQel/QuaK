@@ -7,7 +7,7 @@ import { SimulationResult, SimulationOptions } from '@/simulation/simulation.typ
 // Debounce delay in milliseconds
 const SIMULATION_DELAY_MS = 300;
 
-export function useQuantumSimulation(circuit: CircuitResponse | null, options: SimulationOptions = {}) {
+export function useQuantumSimulation(circuit: CircuitResponse | undefined, options: SimulationOptions = {}) {
     const [result, setResult] = useState<SimulationResult | null>(null);
     const [isCalculating, setIsCalculating] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -79,7 +79,7 @@ export function useQuantumSimulation(circuit: CircuitResponse | null, options: S
                 clearTimeout(debounceTimerRef.current);
             }
         };
-    }, [circuit, options.mode, options.sampleCount, options.maxQubits]);
+    }, [circuit, options.mode, options.sampleCount, options.maxCircuitWidth]);
     // Note: We decompose 'options' in deps to avoid re-runs on new object references
 
     return { result, isCalculating, error };

@@ -2,27 +2,37 @@ package edu.kit.quak.infrastructure.circuit.in.web.rest;
 
 import edu.kit.quak.application.circuit.ports.in.CircuitServicePort;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
-import edu.kit.quak.core.circuit.model.operation.ElementaryQuantumGateDefinitionIdentifier;
-import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.AddGateRequest;
-import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.ChangeQubitNameRequest;
+import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
+import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
+import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.AddQuantumOperationRequest;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.CircuitResponse;
-import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.MoveGateRequest;
+import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.MoveQuantumOperationRequest;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.CircuitDtoMapper;
-import io.swagger.v3.oas.annotations.tags.Tag;
+import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.ElementSelectorDtoMapper;
+import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.QuantumOperationDtoMapper;
+import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/circuit")
-@Tag(name = "Circuit", description = "Controls operations on a quantum circuit")
 public class CircuitRestAdapter {
 
     private final CircuitServicePort service;
     private final CircuitDtoMapper mapper;
+    private final QuantumOperationDtoMapper quantumOperationDtoMapper;
+    private final ElementSelectorDtoMapper elementSelectorDtoMapper;
 
-    public CircuitRestAdapter(CircuitServicePort service, CircuitDtoMapper mapper) {
+    public CircuitRestAdapter(
+        CircuitServicePort service,
+        CircuitDtoMapper mapper,
+        QuantumOperationDtoMapper quantumOperationDtoMapper,
+        ElementSelectorDtoMapper elementSelectorDtoMapper
+    ) {
         this.service = service;
         this.mapper = mapper;
+        this.quantumOperationDtoMapper = quantumOperationDtoMapper;
+        this.elementSelectorDtoMapper = elementSelectorDtoMapper;
     }
 
     @PostMapping
@@ -43,45 +53,44 @@ public class CircuitRestAdapter {
         service.delete(circuitId);
     }
 
-    @PostMapping("/{circuitId}/qubit")
+    @PostMapping("/{circuitId}/register/{registerId}")
     @ResponseStatus(HttpStatus.CREATED)
-    public CircuitResponse addQubit(@PathVariable String circuitId) {
-        QuantumCircuit circuit = service.addQubit(circuitId);
+    public CircuitResponse addQubit(@PathVariable String circuitId, @PathVariable String registerId) {
+        QuantumCircuit circuit = service.addQubit(circuitId, registerId);
         return mapper.toResponse(circuit);
     }
 
-    @PatchMapping("/{circuitId}/qubit")
-    @ResponseStatus(HttpStatus.CREATED)
-    public CircuitResponse changeQubitName(@PathVariable String circuitId, @RequestBody ChangeQubitNameRequest request) {
-        QuantumCircuit circuit = service.changeQubitName(circuitId, request.id(), request.name());
+    @DeleteMapping("/{circuitId}/register/{registerId}/{qubitIdx}")
+    public CircuitResponse removeQubit(@PathVariable String circuitId, @PathVariable String registerId, @PathVariable int qubitIdx) {
+        QuantumCircuit circuit = service.removeQubit(circuitId, registerId, qubitIdx);
         return mapper.toResponse(circuit);
     }
 
-    @DeleteMapping("/{circuitId}/qubit/{qubitId}")
-    public CircuitResponse deleteQubit(@PathVariable String circuitId, @PathVariable String qubitId) {
-        QuantumCircuit circuit = service.deleteQubit(circuitId, qubitId);
+    @PostMapping("/{circuitId}/operation")
+    @ResponseStatus(HttpStatus.CREATED)
+    public CircuitResponse addQuantumOperation(@PathVariable String circuitId, @RequestBody AddQuantumOperationRequest request) {
+        QuantumOperation operation = quantumOperationDtoMapper.toDomain(request.quantumOperation());
+        QuantumCircuit circuit = service.addQuantumOperation(circuitId, operation, request.layerIdx());
         return mapper.toResponse(circuit);
     }
 
-    @PostMapping("/{circuitId}/gate")
-    @ResponseStatus(HttpStatus.CREATED)
-    public CircuitResponse addGate(@PathVariable String circuitId, @RequestBody AddGateRequest request) {
-        ElementaryQuantumGateDefinitionIdentifier definitionId = ElementaryQuantumGateDefinitionIdentifier.fromString(
-            request.definitionId()
+    @PatchMapping("/{circuitId}/operation")
+    public CircuitResponse moveQuantumOperation(@PathVariable String circuitId, @RequestBody MoveQuantumOperationRequest request) {
+        List<ElementSelector> targetQubits = request.targetQubits().stream().map(elementSelectorDtoMapper::toDomain).toList();
+        List<ElementSelector> controlQubits = request.controlQubits().stream().map(elementSelectorDtoMapper::toDomain).toList();
+        QuantumCircuit circuit = service.moveQuantumOperation(
+            circuitId,
+            request.quantumOperationId(),
+            request.layerIdx(),
+            targetQubits,
+            controlQubits
         );
-        QuantumCircuit circuit = service.addGate(circuitId, definitionId, request.toQubitIdx(), request.toPositionIdx());
         return mapper.toResponse(circuit);
     }
 
-    @PatchMapping("/{circuitId}/gate")
-    public CircuitResponse moveGate(@PathVariable String circuitId, @RequestBody MoveGateRequest request) {
-        QuantumCircuit circuit = service.moveGate(circuitId, request.id(), request.toQubitIdx(), request.toPositionIdx());
-        return mapper.toResponse(circuit);
-    }
-
-    @DeleteMapping("/{circuitId}/gate/{gateId}")
-    public CircuitResponse deleteGate(@PathVariable String circuitId, @PathVariable String gateId) {
-        QuantumCircuit circuit = service.deleteGate(circuitId, gateId);
+    @DeleteMapping("/{circuitId}/operation/{operationId}")
+    public CircuitResponse removeQuantumOperation(@PathVariable String circuitId, @PathVariable String operationId) {
+        QuantumCircuit circuit = service.removeQuantumOperation(circuitId, operationId);
         return mapper.toResponse(circuit);
     }
 }

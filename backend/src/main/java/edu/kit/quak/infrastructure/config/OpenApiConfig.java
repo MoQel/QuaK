@@ -68,7 +68,7 @@ public class OpenApiConfig {
                     new Tag().name("Authentication").description("Authentication and user session management" + " endpoints"),
                     new Tag().name("Projects").description("Project management operations"),
                     new Tag().name("Files").description("File and directory management operations"),
-                    new Tag().name("Gates").description("Quantum gate operations")
+                    new Tag().name("Operation Definitions").description("Definitions of quantum operations")
                 )
             );
     }

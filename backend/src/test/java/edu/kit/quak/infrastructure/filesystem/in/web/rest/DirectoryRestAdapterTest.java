@@ -46,12 +46,10 @@ class DirectoryRestAdapterTest {
     @MockitoBean
     AuthenticationMapper authenticationMapper;
 
-    private User testUser;
-
     @BeforeEach
     void setUp() {
         AuthenticatedUser testAuthUser = new AuthenticatedUser(UUID.randomUUID(), "github", "tester");
-        testUser = new User(testAuthUser.userId(), testAuthUser.issuer(), testAuthUser.subject());
+        User testUser = new User(testAuthUser.userId(), testAuthUser.issuer(), testAuthUser.subject());
 
         when(authenticationMapper.toDomain(any())).thenReturn(testAuthUser);
         when(userService.getAuthenticatedUser(any(AuthenticatedUser.class))).thenReturn(testUser);
