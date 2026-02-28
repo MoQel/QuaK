@@ -59,7 +59,7 @@ export function FileElementContainer({
     const [reloaded, r] = useState(false);
     const reload = () => r(!reloaded);
     const [open, setOpen] = useState(false);
-    const [collapsible, toggleCollapsible] = useState(initiallyOpen);
+    const [collapsible, setCollapsible] = useState(initiallyOpen);
     const { id: selectedFolderId, setId: setSelectedFolderId, reloadTrigger } = useContext(SelectedFolder);
     const isSelected = selectedFolderId === id;
 
@@ -87,7 +87,7 @@ export function FileElementContainer({
     const handleClose = useCallback(() => setOpen(false), []);
 
     return (
-        <Collapsible open={collapsible} onOpenChange={toggleCollapsible}>
+        <Collapsible open={collapsible} onOpenChange={setCollapsible}>
             <Dialog open={open} onOpenChange={setOpen}>
                 <ContextMenu>
                     <ContextMenuTrigger>

@@ -13,13 +13,13 @@ export function ProjectCard({
     onRename,
     onDelete,
     onTogglePin,
-}: {
+}: Readonly<{
     project: ProjectDetailsResponse;
     pinned: boolean;
     onRename: (project: ProjectDetailsResponse) => void;
     onDelete: (project: ProjectDetailsResponse) => void;
     onTogglePin: (projectId: string) => void;
-}) {
+}>) {
     const [actionsOpen, setActionsOpen] = useState(false);
 
     return (
