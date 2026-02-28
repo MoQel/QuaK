@@ -59,9 +59,17 @@ export function ProjectManagerView({ onFileSelect, projectId }: Readonly<Project
                     <CardContent className="overflow-auto p-0 flex-1 min-h-0">
                         <div
                             className="p-4 pt-2 min-h-full"
+                            role="button"
+                            tabIndex={0}
                             aria-label="Clear folder selection"
                             onClick={(e) => {
                                 if (e.target === e.currentTarget) setSelectedFolderId(null);
+                            }}
+                            onKeyDown={(e) => {
+                                if ((e.key === 'Enter' || e.key === ' ') && e.target === e.currentTarget) {
+                                    e.preventDefault();
+                                    setSelectedFolderId(null);
+                                }
                             }}
                         >
                             <FileSelect value={onFileSelect}>
