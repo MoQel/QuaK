@@ -11,7 +11,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 /**
- * Service for user-related business logic. Handles user authentication, authorization, and user
+ * Service for user-related business logic. Handles user authentication,
+ * authorization, and user
  * data operations.
  */
 @Service
@@ -32,7 +33,7 @@ public class UserService implements UserServicePort {
         return userRepository
             .findByIssuerAndSub(authenticatedUser.issuer(), authenticatedUser.subject())
             .orElseThrow(() -> {
-                log.warn("User not found for issuer={} sub={}", authenticatedUser.issuer(), authenticatedUser.subject());
+                log.debug("User not found for issuer={} sub={}", authenticatedUser.issuer(), authenticatedUser.subject());
                 return new UserNotFoundException(authenticatedUser.issuer(), authenticatedUser.subject());
             });
     }
@@ -56,7 +57,7 @@ public class UserService implements UserServicePort {
         return userRepository
             .findIdByIssuerAndSub(authenticatedUser.issuer(), authenticatedUser.subject())
             .orElseThrow(() -> {
-                log.warn("User ID not found for issuer={} sub={}", authenticatedUser.issuer(), authenticatedUser.subject());
+                log.debug("User ID not found for issuer={} sub={}", authenticatedUser.issuer(), authenticatedUser.subject());
                 return new UserNotFoundException(authenticatedUser.issuer(), authenticatedUser.subject());
             });
     }

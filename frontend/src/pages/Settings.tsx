@@ -11,7 +11,7 @@ export const Settings: React.FC = () => {
     const isDark = theme === 'dark';
     return (
         <div className="p-8 max-w-4xl mx-auto">
-            <h1 className="text-4xl font-bold mb-6">Settings</h1>
+            <h1 className="text-3xl font-bold mb-6">Settings</h1>
 
             <div className="grid gap-6">
                 {/* Preferences Card */}

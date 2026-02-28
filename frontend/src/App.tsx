@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable.tsx';
 import { LibraryView } from '@/views/library-view/LibraryView.tsx';
@@ -6,7 +7,6 @@ import { CircuitView } from '@/views/circuit-view/CircuitView.tsx';
 import { TextEditorView } from '@/views/text-editor-view/TextEditorView.tsx';
 import { ProjectManagerView } from '@/views/project-manager-view/ProjectManagerView.tsx';
 import { ResultsView } from '@/views/results-view/ResultsView.tsx';
-import { Toaster } from '@/components/ui/sonner.tsx';
 import { InspectorView } from '@/views/inspector-view/InspectorView.tsx';
 import { OperationDefinitionResponse } from '@/api/dto/library.ts';
 import { CircuitResponse } from '@/api/dto/circuit.ts';
@@ -15,9 +15,9 @@ import { useFileSelect } from '@/hooks/useFileSelect.ts';
 import { usePreventKeyboardActions } from '@/hooks/usePreventKeyboardActions.ts';
 
 function App() {
+    const { projectId } = useParams<{ projectId: string }>();
     const [selectedOperation, setSelectedOperation] = useState<OperationDefinitionResponse | undefined>(undefined);
-    const [circuit, setCircuit] = useState<CircuitResponse>();
-
+    const [circuit, setCircuit] = useState<CircuitResponse | undefined>(undefined);
     const handleFileSelect = useFileSelect();
 
     // prevent globally standard browser behavior
@@ -33,7 +33,7 @@ function App() {
         return () => {
             onSetMenubarVisibility(false);
         };
-    }, []);
+    }, [onSetMenubarVisibility]);
 
     const topContainerClass = isBottomVisible ? 'h-[50%]' : 'flex-1';
     const bottomContainerClass = isTopVisible ? 'h-[50%]' : 'flex-1';
@@ -50,7 +50,7 @@ function App() {
                                     minSize={15}
                                     onClose={() => onTogglePanel('file')}
                                 >
-                                    <ProjectManagerView onFileSelect={handleFileSelect} />
+                                    <ProjectManagerView onFileSelect={handleFileSelect} projectId={projectId} />
                                 </ResizablePanel>
                                 {(visiblePanels.circuit || visiblePanels.code) && <ResizableHandle withHandle />}
                             </>
@@ -97,8 +97,6 @@ function App() {
                         </div>
                     )}
                 </div>
-
-                <Toaster />
             </div>
         </div>
     );

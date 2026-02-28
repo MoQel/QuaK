@@ -3,7 +3,7 @@ import { Form, FormField } from '@/components/ui/form.tsx';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ParentRefresh } from '@/views/project-manager-view/ProjectManagerView.tsx';
+import { ParentRefresh } from '@/views/project-manager-view/ProjectManagerContexts.ts';
 import { JSX, useContext } from 'react';
 import {
     ContextMenuItem,
@@ -16,6 +16,7 @@ import { api } from '@/api/api.ts';
 import { CreateFileRequest, DirectoryRequest } from '@/api/dto/filesystem';
 import { EntityForm } from '@/views/project-manager-view/util/FormUtils.tsx';
 import { useFocusSelection } from '@/hooks/useFocusSelection.ts';
+import { getContentType } from '@/lib/utils.ts';
 
 interface CreateDialogProps {
     id: string;
@@ -74,21 +75,19 @@ function CreateFile({ parent }: Readonly<{ parent: string }>) {
 
     const formSchema = z.object({
         name: z.string().min(1, { message: 'Filename must be at least 1 characters.' }),
-        contentType: z.string(),
     });
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
             name: 'new_file.txt',
-            contentType: 'application/json',
         },
     });
 
     const onSubmit = (values: z.infer<typeof formSchema>) => {
         const body: CreateFileRequest = {
             name: values.name,
-            contentType: 'text/plain', // TODO: Issue
+            contentType: getContentType(values.name),
         };
         api.post('/api/file/', body, { headers: { 'parent-id': parent } }).then(reloadParent);
     };
@@ -101,13 +100,6 @@ function CreateFile({ parent }: Readonly<{ parent: string }>) {
                     name="name"
                     render={({ field }) => (
                         <TextInput inputRef={inputRef} placeholder="new_file.txt" label="Filename" field={field} />
-                    )}
-                />
-                <FormField
-                    control={form.control}
-                    name="contentType"
-                    render={({ field }) => (
-                        <TextInput placeholder="application/json" label="Content-Type" field={field} />
                     )}
                 />
                 <DialogCloseButtons />

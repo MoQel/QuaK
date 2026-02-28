@@ -1,8 +1,7 @@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible.tsx';
-import { JSX, useEffect, useState } from 'react';
-import { CreateDialog } from '@/views/project-manager-view/CreateDialog.tsx';
+import { JSX, useCallback, useContext, useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton.tsx';
-import { ParentRefresh } from '@/views/project-manager-view/ProjectManagerView.tsx';
+import { DialogClose, ParentRefresh, SelectedFolder } from '@/views/project-manager-view/ProjectManagerContexts.ts';
 import './ProjectManagerView.css';
 import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from '@/components/ui/context-menu.tsx';
 import { Dialog, DialogContent } from '@/components/ui/dialog.tsx';
@@ -45,6 +44,7 @@ export function FileElementContainer({
     edit,
     icon,
     deletePath,
+    initiallyOpen = false,
 }: {
     name: string;
     id: string;
@@ -52,44 +52,60 @@ export function FileElementContainer({
     edit: Edit;
     icon: Icon;
     deletePath: string;
+    initiallyOpen?: boolean;
 }) {
     const [content, setContent] = useState([<Skeleton className="h-4" />]);
     const [dialogContent, setDialogContent] = useState(<Skeleton className="h-5 mt-5" />);
     const [reloaded, r] = useState(false);
     const reload = () => r(!reloaded);
     const [open, setOpen] = useState(false);
-    const [collapsible, toggleCollapsible] = useState(false);
+    const [collapsible, setCollapsible] = useState(initiallyOpen);
+    const { id: selectedFolderId, setId: setSelectedFolderId, reloadTrigger } = useContext(SelectedFolder);
+    const isSelected = selectedFolderId === id;
 
     useEffect(() => {
         getContent(id).then(setContent);
     }, [id, reloaded, getContent]);
+
+    // Re-fetch contents when the toolbar triggers a reload for the selected folder
+    useEffect(() => {
+        if (isSelected && reloadTrigger > 0) {
+            getContent(id).then(setContent);
+        }
+    }, [reloadTrigger, isSelected, getContent, id]);
 
     const openDialog = (content: Promise<JSX.Element>) => {
         setOpen(true);
         content.then(setDialogContent);
     };
 
+    const handleClick = () => {
+        setSelectedFolderId(id);
+        reload();
+    };
+
+    const handleClose = useCallback(() => setOpen(false), []);
+
     return (
-        <Collapsible open={collapsible} onOpenChange={toggleCollapsible}>
+        <Collapsible open={collapsible} onOpenChange={setCollapsible}>
             <Dialog open={open} onOpenChange={setOpen}>
                 <ContextMenu>
                     <ContextMenuTrigger>
-                        <div className="flex">
-                            <CollapsibleTrigger className="flex-auto h-8 flex" onClick={reload}>
+                        <div className={`flex ${isSelected ? 'selected-entry' : ''}`}>
+                            <CollapsibleTrigger className="flex-auto h-8 flex" onClick={handleClick}>
                                 <ListingElement text={name} icon={icon(collapsible)} />
                             </CollapsibleTrigger>
                         </div>
                     </ContextMenuTrigger>
                     <ContextMenuContent>
-                        <ParentRefresh value={reload}>
-                            <CreateDialog id={id} openDialog={openDialog} />
-                            {edit(id, openDialog)}
-                        </ParentRefresh>
+                        <ParentRefresh value={reload}>{edit(id, openDialog)}</ParentRefresh>
                         <Delete endpoint={deletePath} openDialog={openDialog} />
                     </ContextMenuContent>
                 </ContextMenu>
                 <ParentRefresh value={reload}>
-                    <DialogContent>{dialogContent}</DialogContent>
+                    <DialogClose.Provider value={handleClose}>
+                        <DialogContent>{dialogContent}</DialogContent>
+                    </DialogClose.Provider>
                 </ParentRefresh>
             </Dialog>
 
