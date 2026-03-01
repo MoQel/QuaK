@@ -25,7 +25,7 @@ export function TextEditorView() {
     const showBottomDropZone = isDragging && !hasBottomGroup;
 
     return (
-        <Card className="h-full flex flex-col p-0 border-none rounded-none relative">
+        <Card className="h-full flex flex-col p-0 border-none rounded-none relative bg-bg-subtle">
             <UnsavedChangesAlertDialog />
             {/* Top/Bottom split */}
             <PanelGroup direction="vertical" id="outer-group">

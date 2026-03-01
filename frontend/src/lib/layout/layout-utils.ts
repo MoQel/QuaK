@@ -62,7 +62,12 @@ export const getOptimalPosition = (panelId: string, api: DockviewApi) => {
 export const buildDefaultLayout = (api: DockviewApi) => {
     api.clear();
 
-    // 1. Top Row Anchors
+    // Tune these
+    const LEFT_W = 400;
+    const RIGHT_W = 520;
+    const BOTTOM_H = 350;
+
+    // 1) Top row
     const circuit = api.addPanel({
         id: 'circuit',
         component: 'circuit',
@@ -74,6 +79,7 @@ export const buildDefaultLayout = (api: DockviewApi) => {
         component: 'file',
         title: 'Project',
         position: { referencePanel: circuit, direction: 'left' },
+        initialWidth: LEFT_W,
     });
 
     const code = api.addPanel({
@@ -81,14 +87,16 @@ export const buildDefaultLayout = (api: DockviewApi) => {
         component: 'code',
         title: 'Code Editor',
         position: { referencePanel: circuit, direction: 'right' },
+        initialWidth: RIGHT_W,
     });
 
-    // 2. Bottom Row Splits
+    // 2) Bottom row (give bottoms a height so tops stay larger)
     api.addPanel({
         id: 'library',
         component: 'library',
         title: 'Library',
         position: { referencePanel: file, direction: 'below' },
+        initialHeight: BOTTOM_H,
     });
 
     api.addPanel({
@@ -96,6 +104,7 @@ export const buildDefaultLayout = (api: DockviewApi) => {
         component: 'inspector',
         title: 'Inspector',
         position: { referencePanel: circuit, direction: 'below' },
+        initialHeight: BOTTOM_H,
     });
 
     api.addPanel({
@@ -103,5 +112,6 @@ export const buildDefaultLayout = (api: DockviewApi) => {
         component: 'results',
         title: 'Results',
         position: { referencePanel: code, direction: 'below' },
+        initialHeight: BOTTOM_H,
     });
 };

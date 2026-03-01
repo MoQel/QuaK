@@ -177,10 +177,6 @@
     background: var(--bg-dark) !important;
 }
 
-.dockview-theme-custom .--dv-group-view-background-color {
-    background: var(--bg-dark) !important;
-}
-
 /* INACTIVE TABS */
 .dockview-theme-custom .dv-tab {
     background-color: transparent !important;
@@ -194,6 +190,7 @@
     color: var(--text) !important;
 }
 
+/*Active panel color*/
 .dockview-theme-custom .dv-tab.dv-active-tab {
     background-color: var(--bg) !important;
     color: var(--text) !important;
@@ -205,27 +202,10 @@
     background-color: var(--bg-dark) !important;
 }
 
-/* Default group: no strong outline */
-.dockview-theme-custom .dv-group-view {
-    outline: none !important;
-    box-shadow: none !important;
-}
-
-/* Active group: subtle left accent (NOT a full border box) */
-.dockview-theme-custom .dv-group-view.dv-active-group {
-    box-shadow: inset 2px 0 0 0 color-mix(in srgb, var(--special) 55%, transparent) !important;
-}
-
 /* 1. The Header Strip (Background behind the tabs) */
 .dockview-theme-custom .dv-tabs-and-actions-container {
     background-color: var(--bg-subtle) !important;
     border-bottom: 1px solid var(--border) !important;
-}
-
-/* SASH: keep hitzone, only draw a thin line */
-.dockview-theme-custom .dv-sash {
-    background: transparent !important;
-    position: relative;
 }
 
 /* Default: vertical divider (left/right split) */
@@ -249,4 +229,17 @@
 /* Hover: recolor (works for both) */
 .dockview-theme-custom .dv-sash:hover::after {
     background: var(--special);
+}
+
+.dockview-theme-custom .dv-tab.dv-active-tab {
+    border: none !important;
+    /* underline */
+    box-shadow: inset 0 -2px 0 0 var(--special) !important;
+}
+
+/* Also remove any real border/outline Dockview sets on the clickable tab */
+.dockview-theme-custom .dv-default-tab {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
 }

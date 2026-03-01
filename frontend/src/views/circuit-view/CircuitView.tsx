@@ -82,7 +82,7 @@ export function CircuitView({ circuit, setCircuit }: CircuitViewProps) {
     };
 
     return (
-        <Card className="h-full overflow-hidden border-none">
+        <Card className="h-full overflow-hidden border-none bg-bg-subtle">
             <CardContent className="flex flex-col h-full">
                 {/* Buttons */}
                 <div className="pb-5 flex justify-end space-x-3">
