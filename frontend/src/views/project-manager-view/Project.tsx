@@ -1,6 +1,6 @@
 import { DialogHeader, DialogTitle } from '@/components/ui/dialog.tsx';
 import { FileElementContainer } from '@/views/project-manager-view/FileElementContainer.tsx';
-import { ParentRefresh } from '@/views/project-manager-view/ProjectManagerView.tsx';
+import { DialogClose, ParentRefresh } from '@/views/project-manager-view/ProjectManagerContexts.ts';
 import { JSX, useContext } from 'react';
 import { ContextMenuItem } from '@/components/ui/context-menu.tsx';
 import { ChevronDown, ChevronRight } from 'lucide-react';
@@ -8,6 +8,7 @@ import { getElementForFileElement, type Project, sort } from '@/views/project-ma
 import { api } from '@/api/api.ts';
 import { ProjectContentsResponse, ProjectRequest } from '@/api/dto/filesystem.ts';
 import { EntityForm } from '@/views/project-manager-view/util/FormUtils.tsx';
+import { toast } from 'sonner';
 
 async function fetchProjectContent(id: string) {
     const project = await api.get<Project>('/api/project/' + id);
@@ -24,7 +25,7 @@ async function fetchProjectContent(id: string) {
  * @param id The id of the project
  * @constructor
  */
-export function Project({ name, id }: Readonly<{ name: string; id: string }>) {
+export function Project({ name, id, initiallyOpen }: Readonly<{ name: string; id: string; initiallyOpen?: boolean }>) {
     const icon = (open: boolean) => (open ? <ChevronDown /> : <ChevronRight />);
     return (
         <FileElementContainer
@@ -34,6 +35,7 @@ export function Project({ name, id }: Readonly<{ name: string; id: string }>) {
             edit={ProjectEdit}
             icon={icon}
             deletePath={'/api/project/' + id}
+            initiallyOpen={initiallyOpen}
         />
     );
 }
@@ -61,9 +63,17 @@ function ProjectEdit(id: string, trigger: (element: Promise<JSX.Element>) => voi
 }
 
 function EditForm({ project, reloadParent }: Readonly<{ project: Project; reloadParent: () => void }>) {
+    const close = useContext(DialogClose);
     const onSubmit = (name: string) => {
         const body: ProjectRequest = { name };
-        api.patch('/api/project/' + project.id, body).then(reloadParent);
+        api.patch('/api/project/' + project.id, body)
+            .then(() => {
+                reloadParent();
+                close();
+            })
+            .catch((err) => {
+                toast.error(err.message || 'Failed to rename project');
+            });
     };
 
     return <EntityForm defaultName={project.name} onSubmit={onSubmit} label="Project Name" />;

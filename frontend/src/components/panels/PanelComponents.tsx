@@ -6,6 +6,7 @@ import { ProjectManagerView } from '@/views/project-manager-view/ProjectManagerV
 import { ResultsView } from '@/views/results-view/ResultsView';
 import { InspectorView } from '@/views/inspector-view/InspectorView';
 import { useFileSelect } from '@/hooks/useFileSelect';
+import { useParams } from 'react-router-dom';
 
 const PanelWrapper = ({ children }: { children: React.ReactNode }) => (
     <div className="h-full w-full overflow-hidden relative">{children}</div>
@@ -13,7 +14,8 @@ const PanelWrapper = ({ children }: { children: React.ReactNode }) => (
 
 export const ProjectPanel = () => {
     const handleFileSelect = useFileSelect();
-    return <ProjectManagerView onFileSelect={handleFileSelect} />;
+    const { projectId } = useParams<{ projectId: string }>();
+    return <ProjectManagerView onFileSelect={handleFileSelect} projectId={projectId} />;
 };
 
 export const CircuitPanel = () => {
@@ -26,15 +28,15 @@ export const CodePanel = () => {
 };
 
 export const LibraryPanel = () => {
-    const { setSelectedGate } = usePanelData();
-    return <GateLibraryView onGateSelect={setSelectedGate} />;
+    const { setSelectedOperation } = usePanelData();
+    return <GateLibraryView onGateSelect={setSelectedOperation} />;
 };
 
 export const InspectorPanel = () => {
-    const { selectedGate, setSelectedGate } = usePanelData();
+    const { selectedOperation, setSelectedOperation } = usePanelData();
     return (
         <PanelWrapper>
-            <InspectorView gate={selectedGate} onClear={() => setSelectedGate(undefined)} />
+            <InspectorView gate={selectedOperation} onClear={() => setSelectedOperation(undefined)} />
         </PanelWrapper>
     );
 };
