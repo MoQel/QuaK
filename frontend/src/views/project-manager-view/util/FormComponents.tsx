@@ -23,11 +23,9 @@ export function DialogCloseButtons({ cancel = 'Cancel', submit = 'Submit' }: Rea
             <DialogClose asChild>
                 <Button variant="secondary">{cancel}</Button>
             </DialogClose>
-            <DialogClose asChild>
-                <Button type="submit" variant="outline">
-                    {submit}
-                </Button>
-            </DialogClose>
+            <Button type="submit" variant="outline">
+                {submit}
+            </Button>
         </DialogFooter>
     );
 }

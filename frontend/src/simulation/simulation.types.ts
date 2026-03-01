@@ -24,7 +24,7 @@ export interface StateVectorEntry {
 }
 
 export interface SimulationOptions {
-    maxQubits?: number;
+    maxCircuitWidth?: number;
     sampleCount?: number;
     mode?: SimulationMode;
 }

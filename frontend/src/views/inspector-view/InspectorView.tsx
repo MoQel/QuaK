@@ -3,18 +3,17 @@ import { Button } from '@/components/ui/button.tsx';
 import { memo } from 'react';
 import { BlockMath, InlineMath } from 'react-katex'; // LaTex rendering
 import 'katex/dist/katex.min.css'; // LaTex rendering
-import { X, Microscope } from 'lucide-react';
-import { Info } from 'lucide-react';
+import { X, Microscope, Info } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { GateDefinitionResponse } from '@/api/dto/library.ts';
+import { OperationDefinitionResponse } from '@/api/dto/library.ts';
 
 interface InspectorViewProps {
-    gate: GateDefinitionResponse | undefined;
+    operationDefinition: OperationDefinitionResponse | undefined;
     onClear?: () => void;
 }
 
 // Safe LaTeX rendering components with error handling
-function SafeBlockMath({ math }: { math: string }) {
+function SafeBlockMath({ math }: Readonly<{ math: string }>) {
     try {
         return <BlockMath math={math} />;
     } catch (error) {
@@ -23,7 +22,7 @@ function SafeBlockMath({ math }: { math: string }) {
     }
 }
 
-function SafeInlineMath({ math }: { math: string }) {
+function SafeInlineMath({ math }: Readonly<{ math: string }>) {
     try {
         return <InlineMath math={math} />;
     } catch (error) {
@@ -32,9 +31,9 @@ function SafeInlineMath({ math }: { math: string }) {
     }
 }
 
-function InspectorViewComponent({ gate, onClear }: InspectorViewProps) {
+function InspectorViewComponent({ operationDefinition, onClear }: Readonly<InspectorViewProps>) {
     // Case 1: nothing selected
-    if (!gate) {
+    if (!operationDefinition) {
         return (
             <Card className="w-full h-full border-none rounded-none bg-muted/10">
                 <CardContent className="flex flex-col items-center justify-center h-[50vh] text-muted-foreground text-sm italic">
@@ -46,7 +45,7 @@ function InspectorViewComponent({ gate, onClear }: InspectorViewProps) {
     }
 
     // Case 2: show details
-    const info = gate.inspectorInfo;
+    const info = operationDefinition.inspectorInfo;
 
     return (
         <Card className="w-full h-full border-none rounded-none flex flex-col overflow-hidden bg-card">
@@ -54,12 +53,12 @@ function InspectorViewComponent({ gate, onClear }: InspectorViewProps) {
                 <div className="flex items-start justify-between gap-2">
                     <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-2">
-                            <CardTitle className="text-lg">{gate.name}</CardTitle>
+                            <CardTitle className="text-lg">{operationDefinition.name}</CardTitle>
                             <span className="text-xs font-mono bg-primary/10 text-primary px-2 py-0.5 rounded border border-primary/20">
-                                {gate.symbol}
+                                {operationDefinition.symbol}
                             </span>
                         </div>
-                        <p className="text-xs text-muted-foreground line-clamp-2">{gate.description}</p>
+                        <p className="text-xs text-muted-foreground line-clamp-2">{operationDefinition.description}</p>
                     </div>
 
                     {/* Close Button */}
@@ -159,13 +158,13 @@ function InspectorViewComponent({ gate, onClear }: InspectorViewProps) {
                     )}
 
                     {/* Parameters */}
-                    {gate.parameters && gate.parameters.length > 0 && (
+                    {operationDefinition.parameters && operationDefinition.parameters.length > 0 && (
                         <div>
                             <h4 className="font-semibold text-xs uppercase tracking-wider mb-2 text-muted-foreground">
                                 Parameters
                             </h4>
                             <div className="flex flex-wrap gap-2">
-                                {gate.parameters.map((param) => (
+                                {operationDefinition.parameters.map((param) => (
                                     <span
                                         key={param}
                                         className="px-2 py-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-mono rounded border border-blue-500/20"

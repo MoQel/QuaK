@@ -1,14 +1,18 @@
 package edu.kit.quak.core.circuit.model.register;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
+import lombok.Getter;
+import lombok.Setter;
 
+@Getter
+@Setter
 public class ClassicRegister extends Register {
-    private List<Boolean> bits = new ArrayList<>();
 
-    public ClassicRegister(String name) {
+    private int numberOfBits;
+
+    public ClassicRegister(String name, int numberOfBits) {
         super(name);
+        this.numberOfBits = numberOfBits;
     }
 
     @Override
@@ -16,15 +20,12 @@ public class ClassicRegister extends Register {
         return Optional.of(this);
     }
 
-    public List<Boolean> getBits() {
-        return bits;
+    public void addBit() {
+        numberOfBits++;
     }
 
-    public void setBits(List<Boolean> bits) {
-        this.bits = bits;
-    }
-
-    public void addBit(Boolean bit) {
-        bits.add(bit);
+    @Override
+    public String toString() {
+        return "ClassicRegister %s with %d bits".formatted(getName(), numberOfBits);
     }
 }

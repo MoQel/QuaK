@@ -6,7 +6,6 @@ import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface SpringDataProjectRepository extends JpaRepository<JpaProject, String> {
-
     /**
      * Find all projects owned by a specific user.
      *

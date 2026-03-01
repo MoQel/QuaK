@@ -24,11 +24,7 @@ public class FileRestAdapter {
     private final FileDtoMapper mapper;
     private final AuthenticationMapper authMapper;
 
-    public FileRestAdapter(
-            FileServicePort service,
-            UserServicePort userService,
-            FileDtoMapper mapper,
-            AuthenticationMapper authMapper) {
+    public FileRestAdapter(FileServicePort service, UserServicePort userService, FileDtoMapper mapper, AuthenticationMapper authMapper) {
         this.service = service;
         this.userService = userService;
         this.mapper = mapper;
@@ -39,9 +35,10 @@ public class FileRestAdapter {
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("isAuthenticated()")
     public FileDetailsResponse createFile(
-            @RequestBody @Valid CreateFileRequest request, // Triggers the Spring Validation
-            @RequestHeader(name = ApiConstants.HEADER_PARENT_ID) String parentId,
-            Authentication authentication) {
+        @RequestBody @Valid CreateFileRequest request, // Triggers the Spring Validation
+        @RequestHeader(name = ApiConstants.HEADER_PARENT_ID) String parentId,
+        Authentication authentication
+    ) {
         User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
         File fileToCreate = mapper.toDomain(request);
         File createdFile = service.createFile(fileToCreate, parentId, user);
@@ -65,8 +62,7 @@ public class FileRestAdapter {
 
     @PatchMapping("/{fId}")
     @PreAuthorize("isAuthenticated()")
-    public FileDetailsResponse renameFile(
-            @PathVariable String fId, @RequestBody RenameFileRequest request, Authentication authentication) {
+    public FileDetailsResponse renameFile(@PathVariable String fId, @RequestBody RenameFileRequest request, Authentication authentication) {
         User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
         File updatedFile = service.renameFile(fId, request.name(), user);
         return mapper.toDetailsResponse(updatedFile);
@@ -82,8 +78,7 @@ public class FileRestAdapter {
 
     @PutMapping("/{fId}/content")
     @PreAuthorize("isAuthenticated()")
-    public void setFileContent(
-            @PathVariable String fId, @RequestBody FileContentRequest fileContent, Authentication authentication) {
+    public void setFileContent(@PathVariable String fId, @RequestBody FileContentRequest fileContent, Authentication authentication) {
         User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
         service.setFileContent(fId, fileContent.content(), fileContent.contentType(), user);
     }

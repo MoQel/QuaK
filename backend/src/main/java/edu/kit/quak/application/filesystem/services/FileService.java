@@ -21,9 +21,10 @@ public class FileService extends AbstractFileElementService<File> implements Fil
     private final FileContentRepositoryPort contentRepository;
 
     public FileService(
-            FileRepositoryPort repository,
-            FileContentRepositoryPort contentRepository,
-            FileElementContainerRepositoryDelegator delegator) {
+        FileRepositoryPort repository,
+        FileContentRepositoryPort contentRepository,
+        FileElementContainerRepositoryDelegator delegator
+    ) {
         super(delegator);
         this.repository = repository;
         this.contentRepository = contentRepository;
@@ -74,6 +75,7 @@ public class FileService extends AbstractFileElementService<File> implements Fil
         log.info("Renaming file '{}' to '{}' for user '{}'", fId, newName, user.getId());
         File file = repository.findById(fId).orElseThrow(NoSuchElementException::new);
         verifyOwnershipByParentId(file.getParentId(), user);
+        checkForDuplicateName(fId, newName);
         return modifyElementInParent(fId, f -> f.rename(newName));
     }
 

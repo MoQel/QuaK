@@ -29,14 +29,7 @@ class OidcUserSyncServiceTest {
     private OidcUserSyncService oidcUserSyncService;
 
     private OidcUserInfo createUserInfo() {
-        return new OidcUserInfo(
-                "test-sub-123",
-                "test@example.com",
-                true,
-                "Test User",
-                "Test",
-                "User",
-                "https://example.com/avatar.jpg");
+        return new OidcUserInfo("test-sub-123", "test@example.com", true, "Test User", "Test", "User", "https://example.com/avatar.jpg");
     }
 
     @Nested

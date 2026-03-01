@@ -1,64 +1,62 @@
-import { CircuitResponse, RegisterResponse } from '@/api/dto/circuit.ts';
+import {
+    CircuitResponse,
+    ElementaryQuantumGateDto,
+    getCircuitWidth,
+    isQuantumRegister,
+    RegisterResponse,
+} from '@/api/dto/circuit.ts';
 import * as qulacs from 'qulacs-wasm';
-import { GateDefinitionIdentifier } from '@/api/dto/GateDefinitionIdentifier.ts';
+import { Complex } from 'qulacs-wasm';
 import {
     Disposable,
+    SimulationMode,
+    SimulationOptions,
     SimulationResult,
     StateVectorEntry,
-    SimulationOptions,
-    SimulationMode,
 } from '@/simulation/simulation.types.ts';
-import { Complex } from 'qulacs-wasm';
+
+type RegisterOffsets = Record<string, number>;
 
 export class CircuitTranslator {
     // Default values, if options not set
     private static readonly SAMPLE_COUNT = 1024;
-    private static readonly MAX_SIMULATION_QUBITS = 8;
+    private static readonly MAX_CIRCUIT_WIDTH = 12;
     private static readonly DEFAULT_MODE: SimulationMode = 'exact';
-
     /**
      * Maps backend Circuit representation into qualacs simulation
      */
     static translateAndRun(circuitData: CircuitResponse, options: SimulationOptions = {}): SimulationResult {
-        const maxQubits = options.maxQubits ?? this.MAX_SIMULATION_QUBITS;
+        const maxCircuitWidth = options.maxCircuitWidth ?? this.MAX_CIRCUIT_WIDTH;
         const sampleCount = options.sampleCount ?? this.SAMPLE_COUNT;
         const mode: SimulationMode = options.mode ?? this.DEFAULT_MODE;
-        const consideredRegisters: RegisterResponse[] = this.filterRegisters(circuitData, maxQubits);
 
-        // Not more than MAX_SIMULATION_QUBITS
-        const consideredQubits = consideredRegisters.flatMap((reg) => reg.qubits);
-        const numQubits = consideredQubits.length;
+        const circuitWidth = getCircuitWidth(circuitData);
 
         // Early return if no circuit is present
-        if (numQubits === 0) {
-            return { stateVector: [], counts: null, simulatedQubits: numQubits };
+        if (circuitWidth === 0) return this.createEmptyResult(circuitWidth);
+        if (circuitWidth > maxCircuitWidth) {
+            throw new Error(`Circuit exceeds maximum limit of ${maxCircuitWidth} qubits.`);
         }
 
+        // Initialize offset Map
+        const offsets = this.calculateRegisterOffsets(circuitData.registers);
         // Initialize Qulacs Circuit instances
-        const state = new qulacs.QuantumState(numQubits);
-        state.set_zero_state();
-        const circuit = new qulacs.QuantumCircuit(numQubits);
+        const state = new qulacs.QuantumState(circuitWidth);
+        const circuit = new qulacs.QuantumCircuit(circuitWidth);
 
         try {
-            // Currently only full measurements supported measurement gates are ignored at the moment
-            this.buildCircuit(consideredRegisters, circuit);
+            // Build
+            state.set_zero_state();
+            this.buildCircuit(circuitData, circuit, offsets);
 
             // Calculate
             circuit.update_quantum_state(state);
 
-            if (mode === 'simulation') {
-                const rawResult = state.sampling(sampleCount);
-                const counts = this.aggregateSamples(rawResult, numQubits);
-                return { stateVector: [], counts: counts, simulatedQubits: numQubits };
-            } else if (mode === 'exact') {
-                // Extract results
-                const stateVector = this.extractStateVector(state, numQubits);
-
-                return { stateVector, counts: null, simulatedQubits: numQubits };
-            } else return { stateVector: [], counts: null, simulatedQubits: numQubits };
+            // Process
+            return this.processResults(state, circuitWidth, mode, sampleCount);
         } catch (error) {
             console.error('Simulation failed:', error);
-            return { stateVector: [], counts: null, simulatedQubits: numQubits };
+            return this.createEmptyResult(circuitWidth);
         } finally {
             // Secure cast on our disposable interface for cleanup (type does not exist)
             (state as unknown as Disposable).delete();
@@ -66,53 +64,33 @@ export class CircuitTranslator {
         }
     }
 
-    /**
-     * Filters the registers so that only those registers are considered
-     * where the total number of qubits taken into account do not exceed maxQubits.
-     * @param data CircuitResponse from circuit backend
-     * @param maxQubits Maximum number of qubits.
-     * @private
-     */
-    private static filterRegisters(data: CircuitResponse, maxQubits: number): RegisterResponse[] {
-        let totalQubits = 0;
-        const filteredRegisters: RegisterResponse[] = [];
+    private static calculateRegisterOffsets(registers: RegisterResponse[]): RegisterOffsets {
+        const offsets: RegisterOffsets = {};
+        let offsetCount = 0;
 
-        for (const reg of data.registers) {
-            if (totalQubits + reg.qubits.length <= maxQubits) {
-                filteredRegisters.push(reg);
-                totalQubits += reg.qubits.length;
-            } else {
-                // Stop checking if adding this register exceeds the limit
-                break;
+        for (const reg of registers) {
+            if (isQuantumRegister(reg)) {
+                offsets[reg.id] = offsetCount;
+                offsetCount += reg.numberOfQubits;
             }
         }
-        return filteredRegisters;
+        return offsets;
     }
 
     /**
      * Builds the circuit based on the filtered registers.
      */
-    private static buildCircuit(registers: RegisterResponse[], circuit: qulacs.QuantumCircuit): void {
-        const allQubits = registers.flatMap((reg) => reg.qubits);
-
-        if (allQubits.length === 0) return;
-
-        // Find max depth of circuit
-        const maxSteps = Math.max(...allQubits.map((q) => q.gates.length));
-
-        // Iterate column by column (Time Step by Time Step)
-        for (let step = 0; step < maxSteps; step++) {
-            let globalQubitIndex = 0;
-
-            for (const register of registers) {
-                for (const qubit of register.qubits) {
-                    const gate = qubit.gates[step];
-
-                    if (gate?.definitionId && gate.definitionId !== 'PLACEHOLDER') {
-                        this.applyGate(circuit, gate.definitionId, globalQubitIndex);
-                    }
-                    globalQubitIndex++;
-                }
+    private static buildCircuit(
+        circuitData: CircuitResponse,
+        circuit: qulacs.QuantumCircuit,
+        offsets: RegisterOffsets,
+    ): void {
+        const layers = circuitData.layers;
+        // Iterate layer by layer (Time Step by Time Step)
+        for (const layer of layers) {
+            for (const op of layer.quantumOperations) {
+                if (op.type !== 'ELEMENTARY_QUANTUM_GATE') continue;
+                this.applyGate(circuit, op, offsets);
             }
         }
     }
@@ -126,55 +104,84 @@ export class CircuitTranslator {
      * In such a case, define the gate using the custom addMatrixGate method,
      * which is a workaround for custom gates from their unitary matrix.
      */
-    // #TODO: Add multiqubit support when backend supports it
-    private static applyGate(
-        circuit: qulacs.QuantumCircuit,
-        type: GateDefinitionIdentifier,
-        targetIdx: number,
-        angle?: number,
-    ) {
-        // #TODO: Hard coded rotation angle change when backend support custom angle
-        angle = Math.PI / 2;
+    private static applyGate(circuit: qulacs.QuantumCircuit, op: ElementaryQuantumGateDto, offsets: RegisterOffsets) {
+        const type = op.identifier;
+        const angle = op.rotationAngle;
+        // Resolve global indices
+        const targets = op.targetQubits.map((t) => offsets[t.registerId] + t.index);
+        const controls = op.controlQubits.map((t) => offsets[t.registerId] + t.index);
+
         switch (type) {
             case 'H':
-                circuit.add_H_gate(targetIdx);
+                circuit.add_H_gate(targets[0]);
                 break;
             case 'X':
-                circuit.add_X_gate(targetIdx);
+                circuit.add_X_gate(targets[0]);
                 break;
             case 'Y':
-                circuit.add_Y_gate(targetIdx);
+                circuit.add_Y_gate(targets[0]);
                 break;
             case 'Z':
-                circuit.add_Z_gate(targetIdx);
+                circuit.add_Z_gate(targets[0]);
                 break;
-            // Wrong mapping in Qulacs version 0.0.5
             case 'S':
-                this.addMatrixGate(circuit, targetIdx, [
-                    [1, 0],
-                    [0, { real: 0, imag: 1 }],
-                ]);
+                circuit.add_S_gate(targets[0]);
                 break;
             case 'T':
-                circuit.add_T_gate(targetIdx);
+                circuit.add_T_gate(targets[0]);
                 break;
-            // Inverted rotation direction in Qulacs version 0.0.5
             case 'RX':
-                circuit.add_RX_gate(targetIdx, -(angle || 0));
+                circuit.add_RotX_gate(targets[0], angle);
                 break;
-            // Inverted rotation direction in Qulacs version 0.0.5
             case 'RY':
-                circuit.add_RY_gate(targetIdx, -(angle || 0));
+                circuit.add_RotY_gate(targets[0], angle);
                 break;
-            // Inverted rotation direction in Qulacs version 0.0.5
             case 'RZ':
-                circuit.add_RZ_gate(targetIdx, -(angle || 0));
+                circuit.add_RotZ_gate(targets[0], angle);
+                break;
+            case 'CX':
+                circuit.add_CNOT_gate(controls[0], targets[0]);
+                break;
+            case 'CZ':
+                circuit.add_CZ_gate(controls[0], targets[0]);
+                break;
+            case 'SWAP':
+                circuit.add_SWAP_gate(targets[0], targets[1]);
+                break;
+            case 'CCX':
+                circuit.add_gate(qulacs.TOFFOLI(controls[0], controls[1], targets[0]));
                 break;
             case 'MEASURE':
-                break;
+                break; // ignored
             default:
                 console.warn(`Gate type ${type} not yet implemented in Translator`);
         }
+    }
+
+    private static processResults(
+        state: qulacs.QuantumState,
+        numQubits: number,
+        mode: SimulationMode,
+        sampleCount: number,
+    ): SimulationResult {
+        if (mode === 'simulation') {
+            const rawResult = state.sampling(sampleCount);
+            return {
+                stateVector: [],
+                counts: this.aggregateSamples(rawResult, numQubits),
+                simulatedQubits: numQubits,
+            };
+        }
+
+        if (mode === 'exact') {
+            return {
+                stateVector: this.extractStateVector(state, numQubits),
+                counts: null,
+                simulatedQubits: numQubits,
+            };
+        }
+
+        return this.createEmptyResult(numQubits);
     }
 
     /**
@@ -191,8 +198,8 @@ export class CircuitTranslator {
             const prob = real * real + imag * imag;
 
             // Qulacs Index 'i' is calculated as: sum(q_k * 2^k)
-            // i.toString(2) produces MSB on the left (Big Endian standard)
-            // Example: Qubit 0 = 1, Qubit 1 = 0 -> Index 1 -> "01" -> |q1 q0>
+            // toString(2) provides the binary representation where the LSB (Qubit 0)
+            // is the rightmost character. This is equivalent to Little Endian representation |q_(n-1)...q_0>.
             const binaryString = i.toString(2).padStart(numQubits, '0');
 
             return {
@@ -223,12 +230,7 @@ export class CircuitTranslator {
         return counts;
     }
 
-    private static addMatrixGate(
-        circuit: qulacs.QuantumCircuit,
-        target_index_list: number | number[],
-        matrix: (Complex | number)[][],
-    ) {
-        const gate = qulacs.DenseMatrix(target_index_list, matrix);
-        circuit.add_gate(gate);
+    private static createEmptyResult(numQubits: number): SimulationResult {
+        return { stateVector: [], counts: null, simulatedQubits: numQubits };
     }
 }

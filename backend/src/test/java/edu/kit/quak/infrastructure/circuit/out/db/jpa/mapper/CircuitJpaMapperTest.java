@@ -1,12 +1,12 @@
 package edu.kit.quak.infrastructure.circuit.out.db.jpa.mapper;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
+import edu.kit.quak.core.circuit.model.register.QuantumRegister;
 import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.JpaQuantumCircuit;
+import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.layer.JpaLayer;
 import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.register.JpaQuantumRegister;
-import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.register.JpaRegister;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -16,53 +16,59 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class CircuitJpaMapperTest {
+
     @Spy
     private RegisterJpaMapperImpl registerJpaMapper;
 
+    @Spy
+    private LayerJpaMapperImpl layerJpaMapper;
+
     @InjectMocks
     private CircuitJpaMapperImpl mapper;
+
+    public static final int INIT_QUBITS = 4;
 
     @Test
     void domainToEntity() {
         // Arrange
         QuantumCircuit domain = new QuantumCircuit();
-        domain.addQuantumRegister();
-        domain.addQuantumRegister();
 
         // Act
         JpaQuantumCircuit entity = mapper.toEntity(domain);
 
         // Assert
         assertNotNull(entity);
-        assertEquals(2, entity.getRegisters().size());
-        for (int idx = 0; idx < entity.getRegisters().size(); idx++) {
-            assertEquals(
-                    String.format("q%d", idx), entity.getRegisters().get(idx).getName());
-            assertEquals(entity, entity.getRegisters().get(idx).getCircuit()); // AfterMapping
-        }
+        assertEquals(1, entity.getRegisters().size());
+        assertEquals("q", entity.getRegisters().getFirst().getName());
+        assertInstanceOf(JpaQuantumRegister.class, entity.getRegisters().getFirst());
+        assertEquals(INIT_QUBITS, ((JpaQuantumRegister) entity.getRegisters().getFirst()).getNumberOfQubits());
+        assertEquals(entity, entity.getRegisters().getFirst().getCircuit()); // AfterMapping
+
+        assertEquals(0, entity.getLayers().size());
     }
 
     @Test
     void entityToDomain() {
         // Arrange
-        JpaQuantumRegister jpaRegister1 = new JpaQuantumRegister();
-        jpaRegister1.setName("q0");
-        JpaQuantumRegister jpaRegister2 = new JpaQuantumRegister();
-        jpaRegister2.setName("q1");
-        List<JpaRegister> jpaRegisters = List.of(jpaRegister1, jpaRegister2);
+        JpaQuantumRegister jpaRegister = new JpaQuantumRegister();
+        jpaRegister.setName("q");
+        jpaRegister.setNumberOfQubits(1);
+        JpaLayer jpaLayer = new JpaLayer();
 
         JpaQuantumCircuit entity = new JpaQuantumCircuit();
-        entity.setRegisters(jpaRegisters);
+        entity.setRegisters(List.of(jpaRegister));
+        entity.setLayers(List.of(jpaLayer));
 
         // Act
         QuantumCircuit domain = mapper.toDomain(entity);
 
         // Assert
         assertNotNull(domain);
-        assertEquals(2, domain.getRegisters().size());
-        for (int idx = 0; idx < domain.getRegisters().size(); idx++) {
-            assertEquals(
-                    String.format("q%d", idx), domain.getRegisters().get(idx).getName());
-        }
+        assertEquals(1, domain.getRegisters().size());
+        assertEquals("q", domain.getRegisters().getFirst().getName());
+        assertInstanceOf(QuantumRegister.class, domain.getRegisters().getFirst());
+        assertEquals(1, ((QuantumRegister) domain.getRegisters().getFirst()).getNumberOfQubits());
+        assertEquals(1, domain.getLayers().size());
+        assertEquals(0, domain.getLayers().getFirst().getQuantumOperations().size());
     }
 }

@@ -31,7 +31,7 @@ If the PR pipeline fails due to formatting, run `./gradlew spotlessApply` locall
 
 ## Testing Workflows
 
-### 1. Test-Kategorien
+### 1. Test-Categories
 
 We distinguish between two main types of tests, marked by custom annotations. Additional annotations may be added.
 

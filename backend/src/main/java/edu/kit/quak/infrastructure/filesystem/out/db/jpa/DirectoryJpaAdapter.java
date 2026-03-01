@@ -19,9 +19,10 @@ public class DirectoryJpaAdapter implements DirectoryRepositoryPort {
     DirectoryJpaMapper directoryMapper;
 
     public DirectoryJpaAdapter(
-            SpringDataDirectoryRepository directoryRepository,
-            DirectoryJpaMapper directoryMapper,
-            SpringDataFileElementContainerRepository parentRepository) {
+        SpringDataDirectoryRepository directoryRepository,
+        DirectoryJpaMapper directoryMapper,
+        SpringDataFileElementContainerRepository parentRepository
+    ) {
         this.directoryRepository = directoryRepository;
         this.directoryMapper = directoryMapper;
         this.parentRepository = parentRepository;
@@ -45,8 +46,8 @@ public class DirectoryJpaAdapter implements DirectoryRepositoryPort {
         // else we would lose the bidirectional behavior in the db
         if (container.getParentId() != null) {
             JpaFileElementContainer<?> parent = parentRepository
-                    .findById(container.getParentId())
-                    .orElseThrow(() -> new IllegalArgumentException("Parent not found: " + container.getParentId()));
+                .findById(container.getParentId())
+                .orElseThrow(() -> new IllegalArgumentException("Parent not found: " + container.getParentId()));
             jpaDirectory.setParent(parent);
         }
         return directoryMapper.toDomainEntity(directoryRepository.save(jpaDirectory));

@@ -1,42 +1,58 @@
-import { Badge } from '@/components/ui/badge.tsx';
-import { TextIcon } from '@/views/TextIcon.tsx';
 import styles from '@/App.module.css';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { BlockMath } from 'react-katex';
 import 'katex/dist/katex.min.css';
-import React, { useState } from 'react'; //
-import { GateDefinitionIdentifier } from '@/api/dto/GateDefinitionIdentifier.ts';
+import React, { useState } from 'react';
+import { useDispatch } from 'react-redux';
+import { startOperationDrag, stopOperationDrag } from '@/store/circuit/dragOperationSlice.ts';
+import { getOperationDefinition, OperationIdentifier } from '@/lib/operations.ts';
+import { DragData } from '@/views/circuit-view/util/types.ts';
+import { TextIcon } from '@/components/ui/text-icon.tsx';
 
 type LibraryElementProps = {
-    id: GateDefinitionIdentifier;
-    symbol: string;
+    identifier: OperationIdentifier;
     onClick?: () => void;
     matrix: string;
 };
 
-export function LibraryElement({ id, symbol, onClick, matrix }: Readonly<LibraryElementProps>) {
+export function LibraryElement({ identifier, onClick, matrix }: Readonly<LibraryElementProps>) {
+    const definition = getOperationDefinition(identifier);
     const DELAY_DURATION = 700;
-    const Icon = TextIcon(symbol);
 
     const [isDragging, setIsDragging] = useState(false);
     const [isOpen, setIsOpen] = useState(false);
+
+    const dispatch = useDispatch();
+
+    let icon: React.ReactNode;
+
+    if (definition.icon.type === 'component' && identifier === 'MEASURE') {
+        const ComponentIcon = definition.icon.component;
+        icon = <ComponentIcon className="size-4 stroke-4" />;
+    } else {
+        const TextIconComponent = TextIcon(identifier);
+        icon = <TextIconComponent />;
+    }
 
     const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
         setIsOpen(false);
         setIsDragging(true);
 
-        const data = {
+        const data: DragData = {
             origin: 'library',
-            id: id,
+            operationIdentifier: identifier,
         };
         e.dataTransfer.setData('text/plain', JSON.stringify(data));
         e.dataTransfer.effectAllowed = 'copy';
+
+        dispatch(startOperationDrag(definition.totalSize));
     };
 
     const handleDragEnd = () => {
         // Wait 100ms to avoid opening tooltip after dragging.
         setTimeout(() => {
             setIsDragging(false);
+            dispatch(stopOperationDrag());
         }, 100);
     };
 
@@ -51,16 +67,19 @@ export function LibraryElement({ id, symbol, onClick, matrix }: Readonly<Library
         <Tooltip delayDuration={DELAY_DURATION} open={isOpen} onOpenChange={handleOpenChange}>
             <TooltipTrigger asChild>
                 <div
-                    id={id}
+                    id={identifier.toLowerCase()}
                     onClick={onClick}
-                    draggable
-                    onDragStart={handleDragStart}
-                    onDragEnd={handleDragEnd}
-                    className="group cursor-grab active:cursor-grabbing"
+                    draggable={identifier !== 'MEASURE'} // Disable Measurement Operation, as it is currently not working.
+                    onDragStart={identifier === 'MEASURE' ? undefined : handleDragStart}
+                    onDragEnd={identifier === 'MEASURE' ? undefined : handleDragEnd}
+                    className={`
+                        group ${identifier === 'MEASURE' ? '' : 'cursor-grab active:cursor-grabbing'}
+                        flex items-center justify-center
+                        hover:brightness-90 dark:hover:brightness-125 transition-colors
+                        ${styles.libraryElement}`}
+                    style={{ backgroundColor: definition.color, color: 'var(--bg-dark)' }}
                 >
-                    <Badge className={styles.libraryElement}>
-                        <Icon />
-                    </Badge>
+                    {icon}
                 </div>
             </TooltipTrigger>
 

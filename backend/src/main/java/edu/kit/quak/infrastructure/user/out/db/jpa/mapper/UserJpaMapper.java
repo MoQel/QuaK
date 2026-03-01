@@ -11,7 +11,6 @@ import org.mapstruct.MappingConstants;
  */
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING)
 public interface UserJpaMapper {
-
     User toDomain(JpaUser jpaUser);
 
     JpaUser toJpa(User user);

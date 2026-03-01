@@ -77,6 +77,7 @@ class FileElementJpaMapperTest {
         // Use a local class to satisfy the recursive generic type T extends
         // FileElement<T>
         class UnknownFileElement extends FileElement<UnknownFileElement> {
+
             public UnknownFileElement(String name, String parentId) {
                 super(name, parentId);
             }
@@ -95,8 +96,7 @@ class FileElementJpaMapperTest {
         UnknownFileElement unknown = new UnknownFileElement("X", null);
 
         // Act & Assert
-        IllegalArgumentException exception =
-                assertThrows(IllegalArgumentException.class, () -> mapper.toJpaEntity(unknown));
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> mapper.toJpaEntity(unknown));
 
         assertTrue(exception.getMessage().contains("Unknown FileElement subtype"));
     }

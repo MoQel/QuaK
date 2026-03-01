@@ -8,10 +8,7 @@ import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.register.JpaQuantum
 import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.register.JpaRegister;
 import org.mapstruct.*;
 
-@Mapper(
-        componentModel = MappingConstants.ComponentModel.SPRING,
-        collectionMappingStrategy = CollectionMappingStrategy.TARGET_IMMUTABLE,
-        uses = {QubitJpaMapper.class})
+@Mapper(componentModel = MappingConstants.ComponentModel.SPRING, collectionMappingStrategy = CollectionMappingStrategy.TARGET_IMMUTABLE)
 public interface RegisterJpaMapper {
     @BeanMapping(subclassExhaustiveStrategy = SubclassExhaustiveStrategy.RUNTIME_EXCEPTION)
     @SubclassMapping(source = QuantumRegister.class, target = JpaQuantumRegister.class)
@@ -25,11 +22,4 @@ public interface RegisterJpaMapper {
     @SubclassMapping(source = JpaClassicRegister.class, target = ClassicRegister.class)
     @Mapping(target = "id", source = "id")
     Register toDomain(JpaRegister entity);
-
-    @AfterMapping
-    default void linkQubits(@MappingTarget JpaRegister entity) {
-        if (entity instanceof JpaQuantumRegister quantumRegister && quantumRegister.getQubits() != null) {
-            quantumRegister.getQubits().forEach(qubit -> qubit.setRegister(quantumRegister));
-        }
-    }
 }

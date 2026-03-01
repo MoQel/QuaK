@@ -1,8 +1,9 @@
 package edu.kit.quak.infrastructure;
 
 import edu.kit.quak.application.filesystem.exceptions.AccessDeniedException;
-import edu.kit.quak.application.library.exceptions.GateDefinitionNotFoundException;
+import edu.kit.quak.application.library.exceptions.OperationDefinitionNotFoundException;
 import edu.kit.quak.application.user.exceptions.UserNotFoundException;
+import jakarta.persistence.EntityNotFoundException;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
@@ -22,9 +23,12 @@ public class GlobalExceptionHandler {
     // Catches Validation errors -> 400 Bad Request
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ProblemDetail handleValidationErrors(MethodArgumentNotValidException ex) {
-        String errors = ex.getBindingResult().getFieldErrors().stream()
-                .map(error -> error.getField() + ": " + error.getDefaultMessage())
-                .collect(Collectors.joining(", "));
+        String errors = ex
+            .getBindingResult()
+            .getFieldErrors()
+            .stream()
+            .map(error -> error.getField() + ": " + error.getDefaultMessage())
+            .collect(Collectors.joining(", "));
 
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Validation failed");
         problem.setTitle("Invalid Request Content");
@@ -58,6 +62,14 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
+    // Catches JPA entity lookups failing -> 404 Not Found
+    @ExceptionHandler(EntityNotFoundException.class)
+    public ProblemDetail handleEntityNotFound(EntityNotFoundException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        problem.setTitle("Resource Not Found");
+        return problem;
+    }
+
     // Catches user authentication failures -> 401 Unauthorized
     @ExceptionHandler(UserNotFoundException.class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
@@ -76,12 +88,11 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
-    // TODO: Seperate library related and filesystem related exceptions
-    @ExceptionHandler(GateDefinitionNotFoundException.class)
+    @ExceptionHandler(OperationDefinitionNotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND) // 404
-    public ProblemDetail handleGateNotFound(GateDefinitionNotFoundException ex) {
+    public ProblemDetail handleOperationDefinitionNotFound(OperationDefinitionNotFoundException ex) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
-        problem.setTitle("Gate Not Found");
+        problem.setTitle("Operation Definition Not Found");
         return problem;
     }
 
@@ -89,8 +100,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ProblemDetail handleGeneralError(Exception ex) {
         ex.printStackTrace(); // Simple fallback logging
-        ProblemDetail problem =
-                ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred.");
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred.");
         problem.setTitle("Internal Error");
         return problem;
     }

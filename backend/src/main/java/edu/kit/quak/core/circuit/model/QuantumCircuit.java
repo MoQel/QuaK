@@ -1,145 +1,249 @@
 package edu.kit.quak.core.circuit.model;
 
-import edu.kit.quak.core.circuit.model.operation.ElementaryQuantumGateDefinitionIdentifier;
-import edu.kit.quak.core.circuit.model.operation.QuantumOperation;
+import edu.kit.quak.core.circuit.model.layer.Layer;
+import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
+import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
 import edu.kit.quak.core.circuit.model.register.QuantumRegister;
-import edu.kit.quak.core.circuit.model.register.Qubit;
 import edu.kit.quak.core.circuit.model.register.Register;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import lombok.Builder;
+import lombok.NonNull;
 
 public class QuantumCircuit extends ElementWithId {
-    public static final String REGISTER_PREFIX = "q";
 
-    private List<Register> registers = new ArrayList<>();
+    private final List<Register> registers = new ArrayList<>();
+    private final List<Layer> layers = new ArrayList<>();
 
     public QuantumCircuit() {
         super();
+        registers.add(new QuantumRegister("q", 4));
+    }
+
+    @Builder
+    public QuantumCircuit(String id, List<Register> registers, List<Layer> layers) {
+        super();
+        this.id = id;
+        this.registers.addAll(registers);
+        this.layers.addAll(layers);
     }
 
     public List<Register> getRegisters() {
         return Collections.unmodifiableList(registers);
     }
 
-    public void setRegisters(List<Register> registers) {
-        this.registers = registers;
+    public List<Layer> getLayers() {
+        return Collections.unmodifiableList(layers);
     }
 
-    public QuantumRegister addQuantumRegister() {
-        int nextIndex = registers.stream()
-                        .map(Register::getName)
-                        .filter(name -> name.startsWith(REGISTER_PREFIX))
-                        .map(name -> name.substring(REGISTER_PREFIX.length()))
-                        .mapToInt(Integer::parseInt)
-                        .max()
-                        .orElse(-1)
-                + 1;
-        QuantumRegister register = new QuantumRegister(REGISTER_PREFIX + nextIndex);
-        registers.add(register);
-        return register;
+    public void addQubit(@NonNull String registerId) {
+        QuantumRegister quantumRegister = findQuantumRegisterById(registerId);
+        quantumRegister.addQubit();
     }
 
-    public void deleteQuantumRegister(String qubitId) {
-        registers.removeIf(register -> register.asQuantum()
-                .map(qReg -> !qReg.getQubits().isEmpty()
-                        && qReg.getQubits().getFirst().getId().equals(qubitId))
-                .orElse(false));
-    }
+    public void removeQubit(@NonNull String registerId, int qubitIdx) {
+        QuantumRegister quantumRegister = findQuantumRegisterById(registerId);
 
-    public void addQubit() {
-        QuantumRegister register = addQuantumRegister();
-        register.addQubit();
-    }
+        if (qubitIdx < 0 || qubitIdx >= quantumRegister.getNumberOfQubits()) {
+            throw new IllegalArgumentException("qubit index must be between 0 and " + (layers.size() - 1));
+        }
 
-    public void changeQubitName(String qubitId, String name) {
-        for (Register register : registers) {
-            register.asQuantum().ifPresent(qReg -> {
-                boolean qubitFound = qReg.getQubits().stream()
-                        .anyMatch(qubit -> qubit.getId().equals(qubitId));
+        // Remove qubit.
+        quantumRegister.removeQubit();
 
-                if (qubitFound) {
-                    qReg.setName(name);
+        for (Layer layer : layers) {
+            for (QuantumOperation operation : new ArrayList<>(layer.getQuantumOperations())) {
+                List<ElementSelector> selectors = Stream.of(operation.getTargetQubits(), operation.getControlQubits())
+                    .flatMap(Collection::stream)
+                    .toList();
+
+                // Remove all quantum operations that had this qubit either as target or as control.
+                boolean removeOperation = selectors
+                    .stream()
+                    .anyMatch(selector -> selector.getRegisterId().equals(registers.getFirst().getId()) && selector.getIndex() == qubitIdx);
+                if (removeOperation) {
+                    layer.removeQuantumOperation(operation);
+                    continue;
                 }
-            });
+
+                // Update selector indices. Decrease index by 1 to account for the removal of the qubit.
+                selectors
+                    .stream()
+                    .filter(sel -> sel.getRegisterId().equals(registerId) && sel.getIndex() > qubitIdx)
+                    .forEach(ElementSelector::decreaseIndex);
+            }
+        }
+
+        flushLayers();
+    }
+
+    public void addQuantumOperation(@NonNull QuantumOperation operation, int layerIdx) {
+        if (layerIdx < 0 || layerIdx > layers.size()) {
+            throw new IllegalArgumentException("Layer index must be between 0 and " + layers.size());
+        }
+
+        if (layerIdx == layers.size()) {
+            layers.add(new Layer(List.of(operation)));
+        } else {
+            layers.get(layerIdx).addQuantumOperation(operation);
+        }
+
+        rescheduleOperations();
+    }
+
+    public void moveQuantumOperation(
+        @NonNull String operationId,
+        int layerIdx,
+        @NonNull List<ElementSelector> targetQubits,
+        List<ElementSelector> controlQubits
+    ) {
+        if (layerIdx < 0 || layerIdx > layers.size()) {
+            throw new IllegalArgumentException("Layer index must be between 0 and " + layers.size());
+        }
+        if (targetQubits.isEmpty()) {
+            throw new IllegalArgumentException("Must provide at least one qubit to target.");
+        }
+
+        for (int idx = 0; idx < layers.size(); idx++) {
+            // 'for' loop CANNOT be replaced with enhanced 'for'
+            for (QuantumOperation operation : layers.get(idx).getQuantumOperations()) {
+                if (operation.getId().equals(operationId)) {
+                    // Set new target and control qubits.
+                    operation.setTargetQubits(targetQubits);
+                    operation.setControlQubits(controlQubits);
+
+                    // Move operation to new layer.
+                    layers.get(idx).removeQuantumOperation(operation);
+                    rescheduleOperations();
+                    addQuantumOperation(operation, layerIdx); // Add and reorganize again.
+                    break;
+                }
+            }
         }
     }
 
-    public void addElementaryQuantumGate(
-            ElementaryQuantumGateDefinitionIdentifier definitionId, int registerIdx, int positionIdx) {
-        if (registerIdx < 0 || registerIdx >= registers.size()) {
-            throw new IllegalArgumentException("Register index out of bounds: " + registerIdx);
+    public void removeQuantumOperation(String operationId) {
+        for (Layer layer : layers) {
+            for (QuantumOperation operation : layer.getQuantumOperations()) {
+                if (operation.getId().equals(operationId)) {
+                    layer.removeQuantumOperation(operation);
+                    break;
+                }
+            }
         }
 
-        registers
-                .get(registerIdx)
-                .asQuantum()
-                .ifPresentOrElse(qReg -> qReg.addElementaryQuantumGate(definitionId, positionIdx), () -> {
-                    throw new IllegalArgumentException(String.format(
-                            "Register at index %d is not a quantum register (cannot" + " add gate).", registerIdx));
-                });
+        rescheduleOperations();
     }
 
-    public void moveQuantumOperation(String operationId, int targetRegisterIdx, int positionIdx) {
-        // search for tuple (Qubit, Operation)
-        var location = findOperationLocation(operationId)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        String.format("Operation %s not found within circuit %s.", operationId, id)));
+    /**
+     * Re-calculates the position of all operations to ensure they are positioned as far left
+     * as possible (ASAP scheduling) while respecting qubit collisions and preserving
+     * logical dependency barriers.
+     */
+    private void rescheduleOperations() {
+        // 1. Extract all operations in their original relative order
+        List<QuantumOperation> allOps = layers
+            .stream()
+            .flatMap(l -> l.getQuantumOperations().stream())
+            .toList();
 
-        Qubit sourceQubit = location.qubit();
-        QuantumOperation operationToMove = location.operation();
+        // 2. Clear current layers
+        layers.forEach(Layer::clearQuantumOperations);
 
-        if (targetRegisterIdx < 0 || targetRegisterIdx >= registers.size()) {
-            throw new IllegalArgumentException("Target register index out of bounds.");
+        // Track the last occupied layer index for each specific qubit.
+        // Key: Selector that points to the qubit, Value: Last occupied layer index
+        Map<ElementSelector, Integer> lastLayerPerQubit = new HashMap<>();
+
+        // 3. Re-insert the operations into the first possible layer where it fits
+        // while respecting the "last occupied layer" logic
+        for (QuantumOperation op : allOps) {
+            Set<ElementSelector> involvedQubits = getTargetAndControlQubits(op);
+
+            // Find the earliest possible layer where this operation could be placed
+            // using the maximal last occupied layer index of the affected qubits as the baseline.
+            int minLayerIdx = 0;
+            for (ElementSelector s : involvedQubits) {
+                minLayerIdx = Math.max(minLayerIdx, lastLayerPerQubit.getOrDefault(s, -1));
+            }
+
+            // Search for the first layer (starting from minLayerIdx) that has no collision.
+            int layerIdx = minLayerIdx;
+            while (isQubitCollisionInLayer(op, layerIdx)) {
+                layerIdx++;
+            }
+
+            // Ensure layer exists
+            while (layers.size() <= layerIdx) {
+                layers.add(new Layer(new ArrayList<>()));
+            }
+
+            op.generateNewId(); // Generate new ID because of problems with Hibernate.
+            layers.get(layerIdx).addQuantumOperation(op); // Add operation to target layer
+
+            // Update the last occupied layer index for all involved qubits
+            for (ElementSelector s : involvedQubits) {
+                lastLayerPerQubit.put(s, layerIdx);
+            }
         }
 
-        QuantumRegister targetReg = registers
-                .get(targetRegisterIdx)
-                .asQuantum()
-                .orElseThrow(() -> new IllegalArgumentException("Target register is not a quantum register."));
-
-        if (targetReg.getQubits().isEmpty()) {
-            throw new IllegalStateException("Target register has no qubits.");
-        }
-
-        Qubit targetQubit = targetReg.getQubits().getFirst();
-
-        sourceQubit.removeOperation(operationToMove);
-        operationToMove.generateNewId(); // Generate new id because of orphan removal problems with
-        // Hibernate.
-        targetQubit.addOperation(positionIdx, operationToMove);
+        flushLayers();
     }
 
-    public void deleteQuantumOperation(String operationId) {
-        boolean removed = findOperationLocation(operationId)
-                .map(loc -> {
-                    loc.qubit().removeOperation(loc.operation());
-                    return true;
-                })
-                .orElse(false);
+    /**
+     * Checks if a quantum operation conflicts with existing operations in a specific layer.
+     *
+     * @param op The quantum operation to check for potential collisions.
+     * @param layerIdx The index of the layer to inspect.
+     * @return {@code true} if a qubit overlap is detected.
+     */
+    private boolean isQubitCollisionInLayer(QuantumOperation op, int layerIdx) {
+        if (layerIdx >= layers.size()) return false;
 
-        if (!removed) {
-            throw new IllegalArgumentException(
-                    String.format("Operation %s not found within circuit %s.", operationId, id));
+        Set<ElementSelector> requiredQubits = getTargetAndControlQubits(op);
+
+        return layers
+            .get(layerIdx)
+            .getQuantumOperations()
+            .stream()
+            .map(this::getTargetAndControlQubits)
+            .anyMatch(existingQubits -> !Collections.disjoint(requiredQubits, existingQubits));
+    }
+
+    private Set<ElementSelector> getTargetAndControlQubits(QuantumOperation op) {
+        Stream<ElementSelector> targetStream = op.getTargetQubits().stream();
+        Stream<ElementSelector> controlStream = op.getControlQubits() != null ? op.getControlQubits().stream() : Stream.empty();
+
+        return Stream.concat(targetStream, controlStream).collect(Collectors.toSet());
+    }
+
+    private void flushLayers() {
+        // Remove all layers that no longer contain any quantum operations.
+        layers.removeIf(layer -> layer.getQuantumOperations().isEmpty());
+    }
+
+    private QuantumRegister findQuantumRegisterById(String registerId) {
+        for (Register register : registers) {
+            if (register.getId().equals(registerId)) {
+                Optional<QuantumRegister> quantumRegister = register.asQuantum();
+                if (quantumRegister.isEmpty()) {
+                    throw new IllegalArgumentException(
+                        "Register with quantumOperationId %s is not a QuantumRegister.".formatted(registerId)
+                    );
+                }
+                return quantumRegister.get();
+            }
         }
+        throw new NoSuchElementException("Could not find quantum register with quantumOperationId %s".formatted(registerId));
     }
 
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("QuantumCircuit(id=").append(id).append(")\n");
-        registers.forEach(reg ->
-                sb.append("  ").append(reg.toString().replace("\n", "\n  ")).append("\n"));
+        sb.append("QuantumCircuit(quantumOperationId=").append(id).append(")\n");
+        registers.forEach(reg -> sb.append("  ").append(reg.toString().replace("\n", "\n  ")).append("\n"));
+        sb.append("\n");
+        layers.forEach(lay -> sb.append("  ").append(lay.toString().replace("\n", "\n  ")).append("\n"));
         return sb.toString().trim();
-    }
-
-    private record OperationLocation(Qubit qubit, QuantumOperation operation) {}
-
-    private Optional<OperationLocation> findOperationLocation(String operationId) {
-        return registers.stream()
-                .flatMap(reg -> reg.asQuantum().stream())
-                .flatMap(qReg -> qReg.getQubits().stream())
-                .flatMap(qubit -> qubit.getOperations().stream()
-                        .filter(op -> op.getId().equals(operationId))
-                        .map(op -> new OperationLocation(qubit, op)))
-                .findFirst();
     }
 }

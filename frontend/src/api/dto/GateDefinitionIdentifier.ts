@@ -1,2 +1,0 @@
-// 'PLACEHOLDER' is a UI-specific state used for dropzone visualization and does not represent a valid quantum gate.
-export type GateDefinitionIdentifier = 'PLACEHOLDER' | 'H' | 'X' | 'Y' | 'Z' | 'CX' | 'CCX' | 'CZ' | 'SWAP' | 'S' | 'T' | 'RX' | 'RY' | 'RZ' | 'MEASURE';

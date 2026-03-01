@@ -13,8 +13,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class CircuitDtoMapperTest {
+
     @Spy
     private RegisterDtoMapperImpl registerDtoMapper;
+
+    @Spy
+    private LayerDtoMapperImpl layerDtoMapper;
 
     @InjectMocks
     private CircuitDtoMapperImpl mapper;
@@ -23,8 +27,6 @@ class CircuitDtoMapperTest {
     void toResponse() {
         // Arrange
         QuantumCircuit circuit = new QuantumCircuit();
-        circuit.addQuantumRegister();
-        circuit.addQuantumRegister();
 
         // Act
         CircuitResponse response = mapper.toResponse(circuit);
@@ -32,8 +34,8 @@ class CircuitDtoMapperTest {
         // Assert
         assertNotNull(response);
         assertEquals(circuit.getId(), response.id());
-        assertEquals(2, response.registers().size());
-        assertEquals("q0", response.registers().get(0).name());
-        assertEquals("q1", response.registers().get(1).name());
+        assertEquals(1, response.registers().size());
+        assertEquals("q", response.registers().getFirst().getName());
+        assertEquals(0, response.layers().size());
     }
 }

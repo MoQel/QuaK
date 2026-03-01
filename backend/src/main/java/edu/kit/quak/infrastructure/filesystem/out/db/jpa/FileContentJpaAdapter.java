@@ -13,8 +13,7 @@ public class FileContentJpaAdapter implements FileContentRepositoryPort {
     private final SpringDataFileContentRepository contentRepository;
     private final SpringDataJpaFileRepository fileRepository;
 
-    public FileContentJpaAdapter(
-            SpringDataFileContentRepository contentRepository, SpringDataJpaFileRepository fileRepository) {
+    public FileContentJpaAdapter(SpringDataFileContentRepository contentRepository, SpringDataJpaFileRepository fileRepository) {
         this.contentRepository = contentRepository;
         this.fileRepository = fileRepository;
     }
@@ -26,16 +25,16 @@ public class FileContentJpaAdapter implements FileContentRepositoryPort {
         }
 
         JpaFileContent entity = contentRepository
-                .findById(fileId)
-                .map(existing -> {
-                    // Update
-                    existing.setContent(content);
-                    return existing;
-                })
-                .orElseGet(() -> {
-                    // Create
-                    return new JpaFileContent(fileId, content);
-                });
+            .findById(fileId)
+            .map(existing -> {
+                // Update
+                existing.setContent(content);
+                return existing;
+            })
+            .orElseGet(() -> {
+                // Create
+                return new JpaFileContent(fileId, content);
+            });
 
         // store
         contentRepository.save(entity);
