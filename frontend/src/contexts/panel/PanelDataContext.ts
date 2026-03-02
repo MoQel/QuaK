@@ -3,8 +3,8 @@ import { OperationDefinitionResponse } from '@/api/dto/library';
 import { CircuitResponse } from '@/api/dto/circuit';
 
 export type PanelContextType = {
-    circuit: CircuitResponse | null;
-    setCircuit: (c: CircuitResponse | null) => void;
+    circuit: CircuitResponse | undefined;
+    setCircuit: (circuit: CircuitResponse) => void;
     selectedOperation: OperationDefinitionResponse | undefined;
     setSelectedOperation: (op: OperationDefinitionResponse | undefined) => void;
 };

@@ -1,5 +1,5 @@
 import { usePanelData } from '@/contexts/panel/PanelDataContext';
-import { GateLibraryView } from '@/views/library-view/GateLibraryView';
+import { LibraryView } from '@/views/library-view/LibraryView.tsx';
 import { CircuitView } from '@/views/circuit-view/CircuitView';
 import { TextEditorView } from '@/views/text-editor-view/TextEditorView';
 import { ProjectManagerView } from '@/views/project-manager-view/ProjectManagerView';
@@ -29,14 +29,14 @@ export const CodePanel = () => {
 
 export const LibraryPanel = () => {
     const { setSelectedOperation } = usePanelData();
-    return <GateLibraryView onGateSelect={setSelectedOperation} />;
+    return <LibraryView onOperationSelect={setSelectedOperation} />;
 };
 
 export const InspectorPanel = () => {
     const { selectedOperation, setSelectedOperation } = usePanelData();
     return (
         <PanelWrapper>
-            <InspectorView gate={selectedOperation} onClear={() => setSelectedOperation(undefined)} />
+            <InspectorView operationDefinition={selectedOperation} onClear={() => setSelectedOperation(undefined)} />
         </PanelWrapper>
     );
 };
