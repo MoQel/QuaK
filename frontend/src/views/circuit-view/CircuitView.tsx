@@ -1,5 +1,5 @@
 import { Card, CardContent } from '@/components/ui/card';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
     CircuitResponse,
     ElementSelectorDto,
@@ -22,17 +22,16 @@ import { LABEL_WIDTH } from '@/views/circuit-view/util/layout.ts';
 interface CircuitViewProps {
     circuit: CircuitResponse | undefined;
     setCircuit: (circuit: CircuitResponse) => void;
+    projectId: string;
 }
 
-export function CircuitView({ circuit, setCircuit }: Readonly<CircuitViewProps>) {
-    const { initCircuit, removeQuantumOperation } = createCircuitService(circuit, setCircuit);
+export function CircuitView({ circuit, setCircuit, projectId }: Readonly<CircuitViewProps>) {
+    const { removeQuantumOperation } = createCircuitService(circuit, setCircuit);
 
     const { isOperationDragging, draggingOperationSize } = useSelector((state: RootState) => state.dragOperation);
 
     const [hoverPos, setHoverPos] = useState<HoverPos | null>(null);
     const [draggingOperationId, setDraggingOperationId] = useState<string | null>(null);
-
-    useEffect(() => initCircuit(), []);
 
     /**
      * Flattens the nested register structure into a single array of qubits
@@ -227,7 +226,7 @@ export function CircuitView({ circuit, setCircuit }: Readonly<CircuitViewProps>)
     return (
         <Card className="h-full overflow-hidden">
             <CardContent className="flex flex-col h-full">
-                <CircuitToolbar circuit={circuit} setCircuit={setCircuit} />
+                <CircuitToolbar circuit={circuit} setCircuit={setCircuit} projectId={projectId} />
 
                 {/* Circuit Canvas */}
                 <div className="relative flex-1 overflow-auto">

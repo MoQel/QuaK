@@ -31,7 +31,7 @@ class CircuitServiceTest {
     @Test
     void init_createsAndSavesCircuit() {
         // execute
-        QuantumCircuit result = service.init();
+        QuantumCircuit result = service.init("");
 
         // verify state
         assertNotNull(result);
@@ -41,25 +41,29 @@ class CircuitServiceTest {
     @Test
     void get_returnsCircuit_whenFound() {
         // setup
-        String circuitId = "c-1";
-        QuantumCircuit circuit = new QuantumCircuit();
-        when(repository.findById(circuitId)).thenReturn(Optional.of(circuit));
+        String projectId = "p-1";
+        QuantumCircuit circuit = new QuantumCircuit(projectId);
+        when(repository.findByProjectId(projectId)).thenReturn(Optional.of(circuit));
 
         // execute
-        QuantumCircuit result = service.get(circuitId);
+        Optional<QuantumCircuit> result = service.getByProjectId(projectId);
 
         // verify state
-        assertEquals(circuit, result);
+        assertTrue(result.isPresent());
+        assertEquals(circuit, result.get());
     }
 
     @Test
-    void get_throwsException_whenNotFound() {
+    void get_returnsEmptyOptional_whenNotFound() {
         // setup
-        String circuitId = "unknown";
-        when(repository.findById(circuitId)).thenReturn(Optional.empty());
+        String projectId = "unknown";
+        when(repository.findByProjectId(projectId)).thenReturn(Optional.empty());
 
-        // execute & verify exception
-        assertThrows(EntityNotFoundException.class, () -> service.get(circuitId));
+        // execute
+        Optional<QuantumCircuit> result = service.getByProjectId(projectId);
+
+        // verify state
+        assertTrue(result.isEmpty());
     }
 
     @Test

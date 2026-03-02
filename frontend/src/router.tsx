@@ -8,6 +8,8 @@ import NotFound from './pages/NotFound';
 import Layout from './components/Layout';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { api } from '@/api/api.ts';
+import { CircuitResponse } from '@/api/dto/circuit.ts';
 
 const routes: RouteObject[] = [
     {
@@ -34,6 +36,16 @@ const routes: RouteObject[] = [
             },
             {
                 path: 'project/:projectId',
+                // Get or initialize circuit for project.
+                loader: async ({ params }) => {
+                    return api.get<CircuitResponse>(`/api/circuit/${params.projectId}`).catch((error: Response) => {
+                        if (error.status === 404) {
+                            // Initialize new circuit if none found.
+                            return api.post<CircuitResponse>(`/api/circuit/${params.projectId}`);
+                        }
+                        throw error;
+                    });
+                },
                 element: <Project />,
             },
             {

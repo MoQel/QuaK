@@ -7,6 +7,7 @@ import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
 import jakarta.persistence.EntityNotFoundException;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 import org.springframework.stereotype.Service;
 
@@ -20,15 +21,15 @@ public class CircuitService implements CircuitServicePort {
     }
 
     @Override
-    public QuantumCircuit init() {
-        QuantumCircuit circuit = new QuantumCircuit();
+    public QuantumCircuit init(String projectId) {
+        QuantumCircuit circuit = new QuantumCircuit(projectId);
         repository.save(circuit);
         return circuit;
     }
 
     @Override
-    public QuantumCircuit get(String circuitId) {
-        return repository.findById(circuitId).orElseThrow(EntityNotFoundException::new);
+    public Optional<QuantumCircuit> getByProjectId(String projectId) {
+        return repository.findByProjectId(projectId);
     }
 
     @Override

@@ -8,9 +8,10 @@ import { useState } from 'react';
 interface CircuitToolbarProps {
     circuit: CircuitResponse | undefined;
     setCircuit: (circuit: CircuitResponse) => void;
+    projectId: string;
 }
 
-export function CircuitToolbar({ circuit, setCircuit }: Readonly<CircuitToolbarProps>) {
+export function CircuitToolbar({ circuit, setCircuit, projectId }: Readonly<CircuitToolbarProps>) {
     const { addQubit, deleteLastQubit, resetCircuit } = createCircuitService(circuit, setCircuit);
     const [isPopoverOpen, setIsPopoverOpen] = useState(false);
 
@@ -43,7 +44,7 @@ export function CircuitToolbar({ circuit, setCircuit }: Readonly<CircuitToolbarP
                         <div className="flex flex-col gap-2">
                             <Button
                                 onClick={() => {
-                                    resetCircuit();
+                                    resetCircuit(projectId);
                                     setIsPopoverOpen(false);
                                 }}
                                 variant="destructive"

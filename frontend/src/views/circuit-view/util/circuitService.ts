@@ -10,8 +10,8 @@ export function createCircuitService(
     circuit: CircuitResponse | undefined,
     setCircuit: (circuit: CircuitResponse) => void,
 ) {
-    const initCircuit = () => {
-        api.post<CircuitResponse>('/api/circuit').then(setCircuit);
+    const initCircuit = (projectId: string) => {
+        api.post<CircuitResponse>(`/api/circuit/${projectId}`).then(setCircuit);
     };
 
     const addQubit = () => {
@@ -37,9 +37,9 @@ export function createCircuitService(
         }
     };
 
-    const resetCircuit = () => {
+    const resetCircuit = (projectId: string) => {
         if (!circuit) return;
-        api.delete(`/api/circuit/${circuit.id}`).then(initCircuit);
+        api.delete(`/api/circuit/${circuit.id}`).then(() => initCircuit(projectId));
     };
 
     const addQuantumOperation = (payload: AddQuantumOperationRequest) => {
@@ -58,7 +58,6 @@ export function createCircuitService(
     };
 
     return {
-        initCircuit,
         addQubit,
         deleteQubit,
         deleteLastQubit,

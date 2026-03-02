@@ -16,6 +16,7 @@ import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
 import edu.kit.quak.core.circuit.model.layer.operation.library.QuantumOperationLibrary;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.*;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -49,12 +50,13 @@ class CircuitRestAdapterTest {
     @Test
     void initCircuit_ShouldReturnCreated() throws Exception {
         // Arrange
-        QuantumCircuit circuit = new QuantumCircuit();
-        given(circuitServicePort.init()).willReturn(circuit);
+        String projectId = "p-id";
+        QuantumCircuit circuit = new QuantumCircuit(projectId);
+        given(circuitServicePort.init(projectId)).willReturn(circuit);
 
         // Act & Assert
         mockMvc
-            .perform(post("/api/circuit").with(csrf()).contentType(MediaType.APPLICATION_JSON))
+            .perform(post("/api/circuit/{projectId}", projectId).with(csrf()).contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.id").value(circuit.getId()))
             .andExpect(jsonPath("$.registers").exists())
@@ -66,21 +68,31 @@ class CircuitRestAdapterTest {
     }
 
     @Test
-    void getCircuit_ShouldReturnCircuit() throws Exception {
+    void getCircuitByProjectId_ProjectHasCircuit_ShouldReturnCircuit() throws Exception {
         // Arrange
-        String circuitId = "test-quantumOperationId";
-        QuantumCircuit circuit = new QuantumCircuit();
-        given(circuitServicePort.get(circuitId)).willReturn(circuit);
+        String projectId = "p-id";
+        QuantumCircuit circuit = new QuantumCircuit(projectId);
+        given(circuitServicePort.getByProjectId(projectId)).willReturn(Optional.of(circuit));
 
         // Act & Assert
-        mockMvc.perform(get("/api/circuit/{circuitId}", circuitId)).andExpect(status().isOk()).andExpect(jsonPath("$.id").exists());
+        mockMvc.perform(get("/api/circuit/{projectId}", projectId)).andExpect(status().isOk()).andExpect(jsonPath("$.id").exists());
+    }
+
+    @Test
+    void getCircuitByProjectId_ProjectHasNoCircuit_ShouldThrow404() throws Exception {
+        // Arrange
+        String projectId = "unknown";
+        given(circuitServicePort.getByProjectId(projectId)).willReturn(Optional.empty());
+
+        // Act & Assert
+        mockMvc.perform(get("/api/circuit/{projectId}", projectId)).andExpect(status().is(404));
     }
 
     @Test
     void addQubit_ShouldReturnCreated() throws Exception {
         // Arrange
         String circuitId = "test-quantumOperationId";
-        QuantumCircuit circuit = new QuantumCircuit();
+        QuantumCircuit circuit = new QuantumCircuit("");
         String registerId = circuit.getRegisters().getFirst().getId();
         circuit.addQubit(registerId);
         given(circuitServicePort.addQubit(circuitId, registerId)).willReturn(circuit);
@@ -106,7 +118,7 @@ class CircuitRestAdapterTest {
         // Arrange
         String circuitId = "circuit-123";
         String registerId = "register-456";
-        QuantumCircuit updatedCircuit = new QuantumCircuit();
+        QuantumCircuit updatedCircuit = new QuantumCircuit("");
         int qubitIdx = 0;
         given(circuitServicePort.removeQubit(circuitId, registerId, qubitIdx)).willReturn(updatedCircuit);
 
@@ -125,7 +137,7 @@ class CircuitRestAdapterTest {
     void addQuantumOperation_ShouldReturnCreated() throws Exception {
         // Arrange
         String circuitId = "test-quantumOperationId";
-        QuantumCircuit circuit = new QuantumCircuit();
+        QuantumCircuit circuit = new QuantumCircuit("");
         String registerId = circuit.getRegisters().getFirst().getId();
         circuit.addQubit(registerId);
         ElementSelector target = new ElementSelector(registerId, 0);

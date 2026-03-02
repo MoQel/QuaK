@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useLoaderData, useParams } from 'react-router-dom';
 
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable.tsx';
 import { LibraryView } from '@/views/library-view/LibraryView.tsx';
@@ -17,7 +17,7 @@ import { usePreventKeyboardActions } from '@/hooks/usePreventKeyboardActions.ts'
 function App() {
     const { projectId } = useParams<{ projectId: string }>();
     const [selectedOperation, setSelectedOperation] = useState<OperationDefinitionResponse | undefined>(undefined);
-    const [circuit, setCircuit] = useState<CircuitResponse | undefined>(undefined);
+    const [circuit, setCircuit] = useState<CircuitResponse | undefined>(useLoaderData());
     const handleFileSelect = useFileSelect();
 
     // prevent globally standard browser behavior
@@ -59,7 +59,7 @@ function App() {
                         {visiblePanels.circuit && (
                             <>
                                 <ResizablePanel defaultSize={topLayout[1]} onClose={() => onTogglePanel('circuit')}>
-                                    <CircuitView circuit={circuit} setCircuit={setCircuit} />
+                                    <CircuitView circuit={circuit} setCircuit={setCircuit} projectId={projectId!} />
                                 </ResizablePanel>
                                 {visiblePanels.code && <ResizableHandle withHandle />}
                             </>

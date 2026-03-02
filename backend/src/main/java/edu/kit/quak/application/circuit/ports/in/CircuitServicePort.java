@@ -4,11 +4,12 @@ import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
 import java.util.List;
+import java.util.Optional;
 
 public interface CircuitServicePort {
-    QuantumCircuit init();
+    QuantumCircuit init(String projectId);
 
-    QuantumCircuit get(String circuitId);
+    Optional<QuantumCircuit> getByProjectId(String projectId);
 
     void delete(String circuitId);
 

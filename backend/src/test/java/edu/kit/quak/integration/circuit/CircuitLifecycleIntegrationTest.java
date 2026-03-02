@@ -39,8 +39,9 @@ class CircuitLifecycleIntegrationTest {
     @DisplayName("E2E: Full Circuit Lifecycle with multi-qubit gates and state verification")
     void testFullCircuitLifecycle() throws Exception {
         // 1. Create circuit
+        String projectId = "p-id";
         MvcResult initResult = mockMvc
-            .perform(post("/api/circuit").with(authenticatedUser()).with(csrf()))
+            .perform(post("/api/circuit/" + projectId).with(authenticatedUser()).with(csrf()))
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.id").exists())
             .andReturn();
@@ -101,7 +102,7 @@ class CircuitLifecycleIntegrationTest {
 
         // 6. Verify circuit state via GET
         mockMvc
-            .perform(get("/api/circuit/" + circuitId).with(authenticatedUser()))
+            .perform(get("/api/circuit/" + projectId).with(authenticatedUser()))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.layers.length()").value(2)) // Now correctly separated
             .andExpect(jsonPath("$.layers[0].quantumOperations[0].identifier").value("H"))
@@ -125,7 +126,7 @@ class CircuitLifecycleIntegrationTest {
         mockMvc.perform(delete("/api/circuit/" + circuitId).with(authenticatedUser()).with(csrf())).andExpect(status().isOk());
 
         // 10. Verify deletion (Expect 404)
-        mockMvc.perform(get("/api/circuit/" + circuitId).with(authenticatedUser())).andExpect(status().isNotFound());
+        mockMvc.perform(get("/api/circuit/" + projectId).with(authenticatedUser())).andExpect(status().is(404));
     }
 
     // --- Helper Methods ---

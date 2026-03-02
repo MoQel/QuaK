@@ -11,7 +11,9 @@ import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.CircuitDtoMapper;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.ElementSelectorDtoMapper;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.QuantumOperationDtoMapper;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -35,16 +37,16 @@ public class CircuitRestAdapter {
         this.elementSelectorDtoMapper = elementSelectorDtoMapper;
     }
 
-    @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public CircuitResponse init() {
-        QuantumCircuit circuit = service.init();
-        return mapper.toResponse(circuit);
+    @GetMapping("/{projectId}")
+    public ResponseEntity<CircuitResponse> getByProjectId(@PathVariable String projectId) {
+        Optional<QuantumCircuit> circuit = service.getByProjectId(projectId);
+        return circuit.map(mapper::toResponse).map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
     }
 
-    @GetMapping("/{circuitId}")
-    public CircuitResponse get(@PathVariable String circuitId) {
-        QuantumCircuit circuit = service.get(circuitId);
+    @ResponseStatus(HttpStatus.CREATED)
+    @PostMapping("/{projectId}")
+    public CircuitResponse init(@PathVariable String projectId) {
+        QuantumCircuit circuit = service.init(projectId);
         return mapper.toResponse(circuit);
     }
 
