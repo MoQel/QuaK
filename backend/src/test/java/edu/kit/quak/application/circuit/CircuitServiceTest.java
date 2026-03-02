@@ -157,7 +157,8 @@ class CircuitServiceTest {
         when(repository.save(circuitMock)).thenReturn(circuitMock);
 
         // execute
-        QuantumCircuit result = service.moveQuantumOperation(circuitId, operationId, layerIdx, targetQubits, controlQubits);
+        QuantumCircuit result =
+                service.moveQuantumOperation(circuitId, operationId, layerIdx, targetQubits, controlQubits);
 
         // verify delegation and save
         verify(circuitMock).moveQuantumOperation(operationId, layerIdx, targetQubits, controlQubits);
