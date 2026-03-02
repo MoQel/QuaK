@@ -85,8 +85,7 @@ public class FileRestAdapter {
 
     @PutMapping("/{fId}/content")
     @PreAuthorize("isAuthenticated()")
-    public void setFileContent(
-            @PathVariable String fId, @RequestBody FileContentRequest fileContent, Authentication authentication) {
+    public void setFileContent(@PathVariable String fId, @RequestBody FileContentRequest fileContent, Authentication authentication) {
         log.debug("REST request to set file content '{}'", fId);
         User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
         service.setFileContent(fId, fileContent.content(), fileContent.contentType(), user);

@@ -7,10 +7,9 @@ import edu.kit.quak.core.filesystem.exception.DuplicateNameException;
 import edu.kit.quak.core.filesystem.model.FileElement;
 import edu.kit.quak.core.filesystem.model.FileElementContainer;
 import edu.kit.quak.core.user.model.User;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.UUID;
 import java.util.function.Consumer;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Abstract base class for file element services that provides common
