@@ -113,4 +113,4 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add docs/api/openapi.yaml
-          git diff --quiet && git diff --staged --quiet || (git commit -m "docs: automated update of openapi spec" && git push)
+          git diff --quiet && git diff --staged --quiet || (git commit -m "docs: automated update of openapi spec" && git pull --rebase origin ${{ github.head_ref || github.ref_name }} && git push)
