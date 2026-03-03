@@ -22,7 +22,10 @@ import org.springframework.web.bind.annotation.*;
  */
 @RestController
 @RequestMapping("/api/auth")
-@Tag(name = "TESTING_THE_PIPLINE_OF_AUTO_OPENAPI_CREATION_Authentication", description = "Authentication and user session management endpoints")
+@Tag(
+    name = "TESTING_THE_PIPLINE_OF_AUTO_OPENAPI_CREATION_Authentication",
+    description = "Authentication and user session management endpoints"
+)
 public class AuthRestAdapter {
 
     private final AuthServicePort authService;
@@ -65,8 +68,7 @@ public class AuthRestAdapter {
     private Optional<AuthenticatedUser> extractAuthenticatedUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        if (authentication == null || !authentication.isAuthenticated()
-                || "anonymousUser".equals(authentication.getPrincipal())) {
+        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
             return Optional.empty();
         }
 
