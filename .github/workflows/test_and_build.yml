@@ -108,7 +108,7 @@ jobs:
           path: docs/api/openapi.yaml
 
       - name: Commit and Push OpenAPI Spec
-        if: github.event_name == 'push' || github.event_name == 'pull_request'
+        if: github.event_name == 'push'
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
