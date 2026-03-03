@@ -37,8 +37,9 @@ export function createCircuitService(
         }
     };
 
-    const resetCircuit = (projectId: string) => {
+    const resetCircuit = (projectId: string | undefined) => {
         if (!circuit) return;
+        if (!projectId) return;
         api.delete(`/api/circuit/${circuit.id}`).then(() => initCircuit(projectId));
     };
 

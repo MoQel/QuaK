@@ -22,7 +22,7 @@ import { LABEL_WIDTH } from '@/views/circuit-view/util/layout.ts';
 interface CircuitViewProps {
     circuit: CircuitResponse | undefined;
     setCircuit: (circuit: CircuitResponse) => void;
-    projectId: string;
+    projectId: string | undefined;
 }
 
 export function CircuitView({ circuit, setCircuit, projectId }: Readonly<CircuitViewProps>) {

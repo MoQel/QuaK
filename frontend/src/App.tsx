@@ -59,7 +59,7 @@ function App() {
                         {visiblePanels.circuit && (
                             <>
                                 <ResizablePanel defaultSize={topLayout[1]} onClose={() => onTogglePanel('circuit')}>
-                                    <CircuitView circuit={circuit} setCircuit={setCircuit} projectId={projectId!} />
+                                    <CircuitView circuit={circuit} setCircuit={setCircuit} projectId={projectId} />
                                 </ResizablePanel>
                                 {visiblePanels.code && <ResizableHandle withHandle />}
                             </>

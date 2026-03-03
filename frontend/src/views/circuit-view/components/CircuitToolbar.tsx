@@ -8,7 +8,7 @@ import { useState } from 'react';
 interface CircuitToolbarProps {
     circuit: CircuitResponse | undefined;
     setCircuit: (circuit: CircuitResponse) => void;
-    projectId: string;
+    projectId: string | undefined;
 }
 
 export function CircuitToolbar({ circuit, setCircuit, projectId }: Readonly<CircuitToolbarProps>) {
