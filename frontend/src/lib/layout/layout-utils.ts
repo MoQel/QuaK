@@ -20,17 +20,9 @@ export const getOptimalPosition = (panelId: string, api: DockviewApi) => {
         case 'file':
             return (
                 tryPos('circuit', 'left') ||
-                tryPos('inspector', 'left') ||
+                tryPos('code', 'left') ||
                 tryPos('library', 'above') ||
-                tryPos('code', 'left')
-            );
-
-        case 'code':
-            return (
-                tryPos('circuit', 'right') ||
-                tryPos('inspector', 'right') ||
-                tryPos('results', 'above') ||
-                tryPos('file', 'right')
+                tryPos('inspector', 'above')
             );
 
         case 'circuit':
@@ -41,15 +33,37 @@ export const getOptimalPosition = (panelId: string, api: DockviewApi) => {
                 tryPos('library', 'right')
             );
 
-        // --- BOTTOM ROW PANELS (Anchor to Top Sibling First) ---
+        case 'code':
+            return (
+                tryPos('circuit', 'right') ||
+                tryPos('file', 'right') ||
+                tryPos('results', 'above') ||
+                tryPos('inspector', 'above')
+            );
+
         case 'library':
-            return tryPos('file', 'below') || tryPos('inspector', 'left') || tryPos('circuit', 'left');
+            return (
+                tryPos('inspector', 'left') ||
+                tryPos('results', 'left') ||
+                tryPos('file', 'below') ||
+                tryPos('circuit', 'below')
+            );
 
         case 'inspector':
-            return tryPos('circuit', 'below') || tryPos('library', 'right') || tryPos('results', 'left');
+            return (
+                tryPos('library', 'right') ||
+                tryPos('results', 'left') ||
+                tryPos('circuit', 'below') ||
+                tryPos('file', 'below')
+            );
 
         case 'results':
-            return tryPos('code', 'below') || tryPos('inspector', 'right') || tryPos('circuit', 'right');
+            return (
+                tryPos('inspector', 'right') ||
+                tryPos('library', 'right') ||
+                tryPos('code', 'below') ||
+                tryPos('circuit', 'below')
+            );
 
         default:
             return null;
@@ -62,44 +76,20 @@ export const getOptimalPosition = (panelId: string, api: DockviewApi) => {
 export const buildDefaultLayout = (api: DockviewApi) => {
     api.clear();
 
-    // Tune these
     const LEFT_W = 400;
     const RIGHT_W = 520;
     const BOTTOM_H = 350;
 
-    // 1) Top row
+    // 1. Top-row anchor
     const circuit = api.addPanel({
         id: 'circuit',
         component: 'circuit',
         title: 'Circuit',
     });
 
-    const file = api.addPanel({
-        id: 'file',
-        component: 'file',
-        title: 'Project',
-        position: { referencePanel: circuit, direction: 'left' },
-        initialWidth: LEFT_W,
-    });
-
-    const code = api.addPanel({
-        id: 'code',
-        component: 'code',
-        title: 'Code Editor',
-        position: { referencePanel: circuit, direction: 'right' },
-        initialWidth: RIGHT_W,
-    });
-
-    // 2) Bottom row (give bottoms a height so tops stay larger)
-    api.addPanel({
-        id: 'library',
-        component: 'library',
-        title: 'Library',
-        position: { referencePanel: file, direction: 'below' },
-        initialHeight: BOTTOM_H,
-    });
-
-    api.addPanel({
+    // 2. Bottom-row anchor
+    // Note: Split vertically first for a continuous horizontal splitter.
+    const inspector = api.addPanel({
         id: 'inspector',
         component: 'inspector',
         title: 'Inspector',
@@ -107,11 +97,37 @@ export const buildDefaultLayout = (api: DockviewApi) => {
         initialHeight: BOTTOM_H,
     });
 
+    // 3. Fill top row (left / right of circuit)
+    api.addPanel({
+        id: 'file',
+        component: 'file',
+        title: 'Project',
+        position: { referencePanel: circuit, direction: 'left' },
+        initialWidth: LEFT_W,
+    });
+
+    api.addPanel({
+        id: 'code',
+        component: 'code',
+        title: 'Code Editor',
+        position: { referencePanel: circuit, direction: 'right' },
+        initialWidth: RIGHT_W,
+    });
+
+    // 4. Fill bottom row (left / right of inspector)
+    api.addPanel({
+        id: 'library',
+        component: 'library',
+        title: 'Library',
+        position: { referencePanel: inspector, direction: 'left' },
+        initialWidth: LEFT_W,
+    });
+
     api.addPanel({
         id: 'results',
         component: 'results',
         title: 'Results',
-        position: { referencePanel: code, direction: 'below' },
-        initialHeight: BOTTOM_H,
+        position: { referencePanel: inspector, direction: 'right' },
+        initialWidth: RIGHT_W,
     });
 };
