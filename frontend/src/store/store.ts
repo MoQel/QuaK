@@ -1,8 +1,8 @@
 import { configureStore } from '@reduxjs/toolkit';
 import layoutReducer, { LayoutState } from '@/store/layout/layoutSlice';
 import tabsReducer from './tabs/tabsSlice.ts';
+import dragOperationReducer from './circuit/dragOperationSlice';
 
-// --- 1. Load State from LocalStorage ---
 const loadState = (): { layout: LayoutState } | undefined => {
     try {
         const serializedState = localStorage.getItem('ide-layout-settings');
@@ -11,15 +11,16 @@ const loadState = (): { layout: LayoutState } | undefined => {
         }
         return JSON.parse(serializedState);
     } catch (e) {
-        console.warn('Could not load state', e);
+        console.error('Could not load state', e);
+        return undefined;
     }
 };
 
-// --- 2. Configure Store ---
 export const store = configureStore({
     reducer: {
         layout: layoutReducer,
         tabs: tabsReducer,
+        dragOperation: dragOperationReducer,
     },
     preloadedState: loadState(),
 });

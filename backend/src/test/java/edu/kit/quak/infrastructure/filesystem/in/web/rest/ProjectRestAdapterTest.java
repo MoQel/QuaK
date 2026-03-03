@@ -111,9 +111,7 @@ class ProjectRestAdapterTest {
     @Test
     @DisplayName("DELETE /project/{id} removes project")
     void deleteProject_success() throws Exception {
-        mockMvc
-            .perform(delete("/api/project/p-1").with(csrf())) // WICHTIG: CSRF Token
-            .andExpect(status().isOk());
+        mockMvc.perform(delete("/api/project/p-1").with(csrf())).andExpect(status().isOk());
 
         verify(projectService).removeProject(eq("p-1"), any(User.class));
     }
@@ -131,12 +129,7 @@ class ProjectRestAdapterTest {
             """;
 
         mockMvc
-            .perform(
-                patch("/api/project/p-1")
-                    .with(csrf()) // WICHTIG: CSRF Token
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(jsonRequest)
-            )
+            .perform(patch("/api/project/p-1").with(csrf()).contentType(MediaType.APPLICATION_JSON).content(jsonRequest))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.name").value("Renamed Project"));
     }

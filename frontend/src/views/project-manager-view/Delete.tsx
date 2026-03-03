@@ -1,6 +1,6 @@
 import { ContextMenuItem } from '@/components/ui/context-menu.tsx';
 import { FormEvent, JSX, useContext } from 'react';
-import { ParentRefresh } from '@/views/project-manager-view/ProjectManagerView.tsx';
+import { DialogClose, ParentRefresh } from '@/views/project-manager-view/ProjectManagerContexts.ts';
 import { DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog.tsx';
 import { DialogCloseButtons } from '@/views/project-manager-view/util/FormComponents.tsx';
 import { api } from '@/api/api.ts';
@@ -19,10 +19,14 @@ export function Delete({
     openDialog: (element: Promise<JSX.Element>) => void;
 }>) {
     const reload = useContext(ParentRefresh);
+    const close = useContext(DialogClose);
 
     const del = (event: FormEvent) => {
         event.preventDefault();
-        api.delete(endpoint).then(reload);
+        api.delete(endpoint).then(() => {
+            reload();
+            close();
+        });
     };
 
     return (

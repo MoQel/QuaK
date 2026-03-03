@@ -5,7 +5,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Domain POJO for FileElementContainer A FileElementContainer is a container that holds {@link
+ * Domain POJO for FileElementContainer A FileElementContainer is a container
+ * that holds {@link
  * FileElement FileElements}.
  *
  * @author Henrik K
@@ -32,7 +33,7 @@ public abstract class FileElementContainer<T extends FileElementContainer<T>> ex
 
     public void addChild(FileElement<?> child) {
         // No duplicate names within one parent
-        if (hasChildWithName(child.getName())) {
+        if (hasChildWithName(child.getName(), null)) {
             throw new IllegalArgumentException(
                 "An element with the name '" + child.getName() + "' already exists in '" + this.getName() + "'"
             );
@@ -50,11 +51,19 @@ public abstract class FileElementContainer<T extends FileElementContainer<T>> ex
         }
     }
 
-    // Case-insensitive
-    private boolean hasChildWithName(String name) {
+    /**
+     * Checks whether a child with the given name (case-insensitive) already exists.
+     *
+     * @param name      the name to check
+     * @param excludeId an optional element ID to exclude from the check (e.g. the
+     *                  element being
+     *                  renamed), or {@code null} to check all children
+     * @return {@code true} if a matching child exists
+     */
+    public boolean hasChildWithName(String name, String excludeId) {
         return contents
             .stream()
-            // Child will find itself make sure it is not added yet
+            .filter(existing -> excludeId == null || !existing.getId().equals(excludeId))
             .anyMatch(existing -> existing.getName().equalsIgnoreCase(name));
     }
 }

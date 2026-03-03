@@ -31,7 +31,7 @@ export const LogIn: React.FC = () => {
 
                         <button
                             onClick={() => login('google')}
-                            className="w-full bg-white hover:bg-gray-50 text-gray-800 font-semibold py-4 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-3 group"
+                            className="w-full bg-white hover:bg-gray-50 text-gray-800 font-semibold py-4 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-3 group cursor-pointer"
                         >
                             <svg className="w-6 h-6" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                 <path
@@ -56,7 +56,7 @@ export const LogIn: React.FC = () => {
 
                         <button
                             onClick={() => login('github')}
-                            className="w-full bg-[#24292e] hover:bg-[#1b1f23] text-white font-semibold py-4 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-3 group"
+                            className="w-full bg-[#24292e] hover:bg-[#1b1f23] text-white font-semibold py-4 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-3 group cursor-pointer"
                         >
                             <svg
                                 className="w-6 h-6 fill-current"

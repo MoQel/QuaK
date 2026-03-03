@@ -12,13 +12,12 @@ on:
       - "merge/**"
       - "feature/**"
 
-permissions:
-  contents: read
-  pull-requests: read
-
 jobs:
   test:
     name: test
+    permissions:
+      contents: read
+      pull-requests: read
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -55,6 +54,9 @@ jobs:
   build:
     name: build
     needs: test
+    permissions:
+      contents: read
+      pull-requests: read
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository

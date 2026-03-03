@@ -24,6 +24,8 @@ export default function ThemeSwitch({ onToggle }: ThemeSwitchProps) {
         bg-bg-light
         p-1
         cursor-pointer
+        shrink-0
+        overflow-hidden
       "
         >
             {isDark ? (
