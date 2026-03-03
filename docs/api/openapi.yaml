@@ -34,8 +34,6 @@ tags:
   description: Project management operations
 - name: Authentication
   description: Authentication and user session management endpoints
-- name: TESTING_THE_PIPLINE_OF_AUTO_OPENAPI_CREATION_Authentication
-  description: Authentication and user session management endpoints
 paths:
   /api/file/{fId}/content:
     get:
@@ -485,7 +483,7 @@ paths:
   /api/auth/logout:
     post:
       tags:
-      - TESTING_THE_PIPLINE_OF_AUTO_OPENAPI_CREATION_Authentication
+      - Authentication
       operationId: logout
       responses:
         "401":
@@ -1004,7 +1002,7 @@ paths:
   /api/auth/user:
     get:
       tags:
-      - TESTING_THE_PIPLINE_OF_AUTO_OPENAPI_CREATION_Authentication
+      - Authentication
       operationId: getUser
       responses:
         "401":
