@@ -1,0 +1,83 @@
+/**
+* Customize Dockview by overwriting CSS attributes.
+*/
+
+.dockview-theme-custom .dv-watermark {
+    background: var(--bg-dark) !important;
+}
+
+/* INACTIVE TABS */
+.dockview-theme-custom .dv-tab {
+    background-color: transparent !important;
+    color: var(--text-muted) !important;
+    border: none !important;
+}
+
+/* INACTIVE TAB HOVER */
+.dockview-theme-custom .dv-tab:hover {
+    background-color: var(--bg) !important;
+    color: var(--text) !important;
+}
+
+/*Active panel color*/
+.dockview-theme-custom .dv-tab.dv-active-tab {
+    background-color: var(--bg) !important;
+    color: var(--text) !important;
+    border: none !important;
+    /* underline */
+    box-shadow: inset 0 -2px 0 0 var(--special) !important;
+}
+
+/* Force the Panel Content Container to match */
+.dockview-theme-custom .dv-content-container,
+.dockview-theme-custom .dv-group-view {
+    background-color: var(--bg-dark) !important;
+}
+
+/* 1. The Header Strip (Background behind the tabs) */
+.dockview-theme-custom .dv-tabs-and-actions-container {
+    background-color: var(--bg-subtle) !important;
+    border-bottom: 1px solid var(--border) !important;
+}
+
+/* Default: vertical divider (left/right split) */
+.dockview-theme-custom .dv-sash::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: 2.5px; /* thickness */
+    height: 100%;
+    background: var(--bg-light);
+    pointer-events: none;
+}
+
+/* If the split container is dv-vertical, the divider is horizontal (top/bottom) */
+.dockview-theme-custom .dv-split-view-container.dv-vertical > .dv-sash-container > .dv-sash::after {
+    width: 100%;
+    height: 2.5px;
+}
+
+/* Hover: recolor (works for both) */
+.dockview-theme-custom .dv-sash:hover::after {
+    background: var(--special);
+}
+
+/* Also remove any real border/outline Dockview sets on the clickable tab */
+.dockview-theme-custom .dv-default-tab {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+/* Hide close button by default, show on tab hover */
+.dockview-theme-custom .dv-default-tab .dv-default-tab-action {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+}
+
+.dockview-theme-custom .dv-tab:hover .dv-default-tab-action {
+    opacity: 1;
+    pointer-events: auto;
+}
