@@ -62,8 +62,7 @@ class DirectoryServiceTest {
         newDir.setId("d-new");
 
         // Mock the role-based access check
-        when(roleService.hasMinimumRole(eq(parentId), eq(testUserId), any(ProjectRole.class)))
-                .thenReturn(true);
+        when(roleService.hasMinimumRole(eq(parentId), eq(testUserId), any(ProjectRole.class))).thenReturn(true);
         when(delegator.findContainerById(parentId)).thenReturn(Optional.of(parent));
         when(delegator.save(parent)).thenReturn(parent);
 
@@ -104,8 +103,7 @@ class DirectoryServiceTest {
 
         when(repository.findById(dirId)).thenReturn(Optional.of(dir));
         // Mock the role-based access check
-        when(roleService.hasMinimumRole(eq(parentId), eq(testUserId), any(ProjectRole.class)))
-                .thenReturn(true);
+        when(roleService.hasMinimumRole(eq(parentId), eq(testUserId), any(ProjectRole.class))).thenReturn(true);
         when(delegator.findContainerById(parentId)).thenReturn(Optional.of(parent));
 
         when(delegator.save(parent)).thenAnswer(invocation -> invocation.getArgument(0));
@@ -134,8 +132,7 @@ class DirectoryServiceTest {
 
         when(repository.findById(dirId)).thenReturn(Optional.of(dir));
         // Mock the role-based access check
-        when(roleService.hasMinimumRole(eq(parentId), eq(testUserId), any(ProjectRole.class)))
-                .thenReturn(true);
+        when(roleService.hasMinimumRole(eq(parentId), eq(testUserId), any(ProjectRole.class))).thenReturn(true);
         when(delegator.findContainerById(parentId)).thenReturn(Optional.of(parent));
 
         // Act

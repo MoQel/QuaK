@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class ProjectRoleDtoMapper {
+
     private final UserServicePort userService;
 
     public ProjectRoleDtoMapper(UserServicePort userService) {
@@ -23,12 +24,13 @@ public class ProjectRoleDtoMapper {
     public ProjectRoleResponse toResponse(ProjectRoleAssignment assignment) {
         User user = userService.findById(assignment.getUserId()).orElse(null);
         return new ProjectRoleResponse(
-                assignment.getUserId(),
-                assignment.getProjectId(),
-                assignment.getRole().name(),
-                user != null ? user.getEmail() : null,
-                user != null ? user.getName() : null,
-                user != null ? user.getAvatarUrl() : null);
+            assignment.getUserId(),
+            assignment.getProjectId(),
+            assignment.getRole().name(),
+            user != null ? user.getEmail() : null,
+            user != null ? user.getName() : null,
+            user != null ? user.getAvatarUrl() : null
+        );
     }
 
     public List<ProjectRoleResponse> toResponseList(List<ProjectRoleAssignment> assignments) {

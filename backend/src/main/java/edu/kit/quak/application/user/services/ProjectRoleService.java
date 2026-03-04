@@ -29,14 +29,14 @@ public class ProjectRoleService implements ProjectRoleServicePort {
     }
 
     @Override
-    public ProjectRoleAssignment assignRole(
-            String projectId, UUID targetUserId, ProjectRole role, User requestingUser) {
+    public ProjectRoleAssignment assignRole(String projectId, UUID targetUserId, ProjectRole role, User requestingUser) {
         log.info(
-                "Assigning role '{}' to user '{}' for project '{}' (requested by '{}')",
-                role,
-                targetUserId,
-                projectId,
-                requestingUser.getId());
+            "Assigning role '{}' to user '{}' for project '{}' (requested by '{}')",
+            role,
+            targetUserId,
+            projectId,
+            requestingUser.getId()
+        );
 
         verifyOwnerRole(projectId, requestingUser);
 
@@ -47,10 +47,13 @@ public class ProjectRoleService implements ProjectRoleServicePort {
         }
 
         // Check if user already has a role on this project
-        roleRepository.findByUserIdAndProjectId(targetUserId, projectId).ifPresent(existing -> {
-            throw new IllegalArgumentException("User already has role '" + existing.getRole() + "' on this project. "
-                    + "Remove the existing role first.");
-        });
+        roleRepository
+            .findByUserIdAndProjectId(targetUserId, projectId)
+            .ifPresent(existing -> {
+                throw new IllegalArgumentException(
+                    "User already has role '" + existing.getRole() + "' on this project. " + "Remove the existing role first."
+                );
+            });
 
         ProjectRoleAssignment assignment = new ProjectRoleAssignment(targetUserId, projectId, role);
         return roleRepository.save(assignment);
@@ -58,11 +61,7 @@ public class ProjectRoleService implements ProjectRoleServicePort {
 
     @Override
     public void removeRole(String projectId, UUID targetUserId, User requestingUser) {
-        log.info(
-                "Removing role for user '{}' from project '{}' (requested by '{}')",
-                targetUserId,
-                projectId,
-                requestingUser.getId());
+        log.info("Removing role for user '{}' from project '{}' (requested by '{}')", targetUserId, projectId, requestingUser.getId());
 
         verifyOwnerRole(projectId, requestingUser);
 
@@ -83,10 +82,7 @@ public class ProjectRoleService implements ProjectRoleServicePort {
 
     @Override
     public ProjectRole getUserRoleForProject(String projectId, UUID userId) {
-        return roleRepository
-                .findByUserIdAndProjectId(userId, projectId)
-                .map(ProjectRoleAssignment::getRole)
-                .orElse(null);
+        return roleRepository.findByUserIdAndProjectId(userId, projectId).map(ProjectRoleAssignment::getRole).orElse(null);
     }
 
     @Override

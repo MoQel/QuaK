@@ -11,5 +11,5 @@ package edu.kit.quak.core.user.model;
  */
 public enum ProjectRole {
     OWNER,
-    VIEWER
+    VIEWER,
 }

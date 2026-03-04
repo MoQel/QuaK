@@ -33,10 +33,11 @@ public class ProjectRoleRestAdapter {
     private final AuthenticationMapper authMapper;
 
     public ProjectRoleRestAdapter(
-            ProjectRoleServicePort roleService,
-            UserServicePort userService,
-            ProjectRoleDtoMapper mapper,
-            AuthenticationMapper authMapper) {
+        ProjectRoleServicePort roleService,
+        UserServicePort userService,
+        ProjectRoleDtoMapper mapper,
+        AuthenticationMapper authMapper
+    ) {
         this.roleService = roleService;
         this.userService = userService;
         this.mapper = mapper;
@@ -62,7 +63,10 @@ public class ProjectRoleRestAdapter {
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("isAuthenticated()")
     public ProjectRoleResponse assignRole(
-            @PathVariable String pId, @RequestBody ProjectRoleRequest request, Authentication authentication) {
+        @PathVariable String pId,
+        @RequestBody ProjectRoleRequest request,
+        Authentication authentication
+    ) {
         User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
         UUID targetUserId = UUID.fromString(request.userId());
         ProjectRole role = ProjectRole.valueOf(request.role().toUpperCase());
@@ -92,10 +96,8 @@ public class ProjectRoleRestAdapter {
         ProjectRole role = roleService.getUserRoleForProject(pId, user.getId());
 
         if (role == null) {
-            return new ProjectRoleResponse(user.getId(), pId, null, user.getEmail(), user.getName(),
-                    user.getAvatarUrl());
+            return new ProjectRoleResponse(user.getId(), pId, null, user.getEmail(), user.getName(), user.getAvatarUrl());
         }
-        return new ProjectRoleResponse(user.getId(), pId, role.name(), user.getEmail(), user.getName(),
-                user.getAvatarUrl());
+        return new ProjectRoleResponse(user.getId(), pId, role.name(), user.getEmail(), user.getName(), user.getAvatarUrl());
     }
 }

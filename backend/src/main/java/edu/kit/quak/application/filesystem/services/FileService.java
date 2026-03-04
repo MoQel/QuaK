@@ -22,10 +22,11 @@ public class FileService extends AbstractFileElementService<File> implements Fil
     private final FileContentRepositoryPort contentRepository;
 
     public FileService(
-            FileRepositoryPort repository,
-            FileContentRepositoryPort contentRepository,
-            FileElementContainerRepositoryDelegator delegator,
-            ProjectRoleServicePort roleService) {
+        FileRepositoryPort repository,
+        FileContentRepositoryPort contentRepository,
+        FileElementContainerRepositoryDelegator delegator,
+        ProjectRoleServicePort roleService
+    ) {
         super(delegator, roleService);
         this.repository = repository;
         this.contentRepository = contentRepository;

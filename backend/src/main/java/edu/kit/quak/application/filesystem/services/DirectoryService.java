@@ -20,9 +20,10 @@ public class DirectoryService extends AbstractFileElementService<Directory> impl
     private final DirectoryRepositoryPort repository;
 
     public DirectoryService(
-            DirectoryRepositoryPort repository,
-            FileElementContainerRepositoryDelegator delegator,
-            ProjectRoleServicePort roleService) {
+        DirectoryRepositoryPort repository,
+        FileElementContainerRepositoryDelegator delegator,
+        ProjectRoleServicePort roleService
+    ) {
         super(delegator, roleService);
         this.repository = repository;
     }

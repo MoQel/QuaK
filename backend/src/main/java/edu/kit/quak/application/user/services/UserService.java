@@ -28,19 +28,15 @@ public class UserService implements UserServicePort {
 
     @Override
     public User getAuthenticatedUser(AuthenticatedUser authenticatedUser) {
-        log.debug("Fetching authenticated user details for issuer={} sub={}", authenticatedUser.issuer(),
-                authenticatedUser.subject());
+        log.debug("Fetching authenticated user details for issuer={} sub={}", authenticatedUser.issuer(), authenticatedUser.subject());
         // Look up the full user from the repository using the authenticated user's
         // issuer and subject
         return userRepository
-                .findByIssuerAndSub(authenticatedUser.issuer(), authenticatedUser.subject())
-                .orElseThrow(() -> {
-                    log.debug(
-                            "User not found for issuer={} sub={}",
-                            authenticatedUser.issuer(),
-                            authenticatedUser.subject());
-                    return new UserNotFoundException(authenticatedUser.issuer(), authenticatedUser.subject());
-                });
+            .findByIssuerAndSub(authenticatedUser.issuer(), authenticatedUser.subject())
+            .orElseThrow(() -> {
+                log.debug("User not found for issuer={} sub={}", authenticatedUser.issuer(), authenticatedUser.subject());
+                return new UserNotFoundException(authenticatedUser.issuer(), authenticatedUser.subject());
+            });
     }
 
     @Override
@@ -57,18 +53,14 @@ public class UserService implements UserServicePort {
 
     @Override
     public UUID getAuthenticatedUserId(AuthenticatedUser authenticatedUser) {
-        log.debug("Fetching authenticated user ID for issuer={} sub={}", authenticatedUser.issuer(),
-                authenticatedUser.subject());
+        log.debug("Fetching authenticated user ID for issuer={} sub={}", authenticatedUser.issuer(), authenticatedUser.subject());
         // Use the efficient query that only fetches the UUID
         return userRepository
-                .findIdByIssuerAndSub(authenticatedUser.issuer(), authenticatedUser.subject())
-                .orElseThrow(() -> {
-                    log.debug(
-                            "User ID not found for issuer={} sub={}",
-                            authenticatedUser.issuer(),
-                            authenticatedUser.subject());
-                    return new UserNotFoundException(authenticatedUser.issuer(), authenticatedUser.subject());
-                });
+            .findIdByIssuerAndSub(authenticatedUser.issuer(), authenticatedUser.subject())
+            .orElseThrow(() -> {
+                log.debug("User ID not found for issuer={} sub={}", authenticatedUser.issuer(), authenticatedUser.subject());
+                return new UserNotFoundException(authenticatedUser.issuer(), authenticatedUser.subject());
+            });
     }
 
     @Override

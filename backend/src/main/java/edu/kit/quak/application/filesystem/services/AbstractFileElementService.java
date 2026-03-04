@@ -37,8 +37,7 @@ public abstract class AbstractFileElementService<T extends FileElement<T>> {
     protected final FileElementContainerRepositoryDelegator delegator;
     protected final ProjectRoleServicePort roleService;
 
-    protected AbstractFileElementService(
-            FileElementContainerRepositoryDelegator delegator, ProjectRoleServicePort roleService) {
+    protected AbstractFileElementService(FileElementContainerRepositoryDelegator delegator, ProjectRoleServicePort roleService) {
         this.delegator = delegator;
         this.roleService = roleService;
     }
@@ -62,10 +61,11 @@ public abstract class AbstractFileElementService<T extends FileElement<T>> {
         String projectId = resolveProjectId(parentId);
         if (!roleService.hasMinimumRole(projectId, user.getId(), ProjectRole.OWNER)) {
             log.debug(
-                    "Access denied: User '{}' is not OWNER of project containing {} (parent: '{}')",
-                    user.getId(),
-                    getElementTypeName(),
-                    parentId);
+                "Access denied: User '{}' is not OWNER of project containing {} (parent: '{}')",
+                user.getId(),
+                getElementTypeName(),
+                parentId
+            );
             throw new AccessDeniedException(getElementTypeName(), parentId);
         }
     }
@@ -87,10 +87,11 @@ public abstract class AbstractFileElementService<T extends FileElement<T>> {
         String projectId = resolveProjectId(parentId);
         if (!roleService.hasMinimumRole(projectId, user.getId(), ProjectRole.VIEWER)) {
             log.debug(
-                    "Access denied: User '{}' has no role on project containing {} (parent: '{}')",
-                    user.getId(),
-                    getElementTypeName(),
-                    parentId);
+                "Access denied: User '{}' has no role on project containing {} (parent: '{}')",
+                user.getId(),
+                getElementTypeName(),
+                parentId
+            );
             throw new AccessDeniedException(getElementTypeName(), parentId);
         }
     }
@@ -112,9 +113,8 @@ public abstract class AbstractFileElementService<T extends FileElement<T>> {
         // Otherwise, find the project owner via recursive CTE and get the project ID
         // We look up via the delegator
         return delegator
-                .findProjectIdByElementId(elementId)
-                .orElseThrow(() -> new IllegalStateException(
-                        "Could not find root project for element with ID: " + elementId));
+            .findProjectIdByElementId(elementId)
+            .orElseThrow(() -> new IllegalStateException("Could not find root project for element with ID: " + elementId));
     }
 
     /**
@@ -128,8 +128,7 @@ public abstract class AbstractFileElementService<T extends FileElement<T>> {
         if (parentId == null) {
             throw new IllegalStateException(getElementTypeName() + " has no parent - corrupt state");
         }
-        return delegator.findContainerById(parentId)
-                .orElseThrow(() -> new IllegalStateException("Parent not found with ID: " + parentId));
+        return delegator.findContainerById(parentId).orElseThrow(() -> new IllegalStateException("Parent not found with ID: " + parentId));
     }
 
     /**
@@ -142,14 +141,13 @@ public abstract class AbstractFileElementService<T extends FileElement<T>> {
      */
     protected T findElementInParent(FileElementContainer<?> parent, String elementId) {
         return parent
-                .getContents()
-                .stream()
-                .filter(c -> c.getId().equals(elementId))
-                .filter(this::isCorrectType)
-                .map(this::castToType)
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException(
-                        getElementTypeName() + " not found in parent container (ID: " + elementId + ")"));
+            .getContents()
+            .stream()
+            .filter(c -> c.getId().equals(elementId))
+            .filter(this::isCorrectType)
+            .map(this::castToType)
+            .findFirst()
+            .orElseThrow(() -> new IllegalStateException(getElementTypeName() + " not found in parent container (ID: " + elementId + ")"));
     }
 
     /**
@@ -191,8 +189,7 @@ public abstract class AbstractFileElementService<T extends FileElement<T>> {
         FileElementContainer<?> parent = getParentById(element.getParentId());
 
         if (parent.hasChildWithName(newName, elementId)) {
-            throw new IllegalArgumentException(
-                    "An element with the name '" + newName + "' already exists in '" + parent.getName() + "'");
+            throw new IllegalArgumentException("An element with the name '" + newName + "' already exists in '" + parent.getName() + "'");
         }
     }
 

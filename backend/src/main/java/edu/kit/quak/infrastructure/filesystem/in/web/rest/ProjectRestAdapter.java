@@ -40,11 +40,12 @@ public class ProjectRestAdapter {
     private final UserDtoMapper userDtoMapper;
 
     public ProjectRestAdapter(
-            ProjectServicePort service,
-            UserServicePort userService,
-            ProjectDtoMapper mapper,
-            AuthenticationMapper authMapper,
-            UserDtoMapper userDtoMapper) {
+        ProjectServicePort service,
+        UserServicePort userService,
+        ProjectDtoMapper mapper,
+        AuthenticationMapper authMapper,
+        UserDtoMapper userDtoMapper
+    ) {
         this.service = service;
         this.userService = userService;
         this.mapper = mapper;
@@ -59,24 +60,22 @@ public class ProjectRestAdapter {
         List<Project> projects = service.listProjects(user);
 
         // Collect all unique owner IDs
-        List<UUID> ownerIds = projects.stream()
-                .map(Project::getOwnerId)
-                .filter(Objects::nonNull)
-                .distinct()
-                .toList();
+        List<UUID> ownerIds = projects.stream().map(Project::getOwnerId).filter(Objects::nonNull).distinct().toList();
 
         // Fetch owners in a single batch call to avoid N+1 problem
-        Map<UUID, UserResponse> ownersMap = userService.findAllByIds(ownerIds).stream()
-                .map(userDtoMapper::toResponse)
-                .collect(Collectors.toMap(UserResponse::userId, Function.identity()));
+        Map<UUID, UserResponse> ownersMap = userService
+            .findAllByIds(ownerIds)
+            .stream()
+            .map(userDtoMapper::toResponse)
+            .collect(Collectors.toMap(UserResponse::userId, Function.identity()));
 
-        return projects.stream()
-                .map(project -> {
-                    UserResponse ownerResponse = project.getOwnerId() == null ? null
-                            : ownersMap.get(project.getOwnerId());
-                    return mapper.toDetailsResponse(project, ownerResponse);
-                })
-                .toList();
+        return projects
+            .stream()
+            .map(project -> {
+                UserResponse ownerResponse = project.getOwnerId() == null ? null : ownersMap.get(project.getOwnerId());
+                return mapper.toDetailsResponse(project, ownerResponse);
+            })
+            .toList();
     }
 
     @PostMapping({ "", "/" })
@@ -107,9 +106,10 @@ public class ProjectRestAdapter {
     @PatchMapping("/{pId}")
     @PreAuthorize("isAuthenticated()")
     public ProjectDetailsResponse renameProject(
-            @PathVariable String pId,
-            @RequestBody ProjectRequest request,
-            Authentication authentication) {
+        @PathVariable String pId,
+        @RequestBody ProjectRequest request,
+        Authentication authentication
+    ) {
         User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
         Project updatedProject = service.renameProject(pId, request.name(), user);
         return mapper.toDetailsResponse(updatedProject);

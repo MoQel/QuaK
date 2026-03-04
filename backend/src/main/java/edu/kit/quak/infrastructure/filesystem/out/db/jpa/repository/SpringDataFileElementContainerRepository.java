@@ -42,17 +42,20 @@ public interface SpringDataFileElementContainerRepository extends JpaRepository<
      * @param elementId The ID of any file element (file, directory, or project)
      * @return The project ID
      */
-    @Query(value = """
-            WITH RECURSIVE hierarchy(id, parent_id, dtype) AS (
-                SELECT id, parent_id, dtype
-                FROM file_element
-                WHERE id = :elementId
-                UNION ALL
-                SELECT fe.id, fe.parent_id, fe.dtype
-                FROM file_element fe
-                INNER JOIN hierarchy h ON fe.id = h.parent_id
-            )
-            SELECT id FROM hierarchy WHERE dtype = 'project'
-            """, nativeQuery = true)
+    @Query(
+        value = """
+        WITH RECURSIVE hierarchy(id, parent_id, dtype) AS (
+            SELECT id, parent_id, dtype
+            FROM file_element
+            WHERE id = :elementId
+            UNION ALL
+            SELECT fe.id, fe.parent_id, fe.dtype
+            FROM file_element fe
+            INNER JOIN hierarchy h ON fe.id = h.parent_id
+        )
+        SELECT id FROM hierarchy WHERE dtype = 'project'
+        """,
+        nativeQuery = true
+    )
     Optional<String> findProjectIdByElementId(@Param("elementId") String elementId);
 }

@@ -11,7 +11,6 @@ import org.springframework.stereotype.Repository;
 /** Spring Data JPA repository for JpaProjectRoleAssignment entity. */
 @Repository
 public interface SpringDataProjectRoleRepository extends JpaRepository<JpaProjectRoleAssignment, Long> {
-
     Optional<JpaProjectRoleAssignment> findByUserIdAndProjectId(UUID userId, String projectId);
 
     List<JpaProjectRoleAssignment> findAllByProjectId(String projectId);

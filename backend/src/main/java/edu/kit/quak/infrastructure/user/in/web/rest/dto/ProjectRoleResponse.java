@@ -9,11 +9,4 @@ import java.util.UUID;
  * @param projectId the ID of the project
  * @param role      the role name (e.g., "OWNER", "VIEWER")
  */
-public record ProjectRoleResponse(
-        UUID userId,
-        String projectId,
-        String role,
-        String email,
-        String name,
-        String avatarUrl) {
-}
+public record ProjectRoleResponse(UUID userId, String projectId, String role, String email, String name, String avatarUrl) {}

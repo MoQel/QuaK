@@ -51,12 +51,7 @@ public class OAuth2UserEnrichmentService implements OAuth2UserService<OAuth2User
         headers.setBearerAuth(userRequest.getAccessToken().getTokenValue());
         HttpEntity<String> entity = new HttpEntity<>("parameters", headers);
 
-        ResponseEntity<Map[]> response = restTemplate.exchange(
-            "https://api.github.com/user/emails",
-            HttpMethod.GET,
-            entity,
-            Map[].class
-        );
+        ResponseEntity<Map[]> response = restTemplate.exchange("https://api.github.com/user/emails", HttpMethod.GET, entity, Map[].class);
 
         Map[] emails = response.getBody();
         if (emails != null) {

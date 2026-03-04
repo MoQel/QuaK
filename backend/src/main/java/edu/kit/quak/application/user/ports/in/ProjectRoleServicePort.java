@@ -12,7 +12,6 @@ import java.util.UUID;
  * dependencies.
  */
 public interface ProjectRoleServicePort {
-
     /**
      * Assigns a role to a user for a specific project. Only owners can assign
      * roles.

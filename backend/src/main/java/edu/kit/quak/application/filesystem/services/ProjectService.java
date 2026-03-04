@@ -25,10 +25,7 @@ public class ProjectService implements ProjectServicePort {
     private final ProjectRoleServicePort roleService;
     private final ProjectRoleRepositoryPort roleRepository;
 
-    public ProjectService(
-            ProjectRepositoryPort repository,
-            ProjectRoleServicePort roleService,
-            ProjectRoleRepositoryPort roleRepository) {
+    public ProjectService(ProjectRepositoryPort repository, ProjectRoleServicePort roleService, ProjectRoleRepositoryPort roleRepository) {
         this.repository = repository;
         this.roleService = roleService;
         this.roleRepository = roleRepository;
@@ -42,8 +39,7 @@ public class ProjectService implements ProjectServicePort {
         Project savedProject = repository.save(project);
 
         // Auto-assign OWNER role to the creator
-        ProjectRoleAssignment ownerRole = new ProjectRoleAssignment(user.getId(), savedProject.getId(),
-                ProjectRole.OWNER);
+        ProjectRoleAssignment ownerRole = new ProjectRoleAssignment(user.getId(), savedProject.getId(), ProjectRole.OWNER);
         roleRepository.save(ownerRole);
         log.info("Assigned OWNER role to user '{}' for project '{}'", user.getId(), savedProject.getId());
 
@@ -95,19 +91,17 @@ public class ProjectService implements ProjectServicePort {
         List<Project> ownedProjects = repository.getProjectsByOwnerId(user.getId());
 
         // Get projects where the user has VIEWER role
-        List<ProjectRoleAssignment> viewerAssignments = roleRepository.findAllByUserIdAndRole(user.getId(),
-                ProjectRole.VIEWER);
+        List<ProjectRoleAssignment> viewerAssignments = roleRepository.findAllByUserIdAndRole(user.getId(), ProjectRole.VIEWER);
 
-        List<Project> viewerProjects = viewerAssignments.stream()
-                .map(assignment -> repository.findById(assignment.getProjectId()))
-                .filter(java.util.Optional::isPresent)
-                .map(java.util.Optional::get)
-                .toList();
+        List<Project> viewerProjects = viewerAssignments
+            .stream()
+            .map(assignment -> repository.findById(assignment.getProjectId()))
+            .filter(java.util.Optional::isPresent)
+            .map(java.util.Optional::get)
+            .toList();
 
         // Merge both lists, avoiding duplicates
-        return Stream.concat(ownedProjects.stream(), viewerProjects.stream())
-                .distinct()
-                .toList();
+        return Stream.concat(ownedProjects.stream(), viewerProjects.stream()).distinct().toList();
     }
 
     /**
@@ -147,10 +141,10 @@ public class ProjectService implements ProjectServicePort {
      */
     private void checkForDuplicateProjectName(String name, String excludeProjectId, User user) {
         boolean nameExists = repository
-                .getProjectsByOwnerId(user.getId())
-                .stream()
-                .filter(p -> excludeProjectId == null || !p.getId().equals(excludeProjectId))
-                .anyMatch(p -> p.getName().equalsIgnoreCase(name));
+            .getProjectsByOwnerId(user.getId())
+            .stream()
+            .filter(p -> excludeProjectId == null || !p.getId().equals(excludeProjectId))
+            .anyMatch(p -> p.getName().equalsIgnoreCase(name));
 
         if (nameExists) {
             throw new IllegalArgumentException("A project with the name '" + name + "' already exists");

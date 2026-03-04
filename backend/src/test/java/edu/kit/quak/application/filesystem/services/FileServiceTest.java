@@ -66,8 +66,7 @@ class FileServiceTest {
         file.setId("f-new");
 
         // Mock the role-based access check
-        when(roleService.hasMinimumRole(eq(parentId), eq(testUserId), any(ProjectRole.class)))
-                .thenReturn(true);
+        when(roleService.hasMinimumRole(eq(parentId), eq(testUserId), any(ProjectRole.class))).thenReturn(true);
         when(delegator.findContainerById(parentId)).thenReturn(Optional.of(parent));
         when(delegator.save(parent)).thenReturn(parent);
 
@@ -96,8 +95,7 @@ class FileServiceTest {
 
         when(repository.findById(fileId)).thenReturn(Optional.of(file));
         // Mock the role-based access check
-        when(roleService.hasMinimumRole(eq(parentId), eq(testUserId), any(ProjectRole.class)))
-                .thenReturn(true);
+        when(roleService.hasMinimumRole(eq(parentId), eq(testUserId), any(ProjectRole.class))).thenReturn(true);
         when(delegator.findContainerById(parentId)).thenReturn(Optional.of(parent));
         when(delegator.save(parent)).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -126,8 +124,7 @@ class FileServiceTest {
 
         when(repository.findById(fileId)).thenReturn(Optional.of(file));
         // Mock the role-based access check
-        when(roleService.hasMinimumRole(eq(parentId), eq(testUserId), any(ProjectRole.class)))
-                .thenReturn(true);
+        when(roleService.hasMinimumRole(eq(parentId), eq(testUserId), any(ProjectRole.class))).thenReturn(true);
         when(delegator.findContainerById(parentId)).thenReturn(Optional.of(parent));
 
         // Act

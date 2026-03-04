@@ -9,5 +9,6 @@ import jakarta.validation.constraints.NotBlank;
  * @param role   the role to assign (e.g., "VIEWER")
  */
 public record ProjectRoleRequest(
-        @NotBlank(message = "User ID must not be blank") String userId,
-        @NotBlank(message = "Role must not be blank") String role) {}
+    @NotBlank(message = "User ID must not be blank") String userId,
+    @NotBlank(message = "Role must not be blank") String role
+) {}

@@ -41,9 +41,7 @@ public class ProjectRoleJpaAdapter implements ProjectRoleRepositoryPort {
 
     @Override
     public List<ProjectRoleAssignment> findAllByProjectId(String projectId) {
-        return repository.findAllByProjectId(projectId).stream()
-                .map(mapper::toDomain)
-                .toList();
+        return repository.findAllByProjectId(projectId).stream().map(mapper::toDomain).toList();
     }
 
     @Override
@@ -53,9 +51,7 @@ public class ProjectRoleJpaAdapter implements ProjectRoleRepositoryPort {
 
     @Override
     public List<ProjectRoleAssignment> findAllByUserIdAndRole(UUID userId, ProjectRole role) {
-        return repository.findAllByUserIdAndRole(userId, role).stream()
-                .map(mapper::toDomain)
-                .toList();
+        return repository.findAllByUserIdAndRole(userId, role).stream().map(mapper::toDomain).toList();
     }
 
     @Override

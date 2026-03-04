@@ -8,7 +8,6 @@ import java.util.UUID;
 
 /** Output port for project role persistence operations. */
 public interface ProjectRoleRepositoryPort {
-
     /**
      * Saves a project role assignment.
      *

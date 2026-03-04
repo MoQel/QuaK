@@ -8,9 +8,7 @@ import lombok.Setter;
 
 /** JPA entity for project role assignment persistence. */
 @Entity
-@Table(
-        name = "project_role_assignments",
-        uniqueConstraints = {@UniqueConstraint(columnNames = {"user_id", "project_id"})})
+@Table(name = "project_role_assignments", uniqueConstraints = { @UniqueConstraint(columnNames = { "user_id", "project_id" }) })
 @Getter
 @Setter
 @NoArgsConstructor
