@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import SimulationWorker from '@/workers/simulation.worker.ts?worker';
 import { CircuitResponse } from '@/api/dto/circuit.ts';
 import { WorkerRequest, WorkerResponse } from '@/workers/messages.ts';
 import { SimulationResult, SimulationOptions } from '@/simulation/simulation.types.ts';
+import SimulationWorkerURL from '@/workers/simulation.worker.ts?worker&url';
 
 // Debounce delay in milliseconds
 const SIMULATION_DELAY_MS = 300;
@@ -17,7 +17,7 @@ export function useQuantumSimulation(circuit: CircuitResponse | undefined, optio
     const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
-        const worker = new SimulationWorker();
+        const worker = new Worker(SimulationWorkerURL, { type: 'module', name: 'simulation-worker' });
         workerRef.current = worker;
 
         worker.onmessage = (event: MessageEvent<WorkerResponse>) => {
