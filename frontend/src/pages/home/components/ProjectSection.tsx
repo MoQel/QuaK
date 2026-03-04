@@ -7,13 +7,13 @@ export function ProjectSection({
     icon,
     headerActions,
     children,
-}: {
+}: Readonly<{
     title: string;
     description: React.ReactNode;
     icon: React.ReactNode;
     headerActions?: React.ReactNode;
     children: React.ReactNode;
-}) {
+}>) {
     return (
         <Card className="border-2">
             <CardHeader>

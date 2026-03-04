@@ -91,12 +91,14 @@ export function HomePage() {
         });
     };
 
+    const handleProjectDeleted = (projectId: string) => {
+        setPinnedProjectIds((prev) => prev.filter((id) => id !== projectId));
+        return fetchProjects();
+    };
+
     const handleDelete = (project: ProjectDetailsResponse) => {
         openDeleteProjectDialog(project, {
-            onDeleted: () => {
-                setPinnedProjectIds((prev) => prev.filter((id) => id !== project.id));
-                return fetchProjects();
-            },
+            onDeleted: () => handleProjectDeleted(project.id),
         });
     };
 

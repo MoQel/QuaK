@@ -66,7 +66,7 @@ export function ProjectManagerView({ onFileSelect, projectId }: Readonly<Project
                                 if (e.target === e.currentTarget) setSelectedFolderId(null);
                             }}
                             onKeyDown={(e) => {
-                                if (e.key === 'Enter' || e.key === ' ') {
+                                if ((e.key === 'Enter' || e.key === ' ') && e.target === e.currentTarget) {
                                     e.preventDefault();
                                     setSelectedFolderId(null);
                                 }
@@ -252,7 +252,7 @@ const fileFields: FormFieldConfig<typeof fileSchema.shape>[] = [
     { name: 'name', placeholder: 'new_file.txt', label: 'Filename' },
 ];
 
-function CreateFileForm({ parent, onClose }: { parent: string; onClose: () => void }) {
+function CreateFileForm({ parent, onClose }: Readonly<{ parent: string; onClose: () => void }>) {
     return (
         <CreateElementForm
             parent={parent}
@@ -275,7 +275,7 @@ const directoryFields: FormFieldConfig<typeof directorySchema.shape>[] = [
     { name: 'name', placeholder: 'folder', label: 'Name of the directory' },
 ];
 
-function CreateDirectoryForm({ parent, onClose }: { parent: string; onClose: () => void }) {
+function CreateDirectoryForm({ parent, onClose }: Readonly<{ parent: string; onClose: () => void }>) {
     return (
         <CreateElementForm
             parent={parent}

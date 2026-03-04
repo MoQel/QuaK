@@ -17,7 +17,7 @@ export function ProjectCard({
     onTogglePin,
     onManageAccess,
     isOwner = true,
-}: {
+}: Readonly<{
     project: ProjectDetailsResponse;
     pinned: boolean;
     onRename: (project: ProjectDetailsResponse) => void;
@@ -25,7 +25,7 @@ export function ProjectCard({
     onTogglePin: (projectId: string) => void;
     onManageAccess?: (project: ProjectDetailsResponse) => void;
     isOwner?: boolean;
-}) {
+}>) {
     const [actionsOpen, setActionsOpen] = useState(false);
 
     const owner = project.owner;

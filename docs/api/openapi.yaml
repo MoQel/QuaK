@@ -1,0 +1,1515 @@
+openapi: 3.1.0
+info:
+  title: QuaK API
+  description: |
+    RESTful API for the QuaK application - A quantum computing project management platform.
+
+    ## Authentication
+
+    **Development Mode** (`dev` profile): Use HTTP Basic Auth
+    - Username: `admin`
+    - Password: `admin`
+
+    **Production Mode**: OAuth2/OIDC via Google
+  contact:
+    name: QuaK Development Team
+    email: quak@kit.edu
+  license:
+    name: MIT License
+    url: https://opensource.org/licenses/MIT
+  version: 0.0.1-SNAPSHOT
+servers:
+- url: http://localhost:8080
+  description: Local Development Server
+security:
+- basicAuth: []
+tags:
+- name: Files
+  description: File and directory management operations
+- name: Gates
+  description: Quantum gate operations
+- name: Circuit
+  description: Controls operations on a quantum circuit
+- name: Projects
+  description: Project management operations
+- name: Authentication
+  description: Authentication and user session management endpoints
+paths:
+  /api/file/{fId}/content:
+    get:
+      tags:
+      - Files
+      operationId: getFileContent
+      parameters:
+      - name: fId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/FileContentResponse"
+    put:
+      tags:
+      - Files
+      operationId: setFileContent
+      parameters:
+      - name: fId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FileContentRequest"
+        required: true
+      responses:
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
+          description: OK
+  /api/project:
+    get:
+      tags:
+      - Projects
+      operationId: getProjects
+      responses:
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProjectDetailsResponse"
+    post:
+      tags:
+      - Projects
+      operationId: createProject
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectRequest"
+        required: true
+      responses:
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "201":
+          description: Created
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProjectDetailsResponse"
+  /api/project/:
+    get:
+      tags:
+      - Projects
+      operationId: getProjects_1
+      responses:
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProjectDetailsResponse"
+    post:
+      tags:
+      - Projects
+      operationId: createProject_1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectRequest"
+        required: true
+      responses:
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "201":
+          description: Created
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProjectDetailsResponse"
+  /api/file/:
+    post:
+      tags:
+      - Files
+      operationId: createFile
+      parameters:
+      - name: parent-id
+        in: header
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateFileRequest"
+        required: true
+      responses:
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "201":
+          description: Created
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/FileDetailsResponse"
+  /api/directory/:
+    post:
+      tags:
+      - Files
+      operationId: createDirectory
+      parameters:
+      - name: parent-id
+        in: header
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DirectoryRequest"
+        required: true
+      responses:
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "201":
+          description: Created
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DirectoryDetailsResponse"
+  /api/circuit:
+    post:
+      tags:
+      - Circuit
+      operationId: init
+      responses:
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "201":
+          description: Created
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/CircuitResponse"
+  /api/circuit/{circuitId}/qubit:
+    post:
+      tags:
+      - Circuit
+      operationId: addQubit
+      parameters:
+      - name: circuitId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "201":
+          description: Created
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/CircuitResponse"
+    patch:
+      tags:
+      - Circuit
+      operationId: changeQubitName
+      parameters:
+      - name: circuitId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangeQubitNameRequest"
+        required: true
+      responses:
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "201":
+          description: Created
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/CircuitResponse"
+  /api/circuit/{circuitId}/gate:
+    post:
+      tags:
+      - Circuit
+      operationId: addGate
+      parameters:
+      - name: circuitId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddGateRequest"
+        required: true
+      responses:
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "201":
+          description: Created
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/CircuitResponse"
+    patch:
+      tags:
+      - Circuit
+      operationId: moveGate
+      parameters:
+      - name: circuitId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MoveGateRequest"
+        required: true
+      responses:
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/CircuitResponse"
+  /api/auth/logout:
+    post:
+      tags:
+      - Authentication
+      operationId: logout
+      responses:
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/RestLogoutResponse"
+  /api/project/{pId}:
+    get:
+      tags:
+      - Projects
+      operationId: retrieveProject
+      parameters:
+      - name: pId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProjectContentsResponse"
+    delete:
+      tags:
+      - Projects
+      operationId: deleteProject
+      parameters:
+      - name: pId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
+          description: OK
+    patch:
+      tags:
+      - Projects
+      operationId: renameProject
+      parameters:
+      - name: pId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectRequest"
+        required: true
+      responses:
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProjectDetailsResponse"
+  /api/file/{fId}:
+    get:
+      tags:
+      - Files
+      operationId: retrieveFile
+      parameters:
+      - name: fId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/FileDetailsResponse"
+    delete:
+      tags:
+      - Files
+      operationId: deleteFile
+      parameters:
+      - name: fId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
+          description: OK
+    patch:
+      tags:
+      - Files
+      operationId: renameFile
+      parameters:
+      - name: fId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RenameFileRequest"
+        required: true
+      responses:
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/FileDetailsResponse"
+  /api/directory/{dId}:
+    get:
+      tags:
+      - Files
+      operationId: retrieveDirectory
+      parameters:
+      - name: dId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DirectoryContentsResponse"
+    delete:
+      tags:
+      - Files
+      operationId: deleteDirectory
+      parameters:
+      - name: dId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
+          description: OK
+    patch:
+      tags:
+      - Files
+      operationId: renameDirectory
+      parameters:
+      - name: dId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DirectoryRequest"
+        required: true
+      responses:
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DirectoryDetailsResponse"
+  /favicon.ico:
+    get:
+      tags:
+      - favicon-controller
+      operationId: returnNoFavicon
+      responses:
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "204":
+          description: No Content
+  /api/me:
+    get:
+      tags:
+      - Authentication
+      operationId: getCurrentUser
+      responses:
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+  /api/gates:
+    get:
+      tags:
+      - gate-definition-rest-adapter
+      operationId: getAllGates
+      responses:
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GateDefinitionResponse"
+  /api/gates/{id}:
+    get:
+      tags:
+      - gate-definition-rest-adapter
+      operationId: getGateById
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/GateDefinitionResponse"
+  /api/circuit/{circuitId}:
+    get:
+      tags:
+      - Circuit
+      operationId: get
+      parameters:
+      - name: circuitId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/CircuitResponse"
+    delete:
+      tags:
+      - Circuit
+      operationId: delete
+      parameters:
+      - name: circuitId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
+          description: OK
+  /api/auth/user:
+    get:
+      tags:
+      - Authentication
+      operationId: getUser
+      responses:
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/RestAuthStatusResponse"
+  /api/circuit/{circuitId}/qubit/{qubitId}:
+    delete:
+      tags:
+      - Circuit
+      operationId: deleteQubit
+      parameters:
+      - name: circuitId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: qubitId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/CircuitResponse"
+  /api/circuit/{circuitId}/gate/{gateId}:
+    delete:
+      tags:
+      - Circuit
+      operationId: deleteGate
+      parameters:
+      - name: circuitId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: gateId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/CircuitResponse"
+components:
+  schemas:
+    ProblemDetail:
+      type: object
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+          format: int32
+        detail:
+          type: string
+        instance:
+          type: string
+          format: uri
+        properties:
+          type: object
+          additionalProperties:
+            type: object
+    FileContentRequest:
+      type: object
+      properties:
+        content:
+          type: string
+          format: byte
+        contentType:
+          type: string
+      required:
+      - content
+      - contentType
+    ProjectRequest:
+      type: object
+      properties:
+        name:
+          type: string
+      required:
+      - name
+    ProjectDetailsResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+        createdOn:
+          type: string
+          format: date-time
+        lastAccess:
+          type: string
+          format: date-time
+    CreateFileRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        contentType:
+          type: string
+          pattern: "^[a-z]+/[-a-z0-9]+$"
+      required:
+      - contentType
+      - name
+    FileDetailsResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+        createdOn:
+          type: string
+          format: date-time
+        lastAccess:
+          type: string
+          format: date-time
+        contentType:
+          type: string
+    DirectoryRequest:
+      type: object
+      properties:
+        name:
+          type: string
+      required:
+      - name
+    DirectoryDetailsResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+        createdOn:
+          type: string
+          format: date-time
+        lastAccess:
+          type: string
+          format: date-time
+    CircuitResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        registers:
+          type: array
+          items:
+            $ref: "#/components/schemas/RegisterResponse"
+    GateResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        definitionId:
+          type: string
+          enum:
+          - H
+          - X
+          - "Y"
+          - Z
+          - CX
+          - CCX
+          - CZ
+          - SWAP
+          - S
+          - T
+          - RX
+          - RY
+          - RZ
+          - MEASURE
+    QubitResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        gates:
+          type: array
+          items:
+            $ref: "#/components/schemas/GateResponse"
+    RegisterResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        qubits:
+          type: array
+          items:
+            $ref: "#/components/schemas/QubitResponse"
+    AddGateRequest:
+      type: object
+      properties:
+        definitionId:
+          type: string
+        toQubitIdx:
+          type: integer
+          format: int32
+        toPositionIdx:
+          type: integer
+          format: int32
+    RestLogoutResponse:
+      type: object
+      properties:
+        message:
+          type: string
+    RenameFileRequest:
+      type: object
+      properties:
+        name:
+          type: string
+      required:
+      - name
+    ChangeQubitNameRequest:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+    MoveGateRequest:
+      type: object
+      properties:
+        id:
+          type: string
+        toQubitIdx:
+          type: integer
+          format: int32
+        toPositionIdx:
+          type: integer
+          format: int32
+    FileElementDto:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+        createdOn:
+          type: string
+          format: date-time
+        lastAccess:
+          type: string
+          format: date-time
+    ProjectContentsResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+        contents:
+          type: array
+          items:
+            $ref: "#/components/schemas/FileElementDto"
+        createdOn:
+          type: string
+          format: date-time
+        lastAccess:
+          type: string
+          format: date-time
+    UserResponse:
+      type: object
+      properties:
+        userId:
+          type: string
+          format: uuid
+        email:
+          type: string
+        name:
+          type: string
+        avatarUrl:
+          type: string
+        emailVerified:
+          type: boolean
+    GateDefinitionResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        category:
+          type: string
+        description:
+          type: string
+        qubitCount:
+          type: integer
+          format: int32
+        symbol:
+          type: string
+        parameters:
+          type: array
+          items:
+            type: string
+        inspectorInfo:
+          $ref: "#/components/schemas/InspectorInfoResponse"
+    InspectorInfoResponse:
+      type: object
+      properties:
+        operatorDefinition:
+          type: string
+        truthTable:
+          type: array
+          items:
+            $ref: "#/components/schemas/TruthTableEntryResponse"
+        matrix:
+          $ref: "#/components/schemas/MatrixInfoResponse"
+    MatrixInfoResponse:
+      type: object
+      properties:
+        display:
+          type: string
+        rows:
+          type: integer
+          format: int32
+        cols:
+          type: integer
+          format: int32
+        computable:
+          type: array
+          items:
+            type: array
+            items:
+              type: string
+    TruthTableEntryResponse:
+      type: object
+      properties:
+        input:
+          type: string
+        output:
+          type: string
+    FileContentResponse:
+      type: object
+      properties:
+        content:
+          type: string
+          format: byte
+    DirectoryContentsResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+        contents:
+          type: array
+          items:
+            $ref: "#/components/schemas/FileElementDto"
+        createdOn:
+          type: string
+          format: date-time
+        lastAccess:
+          type: string
+          format: date-time
+    RestAuthStatusResponse:
+      type: object
+      properties:
+        authenticated:
+          type: boolean
+        userId:
+          type: string
+          format: uuid
+  securitySchemes:
+    basicAuth:
+      type: http
+      description: "HTTP Basic Authentication (dev mode: admin/admin)"
+      scheme: basic

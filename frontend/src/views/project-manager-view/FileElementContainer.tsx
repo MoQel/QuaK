@@ -1,5 +1,5 @@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible.tsx';
-import { JSX, useContext, useEffect, useState } from 'react';
+import { JSX, useCallback, useContext, useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton.tsx';
 import { DialogClose, ParentRefresh, SelectedFolder } from '@/views/project-manager-view/ProjectManagerContexts.ts';
 import './ProjectManagerView.css';
@@ -59,7 +59,7 @@ export function FileElementContainer({
     const [reloaded, r] = useState(false);
     const reload = () => r(!reloaded);
     const [open, setOpen] = useState(false);
-    const [collapsible, toggleCollapsible] = useState(initiallyOpen);
+    const [collapsible, setCollapsible] = useState(initiallyOpen);
     const { id: selectedFolderId, setId: setSelectedFolderId, reloadTrigger } = useContext(SelectedFolder);
     const isSelected = selectedFolderId === id;
 
@@ -84,8 +84,10 @@ export function FileElementContainer({
         reload();
     };
 
+    const handleClose = useCallback(() => setOpen(false), []);
+
     return (
-        <Collapsible open={collapsible} onOpenChange={toggleCollapsible}>
+        <Collapsible open={collapsible} onOpenChange={setCollapsible}>
             <Dialog open={open} onOpenChange={setOpen}>
                 <ContextMenu>
                     <ContextMenuTrigger>
@@ -101,7 +103,7 @@ export function FileElementContainer({
                     </ContextMenuContent>
                 </ContextMenu>
                 <ParentRefresh value={reload}>
-                    <DialogClose.Provider value={() => setOpen(false)}>
+                    <DialogClose.Provider value={handleClose}>
                         <DialogContent>{dialogContent}</DialogContent>
                     </DialogClose.Provider>
                 </ParentRefresh>

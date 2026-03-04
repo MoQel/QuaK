@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useState, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { api } from '@/api/api';
 import { ProjectDetailsResponse } from '@/api/dto/filesystem';
@@ -44,12 +44,18 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }, [projectId]);
 
     useEffect(() => {
-        void refreshProject();
+        refreshProject();
     }, [refreshProject]);
 
-    return (
-        <ProjectContext.Provider value={{ projectName, projectId: projectId || null, isLoading, refreshProject }}>
-            {children}
-        </ProjectContext.Provider>
+    const contextValue = useMemo(
+        () => ({
+            projectName,
+            projectId: projectId || null,
+            isLoading,
+            refreshProject,
+        }),
+        [projectName, projectId, isLoading, refreshProject],
     );
+
+    return <ProjectContext.Provider value={contextValue}>{children}</ProjectContext.Provider>;
 };
