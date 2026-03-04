@@ -104,12 +104,6 @@
     --non-unitary-and-modifiers: hsl(0 0% 70%);
 }
 
-/* smaller layout for chrome, edge and safari */
-.tabs-scrollbar::-webkit-scrollbar {
-    height: 2px;
-    width: 2px;
-}
-
 @layer base {
     * {
         @apply border-border;
@@ -120,11 +114,7 @@
     /* Do not set this globally in * Selektor */
     html,
     body,
-    .scroll-container {
-        scrollbar-width: thin;
-        scrollbar-color: var(--bg) transparent;
-    }
-    /* Webkit/Safari */
+     /*Webkit/Safari */
     ::-webkit-scrollbar {
         width: 8px;
         height: 8px;
@@ -180,4 +170,11 @@
             font-size: 12px;
         }
     }
+}
+
+div.tabs-scrollbar {
+    /* Firefox Support: Subtil und dünn */
+    scrollbar-width: thin !important;
+    scrollbar-color: var(--border) transparent !important;
+    scrollbar-gutter: stable;
 }

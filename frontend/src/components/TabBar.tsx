@@ -178,8 +178,11 @@ export function TabBar<T extends TabItem>({
                 onDragLeave={handleContainerDragLeave}
                 onDrop={handleDrop}
                 className={cn(
-                    'flex flex-1 w-full flex-row border-b border-border bg-bg scrollbar-hide',
-                    'overflow-x-auto tabs-scrollbar scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent',
+                    'scale-y-[-1]',
+                    'tabs-scrollbar',
+                    'flex flex-1 w-full flex-row border-b border-border bg-subtle',
+                    'overflow-x-auto',
+                    // 'scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent'
                 )}
                 tabIndex={-1}
             >
@@ -210,6 +213,7 @@ export function TabBar<T extends TabItem>({
                                 onClick={() => onTabClick(tab)}
                                 onKeyDown={(e) => handleKeyDown(e, tab)}
                                 className={cn(
+                                    'scale-y-[-1]',
                                     'h-9 flex-shrink-0 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
                                     isDragging ? 'opacity-20' : 'opacity-100',
                                 )}

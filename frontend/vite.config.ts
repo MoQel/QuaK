@@ -30,6 +30,10 @@ export default defineConfig({
   },
     worker: {
       format: 'es',
+       plugins: () => [
+           wasm(),
+           topLevelAwait()
+       ]
     },
     preview: {
         headers: {
