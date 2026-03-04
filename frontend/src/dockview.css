@@ -6,23 +6,25 @@
     background: var(--bg-dark);
 }
 
-/* Tab */
 .dockview-theme-custom .dv-tab {
-    background-color: transparent !important;
-    color: var(--text) !important;
-    border: none;
-    font-weight: 600;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-right: none !important;
+    border-left: none !important;
+    outline: none !important;
 }
 
-/* Tab hover */
-.dockview-theme-custom .dv-tab:hover {
-    background-color: var(--bg);
-    color: var(--text);
-}
-
-/* Active tab */
-.dockview-theme-custom .dv-tab.dv-active-tab {
-    box-shadow: inset 0 -2px 0 0 var(--special) !important;
+.dockview-theme-custom .dv-tab-divider,
+.dockview-theme-custom .dv-tab-separator,
+.dockview-theme-custom .dv-tabs-and-actions-container ::after,
+.dockview-theme-custom .dv-tabs-and-actions-container ::before {
+    display: none !important;
+    width: 0 !important;
+    background: transparent !important;
+    border: none !important;
 }
 
 /* Panel content + group background */

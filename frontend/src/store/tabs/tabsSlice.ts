@@ -14,6 +14,7 @@ const initialState: TabsState = {
     dirtyFiles: [],
     isDragging: false,
     pendingCloseAction: null,
+    confirmClose: false,
 };
 
 // region Helpers
@@ -328,6 +329,9 @@ export const tabsSlice = createSlice({
         setPendingClose: (state, action: PayloadAction<PendingClose | null>) => {
             state.pendingCloseAction = action.payload;
         },
+        setConfirm: (state, action: PayloadAction<boolean>) => {
+            state.confirmClose = action.payload;
+        },
     },
 });
 // endregion
@@ -349,6 +353,7 @@ export const {
     setFileDirty,
     setDragging,
     setPendingClose,
+    setConfirm,
 } = tabsSlice.actions;
 
 export default tabsSlice.reducer;

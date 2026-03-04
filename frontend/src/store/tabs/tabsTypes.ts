@@ -18,6 +18,7 @@ export interface TabsState {
     dirtyFiles: string[];
     isDragging: boolean;
     pendingCloseAction: PendingClose | null;
+    confirmClose: boolean;
 }
 
 export type PendingClose =

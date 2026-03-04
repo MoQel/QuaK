@@ -169,7 +169,7 @@ export function TabBar<T extends TabItem>({
     // endregion
 
     return (
-        <div className={cn('relative flex w-full flex-row', className)}>
+        <div className={cn('relative flex w-full flex-row border-b-1 border-border', className)}>
             <div
                 ref={containerRef}
                 role="tablist"
@@ -179,7 +179,7 @@ export function TabBar<T extends TabItem>({
                 onDrop={handleDrop}
                 className={cn(
                     'scale-y-[-1] translate-z-0',
-                    'flex flex-1 w-full flex-row border border-border bg-subtle',
+                    'flex flex-1 w-full flex-row bg-subtle border-none',
                     'overflow-x-auto tabs-scrollbar',
                 )}
                 tabIndex={-1}
@@ -225,7 +225,7 @@ export function TabBar<T extends TabItem>({
                 {isOverContainer && !draggingId && dropPlaceholderIndex === tabs.length && <GhostTab />}
             </div>
             {rightSlot && tabs.length !== 0 && (
-                <div className="flex items-center flex-shrink-0 border-l border-border bg-subtle">{rightSlot}</div>
+                <div className="flex items-center flex-shrink-0 bg-subtle">{rightSlot}</div>
             )}
         </div>
     );
