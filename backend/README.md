@@ -29,6 +29,23 @@ If the PR pipeline fails due to formatting, run `./gradlew spotlessApply` locall
 
 ---
 
+## API Documentation (OpenAPI)
+
+The backend automatically provides an OpenAPI (Swagger) specification based on the Spring controllers.
+
+### Automated Workflow
+* **Generation:** The spec is generated via `./gradlew generateOpenApiDocs`.
+* **Automatic Updates:**
+    * When code is merged into **`main`** or **`development`**, the CI pipeline automatically updates the file at `docs/api/openapi.yaml`.
+    * For **Pull Requests**, the spec is generated and stored as a CI artifact for validation, but not committed to the branch.
+* **Manual Generation:** You can run the command locally to update the spec file:
+  ```bash
+  cd backend
+  ./gradlew generateOpenApiDocs
+  ```
+
+---
+
 ## Testing Workflows
 
 ### 1. Test-Categories
