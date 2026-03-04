@@ -48,7 +48,7 @@
     --logo-end: hsl(217 91% 60%);
 
     /* monaco editor needs hex codes */
-    --editor-bg: #e6e6e6;
+    --editor-bg: #e0e0e0;
     --editor-line-number: #666666;
     --scrollbar-background: #00000000;
     --scrollbarSlider-background: #0000001a;
@@ -89,7 +89,7 @@
     --logo-end: hsl(217 91% 60%);
 
     /* monaco editor needs hex codes */
-    --editor-bg: #18191b;
+    --editor-bg: #242629;
     --editor-line-number: #858585;
     --scrollbar-background: #00000000;
     --scrollbarSlider-background: #ffffff1a;

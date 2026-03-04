@@ -48,25 +48,32 @@ function InspectorViewComponent({ operationDefinition, onClear }: Readonly<Inspe
     const info = operationDefinition.inspectorInfo;
 
     return (
-        <Card className="w-full h-full border-none rounded-none flex flex-col overflow-hidden bg-card">
-            <CardHeader className="pb-2 border-b bg-card z-10 shrink-0">
-                <div className="flex items-start justify-between gap-2">
-                    <div className="flex flex-col gap-1">
-                        <div className="flex items-center gap-2">
-                            <CardTitle className="text-lg">{operationDefinition.name}</CardTitle>
-                            <span className="text-xs font-mono bg-primary/10 text-primary px-2 py-0.5 rounded border border-primary/20">
+        <Card className="w-full h-full border-none rounded-none flex flex-col overflow-hidden bg-card gap-0">
+            <CardHeader className="bg-card z-10 shrink-0 p-0 px-6 border-b py-0 [.border-b]:pb-3">
+                <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3 min-w-0">
+                        {/* Title and Symbol */}
+                        <div className="flex items-center gap-2 shrink-0">
+                            <CardTitle className="text-base font-semibold leading-none">
+                                {operationDefinition.name}
+                            </CardTitle>
+                            <span className="text-[10px] font-mono bg-primary/10 text-primary px-1.5 py-0.5 rounded border border-primary/20 uppercase tracking-wider">
                                 {operationDefinition.symbol}
                             </span>
                         </div>
-                        <p className="text-xs text-muted-foreground line-clamp-2">{operationDefinition.description}</p>
+                        {/* Inline Description */}
+                        <div className="hidden sm:block h-4 w-px bg-border shrink-0" /> {/* Vertical divider */}
+                        <p className="text-sm text-muted-foreground truncate italic">
+                            {operationDefinition.description}
+                        </p>
                     </div>
 
-                    {/* Close Button */}
+                    {/* Close Action */}
                     {onClear && (
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 -mr-2 -mt-2 text-muted-foreground hover:text-foreground"
+                            className="h-8 w-8 shrink-0 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
                             onClick={onClear}
                             title="Clear inspector"
                         >
@@ -94,7 +101,7 @@ function InspectorViewComponent({ operationDefinition, onClear }: Readonly<Inspe
                     {/* Matrix */}
                     {info?.matrix && (
                         <div>
-                            <div className="flex items-center gap-2 mb-2">
+                            <div className="flex items-center justify-center gap-2 mb-2">
                                 <h4 className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">
                                     Unitary Matrix ({info.matrix.rows}x{info.matrix.cols})
                                 </h4>
