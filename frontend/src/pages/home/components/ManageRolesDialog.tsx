@@ -18,7 +18,7 @@ interface ManageRolesDialogProps {
     onOpenChange: (open: boolean) => void;
 }
 
-export function ManageRolesDialog({ project, open, onOpenChange }: ManageRolesDialogProps) {
+export function ManageRolesDialog({ project, open, onOpenChange }: Readonly<ManageRolesDialogProps>) {
     const [roles, setRoles] = useState<ProjectRoleResponse[]>([]);
     const [isLoadingRoles, setIsLoadingRoles] = useState(false);
 
@@ -128,6 +128,39 @@ export function ManageRolesDialog({ project, open, onOpenChange }: ManageRolesDi
     const owners = roles.filter((r) => r.role === 'OWNER');
     const viewers = roles.filter((r) => r.role === 'VIEWER');
 
+    const renderSearchResultsContent = () => {
+        if (isSearching) {
+            return (
+                <div className="flex items-center justify-center py-4 text-text-muted">
+                    <Loader2 className="size-4 animate-spin mr-2" />
+                    Searching...
+                </div>
+            );
+        }
+        if (searchResults.length > 0) {
+            return searchResults.map((user) => (
+                <button
+                    key={user.userId}
+                    onClick={() => handleInvite(user)}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-bg-light transition-colors text-left"
+                >
+                    <UserAvatar
+                        avatarUrl={user.avatarUrl}
+                        alt={user.name || user.email}
+                        className="w-8 h-8"
+                        size="sm"
+                    />
+                    <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium text-text truncate">{user.name || user.email}</div>
+                        <div className="text-xs text-text-muted truncate">{user.email}</div>
+                    </div>
+                    <span className="text-xs text-text-muted px-2 py-0.5 rounded bg-bg-light">Invite</span>
+                </button>
+            ));
+        }
+        return <div className="py-4 text-center text-sm text-text-muted">No users found matching "{searchQuery}"</div>;
+    };
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[520px]">
@@ -170,40 +203,7 @@ export function ManageRolesDialog({ project, open, onOpenChange }: ManageRolesDi
                     {/* Search Results Dropdown */}
                     {showResults && (
                         <div className="absolute z-50 w-full mt-1 bg-bg border border-border rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                            {isSearching ? (
-                                <div className="flex items-center justify-center py-4 text-text-muted">
-                                    <Loader2 className="size-4 animate-spin mr-2" />
-                                    Searching...
-                                </div>
-                            ) : searchResults.length > 0 ? (
-                                searchResults.map((user) => (
-                                    <button
-                                        key={user.userId}
-                                        onClick={() => handleInvite(user)}
-                                        className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-bg-light transition-colors text-left"
-                                    >
-                                        <UserAvatar
-                                            avatarUrl={user.avatarUrl}
-                                            alt={user.name || user.email}
-                                            className="w-8 h-8"
-                                            size="sm"
-                                        />
-                                        <div className="flex-1 min-w-0">
-                                            <div className="text-sm font-medium text-text truncate">
-                                                {user.name || user.email}
-                                            </div>
-                                            <div className="text-xs text-text-muted truncate">{user.email}</div>
-                                        </div>
-                                        <span className="text-xs text-text-muted px-2 py-0.5 rounded bg-bg-light">
-                                            Invite
-                                        </span>
-                                    </button>
-                                ))
-                            ) : (
-                                <div className="py-4 text-center text-sm text-text-muted">
-                                    No users found matching "{searchQuery}"
-                                </div>
-                            )}
+                            {renderSearchResultsContent()}
                         </div>
                     )}
                 </div>
@@ -251,11 +251,11 @@ function RoleMemberRow({
     role,
     isOwner = false,
     onRemove,
-}: {
+}: Readonly<{
     role: ProjectRoleResponse;
     isOwner?: boolean;
     onRemove?: () => void;
-}) {
+}>) {
     const displayName = role.name || role.email || role.userId;
     const displayDetail = role.email || '';
     const hasUserInfo = !!(role.name || role.email);
@@ -264,7 +264,7 @@ function RoleMemberRow({
         <div className="flex items-center gap-3 px-3 py-2.5 hover:bg-bg-light/50 transition-colors">
             <UserAvatar avatarUrl={role.avatarUrl} alt={displayName} className="w-8 h-8" size="sm" />
             <div className="flex-1 min-w-0">
-                <div className={`text-sm font-medium text-text truncate ${!hasUserInfo ? 'font-mono text-xs' : ''}`}>
+                <div className={`text-sm font-medium text-text truncate ${hasUserInfo ? '' : 'font-mono text-xs'}`}>
                     {displayName}
                 </div>
                 {displayDetail && <div className="text-xs text-text-muted truncate">{displayDetail}</div>}

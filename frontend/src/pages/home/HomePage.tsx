@@ -126,6 +126,70 @@ export function HomePage() {
         navigate(`/project/${project.id}`);
     };
 
+    const renderOwnProjectsContent = () => {
+        if (isLoading) return <LoadingState />;
+        if (displayedOwnProjects.length > 0) {
+            return (
+                <div className="overflow-x-auto pb-4 -mx-2 px-2 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
+                    <div className="flex flex-row gap-4">
+                        {displayedOwnProjects.map((p) => (
+                            <ProjectCard
+                                key={p.id}
+                                project={p}
+                                pinned={isPinned(p.id)}
+                                onRename={handleRename}
+                                onDelete={handleDelete}
+                                onTogglePin={togglePin}
+                                onManageAccess={handleManageAccess}
+                                isOwner
+                            />
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+        return (
+            <div className="text-center py-12">
+                <FolderOpen className="w-12 h-12 text-text-muted mx-auto mb-3" />
+                <p className="text-sm text-text-muted">You have no projects yet.</p>
+                <CreateProject onSuccess={handleProjectCreated} reload={fetchProjects}>
+                    <Button className="mt-4" variant="outline">
+                        Create New Project
+                    </Button>
+                </CreateProject>
+            </div>
+        );
+    };
+
+    const renderInvitedProjectsContent = () => {
+        if (isLoading) return <LoadingState />;
+        if (invitedProjects.length > 0) {
+            return (
+                <div className="overflow-x-auto pb-4 -mx-2 px-2 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
+                    <div className="flex flex-row gap-4">
+                        {invitedProjects.map((p) => (
+                            <ProjectCard
+                                key={p.id}
+                                project={p}
+                                pinned={isPinned(p.id)}
+                                onRename={handleRename}
+                                onDelete={handleDelete}
+                                onTogglePin={togglePin}
+                                isOwner={false}
+                            />
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+        return (
+            <div className="text-center py-12">
+                <Users className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                <p className="text-sm text-muted-foreground">You have no invited projects.</p>
+            </div>
+        );
+    };
+
     return (
         <div className="p-8 max-w-[1600px] mx-auto">
             {dialog}
@@ -169,36 +233,7 @@ export function HomePage() {
                         </>
                     }
                 >
-                    {isLoading ? (
-                        <LoadingState />
-                    ) : displayedOwnProjects.length > 0 ? (
-                        <div className="overflow-x-auto pb-4 -mx-2 px-2 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
-                            <div className="flex flex-row gap-4">
-                                {displayedOwnProjects.map((p) => (
-                                    <ProjectCard
-                                        key={p.id}
-                                        project={p}
-                                        pinned={isPinned(p.id)}
-                                        onRename={handleRename}
-                                        onDelete={handleDelete}
-                                        onTogglePin={togglePin}
-                                        onManageAccess={handleManageAccess}
-                                        isOwner
-                                    />
-                                ))}
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="text-center py-12">
-                            <FolderOpen className="w-12 h-12 text-text-muted mx-auto mb-3" />
-                            <p className="text-sm text-text-muted">You have no projects yet.</p>
-                            <CreateProject onSuccess={handleProjectCreated} reload={fetchProjects}>
-                                <Button className="mt-4" variant="outline">
-                                    Create New Project
-                                </Button>
-                            </CreateProject>
-                        </div>
-                    )}
+                    {renderOwnProjectsContent()}
                 </ProjectSection>
 
                 <ProjectSection
@@ -210,30 +245,7 @@ export function HomePage() {
                         </div>
                     }
                 >
-                    {isLoading ? (
-                        <LoadingState />
-                    ) : invitedProjects.length > 0 ? (
-                        <div className="overflow-x-auto pb-4 -mx-2 px-2 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
-                            <div className="flex flex-row gap-4">
-                                {invitedProjects.map((p) => (
-                                    <ProjectCard
-                                        key={p.id}
-                                        project={p}
-                                        pinned={isPinned(p.id)}
-                                        onRename={handleRename}
-                                        onDelete={handleDelete}
-                                        onTogglePin={togglePin}
-                                        isOwner={false}
-                                    />
-                                ))}
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="text-center py-12">
-                            <Users className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-                            <p className="text-sm text-muted-foreground">You have no invited projects.</p>
-                        </div>
-                    )}
+                    {renderInvitedProjectsContent()}
                 </ProjectSection>
             </div>
         </div>
