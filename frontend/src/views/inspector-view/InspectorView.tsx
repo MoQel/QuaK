@@ -49,7 +49,7 @@ function InspectorViewComponent({ operationDefinition, onClear }: Readonly<Inspe
 
     return (
         <Card className="w-full h-full border-none rounded-none flex flex-col overflow-hidden bg-card gap-0">
-            <CardHeader className="bg-card z-10 shrink-0 p-0 px-6 border-b py-0 [.border-b]:pb-3">
+            <CardHeader className="bg-card z-10 shrink-0 p-0 px-6 border-b py-0 [.border-b]:pb-3 cursor-default">
                 <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3 min-w-0">
                         {/* Title and Symbol */}
@@ -63,7 +63,7 @@ function InspectorViewComponent({ operationDefinition, onClear }: Readonly<Inspe
                         </div>
                         {/* Inline Description */}
                         <div className="hidden sm:block h-4 w-px bg-border shrink-0" /> {/* Vertical divider */}
-                        <p className="text-sm text-muted-foreground truncate italic">
+                        <p className="text-sm text-muted-foreground italic min-w-0 break-words">
                             {operationDefinition.description}
                         </p>
                     </div>

@@ -210,7 +210,7 @@ export function ResultsView({ circuit }: Readonly<ResultsViewProps>) {
                     <ChartContainer config={chartConfig} className="h-full w-full aspect-auto">
                         <BarChart
                             data={visibleData}
-                            margin={{ top: 15, right: 10, left: 15, bottom: 10 }}
+                            margin={{ top: 0, right: 10, left: 15, bottom: 0 }}
                             accessibilityLayer
                         >
                             <CartesianGrid
