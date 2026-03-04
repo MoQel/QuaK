@@ -118,7 +118,7 @@ export function ProjectCard({
                     <div className="flex items-center justify-between pt-3 mt-1 border-t border-border/40">
                         <div className="flex flex-col gap-0.5">
                             <span className="text-[10px] uppercase font-bold tracking-tight text-text-muted/50">
-                                Modified
+                                Last Modified
                             </span>
                             <span className="text-xs font-medium text-text-muted">
                                 {new Date(project.lastAccess).toLocaleDateString()}
