@@ -30,7 +30,7 @@ export function LibraryView({ onOperationSelect }: Readonly<LibraryViewProps>) {
     };
 
     return (
-        <Card className="w-full h-full min-h-0 relative flex flex-col overflow-hidden">
+        <Card className="w-full h-full min-h-0 relative flex flex-col overflow-hidden border-none">
             <CardHeader className="w-full flex justify-center items-center relative">
                 <CardTitle className="text-center">Library</CardTitle>
 

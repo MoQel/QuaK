@@ -262,7 +262,7 @@ export function ResultsView({ circuit }: Readonly<ResultsViewProps>) {
     };
 
     return (
-        <Card className="w-full h-full border-l rounded-none flex flex-col min-w-0">
+        <Card className="w-full h-full border-l rounded-none flex flex-col min-w-0 border-none">
             <CardHeader className="border-b bg-card z-10 shrink-0 [.border-b]:pb-2">
                 <div className="flex flex-col gap-4 lg:flex-row lg:justify-between lg:items-center">
                     <div className="flex flex-col gap-2">
