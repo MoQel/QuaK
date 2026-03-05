@@ -49,7 +49,7 @@ function InspectorViewComponent({ operationDefinition, onClear }: Readonly<Inspe
 
     return (
         <Card className="w-full h-full border-none rounded-none flex flex-col overflow-hidden bg-card gap-0">
-            <CardHeader className="bg-card z-10 shrink-0 p-0 px-6 border-b py-0 [.border-b]:pb-3 cursor-default">
+            <CardHeader className="bg-card z-10 shrink-0 p-0 px-6 py-0 cursor-default">
                 <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3 min-w-0">
                         {/* Title and Symbol */}

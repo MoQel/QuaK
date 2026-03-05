@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useMemo, useRef, useState } from 'react';
-import { buildDefaultLayout, LAYOUT_STORAGE_KEY, getOptimalPosition } from '@/lib/layout/layout-utils';
+import { buildDefaultLayout, LAYOUT_STORAGE_KEY, getOptimalPosition, applyGroupType } from '@/lib/layout/layout-utils';
 import type { DockviewApi } from 'dockview-react';
 
 export type PanelKey = 'file' | 'circuit' | 'code' | 'results' | 'inspector' | 'library';
@@ -32,7 +32,25 @@ export const useDockviewOptional = () => {
 };
 
 export const DockviewProvider = ({ children }: { children: React.ReactNode }) => {
-    const [api, setApi] = useState<DockviewApi | null>(null);
+    const [api, _setApi] = useState<DockviewApi | null>(null);
+    // Ensure group type is set
+    const setApi = (newApi: DockviewApi | null) => {
+        if (newApi) {
+            newApi.onDidAddPanel((panel) => {
+                requestAnimationFrame(() => applyGroupType(newApi, panel.id));
+            });
+
+            newApi.onDidMovePanel((_) => {
+                requestAnimationFrame(() => {
+                    for (const p of newApi.panels) {
+                        applyGroupType(newApi, p.id);
+                    }
+                });
+            });
+        }
+        _setApi(newApi);
+    };
+
     const [openPanels, setOpenPanels] = useState<Set<PanelKey>>(new Set());
     const isResettingRef = useRef(false);
 

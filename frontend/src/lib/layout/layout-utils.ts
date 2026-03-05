@@ -17,52 +17,52 @@ export const getOptimalPosition = (panelId: string, api: DockviewApi) => {
     };
 
     switch (panelId) {
-        case 'file':
+        case PANELS.file:
             return (
-                tryPos('circuit', 'left') ||
-                tryPos('code', 'left') ||
-                tryPos('library', 'above') ||
+                tryPos(PANELS.circuit, 'left') ||
+                tryPos(PANELS.code, 'left') ||
+                tryPos(PANELS.library, 'above') ||
                 tryPos('inspector', 'above')
             );
 
-        case 'circuit':
+        case PANELS.circuit:
             return (
-                tryPos('file', 'right') ||
-                tryPos('code', 'left') ||
-                tryPos('inspector', 'above') ||
-                tryPos('library', 'right')
+                tryPos(PANELS.file, 'right') ||
+                tryPos(PANELS.code, 'left') ||
+                tryPos(PANELS.inspector, 'above') ||
+                tryPos(PANELS.library, 'right')
             );
 
-        case 'code':
+        case PANELS.code:
             return (
-                tryPos('circuit', 'right') ||
-                tryPos('file', 'right') ||
-                tryPos('results', 'above') ||
-                tryPos('inspector', 'above')
+                tryPos(PANELS.circuit, 'right') ||
+                tryPos(PANELS.file, 'right') ||
+                tryPos(PANELS.results, 'above') ||
+                tryPos(PANELS.inspector, 'above')
             );
 
-        case 'library':
+        case PANELS.library:
             return (
-                tryPos('inspector', 'left') ||
-                tryPos('results', 'left') ||
-                tryPos('file', 'below') ||
-                tryPos('circuit', 'below')
+                tryPos(PANELS.inspector, 'left') ||
+                tryPos(PANELS.results, 'left') ||
+                tryPos(PANELS.file, 'below') ||
+                tryPos(PANELS.circuit, 'below')
             );
 
-        case 'inspector':
+        case PANELS.inspector:
             return (
-                tryPos('library', 'right') ||
-                tryPos('results', 'left') ||
-                tryPos('circuit', 'below') ||
-                tryPos('file', 'below')
+                tryPos(PANELS.library, 'right') ||
+                tryPos(PANELS.results, 'left') ||
+                tryPos(PANELS.circuit, 'below') ||
+                tryPos(PANELS.file, 'below')
             );
 
-        case 'results':
+        case PANELS.results:
             return (
-                tryPos('inspector', 'right') ||
-                tryPos('library', 'right') ||
-                tryPos('code', 'below') ||
-                tryPos('circuit', 'below')
+                tryPos(PANELS.inspector, 'right') ||
+                tryPos(PANELS.library, 'right') ||
+                tryPos(PANELS.code, 'below') ||
+                tryPos(PANELS.circuit, 'below')
             );
 
         default:
@@ -82,16 +82,16 @@ export const buildDefaultLayout = (api: DockviewApi) => {
 
     // 1. Top-row anchor
     const circuit = api.addPanel({
-        id: 'circuit',
-        component: 'circuit',
+        id: PANELS.circuit,
+        component: PANELS.circuit,
         title: 'Circuit',
     });
 
     // 2. Bottom-row anchor
     // Note: Split vertically first for a continuous horizontal splitter.
     const inspector = api.addPanel({
-        id: 'inspector',
-        component: 'inspector',
+        id: PANELS.inspector,
+        component: PANELS.inspector,
         title: 'Inspector',
         position: { referencePanel: circuit, direction: 'below' },
         initialHeight: BOTTOM_H,
@@ -99,16 +99,16 @@ export const buildDefaultLayout = (api: DockviewApi) => {
 
     // 3. Fill top row (left / right of circuit)
     api.addPanel({
-        id: 'file',
-        component: 'file',
+        id: PANELS.file,
+        component: PANELS.file,
         title: 'Project',
         position: { referencePanel: circuit, direction: 'left' },
         initialWidth: LEFT_W,
     });
 
     api.addPanel({
-        id: 'code',
-        component: 'code',
+        id: PANELS.code,
+        component: PANELS.code,
         title: 'Code Editor',
         position: { referencePanel: circuit, direction: 'right' },
         initialWidth: RIGHT_W,
@@ -116,18 +116,35 @@ export const buildDefaultLayout = (api: DockviewApi) => {
 
     // 4. Fill bottom row (left / right of inspector)
     api.addPanel({
-        id: 'library',
-        component: 'library',
+        id: PANELS.library,
+        component: PANELS.library,
         title: 'Library',
         position: { referencePanel: inspector, direction: 'left' },
         initialWidth: LEFT_W,
     });
 
     api.addPanel({
-        id: 'results',
-        component: 'results',
+        id: PANELS.results,
+        component: PANELS.results,
         title: 'Results',
         position: { referencePanel: inspector, direction: 'right' },
         initialWidth: RIGHT_W,
     });
+};
+
+export const PANELS = {
+    circuit: 'circuit',
+    code: 'code',
+    file: 'file',
+    inspector: 'inspector',
+    library: 'library',
+    results: 'results',
+};
+
+const PRIMARY_PANELS = new Set([PANELS.circuit, PANELS.code]);
+
+export const applyGroupType = (api: DockviewApi, id: string) => {
+    const panel = api.getPanel(id);
+    if (!panel) return;
+    panel.group.element.dataset.groupType = PRIMARY_PANELS.has(id) ? 'primary' : 'secondary';
 };

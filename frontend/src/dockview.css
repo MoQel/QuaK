@@ -6,25 +6,17 @@
     background: var(--bg-dark);
 }
 
+/* Tab */
 .dockview-theme-custom .dv-tab {
     background: transparent !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    border: none !important;
-    box-shadow: none !important;
-    border-right: none !important;
-    border-left: none !important;
-    outline: none !important;
+    padding: 0;
 }
 
 .dockview-theme-custom .dv-tab-divider,
 .dockview-theme-custom .dv-tab-separator,
 .dockview-theme-custom .dv-tabs-and-actions-container ::after,
 .dockview-theme-custom .dv-tabs-and-actions-container ::before {
-    display: none !important;
     width: 0 !important;
-    background: transparent !important;
-    border: none !important;
 }
 
 /* Panel content + group background */
@@ -33,10 +25,14 @@
     background-color: var(--bg-dark);
 }
 
-/* Header Strip (Background behind the tabs) */
-.dockview-theme-custom .dv-tabs-and-actions-container {
+/* Header Strip (Background behind the tabs) for Circuit and Code Editor */
+.dockview-theme-custom [data-group-type='primary'] .dv-tabs-and-actions-container {
     background-color: var(--bg-subtle);
-    border-bottom: 1px solid var(--border);
+}
+
+/* Header Strip (Background behind the tabs) for all other panels */
+.dockview-theme-custom [data-group-type='secondary'] .dv-tabs-and-actions-container {
+    background-color: var(--bg-dark);
 }
 
 /* Vertical divider (invisible div around) - Wider grab area for easier resizing */

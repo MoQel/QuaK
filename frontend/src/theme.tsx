@@ -10,7 +10,7 @@ type ThemeCtx = {
 const ThemeContext = createContext<ThemeCtx | null>(null);
 const KEY = 'theme';
 
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
+export function ThemeProvider({ children }: Readonly<{ children: React.ReactNode }>) {
     const [theme, setTheme] = useState<Theme>(() => {
         const saved = localStorage.getItem(KEY) as Theme | null;
         return saved ?? 'dark';
