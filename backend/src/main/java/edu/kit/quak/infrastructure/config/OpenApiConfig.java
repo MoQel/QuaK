@@ -15,10 +15,13 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * OpenAPI / Swagger configuration for the QuaK API documentation. This class configures the API
+ * OpenAPI / Swagger configuration for the QuaK API documentation. This class
+ * configures the API
  * metadata displayed in Swagger UI.
  *
- * <p>In development mode (dev profile), use HTTP Basic Auth with: - Username: admin - Password:
+ * <p>
+ * In development mode (dev profile), use HTTP Basic Auth with: - Username:
+ * admin - Password:
  * admin
  */
 @Configuration
@@ -68,7 +71,8 @@ public class OpenApiConfig {
                     new Tag().name("Authentication").description("Authentication and user session management" + " endpoints"),
                     new Tag().name("Projects").description("Project management operations"),
                     new Tag().name("Files").description("File and directory management operations"),
-                    new Tag().name("Operation Definitions").description("Definitions of quantum operations")
+                    new Tag().name("Operation Definitions").description("Definitions of quantum operations"),
+                    new Tag().name("Circuit").description("Controls operations on a quantum circuit")
                 )
             );
     }
