@@ -279,7 +279,7 @@ class CircuitServiceTest {
 
         // verify context data (RFC 7807)
         assertEquals("Circuit", exception.getResourceType());
-        assertEquals(circuitId, exception.getResourceId());
+        assertEquals("Circuit not found: " + circuitId, exception.getResourceId());
 
         // verify no save occurs
         verify(repository, never()).save(any());
