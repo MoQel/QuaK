@@ -41,17 +41,14 @@ export function SimulationToolbar({
                     }))
                 }
             >
-                <SelectTrigger className="w-full sm:w-[140px] h-8 bg-bg-light hover:bg-bg-light-hover border-border text-text">
+                <SelectTrigger className="w-full sm:w-[140px] h-8 bg-bg hover:bg-bg-light border-border text-text">
                     <SelectValue placeholder="Mode" />
                 </SelectTrigger>
-                <SelectContent className="bg-bg-light border-border text-text">
-                    <SelectItem value="exact" className="rounded cursor-pointer focus:bg-highlight focus:text-text">
+                <SelectContent className="bg-bg border-border text-text">
+                    <SelectItem value="exact" className="rounded cursor-pointer focus:bg-bg-light focus:text-text">
                         Exact State
                     </SelectItem>
-                    <SelectItem
-                        value="simulation"
-                        className="rounded cursor-pointer focus:bg-highlight focus:text-text"
-                    >
+                    <SelectItem value="simulation" className="rounded cursor-pointer focus:bg-bg-light focus:text-text">
                         Simulation
                     </SelectItem>
                 </SelectContent>
@@ -59,11 +56,7 @@ export function SimulationToolbar({
 
             <Popover>
                 <PopoverTrigger asChild>
-                    <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-8 w-8 bg-bg-light border-border text-text hover:bg-bg-light-hover"
-                    >
+                    <Button size="icon" className="h-8 w-8 text-text bg-bg hover:bg-bg-light border-1 border-border">
                         <Settings2 className="h-4 w-4" />
                         <span className="sr-only">Settings</span>
                     </Button>
