@@ -16,7 +16,7 @@ export function CircuitToolbar({ circuit, setCircuit }: Readonly<CircuitToolbarP
 
     return (
         <div className="pb-5 flex justify-end space-x-3">
-            <Button onClick={addQubit} size="icon" className="size-8" title="Add Qubit">
+            <Button onClick={addQubit} size="icon" className="size-8" variant="secondary" title="Add Qubit">
                 <Plus />
             </Button>
             <Button

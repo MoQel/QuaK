@@ -27,12 +27,12 @@
     --bg: hsl(0 0% 80%); /* secondary surfaces / panels */
     --bg-light: hsl(0 0% 70%); /* raised elements / cards / hover surfaces */
     --bg-light-hover: hsl(0 0% 60%);
-    --bg-subtle: hsl(0 0% 88%); /* subtle panel variant between bg-dark and bg */
+    --bg-subtle: hsl(0 0% 86%); /* subtle panel variant between bg-dark and bg */
 
     --text: hsl(0 0% 20%); /* primary text  */
     --text-muted: hsl(0 0% 30%); /* secondary / muted text */
 
-    --border: hsl(0 0 60%); /* standard borders */
+    --border: hsl(0 0 70%); /* standard borders */
     --border-muted: hsl(300 0% 82%); /* very subtle / disabled borders */
 
     --highlight: hsl(0 0% 50%); /* neutral highlight / emphasis */
@@ -48,7 +48,8 @@
     --logo-end: hsl(217 91% 60%);
 
     /* monaco editor needs hex codes */
-    --editor-bg: #e0e0e0;
+    --editor-bg: #dbdbdb;
+    --editor-line-highlight-border: #cacaca;
     --editor-line-number: #666666;
     --scrollbar-background: #00000000;
     --scrollbarSlider-background: #0000001a;
@@ -73,7 +74,7 @@
     --text: hsl(0 0% 95%); /* primary text (almost white) */
     --text-muted: hsl(0 0% 70%); /* secondary / muted text */
 
-    --border: hsl(0 0 20%); /* standard borders (dark gray) */
+    --border: hsl(220 6% 30%); /* standard borders (dark gray) */
     --border-muted: hsl(300 0% 18%); /* very subtle / disabled borders */
 
     --highlight: hsl(0 0% 50%); /* neutral highlight / emphasis */
@@ -90,6 +91,7 @@
 
     /* monaco editor needs hex codes */
     --editor-bg: #242629;
+    --editor-line-highlight-border: #3a3a3a;
     --editor-line-number: #858585;
     --scrollbar-background: #00000000;
     --scrollbarSlider-background: #ffffff1a;

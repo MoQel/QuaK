@@ -18,11 +18,13 @@ export function useMonacoTheme(monaco: Monaco | null, theme: 'dark' | 'light') {
                 rules: [],
                 colors: {
                     'editor.background': getCssVar('--editor-bg'),
+                    'editor.lineHighlightBorder': getCssVar('--editor-line-highlight-border'),
                     'editorLineNumber.foreground': getCssVar('--editor-line-number'),
                     'editorLineNumber.activeForeground': getCssVar('--editor-line-number'),
-                    'scrollbar.background': '#4b556340',
-                    'scrollbarSlider.hoverBackground': '#4b556380',
-                    'scrollbarSlider.activeBackground': '#4b5563aa',
+                    'scrollbar.background': getCssVar('--scrollbar-background'),
+                    'scrollbarSlider.background': getCssVar('--scrollbarSlider-background'),
+                    'scrollbarSlider.hoverBackground': getCssVar('--scrollbarSlider-hoverBackground'),
+                    'scrollbarSlider.activeBackground': getCssVar('--scrollbarSlider-activeBackground'),
                 },
             });
 
