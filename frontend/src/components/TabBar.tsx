@@ -169,7 +169,7 @@ export function TabBar<T extends TabItem>({
     // endregion
 
     return (
-        <div className={cn('relative flex w-full flex-row min-h-12', className)}>
+        <div className={cn('relative flex w-full flex-row', className)}>
             <div
                 ref={containerRef}
                 role="tablist"

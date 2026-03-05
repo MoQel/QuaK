@@ -47,7 +47,13 @@ export function TextEditorView() {
                         {hasRightGroup && (
                             <>
                                 <PanelResizeHandle />
-                                <Panel id="right-panel" order={1} minSize={20} defaultSize={50}>
+                                <Panel
+                                    id="right-panel"
+                                    order={1}
+                                    minSize={20}
+                                    defaultSize={50}
+                                    className="border-l border-border"
+                                >
                                     <EditorSlot groupId={GROUP_RIGHT} />
                                 </Panel>
                             </>
@@ -66,7 +72,13 @@ export function TextEditorView() {
                 {hasBottomGroup && (
                     <>
                         <PanelResizeHandle />
-                        <Panel id="bottom-panel" order={2} minSize={20} defaultSize={50}>
+                        <Panel
+                            id="bottom-panel"
+                            order={2}
+                            minSize={20}
+                            defaultSize={50}
+                            className="border-t border-border"
+                        >
                             <EditorSlot groupId={GROUP_BOTTOM} />
                         </Panel>
                     </>
