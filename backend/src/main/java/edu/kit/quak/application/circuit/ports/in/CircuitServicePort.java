@@ -7,27 +7,47 @@ import java.util.List;
 import java.util.Optional;
 
 public interface CircuitServicePort {
+    /**
+     * Creates a new circuit for the given project. Called automatically on project
+     * creation.
+     */
     QuantumCircuit init(String projectId);
 
+    /**
+     * Returns the circuit for the given project. Assumes 1:1 for now; will evolve
+     * to listByProjectId.
+     */
     Optional<QuantumCircuit> getByProjectId(String projectId);
 
+    /** Returns a specific circuit by its unique ID. */
+    Optional<QuantumCircuit> getById(String circuitId);
+
+    /**
+     * Deletes all circuits for a project. Called automatically on project deletion.
+     */
     void deleteByProjectId(String projectId);
 
-    QuantumCircuit resetByProjectId(String projectId);
+    /**
+     * Resets a specific circuit: deletes it and creates a fresh one with the same
+     * projectId.
+     * Designed around circuitId so it remains correct when multiple circuits per
+     * project are supported.
+     */
+    QuantumCircuit resetByCircuitId(String circuitId);
 
-    QuantumCircuit addQubit(String projectId, String registerId);
+    QuantumCircuit addQubit(String circuitId, String registerId);
 
-    QuantumCircuit removeQubit(String projectId, String registerId, int qubitIdx);
+    QuantumCircuit removeQubit(String circuitId, String registerId, int qubitIdx);
 
-    QuantumCircuit addQuantumOperation(String projectId, QuantumOperation operation, int layerIdx);
+    QuantumCircuit addQuantumOperation(String circuitId, QuantumOperation operation, int layerIdx);
 
     QuantumCircuit moveQuantumOperation(
-        String projectId,
+        String circuitId,
         String operationId,
         int layerIdx,
         List<ElementSelector> targetQubits,
         List<ElementSelector> controlQubits
     );
 
-    QuantumCircuit removeQuantumOperation(String projectId, String operationId);
+    QuantumCircuit removeQuantumOperation(String circuitId, String operationId);
 }

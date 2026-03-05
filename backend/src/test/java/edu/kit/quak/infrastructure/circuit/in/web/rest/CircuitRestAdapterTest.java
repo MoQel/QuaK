@@ -88,15 +88,19 @@ class CircuitRestAdapterTest {
     void addQubit_ShouldReturnCreated() throws Exception {
         // Arrange
         String projectId = "p-id";
+        String circuitId = "c-id";
         QuantumCircuit circuit = new QuantumCircuit(projectId);
+        circuit.setId(circuitId);
         String registerId = circuit.getRegisters().getFirst().getId();
         circuit.addQubit(registerId);
-        given(circuitServicePort.addQubit(projectId, registerId)).willReturn(circuit);
+
+        given(circuitServicePort.getById(circuitId)).willReturn(Optional.of(circuit));
+        given(circuitServicePort.addQubit(circuitId, registerId)).willReturn(circuit);
 
         // Act & Assert
         mockMvc
             .perform(
-                post("/api/circuit/{projectId}/register/{registerId}", projectId, registerId)
+                post("/api/circuit/{circuitId}/register/{registerId}", circuitId, registerId)
                     .with(csrf())
                     .contentType(MediaType.APPLICATION_JSON)
             )
@@ -110,15 +114,19 @@ class CircuitRestAdapterTest {
     void removeQubit_ShouldReturnUpdatedCircuit() throws Exception {
         // Arrange
         String projectId = "p-id";
+        String circuitId = "c-id";
         String registerId = "register-456";
-        QuantumCircuit updatedCircuit = new QuantumCircuit(projectId);
         int qubitIdx = 0;
-        given(circuitServicePort.removeQubit(projectId, registerId, qubitIdx)).willReturn(updatedCircuit);
+        QuantumCircuit updatedCircuit = new QuantumCircuit(projectId);
+        updatedCircuit.setId(circuitId);
+
+        given(circuitServicePort.getById(circuitId)).willReturn(Optional.of(updatedCircuit));
+        given(circuitServicePort.removeQubit(circuitId, registerId, qubitIdx)).willReturn(updatedCircuit);
 
         // Act & Assert
         mockMvc
             .perform(
-                delete("/api/circuit/{projectId}/register/{registerId}/{qubitIdx}", projectId, registerId, qubitIdx)
+                delete("/api/circuit/{circuitId}/register/{registerId}/{qubitIdx}", circuitId, registerId, qubitIdx)
                     .with(csrf())
                     .contentType(MediaType.APPLICATION_JSON)
             )
@@ -127,17 +135,41 @@ class CircuitRestAdapterTest {
     }
 
     @Test
+    void resetCircuit_ShouldReturnFreshCircuit() throws Exception {
+        // Arrange
+        String projectId = "p-id";
+        String circuitId = "c-id";
+        QuantumCircuit existingCircuit = new QuantumCircuit(projectId);
+        existingCircuit.setId(circuitId);
+        QuantumCircuit freshCircuit = new QuantumCircuit(projectId);
+
+        given(circuitServicePort.getById(circuitId)).willReturn(Optional.of(existingCircuit));
+        given(circuitServicePort.resetByCircuitId(circuitId)).willReturn(freshCircuit);
+
+        // Act & Assert
+        mockMvc
+            .perform(delete("/api/circuit/{circuitId}/reset", circuitId).with(csrf()))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.projectId").value(projectId));
+    }
+
+    @Test
     void addQuantumOperation_ShouldReturnCreated() throws Exception {
         // Arrange
         String projectId = "p-id";
+        String circuitId = "c-id";
         QuantumCircuit circuit = new QuantumCircuit(projectId);
+        circuit.setId(circuitId);
         String registerId = circuit.getRegisters().getFirst().getId();
         circuit.addQubit(registerId);
         ElementSelector target = new ElementSelector(registerId, 0);
         ElementaryQuantumGate operation = new ElementaryQuantumGate(QuantumOperationLibrary.H, false, List.of(target), null, 0d);
         int layerIdx = 0;
         circuit.addQuantumOperation(operation, layerIdx);
-        given(circuitServicePort.addQuantumOperation(eq(projectId), any(QuantumOperation.class), eq(layerIdx))).willReturn(circuit);
+
+        given(circuitServicePort.getById(circuitId)).willReturn(Optional.of(circuit));
+        given(circuitServicePort.addQuantumOperation(eq(circuitId), any(QuantumOperation.class), eq(layerIdx))).willReturn(circuit);
+
         String payload = """
             {
                 "quantumOperation": {
@@ -158,7 +190,7 @@ class CircuitRestAdapterTest {
         // Act & Assert
         mockMvc
             .perform(
-                post("/api/circuit/{projectId}/operation", projectId).with(csrf()).contentType(MediaType.APPLICATION_JSON).content(payload)
+                post("/api/circuit/{circuitId}/operation", circuitId).with(csrf()).contentType(MediaType.APPLICATION_JSON).content(payload)
             )
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.layers").exists())

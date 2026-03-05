@@ -22,11 +22,10 @@ import { LABEL_WIDTH } from '@/views/circuit-view/util/layout.ts';
 interface CircuitViewProps {
     circuit: CircuitResponse | undefined;
     setCircuit: (circuit: CircuitResponse) => void;
-    projectId: string | undefined;
 }
 
-export function CircuitView({ circuit, setCircuit, projectId }: Readonly<CircuitViewProps>) {
-    const { removeQuantumOperation } = createCircuitService(circuit, projectId, setCircuit);
+export function CircuitView({ circuit, setCircuit }: Readonly<CircuitViewProps>) {
+    const { removeQuantumOperation } = createCircuitService(circuit, setCircuit);
 
     const { isOperationDragging, draggingOperationSize } = useSelector((state: RootState) => state.dragOperation);
 
@@ -226,16 +225,11 @@ export function CircuitView({ circuit, setCircuit, projectId }: Readonly<Circuit
     return (
         <Card className="h-full overflow-hidden">
             <CardContent className="flex flex-col h-full">
-                <CircuitToolbar circuit={circuit} setCircuit={setCircuit} projectId={projectId} />
+                <CircuitToolbar circuit={circuit} setCircuit={setCircuit} />
 
                 {/* Circuit Canvas */}
                 <div className="relative flex-1 overflow-auto">
-                    <QubitWires
-                        circuit={circuit}
-                        setCircuit={setCircuit}
-                        projectId={projectId}
-                        flatQubits={flatQubits}
-                    />
+                    <QubitWires circuit={circuit} setCircuit={setCircuit} flatQubits={flatQubits} />
 
                     {/* Circuit Content Container (Offset for labels) */}
                     <div className="absolute inset-y-0 right-0" style={{ left: LABEL_WIDTH }}>
@@ -251,7 +245,6 @@ export function CircuitView({ circuit, setCircuit, projectId }: Readonly<Circuit
                         <DropzoneGrid
                             circuit={circuit}
                             setCircuit={setCircuit}
-                            projectId={projectId}
                             flatQubits={flatQubits}
                             uiLayers={uiLayers}
                             activeDropZones={activeDropZones}

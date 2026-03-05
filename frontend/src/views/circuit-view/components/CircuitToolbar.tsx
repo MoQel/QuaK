@@ -8,11 +8,10 @@ import { useState } from 'react';
 interface CircuitToolbarProps {
     circuit: CircuitResponse | undefined;
     setCircuit: (circuit: CircuitResponse) => void;
-    projectId: string | undefined;
 }
 
-export function CircuitToolbar({ circuit, setCircuit, projectId }: Readonly<CircuitToolbarProps>) {
-    const { addQubit, deleteLastQubit, resetCircuit } = createCircuitService(circuit, projectId, setCircuit);
+export function CircuitToolbar({ circuit, setCircuit }: Readonly<CircuitToolbarProps>) {
+    const { addQubit, deleteLastQubit, resetCircuit } = createCircuitService(circuit, setCircuit);
     const [isPopoverOpen, setIsPopoverOpen] = useState(false);
 
     return (
