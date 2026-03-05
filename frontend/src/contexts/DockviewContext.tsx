@@ -5,9 +5,9 @@ import {
     getOptimalPosition,
     applyGroupType,
     PANEL_TITLES,
+    PANELS,
 } from '@/lib/layout/layout-utils';
 import type { DockviewApi } from 'dockview-react';
-import { PANELS } from '@/lib/layout/layout-utils';
 type PanelKey = keyof typeof PANELS;
 
 type DockviewContextType = {
