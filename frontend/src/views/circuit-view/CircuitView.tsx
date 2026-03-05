@@ -1,12 +1,6 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { useMemo, useState } from 'react';
-import {
-    CircuitResponse,
-    ElementSelectorDto,
-    getInvolvedSelectors,
-    getRegisterSize,
-    getSelectorKey,
-} from '@/api/dto/circuit';
+import { ElementSelectorDto, getInvolvedSelectors, getRegisterSize, getSelectorKey } from '@/api/dto/circuit';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store.ts';
 import { CircuitToolbar } from './components/CircuitToolbar.tsx';
@@ -19,12 +13,10 @@ import { HoverPos, UiLayer, UiQuantumOperation } from './util/types.ts';
 import { createCircuitService } from '@/views/circuit-view/util/circuitService.ts';
 import { LABEL_WIDTH } from '@/views/circuit-view/util/layout.ts';
 
-interface CircuitViewProps {
-    circuit: CircuitResponse | undefined;
-    setCircuit: (circuit: CircuitResponse) => void;
-}
+import { useProject } from '@/contexts/ProjectContext';
 
-export function CircuitView({ circuit, setCircuit }: Readonly<CircuitViewProps>) {
+export function CircuitView() {
+    const { circuit, setCircuit } = useProject();
     const { removeQuantumOperation } = createCircuitService(circuit, setCircuit);
 
     const { isOperationDragging, draggingOperationSize } = useSelector((state: RootState) => state.dragOperation);

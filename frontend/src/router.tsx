@@ -8,8 +8,6 @@ import NotFound from './pages/NotFound';
 import Layout from './components/Layout';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
-import { api } from '@/api/api.ts';
-import { CircuitResponse } from '@/api/dto/circuit.ts';
 
 const routes: RouteObject[] = [
     {
@@ -36,10 +34,6 @@ const routes: RouteObject[] = [
             },
             {
                 path: 'project/:projectId',
-                // Get circuit for project.
-                loader: async ({ params }) => {
-                    return api.get<CircuitResponse>(`/api/circuit/${params.projectId}`);
-                },
                 element: <Project />,
             },
             {

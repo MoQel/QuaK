@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useLoaderData, useParams } from 'react-router-dom';
 
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable.tsx';
 import { LibraryView } from '@/views/library-view/LibraryView.tsx';
@@ -9,15 +8,14 @@ import { ProjectManagerView } from '@/views/project-manager-view/ProjectManagerV
 import { ResultsView } from '@/views/results-view/ResultsView.tsx';
 import { InspectorView } from '@/views/inspector-view/InspectorView.tsx';
 import { OperationDefinitionResponse } from '@/api/dto/library.ts';
-import { CircuitResponse } from '@/api/dto/circuit.ts';
 import { useLayout } from '@/hooks/use-layout';
 import { useFileSelect } from '@/hooks/useFileSelect.ts';
 import { usePreventKeyboardActions } from '@/hooks/usePreventKeyboardActions.ts';
+import { useProject } from '@/contexts/ProjectContext';
 
 function App() {
-    const { projectId } = useParams<{ projectId: string }>();
+    const { projectId } = useProject();
     const [selectedOperation, setSelectedOperation] = useState<OperationDefinitionResponse | undefined>(undefined);
-    const [circuit, setCircuit] = useState<CircuitResponse | undefined>(useLoaderData());
     const handleFileSelect = useFileSelect();
 
     // prevent globally standard browser behavior
@@ -50,7 +48,10 @@ function App() {
                                     minSize={15}
                                     onClose={() => onTogglePanel('file')}
                                 >
-                                    <ProjectManagerView onFileSelect={handleFileSelect} projectId={projectId} />
+                                    <ProjectManagerView
+                                        onFileSelect={handleFileSelect}
+                                        projectId={projectId ?? undefined}
+                                    />
                                 </ResizablePanel>
                                 {(visiblePanels.circuit || visiblePanels.code) && <ResizableHandle withHandle />}
                             </>
@@ -59,7 +60,7 @@ function App() {
                         {visiblePanels.circuit && (
                             <>
                                 <ResizablePanel defaultSize={topLayout[1]} onClose={() => onTogglePanel('circuit')}>
-                                    <CircuitView circuit={circuit} setCircuit={setCircuit} />
+                                    <CircuitView />
                                 </ResizablePanel>
                                 {visiblePanels.code && <ResizableHandle withHandle />}
                             </>
@@ -93,7 +94,7 @@ function App() {
 
                     {visiblePanels.results && (
                         <div className="flex-1 overflow-hidden relative">
-                            <ResultsView circuit={circuit} />
+                            <ResultsView />
                         </div>
                     )}
                 </div>
