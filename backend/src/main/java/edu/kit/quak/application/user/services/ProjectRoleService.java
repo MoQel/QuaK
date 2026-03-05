@@ -1,6 +1,6 @@
 package edu.kit.quak.application.user.services;
 
-import edu.kit.quak.application.filesystem.exceptions.AccessDeniedException;
+import edu.kit.quak.application.common.exceptions.AccessDeniedException;
 import edu.kit.quak.application.user.ports.in.ProjectRoleServicePort;
 import edu.kit.quak.application.user.ports.out.ProjectRoleRepositoryPort;
 import edu.kit.quak.core.user.model.ProjectRole;

@@ -1,11 +1,13 @@
 package edu.kit.quak.infrastructure;
 
-import edu.kit.quak.application.filesystem.exceptions.AccessDeniedException;
-import edu.kit.quak.application.library.exceptions.OperationDefinitionNotFoundException;
+import edu.kit.quak.application.common.exceptions.AccessDeniedException;
+import edu.kit.quak.application.common.exceptions.ResourceNotFoundException;
 import edu.kit.quak.application.user.exceptions.UserNotFoundException;
-import jakarta.persistence.EntityNotFoundException;
-import java.util.NoSuchElementException;
+import edu.kit.quak.core.circuit.exceptions.CircuitComponentNotFoundException;
+import edu.kit.quak.core.common.exception.DomainRuleViolationException;
+import edu.kit.quak.core.common.exception.RequestedIndexOutOfBounds;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -17,10 +19,16 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
  * Global exception handler that translates domain exceptions to HTTP responses. Follows RFC-7807
  * Problem Details for HTTP APIs.
  */
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    // Catches Validation errors -> 400 Bad Request
+    public static final String INTERNAL_SERVER_ERROR = "Internal Server Error";
+
+    /**
+     * Handles validation failures from @Valid annotations.
+     * Mapped to 400 Bad Request.
+     */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ProblemDetail handleValidationErrors(MethodArgumentNotValidException ex) {
         String errors = ex
@@ -30,78 +38,120 @@ public class GlobalExceptionHandler {
             .map(error -> error.getField() + ": " + error.getDefaultMessage())
             .collect(Collectors.joining(", "));
 
+        log.warn("Validation failed: {}", errors);
+
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Validation failed");
         problem.setTitle("Invalid Request Content");
-        problem.setProperty("errors", errors); // Custom Property hinzufügen
+        problem.setProperty("errors", errors);
         return problem;
     }
 
-    // Catches “Not Found” errors from the services -> 400
-    // Currently, we often use IllegalArgumentException for “Not found.”
-    // Strictly speaking, IllegalArgumentException is a 400 (client error).
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ProblemDetail handleIllegalArgument(IllegalArgumentException ex) {
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
-        problem.setTitle("Bad Request");
-        return problem;
-    }
-
-    // Catches "Corrupt State" and Configuration errors -> 500 Internal Server Error
-    @ExceptionHandler(IllegalStateException.class)
-    public ProblemDetail handleIllegalState(IllegalStateException ex) {
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage());
-        problem.setTitle("Internal Server Error");
-        return problem;
-    }
-
-    // Catches standard Optional.orElseThrow() -> 404 Not Found
-    @ExceptionHandler(NoSuchElementException.class)
-    public ProblemDetail handleNotFound(NoSuchElementException ex) {
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
-        problem.setTitle("Resource Not Found");
-        return problem;
-    }
-
-    // Catches JPA entity lookups failing -> 404 Not Found
-    @ExceptionHandler(EntityNotFoundException.class)
-    public ProblemDetail handleEntityNotFound(EntityNotFoundException ex) {
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
-        problem.setTitle("Resource Not Found");
-        return problem;
-    }
-
-    // Catches user authentication failures -> 401 Unauthorized
+    /**
+     * Handles authentication failures.
+     * Mapped to 401 Unauthorized.
+     */
     @ExceptionHandler(UserNotFoundException.class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     public ProblemDetail handleUserNotFound(UserNotFoundException ex) {
+        log.warn("User Authentication Error: {}", ex.getMessage());
+
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());
         problem.setTitle("Unauthorized");
         return problem;
     }
 
-    // Catches authorization/ownership failures -> 403 Forbidden
+    /**
+     * Handles authorization and ownership check failures.
+     * Mapped to 403 Forbidden.
+     */
     @ExceptionHandler(AccessDeniedException.class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
     public ProblemDetail handleAccessDenied(AccessDeniedException ex) {
+        log.warn("Forbidden Access: {}", ex.getMessage());
+
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
         problem.setTitle("Access Denied");
         return problem;
     }
 
-    @ExceptionHandler(OperationDefinitionNotFoundException.class)
-    @ResponseStatus(HttpStatus.NOT_FOUND) // 404
-    public ProblemDetail handleOperationDefinitionNotFound(OperationDefinitionNotFoundException ex) {
+    /**
+     * Handles cases where a resource is missing.
+     * Mapped to 404 Not Found.
+     */
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ProblemDetail handleNotFound(ResourceNotFoundException ex) {
+        log.warn("Resource not found: type={}, id={}", ex.getResourceType(), ex.getResourceId());
+
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
-        problem.setTitle("Operation Definition Not Found");
+        problem.setTitle("Resource Not Found");
+        problem.setProperty("resourceType", ex.getResourceType());
+        problem.setProperty("resourceId", ex.getResourceId());
         return problem;
     }
 
-    // Fallback -> 500 Internal Server Error
+    /**
+     * Handles cases where a circuit component is missing.
+     * Mapped to 404 Not Found.
+     */
+    @ExceptionHandler(CircuitComponentNotFoundException.class)
+    public ProblemDetail handleCircuitComponentNotFound(CircuitComponentNotFoundException ex) {
+        log.warn("Circuit component not found: type={}, id={}", ex.getComponentType(), ex.getComponentId());
+
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        problem.setTitle("Resource Not Found");
+        problem.setProperty("componentType", ex.getComponentType());
+        problem.setProperty("componentId", ex.getComponentId());
+        return problem;
+    }
+
+    /**
+     * Handles business rule violations from the domain core.
+     * Mapped to 422 Unprocessable Content.
+     */
+    @ExceptionHandler(DomainRuleViolationException.class)
+    public ProblemDetail handleDomainViolation(DomainRuleViolationException ex) {
+        log.warn("Domain rule violated: {}", ex.getMessage());
+
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage());
+        problem.setTitle("Business Rule Violation");
+        return problem;
+    }
+
+    /**
+     * Handles requested index out of bounds from the domain core.
+     * Mapped to 422 Unprocessable Content.
+     */
+    @ExceptionHandler(RequestedIndexOutOfBounds.class)
+    public ProblemDetail handleRequestedIndexOutOfBounds(RequestedIndexOutOfBounds ex) {
+        log.warn("Requested index out of bounds: {}", ex.getMessage());
+
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage());
+        problem.setTitle("Requested Index Out Of Bounds");
+        return problem;
+    }
+
+    /**
+     * Handles illegal system states. Shields internal details from the client.
+     * Mapped to 500 Internal Error.
+     */
+    @ExceptionHandler(IllegalStateException.class)
+    public ProblemDetail handleIllegalState(IllegalStateException ex) {
+        log.error(ex.getMessage(), ex);
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR);
+        problem.setTitle(INTERNAL_SERVER_ERROR);
+        return problem;
+    }
+
+    /**
+     * Final fallback for unexpected exceptions. Provides full stack trace in logs.
+     * Mapped to 500 Internal Error.
+     */
     @ExceptionHandler(Exception.class)
     public ProblemDetail handleGeneralError(Exception ex) {
-        ex.printStackTrace(); // Simple fallback logging
+        log.error("An unexpected error occurred", ex);
+
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred.");
-        problem.setTitle("Internal Error");
+        problem.setTitle(INTERNAL_SERVER_ERROR);
         return problem;
     }
 }

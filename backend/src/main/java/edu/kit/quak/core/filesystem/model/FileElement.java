@@ -1,5 +1,6 @@
 package edu.kit.quak.core.filesystem.model;
 
+import edu.kit.quak.core.filesystem.exception.EmptyNameException;
 import java.time.Instant;
 import java.util.UUID;
 import lombok.Getter;
@@ -43,11 +44,11 @@ public abstract class FileElement<T extends FileElement<T>> {
      * method over {@link #setName(String)}.
      *
      * @param newName the new name for this element
-     * @throws IllegalArgumentException if the name is null or blank
+     * @throws EmptyNameException if the name is null or blank
      */
     public void rename(String newName) {
         if (newName == null || newName.isBlank()) {
-            throw new IllegalArgumentException("Name cannot be empty");
+            throw new EmptyNameException();
         }
         this.name = newName;
         this.lastAccess = Instant.now();

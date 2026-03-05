@@ -1,6 +1,8 @@
 package edu.kit.quak.application.filesystem.services;
 
 import edu.kit.quak.application.filesystem.delegator.FileElementContainerRepositoryDelegator;
+import edu.kit.quak.application.filesystem.exception.FileContentNotFoundException;
+import edu.kit.quak.application.filesystem.exception.FileNotFoundException;
 import edu.kit.quak.application.filesystem.ports.in.FileServicePort;
 import edu.kit.quak.application.filesystem.ports.out.FileContentRepositoryPort;
 import edu.kit.quak.application.filesystem.ports.out.FileRepositoryPort;
@@ -9,7 +11,6 @@ import edu.kit.quak.core.filesystem.model.File;
 import edu.kit.quak.core.filesystem.model.FileElement;
 import edu.kit.quak.core.filesystem.model.FileElementContainer;
 import edu.kit.quak.core.user.model.User;
-import java.util.NoSuchElementException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,7 +37,7 @@ public class FileService extends AbstractFileElementService<File> implements Fil
     @Override
     @Transactional
     public File createFile(File element, String parentId, User user) {
-        log.info("Creating file '{}' in parent '{}' for user '{}'", element.getName(), parentId, user.getId());
+        log.debug("Creating file '{}' in parent '{}' for user '{}'", element.getName(), parentId, user.getId());
         verifyOwnershipByParentId(parentId, user);
 
         FileElementContainer<?> parent = getParentById(parentId);
@@ -45,6 +46,8 @@ public class FileService extends AbstractFileElementService<File> implements Fil
         // Create initially empty content entry
         File createdFile = findElementInParent(savedParent, element.getId());
         contentRepository.saveContent(createdFile.getId(), new byte[0]);
+
+        log.info("File created. fileId={}, parentId={}, userId={}", createdFile.getId(), parentId, user.getId());
         return createdFile;
     }
 
@@ -52,9 +55,9 @@ public class FileService extends AbstractFileElementService<File> implements Fil
 
     // region Read
     @Override
-    public File retrieveFile(String id, User user) {
-        log.debug("Retrieving file '{}' for user '{}'", id, user.getId());
-        File file = repository.findById(id).orElseThrow(NoSuchElementException::new);
+    public File retrieveFile(String fId, User user) {
+        log.debug("Retrieving file '{}' for user '{}'", fId, user.getId());
+        File file = retrieveWithoutAuth(fId);
         // Both OWNER and VIEWER can retrieve a file
         verifyAccessByParentId(file.getParentId(), user);
         return file;
@@ -64,10 +67,15 @@ public class FileService extends AbstractFileElementService<File> implements Fil
     @Transactional
     public byte[] getFileContent(String fId, User user) {
         log.debug("Retrieving content for file '{}'", fId);
-        File file = repository.findById(fId).orElseThrow(() -> new NoSuchElementException("File not found: " + fId));
+        File file = retrieveWithoutAuth(fId);
         // Both OWNER and VIEWER can read file content
         verifyAccessByParentId(file.getParentId(), user);
-        return contentRepository.loadContent(fId).orElseThrow(NoSuchElementException::new);
+        return contentRepository
+            .loadContent(fId)
+            .orElseThrow(() -> {
+                log.error("Content blob missing for existing file. fileId={}", fId);
+                return new FileContentNotFoundException(fId);
+            });
     }
 
     // endregion Retrieve
@@ -77,7 +85,7 @@ public class FileService extends AbstractFileElementService<File> implements Fil
     @Transactional
     public File renameFile(String fId, String newName, User user) {
         log.info("Renaming file '{}' to '{}' for user '{}'", fId, newName, user.getId());
-        File file = repository.findById(fId).orElseThrow(NoSuchElementException::new);
+        File file = retrieveWithoutAuth(fId);
         verifyOwnershipByParentId(file.getParentId(), user);
         checkForDuplicateName(fId, newName);
         return modifyElementInParent(fId, f -> f.rename(newName));
@@ -87,7 +95,7 @@ public class FileService extends AbstractFileElementService<File> implements Fil
     @Transactional
     public void setFileContent(String fId, byte[] content, String contentType, User user) {
         log.info("Updating content for file '{}'", fId);
-        File file = repository.findById(fId).orElseThrow(NoSuchElementException::new);
+        File file = retrieveWithoutAuth(fId);
         verifyOwnershipByParentId(file.getParentId(), user);
 
         modifyElementInParent(fId, f -> {
@@ -112,6 +120,8 @@ public class FileService extends AbstractFileElementService<File> implements Fil
         parent.removeChild(file);
         delegator.save(parent);
         contentRepository.deleteContent(fId);
+
+        log.info("File removed. fileId={}, userId={}", fId, user.getId());
     }
 
     // endregion Delete
@@ -120,7 +130,12 @@ public class FileService extends AbstractFileElementService<File> implements Fil
 
     @Override
     protected File retrieveWithoutAuth(String id) {
-        return repository.findById(id).orElseThrow(NoSuchElementException::new);
+        return repository
+            .findById(id)
+            .orElseThrow(() -> {
+                log.warn("File not found. fileId={}", id);
+                return new FileNotFoundException(id);
+            });
     }
 
     @Override

@@ -7,6 +7,7 @@ import edu.kit.quak.core.circuit.model.layer.operation.ElementaryQuantumGate;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
 import edu.kit.quak.core.circuit.model.layer.operation.library.QuantumOperationLibrary;
 import edu.kit.quak.core.circuit.model.register.QuantumRegister;
+import edu.kit.quak.core.common.exception.RequestedIndexOutOfBounds;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -129,7 +130,7 @@ class QuantumCircuitTest {
 
         // Act & Assert
         assertThrows(
-            IllegalArgumentException.class,
+            RequestedIndexOutOfBounds.class,
             () -> circuit.removeQubit(registerId, INIT_QUBITS + 1),
             "Should throw an exception when trying to remove a qubit with an out-of-bounds index."
         );

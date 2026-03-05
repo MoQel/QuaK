@@ -18,6 +18,7 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -28,6 +29,7 @@ import org.springframework.web.bind.annotation.*;
  * and converts framework
  * types to domain types.
  */
+@Slf4j
 @RestController
 @RequestMapping("/api/project")
 @Tag(name = "Projects", description = "Project management operations")
@@ -56,6 +58,7 @@ public class ProjectRestAdapter {
     @GetMapping({ "", "/" })
     @PreAuthorize("isAuthenticated()")
     public List<ProjectDetailsResponse> getProjects(Authentication authentication) {
+        log.debug("REST request to retrieve all projects of a user");
         User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
         List<Project> projects = service.listProjects(user);
 
@@ -82,6 +85,7 @@ public class ProjectRestAdapter {
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("isAuthenticated()")
     public ProjectDetailsResponse createProject(@RequestBody ProjectRequest request, Authentication authentication) {
+        log.info("REST request to create a project");
         User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
         Project projectToCreate = mapper.toDomain(request);
         Project createdProject = service.createProject(projectToCreate, user);
@@ -91,14 +95,17 @@ public class ProjectRestAdapter {
     @GetMapping("/{pId}")
     @PreAuthorize("isAuthenticated()")
     public ProjectContentsResponse retrieveProject(@PathVariable String pId, Authentication authentication) {
+        log.debug("REST request to retrieve project '{}'", pId);
         User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
         Project project = service.retrieveProject(pId, user);
         return mapper.toContentsResponse(project);
     }
 
     @DeleteMapping("/{pId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("isAuthenticated()")
     public void deleteProject(@PathVariable String pId, Authentication authentication) {
+        log.debug("REST request to delete project '{}'", pId);
         User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
         service.removeProject(pId, user);
     }
@@ -110,6 +117,7 @@ public class ProjectRestAdapter {
         @RequestBody ProjectRequest request,
         Authentication authentication
     ) {
+        log.debug("REST request to rename project '{}'", pId);
         User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
         Project updatedProject = service.renameProject(pId, request.name(), user);
         return mapper.toDetailsResponse(updatedProject);

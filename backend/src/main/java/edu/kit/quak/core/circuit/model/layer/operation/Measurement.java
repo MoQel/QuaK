@@ -1,5 +1,6 @@
 package edu.kit.quak.core.circuit.model.layer.operation;
 
+import edu.kit.quak.core.circuit.exceptions.InvalidOperationConfigurationException;
 import edu.kit.quak.core.circuit.model.layer.operation.library.QuantumOperationLibrary;
 import java.util.List;
 import lombok.Getter;
@@ -21,10 +22,12 @@ public class Measurement extends QuantumOperation {
     ) {
         super(operationDefinition, inverseForm, targetQubits, controlQubits);
         if (operationDefinition.getDefinition().getType() != getClass()) {
-            throw new IllegalArgumentException("Operation definition type is not a measurement.");
+            throw new InvalidOperationConfigurationException(
+                "Operation type mismatch: expected %s but got %s".formatted(getClass(), operationDefinition.getDefinition().getType())
+            );
         }
         if (classicBits.isEmpty()) {
-            throw new IllegalArgumentException("A measurement must safe information to at least one classic bit.");
+            throw new InvalidOperationConfigurationException("A measurement operation must assign its result to at least one classic bit.");
         }
         this.classicBits = classicBits;
     }

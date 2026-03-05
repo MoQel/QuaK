@@ -2,6 +2,7 @@ package edu.kit.quak.core.filesystem.model;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import edu.kit.quak.core.filesystem.exception.DuplicateNameException;
 import edu.kit.quak.shared.tags.UnitTest;
 import java.time.Instant;
 import java.util.UUID;
@@ -69,7 +70,6 @@ class FileElementDomainTest {
         File file = new File("OldName", dummyParentId);
 
         Instant beforeRename = file.getLastAccess();
-        Thread.sleep(10);
 
         file.rename("NewName");
 
@@ -136,7 +136,7 @@ class FileElementDomainTest {
 
         File f2 = new File("Config.txt", dir.getId());
 
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> dir.addChild(f2));
+        DuplicateNameException ex = assertThrows(DuplicateNameException.class, () -> dir.addChild(f2));
 
         assertTrue(ex.getMessage().toLowerCase().contains("exists"));
     }

@@ -1,5 +1,6 @@
 package edu.kit.quak.core.circuit.model.layer.operation.library;
 
+import edu.kit.quak.core.circuit.exceptions.InvalidOperationConfigurationException;
 import edu.kit.quak.core.circuit.model.layer.operation.Measurement;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
 import lombok.Getter;
@@ -23,7 +24,7 @@ public class ConcreteQuantumOperation<T extends QuantumOperation> extends Quantu
     ) {
         super(type, reversible, targetQubits, controlQubits);
         if (type != Measurement.class && classicBits != 0) {
-            throw new IllegalArgumentException("Classic bits are only allowed for type Measurement!");
+            throw new InvalidOperationConfigurationException("Classic bits are only allowed for type Measurement!");
         }
         this.classicBits = classicBits;
         this.hasRotationAngle = hasRotationAngle;

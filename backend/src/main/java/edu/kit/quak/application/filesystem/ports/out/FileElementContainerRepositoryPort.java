@@ -5,7 +5,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Repository port for {@link FileElementContainer} aggregates. <<<<<<< HEAD
+ * Repository port for {@link FileElementContainer} aggregates.
  *
  * <p>
  * Each implementation is responsible for exactly one container type and must

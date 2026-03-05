@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import edu.kit.quak.application.circuit.exceptions.CircuitNotFoundException;
 import edu.kit.quak.application.circuit.ports.in.CircuitServicePort;
 import edu.kit.quak.application.filesystem.ports.in.ProjectServicePort;
 import edu.kit.quak.application.user.ports.in.UserServicePort;
@@ -19,7 +20,6 @@ import edu.kit.quak.core.circuit.model.layer.operation.library.QuantumOperationL
 import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.*;
 import edu.kit.quak.infrastructure.user.in.web.rest.mapper.AuthenticationMapper;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -65,7 +65,7 @@ class CircuitRestAdapterTest {
         // Arrange
         String projectId = "p-id";
         QuantumCircuit circuit = new QuantumCircuit(projectId);
-        given(circuitServicePort.getByProjectId(projectId)).willReturn(Optional.of(circuit));
+        given(circuitServicePort.getByProjectId(projectId)).willReturn(circuit);
 
         // Act & Assert
         mockMvc
@@ -78,7 +78,7 @@ class CircuitRestAdapterTest {
     void getCircuitByProjectId_ProjectHasNoCircuit_ShouldThrow404() throws Exception {
         // Arrange
         String projectId = "unknown";
-        given(circuitServicePort.getByProjectId(projectId)).willReturn(Optional.empty());
+        given(circuitServicePort.getByProjectId(projectId)).willThrow(CircuitNotFoundException.class);
 
         // Act & Assert
         mockMvc.perform(get("/api/circuit/{projectId}", projectId).with(csrf())).andExpect(status().is(404));
@@ -94,7 +94,7 @@ class CircuitRestAdapterTest {
         String registerId = circuit.getRegisters().getFirst().getId();
         circuit.addQubit(registerId);
 
-        given(circuitServicePort.getById(circuitId)).willReturn(Optional.of(circuit));
+        given(circuitServicePort.getById(circuitId)).willReturn(circuit);
         given(circuitServicePort.addQubit(circuitId, registerId)).willReturn(circuit);
 
         // Act & Assert
@@ -120,7 +120,7 @@ class CircuitRestAdapterTest {
         QuantumCircuit updatedCircuit = new QuantumCircuit(projectId);
         updatedCircuit.setId(circuitId);
 
-        given(circuitServicePort.getById(circuitId)).willReturn(Optional.of(updatedCircuit));
+        given(circuitServicePort.getById(circuitId)).willReturn(updatedCircuit);
         given(circuitServicePort.removeQubit(circuitId, registerId, qubitIdx)).willReturn(updatedCircuit);
 
         // Act & Assert
@@ -143,7 +143,7 @@ class CircuitRestAdapterTest {
         existingCircuit.setId(circuitId);
         QuantumCircuit freshCircuit = new QuantumCircuit(projectId);
 
-        given(circuitServicePort.getById(circuitId)).willReturn(Optional.of(existingCircuit));
+        given(circuitServicePort.getById(circuitId)).willReturn(existingCircuit);
         given(circuitServicePort.resetCircuit(circuitId)).willReturn(freshCircuit);
 
         // Act & Assert
@@ -167,7 +167,7 @@ class CircuitRestAdapterTest {
         int layerIdx = 0;
         circuit.addQuantumOperation(operation, layerIdx);
 
-        given(circuitServicePort.getById(circuitId)).willReturn(Optional.of(circuit));
+        given(circuitServicePort.getById(circuitId)).willReturn(circuit);
         given(circuitServicePort.addQuantumOperation(eq(circuitId), any(QuantumOperation.class), eq(layerIdx))).willReturn(circuit);
 
         String payload = """

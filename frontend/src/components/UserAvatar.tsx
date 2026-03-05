@@ -94,6 +94,7 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
                     className="w-full h-full object-cover"
                     onError={handleError}
                     referrerPolicy="no-referrer"
+                    crossOrigin="anonymous"
                 />
             )}
         </div>

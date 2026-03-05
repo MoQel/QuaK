@@ -1,0 +1,108 @@
+/**
+ * Customize Dockview by overwriting CSS attributes.
+ */
+
+.dockview-theme-custom .dv-watermark {
+    background: var(--bg-dark);
+}
+
+/* Tab */
+.dockview-theme-custom .dv-tab {
+    background: transparent !important;
+    padding: 0;
+}
+
+.dockview-theme-custom .dv-tab-divider,
+.dockview-theme-custom .dv-tab-separator,
+.dockview-theme-custom .dv-tabs-and-actions-container ::after,
+.dockview-theme-custom .dv-tabs-and-actions-container ::before {
+    width: 0 !important;
+}
+
+/* Panel content + group background */
+.dockview-theme-custom .dv-content-container,
+.dockview-theme-custom .dv-group-view {
+    background-color: var(--bg-dark);
+}
+
+/* Header Strip (Background behind the tabs) for Circuit and Code Editor */
+.dockview-theme-custom [data-group-type='primary'] .dv-tabs-and-actions-container {
+    background-color: var(--bg-subtle);
+}
+
+/* Header Strip (Background behind the tabs) for all other panels */
+.dockview-theme-custom [data-group-type='secondary'] .dv-tabs-and-actions-container {
+    background-color: var(--bg-dark);
+}
+
+/* Vertical divider (invisible div around) - Wider grab area for easier resizing */
+.dockview-theme-custom .dv-split-view-container:not(.dv-vertical) > .dv-sash-container > .dv-sash {
+    width: 12px;
+    margin-left: -3px;
+}
+
+/* Horizontal divider (invisible div around) - Wider grab area for easier resizing */
+.dockview-theme-custom .dv-split-view-container.dv-vertical > .dv-sash-container > .dv-sash {
+    height: 12px;
+    margin-top: -3px;
+}
+
+/* Vertical divider (actual visible divider) */
+.dockview-theme-custom .dv-sash::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: 2px;
+    height: 100%;
+    background: var(--bg-light);
+    pointer-events: none;
+}
+
+/* Horizontal divider (actual visible divider) */
+.dockview-theme-custom .dv-split-view-container.dv-vertical > .dv-sash-container > .dv-sash::after {
+    width: 100%;
+    height: 2px;
+}
+
+/* Divider hover (actual visible divider) */
+.dockview-theme-custom .dv-sash:hover::after {
+    background: var(--special);
+}
+
+/* Remove default tab chrome */
+.dockview-theme-custom .dv-default-tab {
+    border: none;
+    outline: none;
+    box-shadow: none;
+}
+
+/* Close button — hidden by default */
+.dockview-theme-custom .dv-default-tab .dv-default-tab-action {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+
+    /* Smaller icon button with rounded hover area */
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+}
+
+/* Scale down the SVG/icon inside */
+.dockview-theme-custom .dv-default-tab .dv-default-tab-action svg {
+    width: 9px;
+    height: 9px;
+}
+
+/* Close button hover background */
+.dockview-theme-custom .dv-default-tab .dv-default-tab-action:hover {
+    background-color: var(--bg-light) !important;
+    border-radius: 4px !important;
+}
+
+/* Show close button on tab hover */
+.dockview-theme-custom .dv-tab:hover .dv-default-tab-action {
+    opacity: 1;
+    pointer-events: auto;
+}

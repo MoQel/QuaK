@@ -161,7 +161,7 @@ class ProjectLifecycleIntegrationTest {
             .andExpect(jsonPath("$.contents[0].id").value(dirId));
 
         // Delete Project (Cascading Delete Test)
-        mockMvc.perform(delete("/api/project/" + projectId).with(authenticatedUser()).with(csrf())).andExpect(status().isOk());
+        mockMvc.perform(delete("/api/project/" + projectId).with(authenticatedUser()).with(csrf())).andExpect(status().isNoContent());
 
         // Verify that the file is also gone (Accessing file should return 404)
         mockMvc.perform(get("/api/file/" + fileId).with(authenticatedUser())).andExpect(status().isNotFound());
@@ -215,7 +215,7 @@ class ProjectLifecycleIntegrationTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(duplicateFileJson)
             )
-            .andExpect(status().isBadRequest())
+            .andExpect(status().isUnprocessableEntity())
             .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("already exists")));
     }
 

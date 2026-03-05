@@ -8,7 +8,7 @@ export function EditorSlot({ groupId }: Readonly<{ groupId: string }>) {
     const dispatch = useAppDispatch();
 
     return (
-        <div className={'h-full flex flex-col border-r'} onClickCapture={() => dispatch(setActiveGroup(groupId))}>
+        <div className={'h-full flex flex-col'} onClickCapture={() => dispatch(setActiveGroup(groupId))}>
             <EditorTabBar groupId={groupId} />
             <CardContent className="flex flex-col flex-1 p-0 overflow-hidden relative">
                 <QLPEditor groupId={groupId} />

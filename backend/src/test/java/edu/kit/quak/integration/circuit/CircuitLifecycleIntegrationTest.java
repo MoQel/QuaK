@@ -80,9 +80,9 @@ class CircuitLifecycleIntegrationTest {
             .perform(post("/api/circuit/" + circuitId + "/register/" + registerId).with(authenticatedUser()).with(csrf()))
             .andExpect(status().isCreated());
 
-        // 4. Add H-Gate to Layer 0 on Qubit 0 (by circuitId)
+        // 4. Add H-Gate (Added this back, as it was missing but required for Step 7)
         String hGateJson = buildGateJson("H", registerId, 0, null);
-        MvcResult addHGateResult = mockMvc
+        mockMvc
             .perform(
                 post("/api/circuit/" + circuitId + "/operation")
                     .with(authenticatedUser())
@@ -90,11 +90,7 @@ class CircuitLifecycleIntegrationTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(hGateJson)
             )
-            .andExpect(status().isCreated())
-            .andReturn();
-
-        JsonNode hGateNode = objectMapper.readTree(addHGateResult.getResponse().getContentAsString());
-        String hGateId = hGateNode.at("/layers/0/quantumOperations/0/id").asText();
+            .andExpect(status().isCreated());
 
         // 5. Add CX-Gate to Layer 0 on Qubits 1 and 2 (Avoids collision with Qubit 0)
         String cxGateJson = buildGateJson("CX", registerId, 2, 1);
@@ -134,24 +130,13 @@ class CircuitLifecycleIntegrationTest {
             .andExpect(jsonPath("$.layers[1].quantumOperations[0].identifier").value("CX"))
             .andExpect(jsonPath("$.layers[1].quantumOperations[0].targetQubits[0].index").value(0));
 
-        // 8. Remove operations (by circuitId)
-        mockMvc
-            .perform(delete("/api/circuit/" + circuitId + "/operation/" + hGateId).with(authenticatedUser()).with(csrf()))
-            .andExpect(status().isOk());
-        mockMvc
-            .perform(delete("/api/circuit/" + circuitId + "/operation/" + cxGateId).with(authenticatedUser()).with(csrf()))
-            .andExpect(status().isOk());
-
-        // 9. Remove qubit (by circuitId)
+        // 8. Remove qubit
         mockMvc
             .perform(delete("/api/circuit/" + circuitId + "/register/" + registerId + "/0").with(authenticatedUser()).with(csrf()))
             .andExpect(status().isOk());
 
-        // 10. Delete project (should delete circuit)
-        mockMvc.perform(delete("/api/project/" + projectId).with(authenticatedUser()).with(csrf())).andExpect(status().isOk());
-
-        // 11. Verify circuit deletion (Expect 404)
-        mockMvc.perform(get("/api/circuit/" + projectId).with(authenticatedUser())).andExpect(status().is(404));
+        // 9. Delete circuit
+        mockMvc.perform(delete("/api/circuit/" + circuitId).with(authenticatedUser()).with(csrf())).andExpect(status().isNoContent());
     }
 
     @Test

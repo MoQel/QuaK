@@ -1,16 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Home, User, Settings, LogOut, Menu, Pencil, Trash2 } from 'lucide-react';
-import UserAvatar from '@/components/UserAvatar';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCurrentUser } from '@/hooks/useUser';
 import ThemeSwitch from '@/components/ThemeSwitch';
 import { Button } from '@/components/ui/button';
 import { IdeMenubar } from '@/components/MenuBar';
-import { useLayout } from '@/hooks/use-layout';
+import { useDockviewOptional } from '@/contexts/DockviewContext';
 import { useProject } from '@/contexts/ProjectContext';
 import { useProjectActionsDialog } from '@/components/projects/useProjectActionsDialog.tsx';
+import UserAvatar from '@/components/UserAvatar';
 
 export const Navbar: React.FC = () => {
     const location = useLocation();
@@ -18,12 +18,21 @@ export const Navbar: React.FC = () => {
     const { logout } = useAuth();
     const { user } = useCurrentUser();
     const { projectName, projectId, refreshProject } = useProject();
-
     const { dialog, openRenameProjectDialog, openDeleteProjectDialog } = useProjectActionsDialog();
-
-    const { visiblePanels, isMenubarVisible, onToggleMenubar, onTogglePanel, onResetLayout } = useLayout();
+    const [isMenubarVisible, setIsMenubarVisible] = useState(false);
 
     const isIdeView = location.pathname.startsWith('/project');
+
+    const dockview = useDockviewOptional();
+
+    const dockviewVisiblePanels = {
+        file: !!dockview?.openPanels?.has('file'),
+        circuit: !!dockview?.openPanels?.has('circuit'),
+        code: !!dockview?.openPanels?.has('code'),
+        results: !!dockview?.openPanels?.has('results'),
+        inspector: !!dockview?.openPanels?.has('inspector'),
+        library: !!dockview?.openPanels?.has('library'),
+    };
 
     const getActiveTab = () => {
         if (location.pathname === '/' || location.pathname.startsWith('/home')) {
@@ -56,16 +65,16 @@ export const Navbar: React.FC = () => {
                                 variant={isMenubarVisible ? 'secondary' : 'ghost'}
                                 size="icon"
                                 className="h-8 w-8"
-                                onClick={() => onToggleMenubar()}
+                                onClick={() => setIsMenubarVisible((prev) => !prev)}
                             >
                                 <Menu className="h-4 w-4" />
                             </Button>
 
                             {isMenubarVisible && (
                                 <IdeMenubar
-                                    visiblePanels={visiblePanels}
-                                    togglePanel={(key) => onTogglePanel(key)}
-                                    resetLayout={() => onResetLayout()}
+                                    visiblePanels={dockviewVisiblePanels}
+                                    togglePanel={(key) => dockview?.togglePanel?.(key)}
+                                    resetLayout={() => dockview?.resetLayout?.()}
                                 />
                             )}
                         </div>
@@ -98,7 +107,7 @@ export const Navbar: React.FC = () => {
                                     type="button"
                                     variant="ghost"
                                     size="icon"
-                                    className="h-8 w-8 text-destructive hover:text-destructive"
+                                    className="h-8 w-8 text-destructive-text"
                                     title="Delete project"
                                     aria-label="Delete project"
                                     onClick={() =>
@@ -149,18 +158,17 @@ export const Navbar: React.FC = () => {
                             </div>
                         </div>
 
-                        <button
+                        <Button
+                            variant="ghost"
                             onClick={logout}
-                            className="flex items-center gap-2 px-4 py-2 bg-destructive hover:bg-destructive-hover text-text border-border rounded-lg transition-colors duration-200 cursor-pointer"
+                            className="flex items-center gap-2 px-4 py-2 text-text border-border rounded-lg transition-colors duration-200 cursor-pointer"
                         >
                             <LogOut className="size-4" />
                             <span className="text-sm font-medium">Logout</span>
-                        </button>
+                        </Button>
                     </div>
                 )}
             </div>
         </nav>
     );
 };
-
-export default Navbar;

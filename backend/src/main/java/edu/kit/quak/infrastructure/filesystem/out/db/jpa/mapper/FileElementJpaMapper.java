@@ -40,7 +40,7 @@ public abstract class FileElementJpaMapper {
             return projectMapper.toJpaEntity(p);
         }
 
-        throw new IllegalArgumentException("Unknown FileElement subtype: " + domain.getClass());
+        throw new IllegalStateException("Unknown FileElement subtype: " + domain.getClass());
     }
 
     public FileElement<?> toDomainEntity(JpaFileElement<?> jpa) {
@@ -52,7 +52,7 @@ public abstract class FileElementJpaMapper {
             return projectMapper.toDomainEntity(p);
         }
 
-        throw new IllegalArgumentException("Unknown JpaFileElement subtype: " + jpa.getClass());
+        throw new IllegalStateException("Unknown JpaFileElement subtype: " + jpa.getClass());
     }
 
     // Map Set required for contents

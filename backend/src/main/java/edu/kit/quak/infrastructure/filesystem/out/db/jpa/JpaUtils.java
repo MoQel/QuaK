@@ -16,7 +16,7 @@ public final class JpaUtils {
      *
      * @param value the raw value from the database
      * @return the converted UUID or null if the value is null
-     * @throws IllegalArgumentException if the value cannot be converted
+     * @throws IllegalStateException if the value cannot be converted
      */
     public static UUID convertToUuid(Object value) {
         if (value == null) {
@@ -27,13 +27,13 @@ public final class JpaUtils {
         } else if (value instanceof byte[] bytes) {
             // H2 returns UUID as byte array
             if (bytes.length != 16) {
-                throw new IllegalArgumentException("Byte array for UUID must be 16 bytes long");
+                throw new IllegalStateException("Byte array for UUID must be 16 bytes long");
             }
             ByteBuffer bb = ByteBuffer.wrap(bytes);
             return new UUID(bb.getLong(), bb.getLong());
         } else if (value instanceof String str) {
             return UUID.fromString(str);
         }
-        throw new IllegalArgumentException("Cannot convert value to UUID: " + value.getClass());
+        throw new IllegalStateException("Cannot convert value to UUID: " + value.getClass());
     }
 }

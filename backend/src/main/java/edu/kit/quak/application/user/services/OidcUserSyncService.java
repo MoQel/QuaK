@@ -29,7 +29,7 @@ public class OidcUserSyncService implements OidcSyncServicePort {
         String sub = userInfo.sub();
         if (sub == null) {
             log.error("Subject (sub) claim is missing in OIDC user data for issuer '{}'", issuer);
-            throw new IllegalArgumentException("Subject (sub) claim is missing");
+            throw new IllegalStateException("Subject (sub) claim is missing");
         }
 
         log.debug("Syncing user for issuer='{}' sub='{}'", issuer, sub);

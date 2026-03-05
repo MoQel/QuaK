@@ -41,14 +41,6 @@ public enum QuantumOperationLibrary {
         this.definition = definition;
     }
 
-    public static QuantumOperationLibrary fromString(String value) {
-        try {
-            return QuantumOperationLibrary.valueOf(value.toUpperCase());
-        } catch (IllegalArgumentException ex) {
-            throw new IllegalArgumentException("Unknown quantum operation: " + value);
-        }
-    }
-
     @Override
     public String toString() {
         return name();

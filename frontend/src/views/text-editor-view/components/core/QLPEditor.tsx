@@ -61,7 +61,7 @@ function QLPEditor({ groupId }: Readonly<QLPEditorProps>) {
     // endregion
 
     return (
-        <div className="h-full flex flex-col p-0 relative">
+        <div className="h-full flex flex-col pt-2 relative ">
             {!activeFileId && (
                 <div className="absolute inset-0 z-10 flex items-center justify-center text-gray-500">No file open</div>
             )}
