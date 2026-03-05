@@ -44,6 +44,14 @@ The backend automatically provides an OpenAPI (Swagger) specification based on t
   ./gradlew generateOpenApiDocs
   ```
 
+### Configuration (`OpenApiConfig.java`)
+The file `src/main/java/edu/kit/quak/infrastructure/config/OpenApiConfig.java` contains the global configuration for the API documentation.
+
+**When do I need to edit this file?**
+* **API Metadata:** Changing the API version, title, or main description.
+* **Security:** Modifying authentication methods (e.g., updating dev mode credentials).
+* **Tags:** When adding a new functional area to the API. Tags are used to group endpoints in the Swagger UI. If you create a new controller that doesn't fit into existing categories (Authentication, Projects, Files, etc.), you should add a new tag here.
+
 ---
 
 ## Testing Workflows
