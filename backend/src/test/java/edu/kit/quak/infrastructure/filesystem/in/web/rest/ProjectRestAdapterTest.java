@@ -111,7 +111,7 @@ class ProjectRestAdapterTest {
     @Test
     @DisplayName("DELETE /project/{id} removes project")
     void deleteProject_success() throws Exception {
-        mockMvc.perform(delete("/api/project/p-1").with(csrf())).andExpect(status().isOk());
+        mockMvc.perform(delete("/api/project/p-1").with(csrf())).andExpect(status().isNoContent());
 
         verify(projectService).removeProject(eq("p-1"), any(User.class));
     }

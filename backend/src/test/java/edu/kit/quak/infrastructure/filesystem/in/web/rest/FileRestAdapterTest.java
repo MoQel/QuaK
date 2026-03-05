@@ -128,7 +128,7 @@ class FileRestAdapterTest {
     @Test
     @DisplayName("DELETE /file/{id} removes file")
     void deleteFile_success() throws Exception {
-        mockMvc.perform(delete("/api/file/f-123").with(csrf())).andExpect(status().isOk());
+        mockMvc.perform(delete("/api/file/f-123").with(csrf())).andExpect(status().isNoContent());
 
         verify(fileService).removeFile(eq("f-123"), any(User.class));
     }

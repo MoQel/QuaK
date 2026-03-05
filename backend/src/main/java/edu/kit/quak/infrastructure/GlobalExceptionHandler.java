@@ -3,7 +3,9 @@ package edu.kit.quak.infrastructure;
 import edu.kit.quak.application.common.exceptions.AccessDeniedException;
 import edu.kit.quak.application.common.exceptions.ResourceNotFoundException;
 import edu.kit.quak.application.user.exceptions.UserNotFoundException;
+import edu.kit.quak.core.circuit.exceptions.CircuitComponentNotFoundException;
 import edu.kit.quak.core.common.exception.DomainRuleViolationException;
+import edu.kit.quak.core.common.exception.RequestedIndexOutOfBounds;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -45,19 +47,6 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * Handles business rule violations from the domain core.
-     * Mapped to 400 Bad Request.
-     */
-    @ExceptionHandler(DomainRuleViolationException.class)
-    public ProblemDetail handleDomainViolation(DomainRuleViolationException ex) {
-        log.warn("Domain rule violated: {}", ex.getMessage());
-
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
-        problem.setTitle("Business Rule Violation");
-        return problem;
-    }
-
-    /**
      * Handles authentication failures.
      * Mapped to 401 Unauthorized.
      */
@@ -91,13 +80,53 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(ResourceNotFoundException.class)
     public ProblemDetail handleNotFound(ResourceNotFoundException ex) {
-        // Log as WARN without stack trace to avoid log pollution
         log.warn("Resource not found: type={}, id={}", ex.getResourceType(), ex.getResourceId());
 
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
         problem.setTitle("Resource Not Found");
         problem.setProperty("resourceType", ex.getResourceType());
         problem.setProperty("resourceId", ex.getResourceId());
+        return problem;
+    }
+
+    /**
+     * Handles cases where a circuit component is missing.
+     * Mapped to 404 Not Found.
+     */
+    @ExceptionHandler(CircuitComponentNotFoundException.class)
+    public ProblemDetail handleCircuitComponentNotFound(CircuitComponentNotFoundException ex) {
+        log.warn("Circuit component not found: type={}, id={}", ex.getComponentType(), ex.getComponentId());
+
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        problem.setTitle("Resource Not Found");
+        problem.setProperty("componentType", ex.getComponentType());
+        problem.setProperty("componentId", ex.getComponentId());
+        return problem;
+    }
+
+    /**
+     * Handles business rule violations from the domain core.
+     * Mapped to 422 Unprocessable Content.
+     */
+    @ExceptionHandler(DomainRuleViolationException.class)
+    public ProblemDetail handleDomainViolation(DomainRuleViolationException ex) {
+        log.warn("Domain rule violated: {}", ex.getMessage());
+
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage());
+        problem.setTitle("Business Rule Violation");
+        return problem;
+    }
+
+    /**
+     * Handles requested index out of bounds from the domain core.
+     * Mapped to 422 Unprocessable Content.
+     */
+    @ExceptionHandler(RequestedIndexOutOfBounds.class)
+    public ProblemDetail handleRequestedIndexOutOfBounds(RequestedIndexOutOfBounds ex) {
+        log.warn("Requested index out of bounds: {}", ex.getMessage());
+
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage());
+        problem.setTitle("Requested Index Out Of Bounds");
         return problem;
     }
 

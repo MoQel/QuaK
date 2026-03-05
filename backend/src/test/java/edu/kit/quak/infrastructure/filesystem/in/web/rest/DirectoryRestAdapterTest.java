@@ -93,7 +93,7 @@ class DirectoryRestAdapterTest {
     @Test
     @DisplayName("DELETE /directory/{id} calls service")
     void deleteDirectory() throws Exception {
-        mockMvc.perform(delete("/api/directory/d-123").with(csrf())).andExpect(status().isOk());
+        mockMvc.perform(delete("/api/directory/d-123").with(csrf())).andExpect(status().isNoContent());
 
         verify(directoryService).removeDirectory(eq("d-123"), any(User.class));
     }

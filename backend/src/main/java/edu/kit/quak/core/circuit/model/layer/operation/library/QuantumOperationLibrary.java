@@ -1,6 +1,5 @@
 package edu.kit.quak.core.circuit.model.layer.operation.library;
 
-import edu.kit.quak.core.circuit.exceptions.UnknownQuantumOperationException;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementaryQuantumGate;
 import edu.kit.quak.core.circuit.model.layer.operation.Measurement;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
@@ -40,14 +39,6 @@ public enum QuantumOperationLibrary {
 
     QuantumOperationLibrary(QuantumOperationDefinition<? extends QuantumOperation> definition) {
         this.definition = definition;
-    }
-
-    public static QuantumOperationLibrary fromString(String value) {
-        try {
-            return QuantumOperationLibrary.valueOf(value.toUpperCase());
-        } catch (IllegalArgumentException ex) {
-            throw new UnknownQuantumOperationException(value);
-        }
     }
 
     @Override

@@ -74,6 +74,7 @@ public class ProjectRestAdapter {
     }
 
     @DeleteMapping("/{pId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("isAuthenticated()")
     public void deleteProject(@PathVariable String pId, Authentication authentication) {
         log.debug("REST request to delete project '{}'", pId);

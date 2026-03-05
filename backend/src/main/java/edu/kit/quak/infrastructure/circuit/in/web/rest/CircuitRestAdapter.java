@@ -53,6 +53,7 @@ public class CircuitRestAdapter {
     }
 
     @DeleteMapping("/{circuitId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable String circuitId) {
         log.info("REST request to delete circuit: {}", circuitId);
         service.delete(circuitId);

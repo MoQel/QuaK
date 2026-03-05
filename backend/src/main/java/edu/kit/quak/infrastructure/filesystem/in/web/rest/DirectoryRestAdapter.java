@@ -64,6 +64,7 @@ public class DirectoryRestAdapter {
     }
 
     @DeleteMapping("/{dId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("isAuthenticated()")
     public void deleteDirectory(@PathVariable String dId, Authentication authentication) {
         log.debug("REST request to delete directory '{}'", dId);

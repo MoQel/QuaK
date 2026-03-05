@@ -58,6 +58,7 @@ public class FileRestAdapter {
     }
 
     @DeleteMapping("/{fId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("isAuthenticated()")
     public void deleteFile(@PathVariable String fId, Authentication authentication) {
         log.debug("REST request to delete file '{}'", fId);

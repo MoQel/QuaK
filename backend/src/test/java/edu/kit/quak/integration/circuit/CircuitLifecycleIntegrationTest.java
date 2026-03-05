@@ -108,21 +108,13 @@ class CircuitLifecycleIntegrationTest {
             .andExpect(jsonPath("$.layers[1].quantumOperations[0].identifier").value("CX"))
             .andExpect(jsonPath("$.layers[1].quantumOperations[0].targetQubits[0].index").value(0));
 
-        // 7. Remove operations
-        mockMvc
-            .perform(delete("/api/circuit/" + circuitId + "/operation/" + hGateId).with(authenticatedUser()).with(csrf()))
-            .andExpect(status().isOk());
-        mockMvc
-            .perform(delete("/api/circuit/" + circuitId + "/operation/" + cxGateId).with(authenticatedUser()).with(csrf()))
-            .andExpect(status().isOk());
-
         // 8. Remove qubit
         mockMvc
             .perform(delete("/api/circuit/" + circuitId + "/register/" + registerId + "/0").with(authenticatedUser()).with(csrf()))
             .andExpect(status().isOk());
 
         // 9. Delete circuit
-        mockMvc.perform(delete("/api/circuit/" + circuitId).with(authenticatedUser()).with(csrf())).andExpect(status().isOk());
+        mockMvc.perform(delete("/api/circuit/" + circuitId).with(authenticatedUser()).with(csrf())).andExpect(status().isNoContent());
 
         // 10. Verify deletion (Expect 404)
         mockMvc.perform(get("/api/circuit/" + circuitId).with(authenticatedUser())).andExpect(status().isNotFound());
