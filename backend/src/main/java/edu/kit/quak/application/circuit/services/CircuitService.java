@@ -109,7 +109,6 @@ public class CircuitService implements CircuitServicePort {
                 log.warn("Update failed: Circuit not found. circuitId={}", circuitId);
                 return new CircuitNotFoundException(circuitId);
             });
-
         action.accept(circuit);
 
         return repository.save(circuit);
