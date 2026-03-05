@@ -5,6 +5,7 @@ import { safeCloseCodePanel } from '@/store/tabs/tabsThunks.ts';
 import { useAppDispatch } from '@/hooks/useAppDispatch.ts';
 import { useAppSelector } from '@/hooks/useAppSelector.ts';
 import { Button } from '@/components/ui/button.tsx';
+import { cn } from '@/lib/utils.ts';
 
 export const CustomTabRenderer = (props: IDockviewPanelHeaderProps) => {
     const { api } = props;
@@ -49,7 +50,7 @@ export const CustomTabRenderer = (props: IDockviewPanelHeaderProps) => {
             className={`
                 flex items-center justify-between h-full px-3 cursor-pointer transition-colors duration-150 group
                 ${isVisible ? 'bg-transparent' : 'hover:bg-[var(--bg)]'}
-                ${isVisible ? 'shadow-[inset_0_-2px_0_0_var(--special)]' : ''}
+                ${isVisible ? 'border-b-2 border-[var(--special)]' : 'border-b-2 border-transparent'}
             `}
         >
             {/* Title */}
@@ -58,12 +59,10 @@ export const CustomTabRenderer = (props: IDockviewPanelHeaderProps) => {
             {/* Close Button */}
             <Button
                 onClick={handleClose}
-                className={`
-                    flex items-center justify-center w-5 h-5 rounded-md
-                    transition-all duration-150
-                    hover:bg-[var(--bg-light)] 
-                    opacity-0 group-hover:opacity-100
-                `}
+                className={cn(
+                    'relative flex items-center justify-center p-0.5 rounded-sm h-5 w-5 hover:bg-bg-light ',
+                    'bg-transparent shadow-none border-none',
+                )}
             >
                 <X size={12} className="text-[var(--text)]" />
             </Button>
