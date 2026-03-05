@@ -107,7 +107,7 @@ export const Navbar: React.FC = () => {
                                     type="button"
                                     variant="ghost"
                                     size="icon"
-                                    className="h-8 w-8 text-destructive hover:text-destructive"
+                                    className="h-8 w-8 text-destructive-text"
                                     title="Delete project"
                                     aria-label="Delete project"
                                     onClick={() =>
