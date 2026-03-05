@@ -23,9 +23,9 @@ public interface CircuitServicePort {
     Optional<QuantumCircuit> getById(String circuitId);
 
     /**
-     * Deletes all circuits for a project. Called automatically on project deletion.
+     * Deletes a specific circuit by its unique ID.
      */
-    void deleteByProjectId(String projectId);
+    void delete(String circuitId);
 
     /**
      * Resets a specific circuit: deletes it and creates a fresh one with the same
@@ -33,7 +33,7 @@ public interface CircuitServicePort {
      * Designed around circuitId so it remains correct when multiple circuits per
      * project are supported.
      */
-    QuantumCircuit resetByCircuitId(String circuitId);
+    QuantumCircuit resetCircuit(String circuitId);
 
     QuantumCircuit addQubit(String circuitId, String registerId);
 

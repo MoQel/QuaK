@@ -9,7 +9,8 @@ interface ProjectContextType {
     projectId: string | null;
     circuit: CircuitResponse | undefined;
     setCircuit: React.Dispatch<React.SetStateAction<CircuitResponse | undefined>>;
-    isLoading: boolean;
+    isLoadingProject: boolean;
+    isLoadingCircuit: boolean;
     refreshProject: () => Promise<void>;
 }
 
@@ -18,7 +19,8 @@ const ProjectContext = createContext<ProjectContextType>({
     projectId: null,
     circuit: undefined,
     setCircuit: () => {},
-    isLoading: false,
+    isLoadingProject: false,
+    isLoadingCircuit: false,
     refreshProject: async () => {},
 });
 
@@ -28,33 +30,61 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const { projectId } = useParams<{ projectId: string }>();
     const [projectName, setProjectName] = useState<string | null>(null);
     const [circuit, setCircuit] = useState<CircuitResponse | undefined>(undefined);
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoadingProject, setIsLoadingProject] = useState(false);
+    const [isLoadingCircuit, setIsLoadingCircuit] = useState(false);
 
     const refreshProject = useCallback(async () => {
         if (!projectId) {
             setProjectName(null);
             setCircuit(undefined);
-            setIsLoading(false);
+            setIsLoadingProject(false);
+            setIsLoadingCircuit(false);
             return;
         }
 
-        setIsLoading(true);
-        try {
-            // Fetch project and circuit in parallel
-            const [project, circuitData] = await Promise.all([
-                api.get<ProjectDetailsResponse>(`/api/project/${projectId}`),
-                api.get<CircuitResponse>(`/api/circuit/${projectId}`),
-            ]);
+        const currentProjectId = projectId;
 
-            setProjectName(project.name);
-            setCircuit(circuitData);
-        } catch (error) {
-            console.error('Failed to fetch project details or circuit:', error);
-            setProjectName(null);
-            setCircuit(undefined);
-        } finally {
-            setIsLoading(false);
-        }
+        // Fetch project details
+        const fetchProject = async () => {
+            setIsLoadingProject(true);
+            try {
+                const project = await api.get<ProjectDetailsResponse>(`/api/project/${currentProjectId}`);
+                if (currentProjectId === projectId) {
+                    setProjectName(project.name);
+                }
+            } catch (error) {
+                console.error('Failed to fetch project details:', error);
+                if (currentProjectId === projectId) {
+                    setProjectName(null);
+                }
+            } finally {
+                if (currentProjectId === projectId) {
+                    setIsLoadingProject(false);
+                }
+            }
+        };
+
+        // Fetch circuit details
+        const fetchCircuit = async () => {
+            setIsLoadingCircuit(true);
+            try {
+                const circuitData = await api.get<CircuitResponse>(`/api/circuit/${currentProjectId}`);
+                if (currentProjectId === projectId) {
+                    setCircuit(circuitData);
+                }
+            } catch (error) {
+                console.error('Failed to fetch circuit:', error);
+                if (currentProjectId === projectId) {
+                    setCircuit(undefined);
+                }
+            } finally {
+                if (currentProjectId === projectId) {
+                    setIsLoadingCircuit(false);
+                }
+            }
+        };
+
+        await Promise.all([fetchProject(), fetchCircuit()]);
     }, [projectId]);
 
     useEffect(() => {
@@ -67,10 +97,11 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
             projectId: projectId || null,
             circuit,
             setCircuit,
-            isLoading,
+            isLoadingProject,
+            isLoadingCircuit,
             refreshProject,
         }),
-        [projectName, projectId, circuit, isLoading, refreshProject],
+        [projectName, projectId, circuit, isLoadingProject, isLoadingCircuit, refreshProject],
     );
 
     return <ProjectContext.Provider value={contextValue}>{children}</ProjectContext.Provider>;

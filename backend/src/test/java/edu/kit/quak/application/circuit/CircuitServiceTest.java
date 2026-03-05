@@ -84,16 +84,12 @@ class CircuitServiceTest {
     }
 
     @Test
-    void deleteByProjectId_callsRepository() {
+    void delete_callsRepository() {
         // setup
-        String projectId = "p-1";
         String circuitId = "c-1";
-        QuantumCircuit circuit = new QuantumCircuit(projectId);
-        circuit.setId(circuitId);
-        when(repository.findByProjectId(projectId)).thenReturn(Optional.of(circuit));
 
         // execute
-        service.deleteByProjectId(projectId);
+        service.delete(circuitId);
 
         // verify delegation
         verify(repository).delete(circuitId);
@@ -109,7 +105,7 @@ class CircuitServiceTest {
         when(repository.findById(circuitId)).thenReturn(Optional.of(circuit));
 
         // execute
-        QuantumCircuit result = service.resetByCircuitId(circuitId);
+        QuantumCircuit result = service.resetCircuit(circuitId);
 
         // verify old circuit deleted and new one saved
         verify(repository).delete(circuitId);

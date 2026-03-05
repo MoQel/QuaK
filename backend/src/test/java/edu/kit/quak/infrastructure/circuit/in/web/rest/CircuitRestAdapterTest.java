@@ -144,7 +144,7 @@ class CircuitRestAdapterTest {
         QuantumCircuit freshCircuit = new QuantumCircuit(projectId);
 
         given(circuitServicePort.getById(circuitId)).willReturn(Optional.of(existingCircuit));
-        given(circuitServicePort.resetByCircuitId(circuitId)).willReturn(freshCircuit);
+        given(circuitServicePort.resetCircuit(circuitId)).willReturn(freshCircuit);
 
         // Act & Assert
         mockMvc

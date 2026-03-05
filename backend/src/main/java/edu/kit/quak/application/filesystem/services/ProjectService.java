@@ -54,8 +54,8 @@ public class ProjectService implements ProjectServicePort {
 
         verifyOwnership(project, user);
 
+        circuitService.getByProjectId(id).ifPresent(c -> circuitService.delete(c.getId()));
         repository.deleteById(id);
-        circuitService.deleteByProjectId(id);
     }
 
     @Override

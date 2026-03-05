@@ -154,6 +154,39 @@ class CircuitLifecycleIntegrationTest {
         mockMvc.perform(get("/api/circuit/" + projectId).with(authenticatedUser())).andExpect(status().is(404));
     }
 
+    @Test
+    @DisplayName("E2E: Direct Circuit Deletion by circuitId")
+    void testDeleteCircuitDirectly() throws Exception {
+        // 1. Create Project (automatically initializes circuit)
+        syncService.syncUser("test", new OidcUserInfo("test-sub", "test@example.com", true, "Test User", null, null, null));
+        String projectRequest = """
+            { "name": "Direct Delete Project" }
+            """;
+        MvcResult projectResult = mockMvc
+            .perform(
+                post("/api/project").with(authenticatedUser()).with(csrf()).contentType(MediaType.APPLICATION_JSON).content(projectRequest)
+            )
+            .andExpect(status().isCreated())
+            .andReturn();
+
+        JsonNode projectNode = objectMapper.readTree(projectResult.getResponse().getContentAsString());
+        String projectId = projectNode.get("id").asText();
+
+        // 2. Get the circuit to find its ID
+        MvcResult circuitResult = mockMvc
+            .perform(get("/api/circuit/" + projectId).with(authenticatedUser()))
+            .andExpect(status().isOk())
+            .andReturn();
+        JsonNode circuitNode = objectMapper.readTree(circuitResult.getResponse().getContentAsString());
+        String circuitId = circuitNode.get("id").asText();
+
+        // 3. Delete the circuit directly by its ID
+        mockMvc.perform(delete("/api/circuit/" + circuitId).with(authenticatedUser()).with(csrf())).andExpect(status().isNoContent());
+
+        // 4. Verify circuit is gone for the project
+        mockMvc.perform(get("/api/circuit/" + projectId).with(authenticatedUser())).andExpect(status().isNotFound());
+    }
+
     // --- Helper Methods ---
 
     /**

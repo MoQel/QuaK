@@ -38,15 +38,12 @@ public class CircuitService implements CircuitServicePort {
     }
 
     @Override
-    public void deleteByProjectId(String projectId) {
-        QuantumCircuit circuit = getByProjectId(projectId).orElseThrow(() ->
-            new EntityNotFoundException("Circuit not found for project: " + projectId)
-        );
-        repository.delete(circuit.getId());
+    public void delete(String circuitId) {
+        repository.delete(circuitId);
     }
 
     @Override
-    public QuantumCircuit resetByCircuitId(String circuitId) {
+    public QuantumCircuit resetCircuit(String circuitId) {
         QuantumCircuit existing = repository
             .findById(circuitId)
             .orElseThrow(() -> new EntityNotFoundException("Circuit not found: " + circuitId));

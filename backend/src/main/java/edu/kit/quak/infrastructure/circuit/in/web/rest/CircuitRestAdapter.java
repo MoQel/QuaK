@@ -79,8 +79,21 @@ public class CircuitRestAdapter {
     public CircuitResponse reset(@PathVariable String circuitId, Authentication authentication) {
         verifyCircuitOwnership(circuitId, authentication);
 
-        QuantumCircuit circuit = service.resetByCircuitId(circuitId);
+        QuantumCircuit circuit = service.resetCircuit(circuitId);
         return mapper.toResponse(circuit);
+    }
+
+    /**
+     * Deletes a specific circuit identified by its unique circuitId.
+     * Ownership is verified via the circuit's associated project.
+     */
+    @DeleteMapping("/{circuitId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("isAuthenticated()")
+    public void delete(@PathVariable String circuitId, Authentication authentication) {
+        verifyCircuitOwnership(circuitId, authentication);
+
+        service.delete(circuitId);
     }
 
     /**

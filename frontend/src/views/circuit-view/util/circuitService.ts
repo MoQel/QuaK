@@ -38,6 +38,11 @@ export function createCircuitService(
         api.delete<CircuitResponse>(`/api/circuit/${circuit.id}/reset`).then(setCircuit);
     };
 
+    const deleteCircuit = () => {
+        if (!circuit) return;
+        api.delete(`/api/circuit/${circuit.id}`);
+    };
+
     const addQuantumOperation = (payload: AddQuantumOperationRequest) => {
         if (!circuit) return;
         api.post<CircuitResponse>(`/api/circuit/${circuit.id}/operation`, payload).then(setCircuit);
@@ -58,6 +63,7 @@ export function createCircuitService(
         deleteQubit,
         deleteLastQubit,
         resetCircuit,
+        deleteCircuit,
         addQuantumOperation,
         moveQuantumOperation,
         removeQuantumOperation,
