@@ -1,6 +1,7 @@
 package edu.kit.quak.application.user.services;
 
 import edu.kit.quak.application.common.exceptions.AccessDeniedException;
+import edu.kit.quak.application.user.exceptions.RoleAssignmentException;
 import edu.kit.quak.application.user.ports.in.ProjectRoleServicePort;
 import edu.kit.quak.application.user.ports.out.ProjectRoleRepositoryPort;
 import edu.kit.quak.core.user.model.ProjectRole;
@@ -43,14 +44,14 @@ public class ProjectRoleService implements ProjectRoleServicePort {
         // Prevent assigning OWNER role to another user (there should be exactly one
         // owner)
         if (role == ProjectRole.OWNER) {
-            throw new IllegalArgumentException("Cannot assign OWNER role. Projects can only have one owner.");
+            throw new RoleAssignmentException("Cannot assign OWNER role. Projects can only have one owner.");
         }
 
         // Check if user already has a role on this project
         roleRepository
             .findByUserIdAndProjectId(targetUserId, projectId)
             .ifPresent(existing -> {
-                throw new IllegalArgumentException(
+                throw new RoleAssignmentException(
                     "User already has role '" + existing.getRole() + "' on this project. " + "Remove the existing role first."
                 );
             });
@@ -67,7 +68,7 @@ public class ProjectRoleService implements ProjectRoleServicePort {
 
         // Cannot remove the owner's own role
         if (targetUserId.equals(requestingUser.getId())) {
-            throw new IllegalArgumentException("Cannot remove your own OWNER role from the project.");
+            throw new RoleAssignmentException("Cannot remove your own OWNER role from the project.");
         }
 
         roleRepository.deleteByUserIdAndProjectId(targetUserId, projectId);

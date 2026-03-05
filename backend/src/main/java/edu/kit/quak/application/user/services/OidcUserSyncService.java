@@ -1,5 +1,6 @@
 package edu.kit.quak.application.user.services;
 
+import edu.kit.quak.application.user.exceptions.DuplicateEmailException;
 import edu.kit.quak.application.user.ports.in.OidcSyncServicePort;
 import edu.kit.quak.application.user.ports.in.OidcUserInfo;
 import edu.kit.quak.application.user.ports.out.UserRepositoryPort;
@@ -43,7 +44,7 @@ public class OidcUserSyncService implements OidcSyncServicePort {
                         .findByEmail(userInfo.email())
                         .ifPresent(existing -> {
                             log.error("Prevented login: Email '{}' is already associated with a different provider", userInfo.email());
-                            throw new IllegalArgumentException("Email is already associated with a different provider");
+                            throw new DuplicateEmailException("Email is already associated with a different provider");
                         });
                 }
                 return createUser(issuer, sub, userInfo);
