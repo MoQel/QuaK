@@ -66,14 +66,13 @@ export const Profile: React.FC = () => {
                                 <CardDescription className="text-base mb-3">{user.email}</CardDescription>
                                 <div className="flex gap-2 flex-wrap">
                                     {user.emailVerified && (
-                                        <Badge
-                                            variant="secondary"
-                                            className="bg-special text-text hover:bg-special-hover cursor-default"
-                                        >
+                                        <Badge variant="secondary" className="bg-special text-text pointer-events-none">
                                             Verified Email
                                         </Badge>
                                     )}
-                                    <Badge variant="outline">User ID: {user.userId}</Badge>
+                                    <Badge variant="outline" className="pointer-events-none">
+                                        User ID: {user.userId}
+                                    </Badge>
                                 </div>
                             </div>
                         </div>
