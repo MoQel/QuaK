@@ -6,7 +6,8 @@ import { ProjectManagerView } from '@/views/project-manager-view/ProjectManagerV
 import { ResultsView } from '@/views/results-view/ResultsView';
 import { InspectorView } from '@/views/inspector-view/InspectorView';
 import { useFileSelect } from '@/hooks/useFileSelect';
-import { useParams } from 'react-router-dom';
+import { useProject } from '@/contexts/ProjectContext.tsx';
+import React from 'react';
 
 const PanelWrapper = ({ children }: { children: React.ReactNode }) => (
     <div className="h-full w-full overflow-hidden relative">{children}</div>
@@ -14,13 +15,12 @@ const PanelWrapper = ({ children }: { children: React.ReactNode }) => (
 
 export const ProjectPanel = () => {
     const handleFileSelect = useFileSelect();
-    const { projectId } = useParams<{ projectId: string }>();
-    return <ProjectManagerView onFileSelect={handleFileSelect} projectId={projectId} />;
+    const { projectId } = useProject();
+    return <ProjectManagerView onFileSelect={handleFileSelect} projectId={projectId ?? undefined} />;
 };
 
 export const CircuitPanel = () => {
-    const { circuit, setCircuit } = usePanelData();
-    return <CircuitView circuit={circuit} setCircuit={setCircuit} />;
+    return <CircuitView />;
 };
 
 export const CodePanel = () => {
@@ -42,6 +42,5 @@ export const InspectorPanel = () => {
 };
 
 export const ResultsPanel = () => {
-    const { circuit } = usePanelData();
-    return <ResultsView circuit={circuit} />;
+    return <ResultsView />;
 };

@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { SimulationToolbar } from '@/views/results-view/SimulationToolbar.tsx';
 import { CustomTooltipContent } from '@/views/results-view/CustomTooltipContent.tsx';
-import { CircuitResponse, getCircuitWidth } from '@/api/dto/circuit';
+import { getCircuitWidth } from '@/api/dto/circuit';
 import { useQuantumSimulation } from '@/hooks/results/useQuantumSimulation.ts';
 import { SimulationOptions } from '@/simulation/simulation.types.ts';
 import { Endianness, useChartData } from '@/hooks/results/useChartData.ts';
@@ -31,11 +31,10 @@ const chartConfig = {
     },
 } satisfies ChartConfig;
 
-interface ResultsViewProps {
-    circuit: CircuitResponse | undefined;
-}
+import { useProject } from '@/contexts/ProjectContext';
 
-export function ResultsView({ circuit }: Readonly<ResultsViewProps>) {
+export function ResultsView() {
+    const { circuit } = useProject();
     const [options, setOptions] = useState<SimulationOptions>({
         mode: 'exact',
         sampleCount: 1024,

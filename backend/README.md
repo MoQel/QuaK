@@ -29,6 +29,31 @@ If the PR pipeline fails due to formatting, run `./gradlew spotlessApply` locall
 
 ---
 
+## API Documentation (OpenAPI)
+
+The backend automatically provides an OpenAPI (Swagger) specification based on the Spring controllers.
+
+### Automated Workflow
+* **Generation:** The spec is generated via `./gradlew generateOpenApiDocs`.
+* **Automatic Updates:**
+    * When code is merged into **`main`** or **`development`**, the CI pipeline automatically updates the file at `docs/api/openapi.yaml`.
+    * For **Pull Requests**, the spec is generated and stored as a CI artifact for validation, but not committed to the branch.
+* **Manual Generation:** You can run the command locally to update the spec file:
+  ```bash
+  cd backend
+  ./gradlew generateOpenApiDocs
+  ```
+
+### Configuration (`OpenApiConfig.java`)
+The file `src/main/java/edu/kit/quak/infrastructure/config/OpenApiConfig.java` contains the global configuration for the API documentation.
+
+**When do I need to edit this file?**
+* **API Metadata:** Changing the API version, title, or main description.
+* **Security:** Modifying authentication methods (e.g., updating dev mode credentials).
+* **Tags:** When adding a new functional area to the API. Tags are used to group endpoints in the Swagger UI. If you create a new controller that doesn't fit into existing categories (Authentication, Projects, Files, etc.), you should add a new tag here.
+
+---
+
 ## Testing Workflows
 
 ### 1. Test-Categories

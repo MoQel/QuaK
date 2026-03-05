@@ -1,4 +1,10 @@
-#!/bin/sh
-. "$(dirname "$0")/_/husky.sh"
+# Run Spotless Apply in the backend
+if [ -d "backend" ]; then
+    echo "🔍 Running Spotless Apply in the backend..."
+    (cd backend && ./gradlew spotlessApply)
+    # Stage any files modified by Spotless Apply
+    git add .
+fi
 
+# Run lint-staged in the frontend
 cd frontend && npx lint-staged
