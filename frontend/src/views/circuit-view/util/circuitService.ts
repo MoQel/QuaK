@@ -10,10 +10,6 @@ export function createCircuitService(
     circuit: CircuitResponse | undefined,
     setCircuit: (circuit: CircuitResponse) => void,
 ) {
-    const initCircuit = () => {
-        api.post<CircuitResponse>('/api/circuit').then(setCircuit);
-    };
-
     const addQubit = () => {
         if (!circuit) return;
         const lastQR = circuit.registers.findLast(isQuantumRegister);
@@ -39,7 +35,12 @@ export function createCircuitService(
 
     const resetCircuit = () => {
         if (!circuit) return;
-        api.delete(`/api/circuit/${circuit.id}`).then(initCircuit);
+        api.delete<CircuitResponse>(`/api/circuit/${circuit.id}/reset`).then(setCircuit);
+    };
+
+    const deleteCircuit = () => {
+        if (!circuit) return;
+        api.delete(`/api/circuit/${circuit.id}`);
     };
 
     const addQuantumOperation = (payload: AddQuantumOperationRequest) => {
@@ -58,11 +59,11 @@ export function createCircuitService(
     };
 
     return {
-        initCircuit,
         addQubit,
         deleteQubit,
         deleteLastQubit,
         resetCircuit,
+        deleteCircuit,
         addQuantumOperation,
         moveQuantumOperation,
         removeQuantumOperation,

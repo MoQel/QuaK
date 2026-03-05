@@ -17,7 +17,7 @@ class QuantumCircuitTest {
     @Test
     void constructor_initializesRegisterAndLayer() {
         // Act
-        QuantumCircuit circuit = new QuantumCircuit();
+        QuantumCircuit circuit = new QuantumCircuit("");
 
         // Assert
         assertEquals(1, circuit.getRegisters().size(), "Circuit should initialize with one register.");
@@ -33,7 +33,7 @@ class QuantumCircuitTest {
     @Test
     void addAndRemoveQubit() {
         // Arrange
-        QuantumCircuit circuit = new QuantumCircuit();
+        QuantumCircuit circuit = new QuantumCircuit("");
         QuantumRegister qr = circuit.getRegisters().getFirst().asQuantum().orElseThrow();
 
         // Act
@@ -52,7 +52,7 @@ class QuantumCircuitTest {
     @Test
     void addQuantumOperation_createsNewLayerIfNecessary() {
         // Arrange
-        QuantumCircuit circuit = new QuantumCircuit();
+        QuantumCircuit circuit = new QuantumCircuit("");
         String registerId = circuit.getRegisters().getFirst().asQuantum().orElseThrow().getId();
         ElementSelector target = new ElementSelector(registerId, 1);
         QuantumOperation op = new ElementaryQuantumGate(QuantumOperationLibrary.T, false, List.of(target), List.of(), 0d);
@@ -71,7 +71,7 @@ class QuantumCircuitTest {
     @Test
     void moveQuantumOperation_changesLayerAndSelectors() {
         // Arrange
-        QuantumCircuit circuit = new QuantumCircuit();
+        QuantumCircuit circuit = new QuantumCircuit("");
         String registerId = circuit.getRegisters().getFirst().asQuantum().orElseThrow().getId();
 
         ElementSelector target1 = new ElementSelector(registerId, 0);
@@ -107,7 +107,7 @@ class QuantumCircuitTest {
     @Test
     void removeQuantumOperation_byId() {
         // Arrange
-        QuantumCircuit circuit = new QuantumCircuit();
+        QuantumCircuit circuit = new QuantumCircuit("");
         String registerId = circuit.getRegisters().getFirst().asQuantum().orElseThrow().getId();
 
         ElementSelector target = new ElementSelector(registerId, 1);
@@ -124,7 +124,7 @@ class QuantumCircuitTest {
     @Test
     void invalidQubitIndexThrowsException() {
         // Arrange
-        QuantumCircuit circuit = new QuantumCircuit();
+        QuantumCircuit circuit = new QuantumCircuit("");
         String registerId = circuit.getRegisters().getFirst().asQuantum().orElseThrow().getId();
 
         // Act & Assert
@@ -138,7 +138,7 @@ class QuantumCircuitTest {
     @Test
     void flushLayers_afterRemovingQubit_emptyLayersAreCleanedUp() {
         // Arrange
-        QuantumCircuit circuit = new QuantumCircuit();
+        QuantumCircuit circuit = new QuantumCircuit("");
         String registerId = circuit.getRegisters().getFirst().getId();
         ElementSelector target = new ElementSelector(registerId, 0);
         QuantumOperation op = new ElementaryQuantumGate(QuantumOperationLibrary.Z, false, List.of(target), List.of(), 0d);
@@ -154,7 +154,7 @@ class QuantumCircuitTest {
     @Test
     void flushLayers_afterRemovingLastOperation_layerIsRemoved() {
         // Arrange
-        QuantumCircuit circuit = new QuantumCircuit();
+        QuantumCircuit circuit = new QuantumCircuit("");
         String registerId = circuit.getRegisters().getFirst().getId();
         ElementSelector target = new ElementSelector(registerId, 0);
         QuantumOperation op = new ElementaryQuantumGate(QuantumOperationLibrary.X, false, List.of(target), List.of(), 0d);
@@ -170,7 +170,7 @@ class QuantumCircuitTest {
     @Test
     void flushLayers_afterMovingLastOperation_sourceLayerIsRemoved() {
         // Arrange
-        QuantumCircuit circuit = new QuantumCircuit();
+        QuantumCircuit circuit = new QuantumCircuit("");
         String registerId = circuit.getRegisters().getFirst().getId();
 
         ElementSelector target1 = new ElementSelector(registerId, 0);
