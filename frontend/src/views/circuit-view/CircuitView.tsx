@@ -215,7 +215,7 @@ export function CircuitView() {
     }, [circuit, hoverPos]);
 
     return (
-        <Card className="h-full overflow-hidden">
+        <Card className="h-full overflow-hidden border-none bg-bg-subtle">
             <CardContent className="flex flex-col h-full">
                 <CircuitToolbar circuit={circuit} setCircuit={setCircuit} />
 

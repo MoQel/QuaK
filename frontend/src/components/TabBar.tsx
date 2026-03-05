@@ -178,8 +178,9 @@ export function TabBar<T extends TabItem>({
                 onDragLeave={handleContainerDragLeave}
                 onDrop={handleDrop}
                 className={cn(
-                    'flex flex-1 w-full flex-row border-b border-border bg-bg scrollbar-hide',
-                    'overflow-x-auto tabs-scrollbar scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent',
+                    'scale-y-[-1] translate-z-0',
+                    'flex flex-1 w-full flex-row bg-subtle border-none',
+                    'overflow-x-auto tabs-scrollbar',
                 )}
                 tabIndex={-1}
             >
@@ -210,6 +211,7 @@ export function TabBar<T extends TabItem>({
                                 onClick={() => onTabClick(tab)}
                                 onKeyDown={(e) => handleKeyDown(e, tab)}
                                 className={cn(
+                                    'scale-y-[-1]',
                                     'h-9 flex-shrink-0 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
                                     isDragging ? 'opacity-20' : 'opacity-100',
                                 )}
@@ -223,7 +225,7 @@ export function TabBar<T extends TabItem>({
                 {isOverContainer && !draggingId && dropPlaceholderIndex === tabs.length && <GhostTab />}
             </div>
             {rightSlot && tabs.length !== 0 && (
-                <div className="flex items-center flex-shrink-0 border-l border-border bg-bg">{rightSlot}</div>
+                <div className="flex items-center flex-shrink-0 bg-subtle">{rightSlot}</div>
             )}
         </div>
     );

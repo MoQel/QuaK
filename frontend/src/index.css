@@ -1,5 +1,6 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
+@import './dockview.css';
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -18,6 +19,7 @@
     --color-logo-start: var(--logo-start);
     --color-logo-end: var(--logo-end);
     --color-destructive-text: var(--destructive-text);
+    --color-bg-subtle: var(--bg-subtle);
 }
 
 :root {
@@ -25,11 +27,12 @@
     --bg: hsl(0 0% 80%); /* secondary surfaces / panels */
     --bg-light: hsl(0 0% 70%); /* raised elements / cards / hover surfaces */
     --bg-light-hover: hsl(0 0% 60%);
+    --bg-subtle: hsl(0 0% 86%); /* subtle panel variant between bg-dark and bg */
 
     --text: hsl(0 0% 20%); /* primary text  */
     --text-muted: hsl(0 0% 30%); /* secondary / muted text */
 
-    --border: hsl(0 0 60%); /* standard borders */
+    --border: hsl(0 0 70%); /* standard borders */
     --border-muted: hsl(300 0% 82%); /* very subtle / disabled borders */
 
     --highlight: hsl(0 0% 50%); /* neutral highlight / emphasis */
@@ -45,7 +48,8 @@
     --logo-end: hsl(217 91% 60%);
 
     /* monaco editor needs hex codes */
-    --editor-bg: #e6e6e6;
+    --editor-bg: #dbdbdb;
+    --editor-line-highlight-border: #cacaca;
     --editor-line-number: #666666;
     --scrollbar-background: #00000000;
     --scrollbarSlider-background: #0000001a;
@@ -61,15 +65,16 @@
 }
 
 .dark {
-    --bg-dark: hsl(220, 6%, 10%); /* main page background (black) */
-    --bg: hsl(0 0% 20%); /* secondary surfaces / panels */
-    --bg-light: hsl(0 0% 30%); /* raised elements / cards / hover surfaces */
+    --bg-dark: hsl(220 6% 10%); /* main page background (black) */
+    --bg: hsl(220 6% 20%); /* secondary surfaces / panels */
+    --bg-light: hsl(220 6% 30%); /* raised elements / cards / hover surfaces */
     --bg-light-hover: hsl(0 0% 60%);
+    --bg-subtle: hsl(220 6% 15%); /* midpoint between 10% (bg-dark) and 20% (bg) */
 
     --text: hsl(0 0% 95%); /* primary text (almost white) */
     --text-muted: hsl(0 0% 70%); /* secondary / muted text */
 
-    --border: hsl(0 0 20%); /* standard borders (dark gray) */
+    --border: hsl(220 6% 30%); /* standard borders (dark gray) */
     --border-muted: hsl(300 0% 18%); /* very subtle / disabled borders */
 
     --highlight: hsl(0 0% 50%); /* neutral highlight / emphasis */
@@ -85,7 +90,8 @@
     --logo-end: hsl(217 91% 60%);
 
     /* monaco editor needs hex codes */
-    --editor-bg: #18191b;
+    --editor-bg: #242629;
+    --editor-line-highlight-border: #3a3a3a;
     --editor-line-number: #858585;
     --scrollbar-background: #00000000;
     --scrollbarSlider-background: #ffffff1a;
@@ -100,12 +106,6 @@
     --non-unitary-and-modifiers: hsl(0 0% 70%);
 }
 
-/* smaller layout for chrome, edge and safari */
-.tabs-scrollbar::-webkit-scrollbar {
-    height: 2px;
-    width: 2px;
-}
-
 @layer base {
     * {
         @apply border-border;
@@ -116,11 +116,7 @@
     /* Do not set this globally in * Selektor */
     html,
     body,
-    .scroll-container {
-        scrollbar-width: thin;
-        scrollbar-color: var(--bg) transparent;
-    }
-    /* Webkit/Safari */
+     /*Webkit/Safari */
     ::-webkit-scrollbar {
         width: 8px;
         height: 8px;
@@ -138,4 +134,49 @@
     ::-webkit-scrollbar-thumb:hover {
         background-color: var(--border);
     }
+
+    html {
+        /* Default for large screens (1080p monitors and up) */
+        font-size: 16px;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    /*
+       Laptop Mode (13" / 14" Laptops)
+       Shrinks UI to ~87.5%.
+       1rem becomes 14px.
+    */
+    @media (max-width: 1440px) {
+        html {
+            font-size: 14px;
+        }
+    }
+
+    /*
+       Tablet / Small Laptop Mode
+       Shrinks UI to ~81%.
+       1rem becomes 13px.
+    */
+    @media (max-width: 1024px) {
+        html {
+            font-size: 13px;
+        }
+    }
+
+    /*
+       Mobile Mode
+       Shrinks UI to ~75%.
+    */
+    @media (max-width: 768px) {
+        html {
+            font-size: 12px;
+        }
+    }
+}
+
+div.tabs-scrollbar {
+    /* Firefox Support: Subtil und dünn */
+    scrollbar-width: thin !important;
+    scrollbar-color: var(--border) transparent !important;
+    scrollbar-gutter: stable;
 }

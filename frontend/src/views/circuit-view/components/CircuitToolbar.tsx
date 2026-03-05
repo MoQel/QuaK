@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button.tsx';
-import { Minus, Plus, Trash } from 'lucide-react';
+import { Minus, Plus, Trash2 } from 'lucide-react';
 import { CircuitResponse } from '@/api/dto/circuit.ts';
 import { createCircuitService } from '@/views/circuit-view/util/circuitService.ts';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover.tsx';
@@ -16,7 +16,7 @@ export function CircuitToolbar({ circuit, setCircuit }: Readonly<CircuitToolbarP
 
     return (
         <div className="pb-5 flex justify-end space-x-3">
-            <Button onClick={addQubit} size="icon" className="size-8" title="Add Qubit">
+            <Button onClick={addQubit} size="icon" className="size-8" variant="secondary" title="Add Qubit">
                 <Plus />
             </Button>
             <Button
@@ -31,7 +31,7 @@ export function CircuitToolbar({ circuit, setCircuit }: Readonly<CircuitToolbarP
             <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
                 <PopoverTrigger asChild>
                     <Button size="icon" className="size-8" variant="destructive" title="Reset Circuit">
-                        <Trash />
+                        <Trash2 />
                     </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-64 p-4">

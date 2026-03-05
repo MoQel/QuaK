@@ -9,8 +9,10 @@ import { useTheme } from '@/theme';
 export const Settings: React.FC = () => {
     const { theme, setTheme } = useTheme();
     const isDark = theme === 'dark';
+    const construction = '<Under Construction />';
     return (
         <div className="p-8 max-w-4xl mx-auto">
+            <h1 className="italic text-2xl">{construction}</h1>
             <h1 className="text-3xl font-bold mb-6">Settings</h1>
 
             <div className="grid gap-6">

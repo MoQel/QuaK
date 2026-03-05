@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import SimulationWorker from '@/workers/simulation.worker.ts?worker';
 import { CircuitResponse } from '@/api/dto/circuit.ts';
 import { WorkerRequest, WorkerResponse } from '@/workers/messages.ts';
 import { SimulationResult, SimulationOptions } from '@/simulation/simulation.types.ts';
@@ -17,7 +16,10 @@ export function useQuantumSimulation(circuit: CircuitResponse | undefined, optio
     const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
-        const worker = new SimulationWorker();
+        const worker = new Worker(new URL('@/workers/simulation.worker.ts', import.meta.url), {
+            type: 'module',
+            name: 'simulation-worker',
+        });
         workerRef.current = worker;
 
         worker.onmessage = (event: MessageEvent<WorkerResponse>) => {

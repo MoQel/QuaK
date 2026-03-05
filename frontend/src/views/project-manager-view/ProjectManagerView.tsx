@@ -2,17 +2,16 @@ import { Card, CardContent } from '@/components/ui/card.tsx';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog.tsx';
 import { Project } from '@/views/project-manager-view/Project.tsx';
 import { Button } from '@/components/ui/button.tsx';
-import { ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { Form, FormField } from '@/components/ui/form.tsx';
 import { z, ZodObject, ZodRawShape } from 'zod';
 import { DefaultValues, FieldPath, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Skeleton } from '@/components/ui/skeleton.tsx';
-import { sort, getElementForFileElement } from '@/views/project-manager-view/util/FileElement.tsx';
+import { File, sort, getElementForFileElement } from '@/views/project-manager-view/util/FileElement.tsx';
 import { DialogCloseButtons, TextInput } from '@/views/project-manager-view/util/FormComponents.tsx';
 import { Plus, FilePlus, FolderPlus, LucideIcon } from 'lucide-react';
 import { Empty } from '@/views/project-manager-view/util/TreeComponents.tsx';
-import { File } from '@/views/project-manager-view/util/FileElement.tsx';
 import { api } from '@/api/api.ts';
 import { ProjectDetailsResponse, ProjectRequest, ProjectContentsResponse } from '@/api/dto/filesystem.ts';
 import { toast } from 'sonner';
@@ -52,7 +51,7 @@ export function ProjectManagerView({ onFileSelect, projectId }: Readonly<Project
     }, [reloaded, projectId]);
 
     return (
-        <Card className="h-full border-0 rounded-none bg-background shadow-none p-0 gap-0">
+        <Card className="h-full border-none rounded-none bg-background shadow-none p-0 gap-0">
             <SelectedFolder value={selectedFolderValue}>
                 <div className="flex flex-col h-full">
                     {projectId && <ProjectToolbar projectId={projectId} reload={reload} />}
@@ -167,7 +166,7 @@ function ProjectToolbar({ projectId, reload }: Readonly<ProjectToolbarProps>) {
     };
 
     return (
-        <div className="flex items-center gap-1 px-2 py-1.5 border-b border-border bg-muted/20">
+        <div className="flex items-center gap-1 px-2 py-1.5 bg-muted/20">
             <ToolbarDialog icon={FilePlus} title="Create a new file" parentId={parentId} reloadAll={reloadAll}>
                 {(props) => <CreateFileForm {...props} />}
             </ToolbarDialog>

@@ -67,3 +67,19 @@ export const safeCloseOthers =
             dispatch(closeOthers(payload));
         }
     };
+
+export const safeCloseCodePanel = () => (dispatch: AppDispatch, getState: () => RootState) => {
+    const state = getState().tabs;
+
+    if (state.dirtyFiles.length > 0) {
+        dispatch(
+            setPendingClose({
+                type: 'all',
+                shouldCloseCodePanel: true,
+            }),
+        );
+    } else {
+        dispatch(closeAll());
+        globalThis.dispatchEvent(new CustomEvent('dockview-close-panel-code'));
+    }
+};

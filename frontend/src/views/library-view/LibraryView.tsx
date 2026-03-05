@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.tsx';
+import { Card, CardContent, CardHeader } from '@/components/ui/card.tsx';
 import styles from '@/App.module.css';
 import LibraryBoxView from '@/views/library-view/LibraryBoxView.tsx';
 import { Button } from '@/components/ui/button';
@@ -30,10 +30,8 @@ export function LibraryView({ onOperationSelect }: Readonly<LibraryViewProps>) {
     };
 
     return (
-        <Card className="w-full h-full min-h-0 relative flex flex-col overflow-hidden">
+        <Card className="w-full h-full min-h-0 relative flex flex-col overflow-hidden border-none">
             <CardHeader className="w-full flex justify-center items-center relative">
-                <CardTitle className="text-center">Library</CardTitle>
-
                 <Button onClick={() => setBoxMode(!boxMode)} variant="default" size="icon" className="absolute right-5">
                     {boxMode && <List />}
                     {!boxMode && <LayoutGrid />}

@@ -209,7 +209,7 @@ export function ResultsView() {
                     <ChartContainer config={chartConfig} className="h-full w-full aspect-auto">
                         <BarChart
                             data={visibleData}
-                            margin={{ top: 15, right: 10, left: 15, bottom: 10 }}
+                            margin={{ top: 0, right: 10, left: 15, bottom: 0 }}
                             accessibilityLayer
                         >
                             <CartesianGrid
@@ -261,22 +261,10 @@ export function ResultsView() {
     };
 
     return (
-        <Card className="w-full h-full border-l rounded-none flex flex-col min-w-0">
-            <CardHeader className="border-b bg-card z-10 shrink-0 [.border-b]:pb-2">
+        <Card className="w-full h-full border-l rounded-none flex flex-col min-w-0 border-none">
+            <CardHeader className="bg-card z-10 shrink-0">
                 <div className="flex flex-col gap-4 lg:flex-row lg:justify-between lg:items-center">
                     <div className="flex flex-col gap-2">
-                        <CardTitle className="flex items-center gap-2 text-text">
-                            Simulation Results
-                            {isCalculating && (
-                                <Badge
-                                    variant="secondary"
-                                    className="animate-pulse text-xs bg-bg-light text-text-muted"
-                                >
-                                    Calculating...
-                                </Badge>
-                            )}
-                        </CardTitle>
-
                         <div
                             className={`flex flex-col gap-1 transition-opacity duration-200 ${
                                 isCircuitTooLarge ? 'opacity-50 pointer-events-none grayscale' : ''
@@ -333,10 +321,10 @@ export function ResultsView() {
 
                 {/* Loading State Overlay */}
                 {isCalculating && (
-                    <div className="absolute inset-0 bg-bg-dark/50 backdrop-blur-[2px] z-20 flex items-center justify-center">
+                    <div className="absolute inset-0 bg-bg-dark/50 backdrop-blur-[2px] z-20 flex items-center justify-center cursor">
                         <Badge
                             variant="outline"
-                            className="bg-bg-light shadow-lg px-4 py-2 animate-pulse text-text border-border"
+                            className="bg-bg-light shadow-lg px-4 py-2 animate-pulse text-text border-border pointer-events-none"
                         >
                             Processing...
                         </Badge>

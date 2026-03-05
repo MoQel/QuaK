@@ -25,7 +25,7 @@ export function TextEditorView() {
     const showBottomDropZone = isDragging && !hasBottomGroup;
 
     return (
-        <Card className="h-full flex flex-col p-0 border-none rounded-none relative">
+        <Card className="h-full flex flex-col p-0 border-none rounded-none relative bg-bg-subtle">
             <UnsavedChangesAlertDialog />
             {/* Top/Bottom split */}
             <PanelGroup direction="vertical" id="outer-group">
@@ -47,7 +47,13 @@ export function TextEditorView() {
                         {hasRightGroup && (
                             <>
                                 <PanelResizeHandle />
-                                <Panel id="right-panel" order={1} minSize={20} defaultSize={50}>
+                                <Panel
+                                    id="right-panel"
+                                    order={1}
+                                    minSize={20}
+                                    defaultSize={50}
+                                    className="border-l border-border"
+                                >
                                     <EditorSlot groupId={GROUP_RIGHT} />
                                 </Panel>
                             </>
@@ -66,7 +72,13 @@ export function TextEditorView() {
                 {hasBottomGroup && (
                     <>
                         <PanelResizeHandle />
-                        <Panel id="bottom-panel" order={2} minSize={20} defaultSize={50}>
+                        <Panel
+                            id="bottom-panel"
+                            order={2}
+                            minSize={20}
+                            defaultSize={50}
+                            className="border-t border-border"
+                        >
                             <EditorSlot groupId={GROUP_BOTTOM} />
                         </Panel>
                     </>

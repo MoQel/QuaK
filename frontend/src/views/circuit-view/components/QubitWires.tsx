@@ -20,7 +20,7 @@ export function QubitWires({ circuit, setCircuit, flatQubits }: Readonly<QubitWi
                 >
                     <QubitLabel circuit={circuit} setCircuit={setCircuit} qubit={q} />
                     <div
-                        className="absolute border-b"
+                        className="absolute border-b border-border"
                         style={{
                             top: QUBIT_HEIGHT / 2,
                             left: LABEL_WIDTH,

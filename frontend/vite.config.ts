@@ -18,6 +18,7 @@ export default defineConfig({
       headers: {
           'Cross-Origin-Opener-Policy': 'same-origin',
           'Cross-Origin-Embedder-Policy': 'require-corp',
+          'Content-Security-Policy': "worker-src 'self' blob:; child-src 'self' blob:;"
       },
     proxy: {
       '/api': {
@@ -27,10 +28,18 @@ export default defineConfig({
       }
     }
   },
+    worker: {
+      format: 'es',
+       plugins: () => [
+           wasm(),
+           topLevelAwait()
+       ]
+    },
     preview: {
         headers: {
             'Cross-Origin-Opener-Policy': 'same-origin',
             'Cross-Origin-Embedder-Policy': 'require-corp',
+            'Content-Security-Policy': "worker-src 'self' blob:; child-src 'self' blob:;"
         },
     },
     test: {
