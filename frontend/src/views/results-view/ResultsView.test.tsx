@@ -19,6 +19,9 @@ vi.mock('@/hooks/results/useChartData.ts', () => ({
     useChartData: vi.fn(() => []),
 }));
 
+import { useProject } from '@/contexts/ProjectContext';
+vi.mock('@/contexts/ProjectContext');
+
 vi.mock('recharts', async (importOriginal) => {
     const actual = await importOriginal<typeof import('recharts')>();
     return {
@@ -58,25 +61,27 @@ describe('ResultsView Component', () => {
     });
 
     it('shows empty state when no circuit is provided', () => {
+        (useProject as Mock).mockReturnValue({ circuit: undefined });
         (useQuantumSimulation as Mock).mockReturnValue({
             result: null,
             isCalculating: false,
             error: null,
         });
 
-        render(<ResultsView circuit={undefined} />);
+        render(<ResultsView />);
 
         expect(screen.getByText(/Add qubits to the circuit/i)).toBeInTheDocument();
     });
 
     it('shows loading state correctly', () => {
+        (useProject as Mock).mockReturnValue({ circuit: mockCircuit });
         (useQuantumSimulation as Mock).mockReturnValue({
             result: null,
             isCalculating: true,
             error: null,
         });
 
-        render(<ResultsView circuit={mockCircuit} />);
+        render(<ResultsView />);
 
         const badge = screen.getByText(/Calculating/i);
         expect(badge).toBeInTheDocument();
@@ -84,26 +89,28 @@ describe('ResultsView Component', () => {
     });
 
     it('shows error message when simulation fails', () => {
+        (useProject as Mock).mockReturnValue({ circuit: mockCircuit });
         (useQuantumSimulation as Mock).mockReturnValue({
             result: null,
             isCalculating: false,
             error: 'WASM Explosion',
         });
 
-        render(<ResultsView circuit={mockCircuit} />);
+        render(<ResultsView />);
 
         expect(screen.getByText(/Simulation Error/i)).toBeInTheDocument();
         expect(screen.getByText(/WASM Explosion/i)).toBeInTheDocument();
     });
 
     it('renders the chart area when simulation succeeds', () => {
+        (useProject as Mock).mockReturnValue({ circuit: mockCircuit });
         (useQuantumSimulation as Mock).mockReturnValue({
             result: mockSuccessResult,
             isCalculating: false,
             error: null,
         });
 
-        render(<ResultsView circuit={mockCircuit} />);
+        render(<ResultsView />);
 
         expect(screen.getByText(/Simulation Results/i)).toBeInTheDocument();
         expect(screen.getByText('|q0>')).toBeInTheDocument();

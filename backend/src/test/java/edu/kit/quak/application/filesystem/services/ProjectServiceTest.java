@@ -7,6 +7,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import edu.kit.quak.application.circuit.ports.in.CircuitServicePort;
 import edu.kit.quak.application.filesystem.ports.out.ProjectRepositoryPort;
 import edu.kit.quak.application.user.ports.in.ProjectRoleServicePort;
 import edu.kit.quak.application.user.ports.out.ProjectRoleRepositoryPort;
@@ -35,12 +36,15 @@ class ProjectServiceTest {
     @Mock
     private ProjectRoleRepositoryPort roleRepository;
 
+    @Mock
+    private CircuitServicePort circuitService;
+
     private ProjectService service;
     private User testUser;
 
     @BeforeEach
     void setUp() {
-        service = new ProjectService(repository, roleService, roleRepository);
+        service = new ProjectService(repository, roleService, roleRepository, circuitService);
         testUser = new User();
         testUser.setId(UUID.randomUUID());
     }

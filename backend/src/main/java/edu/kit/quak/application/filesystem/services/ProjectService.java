@@ -1,5 +1,6 @@
 package edu.kit.quak.application.filesystem.services;
 
+import edu.kit.quak.application.circuit.ports.in.CircuitServicePort;
 import edu.kit.quak.application.filesystem.exceptions.AccessDeniedException;
 import edu.kit.quak.application.filesystem.ports.in.ProjectServicePort;
 import edu.kit.quak.application.filesystem.ports.out.ProjectRepositoryPort;
@@ -24,11 +25,18 @@ public class ProjectService implements ProjectServicePort {
     private final ProjectRepositoryPort repository;
     private final ProjectRoleServicePort roleService;
     private final ProjectRoleRepositoryPort roleRepository;
+    private final CircuitServicePort circuitService;
 
-    public ProjectService(ProjectRepositoryPort repository, ProjectRoleServicePort roleService, ProjectRoleRepositoryPort roleRepository) {
+    public ProjectService(
+        ProjectRepositoryPort repository,
+        ProjectRoleServicePort roleService,
+        ProjectRoleRepositoryPort roleRepository,
+        CircuitServicePort circuitService
+    ) {
         this.repository = repository;
         this.roleService = roleService;
         this.roleRepository = roleRepository;
+        this.circuitService = circuitService;
     }
 
     @Override
@@ -43,6 +51,7 @@ public class ProjectService implements ProjectServicePort {
         roleRepository.save(ownerRole);
         log.info("Assigned OWNER role to user '{}' for project '{}'", user.getId(), savedProject.getId());
 
+        circuitService.init(savedProject.getId());
         return savedProject;
     }
 
@@ -67,6 +76,7 @@ public class ProjectService implements ProjectServicePort {
 
         // Clean up all role assignments for this project
         roleRepository.deleteAllByProjectId(id);
+        circuitService.getByProjectId(id).ifPresent(c -> circuitService.delete(c.getId()));
         repository.deleteById(id);
     }
 
