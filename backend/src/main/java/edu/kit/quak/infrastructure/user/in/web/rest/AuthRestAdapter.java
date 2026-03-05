@@ -20,7 +20,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * REST adapter for authentication-related endpoints. Handles HTTP-specific concerns and delegates
+ * REST adapter for authentication-related endpoints. Handles HTTP-specific
+ * concerns and delegates
  * business logic to the application layer.
  */
 @Slf4j
@@ -63,7 +64,8 @@ public class AuthRestAdapter {
     /**
      * Extracts AuthenticatedUser from Spring Security context.
      *
-     * @return Optional containing the authenticated user, empty if not authenticated
+     * @return Optional containing the authenticated user, empty if not
+     *         authenticated
      */
     private Optional<AuthenticatedUser> extractAuthenticatedUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();

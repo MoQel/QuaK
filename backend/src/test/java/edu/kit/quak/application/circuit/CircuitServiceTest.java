@@ -30,28 +30,42 @@ class CircuitServiceTest {
     private CircuitService service;
 
     @Test
-    void init_createsAndSavesCircuit() {
+    void get_returnsCircuit_whenFound() {
         // setup
-        QuantumCircuit mockCircuit = new QuantumCircuit();
-        when(repository.save(any(QuantumCircuit.class))).thenReturn(mockCircuit);
+        String projectId = "p-1";
+        QuantumCircuit circuit = new QuantumCircuit(projectId);
+        when(repository.findByProjectId(projectId)).thenReturn(Optional.of(circuit));
 
         // execute
-        QuantumCircuit result = service.init();
+        QuantumCircuit result = service.getByProjectId(projectId);
 
         // verify state
-        assertNotNull(result);
-        verify(repository).save(any(QuantumCircuit.class));
+        assertEquals(circuit, result);
     }
 
     @Test
-    void get_returnsCircuit_whenFound() {
+    void getByProjectId_throwsException_whenNotFound() {
         // setup
+        String projectId = "unknown";
+        when(repository.findByProjectId(projectId)).thenReturn(Optional.empty());
+
+        // execute & verify exception
+        CircuitNotFoundException exception = assertThrows(CircuitNotFoundException.class, () -> service.getByProjectId(projectId));
+        // verify context data (RFC 7807)
+        assertEquals("Circuit", exception.getResourceType());
+    }
+
+    @Test
+    void getById_returnsCircuit_whenFound() {
+        // setup
+        String projectId = "p-1";
         String circuitId = "c-1";
-        QuantumCircuit circuit = new QuantumCircuit();
+        QuantumCircuit circuit = new QuantumCircuit(projectId);
+        circuit.setId(circuitId);
         when(repository.findById(circuitId)).thenReturn(Optional.of(circuit));
 
         // execute
-        QuantumCircuit result = service.get(circuitId);
+        QuantumCircuit result = service.getById(circuitId);
 
         // verify state
         assertEquals(circuit, result);
@@ -64,10 +78,10 @@ class CircuitServiceTest {
         when(repository.findById(circuitId)).thenReturn(Optional.empty());
 
         // execute & verify exception
-        CircuitNotFoundException exception = assertThrows(CircuitNotFoundException.class, () -> service.get(circuitId));
+        CircuitNotFoundException exception = assertThrows(CircuitNotFoundException.class, () -> service.getById(circuitId));
         // verify context data (RFC 7807)
         assertEquals("Circuit", exception.getResourceType());
-        assertEquals(circuitId, exception.getResourceId());
+        assertEquals("Circuit not found: " + circuitId, exception.getResourceId());
     }
 
     @Test
@@ -80,6 +94,26 @@ class CircuitServiceTest {
 
         // verify delegation
         verify(repository).delete(circuitId);
+    }
+
+    @Test
+    void resetByCircuitId_deletesOldAndCreatesNew() {
+        // setup
+        String projectId = "p-1";
+        String circuitId = "c-1";
+        QuantumCircuit circuit = new QuantumCircuit(projectId);
+        circuit.setId(circuitId);
+        when(repository.findById(circuitId)).thenReturn(Optional.of(circuit));
+        when(repository.save(any(QuantumCircuit.class))).thenAnswer(i -> i.getArguments()[0]);
+
+        // execute
+        QuantumCircuit result = service.resetCircuit(circuitId);
+
+        // verify old circuit deleted and new one saved
+        verify(repository).delete(circuitId);
+        verify(repository).save(any(QuantumCircuit.class));
+        assertNotNull(result);
+        assertEquals(projectId, result.getProjectId());
     }
 
     @Test

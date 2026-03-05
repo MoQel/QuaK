@@ -14,22 +14,28 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.NonNull;
 
 public class QuantumCircuit extends ElementWithId {
 
+    @Getter
+    private final String projectId;
+
     private final List<Register> registers = new ArrayList<>();
     private final List<Layer> layers = new ArrayList<>();
 
-    public QuantumCircuit() {
+    public QuantumCircuit(String projectId) {
         super();
+        this.projectId = projectId;
         registers.add(new QuantumRegister("q", 4));
     }
 
     @Builder
-    public QuantumCircuit(String id, List<Register> registers, List<Layer> layers) {
+    public QuantumCircuit(String id, String projectId, List<Register> registers, List<Layer> layers) {
         super();
         this.id = id;
+        this.projectId = projectId;
         this.registers.addAll(registers);
         this.layers.addAll(layers);
     }

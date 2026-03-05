@@ -49,33 +49,27 @@ export async function apiRequest<T>(endpoint: string, options: FetchOptions = {}
         },
     };
 
-    try {
-        const response = await fetch(url, defaultOptions);
+    const response = await fetch(url, defaultOptions);
 
-        // Handle authentication errors
-        if (response.status === 401) {
-            if (!options.skipRedirect) {
-                // Redirect to login if not authenticated
-                window.location.href = '/login';
-            }
-            throw new Error('Unauthorized');
+    // Handle authentication errors
+    if (response.status === 401) {
+        if (!options.skipRedirect) {
+            // Redirect to login if not authenticated
+            window.location.href = '/login';
         }
+        throw new Error('Unauthorized');
+    }
 
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.detail || errorData.message || `API error: ${response.statusText}`);
-        }
+    if (!response.ok) {
+        throw response;
+    }
 
-        // Return parsed JSON or text based on content type
-        const contentType = response.headers.get('content-type');
-        if (contentType && contentType.indexOf('application/json') !== -1) {
-            return await response.json();
-        } else {
-            return (await response.text()) as unknown as T;
-        }
-    } catch (error) {
-        console.error('API request failed:', error);
-        throw error;
+    // Return parsed JSON or text based on content type
+    const contentType = response.headers.get('content-type');
+    if (contentType?.includes('application/json')) {
+        return await response.json();
+    } else {
+        return (await response.text()) as unknown as T;
     }
 }
 

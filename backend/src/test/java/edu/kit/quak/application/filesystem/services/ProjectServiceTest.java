@@ -7,6 +7,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import edu.kit.quak.application.circuit.ports.in.CircuitServicePort;
 import edu.kit.quak.application.filesystem.exception.ProjectNotFoundException;
 import edu.kit.quak.application.filesystem.ports.out.ProjectRepositoryPort;
 import edu.kit.quak.core.filesystem.model.Project;
@@ -27,12 +28,15 @@ class ProjectServiceTest {
     @Mock
     private ProjectRepositoryPort repository;
 
+    @Mock
+    private CircuitServicePort circuitService;
+
     private ProjectService service;
     private User testUser;
 
     @BeforeEach
     void setUp() {
-        service = new ProjectService(repository);
+        service = new ProjectService(repository, circuitService);
         testUser = new User();
         testUser.setId(UUID.randomUUID());
     }

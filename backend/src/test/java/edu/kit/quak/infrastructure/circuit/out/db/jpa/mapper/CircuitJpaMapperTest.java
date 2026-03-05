@@ -31,13 +31,17 @@ class CircuitJpaMapperTest {
     @Test
     void domainToEntity() {
         // Arrange
-        QuantumCircuit domain = new QuantumCircuit();
+        String projectId = "p-id";
+        QuantumCircuit domain = new QuantumCircuit(projectId);
+        String circuitId = domain.getId();
 
         // Act
         JpaQuantumCircuit entity = mapper.toEntity(domain);
 
         // Assert
         assertNotNull(entity);
+        assertEquals(circuitId, entity.getId());
+        assertEquals(projectId, entity.getProjectId());
         assertEquals(1, entity.getRegisters().size());
         assertEquals("q", entity.getRegisters().getFirst().getName());
         assertInstanceOf(JpaQuantumRegister.class, entity.getRegisters().getFirst());
@@ -55,7 +59,11 @@ class CircuitJpaMapperTest {
         jpaRegister.setNumberOfQubits(1);
         JpaLayer jpaLayer = new JpaLayer();
 
+        String projectId = "p-id";
+        String circuitId = "circuit-id";
         JpaQuantumCircuit entity = new JpaQuantumCircuit();
+        entity.setId(circuitId);
+        entity.setProjectId(projectId);
         entity.setRegisters(List.of(jpaRegister));
         entity.setLayers(List.of(jpaLayer));
 
@@ -64,6 +72,8 @@ class CircuitJpaMapperTest {
 
         // Assert
         assertNotNull(domain);
+        assertEquals(circuitId, domain.getId());
+        assertEquals(projectId, domain.getProjectId());
         assertEquals(1, domain.getRegisters().size());
         assertEquals("q", domain.getRegisters().getFirst().getName());
         assertInstanceOf(QuantumRegister.class, domain.getRegisters().getFirst());
