@@ -36,15 +36,9 @@ const routes: RouteObject[] = [
             },
             {
                 path: 'project/:projectId',
-                // Get or initialize circuit for project.
+                // Get circuit for project.
                 loader: async ({ params }) => {
-                    return api.get<CircuitResponse>(`/api/circuit/${params.projectId}`).catch((error: Response) => {
-                        if (error.status === 404) {
-                            // Initialize new circuit if none found.
-                            return api.post<CircuitResponse>(`/api/circuit/${params.projectId}`);
-                        }
-                        throw error;
-                    });
+                    return api.get<CircuitResponse>(`/api/circuit/${params.projectId}`);
                 },
                 element: <Project />,
             },

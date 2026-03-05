@@ -12,7 +12,7 @@ interface CircuitToolbarProps {
 }
 
 export function CircuitToolbar({ circuit, setCircuit, projectId }: Readonly<CircuitToolbarProps>) {
-    const { addQubit, deleteLastQubit, resetCircuit } = createCircuitService(circuit, setCircuit);
+    const { addQubit, deleteLastQubit, resetCircuit } = createCircuitService(circuit, projectId, setCircuit);
     const [isPopoverOpen, setIsPopoverOpen] = useState(false);
 
     return (
@@ -44,7 +44,7 @@ export function CircuitToolbar({ circuit, setCircuit, projectId }: Readonly<Circ
                         <div className="flex flex-col gap-2">
                             <Button
                                 onClick={() => {
-                                    resetCircuit(projectId);
+                                    resetCircuit();
                                     setIsPopoverOpen(false);
                                 }}
                                 variant="destructive"

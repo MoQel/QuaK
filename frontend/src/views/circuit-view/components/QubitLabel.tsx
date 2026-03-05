@@ -9,11 +9,12 @@ import { LABEL_WIDTH, QUBIT_HEIGHT } from '@/views/circuit-view/util/layout.ts';
 interface QubitLabelProps {
     circuit: CircuitResponse | undefined;
     setCircuit: (circuit: CircuitResponse) => void;
+    projectId: string | undefined;
     qubit: FlatQubit;
 }
 
-export function QubitLabel({ circuit, setCircuit, qubit }: Readonly<QubitLabelProps>) {
-    const { deleteQubit } = createCircuitService(circuit, setCircuit);
+export function QubitLabel({ circuit, setCircuit, projectId, qubit }: Readonly<QubitLabelProps>) {
+    const { deleteQubit } = createCircuitService(circuit, projectId, setCircuit);
     const [open, setOpen] = useState(false);
 
     const onDelete = () => {

@@ -11,21 +11,23 @@ public interface CircuitServicePort {
 
     Optional<QuantumCircuit> getByProjectId(String projectId);
 
-    void delete(String circuitId);
+    void deleteByProjectId(String projectId);
 
-    QuantumCircuit addQubit(String circuitId, String registerId);
+    QuantumCircuit resetByProjectId(String projectId);
 
-    QuantumCircuit removeQubit(String circuitId, String registerId, int qubitIdx);
+    QuantumCircuit addQubit(String projectId, String registerId);
 
-    QuantumCircuit addQuantumOperation(String circuitId, QuantumOperation operation, int layerIdx);
+    QuantumCircuit removeQubit(String projectId, String registerId, int qubitIdx);
+
+    QuantumCircuit addQuantumOperation(String projectId, QuantumOperation operation, int layerIdx);
 
     QuantumCircuit moveQuantumOperation(
-        String circuitId,
+        String projectId,
         String operationId,
         int layerIdx,
         List<ElementSelector> targetQubits,
         List<ElementSelector> controlQubits
     );
 
-    QuantumCircuit removeQuantumOperation(String circuitId, String operationId);
+    QuantumCircuit removeQuantumOperation(String projectId, String operationId);
 }

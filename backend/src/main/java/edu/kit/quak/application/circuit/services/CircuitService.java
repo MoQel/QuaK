@@ -33,43 +33,54 @@ public class CircuitService implements CircuitServicePort {
     }
 
     @Override
-    public void delete(String circuitId) {
-        repository.delete(circuitId);
+    public void deleteByProjectId(String projectId) {
+        QuantumCircuit circuit = getByProjectId(projectId).orElseThrow(() ->
+            new EntityNotFoundException("Circuit not found for project: " + projectId)
+        );
+        repository.delete(circuit.getId());
     }
 
     @Override
-    public QuantumCircuit addQubit(String circuitId, String registerId) {
-        return updateCircuit(circuitId, circuit -> circuit.addQubit(registerId));
+    public QuantumCircuit resetByProjectId(String projectId) {
+        getByProjectId(projectId).ifPresent(circuit -> repository.delete(circuit.getId()));
+        return init(projectId);
     }
 
     @Override
-    public QuantumCircuit removeQubit(String circuitId, String registerId, int qubitIdx) {
-        return updateCircuit(circuitId, circuit -> circuit.removeQubit(registerId, qubitIdx));
+    public QuantumCircuit addQubit(String projectId, String registerId) {
+        return updateCircuit(projectId, circuit -> circuit.addQubit(registerId));
     }
 
-    public QuantumCircuit addQuantumOperation(String circuitId, QuantumOperation operation, int layerIdx) {
-        return updateCircuit(circuitId, circuit -> circuit.addQuantumOperation(operation, layerIdx));
+    @Override
+    public QuantumCircuit removeQubit(String projectId, String registerId, int qubitIdx) {
+        return updateCircuit(projectId, circuit -> circuit.removeQubit(registerId, qubitIdx));
     }
 
+    @Override
+    public QuantumCircuit addQuantumOperation(String projectId, QuantumOperation operation, int layerIdx) {
+        return updateCircuit(projectId, circuit -> circuit.addQuantumOperation(operation, layerIdx));
+    }
+
+    @Override
     public QuantumCircuit moveQuantumOperation(
-        String circuitId,
+        String projectId,
         String operationId,
         int layerIdx,
         List<ElementSelector> targetQubits,
         List<ElementSelector> controlQubits
     ) {
-        return updateCircuit(circuitId, circuit -> circuit.moveQuantumOperation(operationId, layerIdx, targetQubits, controlQubits));
+        return updateCircuit(projectId, circuit -> circuit.moveQuantumOperation(operationId, layerIdx, targetQubits, controlQubits));
     }
 
     @Override
-    public QuantumCircuit removeQuantumOperation(String circuitId, String operationId) {
-        return updateCircuit(circuitId, circuit -> circuit.removeQuantumOperation(operationId));
+    public QuantumCircuit removeQuantumOperation(String projectId, String operationId) {
+        return updateCircuit(projectId, circuit -> circuit.removeQuantumOperation(operationId));
     }
 
-    private QuantumCircuit updateCircuit(String circuitId, Consumer<QuantumCircuit> action) {
-        QuantumCircuit circuit = repository
-            .findById(circuitId)
-            .orElseThrow(() -> new EntityNotFoundException("Circuit not found: " + circuitId));
+    private QuantumCircuit updateCircuit(String projectId, Consumer<QuantumCircuit> action) {
+        QuantumCircuit circuit = getByProjectId(projectId).orElseThrow(() ->
+            new EntityNotFoundException("Circuit not found for project: " + projectId)
+        );
 
         action.accept(circuit);
 

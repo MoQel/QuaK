@@ -16,6 +16,7 @@ import { getOperationDefinition } from '@/lib/operations.ts';
 interface DropzoneGridProps {
     circuit: CircuitResponse | undefined;
     setCircuit: (circuit: CircuitResponse) => void;
+    projectId: string | undefined;
     flatQubits: FlatQubit[];
     uiLayers: UiLayer[];
     activeDropZones: Set<string>;
@@ -26,13 +27,14 @@ interface DropzoneGridProps {
 export function DropzoneGrid({
     circuit,
     setCircuit,
+    projectId,
     flatQubits,
     uiLayers,
     activeDropZones,
     setHoverPos,
     setDraggingOperationId,
 }: Readonly<DropzoneGridProps>) {
-    const { addQuantumOperation, moveQuantumOperation } = createCircuitService(circuit, setCircuit);
+    const { addQuantumOperation, moveQuantumOperation } = createCircuitService(circuit, projectId, setCircuit);
 
     const dispatch = useDispatch();
 

@@ -8,54 +8,50 @@ import {
 
 export function createCircuitService(
     circuit: CircuitResponse | undefined,
+    projectId: string | undefined,
     setCircuit: (circuit: CircuitResponse) => void,
 ) {
-    const initCircuit = (projectId: string) => {
-        api.post<CircuitResponse>(`/api/circuit/${projectId}`).then(setCircuit);
-    };
-
     const addQubit = () => {
-        if (!circuit) return;
+        if (!projectId || !circuit) return;
         const lastQR = circuit.registers.findLast(isQuantumRegister);
         if (lastQR) {
-            api.post<CircuitResponse>(`/api/circuit/${circuit.id}/register/${lastQR.id}`).then(setCircuit);
+            api.post<CircuitResponse>(`/api/circuit/${projectId}/register/${lastQR.id}`).then(setCircuit);
         }
     };
 
     const deleteQubit = (registerId: string, qubitIdx: number) => {
-        if (!circuit) return;
-        api.delete<CircuitResponse>(`/api/circuit/${circuit.id}/register/${registerId}/${qubitIdx}`).then(setCircuit);
+        if (!projectId) return;
+        api.delete<CircuitResponse>(`/api/circuit/${projectId}/register/${registerId}/${qubitIdx}`).then(setCircuit);
     };
 
     const deleteLastQubit = () => {
-        if (!circuit) return;
+        if (!projectId || !circuit) return;
         const lastQR = circuit.registers.findLast(isQuantumRegister);
         if (lastQR && lastQR.numberOfQubits > 0) {
             api.delete<CircuitResponse>(
-                `/api/circuit/${circuit.id}/register/${lastQR.id}/${lastQR.numberOfQubits - 1}`,
+                `/api/circuit/${projectId}/register/${lastQR.id}/${lastQR.numberOfQubits - 1}`,
             ).then(setCircuit);
         }
     };
 
-    const resetCircuit = (projectId: string | undefined) => {
-        if (!circuit) return;
+    const resetCircuit = () => {
         if (!projectId) return;
-        api.delete(`/api/circuit/${circuit.id}`).then(() => initCircuit(projectId));
+        api.delete<CircuitResponse>(`/api/circuit/${projectId}`).then(setCircuit);
     };
 
     const addQuantumOperation = (payload: AddQuantumOperationRequest) => {
-        if (!circuit) return;
-        api.post<CircuitResponse>(`/api/circuit/${circuit.id}/operation`, payload).then(setCircuit);
+        if (!projectId) return;
+        api.post<CircuitResponse>(`/api/circuit/${projectId}/operation`, payload).then(setCircuit);
     };
 
     const moveQuantumOperation = (payload: MoveQuantumOperationRequest) => {
-        if (!circuit) return;
-        api.patch<CircuitResponse>(`/api/circuit/${circuit.id}/operation`, payload).then(setCircuit);
+        if (!projectId) return;
+        api.patch<CircuitResponse>(`/api/circuit/${projectId}/operation`, payload).then(setCircuit);
     };
 
     const removeQuantumOperation = (operationId: string) => {
-        if (!circuit) return;
-        api.delete<CircuitResponse>(`/api/circuit/${circuit.id}/operation/${operationId}`).then(setCircuit);
+        if (!projectId) return;
+        api.delete<CircuitResponse>(`/api/circuit/${projectId}/operation/${operationId}`).then(setCircuit);
     };
 
     return {

@@ -67,29 +67,52 @@ class CircuitServiceTest {
     }
 
     @Test
-    void delete_callsRepository() {
+    void deleteByProjectId_callsRepository() {
         // setup
+        String projectId = "p-1";
         String circuitId = "c-1";
+        QuantumCircuit circuit = new QuantumCircuit(projectId);
+        circuit.setId(circuitId);
+        when(repository.findByProjectId(projectId)).thenReturn(Optional.of(circuit));
 
         // execute
-        service.delete(circuitId);
+        service.deleteByProjectId(projectId);
 
         // verify delegation
         verify(repository).delete(circuitId);
     }
 
     @Test
+    void resetByProjectId_deletesOldAndCreatesNew() {
+        // setup
+        String projectId = "p-1";
+        String circuitId = "c-1";
+        QuantumCircuit circuit = new QuantumCircuit(projectId);
+        circuit.setId(circuitId);
+        when(repository.findByProjectId(projectId)).thenReturn(Optional.of(circuit));
+
+        // execute
+        QuantumCircuit result = service.resetByProjectId(projectId);
+
+        // verify old circuit deleted and new one saved
+        verify(repository).delete(circuitId);
+        verify(repository).save(any(QuantumCircuit.class));
+        assertNotNull(result);
+        assertEquals(projectId, result.getProjectId());
+    }
+
+    @Test
     void addQubit_updatesAndSavesCircuit() {
         // setup
-        String circuitId = "c-1";
+        String projectId = "p-1";
         String registerId = "r-1";
         QuantumCircuit circuitMock = mock(QuantumCircuit.class);
 
-        when(repository.findById(circuitId)).thenReturn(Optional.of(circuitMock));
+        when(repository.findByProjectId(projectId)).thenReturn(Optional.of(circuitMock));
         when(repository.save(circuitMock)).thenReturn(circuitMock);
 
         // execute
-        QuantumCircuit result = service.addQubit(circuitId, registerId);
+        QuantumCircuit result = service.addQubit(projectId, registerId);
 
         // verify delegation and save
         verify(circuitMock).addQubit(registerId);
@@ -100,16 +123,16 @@ class CircuitServiceTest {
     @Test
     void removeQubit_updatesAndSavesCircuit() {
         // setup
-        String circuitId = "c-1";
+        String projectId = "p-1";
         String registerId = "r-1";
         int qubitIdx = 2;
         QuantumCircuit circuitMock = mock(QuantumCircuit.class);
 
-        when(repository.findById(circuitId)).thenReturn(Optional.of(circuitMock));
+        when(repository.findByProjectId(projectId)).thenReturn(Optional.of(circuitMock));
         when(repository.save(circuitMock)).thenReturn(circuitMock);
 
         // execute
-        QuantumCircuit result = service.removeQubit(circuitId, registerId, qubitIdx);
+        QuantumCircuit result = service.removeQubit(projectId, registerId, qubitIdx);
 
         // verify delegation and save
         verify(circuitMock).removeQubit(registerId, qubitIdx);
@@ -120,16 +143,16 @@ class CircuitServiceTest {
     @Test
     void addQuantumOperation_updatesAndSavesCircuit() {
         // setup
-        String circuitId = "c-1";
+        String projectId = "p-1";
         int layerIdx = 1;
         QuantumOperation operationMock = mock(QuantumOperation.class);
         QuantumCircuit circuitMock = mock(QuantumCircuit.class);
 
-        when(repository.findById(circuitId)).thenReturn(Optional.of(circuitMock));
+        when(repository.findByProjectId(projectId)).thenReturn(Optional.of(circuitMock));
         when(repository.save(circuitMock)).thenReturn(circuitMock);
 
         // execute
-        QuantumCircuit result = service.addQuantumOperation(circuitId, operationMock, layerIdx);
+        QuantumCircuit result = service.addQuantumOperation(projectId, operationMock, layerIdx);
 
         // verify delegation and save
         verify(circuitMock).addQuantumOperation(operationMock, layerIdx);
@@ -140,7 +163,7 @@ class CircuitServiceTest {
     @Test
     void moveQuantumOperation_updatesAndSavesCircuit() {
         // setup
-        String circuitId = "c-1";
+        String projectId = "p-1";
         String operationId = "op-1";
         int layerIdx = 2;
         List<ElementSelector> targetQubits = List.of(mock(ElementSelector.class));
@@ -148,11 +171,11 @@ class CircuitServiceTest {
 
         QuantumCircuit circuitMock = mock(QuantumCircuit.class);
 
-        when(repository.findById(circuitId)).thenReturn(Optional.of(circuitMock));
+        when(repository.findByProjectId(projectId)).thenReturn(Optional.of(circuitMock));
         when(repository.save(circuitMock)).thenReturn(circuitMock);
 
         // execute
-        QuantumCircuit result = service.moveQuantumOperation(circuitId, operationId, layerIdx, targetQubits, controlQubits);
+        QuantumCircuit result = service.moveQuantumOperation(projectId, operationId, layerIdx, targetQubits, controlQubits);
 
         // verify delegation and save
         verify(circuitMock).moveQuantumOperation(operationId, layerIdx, targetQubits, controlQubits);
@@ -163,15 +186,15 @@ class CircuitServiceTest {
     @Test
     void removeQuantumOperation_updatesAndSavesCircuit() {
         // setup
-        String circuitId = "c-1";
+        String projectId = "p-1";
         String operationId = "op-1";
         QuantumCircuit circuitMock = mock(QuantumCircuit.class);
 
-        when(repository.findById(circuitId)).thenReturn(Optional.of(circuitMock));
+        when(repository.findByProjectId(projectId)).thenReturn(Optional.of(circuitMock));
         when(repository.save(circuitMock)).thenReturn(circuitMock);
 
         // execute
-        QuantumCircuit result = service.removeQuantumOperation(circuitId, operationId);
+        QuantumCircuit result = service.removeQuantumOperation(projectId, operationId);
 
         // verify delegation and save
         verify(circuitMock).removeQuantumOperation(operationId);
@@ -182,11 +205,11 @@ class CircuitServiceTest {
     @Test
     void updateCircuitMethods_throwException_whenCircuitNotFound() {
         // setup
-        String circuitId = "unknown";
-        when(repository.findById(circuitId)).thenReturn(Optional.empty());
+        String projectId = "unknown";
+        when(repository.findByProjectId(projectId)).thenReturn(Optional.empty());
 
         // execute & verify exception
-        assertThrows(EntityNotFoundException.class, () -> service.addQubit(circuitId, "r-1"));
+        assertThrows(EntityNotFoundException.class, () -> service.addQubit(projectId, "r-1"));
 
         // verify no save occurs
         verify(repository, never()).save(any());

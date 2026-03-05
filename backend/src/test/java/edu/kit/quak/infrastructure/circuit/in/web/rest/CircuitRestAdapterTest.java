@@ -9,12 +9,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import edu.kit.quak.application.circuit.ports.in.CircuitServicePort;
+import edu.kit.quak.application.filesystem.ports.in.ProjectServicePort;
+import edu.kit.quak.application.user.ports.in.UserServicePort;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementaryQuantumGate;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
 import edu.kit.quak.core.circuit.model.layer.operation.library.QuantumOperationLibrary;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.*;
+import edu.kit.quak.infrastructure.user.in.web.rest.mapper.AuthenticationMapper;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -26,6 +29,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+@SuppressWarnings("null")
 @WebMvcTest(CircuitRestAdapter.class)
 @Import(
     {
@@ -45,27 +49,16 @@ class CircuitRestAdapterTest {
     @MockitoBean
     private CircuitServicePort circuitServicePort;
 
+    @MockitoBean
+    private ProjectServicePort projectService;
+
+    @MockitoBean
+    private UserServicePort userService;
+
+    @MockitoBean
+    private AuthenticationMapper authMapper;
+
     public static final int INIT_QUBITS = 4;
-
-    @Test
-    void initCircuit_ShouldReturnCreated() throws Exception {
-        // Arrange
-        String projectId = "p-id";
-        QuantumCircuit circuit = new QuantumCircuit(projectId);
-        given(circuitServicePort.init(projectId)).willReturn(circuit);
-
-        // Act & Assert
-        mockMvc
-            .perform(post("/api/circuit/{projectId}", projectId).with(csrf()).contentType(MediaType.APPLICATION_JSON))
-            .andExpect(status().isCreated())
-            .andExpect(jsonPath("$.id").value(circuit.getId()))
-            .andExpect(jsonPath("$.registers").exists())
-            .andExpect(jsonPath("$.registers").isArray())
-            .andExpect(jsonPath("$.registers.size()").value(1))
-            .andExpect(jsonPath("$.layers").exists())
-            .andExpect(jsonPath("$.layers").isArray())
-            .andExpect(jsonPath("$.layers.size()").value(0));
-    }
 
     @Test
     void getCircuitByProjectId_ProjectHasCircuit_ShouldReturnCircuit() throws Exception {
@@ -75,7 +68,10 @@ class CircuitRestAdapterTest {
         given(circuitServicePort.getByProjectId(projectId)).willReturn(Optional.of(circuit));
 
         // Act & Assert
-        mockMvc.perform(get("/api/circuit/{projectId}", projectId)).andExpect(status().isOk()).andExpect(jsonPath("$.id").exists());
+        mockMvc
+            .perform(get("/api/circuit/{projectId}", projectId).with(csrf()))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.projectId").value(projectId));
     }
 
     @Test
@@ -85,66 +81,63 @@ class CircuitRestAdapterTest {
         given(circuitServicePort.getByProjectId(projectId)).willReturn(Optional.empty());
 
         // Act & Assert
-        mockMvc.perform(get("/api/circuit/{projectId}", projectId)).andExpect(status().is(404));
+        mockMvc.perform(get("/api/circuit/{projectId}", projectId).with(csrf())).andExpect(status().is(404));
     }
 
     @Test
     void addQubit_ShouldReturnCreated() throws Exception {
         // Arrange
-        String circuitId = "test-quantumOperationId";
-        QuantumCircuit circuit = new QuantumCircuit("");
+        String projectId = "p-id";
+        QuantumCircuit circuit = new QuantumCircuit(projectId);
         String registerId = circuit.getRegisters().getFirst().getId();
         circuit.addQubit(registerId);
-        given(circuitServicePort.addQubit(circuitId, registerId)).willReturn(circuit);
+        given(circuitServicePort.addQubit(projectId, registerId)).willReturn(circuit);
 
         // Act & Assert
         mockMvc
             .perform(
-                post("/api/circuit/{circuitId}/register/{registerId}", circuitId, registerId)
+                post("/api/circuit/{projectId}/register/{registerId}", projectId, registerId)
                     .with(csrf())
                     .contentType(MediaType.APPLICATION_JSON)
             )
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.registers").exists())
             .andExpect(jsonPath("$.registers").isArray())
-            .andExpect(jsonPath("$.registers[0].name").exists())
-            .andExpect(jsonPath("$.registers[0].name").value("q"))
-            .andExpect(jsonPath("$.registers[0].numberOfQubits").exists())
             .andExpect(jsonPath("$.registers[0].numberOfQubits").value(INIT_QUBITS + 1));
     }
 
     @Test
     void removeQubit_ShouldReturnUpdatedCircuit() throws Exception {
         // Arrange
-        String circuitId = "circuit-123";
+        String projectId = "p-id";
         String registerId = "register-456";
-        QuantumCircuit updatedCircuit = new QuantumCircuit("");
+        QuantumCircuit updatedCircuit = new QuantumCircuit(projectId);
         int qubitIdx = 0;
-        given(circuitServicePort.removeQubit(circuitId, registerId, qubitIdx)).willReturn(updatedCircuit);
+        given(circuitServicePort.removeQubit(projectId, registerId, qubitIdx)).willReturn(updatedCircuit);
 
         // Act & Assert
         mockMvc
             .perform(
-                delete("/api/circuit/{circuitId}/register/{registerId}/{qubitIdx}", circuitId, registerId, qubitIdx)
+                delete("/api/circuit/{projectId}/register/{registerId}/{qubitIdx}", projectId, registerId, qubitIdx)
                     .with(csrf())
                     .contentType(MediaType.APPLICATION_JSON)
             )
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.id").value(updatedCircuit.getId()));
+            .andExpect(jsonPath("$.projectId").value(projectId));
     }
 
     @Test
     void addQuantumOperation_ShouldReturnCreated() throws Exception {
         // Arrange
-        String circuitId = "test-quantumOperationId";
-        QuantumCircuit circuit = new QuantumCircuit("");
+        String projectId = "p-id";
+        QuantumCircuit circuit = new QuantumCircuit(projectId);
         String registerId = circuit.getRegisters().getFirst().getId();
         circuit.addQubit(registerId);
         ElementSelector target = new ElementSelector(registerId, 0);
         ElementaryQuantumGate operation = new ElementaryQuantumGate(QuantumOperationLibrary.H, false, List.of(target), null, 0d);
         int layerIdx = 0;
         circuit.addQuantumOperation(operation, layerIdx);
-        given(circuitServicePort.addQuantumOperation(eq(circuitId), any(QuantumOperation.class), eq(layerIdx))).willReturn(circuit);
+        given(circuitServicePort.addQuantumOperation(eq(projectId), any(QuantumOperation.class), eq(layerIdx))).willReturn(circuit);
         String payload = """
             {
                 "quantumOperation": {
@@ -165,14 +158,11 @@ class CircuitRestAdapterTest {
         // Act & Assert
         mockMvc
             .perform(
-                post("/api/circuit/{circuitId}/operation", circuitId).with(csrf()).contentType(MediaType.APPLICATION_JSON).content(payload)
+                post("/api/circuit/{projectId}/operation", projectId).with(csrf()).contentType(MediaType.APPLICATION_JSON).content(payload)
             )
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.layers").exists())
             .andExpect(jsonPath("$.layers").isArray())
-            .andExpect(jsonPath("$.layers[0].quantumOperations").exists())
-            .andExpect(jsonPath("$.layers[0].quantumOperations").isArray())
-            .andExpect(jsonPath("$.layers[0].quantumOperations[0]").exists())
             .andExpect(jsonPath("$.layers[0].quantumOperations[0].id").value(operation.getId()));
     }
 }

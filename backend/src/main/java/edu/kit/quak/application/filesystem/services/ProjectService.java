@@ -1,5 +1,6 @@
 package edu.kit.quak.application.filesystem.services;
 
+import edu.kit.quak.application.circuit.ports.in.CircuitServicePort;
 import edu.kit.quak.application.filesystem.exceptions.AccessDeniedException;
 import edu.kit.quak.application.filesystem.ports.in.ProjectServicePort;
 import edu.kit.quak.application.filesystem.ports.out.ProjectRepositoryPort;
@@ -17,9 +18,11 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProjectService implements ProjectServicePort {
 
     private final ProjectRepositoryPort repository;
+    private final CircuitServicePort circuitService;
 
-    public ProjectService(ProjectRepositoryPort repository) {
+    public ProjectService(ProjectRepositoryPort repository, CircuitServicePort circuitService) {
         this.repository = repository;
+        this.circuitService = circuitService;
     }
 
     @Override
@@ -27,7 +30,9 @@ public class ProjectService implements ProjectServicePort {
         log.info("Creating project '{}' for user '{}'", project.getName(), user.getId());
         checkForDuplicateProjectName(project.getName(), null, user);
         project.setOwnerId(user.getId());
-        return repository.save(project);
+        Project savedProject = repository.save(project);
+        circuitService.init(savedProject.getId());
+        return savedProject;
     }
 
     @Override
@@ -50,6 +55,7 @@ public class ProjectService implements ProjectServicePort {
         verifyOwnership(project, user);
 
         repository.deleteById(id);
+        circuitService.deleteByProjectId(id);
     }
 
     @Override

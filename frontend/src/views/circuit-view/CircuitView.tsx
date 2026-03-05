@@ -26,7 +26,7 @@ interface CircuitViewProps {
 }
 
 export function CircuitView({ circuit, setCircuit, projectId }: Readonly<CircuitViewProps>) {
-    const { removeQuantumOperation } = createCircuitService(circuit, setCircuit);
+    const { removeQuantumOperation } = createCircuitService(circuit, projectId, setCircuit);
 
     const { isOperationDragging, draggingOperationSize } = useSelector((state: RootState) => state.dragOperation);
 
@@ -230,7 +230,12 @@ export function CircuitView({ circuit, setCircuit, projectId }: Readonly<Circuit
 
                 {/* Circuit Canvas */}
                 <div className="relative flex-1 overflow-auto">
-                    <QubitWires circuit={circuit} setCircuit={setCircuit} flatQubits={flatQubits} />
+                    <QubitWires
+                        circuit={circuit}
+                        setCircuit={setCircuit}
+                        projectId={projectId}
+                        flatQubits={flatQubits}
+                    />
 
                     {/* Circuit Content Container (Offset for labels) */}
                     <div className="absolute inset-y-0 right-0" style={{ left: LABEL_WIDTH }}>
@@ -246,6 +251,7 @@ export function CircuitView({ circuit, setCircuit, projectId }: Readonly<Circuit
                         <DropzoneGrid
                             circuit={circuit}
                             setCircuit={setCircuit}
+                            projectId={projectId}
                             flatQubits={flatQubits}
                             uiLayers={uiLayers}
                             activeDropZones={activeDropZones}
