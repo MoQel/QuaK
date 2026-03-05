@@ -10,7 +10,6 @@ This project uses **Spotless** for code formatting and **Checkstyle** for style 
 |:-------------------------------------|:-----------------------------------------------|
 | `./gradlew spotlessApply`            | Auto-format all Java code                      |
 | `./gradlew spotlessCheck`            | Check if code is properly formatted            |
-| `./gradlew checkstyleMain checkstyleTest` | Run Checkstyle on all code            |
 
 ### Before Creating a Pull Request
 
@@ -22,7 +21,6 @@ Before creating a PR, ensure your code is properly formatted:
 cd backend
 ./gradlew spotlessApply
 ./gradlew spotlessCheck
-./gradlew checkstyleMain checkstyleTest
 ```
 
 If the PR pipeline fails due to formatting, run `./gradlew spotlessApply` locally, commit, and push again.
