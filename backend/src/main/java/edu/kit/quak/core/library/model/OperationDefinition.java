@@ -1,5 +1,6 @@
 package edu.kit.quak.core.library.model;
 
+import edu.kit.quak.core.library.exceptions.MatrixDimensionException;
 import java.util.Collections;
 import java.util.List;
 
@@ -52,7 +53,7 @@ public record OperationDefinition(
             // Validate dimensions match actual computable matrix size
             if (!computable.isEmpty()) {
                 if (computable.size() != rows) {
-                    throw new IllegalArgumentException(
+                    throw new MatrixDimensionException(
                         "MatrixInfo dimension mismatch: expected %d rows but computable matrix has %d rows".formatted(
                             rows,
                             computable.size()
@@ -63,7 +64,7 @@ public record OperationDefinition(
                 for (int i = 0; i < computable.size(); i++) {
                     List<String> row = computable.get(i);
                     if (row.size() != cols) {
-                        throw new IllegalArgumentException(
+                        throw new MatrixDimensionException(
                             "MatrixInfo dimension mismatch: expected %d cols but row %d has %d elements".formatted(cols, i, row.size())
                         );
                     }

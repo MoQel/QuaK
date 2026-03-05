@@ -3,13 +3,14 @@ package edu.kit.quak.application.circuit;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import edu.kit.quak.application.circuit.exceptions.CircuitNotFoundException;
 import edu.kit.quak.application.circuit.ports.out.CircuitRepositoryPort;
 import edu.kit.quak.application.circuit.services.CircuitService;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
 import edu.kit.quak.shared.tags.UnitTest;
-import jakarta.persistence.EntityNotFoundException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -29,16 +30,6 @@ class CircuitServiceTest {
     private CircuitService service;
 
     @Test
-    void init_createsAndSavesCircuit() {
-        // execute
-        QuantumCircuit result = service.init("");
-
-        // verify state
-        assertNotNull(result);
-        verify(repository).save(result);
-    }
-
-    @Test
     void get_returnsCircuit_whenFound() {
         // setup
         String projectId = "p-1";
@@ -46,24 +37,22 @@ class CircuitServiceTest {
         when(repository.findByProjectId(projectId)).thenReturn(Optional.of(circuit));
 
         // execute
-        Optional<QuantumCircuit> result = service.getByProjectId(projectId);
+        QuantumCircuit result = service.getByProjectId(projectId);
 
         // verify state
-        assertTrue(result.isPresent());
-        assertEquals(circuit, result.get());
+        assertEquals(circuit, result);
     }
 
     @Test
-    void get_returnsEmptyOptional_whenNotFound() {
+    void getByProjectId_throwsException_whenNotFound() {
         // setup
         String projectId = "unknown";
         when(repository.findByProjectId(projectId)).thenReturn(Optional.empty());
 
-        // execute
-        Optional<QuantumCircuit> result = service.getByProjectId(projectId);
-
-        // verify state
-        assertTrue(result.isEmpty());
+        // execute & verify exception
+        CircuitNotFoundException exception = assertThrows(CircuitNotFoundException.class, () -> service.getByProjectId(projectId));
+        // verify context data (RFC 7807)
+        assertEquals("Circuit", exception.getResourceType());
     }
 
     @Test
@@ -76,11 +65,23 @@ class CircuitServiceTest {
         when(repository.findById(circuitId)).thenReturn(Optional.of(circuit));
 
         // execute
-        Optional<QuantumCircuit> result = service.getById(circuitId);
+        QuantumCircuit result = service.getById(circuitId);
 
         // verify state
-        assertTrue(result.isPresent());
-        assertEquals(circuit, result.get());
+        assertEquals(circuit, result);
+    }
+
+    @Test
+    void get_throwsException_whenNotFound() {
+        // setup
+        String circuitId = "unknown";
+        when(repository.findById(circuitId)).thenReturn(Optional.empty());
+
+        // execute & verify exception
+        CircuitNotFoundException exception = assertThrows(CircuitNotFoundException.class, () -> service.getById(circuitId));
+        // verify context data (RFC 7807)
+        assertEquals("Circuit", exception.getResourceType());
+        assertEquals("Circuit not found: " + circuitId, exception.getResourceId());
     }
 
     @Test
@@ -103,6 +104,7 @@ class CircuitServiceTest {
         QuantumCircuit circuit = new QuantumCircuit(projectId);
         circuit.setId(circuitId);
         when(repository.findById(circuitId)).thenReturn(Optional.of(circuit));
+        when(repository.save(any(QuantumCircuit.class))).thenAnswer(i -> i.getArguments()[0]);
 
         // execute
         QuantumCircuit result = service.resetCircuit(circuitId);
@@ -217,12 +219,19 @@ class CircuitServiceTest {
 
     @Test
     void updateCircuitMethods_throwException_whenCircuitNotFound() {
-        // setup
+        // Arrange
         String circuitId = "unknown";
-        when(repository.findById(circuitId)).thenReturn(Optional.empty());
+        List<ElementSelector> emptyTargets = new ArrayList<>();
+        List<ElementSelector> emptyControls = new ArrayList<>();
 
-        // execute & verify exception
-        assertThrows(EntityNotFoundException.class, () -> service.addQubit(circuitId, "r-1"));
+        // Act & Assert
+        CircuitNotFoundException exception = assertThrows(CircuitNotFoundException.class, () ->
+            service.moveQuantumOperation(circuitId, "H", 0, emptyTargets, emptyControls)
+        );
+
+        // verify context data (RFC 7807)
+        assertEquals("Circuit", exception.getResourceType());
+        assertEquals(circuitId, exception.getResourceId());
 
         // verify no save occurs
         verify(repository, never()).save(any());

@@ -4,7 +4,6 @@ import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
 import java.util.List;
-import java.util.Optional;
 
 public interface CircuitServicePort {
     /**
@@ -17,10 +16,10 @@ public interface CircuitServicePort {
      * Returns the circuit for the given project. Assumes 1:1 for now; will evolve
      * to listByProjectId.
      */
-    Optional<QuantumCircuit> getByProjectId(String projectId);
+    QuantumCircuit getByProjectId(String projectId);
 
     /** Returns a specific circuit by its unique ID. */
-    Optional<QuantumCircuit> getById(String circuitId);
+    QuantumCircuit getById(String circuitId);
 
     /**
      * Deletes a specific circuit by its unique ID.

@@ -16,13 +16,13 @@ import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.QuantumOperationDt
 import edu.kit.quak.infrastructure.user.in.web.rest.mapper.AuthenticationMapper;
 import jakarta.persistence.EntityNotFoundException;
 import java.util.List;
-import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/circuit")
 public class CircuitRestAdapter {
@@ -59,12 +59,13 @@ public class CircuitRestAdapter {
      */
     @GetMapping("/{projectId}")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<CircuitResponse> getByProjectId(@PathVariable String projectId, Authentication authentication) {
+    public CircuitResponse getByProjectId(@PathVariable String projectId, Authentication authentication) {
+        log.debug("REST request to get circuit by the projectId: {}", projectId);
         User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
         projectService.retrieveProject(projectId, user); // Verify ownership
 
-        Optional<QuantumCircuit> circuit = service.getByProjectId(projectId);
-        return circuit.map(mapper::toResponse).map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
+        QuantumCircuit circuit = service.getByProjectId(projectId);
+        return mapper.toResponse(circuit);
     }
 
     /**
@@ -77,6 +78,7 @@ public class CircuitRestAdapter {
     @DeleteMapping("/{circuitId}/reset")
     @PreAuthorize("isAuthenticated()")
     public CircuitResponse reset(@PathVariable String circuitId, Authentication authentication) {
+        log.info("REST request to reset a specific circuit");
         verifyCircuitOwnership(circuitId, authentication);
 
         QuantumCircuit circuit = service.resetCircuit(circuitId);
@@ -91,8 +93,8 @@ public class CircuitRestAdapter {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("isAuthenticated()")
     public void delete(@PathVariable String circuitId, Authentication authentication) {
+        log.info("REST request to delete circuit: {}", circuitId);
         verifyCircuitOwnership(circuitId, authentication);
-
         service.delete(circuitId);
     }
 
@@ -104,8 +106,8 @@ public class CircuitRestAdapter {
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("isAuthenticated()")
     public CircuitResponse addQubit(@PathVariable String circuitId, @PathVariable String registerId, Authentication authentication) {
+        log.info("REST request to add qubit to register '{}' in circuit '{}'", registerId, circuitId);
         verifyCircuitOwnership(circuitId, authentication);
-
         QuantumCircuit circuit = service.addQubit(circuitId, registerId);
         return mapper.toResponse(circuit);
     }
@@ -122,6 +124,7 @@ public class CircuitRestAdapter {
         @PathVariable int qubitIdx,
         Authentication authentication
     ) {
+        log.info("REST request to remove qubit at index {} from register '{}' in circuit '{}'", qubitIdx, registerId, circuitId);
         verifyCircuitOwnership(circuitId, authentication);
 
         QuantumCircuit circuit = service.removeQubit(circuitId, registerId, qubitIdx);
@@ -140,6 +143,7 @@ public class CircuitRestAdapter {
         @RequestBody AddQuantumOperationRequest request,
         Authentication authentication
     ) {
+        log.info("REST request to add operation to circuit '{}' at layer {}", circuitId, request.layerIdx());
         verifyCircuitOwnership(circuitId, authentication);
 
         QuantumOperation operation = quantumOperationDtoMapper.toDomain(request.quantumOperation());
@@ -159,6 +163,12 @@ public class CircuitRestAdapter {
         @RequestBody MoveQuantumOperationRequest request,
         Authentication authentication
     ) {
+        log.info(
+            "REST request to move operation '{}' in circuit '{}' to layer {}",
+            request.quantumOperationId(),
+            circuitId,
+            request.layerIdx()
+        );
         verifyCircuitOwnership(circuitId, authentication);
 
         List<ElementSelector> targetQubits = request.targetQubits().stream().map(elementSelectorDtoMapper::toDomain).toList();
@@ -185,6 +195,7 @@ public class CircuitRestAdapter {
         @PathVariable String operationId,
         Authentication authentication
     ) {
+        log.info("REST request to remove operation '{}' from circuit '{}'", operationId, circuitId);
         verifyCircuitOwnership(circuitId, authentication);
 
         QuantumCircuit circuit = service.removeQuantumOperation(circuitId, operationId);
@@ -202,33 +213,17 @@ public class CircuitRestAdapter {
      * exactly one owner, we resolve ownership by looking up the circuit's project
      * and
      * delegating to {@link ProjectServicePort#retrieveProject}, which throws
-     * {@link edu.kit.quak.application.filesystem.exceptions.AccessDeniedException}
+     * {@link edu.kit.quak.application.common.exceptions.AccessDeniedException}
      * if the user is not the owner.
      *
      * @param circuitId      the unique ID of the circuit to authorize against
      * @param authentication the current Spring Security authentication token
-     * @throws EntityNotFoundException                                              if
-     *                                                                              no
-     *                                                                              circuit
-     *                                                                              with
-     *                                                                              the
-     *                                                                              given
-     *                                                                              ID
-     *                                                                              exists
-     * @throws edu.kit.quak.application.filesystem.exceptions.AccessDeniedException if
-     *                                                                              the
-     *                                                                              user
-     *                                                                              does
-     *                                                                              not
-     *                                                                              own
-     *                                                                              the
-     *                                                                              project
+     * @throws EntityNotFoundException Returns error if no circuit with the given ID exists
+     * @throws edu.kit.quak.application.common.exceptions.AccessDeniedException if the user does not own the project
      */
     private void verifyCircuitOwnership(String circuitId, Authentication authentication) {
         User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
-        QuantumCircuit circuit = service
-            .getById(circuitId)
-            .orElseThrow(() -> new EntityNotFoundException("Circuit not found: " + circuitId));
+        QuantumCircuit circuit = service.getById(circuitId);
         projectService.retrieveProject(circuit.getProjectId(), user);
     }
 }

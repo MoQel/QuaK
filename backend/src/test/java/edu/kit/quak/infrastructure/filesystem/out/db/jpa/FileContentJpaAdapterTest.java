@@ -58,7 +58,7 @@ class FileContentJpaAdapterTest {
 
     @Test
     void saveContent_throws_whenMetadataMissing() {
-        assertThrows(IllegalArgumentException.class, () -> contentAdapter.saveContent("invalid-id", new byte[] { 1, 2, 3 }));
+        assertThrows(IllegalStateException.class, () -> contentAdapter.saveContent("invalid-id", new byte[] { 1, 2, 3 }));
     }
 
     @Test

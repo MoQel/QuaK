@@ -1,6 +1,11 @@
 package edu.kit.quak.core.filesystem.model;
 
+import lombok.Getter;
+import lombok.Setter;
+
 /** Domain POJO for FileElement */
+@Setter
+@Getter
 public class File extends FileElement<File> {
 
     public static final String TYPE_IDENTIFIER = "file";
@@ -32,14 +37,5 @@ public class File extends FileElement<File> {
     public char getIdPrefix() {
         return ID_PREFIX;
     }
-
-    public String getContentType() {
-        return contentType;
-    }
-
-    public void setContentType(String contentType) {
-        this.contentType = contentType;
-    }
-
     // endregion
 }

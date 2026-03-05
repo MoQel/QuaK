@@ -5,13 +5,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import edu.kit.quak.application.library.exceptions.OperationDefinitionNotFoundException;
 import edu.kit.quak.application.library.ports.in.OperationDefinitionServicePort;
 import edu.kit.quak.core.library.model.OperationDefinition;
 import edu.kit.quak.infrastructure.GlobalExceptionHandler;
 import edu.kit.quak.infrastructure.library.in.web.rest.mapper.OperationDefinitionDtoMapperImpl;
 import edu.kit.quak.shared.tags.IntegrationTest;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -46,7 +46,7 @@ class OperationDefinitionDefinitionRestAdapterTest {
             null // inspectorInfo
         );
 
-        when(operationDefinitionService.getOperationDefinitionById("x")).thenReturn(Optional.of(operationDefinition));
+        when(operationDefinitionService.getOperationDefinitionById("x")).thenReturn(operationDefinition);
 
         // Act & Assert
         mockMvc
@@ -62,7 +62,7 @@ class OperationDefinitionDefinitionRestAdapterTest {
         // Arrange
         OperationDefinition operationDefinition = buildOperationDefinition();
 
-        when(operationDefinitionService.getOperationDefinitionById("x")).thenReturn(Optional.of(operationDefinition));
+        when(operationDefinitionService.getOperationDefinitionById("x")).thenReturn(operationDefinition);
 
         // Act & Assert
         mockMvc
@@ -116,12 +116,12 @@ class OperationDefinitionDefinitionRestAdapterTest {
     void getOperationDefinition_returns404_whenNotFound() throws Exception {
         // Arrange
         String id = "nonExistent";
-        when(operationDefinitionService.getOperationDefinitionById(id)).thenReturn(Optional.empty());
+        when(operationDefinitionService.getOperationDefinitionById(id)).thenThrow(new OperationDefinitionNotFoundException(id));
 
         // Act & Assert
         mockMvc
             .perform(get("/api/operations/nonExistent"))
             .andExpect(status().isNotFound())
-            .andExpect(jsonPath("$.title").value("Operation Definition Not Found"));
+            .andExpect(jsonPath("$.title").value("Resource Not Found"));
     }
 }

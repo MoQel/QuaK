@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import edu.kit.quak.application.common.exceptions.ResourceNotFoundException;
 import edu.kit.quak.application.filesystem.delegator.FileElementContainerRepositoryDelegator;
 import edu.kit.quak.application.filesystem.ports.out.DirectoryRepositoryPort;
 import edu.kit.quak.core.filesystem.model.Directory;
@@ -75,7 +76,7 @@ class DirectoryServiceTest {
         // Mock the ownership check to succeed, but container lookup fails
         when(delegator.findProjectOwnerIdByElementId("missing")).thenReturn(Optional.empty());
 
-        assertThrows(IllegalStateException.class, () -> service.createDirectory(newDir, "missing", testUser));
+        assertThrows(ResourceNotFoundException.class, () -> service.createDirectory(newDir, "missing", testUser));
     }
 
     @Test

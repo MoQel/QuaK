@@ -1,5 +1,6 @@
 package edu.kit.quak.core.filesystem.model;
 
+import edu.kit.quak.core.filesystem.exception.DuplicateNameException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -34,9 +35,7 @@ public abstract class FileElementContainer<T extends FileElementContainer<T>> ex
     public void addChild(FileElement<?> child) {
         // No duplicate names within one parent
         if (hasChildWithName(child.getName(), null)) {
-            throw new IllegalArgumentException(
-                "An element with the name '" + child.getName() + "' already exists in '" + this.getName() + "'"
-            );
+            throw new DuplicateNameException(child.getName(), this.getName());
         }
         this.contents.add(child);
 

@@ -1,10 +1,15 @@
 package edu.kit.quak.core.circuit.model;
 
+import edu.kit.quak.core.circuit.exceptions.InvalidOperationConfigurationException;
+import edu.kit.quak.core.circuit.exceptions.InvalidRegisterTypeException;
+import edu.kit.quak.core.circuit.exceptions.OperationNotFoundException;
+import edu.kit.quak.core.circuit.exceptions.RegisterNotFoundException;
 import edu.kit.quak.core.circuit.model.layer.Layer;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
 import edu.kit.quak.core.circuit.model.register.QuantumRegister;
 import edu.kit.quak.core.circuit.model.register.Register;
+import edu.kit.quak.core.common.exception.RequestedIndexOutOfBounds;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -52,7 +57,7 @@ public class QuantumCircuit extends ElementWithId {
         QuantumRegister quantumRegister = findQuantumRegisterById(registerId);
 
         if (qubitIdx < 0 || qubitIdx >= quantumRegister.getNumberOfQubits()) {
-            throw new IllegalArgumentException("qubit index must be between 0 and " + (layers.size() - 1));
+            throw new RequestedIndexOutOfBounds("Qubit", qubitIdx, quantumRegister.getNumberOfQubits());
         }
 
         // Remove qubit.
@@ -86,7 +91,7 @@ public class QuantumCircuit extends ElementWithId {
 
     public void addQuantumOperation(@NonNull QuantumOperation operation, int layerIdx) {
         if (layerIdx < 0 || layerIdx > layers.size()) {
-            throw new IllegalArgumentException("Layer index must be between 0 and " + layers.size());
+            throw new RequestedIndexOutOfBounds("Layer", layerIdx, layers.size());
         }
 
         if (layerIdx == layers.size()) {
@@ -105,10 +110,10 @@ public class QuantumCircuit extends ElementWithId {
         List<ElementSelector> controlQubits
     ) {
         if (layerIdx < 0 || layerIdx > layers.size()) {
-            throw new IllegalArgumentException("Layer index must be between 0 and " + layers.size());
+            throw new RequestedIndexOutOfBounds("Layer", layerIdx, layers.size());
         }
         if (targetQubits.isEmpty()) {
-            throw new IllegalArgumentException("Must provide at least one qubit to target.");
+            throw new InvalidOperationConfigurationException("Must provide at least one qubit to target.");
         }
 
         for (int idx = 0; idx < layers.size(); idx++) {
@@ -134,12 +139,12 @@ public class QuantumCircuit extends ElementWithId {
             for (QuantumOperation operation : layer.getQuantumOperations()) {
                 if (operation.getId().equals(operationId)) {
                     layer.removeQuantumOperation(operation);
-                    break;
+                    rescheduleOperations();
+                    return;
                 }
             }
         }
-
-        rescheduleOperations();
+        throw new OperationNotFoundException(operationId);
     }
 
     /**
@@ -228,19 +233,17 @@ public class QuantumCircuit extends ElementWithId {
         layers.removeIf(layer -> layer.getQuantumOperations().isEmpty());
     }
 
-    private QuantumRegister findQuantumRegisterById(String registerId) {
+    private QuantumRegister findQuantumRegisterById(String quantumRegisterId) {
         for (Register register : registers) {
-            if (register.getId().equals(registerId)) {
+            if (register.getId().equals(quantumRegisterId)) {
                 Optional<QuantumRegister> quantumRegister = register.asQuantum();
                 if (quantumRegister.isEmpty()) {
-                    throw new IllegalArgumentException(
-                        "Register with quantumOperationId %s is not a QuantumRegister.".formatted(registerId)
-                    );
+                    throw new InvalidRegisterTypeException(quantumRegisterId);
                 }
                 return quantumRegister.get();
             }
         }
-        throw new NoSuchElementException("Could not find quantum register with quantumOperationId %s".formatted(registerId));
+        throw new RegisterNotFoundException(quantumRegisterId);
     }
 
     @Override

@@ -1,7 +1,9 @@
 package edu.kit.quak.application.filesystem.services;
 
+import edu.kit.quak.application.common.exceptions.AccessDeniedException;
+import edu.kit.quak.application.common.exceptions.ResourceNotFoundException;
 import edu.kit.quak.application.filesystem.delegator.FileElementContainerRepositoryDelegator;
-import edu.kit.quak.application.filesystem.exceptions.AccessDeniedException;
+import edu.kit.quak.core.filesystem.exception.DuplicateNameException;
 import edu.kit.quak.core.filesystem.model.FileElement;
 import edu.kit.quak.core.filesystem.model.FileElementContainer;
 import edu.kit.quak.core.user.model.User;
@@ -52,22 +54,20 @@ public abstract class AbstractFileElementService<T extends FileElement<T>> {
      */
     protected void verifyOwnershipByParentId(String parentId, User user) {
         if (parentId == null) {
-            throw new IllegalStateException("Cannot verify ownership: element has no parent");
+            log.error("Missing parent ID during ownership verification.");
+            throw new IllegalStateException("Element has no parent");
         }
 
         // Use efficient single-query ownership lookup
         UUID projectOwnerId = delegator
             .findProjectOwnerIdByElementId(parentId)
-            .orElseThrow(() -> new IllegalStateException("Could not find root project for element with" + " parent ID: " + parentId));
+            .orElseThrow(() -> {
+                log.warn("Root project not found. parentId={}", parentId);
+                return new ResourceNotFoundException("Root Project", parentId);
+            });
 
         if (!projectOwnerId.equals(user.getId())) {
-            log.debug(
-                "Access denied: User '{}' is not owner of project '{}' ({} parent: '{}')",
-                user.getId(),
-                projectOwnerId,
-                getElementTypeName(),
-                parentId
-            );
+            log.warn("Access denied. userId={}, projectOwnerId={}, parentId={}", user.getId(), projectOwnerId, parentId);
             throw new AccessDeniedException(getElementTypeName(), parentId);
         }
     }
@@ -81,9 +81,15 @@ public abstract class AbstractFileElementService<T extends FileElement<T>> {
      */
     protected FileElementContainer<?> getParentById(String parentId) {
         if (parentId == null) {
-            throw new IllegalStateException(getElementTypeName() + " has no parent - corrupt state");
+            log.error("Parent ID is null. Corrupt state.");
+            throw new IllegalStateException("Parent ID is missing.");
         }
-        return delegator.findContainerById(parentId).orElseThrow(() -> new IllegalStateException("Parent not found with ID: " + parentId));
+        return delegator
+            .findContainerById(parentId)
+            .orElseThrow(() -> {
+                log.warn("Parent container not found. parentId={}", parentId);
+                return new ResourceNotFoundException("Parent Container", parentId);
+            });
     }
 
     /**
@@ -102,7 +108,10 @@ public abstract class AbstractFileElementService<T extends FileElement<T>> {
             .filter(this::isCorrectType)
             .map(this::castToType)
             .findFirst()
-            .orElseThrow(() -> new IllegalStateException(getElementTypeName() + " not found in parent container (ID: " + elementId + ")"));
+            .orElseThrow(() -> {
+                log.warn("Element not found in parent. elementId={}, parentId={}", elementId, parent.getId());
+                return new ResourceNotFoundException(getElementTypeName(), elementId);
+            });
     }
 
     /**
@@ -136,7 +145,7 @@ public abstract class AbstractFileElementService<T extends FileElement<T>> {
      *
      * @param elementId the ID of the element being renamed
      * @param newName   the desired new name
-     * @throws IllegalArgumentException if a sibling with the same name already
+     * @throws DuplicateNameException if a sibling with the same name already
      *                                  exists
      */
     protected void checkForDuplicateName(String elementId, String newName) {
@@ -144,7 +153,7 @@ public abstract class AbstractFileElementService<T extends FileElement<T>> {
         FileElementContainer<?> parent = getParentById(element.getParentId());
 
         if (parent.hasChildWithName(newName, elementId)) {
-            throw new IllegalArgumentException("An element with the name '" + newName + "' already exists in '" + parent.getName() + "'");
+            throw new DuplicateNameException(newName, parent.getName());
         }
     }
 
@@ -176,7 +185,7 @@ public abstract class AbstractFileElementService<T extends FileElement<T>> {
      * Casts a FileElement to the specific type managed by this service.
      *
      * @param element the element to cast
-     * @return the casted element
+     * @return the cast element
      */
     protected abstract T castToType(FileElement<?> element);
 }

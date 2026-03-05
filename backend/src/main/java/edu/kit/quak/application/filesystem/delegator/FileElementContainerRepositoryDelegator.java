@@ -3,6 +3,7 @@ package edu.kit.quak.application.filesystem.delegator;
 import edu.kit.quak.core.filesystem.model.FileElementContainer;
 import java.util.Optional;
 import java.util.UUID;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Component;
  * based on the ID prefix. This centralizes persistence orchestration and shields application
  * services from routing logic.
  */
+@Slf4j
 @Component
 public class FileElementContainerRepositoryDelegator {
 
@@ -32,7 +34,14 @@ public class FileElementContainerRepositoryDelegator {
         return registry
             .<T>getRepository(prefix)
             .map(repo -> repo.save(container))
-            .orElseThrow(() -> new IllegalArgumentException("No repo for prefix: " + prefix));
+            .orElseThrow(() -> {
+                log.error(
+                    "Internal mapping error: No repository found for prefix '{}'. " +
+                        "Check FileElementContainerRepositoryRegistry configuration.",
+                    prefix
+                );
+                return new IllegalStateException("Missing repository for type prefix: " + prefix);
+            });
     }
 
     public Optional<FileElementContainer<?>> findContainerById(String id) {
