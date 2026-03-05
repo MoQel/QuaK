@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/alert-dialog.tsx';
 import { useAppDispatch } from '@/hooks/useAppDispatch.ts';
 import { useAppSelector } from '@/hooks/useAppSelector.ts';
-import { closeAll, closeGroup, closeOthers, closeTab, setConfirm, setPendingClose } from '@/store/tabs/tabsSlice.ts';
+import { closeAll, closeGroup, closeOthers, closeTab, setPendingClose } from '@/store/tabs/tabsSlice.ts';
 
 export function UnsavedChangesAlertDialog() {
     const dispatch = useAppDispatch();
@@ -37,8 +37,12 @@ export function UnsavedChangesAlertDialog() {
                 break;
         }
 
+        // Trigger close panel event if should close is set
+        if (pendingAction.shouldCloseCodePanel) {
+            globalThis.dispatchEvent(new CustomEvent('dockview-close-panel-code'));
+        }
+
         // Clear the pending state
-        dispatch(setConfirm(true));
         dispatch(setPendingClose(null));
     };
 

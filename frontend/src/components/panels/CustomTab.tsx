@@ -1,17 +1,15 @@
 import { IDockviewPanelHeaderProps } from 'dockview-react';
 import { X } from 'lucide-react';
 import React, { useCallback, useEffect, useState } from 'react';
-import { safeCloseAll } from '@/store/tabs/tabsThunks.ts';
+import { safeCloseCodePanel } from '@/store/tabs/tabsThunks.ts';
 import { useAppDispatch } from '@/hooks/useAppDispatch.ts';
 import { useAppSelector } from '@/hooks/useAppSelector.ts';
-import { setConfirm } from '@/store/tabs/tabsSlice.ts';
 import { Button } from '@/components/ui/button.tsx';
 
 export const CustomTabRenderer = (props: IDockviewPanelHeaderProps) => {
     const { api } = props;
     const [isVisible, setIsVisible] = useState(api.isVisible);
     const dispatch = useAppDispatch();
-    const confirmClose = useAppSelector((state) => state.tabs.confirmClose);
     const dirtyFiles = useAppSelector((state) => state.tabs.dirtyFiles);
 
     useEffect(() => {
@@ -22,18 +20,21 @@ export const CustomTabRenderer = (props: IDockviewPanelHeaderProps) => {
     }, [api]);
 
     useEffect(() => {
-        if (confirmClose) {
-            dispatch(setConfirm(false));
+        const handleForceClose = () => {
             if (api.id === 'code') api.close();
-        }
-    }, [confirmClose]);
+        };
+
+        globalThis.addEventListener('dockview-close-panel-code', handleForceClose);
+        return () => globalThis.removeEventListener('dockview-close-panel-code', handleForceClose);
+    }, [api]);
 
     const handleClose = useCallback(
         (event: React.MouseEvent) => {
             event.preventDefault();
             event.stopPropagation();
+            // Check if dirty files are open
             if (api.id === 'code' && dirtyFiles.length !== 0) {
-                dispatch(safeCloseAll());
+                dispatch(safeCloseCodePanel());
                 return;
             }
 
