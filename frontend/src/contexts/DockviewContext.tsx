@@ -1,8 +1,14 @@
 import React, { createContext, useContext, useMemo, useRef, useState } from 'react';
-import { buildDefaultLayout, LAYOUT_STORAGE_KEY, getOptimalPosition, applyGroupType } from '@/lib/layout/layout-utils';
+import {
+    buildDefaultLayout,
+    LAYOUT_STORAGE_KEY,
+    getOptimalPosition,
+    applyGroupType,
+    PANEL_TITLES,
+} from '@/lib/layout/layout-utils';
 import type { DockviewApi } from 'dockview-react';
-
-export type PanelKey = 'file' | 'circuit' | 'code' | 'results' | 'inspector' | 'library';
+import { PANELS } from '@/lib/layout/layout-utils';
+type PanelKey = keyof typeof PANELS;
 
 type DockviewContextType = {
     api: DockviewApi | null;
@@ -72,7 +78,7 @@ export const DockviewProvider = ({ children }: { children: React.ReactNode }) =>
             api.addPanel({
                 id,
                 component: id,
-                title: id.charAt(0).toUpperCase() + id.slice(1),
+                title: PANEL_TITLES[id],
                 position: position || undefined,
             });
 

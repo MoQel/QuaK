@@ -141,6 +141,14 @@ export const PANELS = {
     results: 'results',
 };
 
+export const PANEL_TITLES: Record<string, string> = {
+    circuit: 'Circuit',
+    code: 'Code Editor',
+    file: 'Project',
+    inspector: 'Inspector',
+    library: 'Library',
+    results: 'Results',
+};
 const PRIMARY_PANELS = new Set([PANELS.circuit, PANELS.code]);
 
 export const applyGroupType = (api: DockviewApi, id: string) => {
