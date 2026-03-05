@@ -3,6 +3,7 @@ package edu.kit.quak.application.circuit.ports.in;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
+import edu.kit.quak.core.user.model.User;
 import java.util.List;
 
 public interface CircuitServicePort {
@@ -16,7 +17,7 @@ public interface CircuitServicePort {
      * Returns the circuit for the given project. Assumes 1:1 for now; will evolve
      * to listByProjectId.
      */
-    QuantumCircuit getByProjectId(String projectId);
+    QuantumCircuit getByProjectId(String projectId, User user);
 
     /** Returns a specific circuit by its unique ID. */
     QuantumCircuit getById(String circuitId);
@@ -24,7 +25,7 @@ public interface CircuitServicePort {
     /**
      * Deletes a specific circuit by its unique ID.
      */
-    void delete(String circuitId);
+    void delete(String circuitId, User user);
 
     /**
      * Resets a specific circuit: deletes it and creates a fresh one with the same
@@ -32,21 +33,22 @@ public interface CircuitServicePort {
      * Designed around circuitId so it remains correct when multiple circuits per
      * project are supported.
      */
-    QuantumCircuit resetCircuit(String circuitId);
+    QuantumCircuit resetCircuit(String circuitId, User user);
 
-    QuantumCircuit addQubit(String circuitId, String registerId);
+    QuantumCircuit addQubit(String circuitId, String registerId, User user);
 
-    QuantumCircuit removeQubit(String circuitId, String registerId, int qubitIdx);
+    QuantumCircuit removeQubit(String circuitId, String registerId, int qubitIdx, User user);
 
-    QuantumCircuit addQuantumOperation(String circuitId, QuantumOperation operation, int layerIdx);
+    QuantumCircuit addQuantumOperation(String circuitId, QuantumOperation operation, int layerIdx, User user);
 
     QuantumCircuit moveQuantumOperation(
         String circuitId,
         String operationId,
         int layerIdx,
         List<ElementSelector> targetQubits,
-        List<ElementSelector> controlQubits
+        List<ElementSelector> controlQubits,
+        User user
     );
 
-    QuantumCircuit removeQuantumOperation(String circuitId, String operationId);
+    QuantumCircuit removeQuantumOperation(String circuitId, String operationId, User user);
 }

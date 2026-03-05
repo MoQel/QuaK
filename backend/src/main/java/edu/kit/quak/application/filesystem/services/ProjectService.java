@@ -77,8 +77,8 @@ public class ProjectService implements ProjectServicePort {
 
         // Clean up all role assignments for this project
         roleRepository.deleteAllByProjectId(pId);
-        String cId = circuitService.getByProjectId(pId).getId();
-        circuitService.delete(cId);
+        String cId = circuitService.getByProjectId(pId, user).getId();
+        circuitService.delete(cId, user);
         repository.deleteById(pId);
     }
 
