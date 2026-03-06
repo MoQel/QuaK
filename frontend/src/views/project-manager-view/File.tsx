@@ -48,7 +48,7 @@ export function File(file: Readonly<IFile>) {
                     <ListingElement text={name} icon={getFileIcon(name)} />
                 </ContextMenuTrigger>
                 <ContextMenuContent>
-                    {FileEdit(id, dialogTrigger)}
+                    {FileRename(id, dialogTrigger)}
                     <Delete endpoint={'/api/file/' + id} openDialog={dialogTrigger} />
                 </ContextMenuContent>
             </ContextMenu>
@@ -59,7 +59,7 @@ export function File(file: Readonly<IFile>) {
     );
 }
 
-function FileEdit(id: string, trigger: (element: Promise<JSX.Element>) => void) {
+function FileRename(id: string, trigger: (element: Promise<JSX.Element>) => void) {
     const getFile = () => {
         return api.get<FileDetailsResponse>('/api/file/' + id);
     };
@@ -70,18 +70,18 @@ function FileEdit(id: string, trigger: (element: Promise<JSX.Element>) => void) 
             getFile().then((file) => (
                 <>
                     <DialogHeader>
-                        <DialogTitle>Edit File</DialogTitle>
+                        <DialogTitle>Rename File</DialogTitle>
                     </DialogHeader>
-                    <EditForm file={file} reloadParent={reloadParent} />
+                    <RenameForm file={file} reloadParent={reloadParent} />
                 </>
             )),
         );
     };
 
-    return <ContextMenuItem onSelect={dialog}>Edit</ContextMenuItem>;
+    return <ContextMenuItem onSelect={dialog}>Rename</ContextMenuItem>;
 }
 
-function EditForm({ file, reloadParent }: Readonly<{ file: IFile; reloadParent: () => void }>) {
+function RenameForm({ file, reloadParent }: Readonly<{ file: IFile; reloadParent: () => void }>) {
     const close = useContext(DialogClose);
     const onSubmit = (name: string) => {
         const body: RenameFileRequest = { name };
@@ -95,5 +95,5 @@ function EditForm({ file, reloadParent }: Readonly<{ file: IFile; reloadParent: 
             });
     };
 
-    return <EntityForm defaultName={file.name} onSubmit={onSubmit} ignoreExtension={true} />;
+    return <EntityForm defaultName={file.name} onSubmit={onSubmit} ignoreExtension={true} label="File Name" />;
 }
