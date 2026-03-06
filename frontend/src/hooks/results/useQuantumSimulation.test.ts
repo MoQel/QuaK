@@ -1,52 +1,40 @@
 import { act, renderHook } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useQuantumSimulation } from './useQuantumSimulation.ts';
 import { CircuitResponse } from '@/api/dto/circuit.ts';
-import { WorkerRequest, WorkerResponse } from '@/workers/messages.ts';
+import { WorkerResponse } from '@/workers/messages.ts';
 
-const mockPostMessage = vi.fn();
-const mockTerminate = vi.fn();
-
-interface MockWorkerInstance {
-    postMessage: (msg: WorkerRequest) => void;
-    terminate: () => void;
+interface MockWorkerInstance extends Worker {
     onmessage: ((e: MessageEvent<WorkerResponse>) => void) | null;
 }
 
-vi.mock('@/workers/simulation.worker?worker', () => {
-    // Typed 'this' to avoid explicit any
-    const MockWorkerConstructor = vi.fn().mockImplementation(function (this: MockWorkerInstance) {
-        this.postMessage = mockPostMessage;
-        this.terminate = mockTerminate;
-        this.onmessage = null;
-        return this;
-    });
-
-    return {
-        default: MockWorkerConstructor,
-    };
-});
-
-import SimulationWorker from '@/workers/simulation.worker?worker';
-// Cast to Vitest Mock type instead of any
-const MockWorker = SimulationWorker as unknown as Mock;
-
-const mockCircuit: CircuitResponse = {
-    id: 'test',
-    registers: [],
-} as unknown as CircuitResponse;
-
 describe('useQuantumSimulation Hook', () => {
+    let latestWorker: MockWorkerInstance | null = null;
+
     beforeEach(() => {
         vi.useFakeTimers();
         vi.clearAllMocks();
+
+        const MockWorker = vi.fn().mockImplementation(() => {
+            const instance = {
+                postMessage: vi.fn(),
+                terminate: vi.fn(),
+                onmessage: null,
+            } as unknown as MockWorkerInstance;
+            latestWorker = instance;
+            return instance;
+        });
+
+        vi.stubGlobal('Worker', MockWorker);
     });
 
     afterEach(() => {
         vi.useRealTimers();
+        vi.unstubAllGlobals();
+        latestWorker = null;
     });
 
-    const getWorkerInstance = () => MockWorker.mock.instances[0] as MockWorkerInstance;
+    const mockCircuit = { id: 'test-id', registers: [] } as unknown as CircuitResponse;
 
     it('should initialize with default state', () => {
         const { result } = renderHook(() => useQuantumSimulation(undefined));
@@ -57,97 +45,95 @@ describe('useQuantumSimulation Hook', () => {
     });
 
     it('should show calculating state immediately but debounce worker call', () => {
-        renderHook(() => useQuantumSimulation(mockCircuit));
+        const { result } = renderHook(() => useQuantumSimulation(mockCircuit));
+
+        // State should be calculating even before debounce finishes
+        expect(result.current.isCalculating).toBe(true);
+        expect(latestWorker?.postMessage).not.toHaveBeenCalled();
 
         act(() => {
             vi.advanceTimersByTime(305);
         });
 
-        expect(mockPostMessage).toHaveBeenCalledTimes(1);
-        expect(mockPostMessage).toHaveBeenCalledWith(
-            expect.objectContaining({
-                type: 'CALCULATE_CIRCUIT',
-                circuit: mockCircuit,
-            }),
-        );
+        expect(latestWorker?.postMessage).toHaveBeenCalledTimes(1);
+        expect(latestWorker?.postMessage).toHaveBeenCalledWith(expect.objectContaining({ type: 'CALCULATE_CIRCUIT' }));
     });
 
-    it('should update result on worker success', async () => {
+    it('should update result on worker success', () => {
         const { result } = renderHook(() => useQuantumSimulation(mockCircuit));
 
         act(() => vi.advanceTimersByTime(305));
+        const { requestId } = vi.mocked(latestWorker!.postMessage).mock.calls[0][0];
 
-        const { requestId } = mockPostMessage.mock.calls[0][0];
-
-        const mockResponse: WorkerResponse = {
+        const successPayload: WorkerResponse = {
             type: 'SUCCESS',
             requestId,
-            payload: { stateVector: [], counts: { '00': 10 }, simulatedQubits: 1 },
+            payload: { counts: { '00': 10 }, stateVector: [], simulatedQubits: 1 },
         };
 
         act(() => {
-            getWorkerInstance().onmessage!({ data: mockResponse } as MessageEvent);
+            latestWorker?.onmessage?.({ data: successPayload } as MessageEvent);
         });
 
-        expect(result.current.result).toEqual(mockResponse.payload);
+        expect(result.current.result).toEqual(successPayload.payload);
         expect(result.current.isCalculating).toBe(false);
+        expect(result.current.error).toBeNull();
     });
 
     it('should handle worker errors', () => {
         const { result } = renderHook(() => useQuantumSimulation(mockCircuit));
 
         act(() => vi.advanceTimersByTime(305));
-        const { requestId } = mockPostMessage.mock.calls[0][0];
+        const lastCall = vi.mocked(latestWorker!.postMessage).mock.calls[0][0];
 
         act(() => {
-            getWorkerInstance().onmessage!({
-                data: { type: 'ERROR', requestId, error: 'Simulation error' },
+            latestWorker?.onmessage?.({
+                data: { type: 'ERROR', requestId: lastCall.requestId, error: 'Simulation failed' },
             } as MessageEvent);
         });
 
-        expect(result.current.error).toBe('Simulation error');
+        expect(result.current.error).toBe('Simulation failed');
         expect(result.current.isCalculating).toBe(false);
     });
 
     it('should ignore outdated worker responses (race conditions)', () => {
-        // Removed explicit any casts, relying on inference
         const { result, rerender } = renderHook(({ opts }) => useQuantumSimulation(mockCircuit, opts), {
             initialProps: { opts: { sampleCount: 100 } },
         });
 
         act(() => vi.advanceTimersByTime(305));
-        const firstId = mockPostMessage.mock.calls[0][0].requestId;
+        const firstId = vi.mocked(latestWorker!.postMessage).mock.calls[0][0].requestId;
 
         rerender({ opts: { sampleCount: 200 } });
         act(() => vi.advanceTimersByTime(305));
-        const secondId = mockPostMessage.mock.calls[1][0].requestId;
+        const secondId = vi.mocked(latestWorker!.postMessage).mock.calls[1][0].requestId;
 
         act(() => {
-            getWorkerInstance().onmessage!({
+            latestWorker?.onmessage?.({
                 data: {
                     type: 'SUCCESS',
                     requestId: firstId,
-                    payload: { stateVector: [], counts: {}, simulatedQubits: 1 },
+                    payload: { counts: { '0': 1 }, stateVector: [], simulatedQubits: 1 },
                 },
             } as MessageEvent);
         });
         expect(result.current.result).toBeNull();
 
         act(() => {
-            getWorkerInstance().onmessage!({
+            latestWorker?.onmessage?.({
                 data: {
                     type: 'SUCCESS',
                     requestId: secondId,
-                    payload: { stateVector: [{ state: '|0>' }], counts: {}, simulatedQubits: 1 },
+                    payload: { counts: { '1': 1 }, stateVector: [], simulatedQubits: 1 },
                 },
             } as MessageEvent);
         });
-        expect(result.current.result).not.toBeNull();
+        expect(result.current.result).toEqual({ counts: { '1': 1 }, stateVector: [], simulatedQubits: 1 });
     });
 
     it('should terminate worker on unmount', () => {
         const { unmount } = renderHook(() => useQuantumSimulation(mockCircuit));
         unmount();
-        expect(mockTerminate).toHaveBeenCalled();
+        expect(latestWorker?.terminate).toHaveBeenCalled();
     });
 });
