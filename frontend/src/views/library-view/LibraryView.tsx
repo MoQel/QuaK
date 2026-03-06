@@ -30,7 +30,7 @@ export function LibraryView({ onOperationSelect }: Readonly<LibraryViewProps>) {
     };
 
     return (
-        <Card className="w-full h-full min-h-0 relative flex flex-col overflow-hidden border-none">
+        <Card className="w-full h-full min-h-0 relative flex flex-col overflow-hidden border-none gap-3 pb-0">
             <CardHeader className="w-full flex justify-center items-center relative">
                 <Button onClick={() => setBoxMode(!boxMode)} variant="default" size="icon" className="absolute right-5">
                     {boxMode && <List />}
