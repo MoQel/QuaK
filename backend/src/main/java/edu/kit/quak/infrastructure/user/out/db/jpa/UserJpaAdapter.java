@@ -5,12 +5,14 @@ import edu.kit.quak.core.user.model.User;
 import edu.kit.quak.infrastructure.user.out.db.jpa.entity.JpaUser;
 import edu.kit.quak.infrastructure.user.out.db.jpa.mapper.UserJpaMapper;
 import edu.kit.quak.infrastructure.user.out.db.jpa.repository.SpringDataUserRepository;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.stereotype.Repository;
 
 /**
- * JPA adapter implementing UserRepositoryPort. This adapter translates domain operations to JPA
+ * JPA adapter implementing UserRepositoryPort. This adapter translates domain
+ * operations to JPA
  * operations.
  */
 @Repository
@@ -42,6 +44,11 @@ public class UserJpaAdapter implements UserRepositoryPort {
     }
 
     @Override
+    public Optional<User> findByEmail(String email) {
+        return repository.findByEmail(email).map(mapper::toDomain);
+    }
+
+    @Override
     public void deleteById(UUID id) {
         repository.deleteById(id);
     }
@@ -49,5 +56,15 @@ public class UserJpaAdapter implements UserRepositoryPort {
     @Override
     public Optional<UUID> findIdByIssuerAndSub(String issuer, String sub) {
         return repository.findIdByIssuerAndSub(issuer, sub);
+    }
+
+    @Override
+    public List<User> searchByEmail(String email) {
+        return repository.findByEmailContainingIgnoreCase(email).stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
+    public List<User> findAllByIds(List<UUID> ids) {
+        return repository.findAllById(ids).stream().map(mapper::toDomain).toList();
     }
 }

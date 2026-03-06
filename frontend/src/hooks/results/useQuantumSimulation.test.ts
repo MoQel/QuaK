@@ -49,7 +49,7 @@ describe('useQuantumSimulation Hook', () => {
     const getWorkerInstance = () => MockWorker.mock.instances[0] as MockWorkerInstance;
 
     it('should initialize with default state', () => {
-        const { result } = renderHook(() => useQuantumSimulation(null));
+        const { result } = renderHook(() => useQuantumSimulation(undefined));
 
         expect(result.current.result).toBeNull();
         expect(result.current.error).toBeNull();

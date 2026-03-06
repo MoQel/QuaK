@@ -10,6 +10,8 @@ import static org.mockito.Mockito.when;
 import edu.kit.quak.application.circuit.ports.in.CircuitServicePort;
 import edu.kit.quak.application.filesystem.exception.ProjectNotFoundException;
 import edu.kit.quak.application.filesystem.ports.out.ProjectRepositoryPort;
+import edu.kit.quak.application.user.ports.in.ProjectRoleServicePort;
+import edu.kit.quak.application.user.ports.out.ProjectRoleRepositoryPort;
 import edu.kit.quak.core.filesystem.model.Project;
 import edu.kit.quak.core.user.model.User;
 import edu.kit.quak.shared.tags.UnitTest;
@@ -29,6 +31,12 @@ class ProjectServiceTest {
     private ProjectRepositoryPort repository;
 
     @Mock
+    private ProjectRoleServicePort roleService;
+
+    @Mock
+    private ProjectRoleRepositoryPort roleRepository;
+
+    @Mock
     private CircuitServicePort circuitService;
 
     private ProjectService service;
@@ -36,7 +44,7 @@ class ProjectServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new ProjectService(repository, circuitService);
+        service = new ProjectService(repository, roleService, roleRepository, circuitService);
         testUser = new User();
         testUser.setId(UUID.randomUUID());
     }
@@ -50,6 +58,7 @@ class ProjectServiceTest {
 
         assertEquals(testUser.getId(), result.getOwnerId());
         verify(repository).save(p);
+        verify(roleRepository).save(any());
     }
 
     @Test
@@ -58,6 +67,7 @@ class ProjectServiceTest {
         Project p = new Project("Old", testUser.getId());
         when(repository.findById("1")).thenReturn(Optional.of(p));
         when(repository.save(any(Project.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(roleService.hasMinimumRole(any(), any(), any())).thenReturn(true);
 
         // Act
         service.renameProject("1", "New", testUser);

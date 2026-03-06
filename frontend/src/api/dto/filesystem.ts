@@ -50,8 +50,19 @@ export interface ProjectContentsResponse extends FileElementDto {
     contents: FileElementDto[];
 }
 
+// UserResponse.java
+export interface UserResponse {
+    userId: string;
+    email: string;
+    name: string | null;
+    avatarUrl: string | null;
+    emailVerified: boolean | null;
+}
+
 // ProjectDetailsResponse.java
-export type ProjectDetailsResponse = FileElementDto;
+export interface ProjectDetailsResponse extends FileElementDto {
+    owner: UserResponse | null;
+}
 
 // FileDetailsResponse.java
 export interface FileDetailsResponse extends FileElementDto {
@@ -66,8 +77,4 @@ export interface FileContentResponse {
 // --- Helper Types ---
 
 // Union-Type helps to iterate over lists
-export type AnyFileElement =
-    | DirectoryContentsResponse
-    | FileDetailsResponse
-    | ProjectContentsResponse
-    | FileElementDto;
+export type AnyFileElement = DirectoryContentsResponse | FileDetailsResponse | ProjectContentsResponse | FileElementDto;

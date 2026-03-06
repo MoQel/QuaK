@@ -1,14 +1,18 @@
 package edu.kit.quak.application.filesystem.services;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import edu.kit.quak.application.filesystem.delegator.FileElementContainerRepositoryDelegator;
 import edu.kit.quak.application.filesystem.ports.out.FileContentRepositoryPort;
 import edu.kit.quak.application.filesystem.ports.out.FileRepositoryPort;
+import edu.kit.quak.application.user.ports.in.ProjectRoleServicePort;
 import edu.kit.quak.core.filesystem.model.File;
 import edu.kit.quak.core.filesystem.model.Project;
+import edu.kit.quak.core.user.model.ProjectRole;
 import edu.kit.quak.core.user.model.User;
 import edu.kit.quak.shared.tags.UnitTest;
 import java.util.Optional;
@@ -32,6 +36,9 @@ class FileServiceTest {
 
     @Mock
     private FileElementContainerRepositoryDelegator delegator;
+
+    @Mock
+    private ProjectRoleServicePort roleService;
 
     @InjectMocks
     private FileService service;
@@ -58,8 +65,8 @@ class FileServiceTest {
         File file = new File("test.txt", parentId);
         file.setId("f-new");
 
-        // Mock the efficient ownership check
-        when(delegator.findProjectOwnerIdByElementId(parentId)).thenReturn(Optional.of(testUserId));
+        // Mock the role-based access check
+        when(roleService.hasMinimumRole(eq(parentId), eq(testUserId), any(ProjectRole.class))).thenReturn(true);
         when(delegator.findContainerById(parentId)).thenReturn(Optional.of(parent));
         when(delegator.save(parent)).thenReturn(parent);
 
@@ -87,8 +94,8 @@ class FileServiceTest {
         parent.addChild(file);
 
         when(repository.findById(fileId)).thenReturn(Optional.of(file));
-        // Mock the efficient ownership check
-        when(delegator.findProjectOwnerIdByElementId(parentId)).thenReturn(Optional.of(testUserId));
+        // Mock the role-based access check
+        when(roleService.hasMinimumRole(eq(parentId), eq(testUserId), any(ProjectRole.class))).thenReturn(true);
         when(delegator.findContainerById(parentId)).thenReturn(Optional.of(parent));
         when(delegator.save(parent)).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -116,8 +123,8 @@ class FileServiceTest {
         parent.addChild(file);
 
         when(repository.findById(fileId)).thenReturn(Optional.of(file));
-        // Mock the efficient ownership check
-        when(delegator.findProjectOwnerIdByElementId(parentId)).thenReturn(Optional.of(testUserId));
+        // Mock the role-based access check
+        when(roleService.hasMinimumRole(eq(parentId), eq(testUserId), any(ProjectRole.class))).thenReturn(true);
         when(delegator.findContainerById(parentId)).thenReturn(Optional.of(parent));
 
         // Act

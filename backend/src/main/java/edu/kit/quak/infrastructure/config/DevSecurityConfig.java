@@ -65,7 +65,8 @@ public class DevSecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain devSecurityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain devSecurityFilterChain(HttpSecurity http, OAuth2UserEnrichmentService oAuth2UserEnrichmentService)
+        throws Exception {
         http
             .cors(cors -> cors.configurationSource(devCorsConfigurationSource()))
             // Disable CSRF for easier API testing in development
@@ -101,7 +102,11 @@ public class DevSecurityConfig {
             )
             // Use HTTP Basic Auth AND OAuth2 for development
             .httpBasic(Customizer.withDefaults())
-            .oauth2Login(oauth2 -> oauth2.successHandler(devAuthenticationSuccessHandler()))
+            .oauth2Login(oauth2 ->
+                oauth2
+                    .userInfoEndpoint(userInfo -> userInfo.userService(oAuth2UserEnrichmentService))
+                    .successHandler(devAuthenticationSuccessHandler())
+            )
             // Allow frames for H2 console
             .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()));
 
@@ -120,8 +125,14 @@ public class DevSecurityConfig {
                 String registrationId = oauthToken.getAuthorizedClientRegistrationId();
 
                 OidcUserInfo userInfo = mapToUserInfo(principal);
-                edu.kit.quak.core.user.model.User user = oidcUserSyncService.syncUser(registrationId, userInfo);
-                request.getSession().setAttribute("userId", user.getId());
+                try {
+                    edu.kit.quak.core.user.model.User user = oidcUserSyncService.syncUser(registrationId, userInfo);
+                    request.getSession().setAttribute("userId", user.getId());
+                } catch (IllegalArgumentException e) {
+                    org.springframework.security.core.context.SecurityContextHolder.clearContext();
+                    response.sendRedirect(frontendUrl + "/login?error=email_exists");
+                    return;
+                }
             }
             delegate.onAuthenticationSuccess(request, response, authentication);
         };

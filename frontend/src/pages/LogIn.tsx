@@ -1,16 +1,30 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 export const LogIn: React.FC = () => {
     const { login, isAuthenticated } = useAuth();
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     useEffect(() => {
         if (isAuthenticated) {
             navigate('/');
         }
     }, [isAuthenticated, navigate]);
+
+    useEffect(() => {
+        const error = searchParams.get('error');
+        if (error === 'email_exists') {
+            setErrorMessage(
+                'An account with this email address already exists using a different sign-in method. Please use the original method to sign in.',
+            );
+            // Clear the error from URL after reading it
+            searchParams.delete('error');
+            setSearchParams(searchParams);
+        }
+    }, [searchParams, setSearchParams]);
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-400 via-blue-700 to-blue-900 p-4">
@@ -22,6 +36,12 @@ export const LogIn: React.FC = () => {
                         </h1>
                         <p className="text-white/80 text-lg">Quantum Computing Platform</p>
                     </div>
+
+                    {errorMessage && (
+                        <div className="mb-6 bg-red-500/10 border border-red-500/50 text-white px-4 py-3 rounded-xl text-center text-sm font-medium">
+                            {errorMessage}
+                        </div>
+                    )}
 
                     <div className="space-y-6">
                         <div className="text-center">

@@ -5,6 +5,7 @@ import edu.kit.quak.application.user.ports.in.UserServicePort;
 import edu.kit.quak.application.user.ports.out.UserRepositoryPort;
 import edu.kit.quak.core.user.model.AuthenticatedUser;
 import edu.kit.quak.core.user.model.User;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
@@ -60,5 +61,23 @@ public class UserService implements UserServicePort {
                 log.debug("User ID not found for issuer={} sub={}", authenticatedUser.issuer(), authenticatedUser.subject());
                 return new UserNotFoundException(authenticatedUser.issuer(), authenticatedUser.subject());
             });
+    }
+
+    @Override
+    public List<User> searchByEmail(String emailQuery) {
+        log.debug("Searching users by email query: {}", emailQuery);
+        if (emailQuery == null || emailQuery.isBlank()) {
+            return List.of();
+        }
+        return userRepository.searchByEmail(emailQuery);
+    }
+
+    @Override
+    public List<User> findAllByIds(List<UUID> ids) {
+        log.debug("Finding users by IDs: {}", ids);
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+        return userRepository.findAllByIds(ids);
     }
 }

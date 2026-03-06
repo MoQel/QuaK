@@ -8,9 +8,16 @@ import edu.kit.quak.infrastructure.filesystem.in.web.rest.dto.ProjectContentsRes
 import edu.kit.quak.infrastructure.filesystem.in.web.rest.dto.ProjectDetailsResponse;
 import edu.kit.quak.infrastructure.filesystem.in.web.rest.dto.ProjectRequest;
 import edu.kit.quak.infrastructure.filesystem.in.web.rest.mapper.ProjectDtoMapper;
+import edu.kit.quak.infrastructure.user.in.web.rest.dto.UserResponse;
 import edu.kit.quak.infrastructure.user.in.web.rest.mapper.AuthenticationMapper;
+import edu.kit.quak.infrastructure.user.in.web.rest.mapper.UserDtoMapper;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -18,7 +25,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * REST adapter for project-related endpoints. Handles HTTP-specific concerns and converts framework
+ * REST adapter for project-related endpoints. Handles HTTP-specific concerns
+ * and converts framework
  * types to domain types.
  */
 @Slf4j
@@ -31,17 +39,20 @@ public class ProjectRestAdapter {
     private final UserServicePort userService;
     private final ProjectDtoMapper mapper;
     private final AuthenticationMapper authMapper;
+    private final UserDtoMapper userDtoMapper;
 
     public ProjectRestAdapter(
         ProjectServicePort service,
         UserServicePort userService,
         ProjectDtoMapper mapper,
-        AuthenticationMapper authMapper
+        AuthenticationMapper authMapper,
+        UserDtoMapper userDtoMapper
     ) {
         this.service = service;
         this.userService = userService;
         this.mapper = mapper;
         this.authMapper = authMapper;
+        this.userDtoMapper = userDtoMapper;
     }
 
     @GetMapping({ "", "/" })
@@ -50,7 +61,24 @@ public class ProjectRestAdapter {
         log.debug("REST request to retrieve all projects of a user");
         User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
         List<Project> projects = service.listProjects(user);
-        return mapper.toDetailsResponseList(projects);
+
+        // Collect all unique owner IDs
+        List<UUID> ownerIds = projects.stream().map(Project::getOwnerId).filter(Objects::nonNull).distinct().toList();
+
+        // Fetch owners in a single batch call to avoid N+1 problem
+        Map<UUID, UserResponse> ownersMap = userService
+            .findAllByIds(ownerIds)
+            .stream()
+            .map(userDtoMapper::toResponse)
+            .collect(Collectors.toMap(UserResponse::userId, Function.identity()));
+
+        return projects
+            .stream()
+            .map(project -> {
+                UserResponse ownerResponse = project.getOwnerId() == null ? null : ownersMap.get(project.getOwnerId());
+                return mapper.toDetailsResponse(project, ownerResponse);
+            })
+            .toList();
     }
 
     @PostMapping({ "", "/" })

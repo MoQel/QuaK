@@ -16,6 +16,7 @@ import edu.kit.quak.core.user.model.AuthenticatedUser;
 import edu.kit.quak.core.user.model.User;
 import edu.kit.quak.infrastructure.filesystem.in.web.rest.mapper.ProjectDtoMapper;
 import edu.kit.quak.infrastructure.user.in.web.rest.mapper.AuthenticationMapper;
+import edu.kit.quak.infrastructure.user.in.web.rest.mapper.UserDtoMapper;
 import edu.kit.quak.shared.tags.IntegrationTest;
 import java.util.List;
 import java.util.UUID;
@@ -45,6 +46,9 @@ class ProjectRestAdapterTest {
 
     @MockitoBean
     AuthenticationMapper authMapper;
+
+    @MockitoBean
+    UserDtoMapper userDtoMapper;
 
     @org.junit.jupiter.api.BeforeEach
     void setUp() {

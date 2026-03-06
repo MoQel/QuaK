@@ -1,14 +1,17 @@
 package edu.kit.quak.application.filesystem.services;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import edu.kit.quak.application.common.exceptions.ResourceNotFoundException;
 import edu.kit.quak.application.filesystem.delegator.FileElementContainerRepositoryDelegator;
 import edu.kit.quak.application.filesystem.ports.out.DirectoryRepositoryPort;
+import edu.kit.quak.application.user.ports.in.ProjectRoleServicePort;
 import edu.kit.quak.core.filesystem.model.Directory;
 import edu.kit.quak.core.filesystem.model.Project;
+import edu.kit.quak.core.user.model.ProjectRole;
 import edu.kit.quak.core.user.model.User;
 import edu.kit.quak.shared.tags.UnitTest;
 import java.util.Optional;
@@ -29,6 +32,9 @@ class DirectoryServiceTest {
 
     @Mock
     private FileElementContainerRepositoryDelegator delegator;
+
+    @Mock
+    private ProjectRoleServicePort roleService;
 
     @InjectMocks
     private DirectoryService service;
@@ -55,8 +61,8 @@ class DirectoryServiceTest {
         Directory newDir = new Directory("NewDir", parentId);
         newDir.setId("d-new");
 
-        // Mock the efficient ownership check
-        when(delegator.findProjectOwnerIdByElementId(parentId)).thenReturn(Optional.of(testUserId));
+        // Mock the role-based access check
+        when(roleService.hasMinimumRole(eq(parentId), eq(testUserId), any(ProjectRole.class))).thenReturn(true);
         when(delegator.findContainerById(parentId)).thenReturn(Optional.of(parent));
         when(delegator.save(parent)).thenReturn(parent);
 
@@ -73,10 +79,12 @@ class DirectoryServiceTest {
     void createDirectory_throws_whenParentNotFound() {
         Directory newDir = new Directory("NewDir", "missing");
 
-        // Mock the ownership check to succeed, but container lookup fails
-        when(delegator.findProjectOwnerIdByElementId("missing")).thenReturn(Optional.empty());
+        // Parent ID "missing" starts with 'm' (not 'p'), so resolveProjectId will
+        // call findProjectIdByElementId which returns empty → throws
+        // IllegalStateException
+        when(delegator.findProjectIdByElementId("missing")).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class, () -> service.createDirectory(newDir, "missing", testUser));
+        assertThrows(IllegalStateException.class, () -> service.createDirectory(newDir, "missing", testUser));
     }
 
     @Test
@@ -94,8 +102,8 @@ class DirectoryServiceTest {
         parent.addChild(dir);
 
         when(repository.findById(dirId)).thenReturn(Optional.of(dir));
-        // Mock the efficient ownership check
-        when(delegator.findProjectOwnerIdByElementId(parentId)).thenReturn(Optional.of(testUserId));
+        // Mock the role-based access check
+        when(roleService.hasMinimumRole(eq(parentId), eq(testUserId), any(ProjectRole.class))).thenReturn(true);
         when(delegator.findContainerById(parentId)).thenReturn(Optional.of(parent));
 
         when(delegator.save(parent)).thenAnswer(invocation -> invocation.getArgument(0));
@@ -123,8 +131,8 @@ class DirectoryServiceTest {
         parent.addChild(dir);
 
         when(repository.findById(dirId)).thenReturn(Optional.of(dir));
-        // Mock the efficient ownership check
-        when(delegator.findProjectOwnerIdByElementId(parentId)).thenReturn(Optional.of(testUserId));
+        // Mock the role-based access check
+        when(roleService.hasMinimumRole(eq(parentId), eq(testUserId), any(ProjectRole.class))).thenReturn(true);
         when(delegator.findContainerById(parentId)).thenReturn(Optional.of(parent));
 
         // Act

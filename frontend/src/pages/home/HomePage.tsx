@@ -7,6 +7,7 @@ import { useProjectActionsDialog } from '@/components/projects/useProjectActions
 
 import { api } from '@/api/api.ts';
 import type { ProjectDetailsResponse } from '@/api/dto/filesystem.ts';
+import type { ProjectRoleResponse } from '@/api/dto/roles.ts';
 import { CreateProject } from '@/views/project-manager-view/ProjectManagerView.tsx';
 
 import type { SortMode } from './types';
@@ -15,6 +16,7 @@ import { LoadingState } from './components/LoadingState';
 import { ProjectCard } from './components/ProjectCard';
 import { ProjectSection } from './components/ProjectSection';
 import { SortSelect } from './components/SortSelect';
+import { ManageRolesDialog } from './components/ManageRolesDialog';
 
 export function HomePage() {
     const [ownProjects, setOwnProjects] = useState<ProjectDetailsResponse[]>([]);
@@ -26,15 +28,35 @@ export function HomePage() {
 
     const { dialog, openRenameProjectDialog, openDeleteProjectDialog } = useProjectActionsDialog();
 
+    // Manage Access dialog state
+    const [managingProject, setManagingProject] = useState<ProjectDetailsResponse | null>(null);
+
     const navigate = useNavigate();
 
     const fetchProjects = async () => {
         setIsLoading(true);
         try {
             const projects = await api.get<ProjectDetailsResponse[]>('/api/project/');
-            // For now, we put all projects in "Own Projects" as the API doesn't distinguish yet
-            setOwnProjects(projects);
-            setInvitedProjects([]);
+
+            // Determine role for each project
+            const roleChecks = await Promise.allSettled(
+                projects.map((p) => api.get<ProjectRoleResponse>(`/api/project/${p.id}/roles/me`)),
+            );
+
+            const owned: ProjectDetailsResponse[] = [];
+            const invited: ProjectDetailsResponse[] = [];
+
+            projects.forEach((p, idx) => {
+                const result = roleChecks[idx];
+                if (result.status === 'fulfilled' && result.value.role === 'VIEWER') {
+                    invited.push(p);
+                } else {
+                    owned.push(p);
+                }
+            });
+
+            setOwnProjects(owned);
+            setInvitedProjects(invited);
         } catch (error) {
             console.error('Failed to fetch projects:', error);
         } finally {
@@ -80,6 +102,10 @@ export function HomePage() {
         });
     };
 
+    const handleManageAccess = (project: ProjectDetailsResponse) => {
+        setManagingProject(project);
+    };
+
     const displayedOwnProjects = useMemo(() => {
         const byId = new Map(ownProjects.map((p) => [p.id, p] as const));
         const pinned = pinnedProjectIds.map((id) => byId.get(id)).filter((p): p is ProjectDetailsResponse => !!p);
@@ -100,28 +126,29 @@ export function HomePage() {
         navigate(`/project/${project.id}`);
     };
 
-    let ownProjectsContent;
-    if (isLoading) {
-        ownProjectsContent = <LoadingState />;
-    } else if (displayedOwnProjects.length > 0) {
-        ownProjectsContent = (
-            <div className="overflow-x-auto pb-4 -mx-2 px-2 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
-                <div className="flex flex-row gap-4">
-                    {displayedOwnProjects.map((p) => (
-                        <ProjectCard
-                            key={p.id}
-                            project={p}
-                            pinned={isPinned(p.id)}
-                            onRename={handleRename}
-                            onDelete={handleDelete}
-                            onTogglePin={togglePin}
-                        />
-                    ))}
+    const renderOwnProjectsContent = () => {
+        if (isLoading) return <LoadingState />;
+        if (displayedOwnProjects.length > 0) {
+            return (
+                <div className="overflow-x-auto pb-4 -mx-2 px-2 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
+                    <div className="flex flex-row gap-4">
+                        {displayedOwnProjects.map((p) => (
+                            <ProjectCard
+                                key={p.id}
+                                project={p}
+                                pinned={isPinned(p.id)}
+                                onRename={handleRename}
+                                onDelete={handleDelete}
+                                onTogglePin={togglePin}
+                                onManageAccess={handleManageAccess}
+                                isOwner
+                            />
+                        ))}
+                    </div>
                 </div>
-            </div>
-        );
-    } else {
-        ownProjectsContent = (
+            );
+        }
+        return (
             <div className="text-center py-12">
                 <FolderOpen className="w-12 h-12 text-text-muted mx-auto mb-3" />
                 <p className="text-sm text-text-muted">You have no projects yet.</p>
@@ -132,40 +159,51 @@ export function HomePage() {
                 </CreateProject>
             </div>
         );
-    }
+    };
 
-    let invitedProjectsContent;
-    if (isLoading) {
-        invitedProjectsContent = <LoadingState />;
-    } else if (invitedProjects.length > 0) {
-        invitedProjectsContent = (
-            <div className="overflow-x-auto pb-4 -mx-2 px-2 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
-                <div className="flex flex-row gap-4">
-                    {invitedProjects.map((p) => (
-                        <ProjectCard
-                            key={p.id}
-                            project={p}
-                            pinned={isPinned(p.id)}
-                            onRename={handleRename}
-                            onDelete={handleDelete}
-                            onTogglePin={togglePin}
-                        />
-                    ))}
+    const renderInvitedProjectsContent = () => {
+        if (isLoading) return <LoadingState />;
+        if (invitedProjects.length > 0) {
+            return (
+                <div className="overflow-x-auto pb-4 -mx-2 px-2 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
+                    <div className="flex flex-row gap-4">
+                        {invitedProjects.map((p) => (
+                            <ProjectCard
+                                key={p.id}
+                                project={p}
+                                pinned={isPinned(p.id)}
+                                onRename={handleRename}
+                                onDelete={handleDelete}
+                                onTogglePin={togglePin}
+                                isOwner={false}
+                            />
+                        ))}
+                    </div>
                 </div>
-            </div>
-        );
-    } else {
-        invitedProjectsContent = (
+            );
+        }
+        return (
             <div className="text-center py-12">
                 <Users className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
                 <p className="text-sm text-muted-foreground">You have no invited projects.</p>
             </div>
         );
-    }
+    };
 
     return (
         <div className="p-8 max-w-[1600px] mx-auto">
             {dialog}
+
+            {/* Manage Access Dialog */}
+            {managingProject && (
+                <ManageRolesDialog
+                    project={managingProject}
+                    open={!!managingProject}
+                    onOpenChange={(open) => {
+                        if (!open) setManagingProject(null);
+                    }}
+                />
+            )}
 
             <div className="mb-6">
                 <h1 className="text-3xl font-bold mb-2 text-text leading-tight py-1">Projects</h1>
@@ -195,7 +233,7 @@ export function HomePage() {
                         </>
                     }
                 >
-                    {ownProjectsContent}
+                    {renderOwnProjectsContent()}
                 </ProjectSection>
 
                 <ProjectSection
@@ -207,7 +245,7 @@ export function HomePage() {
                         </div>
                     }
                 >
-                    {invitedProjectsContent}
+                    {renderInvitedProjectsContent()}
                 </ProjectSection>
             </div>
         </div>

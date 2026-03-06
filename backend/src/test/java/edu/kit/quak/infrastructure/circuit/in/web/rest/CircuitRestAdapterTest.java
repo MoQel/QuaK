@@ -65,7 +65,7 @@ class CircuitRestAdapterTest {
         // Arrange
         String projectId = "p-id";
         QuantumCircuit circuit = new QuantumCircuit(projectId);
-        given(circuitServicePort.getByProjectId(projectId)).willReturn(circuit);
+        given(circuitServicePort.getByProjectId(eq(projectId), any())).willReturn(circuit);
 
         // Act & Assert
         mockMvc
@@ -78,7 +78,7 @@ class CircuitRestAdapterTest {
     void getCircuitByProjectId_ProjectHasNoCircuit_ShouldThrow404() throws Exception {
         // Arrange
         String projectId = "unknown";
-        given(circuitServicePort.getByProjectId(projectId)).willThrow(CircuitNotFoundException.class);
+        given(circuitServicePort.getByProjectId(eq(projectId), any())).willThrow(CircuitNotFoundException.class);
 
         // Act & Assert
         mockMvc.perform(get("/api/circuit/{projectId}", projectId).with(csrf())).andExpect(status().is(404));
@@ -95,7 +95,7 @@ class CircuitRestAdapterTest {
         circuit.addQubit(registerId);
 
         given(circuitServicePort.getById(circuitId)).willReturn(circuit);
-        given(circuitServicePort.addQubit(circuitId, registerId)).willReturn(circuit);
+        given(circuitServicePort.addQubit(eq(circuitId), eq(registerId), any())).willReturn(circuit);
 
         // Act & Assert
         mockMvc
@@ -121,7 +121,7 @@ class CircuitRestAdapterTest {
         updatedCircuit.setId(circuitId);
 
         given(circuitServicePort.getById(circuitId)).willReturn(updatedCircuit);
-        given(circuitServicePort.removeQubit(circuitId, registerId, qubitIdx)).willReturn(updatedCircuit);
+        given(circuitServicePort.removeQubit(eq(circuitId), eq(registerId), eq(qubitIdx), any())).willReturn(updatedCircuit);
 
         // Act & Assert
         mockMvc
@@ -144,7 +144,7 @@ class CircuitRestAdapterTest {
         QuantumCircuit freshCircuit = new QuantumCircuit(projectId);
 
         given(circuitServicePort.getById(circuitId)).willReturn(existingCircuit);
-        given(circuitServicePort.resetCircuit(circuitId)).willReturn(freshCircuit);
+        given(circuitServicePort.resetCircuit(eq(circuitId), any())).willReturn(freshCircuit);
 
         // Act & Assert
         mockMvc
@@ -168,7 +168,7 @@ class CircuitRestAdapterTest {
         circuit.addQuantumOperation(operation, layerIdx);
 
         given(circuitServicePort.getById(circuitId)).willReturn(circuit);
-        given(circuitServicePort.addQuantumOperation(eq(circuitId), any(QuantumOperation.class), eq(layerIdx))).willReturn(circuit);
+        given(circuitServicePort.addQuantumOperation(eq(circuitId), any(QuantumOperation.class), eq(layerIdx), any())).willReturn(circuit);
 
         String payload = """
             {

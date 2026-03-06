@@ -55,7 +55,8 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(
         HttpSecurity http,
         OAuth2AuthorizationRequestResolver authorizationRequestResolver,
-        AuthenticationSuccessHandler authenticationSuccessHandler
+        AuthenticationSuccessHandler authenticationSuccessHandler,
+        OAuth2UserEnrichmentService oAuth2UserEnrichmentService
     ) throws Exception {
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -95,6 +96,7 @@ public class SecurityConfig {
             .oauth2Login(oauth2 ->
                 oauth2
                     .authorizationEndpoint(authorization -> authorization.authorizationRequestResolver(authorizationRequestResolver))
+                    .userInfoEndpoint(userInfo -> userInfo.userService(oAuth2UserEnrichmentService))
                     .successHandler(authenticationSuccessHandler)
             )
             .logout(logout ->
@@ -200,8 +202,14 @@ public class SecurityConfig {
                 // Map attributes dynamically based on provider
                 OidcUserInfo userInfo = mapToUserInfo(principal);
 
-                edu.kit.quak.core.user.model.User user = oidcUserSyncService.syncUser(registrationId, userInfo);
-                request.getSession().setAttribute("userId", user.getId());
+                try {
+                    edu.kit.quak.core.user.model.User user = oidcUserSyncService.syncUser(registrationId, userInfo);
+                    request.getSession().setAttribute("userId", user.getId());
+                } catch (IllegalArgumentException e) {
+                    org.springframework.security.core.context.SecurityContextHolder.clearContext();
+                    response.sendRedirect(frontendUrl + "/login?error=email_exists");
+                    return;
+                }
             }
             delegate.onAuthenticationSuccess(request, response, authentication);
         };

@@ -67,4 +67,9 @@ public class DirectoryJpaAdapter implements DirectoryRepositoryPort {
     public Optional<UUID> findProjectOwnerIdByElementId(String elementId) {
         return parentRepository.findProjectOwnerIdByElementId(elementId).map(JpaUtils::convertToUuid);
     }
+
+    @Override
+    public Optional<String> findProjectIdByElementId(String elementId) {
+        return parentRepository.findProjectIdByElementId(elementId);
+    }
 }

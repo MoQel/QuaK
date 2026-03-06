@@ -7,14 +7,17 @@ import edu.kit.quak.infrastructure.user.in.web.rest.dto.UserResponse;
 import edu.kit.quak.infrastructure.user.in.web.rest.mapper.AuthenticationMapper;
 import edu.kit.quak.infrastructure.user.in.web.rest.mapper.UserDtoMapper;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.List;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * REST adapter for user-related endpoints. Handles HTTP-specific concerns and converts framework
+ * REST adapter for user-related endpoints. Handles HTTP-specific concerns and
+ * converts framework
  * types to domain types.
  */
 @RestController
@@ -38,5 +41,16 @@ public class UserRestAdapter {
         AuthenticatedUser authUser = authMapper.toDomain(authentication);
         User user = userService.getAuthenticatedUser(authUser);
         return userDtoMapper.toResponse(user);
+    }
+
+    /**
+     * Searches users by email. Returns a list of users whose email contains the
+     * query string.
+     */
+    @GetMapping("/users/search")
+    @PreAuthorize("isAuthenticated()")
+    public List<UserResponse> searchUsers(@RequestParam String email) {
+        List<User> users = userService.searchByEmail(email);
+        return users.stream().map(userDtoMapper::toResponse).toList();
     }
 }
