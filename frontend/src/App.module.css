@@ -7,9 +7,6 @@
     --qubitWireSpacing: 8px;
     --colorBack: #2f2e2e;
     --colorFront: #1e1616;
-    --qubitWidth: var(--quantumOperationWidth);
-    --qubitHeight: var(--quantumOperationHeight);
-    --spacingBetweenOperations: 3px;
 }
 
 .main {
@@ -71,32 +68,6 @@
     font-size: 16px;
 }
 
-.dropzoneSpacing {
-    min-width: var(--quantumOperationSpacing);
-}
-
-.dropZonePlaceHolderMargin {
-    margin-inline: var(--quantumOperationSpacing);
-}
-.dropZoneLastPlaceHolderMargin {
-    margin-left: var(--quantumOperationSpacing);
-}
-
-.qubit {
-    width: var(--qubitWidth);
-    height: var(--qubitHeight);
-}
-
-.qubitWireSpacing {
-    margin-left: var(--qubitWireSpacing);
-}
-
-.quantumOperationIndexSpacing {
-    margin-left: calc(var(--qubitWidth) + var(--qubitWireSpacing) + var(--quantumOperationSpacing) / 2);
-}
-.quantumOperationIndexSize {
-    width: calc(var(--quantumOperationWidth) + var(--quantumOperationSpacing));
-}
 .availableQuantumOperationContainer {
     padding: 9px 11px;
     display: flex;
