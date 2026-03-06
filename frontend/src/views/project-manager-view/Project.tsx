@@ -32,7 +32,7 @@ export function Project({ name, id, initiallyOpen }: Readonly<{ name: string; id
             name={name}
             id={id}
             getContent={fetchProjectContent}
-            edit={ProjectEdit}
+            edit={ProjectRename}
             icon={icon}
             deletePath={'/api/project/' + id}
             initiallyOpen={initiallyOpen}
@@ -40,7 +40,7 @@ export function Project({ name, id, initiallyOpen }: Readonly<{ name: string; id
     );
 }
 
-function ProjectEdit(id: string, trigger: (element: Promise<JSX.Element>) => void) {
+function ProjectRename(id: string, trigger: (element: Promise<JSX.Element>) => void) {
     const getProject = () => {
         return api.get<ProjectContentsResponse>('/api/project/' + id);
     };
@@ -51,18 +51,18 @@ function ProjectEdit(id: string, trigger: (element: Promise<JSX.Element>) => voi
             getProject().then((proj) => (
                 <>
                     <DialogHeader>
-                        <DialogTitle>Edit Project</DialogTitle>
+                        <DialogTitle>Rename Project</DialogTitle>
                     </DialogHeader>
-                    <EditForm project={proj} reloadParent={reloadParent} />
+                    <RenameForm project={proj} reloadParent={reloadParent} />
                 </>
             )),
         );
     };
 
-    return <ContextMenuItem onSelect={dialog}>Edit</ContextMenuItem>;
+    return <ContextMenuItem onSelect={dialog}>Rename</ContextMenuItem>;
 }
 
-function EditForm({ project, reloadParent }: Readonly<{ project: Project; reloadParent: () => void }>) {
+function RenameForm({ project, reloadParent }: Readonly<{ project: Project; reloadParent: () => void }>) {
     const close = useContext(DialogClose);
     const onSubmit = (name: string) => {
         const body: ProjectRequest = { name };

@@ -28,20 +28,14 @@ export function Directory({ name, id }: Readonly<{ name: string; id: string }>) 
             name={name}
             id={id}
             getContent={fetchDirectoryContent}
-            edit={DirectoryEdit}
+            edit={DirectoryRename}
             icon={icon}
             deletePath={'/api/directory/' + id}
         />
     );
 }
 
-/**
- * Provides a {@link ContextMenuItem} to edit a given directory
- * @param id The id of the directory to edit
- * @param openDialog A function that opens a dialog and displays the given elements after their promise resolves.
- * @constructor
- */
-function DirectoryEdit(id: string, openDialog: (element: Promise<JSX.Element>) => void) {
+function DirectoryRename(id: string, openDialog: (element: Promise<JSX.Element>) => void) {
     const getDir = () => {
         return api.get<DirectoryContentsResponse>('/api/directory/' + id);
     };
@@ -52,18 +46,18 @@ function DirectoryEdit(id: string, openDialog: (element: Promise<JSX.Element>) =
             getDir().then((dir) => (
                 <>
                     <DialogHeader>
-                        <DialogTitle>Edit Directory</DialogTitle>
+                        <DialogTitle>Rename Directory</DialogTitle>
                     </DialogHeader>
-                    <EditForm dir={dir} reloadParent={reloadParent} />
+                    <RenameForm dir={dir} reloadParent={reloadParent} />
                 </>
             )),
         );
     };
 
-    return <ContextMenuItem onSelect={dialog}>Edit</ContextMenuItem>;
+    return <ContextMenuItem onSelect={dialog}>Rename</ContextMenuItem>;
 }
 
-function EditForm({ dir, reloadParent }: Readonly<{ dir: IDirectory; reloadParent: () => void }>) {
+function RenameForm({ dir, reloadParent }: Readonly<{ dir: IDirectory; reloadParent: () => void }>) {
     const close = useContext(DialogClose);
     const onSubmit = (name: string) => {
         const body: DirectoryRequest = { name };
