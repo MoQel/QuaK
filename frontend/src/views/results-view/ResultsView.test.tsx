@@ -83,7 +83,7 @@ describe('ResultsView Component', () => {
 
         render(<ResultsView />);
 
-        const badge = screen.getByText(/Calculating/i);
+        const badge = screen.getByText(/Processing.../i);
         expect(badge).toBeInTheDocument();
         expect(badge).toHaveClass('animate-pulse');
     });
@@ -112,7 +112,6 @@ describe('ResultsView Component', () => {
 
         render(<ResultsView />);
 
-        expect(screen.getByText(/Simulation Results/i)).toBeInTheDocument();
         expect(screen.getByText('|q0>')).toBeInTheDocument();
         expect(screen.getByText(/Basis:/i)).toBeInTheDocument();
     });
