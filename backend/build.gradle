@@ -59,22 +59,29 @@ dependencies {
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
-tasks.register('cleanFrontendFiles', Delete) {
+tasks.register('cleanFrontendFiles') {
     group = 'QuaK'
-    def stat = layout.projectDirectory.dir("src/main/resources/static").asFile
-    def toDelete = stat.listFiles().findAll() { file ->
-        !file.name.startsWith(".git")
+    description = 'Clean frontend files from static directory'
+    doLast {
+        def stat = layout.projectDirectory.dir("src/main/resources/static").asFile
+        if (stat.exists()) {
+            stat.listFiles()?.findAll { file -> !file.name.startsWith(".git") }?.each { file ->
+                if (file.isDirectory()) file.deleteDir()
+                else file.delete()
+            }
+        }
     }
-    delete toDelete
 }
 
 tasks.register('getFrontend', Copy) {
     dependsOn npm_run_build
     dependsOn cleanFrontendFiles
+    mustRunAfter cleanFrontendFiles
     group = 'QuaK'
     description = 'Copy frontend into static-folder inside the backend'
     from(layout.projectDirectory.dir("../frontend/dist"))
     into(layout.projectDirectory.dir('src/main/resources/static'))
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
 }
 
 tasks.register('prepareDevStatic') {

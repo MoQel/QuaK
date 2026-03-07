@@ -18,7 +18,7 @@ This ensures a consistent environment and supports hot-reloading.
     * **Linux/macOS:**
 
         ```bash
-        docker compose -f docker-compose.dev.yaml up --build
+        docker-compose -f docker-compose.dev.yaml up --build
         ```
 
     * **Windows:**
@@ -76,7 +76,7 @@ To run the full application (Backend + Frontend served statically):
 1. **Start Application:**
 
     ```bash
-    docker compose -f docker-compose.prod.yaml up --build
+    docker-compose -f docker-compose.prod.yaml up --build
     ```
 
     * Builds the frontend and serves it via the backend (or Nginx if configured).

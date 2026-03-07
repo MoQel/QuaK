@@ -24,6 +24,8 @@ RUN if [ "$SKIP_FRONTEND" = "false" ]; then \
 
 ENV GRADLE_HOME=/opt/gradle
 ENV PATH=$PATH:$GRADLE_HOME/bin
+# Increase Node.js heap size for large frontend builds (prevents OOM during vite build)
+ENV NODE_OPTIONS="--max-old-space-size=4096"
 
 WORKDIR /app
 
