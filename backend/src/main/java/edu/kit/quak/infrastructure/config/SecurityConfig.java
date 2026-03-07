@@ -64,7 +64,7 @@ public class SecurityConfig {
                 csrf
                     .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                     .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
-                    .ignoringRequestMatchers("/api/auth/**", "/login/**", "/oauth2/**")
+                    .ignoringRequestMatchers("/login/**", "/oauth2/**")
             )
             .addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class)
             .authorizeHttpRequests(auth ->
