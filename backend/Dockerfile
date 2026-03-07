@@ -51,8 +51,14 @@ FROM eclipse-temurin:21-jre-jammy
 
 WORKDIR /app
 
+# Create non-root user and group for security
+RUN groupadd -r spring && useradd -r -g spring spring
+
 # Copy the built JAR from builder stage
 COPY --from=builder /app/build/libs/*.jar quak.jar
+
+# Switch to non-root user
+USER spring:spring
 
 # Expose port
 EXPOSE 8080

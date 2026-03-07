@@ -26,6 +26,9 @@ RUN npm install -g http-server
 # Copy built files from builder stage
 COPY --from=builder /app/dist ./dist
 
+# Switch to non-root user (node user is built into node:alpine)
+USER node
+
 # Expose port
 EXPOSE 5173
 
