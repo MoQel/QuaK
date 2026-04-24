@@ -26,6 +26,30 @@ interface FetchOptions extends RequestInit {
     skipRedirect?: boolean;
 }
 
+interface ProblemDetail {
+    type?: string;
+    title?: string;
+    status?: number;
+    detail?: string;
+    instance?: string;
+}
+
+export class ProblemDetailError extends Error {
+    public readonly status?: number;
+    public readonly title?: string;
+    public readonly detail?: string;
+    public readonly instance?: string;
+
+    constructor(problem: ProblemDetail) {
+        super(problem.detail ?? problem.title ?? 'Unknown error');
+        this.name = 'ProblemDetailError';
+        this.status = problem.status;
+        this.title = problem.title;
+        this.detail = problem.detail;
+        this.instance = problem.instance;
+    }
+}
+
 /**
  * Make an authenticated API request
  * Automatically includes credentials (session cookie)
@@ -55,13 +79,17 @@ export async function apiRequest<T>(endpoint: string, options: FetchOptions = {}
     if (response.status === 401) {
         if (!options.skipRedirect) {
             // Redirect to login if not authenticated
-            window.location.href = '/login';
+            globalThis.location.href = '/login';
         }
         throw new Error('Unauthorized');
     }
 
     if (!response.ok) {
-        throw response;
+        const contentType = response.headers.get('content-type');
+        if (contentType?.includes('application/json') || contentType?.includes('application/problem+json')) {
+            throw new ProblemDetailError(await response.json());
+        }
+        throw new Error(response.statusText);
     }
 
     // Return parsed JSON or text based on content type
@@ -98,7 +126,7 @@ export const api = {
             ...options,
             headers,
             method: 'PUT',
-            body: isString ? (data as string) : JSON.stringify(data),
+            body: isString ? data : JSON.stringify(data),
         });
     },
 
