@@ -35,14 +35,7 @@ class FileElementDtoMapperTest {
     @DisplayName("Should map File entity to FileDetailsResponse")
     void testMapFile() {
         File file = new File("test.txt", null);
-        FileDetailsResponse expectedResponse = new FileDetailsResponse(
-            file.getId(),
-            "test.txt",
-            "file",
-            null,
-            Instant.now(),
-            Instant.now()
-        );
+        FileDetailsResponse expectedResponse = new FileDetailsResponse(file.getId(), "test.txt", "file", Instant.now(), Instant.now());
 
         when(fileMapper.toDetailsResponse(any(File.class))).thenReturn(expectedResponse);
 

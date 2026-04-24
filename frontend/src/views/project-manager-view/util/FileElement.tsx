@@ -19,10 +19,6 @@ export type Project = FileElementContainer;
 
 export type Directory = FileElementContainer;
 
-export interface File extends FileElement {
-    contentType: string;
-}
-
 /**
  * Sorts file elements:
  * 1. Directories first, then Files, then Projects

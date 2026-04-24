@@ -12,7 +12,7 @@ public interface FileServicePort {
 
     File retrieveFile(String id, User user);
 
-    void setFileContent(String fileId, byte[] content, String contentType, User user);
+    void setFileContent(String fileId, byte[] content, User user);
 
     byte[] getFileContent(String fileId, User user);
 }

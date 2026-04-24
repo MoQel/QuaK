@@ -100,10 +100,9 @@ class FileServiceTest {
         when(delegator.save(parent)).thenAnswer(invocation -> invocation.getArgument(0));
 
         // Act
-        service.setFileContent(fileId, "Hello".getBytes(), "text/plain", testUser);
+        service.setFileContent(fileId, "Hello".getBytes(), testUser);
 
         // Assert
-        assertEquals("text/plain", file.getContentType());
         verify(contentRepository).saveContent(fileId, "Hello".getBytes());
         verify(delegator).save(parent);
     }

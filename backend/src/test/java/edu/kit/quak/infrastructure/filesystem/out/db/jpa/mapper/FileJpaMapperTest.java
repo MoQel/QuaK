@@ -47,7 +47,6 @@ class FileJpaMapperTest {
 
         JpaFile jpa = new JpaFile("A.txt", null); // Constructor might set parent to null initially
         jpa.setParent(parent); // Set parent relationship
-        jpa.setContentType("text/plain");
         jpa.setId("f-file-1");
 
         // Act
@@ -55,7 +54,6 @@ class FileJpaMapperTest {
 
         // Assert
         assertEquals("A.txt", domain.getName());
-        assertEquals("text/plain", domain.getContentType());
         assertEquals("d-parent-1", domain.getParentId());
     }
 }
