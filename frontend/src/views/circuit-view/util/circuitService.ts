@@ -1,4 +1,4 @@
-import { api } from '@/api/api.ts';
+import { api, ProblemDetailError } from '@/api/api.ts';
 import {
     AddQuantumOperationRequest,
     CircuitResponse,
@@ -11,6 +11,10 @@ const handleError = (error: unknown) => {
     if (error instanceof Response && error.status === 403) {
         toast.error('Access Denied', {
             description: 'You must be the project owner to modify the circuit.',
+        });
+    } else if (error instanceof ProblemDetailError) {
+        toast.error(error.title || 'Operation Failed', {
+            description: error.detail || 'An unexpected error occured on the server.',
         });
     } else {
         toast.error('Operation Failed', {

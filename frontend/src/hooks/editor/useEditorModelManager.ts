@@ -97,7 +97,7 @@ export function useEditorModelManager(
             })
             .catch((err) => {
                 console.error('Failed to load file', err);
-                toast.error('File loading failed');
+                toast.error(err.message || 'File loading failed');
             });
 
         return () => {

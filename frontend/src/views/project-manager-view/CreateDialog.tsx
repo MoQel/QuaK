@@ -16,6 +16,7 @@ import { api } from '@/api/api.ts';
 import { CreateFileRequest, DirectoryRequest } from '@/api/dto/filesystem';
 import { EntityForm } from '@/views/project-manager-view/util/FormUtils.tsx';
 import { useFocusSelection } from '@/hooks/useFocusSelection.ts';
+import { toast } from 'sonner';
 
 interface CreateDialogProps {
     id: string;
@@ -87,7 +88,9 @@ function CreateFile({ parent }: Readonly<{ parent: string }>) {
         const body: CreateFileRequest = {
             name: values.name,
         };
-        api.post('/api/file/', body, { headers: { 'parent-id': parent } }).then(reloadParent);
+        api.post('/api/file/', body, { headers: { 'parent-id': parent } })
+            .then(reloadParent)
+            .catch((err) => toast.error(err.message || 'Failed to create file'));
     };
 
     return (
@@ -111,7 +114,9 @@ function CreateDirectory({ parent }: Readonly<{ parent: string }>) {
 
     const onSubmit = (name: string) => {
         const body: DirectoryRequest = { name };
-        api.post('/api/directory/', body, { headers: { 'parent-id': parent } }).then(reloadParent);
+        api.post('/api/directory/', body, { headers: { 'parent-id': parent } })
+            .then(reloadParent)
+            .catch((err) => toast.error(err.message || 'Failed to create directory'));
     };
 
     return <EntityForm defaultName="folder" onSubmit={onSubmit} label="Name of the directory" placeholder="folder" />;

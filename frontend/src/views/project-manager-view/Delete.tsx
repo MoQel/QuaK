@@ -4,6 +4,7 @@ import { DialogClose, ParentRefresh } from '@/views/project-manager-view/Project
 import { DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog.tsx';
 import { DialogCloseButtons } from '@/views/project-manager-view/util/FormComponents.tsx';
 import { api } from '@/api/api.ts';
+import { toast } from 'sonner';
 
 /**
  * Provides a {@link ContextMenuItem} That allows for deletion of an HTTP-Path
@@ -23,10 +24,12 @@ export function Delete({
 
     const del = (event: FormEvent) => {
         event.preventDefault();
-        api.delete(endpoint).then(() => {
-            reload();
-            close();
-        });
+        api.delete(endpoint)
+            .then(() => {
+                reload();
+                close();
+            })
+            .catch((err) => toast.error(err.message || 'Failed to delete element'));
     };
 
     return (
