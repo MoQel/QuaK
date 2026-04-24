@@ -67,8 +67,7 @@ class FileRestAdapterTest {
 
         String jsonRequest = """
             {
-                "name": "test.txt",
-                "contentType": "text/plain"
+                "name": "test.txt"
             }
             """;
 
@@ -84,30 +83,6 @@ class FileRestAdapterTest {
             .andExpect(jsonPath("$.id").value("f-123"))
             .andExpect(jsonPath("$.name").value("test.txt"))
             .andExpect(jsonPath("$.type").value("file"));
-    }
-
-    @Test
-    @DisplayName("POST /file/ returns 400 on invalid content-definitionId format")
-    void createFile_validationError() throws Exception {
-        // "invalid-type" does not match the regex in the DTO
-        String jsonRequest = """
-            {
-                "name": "test.txt",
-                "contentType": "invalid-type"
-            }
-            """;
-
-        mockMvc
-            .perform(
-                post("/api/file/")
-                    .with(csrf())
-                    .header(ApiConstants.HEADER_PARENT_ID, "d-1")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(jsonRequest)
-            )
-            .andExpect(status().isBadRequest())
-            .andExpect(jsonPath("$.title").exists())
-            .andExpect(jsonPath("$.status").value(400));
     }
 
     @Test
@@ -170,8 +145,7 @@ class FileRestAdapterTest {
         // "SGVsbG8=" ist Base64 für "Hello"
         String jsonRequest = """
             {
-                "content": "SGVsbG8=",
-                "contentType": "text/plain"
+                "content": "SGVsbG8="
             }
             """;
 
@@ -179,6 +153,6 @@ class FileRestAdapterTest {
             .perform(put("/api/file/f-123/content").with(csrf()).contentType(MediaType.APPLICATION_JSON).content(jsonRequest))
             .andExpect(status().isOk());
 
-        verify(fileService).setFileContent(eq("f-123"), any(byte[].class), eq("text/plain"), any(User.class));
+        verify(fileService).setFileContent(eq("f-123"), any(byte[].class), any(User.class));
     }
 }

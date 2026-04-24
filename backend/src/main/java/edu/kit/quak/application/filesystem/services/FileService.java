@@ -93,15 +93,12 @@ public class FileService extends AbstractFileElementService<File> implements Fil
 
     @Override
     @Transactional
-    public void setFileContent(String fId, byte[] content, String contentType, User user) {
+    public void setFileContent(String fId, byte[] content, User user) {
         log.info("Updating content for file '{}'", fId);
         File file = retrieveWithoutAuth(fId);
         verifyOwnershipByParentId(file.getParentId(), user);
 
-        modifyElementInParent(fId, f -> {
-            f.setLastAccessNow();
-            f.setContentType(contentType);
-        });
+        modifyElementInParent(fId, FileElement::setLastAccessNow);
         // Store content blob seperate
         contentRepository.saveContent(fId, content);
     }

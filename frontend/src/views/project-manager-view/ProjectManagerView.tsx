@@ -8,14 +8,13 @@ import { z, ZodObject, ZodRawShape } from 'zod';
 import { DefaultValues, FieldPath, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Skeleton } from '@/components/ui/skeleton.tsx';
-import { File, sort, getElementForFileElement } from '@/views/project-manager-view/util/FileElement.tsx';
+import { FileElement, getElementForFileElement, sort } from '@/views/project-manager-view/util/FileElement.tsx';
 import { DialogCloseButtons, TextInput } from '@/views/project-manager-view/util/FormComponents.tsx';
-import { Plus, FilePlus, FolderPlus, LucideIcon } from 'lucide-react';
+import { FilePlus, FolderPlus, LucideIcon, Plus } from 'lucide-react';
 import { Empty } from '@/views/project-manager-view/util/TreeComponents.tsx';
 import { api } from '@/api/api.ts';
-import { ProjectDetailsResponse, ProjectRequest, ProjectContentsResponse } from '@/api/dto/filesystem.ts';
+import { ProjectContentsResponse, ProjectDetailsResponse, ProjectRequest } from '@/api/dto/filesystem.ts';
 import { toast } from 'sonner';
-import { getContentType } from '@/lib/utils.ts';
 
 import { FileSelect, ParentRefresh, SelectedFolder } from '@/views/project-manager-view/ProjectManagerContexts.ts';
 
@@ -24,14 +23,14 @@ import { FileSelect, ParentRefresh, SelectedFolder } from '@/views/project-manag
  * @constructor
  */
 interface ProjectManagerViewProps {
-    onFileSelect: (file: File) => void;
+    onFileSelect: (file: FileElement) => void;
     projectId?: string;
 }
 
 export function ProjectManagerView({ onFileSelect, projectId }: Readonly<ProjectManagerViewProps>) {
     const [content, setContent] = useState([<Skeleton className="h-4" key="LOADING" />]);
-    const [reloaded, r] = useState(false);
-    const reload = useCallback(() => r((prev) => !prev), []);
+    const [reloaded, setReloaded] = useState(false);
+    const reload = useCallback(() => setReloaded((prev) => !prev), []);
     const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
     const [selectedFolderReloadTrigger, setSelectedFolderReloadTrigger] = useState(0);
     const triggerSelectedFolderReload = useCallback(() => setSelectedFolderReloadTrigger((prev) => prev + 1), []);
@@ -261,7 +260,7 @@ function CreateFileForm({ parent, onClose }: Readonly<{ parent: string; onClose:
             apiEndpoint="/api/file/"
             errorMessage="Failed to create file"
             fields={fileFields}
-            buildBody={(values) => ({ name: values.name, contentType: getContentType(values.name) })}
+            buildBody={(values) => ({ name: values.name })}
         />
     );
 }

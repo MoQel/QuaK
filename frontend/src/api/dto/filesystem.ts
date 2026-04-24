@@ -16,7 +16,6 @@ export interface DirectoryRequest {
 // CreateFileRequest.java
 export interface CreateFileRequest {
     name: string;
-    contentType: string;
 }
 
 // ProjectRequest.java
@@ -27,12 +26,6 @@ export interface ProjectRequest {
 // RenameFileRequest.java
 export interface RenameFileRequest {
     name: string;
-}
-
-// FileContentRequest.java
-export interface FileContentRequest {
-    content: string; // Base64
-    contentType: string;
 }
 
 // --- Responses ---
@@ -65,9 +58,7 @@ export interface ProjectDetailsResponse extends FileElementDto {
 }
 
 // FileDetailsResponse.java
-export interface FileDetailsResponse extends FileElementDto {
-    contentType: string;
-}
+export type FileDetailsResponse = FileElementDto;
 
 // FileContentResponse.java
 export interface FileContentResponse {
