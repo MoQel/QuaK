@@ -12,6 +12,7 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+    dedupe: ['vscode', 'monaco-editor']
   },
   server: {
       // Allow Shared Buffer Array for multithreading

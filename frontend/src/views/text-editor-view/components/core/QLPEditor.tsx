@@ -11,6 +11,7 @@ import { useEditorModelManager } from '@/hooks/editor/useEditorModelManager.ts';
 import { useAppSelector } from '@/hooks/useAppSelector.ts';
 import { useEditorLanguage } from '@/hooks/editor/useEditorLanguage.ts';
 import { cn } from '@/lib/utils.ts';
+import { getLanguageClient } from '@/lsp/languageClient.ts';
 
 interface QLPEditorProps {
     groupId: string;
@@ -36,9 +37,13 @@ function QLPEditor({ groupId }: Readonly<QLPEditorProps>) {
     // endregion
 
     // region Editor config and mount
-    const handleEditorDidMount = (editor: editor.IStandaloneCodeEditor) => {
+    const handleEditorDidMount = async (editor: editor.IStandaloneCodeEditor) => {
         setEditorInstance(editor);
         applyTheme();
+
+        getLanguageClient('python', 'ws://localhost:30000/sampleServer').catch((err) => {
+            console.error('Failed to start python language client:', err);
+        });
 
         const disposable = editor.onDidChangeModelContent(() => {
             const model = editor.getModel();

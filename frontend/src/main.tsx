@@ -6,15 +6,26 @@ import { router } from './router.tsx';
 import { ThemeProvider } from '@/theme';
 import { Provider } from 'react-redux';
 import { store } from '@/store/store.ts';
+import { initVscodeApi } from '@/lsp/initVsCodeApi.ts';
 
-// Enable dark mode globally
-//document.documentElement.classList.add('dark');
-createRoot(document.getElementById('root')!).render(
-    <StrictMode>
-        <Provider store={store}>
-            <ThemeProvider>
-                <RouterProvider router={router} />
-            </ThemeProvider>
-        </Provider>
-    </StrictMode>,
-);
+async function bootstrap() {
+    try {
+        console.log('start vscode api');
+        await initVscodeApi();
+    } catch (e) {
+        console.error('critival error starting vscode api', e);
+    }
+    // Enable dark mode globally
+    //document.documentElement.classList.add('dark');
+    createRoot(document.getElementById('root')!).render(
+        <StrictMode>
+            <Provider store={store}>
+                <ThemeProvider>
+                    <RouterProvider router={router} />
+                </ThemeProvider>
+            </Provider>
+        </StrictMode>,
+    );
+}
+
+await bootstrap();
