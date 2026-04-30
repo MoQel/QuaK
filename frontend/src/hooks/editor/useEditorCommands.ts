@@ -25,7 +25,9 @@ export function useEditorCommands() {
             dispatch(setFileDirty({ fileId: targetFileId, isDirty: false }));
             toast.success('Saved successfully');
         } catch (e) {
-            toast.error('Save failed');
+            toast.error('Save failed', {
+                description: e instanceof Error ? e.message : 'unknown error',
+            });
             console.error(e);
         }
     };

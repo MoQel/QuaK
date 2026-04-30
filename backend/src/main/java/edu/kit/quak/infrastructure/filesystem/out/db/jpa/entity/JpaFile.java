@@ -1,6 +1,5 @@
 package edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity;
 
-import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
 import lombok.Getter;
@@ -15,9 +14,6 @@ import lombok.Setter;
 @Getter
 @Setter
 public class JpaFile extends JpaFileElement<JpaFile> {
-
-    @Column(name = "content_type")
-    private String contentType;
 
     protected JpaFile() {
         super();

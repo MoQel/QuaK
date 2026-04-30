@@ -18,6 +18,5 @@ export async function saveFileContent(id: string, content: string) {
     const encodedContent = Base64.encode(content);
     await api.put(`/api/file/${id}/content`, {
         content: encodedContent,
-        contentType: 'text/plain',
     });
 }

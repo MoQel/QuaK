@@ -1,15 +1,15 @@
 import {
+    DialogClose,
     FileSelect,
     ParentRefresh,
     SelectedFolder,
-    DialogClose,
 } from '@/views/project-manager-view/ProjectManagerContexts.ts';
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu.tsx';
 import { Delete } from '@/views/project-manager-view/Delete.tsx';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog.tsx';
 import { JSX, useCallback, useContext, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton.tsx';
-import { File as IFile } from '@/views/project-manager-view/util/FileElement.tsx';
+import { FileElement as IFile } from '@/views/project-manager-view/util/FileElement.tsx';
 import { ListingElement } from '@/views/project-manager-view/util/TreeComponents.tsx';
 import { api } from '@/api/api.ts';
 import { FileDetailsResponse, RenameFileRequest } from '@/api/dto/filesystem.ts';

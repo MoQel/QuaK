@@ -60,7 +60,7 @@ export function useProjectActionsDialog() {
                                 await options?.onRenamed?.(updated);
                             })
                             .catch((err) => {
-                                toast.error(err?.message || 'Failed to rename project');
+                                toast.error(err.message || 'Failed to rename project');
                             });
                     }}
                 />
@@ -86,7 +86,7 @@ export function useProjectActionsDialog() {
                                 await options?.onDeleted?.();
                             })
                             .catch((err) => {
-                                toast.error(err?.message || 'Failed to delete project');
+                                toast.error(err.message || 'Failed to delete project');
                             });
                     }}
                 >

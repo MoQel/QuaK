@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Search, Trash2, Users, X, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { api } from '@/api/api.ts';
+import { api, ProblemDetailError } from '@/api/api.ts';
 import type { ProjectRoleResponse, UserSearchResult } from '@/api/dto/roles.ts';
 import type { ProjectDetailsResponse } from '@/api/dto/filesystem.ts';
 
@@ -109,7 +109,7 @@ export function ManageRolesDialog({ project, open, onOpenChange }: Readonly<Mana
             setShowResults(false);
             await fetchRoles();
         } catch (err) {
-            const msg = err instanceof Error ? err.message : 'Failed to invite user';
+            const msg = err instanceof ProblemDetailError ? err.detail || err.message : 'Failed to invite user';
             toast.error(msg);
         }
     };
@@ -120,7 +120,7 @@ export function ManageRolesDialog({ project, open, onOpenChange }: Readonly<Mana
             toast.success(`Removed ${email || 'user'} from project`);
             await fetchRoles();
         } catch (err) {
-            const msg = err instanceof Error ? err.message : 'Failed to remove user';
+            const msg = err instanceof ProblemDetailError ? err.detail || err.message : 'Failed to remove user';
             toast.error(msg);
         }
     };
