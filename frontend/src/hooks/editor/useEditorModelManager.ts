@@ -8,6 +8,8 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { setFileDirty } from '@/store/tabs/tabsSlice.ts';
 import { useAppSelector } from '@/hooks/useAppSelector.ts';
 import { Monaco } from '@monaco-editor/react';
+import { fileSystemProvider } from '@/lsp/initVsCodeApi.ts';
+import { RegisteredMemoryFile } from '@codingame/monaco-vscode-files-service-override';
 
 export function useEditorModelManager(
     monaco: Monaco,
@@ -58,7 +60,8 @@ export function useEditorModelManager(
             return;
         }
 
-        const modelUri = Uri.file(activeFileId);
+        const fileName = activeTab?.title || 'untitled';
+        const modelUri = Uri.file(`/tmp/${activeFileId}/${fileName}`);
         let model = monaco.editor.getModel(modelUri);
 
         // Model with content exists (Hit)
@@ -85,6 +88,12 @@ export function useEditorModelManager(
                 model = monaco.editor.getModel(modelUri);
 
                 if (!model || model.isDisposed()) {
+                    try {
+                        fileSystemProvider.registerFile(new RegisteredMemoryFile(modelUri, data.content));
+                    } catch (e) {
+                        console.debug('Datei existiert bereits im virtuellen FS', e);
+                    }
+
                     const techId = getTechnicalId(activeTab?.language || DEFAULT_LANG);
 
                     model = monaco.editor.createModel(data.content, techId, modelUri);

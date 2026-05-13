@@ -13,10 +13,9 @@ async function bootstrap() {
         console.log('start vscode api');
         await initVscodeApi();
     } catch (e) {
-        console.error('critival error starting vscode api', e);
+        console.error('critical error starting vscode api', e);
     }
-    // Enable dark mode globally
-    //document.documentElement.classList.add('dark');
+
     createRoot(document.getElementById('root')!).render(
         <StrictMode>
             <Provider store={store}>

@@ -1,6 +1,6 @@
 import path from "node:path"
 import tailwindcss from "@tailwindcss/vite"
-import { defineConfig } from "vitest/config";
+import {defineConfig} from "vitest/config";
 import react from '@vitejs/plugin-react'
 import wasm from "vite-plugin-wasm";
 import topLevelAwait from "vite-plugin-top-level-await";
@@ -11,6 +11,8 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+        // This is needed for Vite 6, but may be unnecessary for Vite 8
+        "vscode": "@codingame/monaco-vscode-extension-api",
     },
     dedupe: ['vscode', 'monaco-editor']
   },

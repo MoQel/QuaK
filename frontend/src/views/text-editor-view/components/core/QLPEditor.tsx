@@ -1,8 +1,8 @@
 import { Editor, useMonaco } from '@monaco-editor/react';
 import { useState } from 'react';
 import { editor } from 'monaco-editor';
-import { useTheme } from '@/theme.tsx';
 import { languages } from '@/views/text-editor-view/languages/languages.ts';
+import { useTheme } from '@/theme.tsx';
 import { useMonacoTheme } from '@/hooks/editor/useMonacoTheme.ts';
 import { useAppDispatch } from '@/hooks/useAppDispatch.ts';
 import { setFileDirty } from '@/store/tabs/tabsSlice.ts';
