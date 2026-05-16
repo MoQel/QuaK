@@ -9,6 +9,7 @@ import { useEditorCommands } from '@/hooks/editor/useEditorCommands.ts';
 import { EditorDropZoneSlot } from '@/views/text-editor-view/components/layout/EditorDropZoneSlot.tsx';
 import { EditorSlot } from '@/views/text-editor-view/components/layout/EditorSlot.tsx';
 import { UnsavedChangesAlertDialog } from '@/views/text-editor-view/components/utils/UnsavedChangesAlertDialog.tsx';
+import { useLSPSetup } from '@/hooks/editor/useLSPSetup.ts';
 
 export function TextEditorView() {
     const { groups, activeGroupId, isDragging } = useAppSelector((state) => state.tabs);
@@ -17,6 +18,7 @@ export function TextEditorView() {
     useEditorShortcuts(activeTabId, activeGroupId);
     useMonacoGarbageCollector();
     useEditorCommands();
+    useLSPSetup();
 
     const groupMap = useMemo(() => new Map(groups.map((g) => [g.id, g])), [groups]);
     const hasRightGroup = !!groupMap.get(GROUP_RIGHT);

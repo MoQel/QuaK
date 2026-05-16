@@ -11,6 +11,7 @@ import { useEditorModelManager } from '@/hooks/editor/useEditorModelManager.ts';
 import { useAppSelector } from '@/hooks/useAppSelector.ts';
 import { useEditorLanguage } from '@/hooks/editor/useEditorLanguage.ts';
 import { cn } from '@/lib/utils.ts';
+import { lspManager } from '@/lsp/LSPClientManager.ts';
 
 interface QLPEditorProps {
     groupId: string;
@@ -36,25 +37,29 @@ function QLPEditor({ groupId }: Readonly<QLPEditorProps>) {
     // endregion
 
     // region Editor config and mount
-    const handleEditorDidMount = (editor: editor.IStandaloneCodeEditor) => {
-        setEditorInstance(editor);
+    const handleEditorDidMount = (instance: editor.IStandaloneCodeEditor) => {
+        setEditorInstance(instance);
         applyTheme();
 
-        const disposable = editor.onDidChangeModelContent(() => {
-            const model = editor.getModel();
-            if (!model) return;
+        const contentChangeDisposable = instance.onDidChangeModelContent(() => {
+            const model = instance.getModel();
+            if (!model || model.isDisposed()) return;
+
+            lspManager.onDocumentChange(model);
+
             const currentVersion = model.getAlternativeVersionId();
             const savedVersion = savedVersionIds.get(model);
             const isDirty = savedVersion !== undefined && currentVersion !== savedVersion;
 
             if (isDirty !== isDirtyRef.current) {
                 isDirtyRef.current = isDirty;
-                dispatch(setFileDirty({ fileId: getModelId(model), isDirty: isDirty }));
+                dispatch(setFileDirty({ fileId: getModelId(model), isDirty }));
             }
         });
 
-        editor.onDidDispose(() => {
-            disposable.dispose();
+        const disposeDisposable = instance.onDidDispose(() => {
+            contentChangeDisposable.dispose();
+            disposeDisposable.dispose();
             setEditorInstance(null);
         });
     };

@@ -8,6 +8,7 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { setFileDirty } from '@/store/tabs/tabsSlice.ts';
 import { useAppSelector } from '@/hooks/useAppSelector.ts';
 import { Monaco } from '@monaco-editor/react';
+import { lspManager } from '@/lsp/LSPClientManager';
 
 export function useEditorModelManager(
     monaco: Monaco,
@@ -58,7 +59,8 @@ export function useEditorModelManager(
             return;
         }
 
-        const modelUri = Uri.file(activeFileId);
+        const fileName = activeTab?.title || 'untitled.txt';
+        const modelUri = Uri.file(`${activeFileId}/${fileName}`);
         let model = monaco.editor.getModel(modelUri);
 
         // Model with content exists (Hit)
@@ -66,6 +68,7 @@ export function useEditorModelManager(
             editorInstance.setModel(model);
             syncDirtyState(model, false);
             setIsReadOnly(false);
+            lspManager.onDocumentOpen(model);
             return;
         }
 
@@ -94,6 +97,8 @@ export function useEditorModelManager(
                 editorInstance.setModel(model);
                 syncDirtyState(model);
                 setIsReadOnly(false);
+
+                lspManager.onDocumentOpen(model);
             })
             .catch((err) => {
                 console.error('Failed to load file', err);
