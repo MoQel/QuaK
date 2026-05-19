@@ -61,3 +61,7 @@ Component tests **simulate user interaction** and **validate how the UI reacts**
 - **Setup**: The environment is configured in src/test/setup.ts to provide necessary polyfills (like ResizeObserver for charts) and testing-library extensions.
 
 ---
+
+## LSP Client Architecture
+
+<img src="src/assets/lsp_architecture_language_client.svg" width="50%" alt="LSP Architecture">
