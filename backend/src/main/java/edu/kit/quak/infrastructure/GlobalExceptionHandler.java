@@ -2,6 +2,7 @@ package edu.kit.quak.infrastructure;
 
 import edu.kit.quak.application.common.exceptions.AccessDeniedException;
 import edu.kit.quak.application.common.exceptions.ResourceNotFoundException;
+import edu.kit.quak.application.lsp.exceptions.LspInfrastructureException;
 import edu.kit.quak.application.user.exceptions.UserNotFoundException;
 import edu.kit.quak.core.circuit.exceptions.CircuitComponentNotFoundException;
 import edu.kit.quak.core.common.exception.DomainRuleViolationException;
@@ -152,6 +153,19 @@ public class GlobalExceptionHandler {
 
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred.");
         problem.setTitle(INTERNAL_SERVER_ERROR);
+        return problem;
+    }
+
+    /**
+     * Handles requested index out of bounds from the domain core.
+     * Mapped to 422 Unprocessable Content.
+     */
+    @ExceptionHandler(LspInfrastructureException.class)
+    public ProblemDetail handleLspInfrastructureException(LspInfrastructureException ex) {
+        log.error("LSP infrastructure failure: {}", ex.getMessage(), ex);
+
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
+        problem.setTitle("LSP Service Unavailable");
         return problem;
     }
 }
