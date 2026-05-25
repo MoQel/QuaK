@@ -1,0 +1,9 @@
+python/venv/
+python/.venv/
+python/__pycache__/
+python/*.pyc
+
+venv/
+.venv/
+__pycache__/
+*.pyc

@@ -11,7 +11,7 @@ export function useLSPSetup() {
         lspManager.init(monaco, [
             {
                 languageId: 'python',
-                wsUrl: 'ws://localhost:50000/lsp/python',
+                wsUrl: 'ws://localhost:8080/lsp/python',
                 requestTimeoutMs: 15_000,
             },
             // { languageId: 'qasm', wsUrl: 'ws://localhost:8080/lsp/qasm' },
