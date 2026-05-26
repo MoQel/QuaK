@@ -1,6 +1,6 @@
 package edu.kit.quak.application.circuit.antlr;
 
-import edu.kit.quak.application.circuit.antlr.elements.QuantumCircuit;
+import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.springframework.stereotype.Service;
@@ -17,6 +17,7 @@ public class QasmService {
         ParseTree tree = parser.program();
 
         QasmCircuitVisitor visitor = new QasmCircuitVisitor();
+        System.out.print(visitor.getCircuit().getId());
         visitor.visit(tree);
 
         return visitor.getCircuit();

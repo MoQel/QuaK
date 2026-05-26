@@ -48,6 +48,19 @@ public class QuantumCircuit extends ElementWithId {
         return Collections.unmodifiableList(layers);
     }
 
+    /**
+     * Sucht ein Register anhand seines Namens.
+     *
+     * @param registerName Der Name des gesuchten Registers (z.B. "q" oder "alice").
+     * @return Ein Optional, das das Register enthält, oder ein leeres Optional, wenn keines gefunden wurde.
+     */
+    public Optional<Register> getRegisterByName(@NonNull String registerName) {
+        return registers
+            .stream()
+            .filter(register -> registerName.equals(register.getName()))
+            .findFirst();
+    }
+
     public void addQubit(@NonNull String registerId) {
         QuantumRegister quantumRegister = findQuantumRegisterById(registerId);
         quantumRegister.addQubit();
@@ -265,7 +278,7 @@ public class QuantumCircuit extends ElementWithId {
 
     public String toCode() {
         StringBuilder stringBuilder = new StringBuilder();
-
+        stringBuilder.append(this.projectId);
         for (Register register : registers) {
             if (register instanceof QuantumRegister quantumRegister) {
                 stringBuilder.append("// Register ").append(quantumRegister.getName()).append("\n");

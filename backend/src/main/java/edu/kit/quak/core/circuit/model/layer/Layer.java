@@ -2,6 +2,7 @@ package edu.kit.quak.core.circuit.model.layer;
 
 import edu.kit.quak.core.circuit.model.ElementWithId;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
+import edu.kit.quak.core.circuit.model.layer.operation.ElementaryQuantumGate;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -58,8 +59,14 @@ public class Layer extends ElementWithId {
     public String toCode(QuantumCircuit quantumCircuit) {
         String code = "";
         for (QuantumOperation operation : quantumOperations) {
-            code = code.concat(operation.toCode(quantumCircuit));
-            code = code.concat("\n");
+            if (operation instanceof ElementaryQuantumGate elementaryQuantumGate) {
+                //TODO rotation angle aus Elementary holen falls vorhanden
+                code = code.concat(operation.toCode(quantumCircuit));
+                code = code.concat("\n");
+            } else {
+                code = code.concat(operation.toCode(quantumCircuit));
+                code = code.concat("\n");
+            }
         }
         return code;
     }

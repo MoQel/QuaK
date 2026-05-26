@@ -1,6 +1,6 @@
 package edu.kit.quak.application.circuit.antlr;
 
-import edu.kit.quak.application.circuit.antlr.elements.QuantumCircuit;
+import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
