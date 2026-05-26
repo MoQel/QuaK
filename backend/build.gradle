@@ -65,7 +65,7 @@ dependencies {
 
 // Including parser and lexer in generated-src
 def generatedRoot = layout.buildDirectory.dir("generated-src/antlr/main")
-def generatedPkg  = generatedRoot.map { it.dir("edu/kit/quak/application/circuit/antlr;") }
+def generatedPkg  = generatedRoot.map { it.dir("edu/kit/quak/application/circuit/antlr") }
 
 generateGrammarSource {
 	maxHeapSize = "64m"
