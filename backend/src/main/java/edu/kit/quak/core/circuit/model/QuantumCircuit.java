@@ -135,6 +135,7 @@ public class QuantumCircuit extends ElementWithId {
     }
 
     public void removeQuantumOperation(String operationId) {
+        System.out.println(this.toCode());
         for (Layer layer : layers) {
             for (QuantumOperation operation : layer.getQuantumOperations()) {
                 if (operation.getId().equals(operationId)) {
@@ -233,6 +234,7 @@ public class QuantumCircuit extends ElementWithId {
         layers.removeIf(layer -> layer.getQuantumOperations().isEmpty());
     }
 
+    // TODO HashMap statt ArrayList?
     private QuantumRegister findQuantumRegisterById(String quantumRegisterId) {
         for (Register register : registers) {
             if (register.getId().equals(quantumRegisterId)) {
@@ -246,6 +248,11 @@ public class QuantumCircuit extends ElementWithId {
         throw new RegisterNotFoundException(quantumRegisterId);
     }
 
+    public String getQuantumRegisterNameById(String quantumRegisterId) {
+        QuantumRegister quantumRegister = findQuantumRegisterById(quantumRegisterId);
+        return quantumRegister.getName();
+    }
+
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
@@ -254,5 +261,28 @@ public class QuantumCircuit extends ElementWithId {
         sb.append("\n");
         layers.forEach(lay -> sb.append("  ").append(lay.toString().replace("\n", "\n  ")).append("\n"));
         return sb.toString().trim();
+    }
+
+    public String toCode() {
+        StringBuilder stringBuilder = new StringBuilder();
+
+        for (Register register : registers) {
+            if (register instanceof QuantumRegister quantumRegister) {
+                stringBuilder.append("// Register ").append(quantumRegister.getName()).append("\n");
+                stringBuilder
+                    .append("qubit[")
+                    .append(quantumRegister.getNumberOfQubits())
+                    .append("] ")
+                    .append(quantumRegister.getName())
+                    .append(";\n");
+            }
+        }
+        stringBuilder.append("\n");
+
+        for (Layer layer : layers) {
+            stringBuilder.append("// Layer ").append(layer.id).append("\n");
+            stringBuilder.append(layer.toCode(this)).append("\n");
+        }
+        return stringBuilder.toString();
     }
 }
