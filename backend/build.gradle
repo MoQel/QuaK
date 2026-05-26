@@ -1,5 +1,6 @@
 plugins {
 	id 'java'
+	id 'antlr'
 	id 'org.springframework.boot' version '3.4.5'
 	id 'io.spring.dependency-management' version '1.1.7'
 	id "com.github.node-gradle.node" version "7.1.0"
@@ -36,6 +37,9 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-jdbc'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+	implementation "org.antlr:antlr4-runtime:4.13.1"
+	antlr "org.antlr:antlr4:4.13.1"
 	
 	// Lombok - must be declared before MapStruct for proper annotation processor ordering
 	compileOnly 'org.projectlombok:lombok:1.18.30'
@@ -58,6 +62,24 @@ dependencies {
 	testImplementation 'org.springframework.security:spring-security-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
+
+// Including parser and lexer in generated-src
+def generatedRoot = layout.buildDirectory.dir("generated-src/antlr/main")
+def generatedPkg  = generatedRoot.map { it.dir("edu/kit/quak/application/circuit/antlr;") }
+
+generateGrammarSource {
+	maxHeapSize = "64m"
+	arguments += ['-visitor', '-long-messages', '-package', 'edu.kit.quak.application.circuit.antlr']
+
+	outputDirectory = generatedPkg.get().asFile
+}
+
+sourceSets.main.java.srcDir(generatedRoot)
+
+tasks.compileJava {
+	dependsOn(tasks.named("generateGrammarSource"))
+}
+
 
 tasks.register('cleanFrontendFiles', Delete) {
     group = 'QuaK'
@@ -138,6 +160,7 @@ tasks.named("processResources") {
 tasks.named("bootRun") {
 	group = 'QuaK'
 	mainClass = 'edu.kit.quak.QuaKApplication'
+	dependsOn generateGrammarSource
 
 	// Load environment variables from .env file for local development
 	if (file(".env").exists()) {
