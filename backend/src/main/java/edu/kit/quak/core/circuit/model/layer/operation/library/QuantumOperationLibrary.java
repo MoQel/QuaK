@@ -59,7 +59,7 @@ public enum QuantumOperationLibrary {
             case CCX -> "ccx";
             case S -> "s";
             case T -> "t";
-            // Für Rotations-Gates musst du später vermutlich Parameter anhängen:
+            // TODO Für Rotations-Gates musst du später vermutlich Parameter anhängen:
             case RX -> "rx";
             case RY -> "ry";
             case RZ -> "rz";

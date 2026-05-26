@@ -276,6 +276,7 @@ public class QuantumCircuit extends ElementWithId {
                     .append(quantumRegister.getName())
                     .append(";\n");
             }
+            // TODO classical register?
         }
         stringBuilder.append("\n");
 

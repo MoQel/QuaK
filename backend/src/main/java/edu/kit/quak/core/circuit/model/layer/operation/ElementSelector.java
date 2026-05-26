@@ -37,6 +37,6 @@ public class ElementSelector {
 
     public String toCode(QuantumCircuit quantumCircuit) {
         String name = quantumCircuit.getQuantumRegisterNameById(registerId);
-        return name + "[" + index + "]"; // TODO
+        return name + "[" + index + "]";
     }
 }
