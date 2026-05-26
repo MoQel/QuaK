@@ -1,5 +1,6 @@
 package edu.kit.quak.core.circuit.model.layer.operation;
 
+import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import java.util.Objects;
 import lombok.Getter;
 import lombok.NonNull;
@@ -32,5 +33,10 @@ public class ElementSelector {
     @Override
     public int hashCode() {
         return Objects.hash(registerId, index);
+    }
+
+    public String toCode(QuantumCircuit quantumCircuit) {
+        String name = quantumCircuit.getQuantumRegisterNameById(registerId);
+        return name + "[" + index + "]"; // TODO
     }
 }

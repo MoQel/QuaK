@@ -54,4 +54,13 @@ public class Layer extends ElementWithId {
 
         return sb.toString().trim();
     }
+
+    public String toCode(QuantumCircuit quantumCircuit) {
+        String code = "";
+        for (QuantumOperation operation : quantumOperations) {
+            code = code.concat(operation.toCode(quantumCircuit));
+            code = code.concat("\n");
+        }
+        return code;
+    }
 }
