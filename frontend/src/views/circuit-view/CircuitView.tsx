@@ -43,23 +43,32 @@ export function CircuitView() {
         );
     }, [circuit?.registers]);
 
+    const getOperationSpan = (op: UiQuantumOperation) => {
+        const involvedIndices = getInvolvedSelectors(op).map((selector) => selector.index);
+        return {
+            min: Math.min(...involvedIndices),
+            max: Math.max(...involvedIndices),
+        };
+    };
+
+    const doOperationSpansOverlap = (a: UiQuantumOperation, b: UiQuantumOperation): boolean => {
+        const spanA = getOperationSpan(a);
+        const spanB = getOperationSpan(b);
+
+        return spanA.min <= spanB.max && spanB.min <= spanA.max;
+    };
+
     /**
-     * Determines whether a quantum operation would cause a qubit collision
-     * within the specified layer.
-     *
-     * A collision occurs if at least one selector (qubit) required by the given
-     * operation is already occupied by an existing operation in the layer.
-     *
-     * @param op - The operation to be checked.
-     * @param layer - The layer in which the operation would be placed.
-     * @returns True if any involved qubit is already used in the layer; otherwise false.
+     * Determines whether a quantum operation would visually collide within the
+     * specified layer. Besides exact qubit conflicts, multi-qubit gates also
+     * reserve the vertical area between their target and control qubits.
      */
     const isQubitCollisionInLayer = (op: UiQuantumOperation, layer: UiLayer): boolean => {
         const requiredKeys = new Set(getInvolvedSelectors(op).map(getSelectorKey));
 
         return layer.quantumOperations.some((existingOp) => {
             const existingKeys = getInvolvedSelectors(existingOp).map(getSelectorKey);
-            return existingKeys.some((key) => requiredKeys.has(key));
+            return existingKeys.some((key) => requiredKeys.has(key)) || doOperationSpansOverlap(op, existingOp);
         });
     };
 

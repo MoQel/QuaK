@@ -13,7 +13,6 @@ import java.util.List;
 public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
 
     private final QuantumCircuit circuit = new QuantumCircuit("test-1");
-    private int layerIdx = 0;
 
     public QuantumCircuit getCircuit() {
         return circuit;
@@ -86,6 +85,7 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
                 if (indices != null && !indices.isEmpty()) {
                     List<OpenQASM3Parser.ExpressionContext> exprs = indices.getFirst().expression();
                     if (exprs != null && !exprs.isEmpty()) {
+                        //TODO Kann auch eine Variable sein, siehe quantum ripple-carry adder!
                         index = Integer.parseInt(exprs.getFirst().getText());
                     }
                 }
@@ -117,8 +117,7 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
             0.0
         );
 
-        circuit.addQuantumOperation(operation, layerIdx);
-        layerIdx++;
+        circuit.addQuantumOperation(operation, circuit.getLayers().size());
         return null;
     }
 }
