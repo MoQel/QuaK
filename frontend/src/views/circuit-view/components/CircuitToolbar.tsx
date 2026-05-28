@@ -3,6 +3,7 @@ import { Minus, Plus, Trash2 } from 'lucide-react';
 import { CircuitResponse } from '@/api/dto/circuit.ts';
 import { createCircuitService } from '@/views/circuit-view/util/circuitService.ts';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover.tsx';
+import { RegisterManager } from '@/views/circuit-view/components/RegisterManager.tsx';
 import { useState } from 'react';
 
 interface CircuitToolbarProps {
@@ -16,7 +17,8 @@ export function CircuitToolbar({ circuit, setCircuit }: Readonly<CircuitToolbarP
 
     return (
         <div className="pb-5 flex justify-end space-x-3">
-            <Button onClick={addQubit} size="icon" className="size-8" variant="secondary" title="Add Qubit">
+            <RegisterManager circuit={circuit} setCircuit={setCircuit} />
+            <Button onClick={() => addQubit()} size="icon" className="size-8" variant="secondary" title="Add Qubit">
                 <Plus />
             </Button>
             <Button

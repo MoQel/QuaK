@@ -11,7 +11,7 @@ import { DropPlaceholder } from './components/DropPlaceholder.tsx';
 import { CircuitFooter } from './components/CircuitFooter.tsx';
 import { HoverPos, UiLayer, UiQuantumOperation } from './util/types.ts';
 import { createCircuitService } from '@/views/circuit-view/util/circuitService.ts';
-import { LABEL_WIDTH } from '@/views/circuit-view/util/layout.ts';
+import { LABEL_WIDTH, QUBIT_HEIGHT, REGISTER_HEADER_HEIGHT } from '@/views/circuit-view/util/layout.ts';
 
 import { useProject } from '@/contexts/ProjectContext';
 
@@ -32,15 +32,23 @@ export function CircuitView() {
         if (!circuit?.registers) return [];
 
         let globalCounter = 0;
-        return circuit.registers.flatMap((reg, regIdx) =>
-            Array.from({ length: getRegisterSize(reg) }).map((_, relQubitIdx) => ({
+        let visualYOffset = 0;
+
+        return circuit.registers.flatMap((reg, regIdx) => {
+            const size = getRegisterSize(reg);
+            const headerY = visualYOffset;
+            visualYOffset += REGISTER_HEADER_HEIGHT + size * QUBIT_HEIGHT;
+
+            return Array.from({ length: size }).map((_, relQubitIdx) => ({
                 regId: reg.id,
                 regName: reg.name,
                 regIdx,
-                relQubitIdx, // Index within the register
-                absQubitIdx: globalCounter++, // Absolute vertical index
-            })),
-        );
+                relQubitIdx,
+                absQubitIdx: globalCounter++,
+                regType: reg.type,
+                visualY: headerY + REGISTER_HEADER_HEIGHT + relQubitIdx * QUBIT_HEIGHT,
+            }));
+        });
     }, [circuit?.registers]);
 
     /**
@@ -244,7 +252,11 @@ export function CircuitView() {
                             setDraggingOperationId={setDraggingOperationId}
                         />
 
-                        <DropPlaceholder hoverPos={hoverPos} draggingOperationSize={draggingOperationSize} />
+                        <DropPlaceholder
+                            hoverPos={hoverPos}
+                            draggingOperationSize={draggingOperationSize}
+                            flatQubits={flatQubits}
+                        />
                     </div>
                 </div>
 

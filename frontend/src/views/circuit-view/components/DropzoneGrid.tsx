@@ -193,13 +193,16 @@ export function DropzoneGrid({
                     const isZoneActive = activeDropZones.has(`${qIdx}-${layerIdx}`);
                     if (!isZoneActive) return null;
 
+                    // Only allow quantum operations on QuantumRegister qubits
+                    if (qubit.regType !== 'Quantum_Register') return null;
+
                     return (
                         <div
                             key={`drop-${qIdx}-${layerIdx}`}
                             style={{
                                 position: 'absolute',
                                 left: layerIdx * CELL_WIDTH,
-                                top: qIdx * QUBIT_HEIGHT,
+                                top: qubit.visualY,
                                 width: CELL_WIDTH,
                                 height: QUBIT_HEIGHT,
                             }}

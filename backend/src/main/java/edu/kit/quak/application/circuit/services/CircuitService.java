@@ -8,6 +8,8 @@ import edu.kit.quak.application.user.ports.in.ProjectRoleServicePort;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
+import edu.kit.quak.core.circuit.model.register.ClassicRegister;
+import edu.kit.quak.core.circuit.model.register.QuantumRegister;
 import edu.kit.quak.core.user.model.ProjectRole;
 import edu.kit.quak.core.user.model.User;
 import java.util.List;
@@ -114,6 +116,41 @@ public class CircuitService implements CircuitServicePort {
     @Override
     public QuantumCircuit removeQuantumOperation(String circuitId, String operationId, User user) {
         return updateCircuit(circuitId, circuit -> circuit.removeQuantumOperation(operationId), user, ProjectRole.OWNER);
+    }
+
+    @Override
+    public QuantumCircuit addRegister(String circuitId, String name, String type, int size, User user) {
+        log.info("Adding register '{}' of type '{}' with size {} to circuit '{}'", name, type, size, circuitId);
+        return updateCircuit(
+            circuitId,
+            circuit -> {
+                if ("Classic_Register".equals(type)) {
+                    circuit.addRegister(new ClassicRegister(name, size));
+                } else {
+                    circuit.addRegister(new QuantumRegister(name, size));
+                }
+            },
+            user,
+            ProjectRole.OWNER
+        );
+    }
+
+    @Override
+    public QuantumCircuit deleteRegister(String circuitId, String registerId, User user) {
+        log.info("Deleting register '{}' from circuit '{}'", registerId, circuitId);
+        return updateCircuit(circuitId, circuit -> circuit.deleteRegister(registerId), user, ProjectRole.OWNER);
+    }
+
+    @Override
+    public QuantumCircuit addClassicBit(String circuitId, String registerId, User user) {
+        log.info("Adding classic bit to register '{}' in circuit '{}'", registerId, circuitId);
+        return updateCircuit(circuitId, circuit -> circuit.addClassicBit(registerId), user, ProjectRole.OWNER);
+    }
+
+    @Override
+    public QuantumCircuit removeClassicBit(String circuitId, String registerId, int bitIdx, User user) {
+        log.info("Removing classic bit at index {} from register '{}' in circuit '{}'", bitIdx, registerId, circuitId);
+        return updateCircuit(circuitId, circuit -> circuit.removeClassicBit(registerId, bitIdx), user, ProjectRole.OWNER);
     }
 
     private QuantumCircuit updateCircuit(String circuitId, Consumer<QuantumCircuit> action, User user, ProjectRole minimumRole) {

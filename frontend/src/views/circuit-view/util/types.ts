@@ -21,6 +21,9 @@ export type FlatQubit = {
     regIdx: number;
     relQubitIdx: number;
     absQubitIdx: number;
+    regType: 'Quantum_Register' | 'Classic_Register';
+    /** Absolute Y position in pixels, accounting for preceding register headers. */
+    visualY: number;
 };
 
 export type HoverPos = {

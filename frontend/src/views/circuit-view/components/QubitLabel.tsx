@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { FlatQubit } from '@/views/circuit-view/util/types.ts';
+import { CircuitResponse, isQuantumRegister } from '@/api/dto/circuit.ts';
 import { createCircuitService } from '@/views/circuit-view/util/circuitService.ts';
-import { CircuitResponse } from '@/api/dto/circuit.ts';
 import { LABEL_WIDTH, QUBIT_HEIGHT } from '@/views/circuit-view/util/layout.ts';
 
 interface QubitLabelProps {
@@ -13,11 +13,17 @@ interface QubitLabelProps {
 }
 
 export function QubitLabel({ circuit, setCircuit, qubit }: Readonly<QubitLabelProps>) {
-    const { deleteQubit } = createCircuitService(circuit, setCircuit);
+    const { deleteQubit, removeClassicBit } = createCircuitService(circuit, setCircuit);
     const [open, setOpen] = useState(false);
 
+    const isQuantum = qubit.regType === 'Quantum_Register';
+
     const onDelete = () => {
-        deleteQubit(qubit.regId, qubit.relQubitIdx);
+        if (isQuantum) {
+            deleteQubit(qubit.regId, qubit.relQubitIdx);
+        } else {
+            removeClassicBit(qubit.regId, qubit.relQubitIdx);
+        }
         setOpen(false);
     };
 
@@ -35,7 +41,7 @@ export function QubitLabel({ circuit, setCircuit, qubit }: Readonly<QubitLabelPr
                         className="w-full h-7 font-mono text-xs font-bold select-none"
                         onClick={onDelete}
                     >
-                        Remove Qubit
+                        Remove {isQuantum ? 'Qubit' : 'Bit'}
                     </Button>
                 </PopoverContent>
             </Popover>

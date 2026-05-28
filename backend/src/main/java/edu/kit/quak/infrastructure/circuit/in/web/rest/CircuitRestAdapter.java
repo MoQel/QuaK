@@ -9,6 +9,7 @@ import edu.kit.quak.core.user.model.User;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.AddQuantumOperationRequest;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.CircuitResponse;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.MoveQuantumOperationRequest;
+import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.RegisterRequest;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.CircuitDtoMapper;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.ElementSelectorDtoMapper;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.QuantumOperationDtoMapper;
@@ -192,6 +193,65 @@ public class CircuitRestAdapter {
         User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
 
         QuantumCircuit circuit = service.removeQuantumOperation(circuitId, operationId, user);
+        return mapper.toResponse(circuit);
+    }
+
+    /**
+     * Creates a new register (QuantumRegister or ClassicRegister) in the specified circuit.
+     */
+    @PostMapping("/{circuitId}/register")
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("isAuthenticated()")
+    public CircuitResponse addRegister(
+        @PathVariable String circuitId,
+        @RequestBody RegisterRequest request,
+        Authentication authentication
+    ) {
+        log.info("REST request to add register '{}' of type '{}' to circuit '{}'", request.name(), request.type(), circuitId);
+        User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
+        QuantumCircuit circuit = service.addRegister(circuitId, request.name(), request.type(), request.size(), user);
+        return mapper.toResponse(circuit);
+    }
+
+    /**
+     * Deletes a register and all associated operations from the circuit.
+     */
+    @DeleteMapping("/{circuitId}/register/{registerId}")
+    @PreAuthorize("isAuthenticated()")
+    public CircuitResponse deleteRegister(@PathVariable String circuitId, @PathVariable String registerId, Authentication authentication) {
+        log.info("REST request to delete register '{}' from circuit '{}'", registerId, circuitId);
+        User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
+        QuantumCircuit circuit = service.deleteRegister(circuitId, registerId, user);
+        return mapper.toResponse(circuit);
+    }
+
+    /**
+     * Adds a classic bit to a ClassicRegister.
+     */
+    @PostMapping("/{circuitId}/register/{registerId}/bit")
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("isAuthenticated()")
+    public CircuitResponse addClassicBit(@PathVariable String circuitId, @PathVariable String registerId, Authentication authentication) {
+        log.info("REST request to add classic bit to register '{}' in circuit '{}'", registerId, circuitId);
+        User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
+        QuantumCircuit circuit = service.addClassicBit(circuitId, registerId, user);
+        return mapper.toResponse(circuit);
+    }
+
+    /**
+     * Removes a classic bit from a ClassicRegister.
+     */
+    @DeleteMapping("/{circuitId}/register/{registerId}/bit/{bitIdx}")
+    @PreAuthorize("isAuthenticated()")
+    public CircuitResponse removeClassicBit(
+        @PathVariable String circuitId,
+        @PathVariable String registerId,
+        @PathVariable int bitIdx,
+        Authentication authentication
+    ) {
+        log.info("REST request to remove classic bit at index {} from register '{}' in circuit '{}'", bitIdx, registerId, circuitId);
+        User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
+        QuantumCircuit circuit = service.removeClassicBit(circuitId, registerId, bitIdx, user);
         return mapper.toResponse(circuit);
     }
 }

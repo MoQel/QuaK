@@ -109,3 +109,31 @@ export interface MoveQuantumOperationRequest {
     targetQubits: ElementSelectorDto[];
     controlQubits: ElementSelectorDto[];
 }
+
+export interface RegisterRequest {
+    name: string;
+    type: 'Quantum_Register' | 'Classic_Register';
+    size: number;
+}
+
+export const getClassicCircuitWidth = (circuitData: CircuitResponse): number => {
+    return circuitData.registers.reduce((sum, reg) => {
+        return isClassicRegister(reg) ? sum + reg.numberOfBits : sum;
+    }, 0);
+};
+
+/**
+ * Computes the visual Y position (in pixels) of a qubit/bit within a register,
+ * accounting for register header heights that precede it.
+ */
+export const getVisualY = (registers: RegisterResponse[], registerId: string, index: number): number => {
+    let visualY = 0;
+    for (const reg of registers) {
+        const size = getRegisterSize(reg);
+        if (reg.id === registerId) {
+            return visualY + 28 + index * 48; // REGISTER_HEADER_HEIGHT + QUBIT_HEIGHT
+        }
+        visualY += 28 + size * 48; // REGISTER_HEADER_HEIGHT + size * QUBIT_HEIGHT
+    }
+    return 0;
+};

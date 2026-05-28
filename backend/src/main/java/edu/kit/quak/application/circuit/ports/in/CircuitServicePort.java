@@ -51,4 +51,12 @@ public interface CircuitServicePort {
     );
 
     QuantumCircuit removeQuantumOperation(String circuitId, String operationId, User user);
+
+    QuantumCircuit addRegister(String circuitId, String name, String type, int size, User user);
+
+    QuantumCircuit deleteRegister(String circuitId, String registerId, User user);
+
+    QuantumCircuit addClassicBit(String circuitId, String registerId, User user);
+
+    QuantumCircuit removeClassicBit(String circuitId, String registerId, int bitIdx, User user);
 }

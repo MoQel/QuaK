@@ -6,7 +6,9 @@ import edu.kit.quak.core.circuit.exceptions.OperationNotFoundException;
 import edu.kit.quak.core.circuit.exceptions.RegisterNotFoundException;
 import edu.kit.quak.core.circuit.model.layer.Layer;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
+import edu.kit.quak.core.circuit.model.layer.operation.Measurement;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
+import edu.kit.quak.core.circuit.model.register.ClassicRegister;
 import edu.kit.quak.core.circuit.model.register.QuantumRegister;
 import edu.kit.quak.core.circuit.model.register.Register;
 import edu.kit.quak.core.common.exception.RequestedIndexOutOfBounds;
@@ -72,7 +74,7 @@ public class QuantumCircuit extends ElementWithId {
                 // Remove all quantum operations that had this qubit either as target or as control.
                 boolean removeOperation = selectors
                     .stream()
-                    .anyMatch(selector -> selector.getRegisterId().equals(registers.getFirst().getId()) && selector.getIndex() == qubitIdx);
+                    .anyMatch(selector -> selector.getRegisterId().equals(registerId) && selector.getIndex() == qubitIdx);
                 if (removeOperation) {
                     layer.removeQuantumOperation(operation);
                     continue;
@@ -83,6 +85,103 @@ public class QuantumCircuit extends ElementWithId {
                     .stream()
                     .filter(sel -> sel.getRegisterId().equals(registerId) && sel.getIndex() > qubitIdx)
                     .forEach(ElementSelector::decreaseIndex);
+            }
+        }
+
+        flushLayers();
+    }
+
+    /**
+     * Adds a new register to the circuit.
+     *
+     * @param register the register to add (QuantumRegister or ClassicRegister)
+     */
+    public void addRegister(@NonNull Register register) {
+        registers.add(register);
+    }
+
+    /**
+     * Deletes a register from the circuit, removing all operations that reference
+     * any qubit or classic bit within the deleted register.
+     *
+     * @param registerId the ID of the register to delete
+     * @throws RegisterNotFoundException if no register with the given ID exists
+     */
+    public void deleteRegister(@NonNull String registerId) {
+        Register register = findRegisterById(registerId);
+
+        // Remove all operations that reference qubits or classic bits of this register.
+        for (Layer layer : layers) {
+            for (QuantumOperation operation : new ArrayList<>(layer.getQuantumOperations())) {
+                boolean referencesDeletedRegister = Stream.concat(
+                    operation.getTargetQubits().stream(),
+                    Stream.concat(
+                        operation.getControlQubits() != null ? operation.getControlQubits().stream() : Stream.empty(),
+                        operation instanceof Measurement m ? m.getClassicBits().stream() : Stream.empty()
+                    )
+                ).anyMatch(sel -> sel.getRegisterId().equals(registerId));
+
+                if (referencesDeletedRegister) {
+                    layer.removeQuantumOperation(operation);
+                }
+            }
+        }
+
+        registers.remove(register);
+        flushLayers();
+    }
+
+    /**
+     * Adds a classic bit to the specified ClassicRegister.
+     *
+     * @param registerId the ID of the ClassicRegister
+     * @throws RegisterNotFoundException  if no register with the given ID exists
+     * @throws InvalidRegisterTypeException if the register is not a ClassicRegister
+     */
+    public void addClassicBit(@NonNull String registerId) {
+        ClassicRegister classicRegister = findClassicRegisterById(registerId);
+        classicRegister.addBit();
+    }
+
+    /**
+     * Removes a classic bit from the specified ClassicRegister. All operations
+     * targeting the bit are removed, and indices of subsequent bits are decremented.
+     *
+     * @param registerId the ID of the ClassicRegister
+     * @param bitIdx     the index of the bit to remove
+     * @throws RegisterNotFoundException   if no register with the given ID exists
+     * @throws InvalidRegisterTypeException if the register is not a ClassicRegister
+     * @throws RequestedIndexOutOfBounds    if bitIdx is out of range
+     */
+    public void removeClassicBit(@NonNull String registerId, int bitIdx) {
+        ClassicRegister classicRegister = findClassicRegisterById(registerId);
+
+        if (bitIdx < 0 || bitIdx >= classicRegister.getNumberOfBits()) {
+            throw new RequestedIndexOutOfBounds("ClassicBit", bitIdx, classicRegister.getNumberOfBits());
+        }
+
+        classicRegister.removeBit();
+
+        for (Layer layer : layers) {
+            for (QuantumOperation operation : new ArrayList<>(layer.getQuantumOperations())) {
+                if (operation instanceof Measurement m) {
+                    List<ElementSelector> classicBits = m.getClassicBits();
+
+                    // Remove operations that target this exact bit.
+                    boolean targetsRemovedBit = classicBits
+                        .stream()
+                        .anyMatch(sel -> sel.getRegisterId().equals(registerId) && sel.getIndex() == bitIdx);
+                    if (targetsRemovedBit) {
+                        layer.removeQuantumOperation(operation);
+                        continue;
+                    }
+
+                    // Decrement indices for bits after the removed one.
+                    classicBits
+                        .stream()
+                        .filter(sel -> sel.getRegisterId().equals(registerId) && sel.getIndex() > bitIdx)
+                        .forEach(sel -> sel.setIndex(sel.getIndex() - 1));
+                }
             }
         }
 
@@ -244,6 +343,28 @@ public class QuantumCircuit extends ElementWithId {
             }
         }
         throw new RegisterNotFoundException(quantumRegisterId);
+    }
+
+    private ClassicRegister findClassicRegisterById(String classicRegisterId) {
+        for (Register register : registers) {
+            if (register.getId().equals(classicRegisterId)) {
+                Optional<ClassicRegister> classicRegister = register.asClassic();
+                if (classicRegister.isEmpty()) {
+                    throw new InvalidRegisterTypeException(classicRegisterId);
+                }
+                return classicRegister.get();
+            }
+        }
+        throw new RegisterNotFoundException(classicRegisterId);
+    }
+
+    private Register findRegisterById(String registerId) {
+        for (Register register : registers) {
+            if (register.getId().equals(registerId)) {
+                return register;
+            }
+        }
+        throw new RegisterNotFoundException(registerId);
     }
 
     @Override

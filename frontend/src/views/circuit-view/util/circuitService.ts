@@ -4,6 +4,7 @@ import {
     CircuitResponse,
     isQuantumRegister,
     MoveQuantumOperationRequest,
+    RegisterRequest,
 } from '@/api/dto/circuit.ts';
 import { toast } from 'sonner';
 
@@ -27,11 +28,11 @@ export function createCircuitService(
     circuit: CircuitResponse | undefined,
     setCircuit: (circuit: CircuitResponse) => void,
 ) {
-    const addQubit = () => {
+    const addQubit = (registerId?: string) => {
         if (!circuit) return;
-        const lastQR = circuit.registers.findLast(isQuantumRegister);
-        if (lastQR) {
-            api.post<CircuitResponse>(`/api/circuit/${circuit.id}/register/${lastQR.id}`)
+        const targetRegId = registerId ?? circuit.registers.findLast(isQuantumRegister)?.id;
+        if (targetRegId) {
+            api.post<CircuitResponse>(`/api/circuit/${circuit.id}/register/${targetRegId}`)
                 .then(setCircuit)
                 .catch(handleError);
         }
@@ -81,6 +82,32 @@ export function createCircuitService(
             .catch(handleError);
     };
 
+    const addRegister = (payload: RegisterRequest) => {
+        if (!circuit) return;
+        api.post<CircuitResponse>(`/api/circuit/${circuit.id}/register`, payload).then(setCircuit).catch(handleError);
+    };
+
+    const deleteRegister = (registerId: string) => {
+        if (!circuit) return;
+        api.delete<CircuitResponse>(`/api/circuit/${circuit.id}/register/${registerId}`)
+            .then(setCircuit)
+            .catch(handleError);
+    };
+
+    const addClassicBit = (registerId: string) => {
+        if (!circuit) return;
+        api.post<CircuitResponse>(`/api/circuit/${circuit.id}/register/${registerId}/bit`)
+            .then(setCircuit)
+            .catch(handleError);
+    };
+
+    const removeClassicBit = (registerId: string, bitIdx: number) => {
+        if (!circuit) return;
+        api.delete<CircuitResponse>(`/api/circuit/${circuit.id}/register/${registerId}/bit/${bitIdx}`)
+            .then(setCircuit)
+            .catch(handleError);
+    };
+
     return {
         addQubit,
         deleteQubit,
@@ -90,5 +117,9 @@ export function createCircuitService(
         addQuantumOperation,
         moveQuantumOperation,
         removeQuantumOperation,
+        addRegister,
+        deleteRegister,
+        addClassicBit,
+        removeClassicBit,
     };
 }

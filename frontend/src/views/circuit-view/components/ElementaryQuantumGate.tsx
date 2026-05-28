@@ -1,6 +1,12 @@
 import React, { useMemo, useRef } from 'react';
 import styles from '@/App.module.css';
-import { QuantumOperationDto, RegisterResponse, ElementSelectorDto, getRegisterSize } from '@/api/dto/circuit.ts';
+import {
+    QuantumOperationDto,
+    RegisterResponse,
+    ElementSelectorDto,
+    getRegisterSize,
+    getVisualY,
+} from '@/api/dto/circuit.ts';
 import { getOperationDefinition, OperationDefinition } from '@/lib/operations.ts';
 import { CELL_WIDTH, QUBIT_HEIGHT } from '@/views/circuit-view/util/layout.ts';
 import { TextIcon } from '@/components/ui/text-icon.tsx';
@@ -24,6 +30,19 @@ const getGlobalIndex = (selector: ElementSelectorDto, registers: RegisterRespons
     return 0;
 };
 
+/** Maps a global (flat) qubit index back to a register-relative selector. */
+const getSelectorAtGlobalIndex = (globalIdx: number, registers: RegisterResponse[]): ElementSelectorDto => {
+    let offset = 0;
+    for (const reg of registers) {
+        const size = getRegisterSize(reg);
+        if (globalIdx < offset + size) {
+            return { registerId: reg.id, index: globalIdx - offset };
+        }
+        offset += size;
+    }
+    return { registerId: '', index: 0 };
+};
+
 export function ElementaryQuantumGate({
     operation,
     registers,
@@ -36,18 +55,20 @@ export function ElementaryQuantumGate({
     const isDraggingRef = useRef(false);
 
     // Compute geometry (indices, span, bounds)
-    const { targetIndices, controlIndices, minY, spanHeight } = useMemo(() => {
+    const { targetIndices, controlIndices, minGlobal, visualTop, spanHeight } = useMemo(() => {
         const tIndices = operation.targetQubits.map((t) => getGlobalIndex(t, registers));
         const cIndices = operation.controlQubits.map((c) => getGlobalIndex(c, registers));
         const all = [...tIndices, ...cIndices];
-        const min = Math.min(...all);
-        const max = Math.max(...all);
+        const minGlobal = Math.min(...all);
+        const maxGlobal = Math.max(...all);
+        const minSelector = getSelectorAtGlobalIndex(minGlobal, registers);
 
         return {
             targetIndices: tIndices,
             controlIndices: cIndices,
-            minY: min,
-            spanHeight: (max - min) * QUBIT_HEIGHT,
+            minGlobal,
+            visualTop: getVisualY(registers, minSelector.registerId, minSelector.index),
+            spanHeight: (maxGlobal - minGlobal) * QUBIT_HEIGHT,
         };
     }, [operation, registers]);
 
@@ -90,7 +111,7 @@ export function ElementaryQuantumGate({
             onClick={handleClick}
             className="absolute z-30 flex flex-col items-center group pointer-events-none"
             style={{
-                top: minY * QUBIT_HEIGHT,
+                top: visualTop,
                 left: layerIdx * CELL_WIDTH,
                 width: CELL_WIDTH,
                 height: spanHeight + QUBIT_HEIGHT,
@@ -119,14 +140,14 @@ export function ElementaryQuantumGate({
 
             {/* Render Controls */}
             {controlIndices.map((idx) => (
-                <ControlPoint key={`control-${idx}`} relativeIdx={idx - minY} definition={definition} />
+                <ControlPoint key={`control-${idx}`} relativeIdx={idx - minGlobal} definition={definition} />
             ))}
 
             {/* Render Targets */}
             {targetIndices.map((idx) => (
                 <TargetPoint
                     key={`target-${idx}`}
-                    relativeIdx={idx - minY}
+                    relativeIdx={idx - minGlobal}
                     definition={definition}
                     isSWAP={operation.identifier === 'SWAP'}
                 />
