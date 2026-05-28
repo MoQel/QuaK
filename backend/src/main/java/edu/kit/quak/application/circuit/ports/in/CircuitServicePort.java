@@ -3,6 +3,7 @@ package edu.kit.quak.application.circuit.ports.in;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
+import edu.kit.quak.core.circuit.model.register.RegisterType;
 import edu.kit.quak.core.user.model.User;
 import java.util.List;
 
@@ -52,7 +53,7 @@ public interface CircuitServicePort {
 
     QuantumCircuit removeQuantumOperation(String circuitId, String operationId, User user);
 
-    QuantumCircuit addRegister(String circuitId, String name, String type, int size, User user);
+    QuantumCircuit addRegister(String circuitId, String name, RegisterType type, int size, User user);
 
     QuantumCircuit deleteRegister(String circuitId, String registerId, User user);
 

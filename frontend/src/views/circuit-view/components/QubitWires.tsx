@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { FlatQubit } from '@/views/circuit-view/util/types.ts';
-import { CircuitResponse, isClassicRegister } from '@/api/dto/circuit.ts';
+import { CircuitResponse, isClassicRegister, REGISTER_TYPE_QUANTUM } from '@/api/dto/circuit.ts';
 import { QubitLabel } from '@/views/circuit-view/components/QubitLabel.tsx';
 import { LABEL_WIDTH, QUBIT_HEIGHT, REGISTER_HEADER_HEIGHT } from '@/views/circuit-view/util/layout.ts';
 import { Badge } from '@/components/ui/badge';
@@ -35,7 +35,7 @@ export function QubitWires({ circuit, setCircuit, flatQubits }: Readonly<QubitWi
             {registerGroups.map((group) => {
                 const first = group.qubits[0];
                 const isClassic = isClassicRegister(
-                    circuit?.registers?.find((r) => r.id === first.regId) ?? ({ type: 'Quantum_Register' } as any),
+                    circuit?.registers?.find((r) => r.id === first.regId) ?? ({ type: REGISTER_TYPE_QUANTUM } as any),
                 );
 
                 return (

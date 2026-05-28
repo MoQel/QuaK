@@ -10,6 +10,7 @@ import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
 import edu.kit.quak.core.circuit.model.register.ClassicRegister;
 import edu.kit.quak.core.circuit.model.register.QuantumRegister;
+import edu.kit.quak.core.circuit.model.register.RegisterType;
 import edu.kit.quak.core.user.model.ProjectRole;
 import edu.kit.quak.core.user.model.User;
 import java.util.List;
@@ -119,12 +120,12 @@ public class CircuitService implements CircuitServicePort {
     }
 
     @Override
-    public QuantumCircuit addRegister(String circuitId, String name, String type, int size, User user) {
+    public QuantumCircuit addRegister(String circuitId, String name, RegisterType type, int size, User user) {
         log.info("Adding register '{}' of type '{}' with size {} to circuit '{}'", name, type, size, circuitId);
         return updateCircuit(
             circuitId,
             circuit -> {
-                if ("Classic_Register".equals(type)) {
+                if (RegisterType.CLASSIC == type) {
                     circuit.addRegister(new ClassicRegister(name, size));
                 } else {
                     circuit.addRegister(new QuantumRegister(name, size));

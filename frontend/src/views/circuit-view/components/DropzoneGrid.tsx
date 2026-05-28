@@ -8,6 +8,7 @@ import {
     ElementSelectorDto,
     MeasurementDto,
     MoveQuantumOperationRequest,
+    REGISTER_TYPE_QUANTUM,
 } from '@/api/dto/circuit.ts';
 import { DragData, FlatQubit, HoverPos, UiLayer } from '@/views/circuit-view/util/types.ts';
 import { createCircuitService } from '@/views/circuit-view/util/circuitService.ts';
@@ -194,7 +195,7 @@ export function DropzoneGrid({
                     if (!isZoneActive) return null;
 
                     // Only allow quantum operations on QuantumRegister qubits
-                    if (qubit.regType !== 'Quantum_Register') return null;
+                    if (qubit.regType !== REGISTER_TYPE_QUANTUM) return null;
 
                     return (
                         <div

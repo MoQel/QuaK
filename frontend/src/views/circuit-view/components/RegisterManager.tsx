@@ -15,7 +15,14 @@ import {
     DialogClose,
 } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CircuitResponse, isQuantumRegister, isClassicRegister, RegisterRequest } from '@/api/dto/circuit';
+import {
+    CircuitResponse,
+    isQuantumRegister,
+    RegisterType,
+    RegisterRequest,
+    REGISTER_TYPE_QUANTUM,
+    REGISTER_TYPE_CLASSIC,
+} from '@/api/dto/circuit';
 import { createCircuitService } from '@/views/circuit-view/util/circuitService';
 
 interface RegisterManagerProps {
@@ -28,7 +35,7 @@ export function RegisterManager({ circuit, setCircuit }: Readonly<RegisterManage
         createCircuitService(circuit, setCircuit);
 
     const [newRegName, setNewRegName] = useState('');
-    const [newRegType, setNewRegType] = useState<'Quantum_Register' | 'Classic_Register'>('Quantum_Register');
+    const [newRegType, setNewRegType] = useState<RegisterType>(REGISTER_TYPE_QUANTUM);
     const [newRegSize, setNewRegSize] = useState(2);
     const [open, setOpen] = useState(false);
 
@@ -168,16 +175,13 @@ export function RegisterManager({ circuit, setCircuit }: Readonly<RegisterManage
                         </div>
                         <div className="w-28 space-y-1.5">
                             <Label className="text-xs">Type</Label>
-                            <Select
-                                value={newRegType}
-                                onValueChange={(v) => setNewRegType(v as 'Quantum_Register' | 'Classic_Register')}
-                            >
+                            <Select value={newRegType} onValueChange={(v) => setNewRegType(v as RegisterType)}>
                                 <SelectTrigger className="h-8">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="Quantum_Register">Quantum</SelectItem>
-                                    <SelectItem value="Classic_Register">Classic</SelectItem>
+                                    <SelectItem value={REGISTER_TYPE_QUANTUM}>Quantum</SelectItem>
+                                    <SelectItem value={REGISTER_TYPE_CLASSIC}>Classic</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>

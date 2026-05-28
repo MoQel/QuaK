@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { FlatQubit } from '@/views/circuit-view/util/types.ts';
-import { CircuitResponse, isQuantumRegister } from '@/api/dto/circuit.ts';
+import { CircuitResponse, REGISTER_TYPE_QUANTUM } from '@/api/dto/circuit.ts';
 import { createCircuitService } from '@/views/circuit-view/util/circuitService.ts';
 import { LABEL_WIDTH, QUBIT_HEIGHT } from '@/views/circuit-view/util/layout.ts';
 
@@ -16,7 +16,7 @@ export function QubitLabel({ circuit, setCircuit, qubit }: Readonly<QubitLabelPr
     const { deleteQubit, removeClassicBit } = createCircuitService(circuit, setCircuit);
     const [open, setOpen] = useState(false);
 
-    const isQuantum = qubit.regType === 'Quantum_Register';
+    const isQuantum = qubit.regType === REGISTER_TYPE_QUANTUM;
 
     const onDelete = () => {
         if (isQuantum) {

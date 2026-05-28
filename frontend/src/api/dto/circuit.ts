@@ -46,7 +46,11 @@ export const getInvolvedSelectors = (op: QuantumOperationDto): ElementSelectorDt
 };
 
 // --- Responses ---
-type RegisterType = 'Quantum_Register' | 'Classic_Register';
+export type RegisterType = 'Quantum_Register' | 'Classic_Register';
+
+// Constants — single source of truth for register type discriminator values
+export const REGISTER_TYPE_QUANTUM = 'Quantum_Register' as const;
+export const REGISTER_TYPE_CLASSIC = 'Classic_Register' as const;
 
 export interface AbstractRegisterResponse {
     id: string;
@@ -73,11 +77,11 @@ export const getRegisterSize = (reg: RegisterResponse): number => {
 };
 
 export const isQuantumRegister = (reg: RegisterResponse): reg is QuantumRegisterResponse => {
-    return reg.type === 'Quantum_Register';
+    return reg.type === REGISTER_TYPE_QUANTUM;
 };
 
 export const isClassicRegister = (reg: RegisterResponse): reg is ClassicRegisterResponse => {
-    return reg.type === 'Classic_Register';
+    return reg.type === REGISTER_TYPE_CLASSIC;
 };
 
 export const getCircuitWidth = (circuitData: CircuitResponse): number => {
@@ -112,7 +116,7 @@ export interface MoveQuantumOperationRequest {
 
 export interface RegisterRequest {
     name: string;
-    type: 'Quantum_Register' | 'Classic_Register';
+    type: RegisterType;
     size: number;
 }
 

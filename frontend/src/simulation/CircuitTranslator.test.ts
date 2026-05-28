@@ -7,6 +7,7 @@ import {
     LayerResponse,
     QuantumOperationDto,
     QuantumRegisterResponse,
+    REGISTER_TYPE_QUANTUM,
 } from '@/api/dto/circuit';
 import { OperationIdentifier } from '@/lib/operations.ts';
 import { SimulationResult } from '@/simulation/simulation.types.ts';
@@ -22,7 +23,7 @@ const createCircuit = (numQubits: number, operations: QuantumOperationDto[] = []
         {
             id: 'qreg-0',
             name: 'q',
-            type: 'Quantum_Register',
+            type: REGISTER_TYPE_QUANTUM,
             numberOfQubits: numQubits,
         },
     ];

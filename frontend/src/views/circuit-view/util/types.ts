@@ -1,4 +1,4 @@
-import { QuantumOperationDto } from '@/api/dto/circuit.ts';
+import { QuantumOperationDto, RegisterType } from '@/api/dto/circuit.ts';
 import { OperationIdentifier } from '@/lib/operations.ts';
 
 export type UiLayer = {
@@ -21,7 +21,7 @@ export type FlatQubit = {
     regIdx: number;
     relQubitIdx: number;
     absQubitIdx: number;
-    regType: 'Quantum_Register' | 'Classic_Register';
+    regType: RegisterType;
     /** Absolute Y position in pixels, accounting for preceding register headers. */
     visualY: number;
 };

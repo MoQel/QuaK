@@ -8,7 +8,7 @@ globalThis.ResizeObserver = vi.fn().mockImplementation(() => ({
 
 import { render, screen } from '@testing-library/react';
 import { ResultsView } from './ResultsView';
-import { CircuitResponse } from '@/api/dto/circuit';
+import { CircuitResponse, REGISTER_TYPE_QUANTUM } from '@/api/dto/circuit';
 import { SimulationResult } from '@/simulation/simulation.types';
 import { useQuantumSimulation } from '@/hooks/results/useQuantumSimulation.ts';
 import { ReactNode } from 'react';
@@ -39,7 +39,7 @@ const mockCircuit: CircuitResponse = {
         {
             id: 'r1',
             name: 'q',
-            type: 'Quantum_Register',
+            type: REGISTER_TYPE_QUANTUM,
             numberOfQubits: 1,
         },
     ],
