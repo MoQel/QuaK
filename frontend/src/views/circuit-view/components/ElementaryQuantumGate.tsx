@@ -6,6 +6,7 @@ import {
     ElementSelectorDto,
     getRegisterSize,
     getVisualY,
+    MeasurementDto,
 } from '@/api/dto/circuit.ts';
 import { getOperationDefinition, OperationDefinition } from '@/lib/operations.ts';
 import { CELL_WIDTH, QUBIT_HEIGHT } from '@/views/circuit-view/util/layout.ts';
@@ -21,28 +22,6 @@ interface ElementaryQuantumGateProps {
     onDelete: () => void;
 }
 
-const getGlobalIndex = (selector: ElementSelectorDto, registers: RegisterResponse[]): number => {
-    let offset = 0;
-    for (const reg of registers) {
-        if (reg.id === selector.registerId) return offset + selector.index;
-        offset += getRegisterSize(reg);
-    }
-    return 0;
-};
-
-/** Maps a global (flat) qubit index back to a register-relative selector. */
-const getSelectorAtGlobalIndex = (globalIdx: number, registers: RegisterResponse[]): ElementSelectorDto => {
-    let offset = 0;
-    for (const reg of registers) {
-        const size = getRegisterSize(reg);
-        if (globalIdx < offset + size) {
-            return { registerId: reg.id, index: globalIdx - offset };
-        }
-        offset += size;
-    }
-    return { registerId: '', index: 0 };
-};
-
 export function ElementaryQuantumGate({
     operation,
     registers,
@@ -54,21 +33,23 @@ export function ElementaryQuantumGate({
     const definition = getOperationDefinition(operation.identifier);
     const isDraggingRef = useRef(false);
 
-    // Compute geometry (indices, span, bounds)
-    const { targetIndices, controlIndices, minGlobal, visualTop, spanHeight } = useMemo(() => {
-        const tIndices = operation.targetQubits.map((t) => getGlobalIndex(t, registers));
-        const cIndices = operation.controlQubits.map((c) => getGlobalIndex(c, registers));
-        const all = [...tIndices, ...cIndices];
-        const minGlobal = Math.min(...all);
-        const maxGlobal = Math.max(...all);
-        const minSelector = getSelectorAtGlobalIndex(minGlobal, registers);
+    // Compute geometry (visual Y offsets, span, bounds)
+    const { targetYs, controlYs, classicYs, visualTop, spanHeight } = useMemo(() => {
+        const tYs = operation.targetQubits.map((t) => getVisualY(registers, t.registerId, t.index));
+        const cYs = operation.controlQubits.map((c) => getVisualY(registers, c.registerId, c.index));
+        const clYs = (operation.type === 'MEASUREMENT' ? (operation as MeasurementDto).classicBits : []).map((cl) =>
+            getVisualY(registers, cl.registerId, cl.index),
+        );
+        const allYs = [...tYs, ...cYs, ...clYs];
+        const visualTop = allYs.length > 0 ? Math.min(...allYs) : 0;
+        const visualBottom = allYs.length > 0 ? Math.max(...allYs) : 0;
 
         return {
-            targetIndices: tIndices,
-            controlIndices: cIndices,
-            minGlobal,
-            visualTop: getVisualY(registers, minSelector.registerId, minSelector.index),
-            spanHeight: (maxGlobal - minGlobal) * QUBIT_HEIGHT,
+            targetYs: tYs,
+            controlYs: cYs,
+            classicYs: clYs,
+            visualTop,
+            spanHeight: visualBottom - visualTop,
         };
     }, [operation, registers]);
 
@@ -118,7 +99,7 @@ export function ElementaryQuantumGate({
             }}
         >
             {/* Connector Line for Multi-Qubit Gates with hitbox container*/}
-            {targetIndices.length + controlIndices.length > 1 && (
+            {targetYs.length + controlYs.length > 1 && operation.type !== 'MEASUREMENT' && (
                 <div
                     className="
                     absolute left-1/2 -translate-x-1/2 w-2
@@ -138,25 +119,73 @@ export function ElementaryQuantumGate({
                 </div>
             )}
 
+            {/* Classical double-line connector for Measurements */}
+            {operation.type === 'MEASUREMENT' && classicYs.length > 0 && (
+                <div
+                    className="
+                    absolute left-1/2 -translate-x-1/2 w-3
+                    pointer-events-auto cursor-grab active:cursor-grabbing"
+                    style={{
+                        top: QUBIT_HEIGHT / 2,
+                        bottom: QUBIT_HEIGHT / 2,
+                    }}
+                >
+                    {/* Left line */}
+                    <div
+                        className="
+                            absolute left-[3px] h-full w-[1px]
+                            bg-text-muted group-hover:brightness-90 dark:group-hover:brightness-125 transition-colors"
+                        style={{ backgroundColor: 'var(--text-muted)' }}
+                    />
+                    {/* Right line */}
+                    <div
+                        className="
+                            absolute left-[7px] h-full w-[1px]
+                            bg-text-muted group-hover:brightness-90 dark:group-hover:brightness-125 transition-colors"
+                        style={{ backgroundColor: 'var(--text-muted)' }}
+                    />
+                </div>
+            )}
+
             {/* Render Controls */}
-            {controlIndices.map((idx) => (
-                <ControlPoint key={`control-${idx}`} relativeIdx={idx - minGlobal} definition={definition} />
+            {controlYs.map((y, idx) => (
+                <ControlPoint key={`control-${idx}`} relativeY={y - visualTop} definition={definition} />
             ))}
 
             {/* Render Targets */}
-            {targetIndices.map((idx) => (
+            {targetYs.map((y, idx) => (
                 <TargetPoint
                     key={`target-${idx}`}
-                    relativeIdx={idx - minGlobal}
+                    relativeY={y - visualTop}
                     definition={definition}
                     isSWAP={operation.identifier === 'SWAP'}
                 />
             ))}
+
+            {/* Render Classic Bits for Measurements */}
+            {operation.type === 'MEASUREMENT' &&
+                classicYs.map((y, idx) => <ClassicBitTargetPoint key={`classic-${idx}`} relativeY={y - visualTop} />)}
         </div>
     );
 }
 
-function ControlPoint({ relativeIdx, definition }: Readonly<{ relativeIdx: number; definition: OperationDefinition }>) {
+function ClassicBitTargetPoint({ relativeY }: Readonly<{ relativeY: number }>) {
+    return (
+        <div
+            className="absolute inset-x-0 flex items-center justify-center pointer-events-none"
+            style={{ top: relativeY, height: QUBIT_HEIGHT }}
+        >
+            <div
+                className="
+                    size-2 rounded-full bg-text-muted
+                    pointer-events-auto cursor-grab active:cursor-grabbing"
+                style={{ backgroundColor: 'var(--text-muted)' }}
+            />
+        </div>
+    );
+}
+
+function ControlPoint({ relativeY, definition }: Readonly<{ relativeY: number; definition: OperationDefinition }>) {
     const size: number = 12;
     return (
         <div
@@ -167,7 +196,7 @@ function ControlPoint({ relativeIdx, definition }: Readonly<{ relativeIdx: numbe
                 group-hover:brightness-90 dark:group-hover:brightness-125 transition-colors"
             style={{
                 backgroundColor: definition.color,
-                top: relativeIdx * QUBIT_HEIGHT + QUBIT_HEIGHT / 2 - size / 2,
+                top: relativeY + QUBIT_HEIGHT / 2 - size / 2,
                 width: `${size}px`,
                 height: `${size}px`,
             }}
@@ -176,10 +205,10 @@ function ControlPoint({ relativeIdx, definition }: Readonly<{ relativeIdx: numbe
 }
 
 function TargetPoint({
-    relativeIdx,
+    relativeY,
     definition,
     isSWAP,
-}: Readonly<{ relativeIdx: number; definition: OperationDefinition; isSWAP: boolean }>) {
+}: Readonly<{ relativeY: number; definition: OperationDefinition; isSWAP: boolean }>) {
     let icon: React.ReactNode;
 
     if (definition.icon.type === 'component') {
@@ -193,7 +222,7 @@ function TargetPoint({
     return (
         <div
             className="absolute inset-x-0 flex items-center justify-center pointer-events-none"
-            style={{ top: relativeIdx * QUBIT_HEIGHT, height: QUBIT_HEIGHT }}
+            style={{ top: relativeY, height: QUBIT_HEIGHT }}
         >
             {/* Similar to badge.tsx but supporting group-hover */}
             <div

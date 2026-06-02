@@ -11,18 +11,27 @@ import { DropPlaceholder } from './components/DropPlaceholder.tsx';
 import { CircuitFooter } from './components/CircuitFooter.tsx';
 import { HoverPos, UiLayer, UiQuantumOperation } from './util/types.ts';
 import { createCircuitService } from '@/views/circuit-view/util/circuitService.ts';
+import { MeasurementDto } from '@/api/dto/circuit';
+import { MeasurementTargetDialog } from './components/MeasurementTargetDialog';
 import { LABEL_WIDTH, QUBIT_HEIGHT, REGISTER_HEADER_HEIGHT } from '@/views/circuit-view/util/layout.ts';
 
 import { useProject } from '@/contexts/ProjectContext';
 
 export function CircuitView() {
     const { circuit, setCircuit } = useProject();
-    const { removeQuantumOperation } = createCircuitService(circuit, setCircuit);
+    const { removeQuantumOperation, addQuantumOperation } = createCircuitService(circuit, setCircuit);
 
     const { isOperationDragging, draggingOperationSize } = useSelector((state: RootState) => state.dragOperation);
 
     const [hoverPos, setHoverPos] = useState<HoverPos | null>(null);
     const [draggingOperationId, setDraggingOperationId] = useState<string | null>(null);
+    const [measurementDialogOpen, setMeasurementDialogOpen] = useState(false);
+    const [measurementContext, setMeasurementContext] = useState<{
+        layerIdx: number;
+        targetQubits: ElementSelectorDto[];
+        controlQubits: ElementSelectorDto[];
+        operationIdentifier: string;
+    } | null>(null);
 
     /**
      * Flattens the nested register structure into a single array of qubits
@@ -250,6 +259,10 @@ export function CircuitView() {
                             activeDropZones={activeDropZones}
                             setHoverPos={setHoverPos}
                             setDraggingOperationId={setDraggingOperationId}
+                            onRequestMeasurementTarget={(ctx) => {
+                                setMeasurementContext(ctx);
+                                setMeasurementDialogOpen(true);
+                            }}
                         />
 
                         <DropPlaceholder
@@ -258,6 +271,26 @@ export function CircuitView() {
                             flatQubits={flatQubits}
                         />
                     </div>
+                    <MeasurementTargetDialog
+                        open={measurementDialogOpen}
+                        onOpenChange={(open) => !open && setMeasurementDialogOpen(false)}
+                        circuit={circuit}
+                        onOpenRegisterManager={() => globalThis.dispatchEvent(new CustomEvent('open-register-manager'))}
+                        onSubmit={(classicBits) => {
+                            if (!measurementContext) return;
+                            const operation: MeasurementDto = {
+                                type: 'MEASUREMENT',
+                                identifier: measurementContext.operationIdentifier as any,
+                                inverseForm: false,
+                                targetQubits: measurementContext.targetQubits,
+                                controlQubits: measurementContext.controlQubits,
+                                classicBits,
+                            };
+                            addQuantumOperation({ quantumOperation: operation, layerIdx: measurementContext.layerIdx });
+                            setMeasurementDialogOpen(false);
+                            setMeasurementContext(null);
+                        }}
+                    />
                 </div>
 
                 <CircuitFooter uiLayers={uiLayers} />

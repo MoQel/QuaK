@@ -38,6 +38,11 @@ export function LibraryElement({ identifier, onClick, matrix }: Readonly<Library
         setIsOpen(false);
         setIsDragging(true);
 
+        // Debug: log to help diagnose why dragstart may not fire in the browser
+        // Remove these logs after debugging.
+        // eslint-disable-next-line no-console
+        console.log('LibraryElement: dragstart', identifier);
+
         const data: DragData = {
             origin: 'library',
             operationIdentifier: identifier,
@@ -49,6 +54,8 @@ export function LibraryElement({ identifier, onClick, matrix }: Readonly<Library
     };
 
     const handleDragEnd = () => {
+        // eslint-disable-next-line no-console
+        console.log('LibraryElement: dragend', identifier);
         // Wait 100ms to avoid opening tooltip after dragging.
         setTimeout(() => {
             setIsDragging(false);
@@ -69,15 +76,23 @@ export function LibraryElement({ identifier, onClick, matrix }: Readonly<Library
                 <div
                     id={identifier.toLowerCase()}
                     onClick={onClick}
-                    draggable={identifier !== 'MEASURE'} // Disable Measurement Operation, as it is currently not working.
-                    onDragStart={identifier === 'MEASURE' ? undefined : handleDragStart}
-                    onDragEnd={identifier === 'MEASURE' ? undefined : handleDragEnd}
+                    onMouseDown={(e) => {
+                        // eslint-disable-next-line no-console
+                        console.log('LibraryElement: mousedown', identifier, (e.target as HTMLElement)?.tagName);
+                    }}
+                    onMouseUp={(e) => {
+                        // eslint-disable-next-line no-console
+                        console.log('LibraryElement: mouseup', identifier, (e.target as HTMLElement)?.tagName);
+                    }}
+                    draggable={true}
+                    onDragStart={handleDragStart}
+                    onDragEnd={handleDragEnd}
                     className={`
-                        group ${identifier === 'MEASURE' ? '' : 'cursor-grab active:cursor-grabbing'}
+                        group cursor-grab active:cursor-grabbing
                         flex items-center justify-center
                         hover:brightness-90 dark:hover:brightness-125 transition-colors
                         ${styles.libraryElement}`}
-                    style={{ backgroundColor: definition.color, color: 'var(--bg-dark)' }}
+                    style={{ backgroundColor: definition.color, color: 'var(--bg-dark)', WebkitUserDrag: 'element' }}
                 >
                     {icon}
                 </div>

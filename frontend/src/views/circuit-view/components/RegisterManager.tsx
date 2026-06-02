@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Layers, Plus, Minus, Trash2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,6 +38,12 @@ export function RegisterManager({ circuit, setCircuit }: Readonly<RegisterManage
     const [newRegType, setNewRegType] = useState<RegisterType>(REGISTER_TYPE_QUANTUM);
     const [newRegSize, setNewRegSize] = useState(2);
     const [open, setOpen] = useState(false);
+
+    useEffect(() => {
+        const handler = () => setOpen(true);
+        globalThis.addEventListener('open-register-manager', handler as EventListener);
+        return () => globalThis.removeEventListener('open-register-manager', handler as EventListener);
+    }, []);
 
     const handleAddRegister = () => {
         if (!newRegName.trim()) return;

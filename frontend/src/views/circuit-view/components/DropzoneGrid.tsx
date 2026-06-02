@@ -22,6 +22,12 @@ interface DropzoneGridProps {
     activeDropZones: Set<string>;
     setHoverPos: React.Dispatch<React.SetStateAction<HoverPos | null>>;
     setDraggingOperationId: (id: string | null) => void;
+    onRequestMeasurementTarget?: (context: {
+        layerIdx: number;
+        targetQubits: ElementSelectorDto[];
+        controlQubits: ElementSelectorDto[];
+        operationIdentifier: string;
+    }) => void;
 }
 
 export function DropzoneGrid({
@@ -32,6 +38,7 @@ export function DropzoneGrid({
     activeDropZones,
     setHoverPos,
     setDraggingOperationId,
+    onRequestMeasurementTarget,
 }: Readonly<DropzoneGridProps>) {
     const { addQuantumOperation, moveQuantumOperation } = createCircuitService(circuit, setCircuit);
 
@@ -148,15 +155,25 @@ export function DropzoneGrid({
                             };
                             addQuantumOperation({ quantumOperation: operation, layerIdx });
                         } else if (operationDefinition.type === 'MEASUREMENT') {
-                            const operation: MeasurementDto = {
-                                type: 'MEASUREMENT',
-                                identifier: data.operationIdentifier,
-                                inverseForm: false,
-                                targetQubits,
-                                controlQubits,
-                                classicBits: [],
-                            };
-                            addQuantumOperation({ quantumOperation: operation, layerIdx });
+                            // Request classic bit selection from parent before creating the measurement
+                            if (onRequestMeasurementTarget) {
+                                onRequestMeasurementTarget({
+                                    layerIdx,
+                                    targetQubits,
+                                    controlQubits,
+                                    operationIdentifier: data.operationIdentifier,
+                                });
+                            } else {
+                                const operation: MeasurementDto = {
+                                    type: 'MEASUREMENT',
+                                    identifier: data.operationIdentifier,
+                                    inverseForm: false,
+                                    targetQubits,
+                                    controlQubits,
+                                    classicBits: [],
+                                };
+                                addQuantumOperation({ quantumOperation: operation, layerIdx });
+                            }
                         }
                         break;
                     }
