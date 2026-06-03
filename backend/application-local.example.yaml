@@ -1,0 +1,30 @@
+# ============================================================
+# Local developer config — copy to application-local.yaml (gitignored)
+#
+# Setup:
+#   cd backend/lsp && ./setup-all.sh
+#   Then fill in the binary paths printed by the script.
+# ============================================================
+
+quak:
+  lsp:
+    servers:
+
+      # --- Python LSP (pylsp) ---
+      # Dev: use the venv created by lsp/servers/python/setup.sh
+      python:
+        command:
+          - "/absolute/path/to/backend/lsp/servers/python/venv/bin/pylsp"
+        workingDirectory: "tmp/quak-lsp-workspace"
+        environment:
+          PYTHONUNBUFFERED: "1"
+
+      # Production / Docker: if pylsp is installed globally (pip install python-lsp-server),
+      # just use the binary name — no absolute path needed.
+      #
+      # python:
+      #   command:
+      #     - "pylsp"
+      #   workingDirectory: "/var/quak/lsp-workspace"
+      #   environment:
+      #     PYTHONUNBUFFERED: "1"

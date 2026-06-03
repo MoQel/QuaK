@@ -10,6 +10,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -33,8 +35,11 @@ public class ProcessLspSessionAdapter implements LspSessionPort {
 
     @Override
     public void start(LspServerDefinition definition) throws IOException {
+        Path workingDirectory = definition.workingDirectory();
+        Files.createDirectories(workingDirectory);
+
         ProcessBuilder processBuilder = new ProcessBuilder(definition.command());
-        processBuilder.directory(definition.workingDirectory().toFile());
+        processBuilder.directory(workingDirectory.toFile());
         processBuilder.environment().putAll(definition.environment());
 
         process = processBuilder.start();

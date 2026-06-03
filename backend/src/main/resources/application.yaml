@@ -1,12 +1,2 @@
-quak:
-  lsp:
-    servers:
-      python:
-        command:
-          - "/Users/nick/Projekte/Praktikum/QuaK/backend/lsp/servers/python/venv/bin/pylsp"
-        workingDirectory: "tmp/quak-lsp-workspace"
-        environment:
-          PYTHONUNBUFFERED: "1"
-
 server:
   port: 8080
