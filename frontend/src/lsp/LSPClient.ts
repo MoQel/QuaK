@@ -108,9 +108,18 @@ export class LSPClient {
                     return;
                 }
 
-                if (transportState === 'disconnected' && this.state === 'initializing' && !this.initializePromise) {
-                    this.state = 'error';
-                    reject(new Error(`LSP transport disconnected before initialize: "${this.options.languageId}"`));
+                if (transportState === 'disconnected') {
+                    if (this.state === 'initializing' && !this.initializePromise) {
+                        this.state = 'error';
+                        reject(new Error(`LSP transport disconnected before initialize: "${this.options.languageId}"`));
+                    } else if (this.state === 'ready') {
+                        // Transport closed after initialization — e.g. server-side idle timeout.
+                        // Mark as error so the manager recreates the client on next activity.
+                        this.state = 'error';
+                        console.warn(
+                            `[LSP] Transport disconnected for "${this.options.languageId}" — will reconnect on next activity`,
+                        );
+                    }
                 }
             };
 

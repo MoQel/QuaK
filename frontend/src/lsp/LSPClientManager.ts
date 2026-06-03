@@ -62,7 +62,7 @@ class LSPClientManager {
     }
 
     onDocumentChange(model: monaco.editor.ITextModel): void {
-        const client = this.clients.get(model.getLanguageId());
+        const client = this.getOrStartClient(model.getLanguageId());
         client?.didChange(model);
     }
 
@@ -73,7 +73,15 @@ class LSPClientManager {
 
     private getOrStartClient(languageId: string): LSPClient | null {
         const existing = this.clients.get(languageId);
-        if (existing) return existing;
+        if (existing) {
+            if (existing.getState() === 'error') {
+                // Client lost its connection (e.g. server-side idle timeout) — dispose and restart.
+                existing.dispose();
+                this.clients.delete(languageId);
+            } else {
+                return existing;
+            }
+        }
 
         const config = this.configs.get(languageId);
         if (!config) return null;

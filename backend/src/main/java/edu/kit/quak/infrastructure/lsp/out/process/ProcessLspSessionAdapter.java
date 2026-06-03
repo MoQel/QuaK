@@ -12,6 +12,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Comparator;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -27,6 +28,7 @@ public class ProcessLspSessionAdapter implements LspSessionPort {
     private Process process;
     private StdioJsonRpcBridge bridge;
     private ExecutorService errorReaderExecutor;
+    private Path sessionWorkspace;
 
     public ProcessLspSessionAdapter(String sessionId, LspClientConnectionPort clientConnection) {
         this.sessionId = sessionId;
@@ -35,11 +37,13 @@ public class ProcessLspSessionAdapter implements LspSessionPort {
 
     @Override
     public void start(LspServerDefinition definition) throws IOException {
-        Path workingDirectory = definition.workingDirectory();
-        Files.createDirectories(workingDirectory);
+        // Each session gets its own isolated workspace to prevent interference
+        // between concurrent sessions of the same language server.
+        sessionWorkspace = definition.workingDirectory().resolve(sessionId);
+        Files.createDirectories(sessionWorkspace);
 
         ProcessBuilder processBuilder = new ProcessBuilder(definition.command());
-        processBuilder.directory(workingDirectory.toFile());
+        processBuilder.directory(sessionWorkspace.toFile());
         processBuilder.environment().putAll(definition.environment());
 
         process = processBuilder.start();
@@ -98,9 +102,11 @@ public class ProcessLspSessionAdapter implements LspSessionPort {
             try {
                 clientConnection.close(1000, "LSP session closed");
             } catch (Exception e) {
-                log.warn("Failed to close LSP session", e);
+                log.warn("Failed to close client connection for session={}", sessionId, e);
             }
         }
+
+        deleteSessionWorkspace();
 
         log.info("Closed LSP session={}", sessionId);
     }
@@ -162,6 +168,26 @@ public class ProcessLspSessionAdapter implements LspSessionPort {
         }
 
         log.info("LSP server terminated for session={}", sessionId);
+    }
+
+    private void deleteSessionWorkspace() {
+        if (sessionWorkspace == null || !Files.exists(sessionWorkspace)) {
+            return;
+        }
+        try (var paths = Files.walk(sessionWorkspace)) {
+            paths
+                .sorted(Comparator.reverseOrder())
+                .forEach(path -> {
+                    try {
+                        Files.delete(path);
+                    } catch (IOException e) {
+                        log.warn("Failed to delete workspace file={}", path, e);
+                    }
+                });
+            log.debug("Deleted session workspace={}", sessionWorkspace);
+        } catch (IOException e) {
+            log.warn("Failed to walk session workspace={} for cleanup", sessionWorkspace, e);
+        }
     }
 
     private void ensureOpen() {

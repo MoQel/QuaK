@@ -1,2 +1,7 @@
 server:
   port: 8080
+
+quak:
+  lsp:
+    websocket:
+      session-idle-timeout-ms: 900000  # 15 minutes
