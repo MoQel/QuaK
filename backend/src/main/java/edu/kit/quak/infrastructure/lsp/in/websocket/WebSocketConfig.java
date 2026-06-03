@@ -1,5 +1,6 @@
 package edu.kit.quak.infrastructure.lsp.in.websocket;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.socket.config.annotation.EnableWebSocket;
@@ -23,6 +24,7 @@ public class WebSocketConfig implements WebSocketConfigurer {
     }
 
     @Bean
+    @ConditionalOnProperty(name = "quak.lsp.websocket.configure-container", havingValue = "true", matchIfMissing = true)
     public ServletServerContainerFactoryBean createWebSocketContainer() {
         ServletServerContainerFactoryBean container = new ServletServerContainerFactoryBean();
         container.setMaxTextMessageBufferSize(512 * 1024);
