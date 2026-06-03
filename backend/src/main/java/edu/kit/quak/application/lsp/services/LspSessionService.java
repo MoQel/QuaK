@@ -6,6 +6,7 @@ import edu.kit.quak.application.lsp.exceptions.LspSessionNotFoundException;
 import edu.kit.quak.application.lsp.ports.in.LspSessionServicePort;
 import edu.kit.quak.application.lsp.ports.out.LspClientConnectionPort;
 import edu.kit.quak.application.lsp.ports.out.LspServerRegistryPort;
+import edu.kit.quak.application.lsp.ports.out.LspSessionFactoryPort;
 import edu.kit.quak.application.lsp.ports.out.LspSessionPort;
 import edu.kit.quak.core.lsp.model.LspLanguageId;
 import edu.kit.quak.core.lsp.model.LspServerDefinition;
@@ -13,7 +14,6 @@ import edu.kit.quak.core.lsp.model.LspSessionId;
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.BiFunction;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -22,10 +22,10 @@ import org.springframework.stereotype.Service;
 public class LspSessionService implements LspSessionServicePort {
 
     private final LspServerRegistryPort registry;
-    private final BiFunction<String, LspClientConnectionPort, LspSessionPort> sessionFactory;
+    private final LspSessionFactoryPort sessionFactory;
     private final Map<String, LspSessionPort> sessions = new ConcurrentHashMap<>();
 
-    public LspSessionService(LspServerRegistryPort registry, BiFunction<String, LspClientConnectionPort, LspSessionPort> sessionFactory) {
+    public LspSessionService(LspServerRegistryPort registry, LspSessionFactoryPort sessionFactory) {
         this.registry = registry;
         this.sessionFactory = sessionFactory;
     }
@@ -37,7 +37,7 @@ public class LspSessionService implements LspSessionServicePort {
             .orElseThrow(() -> new LspServerNotConfiguredException(language.value()));
 
         LspSessionId sessionId = LspSessionId.newId();
-        LspSessionPort session = sessionFactory.apply(sessionId.value(), clientConnection);
+        LspSessionPort session = sessionFactory.create(sessionId.value(), clientConnection);
 
         try {
             session.start(definition);
