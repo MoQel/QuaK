@@ -31,10 +31,10 @@ const chartConfig = {
     },
 } satisfies ChartConfig;
 
-import { useProject } from '@/contexts/ProjectContext';
+import { useCircuitTabs } from '@/contexts/CircuitTabsContext.tsx';
 
 export function ResultsView() {
-    const { circuit } = useProject();
+    const { activeCircuit: circuit } = useCircuitTabs();
     const [options, setOptions] = useState<SimulationOptions>({
         mode: 'exact',
         sampleCount: 1024,

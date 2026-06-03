@@ -13,10 +13,17 @@ import { DialogCloseButtons, TextInput } from '@/views/project-manager-view/util
 import { FilePlus, FolderPlus, LucideIcon, Plus } from 'lucide-react';
 import { Empty } from '@/views/project-manager-view/util/TreeComponents.tsx';
 import { api } from '@/api/api.ts';
-import { ProjectContentsResponse, ProjectDetailsResponse, ProjectRequest } from '@/api/dto/filesystem.ts';
+import {
+    FileElementDto,
+    ProjectContentsResponse,
+    ProjectDetailsResponse,
+    ProjectRequest,
+} from '@/api/dto/filesystem.ts';
 import { toast } from 'sonner';
 
 import { FileSelect, ParentRefresh, SelectedFolder } from '@/views/project-manager-view/ProjectManagerContexts.ts';
+import { useAppDispatch } from '@/hooks/useAppDispatch.ts';
+import { openTab } from '@/store/tabs/tabsSlice.ts';
 
 /**
  * Displays a tree-view of the projects inside a {@link Card}
@@ -192,6 +199,7 @@ interface CreateElementFormProps<T extends ZodRawShape> {
     errorMessage: string;
     fields: FormFieldConfig<T>[];
     buildBody?: (values: z.infer<ZodObject<T>>) => Record<string, unknown>;
+    onCreated?: (createdElement: FileElementDto) => void;
 }
 
 function CreateElementForm<T extends ZodRawShape>({
@@ -203,6 +211,7 @@ function CreateElementForm<T extends ZodRawShape>({
     errorMessage,
     fields,
     buildBody,
+    onCreated,
 }: Readonly<CreateElementFormProps<T>>) {
     const reloadParent = useContext(ParentRefresh);
 
@@ -213,9 +222,10 @@ function CreateElementForm<T extends ZodRawShape>({
 
     const onSubmit = (values: z.infer<ZodObject<T>>) => {
         const body = buildBody ? buildBody(values) : values;
-        api.post(apiEndpoint, body, { headers: { 'parent-id': parent } })
-            .then(() => {
+        api.post<FileElementDto>(apiEndpoint, body, { headers: { 'parent-id': parent } })
+            .then((createdElement) => {
                 reloadParent();
+                onCreated?.(createdElement);
                 onClose();
             })
             .catch((err) => {
@@ -251,6 +261,8 @@ const fileFields: FormFieldConfig<typeof fileSchema.shape>[] = [
 ];
 
 function CreateFileForm({ parent, onClose }: Readonly<{ parent: string; onClose: () => void }>) {
+    const dispatch = useAppDispatch();
+
     return (
         <CreateElementForm
             parent={parent}
@@ -261,6 +273,9 @@ function CreateFileForm({ parent, onClose }: Readonly<{ parent: string; onClose:
             errorMessage="Failed to create file"
             fields={fileFields}
             buildBody={(values) => ({ name: values.name })}
+            onCreated={(createdFile) =>
+                dispatch(openTab({ tab: { id: createdFile.id, title: createdFile.name, language: '' } }))
+            }
         />
     );
 }

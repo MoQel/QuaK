@@ -4,20 +4,32 @@ import { ElementSelectorDto, getInvolvedSelectors, getRegisterSize, getSelectorK
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store.ts';
 import { CircuitToolbar } from './components/CircuitToolbar.tsx';
+import { CircuitTabBar } from '@/views/circuit-view/components/CircuitTabBar.tsx';
 import { QubitWires } from './components/QubitWires.tsx';
 import { QuantumOperationGrid } from './components/QuantumOperationGrid.tsx';
 import { DropzoneGrid } from './components/DropzoneGrid.tsx';
 import { DropPlaceholder } from './components/DropPlaceholder.tsx';
 import { CircuitFooter } from './components/CircuitFooter.tsx';
 import { HoverPos, UiLayer, UiQuantumOperation } from './util/types.ts';
-import { createCircuitService } from '@/views/circuit-view/util/circuitService.ts';
 import { LABEL_WIDTH } from '@/views/circuit-view/util/layout.ts';
-
-import { useProject } from '@/contexts/ProjectContext';
+import { useCircuitTabs } from '@/contexts/CircuitTabsContext.tsx';
 
 export function CircuitView() {
-    const { circuit, setCircuit } = useProject();
-    const { removeQuantumOperation } = createCircuitService(circuit, setCircuit);
+    const { activeCircuit, setActiveCircuit } = useCircuitTabs();
+    const removeQuantumOperation = (operationId: string) => {
+        setActiveCircuit((prev) => {
+            if (!prev) return prev;
+
+            return {
+                ...prev,
+                layers: prev.layers
+                    .map((layer) => ({
+                        quantumOperations: layer.quantumOperations.filter((operation) => operation.id !== operationId),
+                    }))
+                    .filter((layer) => layer.quantumOperations.length > 0),
+            };
+        });
+    };
 
     const { isOperationDragging, draggingOperationSize } = useSelector((state: RootState) => state.dragOperation);
 
@@ -29,10 +41,10 @@ export function CircuitView() {
      * for easier rendering of wires and drop zones.
      */
     const flatQubits = useMemo(() => {
-        if (!circuit?.registers) return [];
+        if (!activeCircuit?.registers) return [];
 
         let globalCounter = 0;
-        return circuit.registers.flatMap((reg, regIdx) =>
+        return activeCircuit.registers.flatMap((reg, regIdx) =>
             Array.from({ length: getRegisterSize(reg) }).map((_, relQubitIdx) => ({
                 regId: reg.id,
                 regName: reg.name,
@@ -41,7 +53,7 @@ export function CircuitView() {
                 absQubitIdx: globalCounter++, // Absolute vertical index
             })),
         );
-    }, [circuit?.registers]);
+    }, [activeCircuit?.registers]);
 
     const getOperationSpan = (op: UiQuantumOperation) => {
         const involvedIndices = getInvolvedSelectors(op).map((selector) => selector.index);
@@ -124,16 +136,16 @@ export function CircuitView() {
      * Circuit state without the currently dragged operation, used to compute valid drop zones.
      */
     const layersWithoutDragOp = useMemo(() => {
-        if (!circuit?.layers) return [];
+        if (!activeCircuit?.layers) return [];
 
-        const ops = circuit.layers.flatMap((layer, layerIdx) =>
+        const ops = activeCircuit.layers.flatMap((layer, layerIdx) =>
             layer.quantumOperations
                 .filter((op) => op.id !== draggingOperationId)
                 .map((op) => ({ ...op, originalLayerIdx: layerIdx }) as UiQuantumOperation),
         );
 
         return rescheduleOperations(ops);
-    }, [circuit, draggingOperationId]);
+    }, [activeCircuit, draggingOperationId]);
 
     /**
      * Determines valid drop zones based on circuit adjacency rules.
@@ -185,7 +197,7 @@ export function CircuitView() {
      * 5. Re-run ASAP scheduling on the combined set to produce the final layer layout.
      */
     const uiLayers: UiLayer[] = useMemo(() => {
-        if (!circuit?.registers) return [];
+        if (!activeCircuit?.registers) return [];
 
         const allOps: UiQuantumOperation[] = layersWithoutDragOp.flatMap((layer, layerIdx) =>
             layer.quantumOperations.map((op) => ({ ...op, originalLayerIdx: layerIdx })),
@@ -221,22 +233,25 @@ export function CircuitView() {
         allOps.sort((a, b) => a.originalLayerIdx - b.originalLayerIdx);
 
         return rescheduleOperations(allOps);
-    }, [circuit, hoverPos]);
+    }, [activeCircuit, hoverPos]);
 
     return (
-        <Card className="h-full overflow-hidden border-none bg-bg-subtle">
-            <CardContent className="flex flex-col h-full">
-                <CircuitToolbar circuit={circuit} setCircuit={setCircuit} />
+        <Card className="h-full overflow-hidden border-none rounded-none bg-bg-subtle p-0 gap-0">
+            <CardContent className="flex flex-col h-full p-0">
+                <CircuitTabBar />
+                <div className="px-6 pt-5">
+                    <CircuitToolbar circuit={activeCircuit} setCircuit={setActiveCircuit} />
+                </div>
 
                 {/* Circuit Canvas */}
                 <div className="relative flex-1 overflow-auto">
-                    <QubitWires circuit={circuit} setCircuit={setCircuit} flatQubits={flatQubits} />
+                    <QubitWires circuit={activeCircuit} setCircuit={setActiveCircuit} flatQubits={flatQubits} />
 
                     {/* Circuit Content Container (Offset for labels) */}
                     <div className="absolute inset-y-0 right-0" style={{ left: LABEL_WIDTH }}>
                         <QuantumOperationGrid
                             uiLayers={uiLayers}
-                            registers={circuit?.registers ?? []}
+                            registers={activeCircuit?.registers ?? []}
                             isOperationDragging={isOperationDragging}
                             removeQuantumOperation={removeQuantumOperation}
                             setDraggingOperationId={setDraggingOperationId}
@@ -244,8 +259,8 @@ export function CircuitView() {
                         />
 
                         <DropzoneGrid
-                            circuit={circuit}
-                            setCircuit={setCircuit}
+                            circuit={activeCircuit}
+                            setCircuit={setActiveCircuit}
                             flatQubits={flatQubits}
                             uiLayers={uiLayers}
                             activeDropZones={activeDropZones}

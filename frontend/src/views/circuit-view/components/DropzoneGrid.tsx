@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { SetStateAction, useCallback } from 'react';
 import { useDispatch } from 'react-redux';
 import { stopOperationDrag } from '@/store/circuit/dragOperationSlice.ts';
 import { CELL_WIDTH, QUBIT_HEIGHT } from '@/views/circuit-view/util/layout.ts';
@@ -8,14 +8,14 @@ import {
     ElementSelectorDto,
     MeasurementDto,
     MoveQuantumOperationRequest,
+    QuantumOperationDto,
 } from '@/api/dto/circuit.ts';
 import { DragData, FlatQubit, HoverPos, UiLayer } from '@/views/circuit-view/util/types.ts';
-import { createCircuitService } from '@/views/circuit-view/util/circuitService.ts';
 import { getOperationDefinition } from '@/lib/operations.ts';
 
 interface DropzoneGridProps {
     circuit: CircuitResponse | undefined;
-    setCircuit: (circuit: CircuitResponse) => void;
+    setCircuit: React.Dispatch<SetStateAction<CircuitResponse | undefined>>;
     flatQubits: FlatQubit[];
     uiLayers: UiLayer[];
     activeDropZones: Set<string>;
@@ -32,9 +32,64 @@ export function DropzoneGrid({
     setHoverPos,
     setDraggingOperationId,
 }: Readonly<DropzoneGridProps>) {
-    const { addQuantumOperation, moveQuantumOperation } = createCircuitService(circuit, setCircuit);
-
     const dispatch = useDispatch();
+
+    const addQuantumOperationLocally = (operation: QuantumOperationDto, targetLayerIdx: number) => {
+        setCircuit((prev) => {
+            if (!prev) return prev;
+
+            const layers = prev.layers.map((layer) => ({
+                quantumOperations: [...layer.quantumOperations],
+            }));
+
+            while (layers.length <= targetLayerIdx) {
+                layers.push({ quantumOperations: [] });
+            }
+
+            layers[targetLayerIdx].quantumOperations.push({
+                ...operation,
+                id: crypto.randomUUID(),
+            });
+
+            return {
+                ...prev,
+                layers,
+            };
+        });
+    };
+
+    const moveQuantumOperationLocally = (payload: MoveQuantumOperationRequest) => {
+        setCircuit((prev) => {
+            if (!prev) return prev;
+
+            let movedOperation: QuantumOperationDto | undefined;
+            const layers = prev.layers.map((layer) => ({
+                quantumOperations: layer.quantumOperations.filter((operation) => {
+                    if (operation.id !== payload.quantumOperationId) return true;
+
+                    movedOperation = {
+                        ...operation,
+                        targetQubits: payload.targetQubits,
+                        controlQubits: payload.controlQubits,
+                    };
+                    return false;
+                }),
+            }));
+
+            if (!movedOperation) return prev;
+
+            while (layers.length <= payload.layerIdx) {
+                layers.push({ quantumOperations: [] });
+            }
+
+            layers[payload.layerIdx].quantumOperations.push(movedOperation);
+
+            return {
+                ...prev,
+                layers: layers.filter((layer) => layer.quantumOperations.length > 0),
+            };
+        });
+    };
 
     const handleDragOver = (e: React.DragEvent, qubitIdx: number, layerIdx: number) => {
         e.preventDefault();
@@ -145,7 +200,7 @@ export function DropzoneGrid({
                                 controlQubits,
                                 rotationAngle: Math.PI / 2, // standard rotation
                             };
-                            addQuantumOperation({ quantumOperation: operation, layerIdx });
+                            addQuantumOperationLocally(operation, layerIdx);
                         } else if (operationDefinition.type === 'MEASUREMENT') {
                             const operation: MeasurementDto = {
                                 type: 'MEASUREMENT',
@@ -155,7 +210,7 @@ export function DropzoneGrid({
                                 controlQubits,
                                 classicBits: [],
                             };
-                            addQuantumOperation({ quantumOperation: operation, layerIdx });
+                            addQuantumOperationLocally(operation, layerIdx);
                         }
                         break;
                     }
@@ -167,7 +222,7 @@ export function DropzoneGrid({
                             controlQubits,
                         };
                         if (hasCircuitStateChanged(payload)) {
-                            moveQuantumOperation(payload);
+                            moveQuantumOperationLocally(payload);
                         }
                         break;
                     }
@@ -183,7 +238,7 @@ export function DropzoneGrid({
                 setDraggingOperationId(null);
             }
         },
-        [addQuantumOperation, moveQuantumOperation, hasCircuitStateChanged, dispatch],
+        [hasCircuitStateChanged, dispatch],
     );
 
     return (
