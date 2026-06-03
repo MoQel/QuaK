@@ -107,8 +107,13 @@ public class StdioJsonRpcBridge {
     private boolean readAndDispatch() throws IOException {
         int contentLength = readHeaders(serverStdout);
 
-        if (contentLength <= 0) {
+        if (contentLength < 0) {
             return false;
+        }
+
+        if (contentLength == 0) {
+            log.warn("Received Content-Length: 0 from LSP server, skipping empty message");
+            return true;
         }
 
         byte[] payload = serverStdout.readNBytes(contentLength);

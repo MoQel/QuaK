@@ -1,5 +1,6 @@
 package edu.kit.quak.infrastructure.lsp.config;
 
+import edu.kit.quak.application.lsp.ports.in.LspSessionServicePort;
 import edu.kit.quak.application.lsp.ports.out.LspServerRegistryPort;
 import edu.kit.quak.application.lsp.ports.out.LspSessionFactoryPort;
 import edu.kit.quak.application.lsp.services.LspSessionService;
@@ -24,7 +25,7 @@ public class LspConfiguration {
     }
 
     @Bean
-    public LspSessionService lspSessionService(LspServerRegistryPort registryPort, LspSessionFactoryPort sessionFactory) {
+    public LspSessionServicePort lspSessionService(LspServerRegistryPort registryPort, LspSessionFactoryPort sessionFactory) {
         return new LspSessionService(registryPort, sessionFactory);
     }
 }

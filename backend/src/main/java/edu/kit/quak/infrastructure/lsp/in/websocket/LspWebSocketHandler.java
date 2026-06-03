@@ -62,7 +62,7 @@ public class LspWebSocketHandler extends TextWebSocketHandler {
 
     private String extractLanguageId(WebSocketSession session) {
         URI uri = session.getUri();
-        String path = uri != null ? uri.getPath() : "";
+        String path = (uri != null && uri.getPath() != null) ? uri.getPath() : "";
         return path.substring(path.lastIndexOf('/') + 1);
     }
 }

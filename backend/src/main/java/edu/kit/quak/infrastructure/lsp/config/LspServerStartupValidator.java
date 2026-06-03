@@ -27,7 +27,7 @@ public class LspServerStartupValidator {
     public void validate() {
         Map<String, LspProperties.ServerConfig> servers = properties.getServers();
 
-        if (servers.isEmpty()) {
+        if (servers == null || servers.isEmpty()) {
             log.info("LSP: No language servers configured. LSP support is disabled.");
             return;
         }

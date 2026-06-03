@@ -120,7 +120,7 @@ public class ProcessLspSessionAdapter implements LspSessionPort {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(errorStream, StandardCharsets.UTF_8))) {
             String line;
             while ((line = reader.readLine()) != null) {
-                log.warn("[LSP-{}] (session={}) {}", languageId, sessionId, line);
+                log.debug("[LSP-{}] (session={}) {}", languageId, sessionId, line);
             }
         } catch (IOException e) {
             log.debug("LSP stderr stream closed for session={}", sessionId);
@@ -151,20 +151,22 @@ public class ProcessLspSessionAdapter implements LspSessionPort {
             return;
         }
 
-        try {
-            if (clientConnection.isOpen()) {
-                clientConnection.close(1011, "Language server terminated");
-            }
-        } catch (Exception e) {
-            log.warn("Failed to cleanly notify client about server termination for session={}", sessionId, e);
-        }
-
         if (process != null && process.isAlive()) {
             process.destroy();
         }
 
         if (errorReaderExecutor != null) {
             errorReaderExecutor.shutdownNow();
+        }
+
+        deleteSessionWorkspace();
+
+        try {
+            if (clientConnection.isOpen()) {
+                clientConnection.close(1011, "Language server terminated");
+            }
+        } catch (Exception e) {
+            log.warn("Failed to cleanly notify client about server termination for session={}", sessionId, e);
         }
 
         log.info("LSP server terminated for session={}", sessionId);

@@ -15,10 +15,8 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
 
 @Slf4j
-@Service
 public class LspSessionService implements LspSessionServicePort {
 
     private final LspServerRegistryPort registry;
