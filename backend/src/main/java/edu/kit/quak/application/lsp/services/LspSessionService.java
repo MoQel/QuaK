@@ -7,7 +7,7 @@ import edu.kit.quak.application.lsp.ports.in.LspSessionServicePort;
 import edu.kit.quak.application.lsp.ports.out.LspClientConnectionPort;
 import edu.kit.quak.application.lsp.ports.out.LspServerRegistryPort;
 import edu.kit.quak.application.lsp.ports.out.LspSessionPort;
-import edu.kit.quak.core.lsp.model.LspLanguage;
+import edu.kit.quak.core.lsp.model.LspLanguageId;
 import edu.kit.quak.core.lsp.model.LspServerDefinition;
 import edu.kit.quak.core.lsp.model.LspSessionId;
 import java.io.IOException;
@@ -31,10 +31,10 @@ public class LspSessionService implements LspSessionServicePort {
     }
 
     @Override
-    public String open(LspLanguage language, LspClientConnectionPort clientConnection) {
+    public String open(LspLanguageId language, LspClientConnectionPort clientConnection) {
         LspServerDefinition definition = registry
             .findByLanguage(language)
-            .orElseThrow(() -> new LspServerNotConfiguredException(language.id()));
+            .orElseThrow(() -> new LspServerNotConfiguredException(language.value()));
 
         LspSessionId sessionId = LspSessionId.newId();
         LspSessionPort session = sessionFactory.apply(sessionId.value(), clientConnection);
@@ -55,7 +55,7 @@ public class LspSessionService implements LspSessionServicePort {
                 primaryException.addSuppressed(secondaryException);
             }
 
-            throw new LspCommunicationException("Failed to start LSP session for: " + definition.language().id(), primaryException);
+            throw new LspCommunicationException("Failed to start LSP session for: " + definition.language().value(), primaryException);
         }
     }
 

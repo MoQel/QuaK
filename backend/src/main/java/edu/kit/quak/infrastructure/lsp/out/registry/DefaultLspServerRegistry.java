@@ -1,7 +1,7 @@
 package edu.kit.quak.infrastructure.lsp.out.registry;
 
 import edu.kit.quak.application.lsp.ports.out.LspServerRegistryPort;
-import edu.kit.quak.core.lsp.model.LspLanguage;
+import edu.kit.quak.core.lsp.model.LspLanguageId;
 import edu.kit.quak.core.lsp.model.LspServerDefinition;
 import edu.kit.quak.infrastructure.lsp.config.LspProperties;
 import java.nio.file.Path;
@@ -16,8 +16,8 @@ public class DefaultLspServerRegistry implements LspServerRegistryPort {
     }
 
     @Override
-    public Optional<LspServerDefinition> findByLanguage(LspLanguage language) {
-        LspProperties.ServerConfig config = properties.getServers().get(language.id());
+    public Optional<LspServerDefinition> findByLanguage(LspLanguageId language) {
+        LspProperties.ServerConfig config = properties.getServers().get(language.value());
         if (config == null || config.getCommand() == null || config.getCommand().isEmpty()) {
             return Optional.empty();
         }

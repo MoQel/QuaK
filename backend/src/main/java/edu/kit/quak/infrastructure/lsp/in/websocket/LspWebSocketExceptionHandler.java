@@ -2,7 +2,6 @@ package edu.kit.quak.infrastructure.lsp.in.websocket;
 
 import edu.kit.quak.application.lsp.exceptions.LspCommunicationException;
 import edu.kit.quak.application.lsp.exceptions.LspSessionNotFoundException;
-import edu.kit.quak.core.lsp.exceptions.UnsupportedLspLanguageException;
 import java.io.IOException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
@@ -23,9 +22,6 @@ public class LspWebSocketExceptionHandler extends WebSocketHandlerDecorator {
     public void afterConnectionEstablished(@NonNull WebSocketSession session) {
         try {
             super.afterConnectionEstablished(session);
-        } catch (UnsupportedLspLanguageException e) {
-            log.warn("Unsupported language in WebSocket request session={}: {}", session.getId(), e.getMessage());
-            closeQuietly(session, CloseStatus.BAD_DATA.withReason("Unsupported language"));
         } catch (LspCommunicationException e) {
             log.error("LSP session could not be opened for session={}: {}", session.getId(), e.getMessage(), e);
             closeQuietly(session, CloseStatus.SERVER_ERROR.withReason("LSP unavailable"));

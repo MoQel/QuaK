@@ -39,7 +39,7 @@ public class ProcessLspSessionAdapter implements LspSessionPort {
 
         process = processBuilder.start();
 
-        String languageId = definition.language().id();
+        String languageId = definition.language().value();
         errorReaderExecutor = Executors.newSingleThreadExecutor();
         errorReaderExecutor.submit(() -> readErrorStream(process.getErrorStream(), languageId));
 
@@ -53,7 +53,12 @@ public class ProcessLspSessionAdapter implements LspSessionPort {
         open.set(true);
         bridge.start();
 
-        log.info("Started LSP process for session={} language={} command={}", sessionId, definition.language().id(), definition.command());
+        log.info(
+            "Started LSP process for session={} language={} command={}",
+            sessionId,
+            definition.language().value(),
+            definition.command()
+        );
     }
 
     @Override

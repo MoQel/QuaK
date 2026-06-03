@@ -1,7 +1,7 @@
 package edu.kit.quak.infrastructure.lsp.in.websocket;
 
 import edu.kit.quak.application.lsp.ports.in.LspSessionServicePort;
-import edu.kit.quak.core.lsp.model.LspLanguage;
+import edu.kit.quak.core.lsp.model.LspLanguageId;
 import java.net.URI;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -26,7 +26,7 @@ public class LspWebSocketHandler extends TextWebSocketHandler {
     public void afterConnectionEstablished(@NonNull WebSocketSession session) {
         String languageId = extractLanguageId(session);
         String lspSessionId = lspSessionServicePort.open(
-            LspLanguage.fromId(languageId),
+            new LspLanguageId(languageId),
             new SpringWebSocketClientConnectionAdapter(session)
         );
         webSocketToLspSessionId.put(session.getId(), lspSessionId);
