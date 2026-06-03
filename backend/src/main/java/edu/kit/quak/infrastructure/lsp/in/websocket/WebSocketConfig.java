@@ -11,15 +11,15 @@ import org.springframework.web.socket.server.standard.ServletServerContainerFact
 @EnableWebSocket
 public class WebSocketConfig implements WebSocketConfigurer {
 
-    private final LspWebSocketHandler lspWebSocketHandler;
+    private final LspWebSocketExceptionHandler lspWebSocketExceptionHandler;
 
-    public WebSocketConfig(LspWebSocketHandler lspWebSocketHandler) {
-        this.lspWebSocketHandler = lspWebSocketHandler;
+    public WebSocketConfig(LspWebSocketExceptionHandler lspWebSocketExceptionHandler) {
+        this.lspWebSocketExceptionHandler = lspWebSocketExceptionHandler;
     }
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-        registry.addHandler(lspWebSocketHandler, "/lsp/{languageId}").setAllowedOrigins("http://localhost:5173");
+        registry.addHandler(lspWebSocketExceptionHandler, "/lsp/{languageId}").setAllowedOrigins("http://localhost:5173"); // TODO: nonstatic registry
     }
 
     @Bean

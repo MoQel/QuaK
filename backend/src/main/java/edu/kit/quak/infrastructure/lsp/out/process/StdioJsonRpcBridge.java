@@ -1,6 +1,6 @@
 package edu.kit.quak.infrastructure.lsp.out.process;
 
-import edu.kit.quak.application.lsp.exceptions.LspInfrastructureException;
+import edu.kit.quak.infrastructure.lsp.exceptions.LspInfrastructureException;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
@@ -136,6 +136,6 @@ public class StdioJsonRpcBridge {
             }
         }
 
-        throw new LspInfrastructureException("Missing Content-Length header in LSP response. Received headers: " + headers, null);
+        throw new LspInfrastructureException("Missing Content-Length header in LSP response. Received headers: " + headers);
     }
 }

@@ -1,8 +1,10 @@
 package edu.kit.quak.infrastructure.lsp.out.process;
 
+import edu.kit.quak.application.lsp.exceptions.LspCommunicationException;
 import edu.kit.quak.application.lsp.ports.out.LspClientConnectionPort;
 import edu.kit.quak.application.lsp.ports.out.LspSessionPort;
 import edu.kit.quak.core.lsp.model.LspServerDefinition;
+import edu.kit.quak.infrastructure.lsp.exceptions.LspInfrastructureException;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -57,7 +59,11 @@ public class ProcessLspSessionAdapter implements LspSessionPort {
     @Override
     public void sendToServer(String message) {
         ensureOpen();
-        bridge.send(message);
+        try {
+            bridge.send(message);
+        } catch (LspInfrastructureException e) {
+            throw new LspCommunicationException("Failed to send message to LSP server for session=" + sessionId, e);
+        }
     }
 
     @Override

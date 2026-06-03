@@ -1,6 +1,6 @@
 package edu.kit.quak.application.lsp.services;
 
-import edu.kit.quak.application.lsp.exceptions.LspInfrastructureException;
+import edu.kit.quak.application.lsp.exceptions.LspCommunicationException;
 import edu.kit.quak.application.lsp.exceptions.LspServerNotConfiguredException;
 import edu.kit.quak.application.lsp.exceptions.LspSessionNotFoundException;
 import edu.kit.quak.application.lsp.ports.in.LspSessionServicePort;
@@ -45,14 +45,17 @@ public class LspSessionService implements LspSessionServicePort {
             log.info("Session {} opened.", sessionId.value());
             return sessionId.value();
         } catch (Exception primaryException) {
-            // cleanup
+            // always run cleanup
+            // Catches Exception (not just IOException) intentionally: cleanup must run regardless
+            // of exception type. Mirrors the try-with-resources pattern — if close() also fails,
+            // the secondary exception is attached via addSuppressed to preserve the root cause.
             try {
                 session.close();
             } catch (Exception secondaryException) {
                 primaryException.addSuppressed(secondaryException);
             }
 
-            throw new LspInfrastructureException("Failed to start LSP session for: " + definition.language().id(), primaryException);
+            throw new LspCommunicationException("Failed to start LSP session for: " + definition.language().id(), primaryException);
         }
     }
 
@@ -62,11 +65,7 @@ public class LspSessionService implements LspSessionServicePort {
         if (session == null || !session.isOpen()) {
             throw new LspSessionNotFoundException(sessionId);
         }
-        try {
-            session.sendToServer(message);
-        } catch (Exception e) {
-            throw new LspInfrastructureException("Failed to send message to server: " + sessionId, e);
-        }
+        session.sendToServer(message);
     }
 
     @Override

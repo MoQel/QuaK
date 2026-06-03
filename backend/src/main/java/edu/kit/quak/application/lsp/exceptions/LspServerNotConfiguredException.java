@@ -1,10 +1,8 @@
 package edu.kit.quak.application.lsp.exceptions;
 
-import edu.kit.quak.application.common.exceptions.ResourceNotFoundException;
-
-public class LspServerNotConfiguredException extends ResourceNotFoundException {
+public class LspServerNotConfiguredException extends LspCommunicationException {
 
     public LspServerNotConfiguredException(String languageId) {
-        super("Server configuration", languageId);
+        super("No LSP server configured for language: " + languageId);
     }
 }
