@@ -3,8 +3,6 @@ package edu.kit.quak.infrastructure.lsp.config;
 import edu.kit.quak.application.lsp.ports.out.LspServerRegistryPort;
 import edu.kit.quak.application.lsp.ports.out.LspSessionFactoryPort;
 import edu.kit.quak.application.lsp.services.LspSessionService;
-import edu.kit.quak.infrastructure.lsp.in.websocket.LspWebSocketExceptionHandler;
-import edu.kit.quak.infrastructure.lsp.in.websocket.LspWebSocketHandler;
 import edu.kit.quak.infrastructure.lsp.out.process.ProcessLspSessionAdapter;
 import edu.kit.quak.infrastructure.lsp.out.registry.DefaultLspServerRegistry;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -28,15 +26,5 @@ public class LspConfiguration {
     @Bean
     public LspSessionService lspSessionService(LspServerRegistryPort registryPort, LspSessionFactoryPort sessionFactory) {
         return new LspSessionService(registryPort, sessionFactory);
-    }
-
-    @Bean
-    public LspWebSocketHandler lspWebSocketHandler(LspSessionService service) {
-        return new LspWebSocketHandler(service);
-    }
-
-    @Bean
-    public LspWebSocketExceptionHandler lspWebSocketExceptionHandler(LspWebSocketHandler handler) {
-        return new LspWebSocketExceptionHandler(handler);
     }
 }

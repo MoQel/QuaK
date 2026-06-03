@@ -1,5 +1,6 @@
 package edu.kit.quak.infrastructure.lsp.in.websocket;
 
+import edu.kit.quak.application.lsp.ports.in.LspSessionServicePort;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -13,23 +14,33 @@ import org.springframework.web.socket.server.standard.ServletServerContainerFact
 @EnableWebSocket
 public class WebSocketConfig implements WebSocketConfigurer {
 
-    private final LspWebSocketExceptionHandler lspWebSocketExceptionHandler;
+    private final LspSessionServicePort lspSessionServicePort;
     private final String frontendUrl;
     private final long sessionIdleTimeoutMs;
 
     public WebSocketConfig(
-        LspWebSocketExceptionHandler lspWebSocketExceptionHandler,
+        LspSessionServicePort lspSessionServicePort,
         @Value("${app.frontend.url}") String frontendUrl,
         @Value("${quak.lsp.websocket.session-idle-timeout-ms:1800000}") long sessionIdleTimeoutMs
     ) {
-        this.lspWebSocketExceptionHandler = lspWebSocketExceptionHandler;
+        this.lspSessionServicePort = lspSessionServicePort;
         this.frontendUrl = frontendUrl;
         this.sessionIdleTimeoutMs = sessionIdleTimeoutMs;
     }
 
+    @Bean
+    public LspWebSocketHandler lspWebSocketHandler() {
+        return new LspWebSocketHandler(lspSessionServicePort);
+    }
+
+    @Bean
+    public LspWebSocketExceptionHandler lspWebSocketExceptionHandler() {
+        return new LspWebSocketExceptionHandler(lspWebSocketHandler());
+    }
+
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-        registry.addHandler(lspWebSocketExceptionHandler, "/lsp/{languageId}").setAllowedOrigins(frontendUrl);
+        registry.addHandler(lspWebSocketExceptionHandler(), "/lsp/{languageId}").setAllowedOrigins(frontendUrl);
     }
 
     @Bean
