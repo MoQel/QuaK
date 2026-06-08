@@ -84,7 +84,18 @@ tasks.register('prepareDevStatic') {
 	doLast {
 		def staticDir = file("src/main/resources/static")
 		if (!staticDir.exists()) staticDir.mkdirs()
-		
+
+		// If a real frontend build was already placed here (e.g. by Dockerfile),
+		// preserve it — the placeholder is only for local dev without frontend.
+		def indexFile = file("src/main/resources/static/index.html")
+		if (indexFile.exists()) {
+			def content = indexFile.text
+			if (!content.contains("Backend Dev Mode")) {
+				logger.lifecycle("Real frontend detected in static/ — skipping dev placeholder.")
+				return
+			}
+		}
+
 		// Delete stale files
 		staticDir.listFiles().each { f ->
 			if (f.name != ".gitkeep") {
