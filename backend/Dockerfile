@@ -1,5 +1,5 @@
 # Stage 1: Build frontend with native Node.js toolchain
-FROM node:22-alpine AS frontend-builder
+FROM node:22-slim AS frontend-builder
 WORKDIR /frontend
 
 # Install dependencies first (layer caching: only re-runs when deps change)
@@ -31,7 +31,7 @@ RUN apt-get update && \
 
 ENV GRADLE_HOME=/opt/gradle
 ENV PATH=$PATH:$GRADLE_HOME/bin
-ENV GRADLE_OPTS=-Dorg.gradle.jvmargs=-Xmx2048m
+ENV GRADLE_OPTS=-Dorg.gradle.jvmargs=-Xmx1536m
 
 WORKDIR /app
 
