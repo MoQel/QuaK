@@ -2,6 +2,8 @@
 FROM node:22-slim AS frontend-builder
 WORKDIR /frontend
 
+ENV NODE_OPTIONS=--max-old-space-size=2560
+
 # Install dependencies first (layer caching: only re-runs when deps change)
 COPY frontend/package.json frontend/package-lock.json* ./
 RUN if [ -f package-lock.json ]; then \
