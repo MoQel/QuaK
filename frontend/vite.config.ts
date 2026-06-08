@@ -8,6 +8,20 @@ import topLevelAwait from "vite-plugin-top-level-await";
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss(), wasm(), topLevelAwait()],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return;
+          if (id.includes("monaco-editor")) return "monaco";
+          if (id.includes("qulacs-wasm")) return "qulacs";
+          if (id.includes("recharts")) return "charts";
+          if (id.includes("dockview")) return "dockview";
+          if (id.includes("@chakra-ui") || id.includes("@radix-ui")) return "ui";
+        },
+      },
+    },
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
