@@ -9,7 +9,7 @@ services:
       MYSQL_DATABASE: quak
       MYSQL_USER: root
     volumes:
-      - db:/var/lib/data
+      - db:/var/lib/mysql
     healthcheck:
       test: [ "CMD", "mariadb-admin", "ping", "-h", "localhost", "--password=hello" ]
       interval: 1m
