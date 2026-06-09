@@ -18,6 +18,13 @@ quak:
         workingDirectory: "tmp/quak-lsp-workspace"
         environment:
           PYTHONUNBUFFERED: "1"
+      # --- QASM LSP (qasmlsp) ---
+      # Dev: use the binary installed by lsp/servers/qasm/setup.sh
+      qasm:
+        command:
+          - "/absolute/path/to/backend/lsp/servers/qasm/go/bin/qasmlsp"
+        workingDirectory: "tmp/quak-lsp-workspace"
+
 
       # Production / Docker: if pylsp is installed globally (pip install python-lsp-server),
       # just use the binary name — no absolute path needed.
@@ -28,3 +35,8 @@ quak:
       #   workingDirectory: "/var/quak/lsp-workspace"
       #   environment:
       #     PYTHONUNBUFFERED: "1"
+      # (go install ...)
+      # qasm:
+      #   command:
+      #     - "qasmlsp"
+      #   workingDirectory: "/var/quak/lsp-workspace"
