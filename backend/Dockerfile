@@ -31,7 +31,6 @@ RUN apt-get update && \
 
 ENV GRADLE_HOME=/opt/gradle
 ENV PATH=$PATH:$GRADLE_HOME/bin
-ENV GRADLE_OPTS=-Dorg.gradle.jvmargs=-Xmx1536m
 
 WORKDIR /app
 
