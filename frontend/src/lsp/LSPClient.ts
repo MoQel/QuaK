@@ -63,6 +63,12 @@ export interface LSPClientOptions {
     requestTimeoutMs?: number;
 }
 
+interface ServerCapabilities {
+    completionProvider?: unknown;
+    hoverProvider?: unknown;
+    definitionProvider?: unknown;
+}
+
 export class LSPClient {
     private readonly transport: JsonRpcTransport;
     private state: LSPClientState = 'idle';
@@ -74,6 +80,7 @@ export class LSPClient {
     private initializePromise: Promise<void> | null = null;
     private providersRegistered = false;
     private disposed = false;
+    private serverCapabilities: ServerCapabilities = {};
 
     constructor(
         private readonly options: LSPClientOptions,
@@ -116,9 +123,6 @@ export class LSPClient {
                         // Transport closed after initialization — e.g. server-side idle timeout.
                         // Mark as error so the manager recreates the client on next activity.
                         this.state = 'error';
-                        console.warn(
-                            `[LSP] Transport disconnected for "${this.options.languageId}" — will reconnect on next activity`,
-                        );
                     }
                 }
             };
@@ -242,7 +246,7 @@ export class LSPClient {
 
     private async initialize(): Promise<void> {
         try {
-            await this.transport.request('initialize', {
+            const initResult = await this.transport.request<{ capabilities: ServerCapabilities }>('initialize', {
                 processId: null,
                 rootUri: this.options.rootUri ?? null,
                 capabilities: {
@@ -278,17 +282,16 @@ export class LSPClient {
 
             if (this.disposed) return;
 
+            this.serverCapabilities = initResult?.capabilities ?? {};
             this.transport.notify('initialized', {});
             this.state = 'ready';
 
             this.registerMonacoProviders();
+            this.clearChangeTimeouts();
             this.replayOpenDocuments();
-
-            console.info(`[LSP] Client ready for "${this.options.languageId}"`);
         } catch (error) {
             if (this.disposed) return;
             this.state = 'error';
-            console.error(`[LSP] Initialize failed for "${this.options.languageId}":`, error);
             throw error;
         }
     }
@@ -302,27 +305,43 @@ export class LSPClient {
         }
     }
 
+    private clearChangeTimeouts(): void {
+        for (const handle of this.changeTimeouts.values()) clearTimeout(handle);
+        this.changeTimeouts.clear();
+    }
+
     private registerMonacoProviders(): void {
         if (this.providersRegistered || this.disposed) return;
 
         const { languages } = this.monacoInstance;
         const langId = this.options.languageId;
 
-        this.disposables.push(
-            languages.registerCompletionItemProvider(langId, {
-                triggerCharacters: ['.', ':', '"', "'", '/'],
-                provideCompletionItems: (model, position) => this.provideCompletion(model, position),
-            }),
-            languages.registerHoverProvider(langId, {
-                provideHover: (model, position) => this.provideHover(model, position),
-            }),
-            languages.registerDefinitionProvider(langId, {
-                provideDefinition: (model, position) => this.provideDefinition(model, position),
-            }),
-        );
+        if (this.serverCapabilities.completionProvider) {
+            this.disposables.push(
+                languages.registerCompletionItemProvider(langId, {
+                    triggerCharacters: ['.', ':', '"', "'", '/'],
+                    provideCompletionItems: (model, position) => this.provideCompletion(model, position),
+                }),
+            );
+        }
+
+        if (this.serverCapabilities.hoverProvider) {
+            this.disposables.push(
+                languages.registerHoverProvider(langId, {
+                    provideHover: (model, position) => this.provideHover(model, position),
+                }),
+            );
+        }
+
+        if (this.serverCapabilities.definitionProvider) {
+            this.disposables.push(
+                languages.registerDefinitionProvider(langId, {
+                    provideDefinition: (model, position) => this.provideDefinition(model, position),
+                }),
+            );
+        }
 
         this.providersRegistered = true;
-        console.debug(`[LSP] Monaco providers registered for "${langId}"`);
     }
 
     private async provideCompletion(
@@ -344,9 +363,16 @@ export class LSPClient {
             if (!response) return null;
 
             const items = Array.isArray(response) ? response : response.items;
+            const word = model.getWordUntilPosition(position);
+            const replaceRange: monaco.IRange = {
+                startLineNumber: position.lineNumber,
+                endLineNumber: position.lineNumber,
+                startColumn: word.startColumn,
+                endColumn: word.endColumn,
+            };
 
             return {
-                suggestions: items.map((item) => lspCompletionToMonaco(item, this.monacoInstance)),
+                suggestions: items.map((item) => lspCompletionToMonaco(item, replaceRange, this.monacoInstance)),
             };
         } catch (error) {
             if (!(error instanceof RpcError)) console.error('[LSP] Completion error:', error);
@@ -415,7 +441,7 @@ export class LSPClient {
         const model = editor.getModel(monacoUri);
         if (!model || model.isDisposed()) return;
 
-        const markers: monaco.editor.IMarkerData[] = params.diagnostics.map((diagnostic) => ({
+        const markers: monaco.editor.IMarkerData[] = (params.diagnostics ?? []).map((diagnostic) => ({
             startLineNumber: diagnostic.range.start.line + 1,
             startColumn: diagnostic.range.start.character + 1,
             endLineNumber: diagnostic.range.end.line + 1,
@@ -494,6 +520,7 @@ function lspMarkupToMonaco(contents: LspHover['contents']): monaco.IMarkdownStri
 
 function lspCompletionToMonaco(
     item: LspCompletionItem,
+    range: monaco.IRange,
     monacoInstance: typeof monaco,
 ): monaco.languages.CompletionItem {
     const kind = lspCompletionKindToMonaco(item.kind, monacoInstance);
@@ -512,7 +539,7 @@ function lspCompletionToMonaco(
             item.insertTextFormat === 2
                 ? monacoInstance.languages.CompletionItemInsertTextRule.InsertAsSnippet
                 : undefined,
-        range: undefined as unknown as monaco.IRange,
+        range,
     };
 }
 

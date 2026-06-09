@@ -6,6 +6,7 @@ import static org.mockito.Mockito.*;
 import edu.kit.quak.application.lsp.exceptions.LspCommunicationException;
 import edu.kit.quak.application.lsp.exceptions.LspServerNotConfiguredException;
 import edu.kit.quak.application.lsp.exceptions.LspSessionNotFoundException;
+import edu.kit.quak.core.lsp.exceptions.InvalidLspLanguageIdException;
 import edu.kit.quak.shared.tags.UnitTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,6 +51,15 @@ class LspWebSocketExceptionHandlerTest {
         handler.afterConnectionEstablished(session);
 
         verify(session).close(any(CloseStatus.class));
+    }
+
+    @Test
+    void afterConnectionEstablished_closesWithBadData_onInvalidLanguageId() throws Exception {
+        doThrow(new InvalidLspLanguageIdException("Language ID must not be blank")).when(delegate).afterConnectionEstablished(session);
+
+        handler.afterConnectionEstablished(session);
+
+        verify(session).close(argThat(status -> status.equalsCode(CloseStatus.BAD_DATA)));
     }
 
     @Test

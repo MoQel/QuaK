@@ -292,10 +292,7 @@ export class JsonRpcTransport {
 
     private handleNotification(msg: JsonRpcNotification): void {
         const handlers = this.notificationHandlers.get(msg.method);
-        if (!handlers || handlers.size === 0) {
-            console.debug('[LSP Transport] Unhandled notification:', msg.method);
-            return;
-        }
+        if (!handlers || handlers.size === 0) return;
 
         for (const handler of handlers) {
             try {

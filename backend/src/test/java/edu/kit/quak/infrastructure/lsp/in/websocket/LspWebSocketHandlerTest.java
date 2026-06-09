@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import edu.kit.quak.application.lsp.ports.in.LspSessionServicePort;
+import edu.kit.quak.core.lsp.exceptions.InvalidLspLanguageIdException;
 import edu.kit.quak.core.lsp.model.LspLanguageId;
 import edu.kit.quak.shared.tags.UnitTest;
 import java.net.URI;
@@ -132,20 +133,21 @@ class LspWebSocketHandlerTest {
         verify(wsSession, never()).close(any());
     }
 
-    // --- extractLanguageId (null URI handling) ---
+    // --- extractLanguageId validation ---
 
     @Test
-    void afterConnectionEstablished_handlesNullUri() {
-        // setup: URI is null (e.g. missing from session)
+    void afterConnectionEstablished_rejectsMissingLanguageId() {
         when(wsSession.getUri()).thenReturn(null);
-        when(service.open(any(), any())).thenReturn("lsp-empty");
 
-        // execute — must not throw NPE
-        assertDoesNotThrow(() -> handler.afterConnectionEstablished(wsSession));
+        assertThrows(InvalidLspLanguageIdException.class, () -> handler.afterConnectionEstablished(wsSession));
+        verify(service, never()).open(any(), any());
+    }
 
-        // verify: language ID defaults to empty string
-        ArgumentCaptor<LspLanguageId> captor = ArgumentCaptor.forClass(LspLanguageId.class);
-        verify(service).open(captor.capture(), any());
-        assertEquals("", captor.getValue().value());
+    @Test
+    void afterConnectionEstablished_rejectsTrailingSlash() throws Exception {
+        when(wsSession.getUri()).thenReturn(new URI("/lsp/python/"));
+
+        assertThrows(InvalidLspLanguageIdException.class, () -> handler.afterConnectionEstablished(wsSession));
+        verify(service, never()).open(any(), any());
     }
 }

@@ -45,7 +45,7 @@ function QLPEditor({ groupId }: Readonly<QLPEditorProps>) {
             const model = instance.getModel();
             if (!model || model.isDisposed()) return;
 
-            lspManager.onDocumentChange(model);
+            lspManager.onDocumentChange(groupId, model);
 
             const currentVersion = model.getAlternativeVersionId();
             const savedVersion = savedVersionIds.get(model);
@@ -57,8 +57,16 @@ function QLPEditor({ groupId }: Readonly<QLPEditorProps>) {
             }
         });
 
+        const cursorChangeDisposable = instance.onDidChangeCursorPosition(() => {
+            const model = instance.getModel();
+            if (model && !model.isDisposed()) {
+                lspManager.onDocumentActivity(groupId, model);
+            }
+        });
+
         const disposeDisposable = instance.onDidDispose(() => {
             contentChangeDisposable.dispose();
+            cursorChangeDisposable.dispose();
             disposeDisposable.dispose();
             setEditorInstance(null);
         });

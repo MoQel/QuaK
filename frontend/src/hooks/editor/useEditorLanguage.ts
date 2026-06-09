@@ -1,7 +1,9 @@
 import { useEffect, useRef } from 'react';
 import { Monaco } from '@monaco-editor/react';
+import { editor } from 'monaco-editor';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { languages } from '@/views/text-editor-view/languages/languages.ts';
+import { getModelId } from '@/views/text-editor-view/utils/editorUtils.ts';
 
 export function useEditorLanguage(monaco: Monaco | null) {
     const lastRequest = useAppSelector((state) => state.tabs.lastLanguageRequest);
@@ -13,10 +15,9 @@ export function useEditorLanguage(monaco: Monaco | null) {
 
         lastTimestampRef.current = lastRequest.timestamp;
 
-        const models = monaco.editor.getModels();
-        const targetModel = models.find((m: Monaco) => {
-            return m.uri.path.endsWith(lastRequest.fileId) || m.uri.fsPath === lastRequest.fileId;
-        });
+        const targetModel = monaco.editor
+            .getModels()
+            .find((model: editor.ITextModel) => getModelId(model) === lastRequest.fileId);
 
         if (targetModel && !targetModel.isDisposed()) {
             const langConfig = languages.find((l) => l.id === lastRequest.langId);
