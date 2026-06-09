@@ -7,9 +7,9 @@ services:
       MYSQL_DATABASE: quak
       MYSQL_USER: root
     volumes:
-      - db:/var/lib/data
+      - db:/var/lib/mysql
     healthcheck:
-      test: [ "CMD", "mariadb-admin", "ping", "-h", "localhost", "--password=$${MARIADB_ROOT_PASSWORD}" ]
+      test: [ "CMD-SHELL", "mariadb-admin ping -h localhost -uroot --password=\"$${MARIADB_ROOT_PASSWORD}\"" ]
       interval: 1m
       timeout: 5s
       start_period: 1m
@@ -24,7 +24,8 @@ services:
       args:
         SKIP_FRONTEND: "false"
     container_name: quak-backend
-    # No public ports — Traefik routes traffic internally.
+    ports:
+      - "8080:8080"
     depends_on:
       database:
         condition: service_healthy
