@@ -24,7 +24,8 @@ services:
       args:
         SKIP_FRONTEND: "false"
     container_name: quak-backend
-    # No public ports — Traefik routes traffic internally.
+    ports:
+      - "8080:8080"
     depends_on:
       database:
         condition: service_healthy
