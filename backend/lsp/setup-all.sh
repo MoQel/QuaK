@@ -19,14 +19,14 @@ echo ""
 
 found=0
 for setup_script in "$SCRIPT_DIR/servers/"*/setup.sh; do
-    if [ -f "$setup_script" ]; then
+    if [[ -f "$setup_script" ]]; then
         bash "$setup_script"
         echo ""
         found=$((found + 1))
     fi
 done
 
-if [ "$found" -eq 0 ]; then
+if [[ "$found" -eq 0 ]]; then
     echo "No language server setup scripts found in $SCRIPT_DIR/servers/"
     exit 1
 fi
