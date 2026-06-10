@@ -11,7 +11,7 @@ import { DropzoneGrid } from './components/DropzoneGrid.tsx';
 import { DropPlaceholder } from './components/DropPlaceholder.tsx';
 import { CircuitFooter } from './components/CircuitFooter.tsx';
 import { HoverPos, UiLayer, UiQuantumOperation } from './util/types.ts';
-import { LABEL_WIDTH } from '@/views/circuit-view/util/layout.ts';
+import { CELL_WIDTH, LABEL_WIDTH, QUBIT_HEIGHT } from '@/views/circuit-view/util/layout.ts';
 import { useCircuitTabs } from '@/contexts/CircuitTabsContext.tsx';
 
 export function CircuitView() {
@@ -235,6 +235,11 @@ export function CircuitView() {
         return rescheduleOperations(allOps);
     }, [activeCircuit, hoverPos]);
 
+    const operationColumnCount = Math.max(uiLayers.length + 1, 1);
+    const operationAreaWidth = operationColumnCount * CELL_WIDTH;
+    const circuitWidth = LABEL_WIDTH + operationAreaWidth;
+    const circuitHeight = Math.max(flatQubits.length * QUBIT_HEIGHT, QUBIT_HEIGHT);
+
     return (
         <Card className="h-full overflow-hidden border-none rounded-none bg-bg-subtle p-0 gap-0">
             <CardContent className="flex flex-col h-full p-0">
@@ -245,34 +250,40 @@ export function CircuitView() {
 
                 {/* Circuit Canvas */}
                 <div className="relative flex-1 overflow-auto">
-                    <QubitWires circuit={activeCircuit} setCircuit={setActiveCircuit} flatQubits={flatQubits} />
-
-                    {/* Circuit Content Container (Offset for labels) */}
-                    <div className="absolute inset-y-0 right-0" style={{ left: LABEL_WIDTH }}>
-                        <QuantumOperationGrid
-                            uiLayers={uiLayers}
-                            registers={activeCircuit?.registers ?? []}
-                            isOperationDragging={isOperationDragging}
-                            removeQuantumOperation={removeQuantumOperation}
-                            setDraggingOperationId={setDraggingOperationId}
-                            setHoverPos={setHoverPos}
-                        />
-
-                        <DropzoneGrid
+                    <div className="relative min-h-full" style={{ width: circuitWidth, height: circuitHeight }}>
+                        <QubitWires
                             circuit={activeCircuit}
                             setCircuit={setActiveCircuit}
                             flatQubits={flatQubits}
-                            uiLayers={uiLayers}
-                            activeDropZones={activeDropZones}
-                            setHoverPos={setHoverPos}
-                            setDraggingOperationId={setDraggingOperationId}
+                            circuitWidth={circuitWidth}
                         />
 
-                        <DropPlaceholder hoverPos={hoverPos} draggingOperationSize={draggingOperationSize} />
-                    </div>
-                </div>
+                        {/* Circuit Content Container (Offset for labels) */}
+                        <div className="absolute inset-y-0" style={{ left: LABEL_WIDTH, width: operationAreaWidth }}>
+                            <QuantumOperationGrid
+                                uiLayers={uiLayers}
+                                registers={activeCircuit?.registers ?? []}
+                                isOperationDragging={isOperationDragging}
+                                removeQuantumOperation={removeQuantumOperation}
+                                setDraggingOperationId={setDraggingOperationId}
+                                setHoverPos={setHoverPos}
+                            />
 
-                <CircuitFooter uiLayers={uiLayers} />
+                            <DropzoneGrid
+                                circuit={activeCircuit}
+                                setCircuit={setActiveCircuit}
+                                flatQubits={flatQubits}
+                                uiLayers={uiLayers}
+                                activeDropZones={activeDropZones}
+                                setHoverPos={setHoverPos}
+                                setDraggingOperationId={setDraggingOperationId}
+                            />
+
+                            <DropPlaceholder hoverPos={hoverPos} draggingOperationSize={draggingOperationSize} />
+                        </div>
+                    </div>
+                    <CircuitFooter uiLayers={uiLayers} />
+                </div>
             </CardContent>
         </Card>
     );

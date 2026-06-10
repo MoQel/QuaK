@@ -7,7 +7,10 @@ interface CircuitFooterProps {
 
 export function CircuitFooter({ uiLayers }: Readonly<CircuitFooterProps>) {
     return (
-        <div className={`flex font-mono text-sm border-l border-border`} style={{ marginLeft: LABEL_WIDTH }}>
+        <div
+            className={`flex font-mono text-sm border-l border-border sticky bottom-0 bg-background`}
+            style={{ marginLeft: LABEL_WIDTH }}
+        >
             {Array.from({ length: uiLayers.length }, (_, i) => (
                 <span
                     key={i}
