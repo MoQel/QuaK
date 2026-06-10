@@ -94,6 +94,7 @@ function QLPEditor({ groupId }: Readonly<QLPEditorProps>) {
                         wordWrap: 'on',
                         readOnly: isReadOnly,
                         automaticLayout: true,
+                        fixedOverflowWidgets: true,
                         scrollbar: {
                             vertical: 'auto',
                             horizontal: 'auto',
