@@ -1,5 +1,6 @@
 package edu.kit.quak.infrastructure.lsp.in.websocket;
 
+import edu.kit.quak.application.lsp.exceptions.LspCapacityExceededException;
 import edu.kit.quak.application.lsp.exceptions.LspCommunicationException;
 import edu.kit.quak.application.lsp.exceptions.LspSessionNotFoundException;
 import edu.kit.quak.core.lsp.exceptions.InvalidLspLanguageIdException;
@@ -26,6 +27,9 @@ public class LspWebSocketExceptionHandler extends WebSocketHandlerDecorator {
         } catch (InvalidLspLanguageIdException e) {
             log.warn("Invalid LSP language for WebSocket session={}: {}", session.getId(), e.getMessage());
             closeQuietly(session, CloseStatus.BAD_DATA.withReason("Invalid language ID"));
+        } catch (LspCapacityExceededException e) {
+            log.warn("LSP capacity exceeded for WebSocket session={}: {}", session.getId(), e.getMessage());
+            closeQuietly(session, new CloseStatus(1013, e.getMessage()));
         } catch (LspCommunicationException e) {
             log.error("LSP session could not be opened for session={}: {}", session.getId(), e.getMessage(), e);
             closeQuietly(session, CloseStatus.SERVER_ERROR.withReason("LSP unavailable"));

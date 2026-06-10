@@ -3,10 +3,12 @@ package edu.kit.quak.infrastructure.lsp.in.websocket;
 import edu.kit.quak.application.lsp.ports.in.LspSessionServicePort;
 import edu.kit.quak.core.lsp.model.LspLanguageId;
 import java.net.URI;
+import java.security.Principal;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
@@ -25,7 +27,12 @@ public class LspWebSocketHandler extends TextWebSocketHandler {
     @Override
     public void afterConnectionEstablished(@NonNull WebSocketSession session) {
         String languageId = extractLanguageId(session);
+        Principal principal = session.getPrincipal();
+        if (principal == null || principal.getName() == null || principal.getName().isBlank()) {
+            throw new IllegalStateException("Authenticated principal missing from LSP WebSocket session");
+        }
         String lspSessionId = lspSessionServicePort.open(
+            resolveUserId(principal),
             new LspLanguageId(languageId),
             new SpringWebSocketClientConnectionAdapter(session)
         );
@@ -64,5 +71,12 @@ public class LspWebSocketHandler extends TextWebSocketHandler {
         URI uri = session.getUri();
         String path = (uri != null && uri.getPath() != null) ? uri.getPath() : "";
         return path.substring(path.lastIndexOf('/') + 1);
+    }
+
+    private String resolveUserId(Principal principal) {
+        if (principal instanceof OAuth2AuthenticationToken oauthToken) {
+            return oauthToken.getAuthorizedClientRegistrationId() + ":" + oauthToken.getName();
+        }
+        return principal.getClass().getName() + ":" + principal.getName();
     }
 }

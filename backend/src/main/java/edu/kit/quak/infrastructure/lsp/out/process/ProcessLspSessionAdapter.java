@@ -12,9 +12,12 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Comparator;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.extern.slf4j.Slf4j;
 
@@ -23,22 +26,30 @@ public class ProcessLspSessionAdapter implements LspSessionPort {
 
     private final String sessionId;
     private final LspClientConnectionPort clientConnection;
+    private final Runnable onTerminated;
+    private final Duration terminationTimeout;
     private final AtomicBoolean open = new AtomicBoolean(false);
+    private final AtomicBoolean terminated = new AtomicBoolean(false);
 
     private Process process;
     private StdioJsonRpcBridge bridge;
     private ExecutorService errorReaderExecutor;
     private Path sessionWorkspace;
 
-    public ProcessLspSessionAdapter(String sessionId, LspClientConnectionPort clientConnection) {
+    public ProcessLspSessionAdapter(
+        String sessionId,
+        LspClientConnectionPort clientConnection,
+        Runnable onTerminated,
+        long terminationTimeoutMs
+    ) {
         this.sessionId = sessionId;
         this.clientConnection = clientConnection;
+        this.onTerminated = onTerminated;
+        this.terminationTimeout = Duration.ofMillis(terminationTimeoutMs);
     }
 
     @Override
     public void start(LspServerDefinition definition) throws IOException {
-        // Each session gets its own isolated workspace to prevent interference
-        // between concurrent sessions of the same language server.
         sessionWorkspace = definition.workingDirectory().resolve(sessionId);
         Files.createDirectories(sessionWorkspace);
 
@@ -81,34 +92,8 @@ public class ProcessLspSessionAdapter implements LspSessionPort {
     }
 
     @Override
-    public void close() throws IOException {
-        if (!open.compareAndSet(true, false)) {
-            return;
-        }
-
-        if (bridge != null) {
-            bridge.close();
-        }
-
-        if (errorReaderExecutor != null) {
-            errorReaderExecutor.shutdownNow();
-        }
-
-        if (process != null && process.isAlive()) {
-            process.destroy();
-        }
-
-        if (clientConnection.isOpen()) {
-            try {
-                clientConnection.close(1000, "LSP session closed");
-            } catch (Exception e) {
-                log.warn("Failed to close client connection for session={}", sessionId, e);
-            }
-        }
-
-        deleteSessionWorkspace();
-
-        log.info("Closed LSP session={}", sessionId);
+    public void close() {
+        terminate(false);
     }
 
     @Override
@@ -138,38 +123,95 @@ public class ProcessLspSessionAdapter implements LspSessionPort {
             }
         } catch (Exception e) {
             log.warn("Failed to forward LSP response to client, closing session={}", sessionId, e);
-            try {
-                close();
-            } catch (IOException closingError) {
-                log.debug("Error while force-closing session after forward failure", closingError);
-            }
+            terminate(false);
         }
     }
 
     private void handleServerClosed() {
-        if (!open.compareAndSet(true, false)) {
+        terminate(true);
+    }
+
+    private void terminate(boolean serverTerminatedUnexpectedly) {
+        if (!terminated.compareAndSet(false, true)) {
             return;
         }
 
-        if (process != null && process.isAlive()) {
-            process.destroy();
+        open.set(false);
+        try {
+            if (bridge != null) {
+                bridge.close();
+            }
+            shutdownErrorReader();
+            terminateProcessTree();
+            deleteSessionWorkspace();
+            closeClientConnection(serverTerminatedUnexpectedly);
+        } finally {
+            onTerminated.run();
         }
 
+        log.info(serverTerminatedUnexpectedly ? "LSP server terminated for session={}" : "Closed LSP session={}", sessionId);
+    }
+
+    private void shutdownErrorReader() {
         if (errorReaderExecutor != null) {
             errorReaderExecutor.shutdownNow();
         }
+    }
 
-        deleteSessionWorkspace();
-
-        try {
-            if (clientConnection.isOpen()) {
-                clientConnection.close(1011, "Language server terminated");
-            }
-        } catch (Exception e) {
-            log.warn("Failed to cleanly notify client about server termination for session={}", sessionId, e);
+    private void terminateProcessTree() {
+        if (process == null) {
+            return;
         }
 
-        log.info("LSP server terminated for session={}", sessionId);
+        List<ProcessHandle> descendants = process.toHandle().descendants().toList();
+        process.destroy();
+        descendants.forEach(ProcessHandle::destroy);
+
+        long deadlineNanos = System.nanoTime() + terminationTimeout.toNanos();
+        waitForExit(process.toHandle(), deadlineNanos);
+        descendants.forEach(handle -> waitForExit(handle, deadlineNanos));
+
+        if (process.isAlive()) {
+            process.destroyForcibly();
+        }
+        descendants.stream().filter(ProcessHandle::isAlive).forEach(ProcessHandle::destroyForcibly);
+
+        long forcedDeadlineNanos = System.nanoTime() + terminationTimeout.toNanos();
+        waitForExit(process.toHandle(), forcedDeadlineNanos);
+        descendants.forEach(handle -> waitForExit(handle, forcedDeadlineNanos));
+    }
+
+    private void waitForExit(ProcessHandle handle, long deadlineNanos) {
+        while (handle.isAlive()) {
+            long remainingNanos = deadlineNanos - System.nanoTime();
+            if (remainingNanos <= 0) {
+                return;
+            }
+            try {
+                handle.onExit().get(remainingNanos, TimeUnit.NANOSECONDS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
+            } catch (Exception e) {
+                return;
+            }
+        }
+    }
+
+    private void closeClientConnection(boolean serverTerminatedUnexpectedly) {
+        if (!clientConnection.isOpen()) {
+            return;
+        }
+
+        try {
+            if (serverTerminatedUnexpectedly) {
+                clientConnection.close(1011, "Language server terminated");
+            } else {
+                clientConnection.close(1000, "LSP session closed");
+            }
+        } catch (Exception e) {
+            log.warn("Failed to close client connection for session={}", sessionId, e);
+        }
     }
 
     private void deleteSessionWorkspace() {

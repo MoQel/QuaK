@@ -3,5 +3,10 @@ server:
 
 quak:
   lsp:
+    limits:
+      max-processes: 40
+      max-processes-per-user: 4
+    process:
+      termination-timeout-ms: 2000
     websocket:
       session-idle-timeout-ms: 900000  # 15 minutes

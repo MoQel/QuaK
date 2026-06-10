@@ -3,6 +3,7 @@ package edu.kit.quak.infrastructure.lsp.in.websocket;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+import edu.kit.quak.application.lsp.exceptions.LspCapacityExceededException;
 import edu.kit.quak.application.lsp.exceptions.LspCommunicationException;
 import edu.kit.quak.application.lsp.exceptions.LspServerNotConfiguredException;
 import edu.kit.quak.application.lsp.exceptions.LspSessionNotFoundException;
@@ -51,6 +52,17 @@ class LspWebSocketExceptionHandlerTest {
         handler.afterConnectionEstablished(session);
 
         verify(session).close(any(CloseStatus.class));
+    }
+
+    @Test
+    void afterConnectionEstablished_closesWithTryAgainLater_whenCapacityExceeded() throws Exception {
+        doThrow(new LspCapacityExceededException(LspCapacityExceededException.Limit.GLOBAL))
+            .when(delegate)
+            .afterConnectionEstablished(session);
+
+        handler.afterConnectionEstablished(session);
+
+        verify(session).close(argThat(status -> status.getCode() == 1013));
     }
 
     @Test

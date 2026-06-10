@@ -76,6 +76,17 @@ class LSPClientManager {
         this.configs = nextConfigs;
     }
 
+    disposeAll(): void {
+        for (const timer of this.hideTimers.values()) clearTimeout(timer);
+        this.hideTimers.clear();
+
+        for (const client of this.clients.values()) client.dispose();
+        this.clients.clear();
+
+        this.activeDocuments.clear();
+        this.retryNotBefore.clear();
+    }
+
     /**
      * Called when a document becomes the active model in an editor group.
      * Cancels any pending hide timer for the language and ensures the LSP

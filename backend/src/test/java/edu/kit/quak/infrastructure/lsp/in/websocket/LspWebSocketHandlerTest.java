@@ -9,6 +9,7 @@ import edu.kit.quak.core.lsp.exceptions.InvalidLspLanguageIdException;
 import edu.kit.quak.core.lsp.model.LspLanguageId;
 import edu.kit.quak.shared.tags.UnitTest;
 import java.net.URI;
+import java.util.Objects;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,6 +37,9 @@ class LspWebSocketHandlerTest {
         handler = new LspWebSocketHandler(service);
         lenient().when(wsSession.getId()).thenReturn("ws-1");
         lenient().when(wsSession.getUri()).thenReturn(new URI("/lsp/python"));
+        lenient()
+            .when(wsSession.getPrincipal())
+            .thenReturn(() -> "user-1");
     }
 
     // --- afterConnectionEstablished ---
@@ -43,21 +47,25 @@ class LspWebSocketHandlerTest {
     @Test
     void afterConnectionEstablished_opensLspSessionWithCorrectLanguage() {
         // setup
-        when(service.open(any(), any())).thenReturn("lsp-1");
+        when(service.open(anyString(), any(), any())).thenReturn("lsp-1");
 
         // execute
         handler.afterConnectionEstablished(wsSession);
 
         // verify language is extracted from URL path
         ArgumentCaptor<LspLanguageId> langCaptor = ArgumentCaptor.forClass(LspLanguageId.class);
-        verify(service).open(langCaptor.capture(), any(SpringWebSocketClientConnectionAdapter.class));
+        verify(service).open(
+            eq(Objects.requireNonNull(wsSession.getPrincipal()).getClass().getName() + ":user-1"),
+            langCaptor.capture(),
+            any(SpringWebSocketClientConnectionAdapter.class)
+        );
         assertEquals("python", langCaptor.getValue().value());
     }
 
     @Test
     void afterConnectionEstablished_storesLspSessionIdForRouting() throws Exception {
         // setup
-        when(service.open(any(), any())).thenReturn("lsp-42");
+        when(service.open(anyString(), any(), any())).thenReturn("lsp-42");
 
         // execute connection + message
         handler.afterConnectionEstablished(wsSession);
@@ -72,7 +80,7 @@ class LspWebSocketHandlerTest {
     @Test
     void handleTextMessage_forwardsPayloadToService() throws Exception {
         // setup: establish connection first
-        when(service.open(any(), any())).thenReturn("lsp-1");
+        when(service.open(anyString(), any(), any())).thenReturn("lsp-1");
         handler.afterConnectionEstablished(wsSession);
 
         // execute
@@ -96,7 +104,7 @@ class LspWebSocketHandlerTest {
     @Test
     void afterConnectionClosed_notifiesService() {
         // setup: open first
-        when(service.open(any(), any())).thenReturn("lsp-1");
+        when(service.open(anyString(), any(), any())).thenReturn("lsp-1");
         handler.afterConnectionEstablished(wsSession);
 
         // execute
@@ -140,7 +148,7 @@ class LspWebSocketHandlerTest {
         when(wsSession.getUri()).thenReturn(null);
 
         assertThrows(InvalidLspLanguageIdException.class, () -> handler.afterConnectionEstablished(wsSession));
-        verify(service, never()).open(any(), any());
+        verify(service, never()).open(anyString(), any(), any());
     }
 
     @Test
@@ -148,6 +156,6 @@ class LspWebSocketHandlerTest {
         when(wsSession.getUri()).thenReturn(new URI("/lsp/python/"));
 
         assertThrows(InvalidLspLanguageIdException.class, () -> handler.afterConnectionEstablished(wsSession));
-        verify(service, never()).open(any(), any());
+        verify(service, never()).open(anyString(), any(), any());
     }
 }

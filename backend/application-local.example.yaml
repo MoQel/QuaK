@@ -8,6 +8,13 @@
 
 quak:
   lsp:
+    # Resource protection per backend instance. The per-user limit must be at
+    # least the number of configured languages.
+    limits:
+      max-processes: 40
+      max-processes-per-user: 4
+    process:
+      termination-timeout-ms: 2000
     servers:
 
       # --- Python LSP (pylsp) ---

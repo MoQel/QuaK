@@ -13,6 +13,23 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class LspProperties {
 
     private Map<String, ServerConfig> servers = new HashMap<>();
+    private Limits limits = new Limits();
+    private Process process = new Process();
+
+    @Setter
+    @Getter
+    public static class Limits {
+
+        private int maxProcesses = 40;
+        private int maxProcessesPerUser = 4;
+    }
+
+    @Setter
+    @Getter
+    public static class Process {
+
+        private long terminationTimeoutMs = 2000;
+    }
 
     @Setter
     @Getter

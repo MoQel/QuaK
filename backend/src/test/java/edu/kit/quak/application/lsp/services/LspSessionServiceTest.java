@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+import edu.kit.quak.application.lsp.exceptions.LspCapacityExceededException;
 import edu.kit.quak.application.lsp.exceptions.LspCommunicationException;
 import edu.kit.quak.application.lsp.exceptions.LspServerNotConfiguredException;
 import edu.kit.quak.application.lsp.exceptions.LspSessionNotFoundException;
@@ -19,6 +20,11 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -45,25 +51,24 @@ class LspSessionServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new LspSessionService(registry, sessionFactory);
+        service = new LspSessionService(registry, sessionFactory, 4, 2);
     }
 
     private LspServerDefinition dummyDefinition() {
         return new LspServerDefinition(new LspLanguageId("python"), List.of("pylsp"), Path.of("/tmp"), Map.of());
     }
 
-    // --- open() ---
+    private void configureSuccessfulOpen() {
+        when(registry.findByLanguage(any())).thenReturn(Optional.of(dummyDefinition()));
+        when(sessionFactory.create(anyString(), any(), any())).thenReturn(session);
+    }
 
     @Test
     void open_returnsSessionId_whenSuccessful() throws IOException {
-        // setup
-        when(registry.findByLanguage(any())).thenReturn(Optional.of(dummyDefinition()));
-        when(sessionFactory.create(anyString(), any())).thenReturn(session);
+        configureSuccessfulOpen();
 
-        // execute
-        String sessionId = service.open(new LspLanguageId("python"), clientConnection);
+        String sessionId = service.open("user-1", new LspLanguageId("python"), clientConnection);
 
-        // verify
         assertNotNull(sessionId);
         assertFalse(sessionId.isBlank());
         verify(session).start(any());
@@ -71,112 +76,158 @@ class LspSessionServiceTest {
 
     @Test
     void open_throwsLspServerNotConfiguredException_whenLanguageUnknown() {
-        // setup
         when(registry.findByLanguage(any())).thenReturn(Optional.empty());
+        LspLanguageId language = new LspLanguageId("cobol");
 
-        // execute & verify
-        var language = new LspLanguageId("cobol");
-        assertThrows(LspServerNotConfiguredException.class, () -> service.open(language, clientConnection));
+        assertThrows(LspServerNotConfiguredException.class, () -> service.open("user-1", language, clientConnection));
     }
 
     @Test
-    void open_closesSessionAndThrows_whenStartFails() throws IOException {
-        // setup
-        when(registry.findByLanguage(any())).thenReturn(Optional.of(dummyDefinition()));
-        when(sessionFactory.create(anyString(), any())).thenReturn(session);
-        doThrow(new IOException("process failed")).when(session).start(any());
+    void open_closesSessionAndReleasesCapacity_whenStartFails() throws IOException {
+        service = new LspSessionService(registry, sessionFactory, 1, 1);
+        configureSuccessfulOpen();
+        doThrow(new IOException("process failed")).doNothing().when(session).start(any());
+        LspLanguageId language = new LspLanguageId("python");
 
-        // execute & verify
-        var language = new LspLanguageId("python");
-        assertThrows(LspCommunicationException.class, () -> service.open(language, clientConnection));
+        assertThrows(LspCommunicationException.class, () -> service.open("user-1", language, clientConnection));
+        assertDoesNotThrow(() -> service.open("user-1", language, clientConnection));
         verify(session).close();
     }
 
     @Test
     void open_suppressesCloseException_whenBothStartAndCloseFail() throws IOException {
-        // setup
-        when(registry.findByLanguage(any())).thenReturn(Optional.of(dummyDefinition()));
-        when(sessionFactory.create(anyString(), any())).thenReturn(session);
+        configureSuccessfulOpen();
         doThrow(new IOException("start failed")).when(session).start(any());
         doThrow(new IOException("close failed")).when(session).close();
+        LspLanguageId language = new LspLanguageId("python");
 
-        // execute
-        var language = new LspLanguageId("python");
-        LspCommunicationException ex = assertThrows(LspCommunicationException.class, () -> service.open(language, clientConnection));
+        LspCommunicationException exception = assertThrows(LspCommunicationException.class, () ->
+            service.open("user-1", language, clientConnection)
+        );
 
-        // verify close exception is suppressed on the cause (the primary IOException)
-        Throwable cause = ex.getCause();
-        assertNotNull(cause);
-        assertEquals(1, cause.getSuppressed().length);
-        assertEquals("close failed", cause.getSuppressed()[0].getMessage());
+        assertEquals(1, exception.getCause().getSuppressed().length);
+        assertEquals("close failed", exception.getCause().getSuppressed()[0].getMessage());
     }
-
-    // --- onClientMessage() ---
 
     @Test
     void onClientMessage_forwardsMessageToSession() {
-        // setup: open a session first
-        when(registry.findByLanguage(any())).thenReturn(Optional.of(dummyDefinition()));
-        when(sessionFactory.create(anyString(), any())).thenReturn(session);
+        configureSuccessfulOpen();
         when(session.isOpen()).thenReturn(true);
-        String sessionId = service.open(new LspLanguageId("python"), clientConnection);
+        String sessionId = service.open("user-1", new LspLanguageId("python"), clientConnection);
 
-        // execute
         service.onClientMessage(sessionId, "{\"method\":\"initialize\"}");
 
-        // verify
         verify(session).sendToServer("{\"method\":\"initialize\"}");
     }
 
     @Test
-    void onClientMessage_throwsSessionNotFound_whenIdUnknown() {
+    void onClientMessage_throwsSessionNotFound_whenIdUnknownOrSessionClosed() {
         assertThrows(LspSessionNotFoundException.class, () -> service.onClientMessage("unknown-session", "{}"));
-    }
 
-    @Test
-    void onClientMessage_throwsSessionNotFound_whenSessionIsClosed() {
-        // setup: session exists but is closed
-        when(registry.findByLanguage(any())).thenReturn(Optional.of(dummyDefinition()));
-        when(sessionFactory.create(anyString(), any())).thenReturn(session);
+        configureSuccessfulOpen();
         when(session.isOpen()).thenReturn(false);
-        String sessionId = service.open(new LspLanguageId("python"), clientConnection);
-
-        // execute & verify
+        String sessionId = service.open("user-1", new LspLanguageId("python"), clientConnection);
         assertThrows(LspSessionNotFoundException.class, () -> service.onClientMessage(sessionId, "{}"));
     }
 
-    // --- onClientClosed() ---
-
     @Test
-    void onClientClosed_closesSession_whenSessionExists() throws IOException {
-        // setup
-        when(registry.findByLanguage(any())).thenReturn(Optional.of(dummyDefinition()));
-        when(sessionFactory.create(anyString(), any())).thenReturn(session);
-        String sessionId = service.open(new LspLanguageId("python"), clientConnection);
+    void onClientClosed_closesAndRemovesSession() throws IOException {
+        configureSuccessfulOpen();
+        String sessionId = service.open("user-1", new LspLanguageId("python"), clientConnection);
 
-        // execute
         service.onClientClosed(sessionId);
 
-        // verify
         verify(session).close();
-    }
-
-    @Test
-    void onClientClosed_doesNothing_whenSessionUnknown() {
+        assertThrows(LspSessionNotFoundException.class, () -> service.onClientMessage(sessionId, "{}"));
         assertDoesNotThrow(() -> service.onClientClosed("unknown-session"));
     }
 
     @Test
-    void onClientClosed_removesSessionFromRegistry_soSubsequentMessageFails() {
-        // setup
+    void open_rejectsThirdProcessForSameUser() {
+        configureSuccessfulOpen();
+
+        service.open("user-1", new LspLanguageId("python"), clientConnection);
+        service.open("user-1", new LspLanguageId("python"), clientConnection);
+        LspLanguageId language = new LspLanguageId("python");
+
+        LspCapacityExceededException exception = assertThrows(LspCapacityExceededException.class, () ->
+            service.open("user-1", language, clientConnection)
+        );
+        assertEquals(LspCapacityExceededException.Limit.USER, exception.getLimit());
+    }
+
+    @Test
+    void open_rejectsWhenGlobalLimitIsReached() {
+        service = new LspSessionService(registry, sessionFactory, 1, 1);
+        configureSuccessfulOpen();
+        service.open("user-1", new LspLanguageId("python"), clientConnection);
+        LspLanguageId language = new LspLanguageId("python");
+
+        LspCapacityExceededException exception = assertThrows(LspCapacityExceededException.class, () ->
+            service.open("user-2", language, clientConnection)
+        );
+        assertEquals(LspCapacityExceededException.Limit.GLOBAL, exception.getLimit());
+    }
+
+    @Test
+    void concurrentOpens_neverExceedUserLimit() throws Exception {
+        int attempts = 12;
+        configureSuccessfulOpen();
+        CountDownLatch ready = new CountDownLatch(attempts);
+        CountDownLatch start = new CountDownLatch(1);
+        AtomicInteger successfulOpens = new AtomicInteger();
+        LspLanguageId language = new LspLanguageId("python");
+
+        try (var executor = Executors.newFixedThreadPool(attempts)) {
+            for (int i = 0; i < attempts; i++) {
+                executor.submit(() -> {
+                    ready.countDown();
+                    start.await();
+                    try {
+                        service.open("user-1", language, clientConnection);
+                        successfulOpens.incrementAndGet();
+                    } catch (LspCapacityExceededException ignored) {
+                        // Expected after the two reservations are taken.
+                    }
+                    return null;
+                });
+            }
+
+            assertTrue(ready.await(5, TimeUnit.SECONDS));
+            start.countDown();
+            executor.shutdown();
+            assertTrue(executor.awaitTermination(10, TimeUnit.SECONDS));
+        }
+
+        assertEquals(2, successfulOpens.get());
+    }
+
+    @Test
+    void terminatedSession_releasesCapacityAndRemovesRegistryEntry() {
+        service = new LspSessionService(registry, sessionFactory, 1, 1);
+        AtomicReference<Runnable> terminationCallback = new AtomicReference<>();
         when(registry.findByLanguage(any())).thenReturn(Optional.of(dummyDefinition()));
-        when(sessionFactory.create(anyString(), any())).thenReturn(session);
-        String sessionId = service.open(new LspLanguageId("python"), clientConnection);
+        when(sessionFactory.create(anyString(), any(), any())).thenAnswer(invocation -> {
+            terminationCallback.set(invocation.getArgument(2));
+            return session;
+        });
+        String sessionId = service.open("user-1", new LspLanguageId("python"), clientConnection);
+        terminationCallback.get().run();
 
-        // execute
-        service.onClientClosed(sessionId);
-
-        // verify the session is gone
         assertThrows(LspSessionNotFoundException.class, () -> service.onClientMessage(sessionId, "{}"));
+        LspLanguageId language = new LspLanguageId("python");
+        assertDoesNotThrow(() -> service.open("user-1", language, clientConnection));
+    }
+
+    @Test
+    void shutdown_closesSessionsAndRejectsNewOnes() throws IOException {
+        configureSuccessfulOpen();
+        service.open("user-1", new LspLanguageId("python"), clientConnection);
+
+        service.shutdown();
+
+        verify(session).close();
+        LspLanguageId language = new LspLanguageId("python");
+        assertThrows(LspCommunicationException.class, () -> service.open("user-1", language, clientConnection));
     }
 }

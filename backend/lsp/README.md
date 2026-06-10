@@ -38,6 +38,11 @@ In `application-local.yaml` (or via environment variables):
 ```yaml
 quak:
   lsp:
+    limits:
+      max-processes: 40
+      max-processes-per-user: 4
+    process:
+      termination-timeout-ms: 2000
     servers:
       python:
         command: ["pylsp"]
@@ -45,6 +50,10 @@ quak:
         environment:
           PYTHONUNBUFFERED: "1"
 ```
+
+`max-processes` limits all active language-server processes in one backend
+instance. `max-processes-per-user` protects capacity from a single user and must
+be at least the number of configured languages.
 
 Spring Boot environment variable equivalent:
 ```bash
