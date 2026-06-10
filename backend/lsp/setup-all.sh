@@ -6,6 +6,14 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
+for command in python3 go; do
+    if ! command -v "$command" >/dev/null 2>&1; then
+        echo "Missing required command: $command" >&2
+        echo "See $SCRIPT_DIR/README.md for local prerequisites." >&2
+        exit 1
+    fi
+done
+
 echo "Setting up all LSP servers..."
 echo ""
 
@@ -25,5 +33,5 @@ fi
 
 echo "All $found LSP server(s) ready."
 echo ""
-echo "Next: copy backend/application-local.example.yaml to backend/application-local.yaml"
-echo "      and set the absolute path to each binary."
+echo "Next: from the repository root, copy backend/application-local.example.yaml"
+echo "      to backend/application-local.yaml and set the printed binary paths."

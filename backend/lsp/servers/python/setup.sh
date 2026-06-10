@@ -5,12 +5,13 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 VENV_DIR="$SCRIPT_DIR/venv"
+PIP_VERSION="26.1.2"
 
 echo "[python-lsp] Creating virtual environment..."
 python3 -m venv "$VENV_DIR"
 
 echo "[python-lsp] Installing dependencies..."
-"$VENV_DIR/bin/pip" install --upgrade pip --quiet
+"$VENV_DIR/bin/pip" install "pip==$PIP_VERSION" --quiet
 "$VENV_DIR/bin/pip" install -r "$SCRIPT_DIR/requirements.txt" --quiet
 
 echo "[python-lsp] Setup complete."
