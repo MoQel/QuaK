@@ -4,10 +4,16 @@ import edu.kit.quak.application.circuit.exceptions.CircuitNotFoundException;
 import edu.kit.quak.application.circuit.ports.in.CircuitServicePort;
 import edu.kit.quak.application.circuit.ports.out.CircuitRepositoryPort;
 import edu.kit.quak.application.common.exceptions.AccessDeniedException;
+import edu.kit.quak.application.common.exceptions.ResourceNotFoundException;
+import edu.kit.quak.application.filesystem.delegator.FileElementContainerRepositoryDelegator;
+import edu.kit.quak.application.filesystem.ports.out.FileRepositoryPort;
 import edu.kit.quak.application.user.ports.in.ProjectRoleServicePort;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
+import edu.kit.quak.core.circuit.model.layer.Layer;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
+import edu.kit.quak.core.circuit.model.register.Register;
+import edu.kit.quak.core.filesystem.model.File;
 import edu.kit.quak.core.user.model.ProjectRole;
 import edu.kit.quak.core.user.model.User;
 import java.util.List;
@@ -23,10 +29,19 @@ public class CircuitService implements CircuitServicePort {
 
     private final CircuitRepositoryPort repository;
     private final ProjectRoleServicePort projectRoleService;
+    private final FileRepositoryPort fileRepository;
+    private final FileElementContainerRepositoryDelegator fileElementDelegator;
 
-    public CircuitService(CircuitRepositoryPort repository, ProjectRoleServicePort projectRoleService) {
+    public CircuitService(
+        CircuitRepositoryPort repository,
+        ProjectRoleServicePort projectRoleService,
+        FileRepositoryPort fileRepository,
+        FileElementContainerRepositoryDelegator fileElementDelegator
+    ) {
         this.repository = repository;
         this.projectRoleService = projectRoleService;
+        this.fileRepository = fileRepository;
+        this.fileElementDelegator = fileElementDelegator;
     }
 
     @Override
@@ -58,11 +73,70 @@ public class CircuitService implements CircuitServicePort {
     }
 
     @Override
+    public QuantumCircuit getOrCreateByFileId(String fileId, User user) {
+        File file = fileRepository.findById(fileId).orElseThrow(() -> new ResourceNotFoundException("File", fileId));
+        String projectId = resolveProjectId(file.getParentId());
+        verifyAccess(projectId, user, ProjectRole.VIEWER);
+
+        return repository
+            .findByFileId(fileId)
+            .orElseGet(() -> {
+                QuantumCircuit circuit = new QuantumCircuit(projectId, fileId);
+                log.info("Initialized new quantum circuit for file. circuitId={}, fileId={}", circuit.getId(), fileId);
+                touchProject(projectId);
+                return repository.save(circuit);
+            });
+    }
+
+    @Override
+    public void deleteByFileId(String fileId) {
+        log.info("Deleting circuit linked to file. fileId={}", fileId);
+        repository.deleteByFileId(fileId);
+    }
+
+    @Override
+    public void deleteAllByProjectId(String projectId) {
+        log.info("Deleting all circuits of project. projectId={}", projectId);
+        repository.deleteAllByProjectId(projectId);
+    }
+
+    @Override
+    public QuantumCircuit replaceContent(String circuitId, List<Register> registers, List<Layer> layers, User user) {
+        log.info("Replacing content of circuit. circuitId={}", circuitId);
+        QuantumCircuit existing = getById(circuitId);
+        verifyAccess(existing.getProjectId(), user, ProjectRole.OWNER);
+
+        QuantumCircuit replacement = QuantumCircuit.builder()
+            .id(existing.getId())
+            .projectId(existing.getProjectId())
+            .fileId(existing.getFileId())
+            .registers(registers)
+            .layers(layers)
+            .build();
+        touchProject(existing.getProjectId());
+        return repository.save(replacement);
+    }
+
+    private void touchProject(String projectId) {
+        fileElementDelegator.touchRootProject(projectId);
+    }
+
+    private String resolveProjectId(String parentId) {
+        if (parentId.charAt(0) == 'p') {
+            return parentId;
+        }
+        return fileElementDelegator
+            .findProjectIdByElementId(parentId)
+            .orElseThrow(() -> new IllegalStateException("Could not find root project for element with ID: " + parentId));
+    }
+
+    @Override
     public void delete(String circuitId, User user) {
         log.info("Deleting circuit. circuitId={}", circuitId);
         QuantumCircuit existing = getById(circuitId);
         verifyAccess(existing.getProjectId(), user, ProjectRole.OWNER);
         repository.delete(circuitId);
+        touchProject(existing.getProjectId());
     }
 
     @Override
@@ -71,8 +145,16 @@ public class CircuitService implements CircuitServicePort {
         verifyAccess(existing.getProjectId(), user, ProjectRole.OWNER);
 
         String projectId = existing.getProjectId();
+        String fileId = existing.getFileId();
         repository.delete(circuitId);
-        return init(projectId);
+
+        touchProject(projectId);
+        if (fileId == null) {
+            return init(projectId);
+        }
+        QuantumCircuit circuit = new QuantumCircuit(projectId, fileId);
+        log.info("Initialized new quantum circuit for file. circuitId={}, fileId={}", circuit.getId(), fileId);
+        return repository.save(circuit);
     }
 
     @Override
@@ -121,6 +203,7 @@ public class CircuitService implements CircuitServicePort {
         verifyAccess(circuit.getProjectId(), user, minimumRole);
 
         action.accept(circuit);
+        touchProject(circuit.getProjectId());
         return repository.save(circuit);
     }
 

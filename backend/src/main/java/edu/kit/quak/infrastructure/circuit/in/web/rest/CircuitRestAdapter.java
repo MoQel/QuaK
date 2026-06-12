@@ -3,15 +3,20 @@ package edu.kit.quak.infrastructure.circuit.in.web.rest;
 import edu.kit.quak.application.circuit.ports.in.CircuitServicePort;
 import edu.kit.quak.application.user.ports.in.UserServicePort;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
+import edu.kit.quak.core.circuit.model.layer.Layer;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
+import edu.kit.quak.core.circuit.model.register.Register;
 import edu.kit.quak.core.user.model.User;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.AddQuantumOperationRequest;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.CircuitResponse;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.MoveQuantumOperationRequest;
+import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.UpdateCircuitRequest;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.CircuitDtoMapper;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.ElementSelectorDtoMapper;
+import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.LayerDtoMapper;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.QuantumOperationDtoMapper;
+import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.RegisterDtoMapper;
 import edu.kit.quak.infrastructure.user.in.web.rest.mapper.AuthenticationMapper;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +35,8 @@ public class CircuitRestAdapter {
     private final CircuitDtoMapper mapper;
     private final QuantumOperationDtoMapper quantumOperationDtoMapper;
     private final ElementSelectorDtoMapper elementSelectorDtoMapper;
+    private final RegisterDtoMapper registerDtoMapper;
+    private final LayerDtoMapper layerDtoMapper;
     private final AuthenticationMapper authMapper;
 
     public CircuitRestAdapter(
@@ -38,6 +45,8 @@ public class CircuitRestAdapter {
         CircuitDtoMapper mapper,
         QuantumOperationDtoMapper quantumOperationDtoMapper,
         ElementSelectorDtoMapper elementSelectorDtoMapper,
+        RegisterDtoMapper registerDtoMapper,
+        LayerDtoMapper layerDtoMapper,
         AuthenticationMapper authMapper
     ) {
         this.service = service;
@@ -45,6 +54,8 @@ public class CircuitRestAdapter {
         this.mapper = mapper;
         this.quantumOperationDtoMapper = quantumOperationDtoMapper;
         this.elementSelectorDtoMapper = elementSelectorDtoMapper;
+        this.registerDtoMapper = registerDtoMapper;
+        this.layerDtoMapper = layerDtoMapper;
         this.authMapper = authMapper;
     }
 
@@ -58,6 +69,40 @@ public class CircuitRestAdapter {
         log.debug("REST request to get circuit by the projectId: {}", projectId);
         User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
         QuantumCircuit circuit = service.getByProjectId(projectId, user);
+        return mapper.toResponse(circuit);
+    }
+
+    /**
+     * Returns the circuit linked to the given file, creating it if it does not
+     * exist yet. Ownership is verified via the file's project.
+     */
+    @GetMapping("/file/{fileId}")
+    @PreAuthorize("isAuthenticated()")
+    public CircuitResponse getByFileId(@PathVariable String fileId, Authentication authentication) {
+        log.debug("REST request to get circuit by fileId: {}", fileId);
+        User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
+        QuantumCircuit circuit = service.getOrCreateByFileId(fileId, user);
+        return mapper.toResponse(circuit);
+    }
+
+    /**
+     * Replaces the full content (registers and layers) of a specific circuit.
+     * Used by the circuit editor to persist client-side edits and parse results.
+     * Ownership is verified via the circuit's associated project.
+     */
+    @PutMapping("/{circuitId}")
+    @PreAuthorize("isAuthenticated()")
+    public CircuitResponse replaceContent(
+        @PathVariable String circuitId,
+        @RequestBody UpdateCircuitRequest request,
+        Authentication authentication
+    ) {
+        log.debug("REST request to replace content of circuit: {}", circuitId);
+        User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
+
+        List<Register> registers = request.registers().stream().map(registerDtoMapper::toDomain).toList();
+        List<Layer> layers = request.layers().stream().map(layerDtoMapper::toDomain).toList();
+        QuantumCircuit circuit = service.replaceContent(circuitId, registers, layers, user);
         return mapper.toResponse(circuit);
     }
 

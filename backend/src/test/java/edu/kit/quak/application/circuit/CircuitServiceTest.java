@@ -6,6 +6,8 @@ import static org.mockito.Mockito.*;
 import edu.kit.quak.application.circuit.exceptions.CircuitNotFoundException;
 import edu.kit.quak.application.circuit.ports.out.CircuitRepositoryPort;
 import edu.kit.quak.application.circuit.services.CircuitService;
+import edu.kit.quak.application.filesystem.delegator.FileElementContainerRepositoryDelegator;
+import edu.kit.quak.application.filesystem.ports.out.FileRepositoryPort;
 import edu.kit.quak.application.user.ports.in.ProjectRoleServicePort;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
@@ -32,6 +34,12 @@ class CircuitServiceTest {
 
     @Mock
     private ProjectRoleServicePort projectRoleService;
+
+    @Mock
+    private FileRepositoryPort fileRepository;
+
+    @Mock
+    private FileElementContainerRepositoryDelegator fileElementDelegator;
 
     @InjectMocks
     private CircuitService service;

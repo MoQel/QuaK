@@ -8,7 +8,13 @@ public interface CircuitRepositoryPort {
 
     Optional<QuantumCircuit> findByProjectId(String projectId);
 
+    Optional<QuantumCircuit> findByFileId(String fileId);
+
     QuantumCircuit save(QuantumCircuit circuit);
 
     void delete(String circuitId);
+
+    void deleteByFileId(String fileId);
+
+    void deleteAllByProjectId(String projectId);
 }

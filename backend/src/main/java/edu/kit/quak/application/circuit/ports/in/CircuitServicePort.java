@@ -1,8 +1,10 @@
 package edu.kit.quak.application.circuit.ports.in;
 
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
+import edu.kit.quak.core.circuit.model.layer.Layer;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
+import edu.kit.quak.core.circuit.model.register.Register;
 import edu.kit.quak.core.user.model.User;
 import java.util.List;
 
@@ -21,6 +23,18 @@ public interface CircuitServicePort {
 
     /** Returns a specific circuit by its unique ID. */
     QuantumCircuit getById(String circuitId);
+
+    /**
+     * Returns the circuit linked to the given file, creating a fresh one if none
+     * exists yet. Access is verified via the file's project.
+     */
+    QuantumCircuit getOrCreateByFileId(String fileId, User user);
+
+    /**
+     * Replaces the registers and layers of an existing circuit with the given
+     * content. Identity (circuitId, projectId, fileId) is preserved.
+     */
+    QuantumCircuit replaceContent(String circuitId, List<Register> registers, List<Layer> layers, User user);
 
     /**
      * Deletes a specific circuit by its unique ID.
@@ -51,4 +65,17 @@ public interface CircuitServicePort {
     );
 
     QuantumCircuit removeQuantumOperation(String circuitId, String operationId, User user);
+
+    /**
+     * Deletes the circuit linked to the given file. Internal cleanup hook for
+     * file deletion; access must be verified by the caller.
+     */
+    void deleteByFileId(String fileId);
+
+    /**
+     * Deletes all circuits of a project (project circuit and file circuits).
+     * Internal cleanup hook for project deletion; access must be verified by the
+     * caller.
+     */
+    void deleteAllByProjectId(String projectId);
 }

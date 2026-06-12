@@ -22,20 +22,30 @@ public class QuantumCircuit extends ElementWithId {
     @Getter
     private final String projectId;
 
+    /** Optional link to the file this circuit belongs to; null for the project-level circuit. */
+    @Getter
+    private final String fileId;
+
     private final List<Register> registers = new ArrayList<>();
     private final List<Layer> layers = new ArrayList<>();
 
     public QuantumCircuit(String projectId) {
+        this(projectId, (String) null);
+    }
+
+    public QuantumCircuit(String projectId, String fileId) {
         super();
         this.projectId = projectId;
+        this.fileId = fileId;
         registers.add(new QuantumRegister("q", 4));
     }
 
     @Builder
-    public QuantumCircuit(String id, String projectId, List<Register> registers, List<Layer> layers) {
+    public QuantumCircuit(String id, String projectId, String fileId, List<Register> registers, List<Layer> layers) {
         super();
         this.id = id;
         this.projectId = projectId;
+        this.fileId = fileId;
         this.registers.addAll(registers);
         this.layers.addAll(layers);
     }

@@ -75,8 +75,8 @@ public class ProjectService implements ProjectServicePort {
 
         verifyOwnerAccess(project, user);
 
-        String cId = circuitService.getByProjectId(pId, user).getId();
-        circuitService.delete(cId, user);
+        // Removes the project circuit and all file-linked circuits
+        circuitService.deleteAllByProjectId(pId);
         // Clean up all role assignments for this project
         roleRepository.deleteAllByProjectId(pId);
         repository.deleteById(pId);

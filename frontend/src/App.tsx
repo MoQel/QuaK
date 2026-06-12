@@ -5,11 +5,15 @@ import { componentRegistry } from '@/components/panels/componentRegistry';
 import { useDockviewLogic } from '@/hooks/useDockviewLogic';
 import 'dockview-core/dist/styles/dockview.css';
 import { CustomTabRenderer } from '@/components/panels/CustomTab.tsx';
+import { useProject } from '@/contexts/ProjectContext.tsx';
+import { useTabsPersistence } from '@/hooks/useTabsPersistence.ts';
 
 function App() {
     const { onReady } = useDockviewLogic();
+    const { projectId } = useProject();
 
     usePreventKeyboardActions();
+    useTabsPersistence(projectId);
 
     return (
         <div className="h-full w-full">

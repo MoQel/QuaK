@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import edu.kit.quak.application.circuit.ports.in.CircuitServicePort;
 import edu.kit.quak.application.filesystem.delegator.FileElementContainerRepositoryDelegator;
 import edu.kit.quak.application.filesystem.ports.out.FileContentRepositoryPort;
 import edu.kit.quak.application.filesystem.ports.out.FileRepositoryPort;
@@ -39,6 +40,9 @@ class FileServiceTest {
 
     @Mock
     private ProjectRoleServicePort roleService;
+
+    @Mock
+    private CircuitServicePort circuitService;
 
     @InjectMocks
     private FileService service;
