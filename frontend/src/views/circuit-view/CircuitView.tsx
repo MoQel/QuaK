@@ -249,8 +249,11 @@ export function CircuitView() {
                 </div>
 
                 {/* Circuit Canvas */}
-                <div className="relative flex-1 overflow-auto">
-                    <div className="relative min-h-full" style={{ width: circuitWidth, height: circuitHeight }}>
+                <div className="relative flex-1 overflow-auto flex flex-col [&::-webkit-scrollbar-track]:bg-bg-subtle">
+                    <div
+                        className="relative flex-1 shrink-0 isolate"
+                        style={{ width: circuitWidth, minHeight: circuitHeight }}
+                    >
                         <QubitWires
                             circuit={activeCircuit}
                             setCircuit={setActiveCircuit}
@@ -282,7 +285,7 @@ export function CircuitView() {
                             <DropPlaceholder hoverPos={hoverPos} draggingOperationSize={draggingOperationSize} />
                         </div>
                     </div>
-                    <CircuitFooter uiLayers={uiLayers} />
+                    <CircuitFooter uiLayers={uiLayers} circuitWidth={circuitWidth} />
                 </div>
             </CardContent>
         </Card>
