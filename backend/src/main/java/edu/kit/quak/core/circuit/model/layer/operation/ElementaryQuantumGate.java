@@ -45,6 +45,10 @@ public class ElementaryQuantumGate extends QuantumOperation {
      * (z.B. "pi/2", "-pi/4", "2*pi/3"), ansonsten als Dezimalzahl.
      */
     private static String formatAngle(double angle) {
+        if (!Double.isFinite(angle)) {
+            // Guard against emitting non-QASM tokens like "Infinity"/"NaN"; fall back to a neutral angle.
+            return "0";
+        }
         if (angle == 0.0) {
             return "0";
         }

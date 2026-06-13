@@ -20,6 +20,7 @@ import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.QuantumOperationDt
 import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.RegisterDtoMapper;
 import edu.kit.quak.infrastructure.user.in.web.rest.mapper.AuthenticationMapper;
 import java.util.List;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -101,9 +102,7 @@ public class CircuitRestAdapter {
         log.debug("REST request to replace content of circuit: {}", circuitId);
         User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
 
-        List<Register> registers = request.registers().stream().map(registerDtoMapper::toDomain).toList();
-        List<Layer> layers = request.layers().stream().map(layerDtoMapper::toDomain).toList();
-        QuantumCircuit circuit = service.replaceContent(circuitId, registers, layers, user);
+        QuantumCircuit circuit = service.replaceContent(circuitId, toRegisters(request), toLayers(request), user);
         return mapper.toResponse(circuit);
     }
 
@@ -115,11 +114,18 @@ public class CircuitRestAdapter {
     @PreAuthorize("isAuthenticated()")
     public GeneratedCodeResponse generateCode(@RequestBody UpdateCircuitRequest request) {
         log.debug("REST request to generate code from circuit content");
-        List<Register> registers = request.registers().stream().map(registerDtoMapper::toDomain).toList();
-        List<Layer> layers = request.layers().stream().map(layerDtoMapper::toDomain).toList();
-
-        QuantumCircuit circuit = QuantumCircuit.builder().registers(registers).layers(layers).build();
+        QuantumCircuit circuit = QuantumCircuit.builder().registers(toRegisters(request)).layers(toLayers(request)).build();
         return new GeneratedCodeResponse(circuit.toCode());
+    }
+
+    /** Maps the request's registers to domain models, tolerating a missing (null) registers field. */
+    private List<Register> toRegisters(UpdateCircuitRequest request) {
+        return Optional.ofNullable(request.registers()).orElseGet(List::of).stream().map(registerDtoMapper::toDomain).toList();
+    }
+
+    /** Maps the request's layers to domain models, tolerating a missing (null) layers field. */
+    private List<Layer> toLayers(UpdateCircuitRequest request) {
+        return Optional.ofNullable(request.layers()).orElseGet(List::of).stream().map(layerDtoMapper::toDomain).toList();
     }
 
     /**

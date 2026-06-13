@@ -82,8 +82,11 @@ public class CircuitService implements CircuitServicePort {
             .findByFileId(fileId)
             .orElseGet(() -> {
                 QuantumCircuit circuit = new QuantumCircuit(projectId, fileId);
+                // A read-only VIEWER must not cause writes; hand back a transient circuit instead of persisting.
+                if (!projectRoleService.hasMinimumRole(projectId, user.getId(), ProjectRole.OWNER)) {
+                    return circuit;
+                }
                 log.info("Initialized new quantum circuit for file. circuitId={}, fileId={}", circuit.getId(), fileId);
-                touchProject(projectId);
                 return repository.save(circuit);
             });
     }

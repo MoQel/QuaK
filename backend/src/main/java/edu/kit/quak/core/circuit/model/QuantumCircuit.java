@@ -54,6 +54,11 @@ public class QuantumCircuit extends ElementWithId {
         return Collections.unmodifiableList(registers);
     }
 
+    /** Adds a register to the circuit, e.g. when materializing a register declaration parsed from code. */
+    public void addRegister(@NonNull Register register) {
+        registers.add(register);
+    }
+
     public List<Layer> getLayers() {
         return Collections.unmodifiableList(layers);
     }
@@ -158,7 +163,6 @@ public class QuantumCircuit extends ElementWithId {
     }
 
     public void removeQuantumOperation(String operationId) {
-        System.out.println(this.toCode());
         for (Layer layer : layers) {
             for (QuantumOperation operation : layer.getQuantumOperations()) {
                 if (operation.getId().equals(operationId)) {

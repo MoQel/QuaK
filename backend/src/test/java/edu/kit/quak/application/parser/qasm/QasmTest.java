@@ -1,14 +1,18 @@
 package edu.kit.quak.application.parser.qasm;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import edu.kit.quak.application.circuit.antlr.OpenQASM3Lexer;
 import edu.kit.quak.application.circuit.antlr.OpenQASM3Parser;
 import edu.kit.quak.application.circuit.antlr.QasmCircuitVisitor;
 import edu.kit.quak.application.circuit.antlr.QasmService;
+import edu.kit.quak.application.circuit.exceptions.QasmParseException;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementaryQuantumGate;
+import edu.kit.quak.core.circuit.model.register.QuantumRegister;
+import edu.kit.quak.core.circuit.model.register.Register;
 import java.util.ArrayList;
 import java.util.List;
 import org.antlr.v4.runtime.*;
@@ -157,5 +161,49 @@ class QasmTest {
         QuantumCircuit reparsed = qasmService.parse(generatedCode);
         ElementaryQuantumGate gate = (ElementaryQuantumGate) reparsed.getLayers().getFirst().getQuantumOperations().getFirst();
         assertEquals(Math.PI / 2, gate.getRotationAngle(), 1e-9);
+    }
+
+    @Test
+    void registerIsSizedFromDeclaration() {
+        // A declared size below the previous default (4) must shrink the register, not keep 4.
+        QuantumCircuit circuit = new QasmService().parse("qubit[2] q;\n");
+
+        assertEquals(1, circuit.getRegisters().size());
+        Register register = circuit.getRegisters().getFirst();
+        assertEquals("q", register.getName());
+        assertEquals(2, ((QuantumRegister) register).getNumberOfQubits());
+    }
+
+    @Test
+    void registerWithNonDefaultNameIsCreated() {
+        // Registers with a name other than "q" must be created (previously silently ignored).
+        QuantumCircuit circuit = new QasmService().parse("qubit[3] alice;\nx alice[0];\n");
+
+        Register register = circuit.getRegisterByName("alice").orElseThrow();
+        assertEquals(3, ((QuantumRegister) register).getNumberOfQubits());
+        assertEquals(1, circuit.getLayers().size());
+    }
+
+    @Test
+    void controlAndTargetAreSplitViaGateDefinition() {
+        QuantumCircuit circuit = new QasmService().parse("qubit[2] q;\ncx q[0], q[1];\n");
+
+        ElementaryQuantumGate gate = (ElementaryQuantumGate) circuit.getLayers().getFirst().getQuantumOperations().getFirst();
+        assertEquals(1, gate.getControlQubits().size());
+        assertEquals(0, gate.getControlQubits().getFirst().getIndex());
+        assertEquals(1, gate.getTargetQubits().size());
+        assertEquals(1, gate.getTargetQubits().getFirst().getIndex());
+    }
+
+    @Test
+    void invalidCodeThrowsQasmParseException() {
+        QasmService qasmService = new QasmService();
+
+        // Unknown gate name.
+        assertThrows(QasmParseException.class, () -> qasmService.parse("qubit[1] q;\nfoo q[0];\n"));
+        // Non-constant (variable) qubit index.
+        assertThrows(QasmParseException.class, () -> qasmService.parse("qubit[2] q;\ncx q[i], q[i + 1];\n"));
+        // Syntax error.
+        assertThrows(QasmParseException.class, () -> qasmService.parse("qubit[1] q\nx q[0]\n"));
     }
 }

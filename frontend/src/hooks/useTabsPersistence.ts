@@ -87,9 +87,14 @@ export function useTabsPersistence(projectId: string | null) {
             .then((state) => {
                 if (cancelled) return;
 
-                const persisted = parsePersistedTabs(state.tabsJson);
-                // Restoring an empty state also clears leftover tabs from a previously opened project.
-                dispatch(restoreTabs(persisted ?? { groups: [], activeGroupId: '' }));
+                // If the user already opened a tab while this request was in flight, don't clobber it
+                // with the restored set — otherwise the just-opened tab (and its circuit) would vanish.
+                const userAlreadyOpenedTabs = latestStateRef.current.groups.some((group) => group.openTabs.length > 0);
+                if (!userAlreadyOpenedTabs) {
+                    const persisted = parsePersistedTabs(state.tabsJson);
+                    // Restoring an empty state also clears leftover tabs from a previously opened project.
+                    dispatch(restoreTabs(persisted ?? { groups: [], activeGroupId: '' }));
+                }
                 restoredProjectRef.current = projectId;
             })
             .catch((error) => console.error('Failed to load editor state', error));

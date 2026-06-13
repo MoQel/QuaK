@@ -50,6 +50,28 @@ export const CircuitTabsProvider: React.FC<{ children: React.ReactNode }> = ({ c
     // Circuits whose local edits have not been written to the backend yet.
     const dirtyCircuitKeysRef = useRef<Set<string>>(new Set());
 
+    // Latest rendered circuits, so teardown effects (tab close / project switch) can still flush
+    // pending edits even though their state has already been reset.
+    const latestCircuitsRef = useRef(circuitsByTabId);
+    latestCircuitsRef.current = circuitsByTabId;
+    const latestProjectCircuitRef = useRef(circuit);
+    latestProjectCircuitRef.current = circuit;
+
+    // Immediately persist the given dirty circuits (or all dirty ones) and clear their dirty flag.
+    const flushDirtyCircuits = useCallback((keys?: string[]) => {
+        const dirtyKeys = dirtyCircuitKeysRef.current;
+        for (const key of keys ?? Array.from(dirtyKeys)) {
+            if (!dirtyKeys.has(key)) continue;
+            dirtyKeys.delete(key);
+
+            const target =
+                key === PROJECT_CIRCUIT_KEY ? latestProjectCircuitRef.current : latestCircuitsRef.current[key];
+            if (target) {
+                saveCircuitContent(target).catch((error) => console.error('Failed to save circuit', error));
+            }
+        }
+    }, []);
+
     const setActiveCircuit = useCallback(
         (nextCircuit: SetStateAction<CircuitResponse | undefined>) => {
             dirtyCircuitKeysRef.current.add(activeCircuitTabId ?? PROJECT_CIRCUIT_KEY);
@@ -99,40 +121,33 @@ export const CircuitTabsProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
     // Persist locally edited circuits to the backend (debounced full replace).
     useEffect(() => {
-        const timer = setTimeout(() => {
-            const dirtyKeys = Array.from(dirtyCircuitKeysRef.current);
-            dirtyCircuitKeysRef.current.clear();
-
-            for (const key of dirtyKeys) {
-                const target = key === PROJECT_CIRCUIT_KEY ? circuit : circuitsByTabId[key];
-                if (target) {
-                    saveCircuitContent(target).catch((error) => console.error('Failed to save circuit', error));
-                }
-            }
-        }, 800);
+        const timer = setTimeout(() => flushDirtyCircuits(), 800);
         return () => clearTimeout(timer);
-    }, [circuitsByTabId, circuit]);
+    }, [circuitsByTabId, circuit, flushDirtyCircuits]);
 
-    // Drop cached circuits whose tabs were closed; they are reloaded from the
-    // backend the next time the file is opened.
+    // When a tab is closed, immediately persist its unsaved edits (save on close).
+    // The cached circuit is intentionally KEPT: reopening the tab then shows it
+    // instantly from cache instead of refetching, which avoids a flash where the
+    // freshly loaded circuit briefly appears and is then dropped by a racing update.
+    // The whole cache is cleared on project switch (see the reset effect below).
     useEffect(() => {
-        // Read the tab ids fresh from the store: during startup this effect can run
-        // with a stale (empty) openTabIdsKey while the tabs were already restored.
         const openIds = new Set(store.getState().tabs.groups.flatMap((group) => group.openTabs.map((tab) => tab.id)));
-        setCircuitsByTabId((prev) => {
-            const entries = Object.entries(prev);
-            const filteredEntries = entries.filter(([tabId]) => openIds.has(tabId));
+        const closingDirtyKeys = Array.from(dirtyCircuitKeysRef.current).filter(
+            (key) => key !== PROJECT_CIRCUIT_KEY && !openIds.has(key),
+        );
+        flushDirtyCircuits(closingDirtyKeys);
+    }, [openTabIdsKey, flushDirtyCircuits]);
 
-            if (filteredEntries.length === entries.length) return prev;
-            return Object.fromEntries(filteredEntries);
-        });
-    }, [openTabIdsKey]);
-
-    // Reset the per-tab circuits when switching projects.
+    // Reset the per-tab circuits when switching projects, but flush pending edits
+    // of the project being left first (the cleanup runs before the reset takes effect).
     useEffect(() => {
         dirtyCircuitKeysRef.current.clear();
         setCircuitsByTabId({});
-    }, [projectId]);
+
+        return () => {
+            flushDirtyCircuits();
+        };
+    }, [projectId, flushDirtyCircuits]);
 
     const contextValue = useMemo(
         () => ({

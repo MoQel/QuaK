@@ -41,7 +41,7 @@ export type OperationDefinition = {
     targetSize: number;
     controlSize: number;
     totalSize: number;
-    icon: { type: 'component'; component: ComponentType<any> } | { type: 'text'; text: string };
+    icon: { type: 'component'; component: ComponentType<{ className?: string }> } | { type: 'text'; text: string };
     label?: string;
     formClass: ShapeClass;
     color: Color;

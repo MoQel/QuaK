@@ -1,5 +1,5 @@
 // Garbage Collection
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { getModelId, savedVersionIds } from '@/views/text-editor-view/utils/editorUtils.ts';
 import { useMonaco } from '@monaco-editor/react';
 import { useAppSelector } from '@/hooks/useAppSelector.ts';
@@ -27,18 +27,23 @@ export function useMonacoGarbageCollector() {
         });
     }, [groups, monaco]);
 
+    // Keep the latest monaco instance in a ref so the unmount cleanup can dispose models
+    // without depending on `monaco`. Depending on it would make this cleanup fire whenever
+    // monaco changes (notably null -> instance right after load), which would dispatch
+    // closeAll() mid-session and wipe tabs that were just restored.
+    const monacoRef = useRef(monaco);
+    monacoRef.current = monaco;
+
     useEffect(() => {
         return () => {
-            // Reset Redux state
+            // Runs only on unmount (leaving the IDE): reset tab state and dispose models.
             dispatch(closeAll());
 
             // Hard dispose all models to prevent memory leaks in global Monaco instance
-            if (monaco) {
-                monaco.editor.getModels().forEach((model) => {
-                    savedVersionIds.delete(model);
-                    model.dispose();
-                });
-            }
+            monacoRef.current?.editor.getModels().forEach((model) => {
+                savedVersionIds.delete(model);
+                model.dispose();
+            });
         };
-    }, [dispatch, monaco]);
+    }, [dispatch]);
 }

@@ -227,7 +227,7 @@ export function DropzoneGrid({
                         break;
                     }
                     default:
-                        console.error(`Unknown drag origin: ${(data as any).origin}`);
+                        console.error(`Unknown drag origin: ${(data as { origin?: string }).origin}`);
                         break;
                 }
             } catch (error) {

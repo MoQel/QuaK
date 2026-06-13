@@ -8,6 +8,7 @@ import edu.kit.quak.infrastructure.editorstate.in.web.rest.dto.EditorStateRespon
 import edu.kit.quak.infrastructure.editorstate.in.web.rest.dto.UpdateEditorStateRequest;
 import edu.kit.quak.infrastructure.user.in.web.rest.mapper.AuthenticationMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -49,7 +50,16 @@ public class EditorStateRestAdapter {
     ) {
         log.debug("REST request to save editor state for project: {}", projectId);
         User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
-        EditorState state = service.save(projectId, request.tabsJson(), user);
+
+        EditorState state;
+        try {
+            state = service.save(projectId, request.tabsJson(), user);
+        } catch (DataIntegrityViolationException ex) {
+            // Two concurrent first-time saves race on the unique (projectId, userId) row; the loser
+            // retries in a fresh transaction, where the row now exists and is updated instead of inserted.
+            log.debug("Concurrent editor-state insert for project {}, retrying as update", projectId);
+            state = service.save(projectId, request.tabsJson(), user);
+        }
         return new EditorStateResponse(state.getProjectId(), state.getTabsJson());
     }
 }
