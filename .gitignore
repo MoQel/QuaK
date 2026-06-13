@@ -10,3 +10,5 @@ Thumbs.db
 node_modules/
 .vscode/settings.json
 /package-lock.json
+/.claude/
+CLAUDE.md

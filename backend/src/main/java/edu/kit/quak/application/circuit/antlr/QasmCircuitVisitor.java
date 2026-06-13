@@ -109,15 +109,70 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
         System.out.println("targ: " + targetQubits);
         System.out.println("cont: " + controlQubits);
 
+        // Rotationswinkel aus den Gate-Parametern lesen, z.B. das "pi/2" in "rx(pi/2) q[0]".
+        double rotationAngle = 0.0;
+        if (ctx.expressionList() != null && !ctx.expressionList().expression().isEmpty()) {
+            rotationAngle = evaluateAngle(ctx.expressionList().expression().getFirst());
+        }
+
         QuantumOperation operation = new ElementaryQuantumGate(
             QuantumOperationLibrary.valueOf(gateName.toUpperCase()),
             false,
             targetQubits,
             controlQubits,
-            0.0
+            rotationAngle
         );
 
         circuit.addQuantumOperation(operation, circuit.getLayers().size());
         return null;
+    }
+
+    /**
+     * Wertet einen Gate-Parameter (z.B. den Winkel eines rx/ry/rz) als Gleitkommazahl in Radiant aus.
+     * Unterstützt Konstanten (pi, tau, euler), Zahlenliterale und einfache Arithmetik (+, -, *, /, %, **).
+     */
+    private double evaluateAngle(OpenQASM3Parser.ExpressionContext expr) {
+        return switch (expr) {
+            case OpenQASM3Parser.ParenthesisExpressionContext p -> evaluateAngle(p.expression());
+            case OpenQASM3Parser.UnaryExpressionContext u -> {
+                double value = evaluateAngle(u.expression());
+                yield u.op.getType() == OpenQASM3Parser.MINUS ? -value : value;
+            }
+            case OpenQASM3Parser.PowerExpressionContext pw -> Math.pow(
+                evaluateAngle(pw.expression().getFirst()),
+                evaluateAngle(pw.expression().getLast())
+            );
+            case OpenQASM3Parser.MultiplicativeExpressionContext m -> {
+                double left = evaluateAngle(m.expression().getFirst());
+                double right = evaluateAngle(m.expression().getLast());
+                yield switch (m.op.getType()) {
+                    case OpenQASM3Parser.ASTERISK -> left * right;
+                    case OpenQASM3Parser.SLASH -> left / right;
+                    case OpenQASM3Parser.PERCENT -> left % right;
+                    default -> 0.0;
+                };
+            }
+            case OpenQASM3Parser.AdditiveExpressionContext a -> {
+                double left = evaluateAngle(a.expression().getFirst());
+                double right = evaluateAngle(a.expression().getLast());
+                yield a.op.getType() == OpenQASM3Parser.PLUS ? left + right : left - right;
+            }
+            default -> parseConstantOrNumber(expr.getText());
+        };
+    }
+
+    private double parseConstantOrNumber(String text) {
+        return switch (text.trim().toLowerCase()) {
+            case "pi", "π" -> Math.PI;
+            case "tau" -> Math.TAU;
+            case "euler", "e" -> Math.E;
+            default -> {
+                try {
+                    yield Double.parseDouble(text.trim());
+                } catch (NumberFormatException ex) {
+                    yield 0.0;
+                }
+            }
+        };
     }
 }

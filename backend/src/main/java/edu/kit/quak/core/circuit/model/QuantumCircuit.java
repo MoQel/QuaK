@@ -288,7 +288,6 @@ public class QuantumCircuit extends ElementWithId {
 
     public String toCode() {
         StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append(this.projectId);
         for (Register register : registers) {
             if (register instanceof QuantumRegister quantumRegister) {
                 stringBuilder.append("// Register ").append(quantumRegister.getName()).append("\n");

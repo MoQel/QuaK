@@ -1,8 +1,16 @@
 package edu.kit.quak.application.parser.qasm;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import edu.kit.quak.application.circuit.antlr.OpenQASM3Lexer;
 import edu.kit.quak.application.circuit.antlr.OpenQASM3Parser;
 import edu.kit.quak.application.circuit.antlr.QasmCircuitVisitor;
+import edu.kit.quak.application.circuit.antlr.QasmService;
+import edu.kit.quak.core.circuit.model.QuantumCircuit;
+import edu.kit.quak.core.circuit.model.layer.operation.ElementaryQuantumGate;
+import java.util.ArrayList;
+import java.util.List;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.*;
 import org.junit.jupiter.api.Test;
@@ -104,5 +112,50 @@ class QasmTest {
         visitor.visit(tree);
         System.out.println("Circuit");
         System.out.println(visitor.getCircuit());
+    }
+
+    @Test
+    void rotationGateAnglesAreParsed() {
+        QasmService qasmService = new QasmService();
+        String qasmCode = """
+            qubit[3] q;
+            rx(pi/2) q[0];
+            ry(pi) q[1];
+            rz(-pi/4) q[2];
+            """;
+
+        QuantumCircuit circuit = qasmService.parse(qasmCode);
+
+        // ASAP-Scheduling kann die Reihenfolge ändern, daher winkelweise (sortiert) vergleichen.
+        List<Double> actual = new ArrayList<>();
+        for (var layer : circuit.getLayers()) {
+            for (var operation : layer.getQuantumOperations()) {
+                if (operation instanceof ElementaryQuantumGate gate) {
+                    actual.add(gate.getRotationAngle());
+                }
+            }
+        }
+        actual.sort(Double::compareTo);
+
+        List<Double> expected = new ArrayList<>(List.of(-Math.PI / 4, Math.PI / 2, Math.PI));
+        assertEquals(expected.size(), actual.size());
+        for (int i = 0; i < expected.size(); i++) {
+            assertEquals(expected.get(i), actual.get(i), 1e-9);
+        }
+    }
+
+    @Test
+    void rotationGateAngleSurvivesCodeRoundTrip() {
+        QasmService qasmService = new QasmService();
+        QuantumCircuit circuit = qasmService.parse("qubit[1] q;\nrx(pi/2) q[0];\n");
+
+        String generatedCode = circuit.toCode();
+
+        assertTrue(generatedCode.contains("rx(pi/2)"), "Generated code should keep the symbolic angle: " + generatedCode);
+
+        // Round-trip: re-parsing the generated code yields the same angle.
+        QuantumCircuit reparsed = qasmService.parse(generatedCode);
+        ElementaryQuantumGate gate = (ElementaryQuantumGate) reparsed.getLayers().getFirst().getQuantumOperations().getFirst();
+        assertEquals(Math.PI / 2, gate.getRotationAngle(), 1e-9);
     }
 }

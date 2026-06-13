@@ -37,7 +37,7 @@ public abstract class QuantumOperation extends ElementWithId {
     public String toCode(QuantumCircuit quantumCircuit) {
         StringBuilder sb = new StringBuilder();
 
-        String operatorCode = this.operationDefinition.toCode(quantumCircuit);
+        String operatorCode = operatorToCode(quantumCircuit);
         sb.append(operatorCode);
 
         //TODO
@@ -69,5 +69,13 @@ public abstract class QuantumOperation extends ElementWithId {
         sb.append(";");
 
         return sb.toString();
+    }
+
+    /**
+     * Liefert den Operator-Teil des QASM-Codes (z.B. "h" oder "cx"). Unterklassen wie
+     * {@link ElementaryQuantumGate} hängen hier ggf. Parameter wie den Rotationswinkel an.
+     */
+    protected String operatorToCode(QuantumCircuit quantumCircuit) {
+        return this.operationDefinition.toCode(quantumCircuit);
     }
 }
