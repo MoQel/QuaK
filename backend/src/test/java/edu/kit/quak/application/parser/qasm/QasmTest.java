@@ -196,6 +196,31 @@ class QasmTest {
     }
 
     @Test
+    void eulerAndTauSurviveCodeRoundTrip() {
+        QasmService qasmService = new QasmService();
+        QuantumCircuit circuit = qasmService.parse("qubit[2] q;\nrx(euler) q[0];\nry(tau) q[1];\n");
+
+        String generatedCode = circuit.toCode();
+        assertTrue(generatedCode.contains("rx(euler)"), "Generated code should keep 'euler': " + generatedCode);
+        assertTrue(generatedCode.contains("ry(tau)"), "Generated code should keep 'tau': " + generatedCode);
+
+        // Round-trip: re-parsing the generated code yields the same angles.
+        QuantumCircuit reparsed = qasmService.parse(generatedCode);
+        List<Double> angles = new ArrayList<>();
+        for (var layer : reparsed.getLayers()) {
+            for (var operation : layer.getQuantumOperations()) {
+                if (operation instanceof ElementaryQuantumGate gate) {
+                    angles.add(gate.getRotationAngle());
+                }
+            }
+        }
+        angles.sort(Double::compareTo);
+        assertEquals(2, angles.size());
+        assertEquals(Math.E, angles.get(0), 1e-9);
+        assertEquals(Math.TAU, angles.get(1), 1e-9);
+    }
+
+    @Test
     void invalidCodeThrowsQasmParseException() {
         QasmService qasmService = new QasmService();
 

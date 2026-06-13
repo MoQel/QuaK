@@ -40,9 +40,13 @@ public class ElementaryQuantumGate extends QuantumOperation {
         return operatorCode;
     }
 
+    /** Named constants the QASM parser understands, with a small tolerance for round-trip matching. */
+    private static final double CONSTANT_MATCH_EPSILON = 1e-9;
+
     /**
-     * Formatiert den Winkel für QASM. Rationale Vielfache von pi werden symbolisch ausgegeben
-     * (z.B. "pi/2", "-pi/4", "2*pi/3"), ansonsten als Dezimalzahl.
+     * Formatiert den Winkel für QASM. Die benannten Konstanten tau und euler sowie rationale Vielfache
+     * von pi werden symbolisch ausgegeben (z.B. "tau", "euler", "pi/2", "-pi/4", "2*pi/3"), ansonsten als
+     * Dezimalzahl. So überleben sie einen parse → toCode → parse Round-Trip.
      */
     private static String formatAngle(double angle) {
         if (!Double.isFinite(angle)) {
@@ -52,14 +56,36 @@ public class ElementaryQuantumGate extends QuantumOperation {
         if (angle == 0.0) {
             return "0";
         }
+        // Check tau before the pi logic so that 2*pi is emitted as "tau" rather than "2*pi".
+        String namedConstant = tryFormatAsNamedConstant(angle);
+        if (namedConstant != null) {
+            return namedConstant;
+        }
         String piTerm = tryFormatAsPiMultiple(angle);
         if (piTerm != null) {
             return piTerm;
         }
-        if (angle == Math.rint(angle) && !Double.isInfinite(angle)) {
+        if (angle == Math.rint(angle)) {
             return Long.toString((long) angle);
         }
         return Double.toString(angle);
+    }
+
+    /** Emits "tau"/"euler" (and their negatives) for the matching constant values, otherwise {@code null}. */
+    private static String tryFormatAsNamedConstant(double angle) {
+        if (Math.abs(angle - Math.TAU) < CONSTANT_MATCH_EPSILON) {
+            return "tau";
+        }
+        if (Math.abs(angle + Math.TAU) < CONSTANT_MATCH_EPSILON) {
+            return "-tau";
+        }
+        if (Math.abs(angle - Math.E) < CONSTANT_MATCH_EPSILON) {
+            return "euler";
+        }
+        if (Math.abs(angle + Math.E) < CONSTANT_MATCH_EPSILON) {
+            return "-euler";
+        }
+        return null;
     }
 
     /**
