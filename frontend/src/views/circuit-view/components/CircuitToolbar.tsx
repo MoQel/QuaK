@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button.tsx';
-import { Minus, Plus, RefreshCw, Trash2 } from 'lucide-react';
+import { FileCode2, Minus, Plus, RefreshCw, Trash2 } from 'lucide-react';
+import { generateCircuitCode } from '@/views/circuit-view/util/circuitPersistence.ts';
 import { apiRequest } from '@/api/api.ts';
 import { CircuitResponse, isQuantumRegister, QuantumOperationDto, RegisterResponse } from '@/api/dto/circuit.ts';
 import { createCircuitService } from '@/views/circuit-view/util/circuitService.ts';
@@ -19,6 +20,7 @@ export function CircuitToolbar({ circuit, setCircuit }: Readonly<CircuitToolbarP
     const { addQubit, deleteLastQubit, resetCircuit } = createCircuitService(circuit, setCircuit);
     const [isPopoverOpen, setIsPopoverOpen] = useState(false);
     const [isParsing, setIsParsing] = useState(false);
+    const [isGenerating, setIsGenerating] = useState(false);
     const monaco = useMonaco();
     const activeFileId = useAppSelector((state) => {
         const activeGroup = state.tabs.groups.find((group) => group.id === state.tabs.activeGroupId);
@@ -57,8 +59,49 @@ export function CircuitToolbar({ circuit, setCircuit }: Readonly<CircuitToolbarP
         }
     };
 
+    const generateCodeIntoActiveEditor = async () => {
+        if (!circuit) {
+            toast.error('No circuit available');
+            return;
+        }
+        if (!monaco || !activeFileId) {
+            toast.error('No active editor file');
+            return;
+        }
+
+        const model = monaco.editor.getModel(Uri.file(activeFileId));
+        if (!model || model.isDisposed()) {
+            toast.error('No editor content available');
+            return;
+        }
+
+        setIsGenerating(true);
+        try {
+            const code = await generateCircuitCode(circuit);
+            model.setValue(code);
+            toast.success('Code generated from circuit');
+        } catch (error) {
+            toast.error('Code generation failed', {
+                description: error instanceof Error ? error.message : 'Could not generate code from the circuit.',
+            });
+            console.error(error);
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
     return (
         <div className="pb-5 flex justify-end space-x-3">
+            <Button
+                onClick={generateCodeIntoActiveEditor}
+                size="icon"
+                className="size-8"
+                variant="secondary"
+                title="Generate code from circuit"
+                disabled={isGenerating}
+            >
+                <FileCode2 />
+            </Button>
             <Button
                 onClick={parseActiveEditor}
                 size="icon"

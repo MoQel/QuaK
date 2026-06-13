@@ -71,6 +71,22 @@ export function CircuitView() {
     };
 
     /**
+     * Canonical operation order for the ASAP scheduler: by original layer, the
+     * dummy operation first (placement priority), then by topmost involved qubit.
+     * This keeps the rendered layout stable across parse/generate round trips,
+     * independent of the operation order stored in the layers.
+     */
+    const compareCanonicalOrder = (a: UiQuantumOperation, b: UiQuantumOperation): number => {
+        if (a.originalLayerIdx !== b.originalLayerIdx) return a.originalLayerIdx - b.originalLayerIdx;
+
+        const aIsDummy = a.type === 'DUMMY';
+        const bIsDummy = b.type === 'DUMMY';
+        if (aIsDummy !== bIsDummy) return aIsDummy ? -1 : 1;
+
+        return getOperationSpan(a).min - getOperationSpan(b).min;
+    };
+
+    /**
      * Determines whether a quantum operation would visually collide within the
      * specified layer. Besides exact qubit conflicts, multi-qubit gates also
      * reserve the vertical area between their target and control qubits.
@@ -143,6 +159,7 @@ export function CircuitView() {
                 .filter((op) => op.id !== draggingOperationId)
                 .map((op) => ({ ...op, originalLayerIdx: layerIdx }) as UiQuantumOperation),
         );
+        ops.sort(compareCanonicalOrder);
 
         return rescheduleOperations(ops);
     }, [activeCircuit, draggingOperationId]);
@@ -229,8 +246,9 @@ export function CircuitView() {
             }
         }
 
-        // Preserve temporal ordering before re-scheduling.
-        allOps.sort((a, b) => a.originalLayerIdx - b.originalLayerIdx);
+        // Preserve temporal ordering before re-scheduling, with canonical
+        // tie-breaking so the layout stays stable across round trips.
+        allOps.sort(compareCanonicalOrder);
 
         return rescheduleOperations(allOps);
     }, [activeCircuit, hoverPos]);

@@ -10,6 +10,7 @@ import edu.kit.quak.core.circuit.model.register.Register;
 import edu.kit.quak.core.user.model.User;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.AddQuantumOperationRequest;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.CircuitResponse;
+import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.GeneratedCodeResponse;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.MoveQuantumOperationRequest;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.UpdateCircuitRequest;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.CircuitDtoMapper;
@@ -104,6 +105,21 @@ public class CircuitRestAdapter {
         List<Layer> layers = request.layers().stream().map(layerDtoMapper::toDomain).toList();
         QuantumCircuit circuit = service.replaceContent(circuitId, registers, layers, user);
         return mapper.toResponse(circuit);
+    }
+
+    /**
+     * Generates OpenQASM code from the given circuit content without persisting
+     * anything. Counterpart of the /qasm/parse endpoint.
+     */
+    @PostMapping("/code")
+    @PreAuthorize("isAuthenticated()")
+    public GeneratedCodeResponse generateCode(@RequestBody UpdateCircuitRequest request) {
+        log.debug("REST request to generate code from circuit content");
+        List<Register> registers = request.registers().stream().map(registerDtoMapper::toDomain).toList();
+        List<Layer> layers = request.layers().stream().map(layerDtoMapper::toDomain).toList();
+
+        QuantumCircuit circuit = QuantumCircuit.builder().registers(registers).layers(layers).build();
+        return new GeneratedCodeResponse(circuit.toCode());
     }
 
     /**
