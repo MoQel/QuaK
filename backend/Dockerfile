@@ -59,5 +59,9 @@ RUN gradle bootJar --no-daemon -PbuildFrontend=false --console=plain
 FROM eclipse-temurin:21-jre-jammy
 WORKDIR /app
 COPY --from=builder /app/build/libs/*.jar quak.jar
+
+# Download OpenTelemetry Java agent for automatic instrumentation
+RUN wget -q https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/latest/download/opentelemetry-javaagent.jar -O /app/opentelemetry-javaagent.jar
+
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "quak.jar"]
+ENTRYPOINT ["java", "-javaagent:/app/opentelemetry-javaagent.jar", "-jar", "quak.jar"]

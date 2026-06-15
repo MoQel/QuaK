@@ -36,10 +36,18 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${MARIADB_ROOT_PASSWORD:-hello}
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       FRONTEND_URL: http://localhost:8080
+      # OpenTelemetry configuration for SigNoz
+      OTEL_RESOURCE_ATTRIBUTES: service.name=QuaK,service.version=0.0.1
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://signoz-ingester-1:4317
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+      OTEL_METRICS_EXPORTER: none
+      OTEL_LOGS_EXPORTER: otlp
+      OTEL_TRACES_EXPORTER: otlp
     env_file:
       - ./backend/.env
     networks:
       - quak-network
+      - traefik-net
     restart: unless-stopped
 
 volumes:
@@ -49,3 +57,5 @@ volumes:
 networks:
   quak-network:
     driver: bridge
+  traefik-net:
+    external: true
