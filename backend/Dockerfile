@@ -70,6 +70,9 @@ COPY --from=builder /app/build/libs/*.jar quak.jar
 COPY --from=python-lsp-builder /opt/lsp/python /opt/lsp/python
 COPY --from=qasm-lsp-builder /go/bin/qasmlsp /opt/lsp/qasm/qasmlsp
 
+# Download OpenTelemetry Java agent for automatic instrumentation
+RUN wget -q https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/latest/download/opentelemetry-javaagent.jar -O /app/opentelemetry-javaagent.jar
+
 RUN mkdir -p /var/lib/quak/lsp-workspace && \
     chown -R quak:quak /app /var/lib/quak
 
@@ -79,4 +82,4 @@ USER quak
 
 EXPOSE 8080
 
-ENTRYPOINT ["java", "-jar", "quak.jar"]
+ENTRYPOINT ["java", "-javaagent:/app/opentelemetry-javaagent.jar", "-jar", "quak.jar"]
