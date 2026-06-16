@@ -1,5 +1,5 @@
 import { Gauge, Plus, X as LucideX } from 'lucide-react';
-import { ComponentType } from 'react';
+import type { ComponentType } from 'react';
 import { QuantumOperationType } from '@/api/dto/circuit.ts';
 
 export type OperationIdentifier =
@@ -28,7 +28,7 @@ export type OperationDefinition = {
     targetSize: number;
     controlSize: number;
     totalSize: number;
-    icon: { type: 'component'; component: ComponentType<any> } | { type: 'text'; text: string };
+    icon: { type: 'component'; component: ComponentType<{ className?: string }> } | { type: 'text'; text: string };
     label?: string;
     formClass: ShapeClass;
     color: Color;

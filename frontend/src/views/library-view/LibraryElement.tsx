@@ -38,11 +38,6 @@ export function LibraryElement({ identifier, onClick, matrix }: Readonly<Library
         setIsOpen(false);
         setIsDragging(true);
 
-        // Debug: log to help diagnose why dragstart may not fire in the browser
-        // Remove these logs after debugging.
-        // eslint-disable-next-line no-console
-        console.log('LibraryElement: dragstart', identifier);
-
         const data: DragData = {
             origin: 'library',
             operationIdentifier: identifier,
@@ -54,8 +49,6 @@ export function LibraryElement({ identifier, onClick, matrix }: Readonly<Library
     };
 
     const handleDragEnd = () => {
-        // eslint-disable-next-line no-console
-        console.log('LibraryElement: dragend', identifier);
         // Wait 100ms to avoid opening tooltip after dragging.
         setTimeout(() => {
             setIsDragging(false);
@@ -76,15 +69,7 @@ export function LibraryElement({ identifier, onClick, matrix }: Readonly<Library
                 <div
                     id={identifier.toLowerCase()}
                     onClick={onClick}
-                    onMouseDown={(e) => {
-                        // eslint-disable-next-line no-console
-                        console.log('LibraryElement: mousedown', identifier, (e.target as HTMLElement)?.tagName);
-                    }}
-                    onMouseUp={(e) => {
-                        // eslint-disable-next-line no-console
-                        console.log('LibraryElement: mouseup', identifier, (e.target as HTMLElement)?.tagName);
-                    }}
-                    draggable={true}
+                    draggable
                     onDragStart={handleDragStart}
                     onDragEnd={handleDragEnd}
                     className={`
@@ -92,7 +77,7 @@ export function LibraryElement({ identifier, onClick, matrix }: Readonly<Library
                         flex items-center justify-center
                         hover:brightness-90 dark:hover:brightness-125 transition-colors
                         ${styles.libraryElement}`}
-                    style={{ backgroundColor: definition.color, color: 'var(--bg-dark)', WebkitUserDrag: 'element' }}
+                    style={{ backgroundColor: definition.color, color: 'var(--bg-dark)' }}
                 >
                     {icon}
                 </div>

@@ -12,7 +12,7 @@ import {
 } from '@/api/dto/circuit.ts';
 import { DragData, FlatQubit, HoverPos, UiLayer } from '@/views/circuit-view/util/types.ts';
 import { createCircuitService } from '@/views/circuit-view/util/circuitService.ts';
-import { getOperationDefinition } from '@/lib/operations.ts';
+import { getOperationDefinition, type OperationIdentifier } from '@/lib/operations.ts';
 
 interface DropzoneGridProps {
     circuit: CircuitResponse | undefined;
@@ -26,7 +26,7 @@ interface DropzoneGridProps {
         layerIdx: number;
         targetQubits: ElementSelectorDto[];
         controlQubits: ElementSelectorDto[];
-        operationIdentifier: string;
+        operationIdentifier: OperationIdentifier;
     }) => void;
 }
 
@@ -190,7 +190,7 @@ export function DropzoneGrid({
                         break;
                     }
                     default:
-                        console.error(`Unknown drag origin: ${(data as any).origin}`);
+                        console.error(`Unknown drag origin: ${String((data as Partial<DragData>).origin)}`);
                         break;
                 }
             } catch (error) {
@@ -201,7 +201,7 @@ export function DropzoneGrid({
                 setDraggingOperationId(null);
             }
         },
-        [addQuantumOperation, moveQuantumOperation, hasCircuitStateChanged, dispatch],
+        [addQuantumOperation, moveQuantumOperation, hasCircuitStateChanged, dispatch, onRequestMeasurementTarget],
     );
 
     return (

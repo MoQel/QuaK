@@ -1,13 +1,6 @@
 import React, { useMemo, useRef } from 'react';
 import styles from '@/App.module.css';
-import {
-    QuantumOperationDto,
-    RegisterResponse,
-    ElementSelectorDto,
-    getRegisterSize,
-    getVisualY,
-    MeasurementDto,
-} from '@/api/dto/circuit.ts';
+import { QuantumOperationDto, RegisterResponse, getVisualY } from '@/api/dto/circuit.ts';
 import { getOperationDefinition, OperationDefinition } from '@/lib/operations.ts';
 import { CELL_WIDTH, QUBIT_HEIGHT } from '@/views/circuit-view/util/layout.ts';
 import { TextIcon } from '@/components/ui/text-icon.tsx';
@@ -37,9 +30,10 @@ export function ElementaryQuantumGate({
     const { targetYs, controlYs, classicYs, visualTop, spanHeight } = useMemo(() => {
         const tYs = operation.targetQubits.map((t) => getVisualY(registers, t.registerId, t.index));
         const cYs = operation.controlQubits.map((c) => getVisualY(registers, c.registerId, c.index));
-        const clYs = (operation.type === 'MEASUREMENT' ? (operation as MeasurementDto).classicBits : []).map((cl) =>
-            getVisualY(registers, cl.registerId, cl.index),
-        );
+        const clYs =
+            operation.type === 'MEASUREMENT'
+                ? operation.classicBits.map((cl) => getVisualY(registers, cl.registerId, cl.index))
+                : [];
         const allYs = [...tYs, ...cYs, ...clYs];
         const visualTop = allYs.length > 0 ? Math.min(...allYs) : 0;
         const visualBottom = allYs.length > 0 ? Math.max(...allYs) : 0;

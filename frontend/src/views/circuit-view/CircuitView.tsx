@@ -14,6 +14,7 @@ import { createCircuitService } from '@/views/circuit-view/util/circuitService.t
 import { MeasurementDto } from '@/api/dto/circuit';
 import { MeasurementTargetDialog } from './components/MeasurementTargetDialog';
 import { LABEL_WIDTH, QUBIT_HEIGHT, REGISTER_HEADER_HEIGHT } from '@/views/circuit-view/util/layout.ts';
+import type { OperationIdentifier } from '@/lib/operations.ts';
 
 import { useProject } from '@/contexts/ProjectContext';
 
@@ -30,7 +31,7 @@ export function CircuitView() {
         layerIdx: number;
         targetQubits: ElementSelectorDto[];
         controlQubits: ElementSelectorDto[];
-        operationIdentifier: string;
+        operationIdentifier: OperationIdentifier;
     } | null>(null);
 
     /**
@@ -280,7 +281,7 @@ export function CircuitView() {
                             if (!measurementContext) return;
                             const operation: MeasurementDto = {
                                 type: 'MEASUREMENT',
-                                identifier: measurementContext.operationIdentifier as any,
+                                identifier: measurementContext.operationIdentifier,
                                 inverseForm: false,
                                 targetQubits: measurementContext.targetQubits,
                                 controlQubits: measurementContext.controlQubits,
