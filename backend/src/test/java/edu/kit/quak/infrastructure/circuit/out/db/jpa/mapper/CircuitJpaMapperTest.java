@@ -43,7 +43,7 @@ class CircuitJpaMapperTest {
         assertEquals(circuitId, entity.getId());
         assertEquals(projectId, entity.getProjectId());
         assertEquals(1, entity.getRegisters().size());
-        assertEquals("q", entity.getRegisters().getFirst().getName());
+        assertEquals("x", entity.getRegisters().getFirst().getName());
         assertInstanceOf(JpaQuantumRegister.class, entity.getRegisters().getFirst());
         assertEquals(INIT_QUBITS, ((JpaQuantumRegister) entity.getRegisters().getFirst()).getNumberOfQubits());
         assertEquals(entity, entity.getRegisters().getFirst().getCircuit()); // AfterMapping
