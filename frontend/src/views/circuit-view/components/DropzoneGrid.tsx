@@ -6,7 +6,6 @@ import {
     CircuitResponse,
     ElementaryQuantumGateDto,
     ElementSelectorDto,
-    MeasurementDto,
     MoveQuantumOperationRequest,
     REGISTER_TYPE_QUANTUM,
 } from '@/api/dto/circuit.ts';
@@ -163,16 +162,6 @@ export function DropzoneGrid({
                                     controlQubits,
                                     operationIdentifier: data.operationIdentifier,
                                 });
-                            } else {
-                                const operation: MeasurementDto = {
-                                    type: 'MEASUREMENT',
-                                    identifier: data.operationIdentifier,
-                                    inverseForm: false,
-                                    targetQubits,
-                                    controlQubits,
-                                    classicBits: [],
-                                };
-                                addQuantumOperation({ quantumOperation: operation, layerIdx });
                             }
                         }
                         break;

@@ -274,7 +274,10 @@ export function CircuitView() {
                     </div>
                     <MeasurementTargetDialog
                         open={measurementDialogOpen}
-                        onOpenChange={(open) => !open && setMeasurementDialogOpen(false)}
+                        onOpenChange={(open) => {
+                            setMeasurementDialogOpen(open);
+                            if (!open) setMeasurementContext(null);
+                        }}
                         circuit={circuit}
                         onOpenRegisterManager={() => globalThis.dispatchEvent(new CustomEvent('open-register-manager'))}
                         onSubmit={(classicBits) => {
