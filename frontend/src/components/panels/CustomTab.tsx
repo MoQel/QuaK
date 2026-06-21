@@ -1,16 +1,11 @@
 import { IDockviewPanelHeaderProps } from 'dockview-react';
 import { X } from 'lucide-react';
 import React, { useCallback, useEffect, useState } from 'react';
-import { safeCloseCodePanel } from '@/store/tabs/tabsThunks.ts';
-import { useAppDispatch } from '@/hooks/useAppDispatch.ts';
-import { useAppSelector } from '@/hooks/useAppSelector.ts';
 import { Button } from '@/components/ui/button.tsx';
 
 export const CustomTabRenderer = (props: IDockviewPanelHeaderProps) => {
     const { api } = props;
     const [isVisible, setIsVisible] = useState(api.isVisible);
-    const dispatch = useAppDispatch();
-    const dirtyFiles = useAppSelector((state) => state.tabs.dirtyFiles);
 
     useEffect(() => {
         const disposable = api.onDidVisibilityChange((event) => {
@@ -19,28 +14,16 @@ export const CustomTabRenderer = (props: IDockviewPanelHeaderProps) => {
         return () => disposable.dispose();
     }, [api]);
 
-    useEffect(() => {
-        const handleForceClose = () => {
-            if (api.id === 'code') api.close();
-        };
-
-        globalThis.addEventListener('dockview-close-panel-code', handleForceClose);
-        return () => globalThis.removeEventListener('dockview-close-panel-code', handleForceClose);
-    }, [api]);
-
     const handleClose = useCallback(
         (event: React.MouseEvent) => {
             event.preventDefault();
             event.stopPropagation();
-            // Check if dirty files are open
-            if (api.id === 'code' && dirtyFiles.length !== 0) {
-                dispatch(safeCloseCodePanel());
-                return;
-            }
-
+            // Closing a panel is a pure layout action: hide the view but keep the open
+            // tabs (and therefore the circuit) intact. This is symmetric across panels —
+            // closing the Code panel no longer wipes every tab.
             api.close();
         },
-        [api, dirtyFiles],
+        [api],
     );
 
     return (

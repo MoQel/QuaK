@@ -7,6 +7,7 @@ import 'dockview-core/dist/styles/dockview.css';
 import { CustomTabRenderer } from '@/components/panels/CustomTab.tsx';
 import { useProject } from '@/contexts/ProjectContext.tsx';
 import { useTabsPersistence } from '@/hooks/useTabsPersistence.ts';
+import { useMonacoGarbageCollector } from '@/hooks/editor/useMonacoGarbageCollector.ts';
 
 function App() {
     const { onReady } = useDockviewLogic();
@@ -14,6 +15,10 @@ function App() {
 
     usePreventKeyboardActions();
     useTabsPersistence(projectId);
+    // Mounted at the IDE host (project route) rather than the Code panel, so its
+    // teardown (closeAll + dispose models) fires only when leaving the IDE — not
+    // when the Code panel itself is closed, which previously wiped every tab.
+    useMonacoGarbageCollector();
 
     return (
         <div className="h-full w-full">

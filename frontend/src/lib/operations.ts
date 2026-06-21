@@ -45,6 +45,8 @@ export type OperationDefinition = {
     label?: string;
     formClass: ShapeClass;
     color: Color;
+    /** Parametric rotation gate (rx/ry/rz): its `rotationAngle` is shown on the gate box. */
+    hasRotationAngle?: boolean;
 };
 
 const H: OperationDefinition = {
@@ -155,6 +157,7 @@ const RX: OperationDefinition = {
     icon: { type: 'text', text: 'RX' },
     formClass: 'rounded-none',
     color: 'var(--quantum)',
+    hasRotationAngle: true,
 };
 
 const RY: OperationDefinition = {
@@ -165,6 +168,7 @@ const RY: OperationDefinition = {
     icon: { type: 'text', text: 'RY' },
     formClass: 'rounded-none',
     color: 'var(--quantum)',
+    hasRotationAngle: true,
 };
 
 const RZ: OperationDefinition = {
@@ -175,6 +179,7 @@ const RZ: OperationDefinition = {
     icon: { type: 'text', text: 'RZ' },
     formClass: 'rounded-none',
     color: 'var(--quantum)',
+    hasRotationAngle: true,
 };
 
 const MEASURE: OperationDefinition = {

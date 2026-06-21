@@ -4,6 +4,7 @@ import { QuantumOperationDto, RegisterResponse, ElementSelectorDto, getRegisterS
 import { getOperationDefinition, OperationDefinition } from '@/lib/operations.ts';
 import { CELL_WIDTH, QUBIT_HEIGHT } from '@/views/circuit-view/util/layout.ts';
 import { TextIcon } from '@/components/ui/text-icon.tsx';
+import { formatRotationAngle } from '@/views/circuit-view/util/angle.ts';
 import { DragData } from '../util/types';
 
 interface ElementaryQuantumGateProps {
@@ -34,6 +35,12 @@ export function ElementaryQuantumGate({
 }: Readonly<ElementaryQuantumGateProps>) {
     const definition = getOperationDefinition(operation.identifier);
     const isDraggingRef = useRef(false);
+
+    // Rotation gates (rx/ry/rz) show their angle on the box, e.g. "π/2".
+    const angleLabel =
+        definition.hasRotationAngle && operation.type === 'ELEMENTARY_QUANTUM_GATE'
+            ? formatRotationAngle(operation.rotationAngle)
+            : null;
 
     // Compute geometry (indices, span, bounds)
     const { targetIndices, controlIndices, minY, spanHeight } = useMemo(() => {
@@ -129,6 +136,7 @@ export function ElementaryQuantumGate({
                     relativeIdx={idx - minY}
                     definition={definition}
                     isSWAP={operation.identifier === 'SWAP'}
+                    angleLabel={angleLabel}
                 />
             ))}
         </div>
@@ -158,15 +166,31 @@ function TargetPoint({
     relativeIdx,
     definition,
     isSWAP,
-}: Readonly<{ relativeIdx: number; definition: OperationDefinition; isSWAP: boolean }>) {
-    let icon: React.ReactNode;
+    angleLabel,
+}: Readonly<{
+    relativeIdx: number;
+    definition: OperationDefinition;
+    isSWAP: boolean;
+    angleLabel?: string | null;
+}>) {
+    let content: React.ReactNode;
 
     if (definition.icon.type === 'component') {
         const ComponentIcon = definition.icon.component;
-        icon = <ComponentIcon className="size-4 stroke-4" />;
+        content = <ComponentIcon className="size-4 stroke-4" />;
+    } else if (angleLabel) {
+        // Rotation gate: stack the identifier over its angle so both fit the box.
+        content = (
+            <div className="flex flex-col items-center justify-center leading-none">
+                <span style={{ fontSize: '12px' }}>{definition.icon.text}</span>
+                <span style={{ fontSize: '9px' }} className="font-semibold opacity-90">
+                    {angleLabel}
+                </span>
+            </div>
+        );
     } else {
         const TextIconComponent = TextIcon(definition.icon.text);
-        icon = <TextIconComponent />;
+        content = <TextIconComponent />;
     }
 
     return (
@@ -185,10 +209,14 @@ function TargetPoint({
                 style={
                     isSWAP
                         ? { backgroundColor: 'transparent', color: definition.color }
-                        : { backgroundColor: definition.color, color: 'var(--bg-dark)' }
+                        : {
+                              backgroundColor: definition.color,
+                              color: 'var(--bg-dark)',
+                              ...(angleLabel ? { padding: '2px 3px' } : {}),
+                          }
                 }
             >
-                {icon}
+                {content}
             </div>
         </div>
     );

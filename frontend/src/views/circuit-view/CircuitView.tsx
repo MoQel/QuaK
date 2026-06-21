@@ -15,7 +15,7 @@ import { CELL_WIDTH, LABEL_WIDTH, QUBIT_HEIGHT } from '@/views/circuit-view/util
 import { useCircuitTabs } from '@/contexts/CircuitTabsContext.tsx';
 
 export function CircuitView() {
-    const { activeCircuit, setActiveCircuit } = useCircuitTabs();
+    const { activeCircuit, setActiveCircuit, activeCircuitTabId } = useCircuitTabs();
     const removeQuantumOperation = (operationId: string) => {
         setActiveCircuit((prev) => {
             if (!prev) return prev;
@@ -257,6 +257,19 @@ export function CircuitView() {
     const operationAreaWidth = operationColumnCount * CELL_WIDTH;
     const circuitWidth = LABEL_WIDTH + operationAreaWidth;
     const circuitHeight = Math.max(flatQubits.length * QUBIT_HEIGHT, QUBIT_HEIGHT);
+
+    // Without an active file tab the only available circuit is the project-level
+    // circuit (fileId IS NULL), which has no entry in the explorer. Mirror the Code
+    // Editor's "No file open" state instead of exposing that orphaned circuit.
+    if (!activeCircuitTabId) {
+        return (
+            <Card className="h-full overflow-hidden border-none rounded-none bg-bg-subtle p-0 gap-0">
+                <CardContent className="flex h-full items-center justify-center p-0 text-gray-500">
+                    No file open
+                </CardContent>
+            </Card>
+        );
+    }
 
     return (
         <Card className="h-full overflow-hidden border-none rounded-none bg-bg-subtle p-0 gap-0">

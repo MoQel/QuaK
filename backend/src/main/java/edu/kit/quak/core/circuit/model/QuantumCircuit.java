@@ -306,8 +306,9 @@ public class QuantumCircuit extends ElementWithId {
         }
         stringBuilder.append("\n");
 
-        for (Layer layer : layers) {
-            stringBuilder.append("// Layer ").append(layer.id).append("\n");
+        for (int layerIdx = 0; layerIdx < layers.size(); layerIdx++) {
+            Layer layer = layers.get(layerIdx);
+            stringBuilder.append("// Layer ").append(layerIdx + 1).append("\n");
             stringBuilder.append(layer.toCode(this)).append("\n");
         }
         return stringBuilder.toString();
