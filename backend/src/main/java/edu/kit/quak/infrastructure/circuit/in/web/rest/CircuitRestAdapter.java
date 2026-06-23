@@ -115,6 +115,9 @@ public class CircuitRestAdapter {
     public GeneratedCodeResponse generateCode(@RequestBody UpdateCircuitRequest request) {
         log.debug("REST request to generate code from circuit content");
         QuantumCircuit circuit = QuantumCircuit.builder().registers(toRegisters(request)).layers(toLayers(request)).build();
+        // Canonicalize the layering (same ASAP + span-overlap rule the frontend renders with) so
+        // the emitted "// Layer N" blocks match the rendered circuit columns.
+        circuit.reschedule();
         return new GeneratedCodeResponse(circuit.toCode());
     }
 

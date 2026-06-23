@@ -176,15 +176,27 @@ public class QuantumCircuit extends ElementWithId {
     }
 
     /**
+     * Re-runs the ASAP layer scheduling. Exposed for code generation, which builds a transient
+     * circuit from request content and must canonicalize the layering so the emitted {@code
+     * // Layer N} blocks line up with the rendered columns. Regenerates operation ids as a side
+     * effect, so only call this on a transient circuit, never on a persisted one.
+     */
+    public void reschedule() {
+        rescheduleOperations();
+    }
+
+    /**
      * Re-calculates the position of all operations to ensure they are positioned as far left
      * as possible (ASAP scheduling) while respecting qubit collisions and preserving
      * logical dependency barriers.
      */
     private void rescheduleOperations() {
-        // 1. Extract all operations in their original relative order
+        // 1. Extract all operations in canonical order: original layer first, then by topmost
+        // involved qubit. This mirrors the order the frontend renders with, so the stored layers
+        // (and the generated code) line up with the rendered circuit columns.
         List<QuantumOperation> allOps = layers
             .stream()
-            .flatMap(l -> l.getQuantumOperations().stream())
+            .flatMap(layer -> layer.getQuantumOperations().stream().sorted(Comparator.comparingInt(op -> operationSpan(op)[0])))
             .toList();
 
         // 2. Clear current layers
@@ -234,19 +246,17 @@ public class QuantumCircuit extends ElementWithId {
      *
      * @param op The quantum operation to check for potential collisions.
      * @param layerIdx The index of the layer to inspect.
-     * @return {@code true} if a qubit overlap is detected.
+     * @return {@code true} if the operation's span overlaps an existing operation's span.
      */
     private boolean isQubitCollisionInLayer(QuantumOperation op, int layerIdx) {
         if (layerIdx >= layers.size()) return false;
 
-        Set<ElementSelector> requiredQubits = getTargetAndControlQubits(op);
-
+        int[] span = operationSpan(op);
         return layers
             .get(layerIdx)
             .getQuantumOperations()
             .stream()
-            .map(this::getTargetAndControlQubits)
-            .anyMatch(existingQubits -> !Collections.disjoint(requiredQubits, existingQubits));
+            .anyMatch(existing -> spansOverlap(span, operationSpan(existing)));
     }
 
     private Set<ElementSelector> getTargetAndControlQubits(QuantumOperation op) {
@@ -254,6 +264,43 @@ public class QuantumCircuit extends ElementWithId {
         Stream<ElementSelector> controlStream = op.getControlQubits() != null ? op.getControlQubits().stream() : Stream.empty();
 
         return Stream.concat(targetStream, controlStream).collect(Collectors.toSet());
+    }
+
+    /**
+     * Span of the global qubit indices an operation reaches, from its topmost to its bottommost
+     * involved qubit (targets and controls).
+     */
+    private int[] operationSpan(QuantumOperation op) {
+        int min = Integer.MAX_VALUE;
+        int max = Integer.MIN_VALUE;
+        for (ElementSelector selector : getTargetAndControlQubits(op)) {
+            int index = globalQubitIndex(selector);
+            min = Math.min(min, index);
+            max = Math.max(max, index);
+        }
+        return new int[] { min, max };
+    }
+
+    /**
+     * Two operations may share a layer only if their spans do not overlap. An actual qubit
+     * conflict is covered by this (the shared qubit lies in both spans); additionally, two
+     * multi-qubit gates with crossing vertical reach are kept apart, matching how the circuit is
+     * rendered (and therefore how the generated code is layered).
+     */
+    private static boolean spansOverlap(int[] spanA, int[] spanB) {
+        return spanA[0] <= spanB[1] && spanB[0] <= spanA[1];
+    }
+
+    /** Absolute qubit index across all registers, matching the frontend's wire ordering. */
+    private int globalQubitIndex(ElementSelector selector) {
+        int offset = 0;
+        for (Register register : registers) {
+            if (register.getId().equals(selector.getRegisterId())) {
+                return offset + selector.getIndex();
+            }
+            offset += register.asQuantum().map(QuantumRegister::getNumberOfQubits).orElse(0);
+        }
+        return offset + selector.getIndex();
     }
 
     private void flushLayers() {

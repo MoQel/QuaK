@@ -188,4 +188,59 @@ class QuantumCircuitTest {
         // Assert
         assertEquals(1, circuit.getLayers().size(), "Second layer is now empty and should be flushed.");
     }
+
+    @Test
+    void overlappingSpanGatesAreSeparatedIntoDifferentLayers() {
+        // Two CX gates on disjoint qubits but with crossing vertical spans (q0–q2 and q1–q3) must
+        // not share a layer, so the stored layers line up with the rendered circuit columns.
+        QuantumCircuit circuit = new QuantumCircuit("");
+        String registerId = circuit.getRegisters().getFirst().asQuantum().orElseThrow().getId();
+
+        QuantumOperation cx02 = new ElementaryQuantumGate(
+            QuantumOperationLibrary.CX,
+            false,
+            List.of(new ElementSelector(registerId, 2)),
+            List.of(new ElementSelector(registerId, 0)),
+            0d
+        );
+        circuit.addQuantumOperation(cx02, 0);
+
+        QuantumOperation cx13 = new ElementaryQuantumGate(
+            QuantumOperationLibrary.CX,
+            false,
+            List.of(new ElementSelector(registerId, 3)),
+            List.of(new ElementSelector(registerId, 1)),
+            0d
+        );
+        circuit.addQuantumOperation(cx13, 0);
+
+        assertEquals(2, circuit.getLayers().size(), "Gates with overlapping spans must occupy separate layers.");
+    }
+
+    @Test
+    void nonOverlappingGatesShareALayer() {
+        // Single-qubit gates on different qubits do not overlap and stay in one layer.
+        QuantumCircuit circuit = new QuantumCircuit("");
+        String registerId = circuit.getRegisters().getFirst().asQuantum().orElseThrow().getId();
+
+        QuantumOperation h0 = new ElementaryQuantumGate(
+            QuantumOperationLibrary.H,
+            false,
+            List.of(new ElementSelector(registerId, 0)),
+            List.of(),
+            0d
+        );
+        circuit.addQuantumOperation(h0, 0);
+
+        QuantumOperation x2 = new ElementaryQuantumGate(
+            QuantumOperationLibrary.X,
+            false,
+            List.of(new ElementSelector(registerId, 2)),
+            List.of(),
+            0d
+        );
+        circuit.addQuantumOperation(x2, 0);
+
+        assertEquals(1, circuit.getLayers().size(), "Non-overlapping operations may share a layer.");
+    }
 }

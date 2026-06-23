@@ -106,7 +106,9 @@ class CircuitLifecycleIntegrationTest {
             .andReturn();
 
         JsonNode cxGateNode = objectMapper.readTree(addCxGateResult.getResponse().getContentAsString());
-        String cxGateId = cxGateNode.at("/layers/0/quantumOperations/1/id").asText();
+        // Locate the CX by identifier rather than a fixed index: the intra-layer order is an
+        // implementation detail (the scheduler prepends, toCode/rendering re-sort by qubit).
+        String cxGateId = findOperationId(cxGateNode, "CX");
 
         // 6. Move CX-Gate to target Qubit 0.
         // Causes collision with H-Gate, forcing CX into Layer 1.
@@ -173,6 +175,18 @@ class CircuitLifecycleIntegrationTest {
     }
 
     // --- Helper Methods ---
+
+    /** Returns the id of the first operation with the given identifier, regardless of layer/position. */
+    private String findOperationId(JsonNode circuit, String identifier) {
+        for (JsonNode layer : circuit.at("/layers")) {
+            for (JsonNode operation : layer.at("/quantumOperations")) {
+                if (identifier.equals(operation.at("/identifier").asText())) {
+                    return operation.at("/id").asText();
+                }
+            }
+        }
+        throw new AssertionError("No operation with identifier '" + identifier + "' found in circuit");
+    }
 
     /**
      * Builds JSON for adding an elementary quantum gate.
