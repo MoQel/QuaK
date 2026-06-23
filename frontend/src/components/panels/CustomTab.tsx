@@ -30,7 +30,7 @@ export const CustomTabRenderer = (props: IDockviewPanelHeaderProps) => {
         <div
             // onClick={() => api.setActive()}
             className={`
-                flex items-center justify-between h-full px-3 cursor-pointer transition-colors duration-150 group
+                flex items-center justify-between h-full w-[120px] px-3 cursor-pointer transition-colors duration-150 group
                 ${isVisible ? 'bg-transparent' : 'hover:bg-[var(--bg)]'}
                 ${isVisible ? 'border-b-2 border-[var(--special)]' : 'border-b-2 border-transparent'}
             `}

@@ -5,6 +5,7 @@ import { componentRegistry } from '@/components/panels/componentRegistry';
 import { useDockviewLogic } from '@/hooks/useDockviewLogic';
 import 'dockview-core/dist/styles/dockview.css';
 import { CustomTabRenderer } from '@/components/panels/CustomTab.tsx';
+import { PanelHeaderActions } from '@/components/panels/PanelHeaderActions.tsx';
 import { useProject } from '@/contexts/ProjectContext.tsx';
 import { useTabsPersistence } from '@/hooks/useTabsPersistence.ts';
 import { useMonacoGarbageCollector } from '@/hooks/editor/useMonacoGarbageCollector.ts';
@@ -25,6 +26,7 @@ function App() {
             <DockviewReact
                 components={componentRegistry}
                 defaultTabComponent={CustomTabRenderer}
+                leftHeaderActionsComponent={PanelHeaderActions}
                 onReady={onReady}
                 className="dockview-theme-custom h-full w-full"
             />

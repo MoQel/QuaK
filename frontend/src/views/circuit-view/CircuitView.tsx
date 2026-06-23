@@ -3,7 +3,6 @@ import { useMemo, useState } from 'react';
 import { ElementSelectorDto, getInvolvedSelectors, getRegisterSize, getSelectorKey } from '@/api/dto/circuit';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store.ts';
-import { CircuitToolbar } from './components/CircuitToolbar.tsx';
 import { CircuitTabBar } from '@/views/circuit-view/components/CircuitTabBar.tsx';
 import { QubitWires } from './components/QubitWires.tsx';
 import { QuantumOperationGrid } from './components/QuantumOperationGrid.tsx';
@@ -275,9 +274,6 @@ export function CircuitView() {
         <Card className="h-full overflow-hidden border-none rounded-none bg-bg-subtle p-0 gap-0">
             <CardContent className="flex flex-col h-full p-0">
                 <CircuitTabBar />
-                <div className="px-6 pt-5">
-                    <CircuitToolbar circuit={activeCircuit} setCircuit={setActiveCircuit} />
-                </div>
 
                 {/* Circuit Canvas */}
                 <div className="relative flex-1 overflow-auto flex flex-col [&::-webkit-scrollbar-track]:bg-bg-subtle">
