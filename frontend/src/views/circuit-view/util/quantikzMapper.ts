@@ -14,6 +14,10 @@ const PI_FRACTION_DENOMINATORS = [1, 2, 3, 4, 6, 8, 12, 16];
 const ANGLE_TOLERANCE = 1e-8;
 const TRAILING_COLUMNS = 1; // Keep trailing wire column so the rendered circuit does not end directly at the last gate.
 
+/**
+ * Exports circuits using Quantikz2 syntax
+ * (quantikz package v1.0+, loaded via \usetikzlibrary{quantikz2}).
+ */
 export function toQuantikz(circuit: CircuitResponse): string {
     const wireIndex = buildWireIndex(circuit.registers);
 
@@ -131,6 +135,11 @@ function applyElementaryGate(
     const identifier = gate.identifier.toUpperCase();
     const targetWires = getTargetWires(wireIndex, gate);
 
+    // Do not allow multitarget gates
+    if (identifier !== 'SWAP' && targetWires.length !== 1) {
+        return;
+    }
+
     if (!targetWires.length) return;
 
     if (identifier === 'SWAP') {
@@ -198,8 +207,7 @@ function applyControls(
 
         if (controlWire === undefined) continue;
 
-        // Controls point to the closest target wire so CCX/CZ remain compact even when controls are on both sides.
-        const targetWire = findNearestWire(controlWire, targetWires);
+        const targetWire = targetWires[0];
         grid[controlWire][layerIdx] = String.raw`\ctrl{${targetWire - controlWire}}`;
     }
 }
@@ -228,14 +236,6 @@ function gateLabel(gate: ElementaryQuantumGateDto): string {
 
 function isControlledXGate(identifier: string, gate: ElementaryQuantumGateDto): boolean {
     return ['X', 'CX', 'CCX'].includes(identifier) && Boolean(gate.controlQubits?.length);
-}
-
-function findNearestWire(sourceWire: number, targetWires: number[]): number {
-    return targetWires.reduce(
-        (nearestWire, currentWire) =>
-            Math.abs(currentWire - sourceWire) < Math.abs(nearestWire - sourceWire) ? currentWire : nearestWire,
-        targetWires[0],
-    );
 }
 
 // Prefer symbolic π fractions for common rotation angles; fall back to a compact decimal.

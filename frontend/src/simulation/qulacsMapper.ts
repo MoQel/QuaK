@@ -22,7 +22,7 @@ type GateContext = {
     angle: number;
 };
 
-export class CircuitTranslator {
+export class QulacsMapper {
     // Default values, if options not set
     private static readonly SAMPLE_COUNT = 1024;
     private static readonly MAX_CIRCUIT_WIDTH = 12;

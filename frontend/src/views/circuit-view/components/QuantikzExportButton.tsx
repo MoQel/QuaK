@@ -1,4 +1,5 @@
-import { Download } from 'lucide-react';
+import { Download, SquareArrowRight } from 'lucide-react';
+
 import { CircuitResponse } from '@/api/dto/circuit.ts';
 import { Button } from '@/components/ui/button.tsx';
 import {
@@ -24,7 +25,10 @@ export function QuantikzExportButton({ circuit }: Readonly<QuantikzExportButtonP
     return (
         <Dialog>
             <DialogTrigger asChild>
-                <Button disabled={!circuit}>Export Circuit</Button>
+                <Button disabled={!circuit}>
+                    <SquareArrowRight />
+                    Latex
+                </Button>
             </DialogTrigger>
 
             <DialogContent className="max-w-3xl max-h-[90vh]">
