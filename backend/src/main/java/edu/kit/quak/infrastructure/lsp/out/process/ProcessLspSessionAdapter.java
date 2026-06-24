@@ -20,6 +20,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.socket.CloseStatus;
 
 @Slf4j
 public class ProcessLspSessionAdapter implements LspSessionPort {
@@ -205,9 +206,9 @@ public class ProcessLspSessionAdapter implements LspSessionPort {
 
         try {
             if (serverTerminatedUnexpectedly) {
-                clientConnection.close(1011, "Language server terminated");
+                clientConnection.close(CloseStatus.SERVER_ERROR.getCode(), "Language server terminated");
             } else {
-                clientConnection.close(1000, "LSP session closed");
+                clientConnection.close(CloseStatus.NORMAL.getCode(), "LSP session closed");
             }
         } catch (Exception e) {
             log.warn("Failed to close client connection for session={}", sessionId, e);

@@ -21,7 +21,7 @@ public class WebSocketConfig implements WebSocketConfigurer {
     public WebSocketConfig(
         LspSessionServicePort lspSessionServicePort,
         @Value("${app.frontend.url}") String frontendUrl,
-        @Value("${quak.lsp.websocket.session-idle-timeout-ms:1800000}") long sessionIdleTimeoutMs
+        @Value("${quak.lsp.websocket.session-idle-timeout-ms}") long sessionIdleTimeoutMs
     ) {
         this.lspSessionServicePort = lspSessionServicePort;
         this.frontendUrl = frontendUrl;

@@ -8,6 +8,9 @@
  *  - Notification dispatch
  */
 
+const JSON_RPC_VERSION = '2.0';
+type JsonRpcVersion = typeof JSON_RPC_VERSION;
+
 export type RpcNotificationHandler = (method: string, params: unknown) => void;
 export type TransportState = 'disconnected' | 'connecting' | 'connected' | 'disposed';
 
@@ -18,26 +21,34 @@ interface PendingRequest {
 }
 
 interface JsonRpcRequest {
-    jsonrpc: '2.0';
+    jsonrpc: JsonRpcVersion;
     id: number;
     method: string;
     params?: unknown;
 }
 
 interface JsonRpcNotification {
-    jsonrpc: '2.0';
+    jsonrpc: JsonRpcVersion;
     method: string;
     params?: unknown;
 }
 
 interface JsonRpcResponse {
-    jsonrpc: '2.0';
+    jsonrpc: JsonRpcVersion;
     id: number;
     result?: unknown;
     error?: { code: number; message: string; data?: unknown };
 }
 
 type JsonRpcMessage = JsonRpcRequest | JsonRpcNotification | JsonRpcResponse;
+
+export const enum RpcErrorCode {
+    TransportDisconnected = -32000,
+    RequestTimeout = -32001,
+    SendFailed = -32002,
+    SendQueueOverflow = -32003,
+    TransportDisposed = -1,
+}
 
 export class RpcError extends Error {
     constructor(
@@ -101,17 +112,17 @@ export class JsonRpcTransport {
         this.ws?.close();
         this.ws = null;
         this.failSendQueue();
-        this.rejectAllPending(new RpcError(-32000, 'Transport disconnected'));
+        this.rejectAllPending(new RpcError(RpcErrorCode.TransportDisconnected, 'Transport disconnected'));
         this.setState('disconnected');
     }
 
     request<T = unknown>(method: string, params?: unknown): Promise<T> {
         if (this.state === 'disposed') {
-            return Promise.reject(new RpcError(-1, 'Transport disposed'));
+            return Promise.reject(new RpcError(RpcErrorCode.TransportDisposed, 'Transport disposed'));
         }
 
         const id = this.nextId++;
-        const message: JsonRpcRequest = { jsonrpc: '2.0', id, method, params };
+        const message: JsonRpcRequest = { jsonrpc: JSON_RPC_VERSION, id, method, params };
 
         return new Promise<T>((resolve, reject) => {
             const pending: PendingRequest = {
@@ -123,7 +134,7 @@ export class JsonRpcTransport {
                 pending.timeoutHandle = setTimeout(() => {
                     if (!this.pending.has(id)) return;
                     this.pending.delete(id);
-                    reject(new RpcError(-32001, `Request timeout: ${method}`));
+                    reject(new RpcError(RpcErrorCode.RequestTimeout, `Request timeout: ${method}`));
                 }, this.options.requestTimeoutMs);
             }
 
@@ -134,14 +145,18 @@ export class JsonRpcTransport {
             } catch (error) {
                 this.pending.delete(id);
                 if (pending.timeoutHandle) clearTimeout(pending.timeoutHandle);
-                reject(error instanceof RpcError ? error : new RpcError(-32002, 'Failed to send request', error));
+                reject(
+                    error instanceof RpcError
+                        ? error
+                        : new RpcError(RpcErrorCode.SendFailed, 'Failed to send request', error),
+                );
             }
         });
     }
 
     notify(method: string, params?: unknown): void {
         if (this.state === 'disposed') return;
-        const message: JsonRpcNotification = { jsonrpc: '2.0', method, params };
+        const message: JsonRpcNotification = { jsonrpc: JSON_RPC_VERSION, method, params };
         this.enqueueOrSend(message);
     }
 
@@ -171,7 +186,7 @@ export class JsonRpcTransport {
         this.shouldReconnect = false;
         this.clearReconnectTimer();
         this.failSendQueue();
-        this.rejectAllPending(new RpcError(-1, 'Transport disposed'));
+        this.rejectAllPending(new RpcError(RpcErrorCode.TransportDisposed, 'Transport disposed'));
         this.notificationHandlers.clear();
 
         const ws = this.ws;
@@ -219,7 +234,7 @@ export class JsonRpcTransport {
 
             this.setState('disconnected');
             this.failSendQueue();
-            this.rejectAllPending(new RpcError(-32000, 'WebSocket closed'));
+            this.rejectAllPending(new RpcError(RpcErrorCode.TransportDisconnected, 'WebSocket closed'));
 
             if (this.shouldReconnect) {
                 this.scheduleReconnect();
@@ -254,7 +269,7 @@ export class JsonRpcTransport {
             return;
         }
 
-        if (!msg || typeof msg !== 'object' || (msg as { jsonrpc?: string }).jsonrpc !== '2.0') {
+        if (!msg || typeof msg !== 'object' || (msg as { jsonrpc?: string }).jsonrpc !== JSON_RPC_VERSION) {
             console.warn('[LSP Transport] Invalid JSON-RPC message:', msg);
             return;
         }
@@ -305,7 +320,7 @@ export class JsonRpcTransport {
 
     private enqueueOrSend(message: JsonRpcMessage): void {
         if (this.state === 'disposed') {
-            throw new RpcError(-1, 'Transport disposed');
+            throw new RpcError(RpcErrorCode.TransportDisposed, 'Transport disposed');
         }
 
         const raw = JSON.stringify(message);
@@ -316,11 +331,11 @@ export class JsonRpcTransport {
         }
 
         if (this.state !== 'connecting' && this.state !== 'connected') {
-            throw new RpcError(-32000, 'Transport is not connected');
+            throw new RpcError(RpcErrorCode.TransportDisconnected, 'Transport is not connected');
         }
 
         if (this.sendQueue.length >= this.options.maxQueueSize) {
-            throw new RpcError(-32003, 'Send queue overflow');
+            throw new RpcError(RpcErrorCode.SendQueueOverflow, 'Send queue overflow');
         }
 
         this.sendQueue.push(raw);

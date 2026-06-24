@@ -11,6 +11,19 @@
 import type * as monaco from 'monaco-editor';
 import { JsonRpcTransport, RpcError, type TransportState } from './JsonRpcTransport';
 
+const METHOD_INITIALIZE = 'initialize';
+const METHOD_INITIALIZED = 'initialized';
+const METHOD_DID_OPEN = 'textDocument/didOpen';
+const METHOD_DID_CHANGE = 'textDocument/didChange';
+const METHOD_DID_CLOSE = 'textDocument/didClose';
+const METHOD_PUBLISH_DIAGNOSTICS = 'textDocument/publishDiagnostics';
+const METHOD_COMPLETION = 'textDocument/completion';
+const METHOD_HOVER = 'textDocument/hover';
+const METHOD_DEFINITION = 'textDocument/definition';
+
+const MARKDOWN = 'markdown';
+const PLAINTEXT = 'plaintext';
+
 interface LspPosition {
     line: number;
     character: number;
@@ -129,7 +142,7 @@ export class LSPClient {
 
             this.transport.connect(onTransportStateChange);
 
-            this.transport.onNotification('textDocument/publishDiagnostics', (_, params) => {
+            this.transport.onNotification(METHOD_PUBLISH_DIAGNOSTICS, (_, params) => {
                 if (this.disposed) return;
                 this.handleDiagnostics(params as { uri: string; diagnostics: LspDiagnostic[] });
             });
@@ -149,7 +162,7 @@ export class LSPClient {
 
         if (this.transport.getState() === 'connected') {
             for (const uri of this.openDocuments.keys()) {
-                this.transport.notify('textDocument/didClose', {
+                this.transport.notify(METHOD_DID_CLOSE, {
                     textDocument: { uri },
                 });
             }
@@ -201,7 +214,7 @@ export class LSPClient {
                 return;
             }
 
-            this.transport.notify('textDocument/didChange', {
+            this.transport.notify(METHOD_DID_CHANGE, {
                 textDocument: { uri, version: model.getVersionId() },
                 contentChanges: [{ text: model.getValue() }],
             });
@@ -223,7 +236,7 @@ export class LSPClient {
         }
 
         if (this.state === 'ready') {
-            this.transport.notify('textDocument/didClose', {
+            this.transport.notify(METHOD_DID_CLOSE, {
                 textDocument: { uri },
             });
         }
@@ -234,7 +247,7 @@ export class LSPClient {
     private sendDidOpen(model: monaco.editor.ITextModel): void {
         if (this.disposed || model.isDisposed()) return;
 
-        this.transport.notify('textDocument/didOpen', {
+        this.transport.notify(METHOD_DID_OPEN, {
             textDocument: {
                 uri: model.uri.toString(),
                 languageId: this.options.languageId,
@@ -246,7 +259,7 @@ export class LSPClient {
 
     private async initialize(): Promise<void> {
         try {
-            const initResult = await this.transport.request<{ capabilities: ServerCapabilities }>('initialize', {
+            const initResult = await this.transport.request<{ capabilities: ServerCapabilities }>(METHOD_INITIALIZE, {
                 processId: null,
                 rootUri: this.options.rootUri ?? null,
                 capabilities: {
@@ -261,12 +274,12 @@ export class LSPClient {
                             dynamicRegistration: false,
                             completionItem: {
                                 snippetSupport: true,
-                                documentationFormat: ['markdown', 'plaintext'],
+                                documentationFormat: [MARKDOWN, PLAINTEXT],
                             },
                         },
                         hover: {
                             dynamicRegistration: false,
-                            contentFormat: ['markdown', 'plaintext'],
+                            contentFormat: [MARKDOWN, PLAINTEXT],
                         },
                         definition: { dynamicRegistration: false },
                         publishDiagnostics: { relatedInformation: false },
@@ -283,7 +296,7 @@ export class LSPClient {
             if (this.disposed) return;
 
             this.serverCapabilities = initResult?.capabilities ?? {};
-            this.transport.notify('initialized', {});
+            this.transport.notify(METHOD_INITIALIZED, {});
             this.state = 'ready';
 
             this.registerMonacoProviders();
@@ -352,7 +365,7 @@ export class LSPClient {
 
         try {
             const response = await this.transport.request<LspCompletionList | LspCompletionItem[] | null>(
-                'textDocument/completion',
+                METHOD_COMPLETION,
                 {
                     textDocument: { uri: model.uri.toString() },
                     position: toLspPosition(position),
@@ -387,7 +400,7 @@ export class LSPClient {
         if (this.state !== 'ready' || this.disposed || model.isDisposed()) return null;
 
         try {
-            const response = await this.transport.request<LspHover | null>('textDocument/hover', {
+            const response = await this.transport.request<LspHover | null>(METHOD_HOVER, {
                 textDocument: { uri: model.uri.toString() },
                 position: toLspPosition(position),
             });
@@ -411,13 +424,10 @@ export class LSPClient {
         if (this.state !== 'ready' || this.disposed || model.isDisposed()) return null;
 
         try {
-            const response = await this.transport.request<LspLocation | LspLocation[] | null>(
-                'textDocument/definition',
-                {
-                    textDocument: { uri: model.uri.toString() },
-                    position: toLspPosition(position),
-                },
-            );
+            const response = await this.transport.request<LspLocation | LspLocation[] | null>(METHOD_DEFINITION, {
+                textDocument: { uri: model.uri.toString() },
+                position: toLspPosition(position),
+            });
 
             if (!response) return null;
 

@@ -76,9 +76,16 @@ public class StdioJsonRpcBridge {
         }
     }
 
+    /**
+     * Reads the JSON-RPC/LSP headers from the input stream until the header delimiter CRLF CRLF ("\r\n\r\n") is encountered.
+     * Since data arrives as a stream, the delimiter may span multiple read operations.
+     * Therefore, the bytes are processed sequentially while tracking how many delimiter bytes have already been matched.
+     * @return the parsed Content-Length value or -1 if the stream ended.
+     */
     private int readHeaders(InputStream inputStream) throws IOException {
         ByteArrayOutputStream headerBuffer = new ByteArrayOutputStream();
 
+        // Number of consecutive bytes matched against the "\r\n\r\n" delimiter.
         int matched = 0;
         byte[] delimiter = "\r\n\r\n".getBytes(StandardCharsets.US_ASCII);
 

@@ -29,7 +29,7 @@ public class LspWebSocketExceptionHandler extends WebSocketHandlerDecorator {
             closeQuietly(session, CloseStatus.BAD_DATA.withReason("Invalid language ID"));
         } catch (LspCapacityExceededException e) {
             log.warn("LSP capacity exceeded for WebSocket session={}: {}", session.getId(), e.getMessage());
-            closeQuietly(session, new CloseStatus(1013, e.getMessage()));
+            closeQuietly(session, CloseStatus.SERVICE_OVERLOAD.withReason("LSP capacity exceeded"));
         } catch (LspCommunicationException e) {
             log.error("LSP session could not be opened for session={}: {}", session.getId(), e.getMessage(), e);
             closeQuietly(session, CloseStatus.SERVER_ERROR.withReason("LSP unavailable"));
