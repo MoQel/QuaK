@@ -3,10 +3,13 @@ import { CircuitTranslator } from './CircuitTranslator';
 import { initQulacs } from 'qulacs-wasm'; // Namespace import for robust WASM handling
 import {
     CircuitResponse,
+    ClassicRegisterResponse,
     ElementaryQuantumGateDto,
     LayerResponse,
+    MeasurementDto,
     QuantumOperationDto,
     QuantumRegisterResponse,
+    REGISTER_TYPE_CLASSIC,
     REGISTER_TYPE_QUANTUM,
 } from '@/api/dto/circuit';
 import { OperationIdentifier } from '@/lib/operations.ts';
@@ -18,7 +21,11 @@ import { SimulationResult } from '@/simulation/simulation.types.ts';
  * Helper to construct a strictly typed mock circuit.
  * Allows defining multiple registers with varying number of gates.
  */
-const createCircuit = (numQubits: number, operations: QuantumOperationDto[] = []): CircuitResponse => {
+const createCircuit = (
+    numQubits: number,
+    operations: QuantumOperationDto[] = [],
+    classicBits: number = 0,
+): CircuitResponse => {
     const registers: QuantumRegisterResponse[] = [
         {
             id: 'qreg-0',
@@ -28,11 +35,23 @@ const createCircuit = (numQubits: number, operations: QuantumOperationDto[] = []
         },
     ];
 
+    const classicRegisters: ClassicRegisterResponse[] =
+        classicBits > 0
+            ? [
+                  {
+                      id: 'creg-0',
+                      name: 'c',
+                      type: REGISTER_TYPE_CLASSIC,
+                      numberOfBits: classicBits,
+                  },
+              ]
+            : [];
+
     const layers: LayerResponse[] = operations.length ? [{ quantumOperations: operations }] : [];
 
     return {
         id: 'test-circuit',
-        registers,
+        registers: [...registers, ...classicRegisters],
         layers,
     };
 };
@@ -66,6 +85,16 @@ const multiGate = (
     rotationAngle: 0,
     targetQubits: targets.map((idx) => ({ registerId: 'qreg-0', index: idx })),
     controlQubits: controls.map((idx) => ({ registerId: 'qreg-0', index: idx })),
+});
+
+const measurement = (targetIndex: number = 0, classicIndex: number = 0): MeasurementDto => ({
+    id: 'test-measurement',
+    type: 'MEASUREMENT',
+    identifier: 'MEASURE',
+    inverseForm: false,
+    targetQubits: [{ registerId: 'qreg-0', index: targetIndex }],
+    controlQubits: [],
+    classicBits: [{ registerId: 'creg-0', index: classicIndex }],
 });
 
 // --- Tests ---
@@ -130,7 +159,7 @@ describe('CircuitTranslator', () => {
         });
 
         it('should respect custom sampleCount', () => {
-            const circuit = createCircuit(1, [gate('MEASURE')]);
+            const circuit = createCircuit(1, [measurement()], 1);
 
             const result = CircuitTranslator.translateAndRun(circuit, {
                 sampleCount: 10,
@@ -142,6 +171,75 @@ describe('CircuitTranslator', () => {
             const totalSamples = Object.values(result.counts!).reduce((a, b) => a + b, 0);
 
             expect(totalSamples).toBe(10);
+        });
+    });
+
+    describe('Measurements', () => {
+        it('should return a deterministic single qubit measurement result for |1>', () => {
+            const circuit = createCircuit(1, [gate('X'), measurement()], 1);
+
+            const result = CircuitTranslator.translateAndRun(circuit);
+
+            expect(result.measurementResults).toHaveLength(1);
+            expect(result.measurementResults[0].probabilities.zero).toBeCloseTo(0);
+            expect(result.measurementResults[0].probabilities.one).toBeCloseTo(1);
+            expect(result.measurementResults[0].outcome).toBe(1);
+            expect(result.measurementResults[0].classicBit).toEqual({ registerId: 'creg-0', index: 0 });
+        });
+
+        it('should return balanced probabilities for measuring H|0>', () => {
+            const circuit = createCircuit(1, [gate('H'), measurement()], 1);
+
+            const result = CircuitTranslator.translateAndRun(circuit);
+
+            expect(result.measurementResults).toHaveLength(1);
+            expect(result.measurementResults[0].probabilities.zero).toBeCloseTo(0.5);
+            expect(result.measurementResults[0].probabilities.one).toBeCloseTo(0.5);
+        });
+
+        it('should include sampled measurement counts in simulation mode', () => {
+            const circuit = createCircuit(1, [gate('X'), measurement()], 1);
+
+            const result = CircuitTranslator.translateAndRun(circuit, {
+                sampleCount: 10,
+                mode: 'simulation',
+            });
+
+            expect(result.measurementResults[0].counts).toEqual({ zero: 0, one: 10 });
+        });
+
+        it('should collapse the state before applying later gates', () => {
+            const circuit = createCircuit(1, [gate('X'), measurement(), gate('X')], 1);
+
+            const result = CircuitTranslator.translateAndRun(circuit);
+
+            expect(result.measurementResults[0].outcome).toBe(1);
+            expect(result.stateVector[0].state).toBe('|0>');
+            expect(result.stateVector[0].prob).toBeCloseTo(1);
+            expect(result.stateVector[1].prob).toBeCloseTo(0);
+        });
+
+        it('should normalize the state after a probabilistic measurement', () => {
+            const circuit = createCircuit(1, [gate('H'), measurement()], 1);
+
+            const result = CircuitTranslator.translateAndRun(circuit);
+            const totalProbability = result.stateVector.reduce((sum, entry) => sum + entry.prob, 0);
+
+            expect(totalProbability).toBeCloseTo(1);
+            expect(result.stateVector.filter((entry) => entry.prob > 0.99)).toHaveLength(1);
+        });
+
+        it('should handle multiple measurements in sequence', () => {
+            const circuit = createCircuit(2, [gate('X', 0), measurement(0, 0), gate('X', 1), measurement(1, 1)], 2);
+
+            const result = CircuitTranslator.translateAndRun(circuit);
+
+            expect(result.measurementResults).toHaveLength(2);
+            expect(result.measurementResults[0].outcome).toBe(1);
+            expect(result.measurementResults[1].outcome).toBe(1);
+            expect(result.measurementResults[0].classicBit).toEqual({ registerId: 'creg-0', index: 0 });
+            expect(result.measurementResults[1].classicBit).toEqual({ registerId: 'creg-0', index: 1 });
+            expect(result.stateVector.find((entry) => entry.state === '|11>')?.prob).toBeCloseTo(1);
         });
     });
 

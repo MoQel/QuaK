@@ -1,3 +1,5 @@
+import type { ElementSelectorDto } from '@/api/dto/circuit.ts';
+
 /**
  * Emscripten objects have a delete method that is missing in the types.
  * This interface prevents the use of “any”.
@@ -12,7 +14,23 @@ export interface Disposable {
 export interface SimulationResult {
     stateVector: StateVectorEntry[];
     counts: Record<string, number> | null;
+    measurementResults: MeasurementResult[];
     simulatedQubits: number;
+}
+
+export interface MeasurementResult {
+    operationId?: string;
+    targetQubit: ElementSelectorDto;
+    classicBit: ElementSelectorDto;
+    outcome: 0 | 1;
+    probabilities: {
+        zero: number;
+        one: number;
+    };
+    counts?: {
+        zero: number;
+        one: number;
+    };
 }
 
 export interface StateVectorEntry {

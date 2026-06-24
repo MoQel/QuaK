@@ -1,6 +1,7 @@
 import {
     CircuitResponse,
     ElementaryQuantumGateDto,
+    MeasurementDto,
     getCircuitWidth,
     isQuantumRegister,
     RegisterResponse,
@@ -12,6 +13,7 @@ import {
     SimulationMode,
     SimulationOptions,
     SimulationResult,
+    MeasurementResult,
     StateVectorEntry,
 } from '@/simulation/simulation.types.ts';
 
@@ -40,27 +42,19 @@ export class CircuitTranslator {
 
         // Initialize offset Map
         const offsets = this.calculateRegisterOffsets(circuitData.registers);
-        // Initialize Qulacs Circuit instances
         const state = new qulacs.QuantumState(circuitWidth);
-        const circuit = new qulacs.QuantumCircuit(circuitWidth);
 
         try {
-            // Build
             state.set_zero_state();
-            this.buildCircuit(circuitData, circuit, offsets);
+            const measurementResults = this.executeCircuit(circuitData, state, offsets, sampleCount);
 
-            // Calculate
-            circuit.update_quantum_state(state);
-
-            // Process
-            return this.processResults(state, circuitWidth, mode, sampleCount);
+            return this.processResults(state, measurementResults, circuitWidth, mode, sampleCount);
         } catch (error) {
             console.error('Simulation failed:', error);
             return this.createEmptyResult(circuitWidth);
         } finally {
             // Secure cast on our disposable interface for cleanup (type does not exist)
             (state as unknown as Disposable).delete();
-            (circuit as unknown as Disposable).delete();
         }
     }
 
@@ -77,27 +71,45 @@ export class CircuitTranslator {
         return offsets;
     }
 
-    /**
-     * Builds the circuit based on the filtered registers.
-     */
-    private static buildCircuit(
+    private static executeCircuit(
         circuitData: CircuitResponse,
-        circuit: qulacs.QuantumCircuit,
+        state: qulacs.QuantumState,
+        offsets: RegisterOffsets,
+        sampleCount: number,
+    ): MeasurementResult[] {
+        const measurementResults: MeasurementResult[] = [];
+
+        for (const layer of circuitData.layers) {
+            for (const op of layer.quantumOperations) {
+                if (op.type === 'ELEMENTARY_QUANTUM_GATE') {
+                    this.applyGateToState(state, op, offsets);
+                } else if (op.type === 'MEASUREMENT') {
+                    measurementResults.push(this.applyMeasurement(state, op, offsets, sampleCount));
+                }
+            }
+        }
+
+        return measurementResults;
+    }
+
+    private static applyGateToState(
+        state: qulacs.QuantumState,
+        op: ElementaryQuantumGateDto,
         offsets: RegisterOffsets,
     ): void {
-        const layers = circuitData.layers;
-        // Iterate layer by layer (Time Step by Time Step)
-        for (const layer of layers) {
-            for (const op of layer.quantumOperations) {
-                if (op.type !== 'ELEMENTARY_QUANTUM_GATE') continue;
-                this.applyGate(circuit, op, offsets);
-            }
+        const circuit = new qulacs.QuantumCircuit(state.get_qubit_count());
+
+        try {
+            this.applyGate(circuit, op, offsets);
+            circuit.update_quantum_state(state);
+        } finally {
+            (circuit as unknown as Disposable).delete();
         }
     }
 
     /**
      * Applies a single gate to the circuit.
-     * We do not support multi-qubit, rotation parameters and measurements yet!
+     * Applies a single unitary gate to a short-lived Qulacs circuit.
      *
      * Please be aware that although the qulacs python library is well maintained,
      * the last release of qulacs-wasm was a long time ago and there may be bugs in the gate mapping.
@@ -151,8 +163,6 @@ export class CircuitTranslator {
             case 'CCX':
                 circuit.add_gate(qulacs.TOFFOLI(controls[0], controls[1], targets[0]));
                 break;
-            case 'MEASURE':
-                break; // ignored
             default:
                 console.warn(`Gate type ${type} not yet implemented in Translator`);
         }
@@ -160,6 +170,7 @@ export class CircuitTranslator {
 
     private static processResults(
         state: qulacs.QuantumState,
+        measurementResults: MeasurementResult[],
         numQubits: number,
         mode: SimulationMode,
         sampleCount: number,
@@ -169,6 +180,7 @@ export class CircuitTranslator {
             return {
                 stateVector: [],
                 counts: this.aggregateSamples(rawResult, numQubits),
+                measurementResults,
                 simulatedQubits: numQubits,
             };
         }
@@ -177,11 +189,95 @@ export class CircuitTranslator {
             return {
                 stateVector: this.extractStateVector(state, numQubits),
                 counts: null,
+                measurementResults,
                 simulatedQubits: numQubits,
             };
         }
 
         return this.createEmptyResult(numQubits);
+    }
+
+    private static applyMeasurement(
+        state: qulacs.QuantumState,
+        measurement: MeasurementDto,
+        offsets: RegisterOffsets,
+        sampleCount: number,
+    ): MeasurementResult {
+        if (measurement.targetQubits.length !== 1 || measurement.classicBits.length !== 1) {
+            throw new Error('Only single-qubit measurements with one classic target bit are supported.');
+        }
+
+        const targetQubit = measurement.targetQubits[0];
+        const classicBit = measurement.classicBits[0];
+        const targetIndex = offsets[targetQubit.registerId] + targetQubit.index;
+        const probabilities = this.getSingleQubitProbabilities(state, targetIndex);
+        const outcome = this.sampleMeasurementOutcome(probabilities);
+
+        this.collapseSingleQubit(state, targetIndex, outcome);
+
+        return {
+            operationId: measurement.id,
+            targetQubit,
+            classicBit,
+            outcome,
+            probabilities,
+            counts: this.countExpectedMeasurementSamples(probabilities, sampleCount),
+        };
+    }
+
+    private static getSingleQubitProbabilities(
+        state: qulacs.QuantumState,
+        targetIndex: number,
+    ): MeasurementResult['probabilities'] {
+        const vec = state.get_vector() as unknown as Complex[];
+        let zero = 0;
+        let one = 0;
+
+        for (let basisIndex = 0; basisIndex < vec.length; basisIndex++) {
+            const { real, imag } = vec[basisIndex];
+            const probability = real * real + imag * imag;
+
+            if (this.getBit(basisIndex, targetIndex) === 1) {
+                one += probability;
+            } else {
+                zero += probability;
+            }
+        }
+
+        return { zero, one };
+    }
+
+    private static sampleMeasurementOutcome(probabilities: MeasurementResult['probabilities']): 0 | 1 {
+        if (probabilities.one <= 0) return 0;
+        if (probabilities.zero <= 0) return 1;
+
+        return Math.random() < probabilities.one ? 1 : 0;
+    }
+
+    private static collapseSingleQubit(state: qulacs.QuantumState, targetIndex: number, outcome: 0 | 1): void {
+        const vec = state.get_vector() as unknown as Complex[];
+        const collapsed: Complex[] = vec.map((complex, basisIndex) => {
+            if (this.getBit(basisIndex, targetIndex) !== outcome) {
+                return { real: 0, imag: 0 };
+            }
+
+            return { real: complex.real, imag: complex.imag };
+        });
+
+        state.load(collapsed);
+        state.normalize(state.get_squared_norm());
+    }
+
+    private static countExpectedMeasurementSamples(
+        probabilities: MeasurementResult['probabilities'],
+        sampleCount: number,
+    ): MeasurementResult['counts'] {
+        const one = Math.round(probabilities.one * sampleCount);
+        return { zero: sampleCount - one, one };
+    }
+
+    private static getBit(value: number, bitIndex: number): 0 | 1 {
+        return ((value >> bitIndex) & 1) === 1 ? 1 : 0;
     }
 
     /**
@@ -231,6 +327,6 @@ export class CircuitTranslator {
     }
 
     private static createEmptyResult(numQubits: number): SimulationResult {
-        return { stateVector: [], counts: null, simulatedQubits: numQubits };
+        return { stateVector: [], counts: null, measurementResults: [], simulatedQubits: numQubits };
     }
 }

@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useQuantumSimulation } from './useQuantumSimulation.ts';
 import { CircuitResponse } from '@/api/dto/circuit.ts';
 import { WorkerResponse } from '@/workers/messages.ts';
+import { SimulationResult } from '@/simulation/simulation.types.ts';
 
 interface MockWorkerInstance extends Worker {
     onmessage: ((e: MessageEvent<WorkerResponse>) => void) | null;
@@ -65,17 +66,23 @@ describe('useQuantumSimulation Hook', () => {
         act(() => vi.advanceTimersByTime(305));
         const { requestId } = vi.mocked(latestWorker!.postMessage).mock.calls[0][0];
 
+        const resultPayload: SimulationResult = {
+            counts: { '00': 10 },
+            stateVector: [],
+            measurementResults: [],
+            simulatedQubits: 1,
+        };
         const successPayload: WorkerResponse = {
             type: 'SUCCESS',
             requestId,
-            payload: { counts: { '00': 10 }, stateVector: [], simulatedQubits: 1 },
+            payload: resultPayload,
         };
 
         act(() => {
             latestWorker?.onmessage?.({ data: successPayload } as MessageEvent);
         });
 
-        expect(result.current.result).toEqual(successPayload.payload);
+        expect(result.current.result).toEqual(resultPayload);
         expect(result.current.isCalculating).toBe(false);
         expect(result.current.error).toBeNull();
     });
@@ -113,7 +120,7 @@ describe('useQuantumSimulation Hook', () => {
                 data: {
                     type: 'SUCCESS',
                     requestId: firstId,
-                    payload: { counts: { '0': 1 }, stateVector: [], simulatedQubits: 1 },
+                    payload: { counts: { '0': 1 }, stateVector: [], measurementResults: [], simulatedQubits: 1 },
                 },
             } as MessageEvent);
         });
@@ -124,11 +131,16 @@ describe('useQuantumSimulation Hook', () => {
                 data: {
                     type: 'SUCCESS',
                     requestId: secondId,
-                    payload: { counts: { '1': 1 }, stateVector: [], simulatedQubits: 1 },
+                    payload: { counts: { '1': 1 }, stateVector: [], measurementResults: [], simulatedQubits: 1 },
                 },
             } as MessageEvent);
         });
-        expect(result.current.result).toEqual({ counts: { '1': 1 }, stateVector: [], simulatedQubits: 1 });
+        expect(result.current.result).toEqual({
+            counts: { '1': 1 },
+            stateVector: [],
+            measurementResults: [],
+            simulatedQubits: 1,
+        });
     });
 
     it('should terminate worker on unmount', () => {

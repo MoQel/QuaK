@@ -59,6 +59,18 @@ export function ResultsView() {
 
     const chartData = useChartData(result, options, simulatedCircuitWidth, endianness);
 
+    const registerNames = useMemo(() => {
+        return new Map(circuit?.registers.map((reg) => [reg.id, reg.name]) ?? []);
+    }, [circuit?.registers]);
+
+    const measurementRows = useMemo(() => {
+        return result?.measurementResults ?? [];
+    }, [result?.measurementResults]);
+
+    const formatSelector = (registerId: string, index: number) => {
+        return `${registerNames.get(registerId) ?? registerId}[${index}]`;
+    };
+
     const [showZero, setShowZero] = useState(false);
     const [minProbability, setMinProbability] = useState(0.1); //standard is 0,1%
 
@@ -317,7 +329,28 @@ export function ResultsView() {
             </CardHeader>
 
             <CardContent className="flex-1 p-0 relative overflow-hidden flex flex-col min-h-0 bg-bg-dark">
-                {renderChartArea()}
+                {measurementRows.length > 0 && (
+                    <div className="shrink-0 border-b border-border bg-bg px-4 py-3">
+                        <div className="text-xs font-semibold text-text mb-2">Measurement results</div>
+                        <div className="flex flex-wrap gap-2">
+                            {measurementRows.map((measurement, idx) => (
+                                <Badge
+                                    key={measurement.operationId ?? `${measurement.targetQubit.registerId}-${idx}`}
+                                    variant="outline"
+                                    className="font-mono border-border text-text bg-bg-light"
+                                >
+                                    {formatSelector(measurement.targetQubit.registerId, measurement.targetQubit.index)}
+                                    {' -> '}
+                                    {formatSelector(measurement.classicBit.registerId, measurement.classicBit.index)}
+                                    {' = '}
+                                    {measurement.outcome}
+                                </Badge>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                <div className="flex-1 min-h-0 relative">{renderChartArea()}</div>
 
                 {/* Loading State Overlay */}
                 {isCalculating && (
