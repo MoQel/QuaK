@@ -2,14 +2,12 @@ import {
     CircuitResponse,
     ElementaryQuantumGateDto,
     getRegisterSize,
-    getSelectorKey,
     isQuantumRegister,
     MeasurementDto,
     QuantumOperationDto,
     RegisterResponse,
 } from '@/api/dto/circuit.ts';
-
-type WireMap = Map<string, number>;
+import { buildWireIndex, WireIndex } from '@/lib/circuitIndex.ts';
 
 const ROTATION_GATES = new Set(['RX', 'RY', 'RZ']);
 const PI_FRACTION_DENOMINATORS = [1, 2, 3, 4, 6, 8, 12, 16];
@@ -17,7 +15,7 @@ const ANGLE_TOLERANCE = 1e-8;
 const TRAILING_COLUMNS = 1; // Keep trailing wire column so the rendered circuit does not end directly at the last gate.
 
 export function toQuantikz(circuit: CircuitResponse): string {
-    const wireMap = buildWireMap(circuit.registers);
+    const wireIndex = buildWireIndex(circuit.registers);
 
     const grid = buildGrid(circuit.registers, circuit.layers.length + TRAILING_COLUMNS);
 
@@ -25,7 +23,7 @@ export function toQuantikz(circuit: CircuitResponse): string {
 
     for (const [layerIdx, layer] of circuit.layers.entries()) {
         for (const operation of layer.quantumOperations) {
-            applyOperation(grid, wireMap, operation, layerIdx);
+            applyOperation(grid, wireIndex, operation, layerIdx);
         }
     }
 
@@ -61,19 +59,6 @@ export function toStandaloneDocument(latexCode: string): string {
     ].join('\n');
 }
 
-function buildWireMap(registers: RegisterResponse[]): WireMap {
-    const wireMap: WireMap = new Map();
-    let wireIdx = 0;
-
-    for (const register of registers) {
-        for (let i = 0; i < getRegisterSize(register); i++) {
-            wireMap.set(getSelectorKey({ registerId: register.id, index: i }), wireIdx++);
-        }
-    }
-
-    return wireMap;
-}
-
 function buildGrid(registers: RegisterResponse[], totalLayers: number): string[][] {
     return registers.flatMap((register) =>
         Array.from({ length: getRegisterSize(register) }, () => new Array<string>(totalLayers).fill('')),
@@ -86,14 +71,19 @@ function buildWireTypes(registers: RegisterResponse[]): string[] {
     );
 }
 
-function applyOperation(grid: string[][], wireMap: WireMap, operation: QuantumOperationDto, layerIdx: number): void {
+function applyOperation(
+    grid: string[][],
+    wireIndex: WireIndex,
+    operation: QuantumOperationDto,
+    layerIdx: number,
+): void {
     if (operation.type === 'MEASUREMENT') {
-        applyMeasurement(grid, wireMap, operation, layerIdx);
+        applyMeasurement(grid, wireIndex, operation, layerIdx);
         return;
     }
 
     if (operation.type === 'ELEMENTARY_QUANTUM_GATE') {
-        applyElementaryGate(grid, wireMap, operation, layerIdx);
+        applyElementaryGate(grid, wireIndex, operation, layerIdx);
     }
 }
 
@@ -120,11 +110,11 @@ function buildLstick(register: RegisterResponse, wireIndex: number): string {
     return String.raw`\lstick{${registerName}[${wireIndex}]}`;
 }
 
-function applyMeasurement(grid: string[][], wireMap: WireMap, measurement: MeasurementDto, layerIdx: number): void {
+function applyMeasurement(grid: string[][], wireIndex: WireIndex, measurement: MeasurementDto, layerIdx: number): void {
     for (let i = 0; i < measurement.targetQubits.length; i++) {
         if (i >= measurement.classicBits.length) break;
 
-        const wireIdx = wireMap.get(getSelectorKey(measurement.targetQubits[i]));
+        const wireIdx = wireIndex.getWireIndex(measurement.targetQubits[i]);
 
         if (wireIdx !== undefined) {
             grid[wireIdx][layerIdx] = String.raw`\meter{}`;
@@ -134,12 +124,12 @@ function applyMeasurement(grid: string[][], wireMap: WireMap, measurement: Measu
 
 function applyElementaryGate(
     grid: string[][],
-    wireMap: WireMap,
+    wireIndex: WireIndex,
     gate: ElementaryQuantumGateDto,
     layerIdx: number,
 ): void {
     const identifier = gate.identifier.toUpperCase();
-    const targetWires = getTargetWires(wireMap, gate);
+    const targetWires = getTargetWires(wireIndex, gate);
 
     if (!targetWires.length) return;
 
@@ -149,11 +139,11 @@ function applyElementaryGate(
     }
 
     if (isControlledXGate(identifier, gate)) {
-        applyControlledXGate(grid, wireMap, gate, targetWires, layerIdx);
+        applyControlledXGate(grid, wireIndex, gate, targetWires, layerIdx);
         return;
     }
 
-    applyGate(grid, wireMap, gate, targetWires, layerIdx);
+    applyGate(grid, wireIndex, gate, targetWires, layerIdx);
 }
 
 function applySwapGate(grid: string[][], targetWires: number[], layerIdx: number): void {
@@ -168,7 +158,7 @@ function applySwapGate(grid: string[][], targetWires: number[], layerIdx: number
 
 function applyControlledXGate(
     grid: string[][],
-    wireMap: WireMap,
+    wireIndex: WireIndex,
     gate: ElementaryQuantumGateDto,
     targetWires: number[],
     layerIdx: number,
@@ -177,12 +167,12 @@ function applyControlledXGate(
         grid[targetWire][layerIdx] = String.raw`\targ{}`;
     }
 
-    applyControls(grid, wireMap, gate, targetWires, layerIdx);
+    applyControls(grid, wireIndex, gate, targetWires, layerIdx);
 }
 
 function applyGate(
     grid: string[][],
-    wireMap: WireMap,
+    wireIndex: WireIndex,
     gate: ElementaryQuantumGateDto,
     targetWires: number[],
     layerIdx: number,
@@ -193,18 +183,18 @@ function applyGate(
         grid[targetWire][layerIdx] = String.raw`\gate{${label}}`;
     }
 
-    applyControls(grid, wireMap, gate, targetWires, layerIdx);
+    applyControls(grid, wireIndex, gate, targetWires, layerIdx);
 }
 
 function applyControls(
     grid: string[][],
-    wireMap: WireMap,
+    wireIndex: WireIndex,
     gate: ElementaryQuantumGateDto,
     targetWires: number[],
     layerIdx: number,
 ): void {
     for (const control of gate.controlQubits ?? []) {
-        const controlWire = wireMap.get(getSelectorKey(control));
+        const controlWire = wireIndex.getWireIndex(control);
 
         if (controlWire === undefined) continue;
 
@@ -214,9 +204,9 @@ function applyControls(
     }
 }
 
-function getTargetWires(wireMap: WireMap, gate: ElementaryQuantumGateDto): number[] {
+function getTargetWires(wireIndex: WireIndex, gate: ElementaryQuantumGateDto): number[] {
     return gate.targetQubits
-        .map((target) => wireMap.get(getSelectorKey(target)))
+        .map((target) => wireIndex.getWireIndex(target))
         .filter((wireIdx): wireIdx is number => wireIdx !== undefined);
 }
 

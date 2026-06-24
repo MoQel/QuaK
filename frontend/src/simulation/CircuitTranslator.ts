@@ -1,10 +1,4 @@
-import {
-    CircuitResponse,
-    ElementaryQuantumGateDto,
-    getCircuitWidth,
-    isQuantumRegister,
-    RegisterResponse,
-} from '@/api/dto/circuit.ts';
+import { CircuitResponse, ElementaryQuantumGateDto, getCircuitWidth } from '@/api/dto/circuit.ts';
 import * as qulacs from 'qulacs-wasm';
 import { Complex } from 'qulacs-wasm';
 import {
@@ -14,14 +8,26 @@ import {
     SimulationResult,
     StateVectorEntry,
 } from '@/simulation/simulation.types.ts';
+import { buildWireIndex, WireIndex } from '@/lib/circuitIndex.ts';
 
-type RegisterOffsets = Record<string, number>;
+type GateType = ElementaryQuantumGateDto['identifier'];
+
+type GateContext = {
+    circuit: qulacs.QuantumCircuit;
+
+    targets: number[];
+
+    controls: number[];
+
+    angle: number;
+};
 
 export class CircuitTranslator {
     // Default values, if options not set
     private static readonly SAMPLE_COUNT = 1024;
     private static readonly MAX_CIRCUIT_WIDTH = 12;
     private static readonly DEFAULT_MODE: SimulationMode = 'exact';
+
     /**
      * Maps backend Circuit representation into qualacs simulation
      */
@@ -38,8 +44,7 @@ export class CircuitTranslator {
             throw new Error(`Circuit exceeds maximum limit of ${maxCircuitWidth} qubits.`);
         }
 
-        // Initialize offset Map
-        const offsets = this.calculateRegisterOffsets(circuitData.registers);
+        const wireIndex = buildWireIndex(circuitData.registers, 'quantum');
         // Initialize Qulacs Circuit instances
         const state = new qulacs.QuantumState(circuitWidth);
         const circuit = new qulacs.QuantumCircuit(circuitWidth);
@@ -47,7 +52,7 @@ export class CircuitTranslator {
         try {
             // Build
             state.set_zero_state();
-            this.buildCircuit(circuitData, circuit, offsets);
+            this.buildCircuit(circuitData, circuit, wireIndex);
 
             // Calculate
             circuit.update_quantum_state(state);
@@ -64,33 +69,20 @@ export class CircuitTranslator {
         }
     }
 
-    private static calculateRegisterOffsets(registers: RegisterResponse[]): RegisterOffsets {
-        const offsets: RegisterOffsets = {};
-        let offsetCount = 0;
-
-        for (const reg of registers) {
-            if (isQuantumRegister(reg)) {
-                offsets[reg.id] = offsetCount;
-                offsetCount += reg.numberOfQubits;
-            }
-        }
-        return offsets;
-    }
-
     /**
      * Builds the circuit based on the filtered registers.
      */
     private static buildCircuit(
         circuitData: CircuitResponse,
         circuit: qulacs.QuantumCircuit,
-        offsets: RegisterOffsets,
+        wireIndex: WireIndex,
     ): void {
         const layers = circuitData.layers;
         // Iterate layer by layer (Time Step by Time Step)
         for (const layer of layers) {
             for (const op of layer.quantumOperations) {
                 if (op.type !== 'ELEMENTARY_QUANTUM_GATE') continue;
-                this.applyGate(circuit, op, offsets);
+                this.applyGate(circuit, op, wireIndex);
             }
         }
     }
@@ -104,59 +96,79 @@ export class CircuitTranslator {
      * In such a case, define the gate using the custom addMatrixGate method,
      * which is a workaround for custom gates from their unitary matrix.
      */
-    private static applyGate(circuit: qulacs.QuantumCircuit, op: ElementaryQuantumGateDto, offsets: RegisterOffsets) {
+    private static applyGate(circuit: qulacs.QuantumCircuit, op: ElementaryQuantumGateDto, wireIndex: WireIndex) {
         const type = op.identifier;
         const angle = op.rotationAngle;
         // Resolve global indices
-        const targets = op.targetQubits.map((t) => offsets[t.registerId] + t.index);
-        const controls = op.controlQubits.map((t) => offsets[t.registerId] + t.index);
+        const targets = op.targetQubits
+            .map((target) => wireIndex.getWireIndex(target))
+            .filter((target): target is number => target !== undefined);
+        const controls = op.controlQubits
+            .map((control) => wireIndex.getWireIndex(control))
+            .filter((control): control is number => control !== undefined);
 
-        switch (type) {
-            case 'H':
-                circuit.add_H_gate(targets[0]);
-                break;
-            case 'X':
-                circuit.add_X_gate(targets[0]);
-                break;
-            case 'Y':
-                circuit.add_Y_gate(targets[0]);
-                break;
-            case 'Z':
-                circuit.add_Z_gate(targets[0]);
-                break;
-            case 'S':
-                circuit.add_S_gate(targets[0]);
-                break;
-            case 'T':
-                circuit.add_T_gate(targets[0]);
-                break;
-            case 'RX':
-                circuit.add_RotX_gate(targets[0], angle);
-                break;
-            case 'RY':
-                circuit.add_RotY_gate(targets[0], angle);
-                break;
-            case 'RZ':
-                circuit.add_RotZ_gate(targets[0], angle);
-                break;
-            case 'CX':
-                circuit.add_CNOT_gate(controls[0], targets[0]);
-                break;
-            case 'CZ':
-                circuit.add_CZ_gate(controls[0], targets[0]);
-                break;
-            case 'SWAP':
-                circuit.add_SWAP_gate(targets[0], targets[1]);
-                break;
-            case 'CCX':
-                circuit.add_gate(qulacs.TOFFOLI(controls[0], controls[1], targets[0]));
-                break;
-            case 'MEASURE':
-                break; // ignored
-            default:
-                console.warn(`Gate type ${type} not yet implemented in Translator`);
+        const handler = this.qulacsGateAdapters[type];
+
+        if (!handler) {
+            console.warn(`Gate type ${type} not yet implemented in Translator`);
+
+            return;
         }
+
+        handler({ circuit, targets, controls, angle });
     }
+
+    // Mapping instead of switch case to reduce complexity for sonar linter
+    private static readonly qulacsGateAdapters: Partial<Record<GateType, (ctx: GateContext) => void>> = {
+        H: ({ circuit, targets }) => {
+            if (hasIndices(targets, 1)) circuit.add_H_gate(targets[0]);
+        },
+        X: ({ circuit, targets }) => {
+            if (hasIndices(targets, 1)) circuit.add_X_gate(targets[0]);
+        },
+        Y: ({ circuit, targets }) => {
+            if (hasIndices(targets, 1)) circuit.add_Y_gate(targets[0]);
+        },
+        Z: ({ circuit, targets }) => {
+            if (hasIndices(targets, 1)) circuit.add_Z_gate(targets[0]);
+        },
+        S: ({ circuit, targets }) => {
+            if (hasIndices(targets, 1)) circuit.add_S_gate(targets[0]);
+        },
+        T: ({ circuit, targets }) => {
+            if (hasIndices(targets, 1)) circuit.add_T_gate(targets[0]);
+        },
+        RX: ({ circuit, targets, angle }) => {
+            if (hasIndices(targets, 1)) circuit.add_RotX_gate(targets[0], angle);
+        },
+        RY: ({ circuit, targets, angle }) => {
+            if (hasIndices(targets, 1)) circuit.add_RotY_gate(targets[0], angle);
+        },
+        RZ: ({ circuit, targets, angle }) => {
+            if (hasIndices(targets, 1)) circuit.add_RotZ_gate(targets[0], angle);
+        },
+        CX: ({ circuit, controls, targets }) => {
+            if (hasIndices(controls, 1) && hasIndices(targets, 1)) {
+                circuit.add_CNOT_gate(controls[0], targets[0]);
+            }
+        },
+        CZ: ({ circuit, controls, targets }) => {
+            if (hasIndices(controls, 1) && hasIndices(targets, 1)) {
+                circuit.add_CZ_gate(controls[0], targets[0]);
+            }
+        },
+        SWAP: ({ circuit, targets }) => {
+            if (hasIndices(targets, 2)) {
+                circuit.add_SWAP_gate(targets[0], targets[1]);
+            }
+        },
+        CCX: ({ circuit, controls, targets }) => {
+            if (hasIndices(controls, 2) && hasIndices(targets, 1)) {
+                circuit.add_gate(qulacs.TOFFOLI(controls[0], controls[1], targets[0]));
+            }
+        },
+        MEASURE: () => undefined,
+    };
 
     private static processResults(
         state: qulacs.QuantumState,
@@ -233,4 +245,8 @@ export class CircuitTranslator {
     private static createEmptyResult(numQubits: number): SimulationResult {
         return { stateVector: [], counts: null, simulatedQubits: numQubits };
     }
+}
+
+function hasIndices(indices: number[], requiredCount: number): boolean {
+    return indices.length >= requiredCount;
 }
