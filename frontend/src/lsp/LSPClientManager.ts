@@ -1,12 +1,25 @@
 /**
  * Layer 3: LSPClientManager
  *
- * Responsibilities:
- *  - Singleton lifecycle
- *  - One LSP client per language
- *  - Lazy startup
- *  - Document routing
- *  - Debounced session close when a language is no longer visible
+ * Application-level coordinator for LSP clients.
+ *
+ * This manager does not speak JSON-RPC or implement LSP messages directly.
+ * Instead, it owns the lifecycle policy around LSPClient instances:
+ *
+ * - keeps at most one LSP client per language
+ * - starts a client lazily when a document for that language becomes visible
+ * - routes document open/change/close activity to the correct client
+ * - tracks visibility per editor group, because the same Monaco model may be
+ *   visible in multiple groups
+ * - delays shutting down an idle language server session so quick tab switches
+ *   do not constantly create and dispose clients
+ *
+ * Example:
+ * Opening a Python document causes the manager to create or reuse the
+ * Python LSPClient. The LSPClient then sends LSP notifications such as
+ * `textDocument/didOpen` and uses JSON-RPC requests for hover/completion.
+ * When no Python document is visible anymore, the manager schedules the
+ * client for disposal after a short delay.
  */
 
 import type * as monaco from 'monaco-editor';

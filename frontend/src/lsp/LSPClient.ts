@@ -1,11 +1,26 @@
 /**
  * Layer 2: LSPClient
  *
- * Responsibilities:
- *  - LSP initialize handshake
- *  - Document synchronization
- *  - Monaco provider registration
- *  - Diagnostics handling
+ * LSP-aware client built on top of JsonRpcTransport.
+ *
+ * This class translates editor activity and Monaco provider calls into concrete
+ * Language Server Protocol messages. It knows which LSP methods are requests
+ * and which are notifications:
+ *
+ * - `initialize`, `textDocument/completion`, `textDocument/hover`, and
+ *   `textDocument/definition` are requests because the client expects a result.
+ *
+ * - `initialized`, `textDocument/didOpen`, `textDocument/didChange`, and
+ *   `textDocument/didClose` are notifications because they only inform the
+ *   server about client/editor state.
+ *
+ * - `textDocument/publishDiagnostics` is a server-to-client notification. The
+ *   server pushes diagnostics without the client requesting them directly.
+ *
+ * The client performs the LSP initialize handshake, registers Monaco completion,
+ * hover and definition providers based on server capabilities, synchronizes
+ * document contents, converts Monaco positions/ranges to LSP positions/ranges,
+ * and maps server diagnostics back to Monaco markers.
  */
 
 import type * as monaco from 'monaco-editor';

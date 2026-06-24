@@ -1,11 +1,25 @@
 /**
  * Layer 1: JsonRpcTransport
  *
- * Responsibilities:
- *  - WebSocket lifecycle
- *  - JSON-RPC framing
- *  - Request/response correlation
- *  - Notification dispatch
+ * Low-level transport for JSON-RPC 2.0 over WebSocket.
+ *
+ * This class knows nothing about LSP semantics. It only deals with the
+ * mechanics of sending and receiving JSON-RPC messages through a WebSocket:
+ *
+ * - A request has an `id` and expects exactly one response with the same `id`.
+ *   Example: `{ jsonrpc: "2.0", id: 1, method: "textDocument/hover", params: ... }`
+ *
+ * - A response has an `id` but no `method`. It resolves or rejects the pending
+ *   request with the matching id.
+ *   Example: `{ jsonrpc: "2.0", id: 1, result: ... }`
+ *
+ * - A notification has a `method` but no `id`. It is fire-and-forget and never
+ *   receives a response.
+ *   Example: `{ jsonrpc: "2.0", method: "textDocument/didChange", params: ... }`
+ *
+ * The transport also owns WebSocket lifecycle state, request timeouts,
+ * reconnect handling, send queueing while connecting, and dispatching incoming
+ * notifications to registered handlers.
  */
 
 const JSON_RPC_VERSION = '2.0';
@@ -103,17 +117,6 @@ export class JsonRpcTransport {
         this.shouldReconnect = this.options.autoReconnect;
         if (this.state === 'connected' || this.state === 'connecting') return;
         this.doConnect();
-    }
-
-    disconnect(): void {
-        if (this.state === 'disposed') return;
-        this.shouldReconnect = false;
-        this.clearReconnectTimer();
-        this.ws?.close();
-        this.ws = null;
-        this.failSendQueue();
-        this.rejectAllPending(new RpcError(RpcErrorCode.TransportDisconnected, 'Transport disconnected'));
-        this.setState('disconnected');
     }
 
     request<T = unknown>(method: string, params?: unknown): Promise<T> {
