@@ -36,7 +36,11 @@ export const CircuitTabsProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const { circuit, setCircuit, projectId } = useProject();
     const activeCircuitTabId = useAppSelector((state) => {
         const activeGroup = state.tabs.groups.find((group) => group.id === state.tabs.activeGroupId);
-        return activeGroup?.activeTabId ?? null;
+        const activeTabId = activeGroup?.activeTabId ?? null;
+        // Only treat a tab as active if it is actually open. This guards against a dangling
+        // activeTabId (e.g. left over after closing all tabs) keeping the circuit editable even
+        // though no tab is shown — the panel then correctly falls back to "No file open".
+        return activeTabId && activeGroup?.openTabs.some((tab) => tab.id === activeTabId) ? activeTabId : null;
     });
     const openTabIdsKey = useAppSelector((state) =>
         state.tabs.groups.flatMap((group) => group.openTabs.map((tab) => tab.id)).join('|'),
