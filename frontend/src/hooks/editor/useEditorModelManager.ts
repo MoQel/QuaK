@@ -8,6 +8,7 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { setFileDirty } from '@/store/tabs/tabsSlice.ts';
 import { useAppSelector } from '@/hooks/useAppSelector.ts';
 import { Monaco } from '@monaco-editor/react';
+import { lspManager } from '@/lsp/LSPClientManager';
 
 export function useEditorModelManager(
     monaco: Monaco,
@@ -58,52 +59,61 @@ export function useEditorModelManager(
             return;
         }
 
-        const modelUri = Uri.file(activeFileId);
-        let model = monaco.editor.getModel(modelUri);
-
-        // Model with content exists (Hit)
-        if (model && !model.isDisposed()) {
-            editorInstance.setModel(model);
-            syncDirtyState(model, false);
-            setIsReadOnly(false);
-            return;
-        }
-
-        // Prevent re-fetching if the tab was just closed but the effect runs one last time with the old activeFileId.
-        const isStillInTabs = groups.find((g) => g.id === groupId)?.openTabs.some((t) => t.id === activeFileId);
-        if (!isStillInTabs) return;
-
-        // Fetch content (Miss)
-        setIsReadOnly(true);
+        let activeModel: editor.ITextModel | null = null;
         let isCancelled = false;
+        const fileName = activeTab?.title || 'untitled.txt';
+        const modelUri = Uri.file(`${activeFileId}/${fileName}`);
+        const findModel = () =>
+            monaco.editor.getModel(modelUri) ??
+            monaco.editor.getModels().find((candidate: editor.ITextModel) => getModelId(candidate) === activeFileId) ??
+            null;
+        let model = findModel();
 
-        fetchFileContent(activeFileId)
-            .then((data) => {
-                if (isCancelled || !data || !editorInstance || !monaco) return;
+        const showModel = (nextModel: editor.ITextModel, shouldDispatchDirtyState: boolean) => {
+            if (isCancelled || nextModel.isDisposed()) return;
 
-                // Has someone else created it in the meantime?
-                model = monaco.editor.getModel(modelUri);
+            activeModel = nextModel;
+            editorInstance.setModel(nextModel);
+            syncDirtyState(nextModel, shouldDispatchDirtyState);
+            setIsReadOnly(false);
+            lspManager.onDocumentOpen(groupId, nextModel);
+        };
 
-                if (!model || model.isDisposed()) {
-                    const techId = getTechnicalId(activeTab?.language || DEFAULT_LANG);
+        if (model && !model.isDisposed()) {
+            showModel(model, false);
+        } else {
+            // Prevent re-fetching if the tab was just closed but the effect runs once more with the old id.
+            const isStillInTabs = groups.find((g) => g.id === groupId)?.openTabs.some((t) => t.id === activeFileId);
+            if (!isStillInTabs) return;
 
-                    model = monaco.editor.createModel(data.content, techId, modelUri);
-                    savedVersionIds.set(model, model.getAlternativeVersionId());
-                }
+            setIsReadOnly(true);
+            fetchFileContent(activeFileId)
+                .then((data) => {
+                    if (isCancelled || !data) return;
 
-                editorInstance.setModel(model);
-                syncDirtyState(model);
-                setIsReadOnly(false);
-            })
-            .catch((err) => {
-                console.error('Failed to load file', err);
-                toast.error(err.message || 'File loading failed');
-            });
+                    model = findModel();
+                    if (!model || model.isDisposed()) {
+                        const techId = getTechnicalId(activeTab?.language || DEFAULT_LANG);
+                        model = monaco.editor.createModel(data.content, techId, modelUri);
+                        savedVersionIds.set(model, model.getAlternativeVersionId());
+                    }
+
+                    showModel(model, true);
+                })
+                .catch((err) => {
+                    if (isCancelled) return;
+                    console.error('Failed to load file', err);
+                    toast.error(err.message || 'File loading failed');
+                });
+        }
 
         return () => {
             isCancelled = true;
+            if (activeModel && !activeModel.isDisposed()) {
+                lspManager.onDocumentHide(groupId, activeModel);
+            }
         };
-    }, [activeFileId, monaco, editorInstance]);
+    }, [activeFileId, activeTab?.language, groupId, monaco, editorInstance]);
 
     return { isReadOnly, isDirtyRef };
 }

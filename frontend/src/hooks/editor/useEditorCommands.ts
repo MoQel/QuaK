@@ -1,8 +1,7 @@
 import { useEffect } from 'react';
-import { Uri } from 'monaco-editor';
 import { toast } from 'sonner';
 import { saveFileContent } from '@/views/text-editor-view/utils/fileService';
-import { savedVersionIds } from '@/views/text-editor-view/utils/editorUtils';
+import { getModelId, savedVersionIds } from '@/views/text-editor-view/utils/editorUtils';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { setFileDirty } from '@/store/tabs/tabsSlice.ts';
@@ -16,7 +15,8 @@ export function useEditorCommands() {
     // Handle Save
     const handleSave = async (targetFileId: string) => {
         if (!monaco) return;
-        const model = monaco.editor.getModel(Uri.file(targetFileId));
+        const models = monaco.editor.getModels();
+        const model = models.find((m) => getModelId(m) === targetFileId);
         if (!model || model.isDisposed()) return;
 
         try {

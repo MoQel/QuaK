@@ -1,0 +1,33 @@
+# ============================================================
+# Local developer config — copy to application-local.yaml (gitignored)
+#
+# Setup:
+#   cd backend/lsp && ./setup-all.sh
+#   Then fill in the binary paths printed by the script.
+# ============================================================
+
+quak:
+  lsp:
+    # Resource protection per backend instance. The per-user limit must be at
+    # least the number of configured languages.
+    limits:
+      max-processes: 40
+      max-processes-per-user: 4
+    process:
+      termination-timeout-ms: 2000
+    servers:
+
+      # --- Python LSP (pylsp) ---
+      # Dev: use the venv created by lsp/servers/python/setup.sh
+      python:
+        command:
+          - "/absolute/path/to/backend/lsp/servers/python/venv/bin/pylsp"
+        workingDirectory: "tmp/quak-lsp-workspace"
+        environment:
+          PYTHONUNBUFFERED: "1"
+      # --- QASM LSP (qasmlsp) ---
+      # Dev: use the binary installed by lsp/servers/qasm/setup.sh
+      qasm:
+        command:
+          - "/absolute/path/to/backend/lsp/servers/qasm/go/bin/qasmlsp"
+        workingDirectory: "tmp/quak-lsp-workspace"
