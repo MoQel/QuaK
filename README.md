@@ -12,9 +12,16 @@ This repository contains the source code for the Quantum Kit (QuaK) Web IDE.
 
 ### Development Workflow (Docker-only)
 
-This ensures a consistent environment and supports hot-reloading.
+This ensures a consistent environment. Rebuild the backend image after backend
+or LSP dependency changes.
 
-1. **Start Backend & Database:**
+1. **Create the environment file once:**
+
+    ```bash
+    cp backend/.env.example backend/.env
+    ```
+
+2. **Start Backend & Database:**
     * **Linux/macOS:**
 
         ```bash
@@ -31,7 +38,7 @@ This ensures a consistent environment and supports hot-reloading.
     * Runs MariaDB on port `3306`.
     * *Note:* The backend does **not** serve frontend files in this mode.
 
-2. **Start Frontend:**
+3. **Start Frontend:**
     In a new terminal:
 
     ```bash
@@ -43,13 +50,18 @@ This ensures a consistent environment and supports hot-reloading.
 
 **Recommended for backend development.** This allows you to run the backend in your IDE or via terminal with a debugger while using Docker for the database.
 
-1. **Start Database:**
+1. **Set up the local language servers and environment once:**
+
+    Follow [`backend/lsp/README.md`](backend/lsp/README.md), including creation
+    of `backend/application-local.yaml` and `backend/.env`.
+
+2. **Start Database:**
 
     ```bash
     docker-compose -f docker-compose.dev.yaml up -d database
     ```
 
-2. **Start Backend (with Debugging):**
+3. **Start Backend (with Debugging):**
     You can run the backend in debug mode via terminal. It will listen on port **5005** for a debugger while the API remains on **8080**.
 
     ```bash
@@ -60,7 +72,7 @@ This ensures a consistent environment and supports hot-reloading.
     * **Port 8080:** Standard Web/API (Frontend stays connected).
     * **Port 5005:** Debugging (Connect your IDE here via "Remote JVM Debug").
 
-3. **Start Frontend:**
+4. **Start Frontend:**
 
     ```bash
     cd frontend
@@ -73,13 +85,19 @@ Access the app at `http://localhost:5173`.
 
 To run the full application (Backend + Frontend served statically):
 
-1. **Start Application:**
+1. **Create and configure the environment file once:**
+
+    ```bash
+    cp backend/.env.example backend/.env
+    ```
+
+2. **Start Application:**
 
     ```bash
     docker compose -f docker-compose.prod.yaml up --build
     ```
 
-    * Builds the frontend and serves it via the backend (or Nginx if configured).
+    * Builds the frontend and serves it via the backend.
     * Runs the Spring Boot backend and MariaDB.
     * Access the app at `http://localhost:8080` (or the configured production port).
 

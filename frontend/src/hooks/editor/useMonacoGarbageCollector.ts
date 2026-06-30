@@ -6,6 +6,7 @@ import { useAppSelector } from '@/hooks/useAppSelector.ts';
 import { useAppDispatch } from '@/hooks/useAppDispatch.ts';
 import { closeAll } from '@/store/tabs/tabsSlice.ts';
 import { editor } from 'monaco-editor';
+import { lspManager } from '@/lsp/LSPClientManager';
 
 export function useMonacoGarbageCollector() {
     const monaco = useMonaco();
@@ -21,6 +22,8 @@ export function useMonacoGarbageCollector() {
             if (model.uri.scheme !== 'file') return;
             const modelId = getModelId(model);
             if (!allOpenFiles.has(modelId)) {
+                lspManager.onDocumentClose(model);
+
                 savedVersionIds.delete(model);
                 model.dispose();
             }
@@ -34,7 +37,9 @@ export function useMonacoGarbageCollector() {
 
             // Hard dispose all models to prevent memory leaks in global Monaco instance
             if (monaco) {
-                monaco.editor.getModels().forEach((model) => {
+                [...monaco.editor.getModels()].forEach((model) => {
+                    lspManager.onDocumentClose(model);
+
                     savedVersionIds.delete(model);
                     model.dispose();
                 });

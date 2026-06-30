@@ -1,17 +1,28 @@
+# Build Python LSP in an isolated virtual environment.
+FROM eclipse-temurin:21-jre-jammy AS python-lsp-builder
+
+ARG PIP_VERSION=26.1.2
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends python3 python3-venv && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY backend/lsp/servers/python/requirements.txt /tmp/python-lsp-requirements.txt
+RUN python3 -m venv /opt/lsp/python && \
+    /opt/lsp/python/bin/pip install --no-cache-dir "pip==${PIP_VERSION}" && \
+    /opt/lsp/python/bin/pip install --no-cache-dir -r /tmp/python-lsp-requirements.txt
+
+# Build a static QASM LSP binary so the runtime image does not need Go.
+FROM golang:1.24-bookworm AS qasm-lsp-builder
+
+ARG QASMLSP_VERSION=v0.2.17
+RUN CGO_ENABLED=0 go install "github.com/orangekame3/qasmtools/cmd/qasmlsp@${QASMLSP_VERSION}"
+
 # Build stage - use Debian-based image for better multi-arch support
 FROM eclipse-temurin:21-jdk-jammy AS builder
 
 # Build argument to control frontend build (default: skip frontend for dev)
 ARG SKIP_FRONTEND=true
-
-# Install Gradle (always needed)
-RUN apt-get update && \
-    apt-get install -y wget unzip && \
-    wget https://services.gradle.org/distributions/gradle-8.5-bin.zip && \
-    unzip gradle-8.5-bin.zip && \
-    mv gradle-8.5 /opt/gradle && \
-    rm gradle-8.5-bin.zip && \
-    rm -rf /var/lib/apt/lists/*
 
 # Install Node.js only when building frontend (prod mode)
 RUN if [ "$SKIP_FRONTEND" = "false" ]; then \
@@ -22,13 +33,11 @@ RUN if [ "$SKIP_FRONTEND" = "false" ]; then \
     rm -rf /var/lib/apt/lists/*; \
     fi
 
-ENV GRADLE_HOME=/opt/gradle
-ENV PATH=$PATH:$GRADLE_HOME/bin
-
 WORKDIR /app
 
-# Copy gradle files (expecting root build context)
-COPY backend/build.gradle backend/settings.gradle backend/node.gradle ./
+# Use the checked-in wrapper so local, CI and Docker builds use the same Gradle version.
+COPY backend/gradlew backend/build.gradle backend/settings.gradle backend/node.gradle ./
+COPY backend/gradle ./gradle
 
 # Copy source code
 COPY backend/src ./src
@@ -41,21 +50,33 @@ COPY frontend /frontend
 # Dev mode: only build backend JAR (no frontend operations at all)
 # Prod mode: build frontend and include in JAR
 RUN if [ "$SKIP_FRONTEND" = "true" ]; then \
-    gradle bootJar --no-daemon -PbuildFrontend=false; \
+    ./gradlew bootJar --no-daemon -PbuildFrontend=false; \
     else \
-    gradle bootJar --no-daemon -PbuildFrontend=true; \
+    ./gradlew bootJar --no-daemon -PbuildFrontend=true; \
     fi
 
-# Runtime stage - use Debian-based for consistency
+# Runtime stage - contains only Java, Python runtime and the built LSP servers.
 FROM eclipse-temurin:21-jre-jammy
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends python3 && \
+    rm -rf /var/lib/apt/lists/* && \
+    groupadd --gid 10001 quak && \
+    useradd --uid 10001 --gid quak --create-home --shell /usr/sbin/nologin quak
 
 WORKDIR /app
 
-# Copy the built JAR from builder stage
 COPY --from=builder /app/build/libs/*.jar quak.jar
+COPY --from=python-lsp-builder /opt/lsp/python /opt/lsp/python
+COPY --from=qasm-lsp-builder /go/bin/qasmlsp /opt/lsp/qasm/qasmlsp
 
-# Expose port
+RUN mkdir -p /var/lib/quak/lsp-workspace && \
+    chown -R quak:quak /app /var/lib/quak
+
+ENV PATH="/opt/lsp/python/bin:/opt/lsp/qasm:${PATH}"
+
+USER quak
+
 EXPOSE 8080
 
-# Run the application
 ENTRYPOINT ["java", "-jar", "quak.jar"]
