@@ -1,10 +1,12 @@
 # Run Spotless Apply in the backend
 if [ -d "backend" ]; then
-    echo "🔍 Running Spotless Apply in the backend..."
+    echo "Running Spotless Apply in the backend..."
     (cd backend && ./gradlew spotlessApply)
-    # Stage any files modified by Spotless Apply
-    git add -u backend/
+
+    if ! git diff --quiet -- backend; then
+        echo "Spotless changed files. Please review and stage them."
+        exit 1
+    fi
 fi
 
-# Run lint-staged in the frontend
 cd frontend && npx lint-staged
