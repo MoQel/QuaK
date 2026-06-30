@@ -7,7 +7,7 @@ services:
       MYSQL_DATABASE: quak
       MYSQL_USER: root
     volumes:
-      - db:/var/lib/mysql
+      - /mnt/quak-data/mariadb:/var/lib/mysql
     healthcheck:
       test: [ "CMD-SHELL", "mariadb-admin ping -h localhost -uroot --password=\"$${MARIADB_ROOT_PASSWORD}\"" ]
       interval: 1m
@@ -58,10 +58,6 @@ services:
       - quak-network
       - traefik-net
     restart: unless-stopped
-
-volumes:
-  db:
-
 
 networks:
   quak-network:
