@@ -8,10 +8,9 @@ import {
     RegisterResponse,
 } from '@/api/dto/circuit.ts';
 import { buildWireIndex, WireIndex } from '@/lib/circuitIndex.ts';
+import { angleToLatex, resolveAngle } from '@/lib/quantumAngle.ts';
 
 const ROTATION_GATES = new Set(['RX', 'RY', 'RZ']);
-const PI_FRACTION_DENOMINATORS = [1, 2, 3, 4, 6, 8, 12, 16];
-const ANGLE_TOLERANCE = 1e-8;
 const TRAILING_COLUMNS = 1; // Keep trailing wire column so the rendered circuit does not end directly at the last gate.
 
 /**
@@ -224,7 +223,7 @@ function gateLabel(gate: ElementaryQuantumGateDto): string {
     if (ROTATION_GATES.has(identifier)) {
         const axis = identifier[1];
         // \ensuremath works with both quantikz versions where gate labels may be handled in text or math mode.
-        return String.raw`\ensuremath{R_${axis}(${formatAngle(gate.rotationAngle)})}`;
+        return String.raw`\ensuremath{R_${axis}(${angleToLatex(resolveAngle(gate.rotationAngle))})}`;
     }
 
     if (identifier === 'CZ') {
@@ -236,60 +235,6 @@ function gateLabel(gate: ElementaryQuantumGateDto): string {
 
 function isControlledXGate(identifier: string, gate: ElementaryQuantumGateDto): boolean {
     return ['X', 'CX', 'CCX'].includes(identifier) && Boolean(gate.controlQubits?.length);
-}
-
-// Prefer symbolic π fractions for common rotation angles; fall back to a compact decimal.
-function formatAngle(angle: number | null | undefined): string {
-    if (angle === null || angle === undefined) {
-        return '?';
-    }
-
-    if (Math.abs(angle) < ANGLE_TOLERANCE) {
-        return '0';
-    }
-
-    const piRatio = angle / Math.PI;
-
-    for (const denominator of PI_FRACTION_DENOMINATORS) {
-        const numerator = Math.round(piRatio * denominator);
-
-        if (numerator === 0) continue;
-
-        if (Math.abs(piRatio - numerator / denominator) < ANGLE_TOLERANCE) {
-            return formatPiFraction(numerator, denominator);
-        }
-    }
-
-    return Number(angle.toFixed(2)).toString();
-}
-
-function formatPiFraction(numerator: number, denominator: number): string {
-    const divisor = gcd(Math.abs(numerator), denominator);
-    const reducedNumerator = numerator / divisor;
-    const reducedDenominator = denominator / divisor;
-    const sign = reducedNumerator < 0 ? '-' : '';
-    const absNumerator = Math.abs(reducedNumerator);
-
-    if (reducedDenominator === 1) {
-        return absNumerator === 1 ? String.raw`${sign}\pi` : String.raw`${sign}${absNumerator}\pi`;
-    }
-
-    if (absNumerator === 1) {
-        return String.raw`${sign}\frac{\pi}{${reducedDenominator}}`;
-    }
-
-    return String.raw`${sign}\frac{${absNumerator}\pi}{${reducedDenominator}}`;
-}
-
-function gcd(a: number, b: number): number {
-    let x = a;
-    let y = b;
-
-    while (y !== 0) {
-        [x, y] = [y, x % y];
-    }
-
-    return x || 1;
 }
 
 function escapeLatexText(value: string): string {
