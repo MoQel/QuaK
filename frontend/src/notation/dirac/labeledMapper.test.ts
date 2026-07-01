@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { toLabeledDirac } from './diracMapper';
+import { toLabeledDirac } from './labeledMapper.ts';
 import {
     CircuitResponse,
     ElementaryQuantumGateDto,
@@ -7,7 +7,7 @@ import {
     LayerResponse,
     QuantumOperationDto,
     QuantumRegisterResponse,
-} from '@/api/dto/circuit';
+} from '@/api/dto/circuit.ts';
 
 const quantumRegister = (id: string, numberOfQubits: number, name = id): QuantumRegisterResponse => ({
     id,
@@ -123,6 +123,12 @@ describe('toLabeledDirac', () => {
         expect(result).toBe(String.raw`\mathrm{H}_{\text{ancilla}_{0}} \cdot \lvert 0\rangle_{\text{ancilla}_{0}}`);
     });
 
+    it('escapes LaTeX-special characters in register names', () => {
+        const result = toLabeledDirac(circuit([quantumRegister('q_a', 1)], [layer(gate('H', [sel('q_a', 0)]))]));
+
+        expect(result).toBe(String.raw`\mathrm{H}_{\text{q\_a}_{0}} \cdot \lvert 0\rangle_{\text{q\_a}_{0}}`);
+    });
+
     it('skips non-unitary operations such as measurements', () => {
         const measurement: QuantumOperationDto = {
             type: 'MEASUREMENT',
@@ -137,6 +143,27 @@ describe('toLabeledDirac', () => {
 
         // Only the labelled initial state remains; no operator was rendered.
         expect(result).toBe(String.raw`\lvert 0\rangle_{q_{0}}`);
+    });
+
+    it('breaks per layer in the layered layout', () => {
+        // H(q0); CNOT(q0, q1) — two layers, wrapped and broken onto separate lines.
+        const result = toLabeledDirac(
+            circuit(
+                [quantumRegister('q', 2)],
+                [layer(gate('H', [sel('q', 0)])), layer(gate('CX', [sel('q', 1)], [sel('q', 0)]))],
+            ),
+            'layered',
+        );
+
+        expect(result).toBe(
+            [
+                '\\begin{aligned}',
+                String.raw`& \left(\mathrm{CNOT}_{q_{0} q_{1}}\right) \\`,
+                String.raw`& \cdot \left(\mathrm{H}_{q_{0}}\right) \\`,
+                String.raw`& \cdot \lvert 00\rangle_{q_{0} q_{1}}`,
+                '\\end{aligned}',
+            ].join('\n'),
+        );
     });
 
     it('returns an empty string when there are no qubits', () => {
