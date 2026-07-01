@@ -2,11 +2,9 @@ package edu.kit.quak.core.circuit.model.layer;
 
 import edu.kit.quak.core.circuit.model.ElementWithId;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
-import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import lombok.NonNull;
 
@@ -55,33 +53,5 @@ public class Layer extends ElementWithId {
         }
 
         return sb.toString().trim();
-    }
-
-    public String toCode(QuantumCircuit quantumCircuit) {
-        //TODO rotation angle aus Elementary holen falls vorhanden
-        StringBuilder code = new StringBuilder();
-        // Emit operations in canonical order (topmost involved qubit first) so that
-        // generating code and re-parsing it yields a stable circuit layout.
-        List<QuantumOperation> sortedOperations = quantumOperations
-            .stream()
-            .sorted(Comparator.comparingInt(Layer::minInvolvedQubitIndex))
-            .toList();
-        for (QuantumOperation operation : sortedOperations) {
-            code.append(operation.toCode(quantumCircuit)).append("\n");
-        }
-        return code.toString();
-    }
-
-    private static int minInvolvedQubitIndex(QuantumOperation operation) {
-        int min = Integer.MAX_VALUE;
-        for (ElementSelector selector : operation.getTargetQubits()) {
-            min = Math.min(min, selector.getIndex());
-        }
-        if (operation.getControlQubits() != null) {
-            for (ElementSelector selector : operation.getControlQubits()) {
-                min = Math.min(min, selector.getIndex());
-            }
-        }
-        return min;
     }
 }

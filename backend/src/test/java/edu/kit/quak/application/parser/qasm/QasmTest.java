@@ -9,6 +9,7 @@ import edu.kit.quak.application.circuit.antlr.OpenQASM3Parser;
 import edu.kit.quak.application.circuit.antlr.QasmCircuitVisitor;
 import edu.kit.quak.application.circuit.antlr.QasmService;
 import edu.kit.quak.application.circuit.exceptions.QasmParseException;
+import edu.kit.quak.core.circuit.codegen.QasmCodeGenerator;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementaryQuantumGate;
 import edu.kit.quak.core.circuit.model.register.QuantumRegister;
@@ -153,7 +154,7 @@ class QasmTest {
         QasmService qasmService = new QasmService();
         QuantumCircuit circuit = qasmService.parse("qubit[1] q;\nrx(pi/2) q[0];\n");
 
-        String generatedCode = circuit.toCode();
+        String generatedCode = QasmCodeGenerator.toCode(circuit);
 
         assertTrue(generatedCode.contains("rx(pi/2)"), "Generated code should keep the symbolic angle: " + generatedCode);
 
@@ -200,7 +201,7 @@ class QasmTest {
         QasmService qasmService = new QasmService();
         QuantumCircuit circuit = qasmService.parse("qubit[2] q;\nrx(euler) q[0];\nry(tau) q[1];\n");
 
-        String generatedCode = circuit.toCode();
+        String generatedCode = QasmCodeGenerator.toCode(circuit);
         assertTrue(generatedCode.contains("rx(euler)"), "Generated code should keep 'euler': " + generatedCode);
         assertTrue(generatedCode.contains("ry(tau)"), "Generated code should keep 'tau': " + generatedCode);
 

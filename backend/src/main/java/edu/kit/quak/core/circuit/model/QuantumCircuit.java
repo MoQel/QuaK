@@ -336,28 +336,4 @@ public class QuantumCircuit extends ElementWithId {
         layers.forEach(lay -> sb.append("  ").append(lay.toString().replace("\n", "\n  ")).append("\n"));
         return sb.toString().trim();
     }
-
-    public String toCode() {
-        StringBuilder stringBuilder = new StringBuilder();
-        for (Register register : registers) {
-            if (register instanceof QuantumRegister quantumRegister) {
-                stringBuilder.append("// Register ").append(quantumRegister.getName()).append("\n");
-                stringBuilder
-                    .append("qubit[")
-                    .append(quantumRegister.getNumberOfQubits())
-                    .append("] ")
-                    .append(quantumRegister.getName())
-                    .append(";\n");
-            }
-            // TODO classical register?
-        }
-        stringBuilder.append("\n");
-
-        for (int layerIdx = 0; layerIdx < layers.size(); layerIdx++) {
-            Layer layer = layers.get(layerIdx);
-            stringBuilder.append("// Layer ").append(layerIdx + 1).append("\n");
-            stringBuilder.append(layer.toCode(this)).append("\n");
-        }
-        return stringBuilder.toString();
-    }
 }
