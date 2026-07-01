@@ -3,14 +3,15 @@ import { useAppDispatch } from '@/hooks/useAppDispatch.ts';
 import { requestSave } from '@/store/tabs/tabsSlice.ts';
 import { safeCloseTab } from '@/store/tabs/tabsThunks.ts';
 
-export function useEditorShortcuts(activeFileId: string | null, activeGroupId: string) {
+export function useEditorShortcuts(activeFileId: string | null, activeGroupId: string, isReadOnly = false) {
     const dispatch = useAppDispatch();
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if ((e.metaKey || e.ctrlKey) && e.key === 's') {
                 e.preventDefault();
-                if (activeFileId) {
+                // Read-only tabs (e.g. the formal editor) have nothing to save.
+                if (activeFileId && !isReadOnly) {
                     dispatch(requestSave(activeFileId));
                 }
             }
@@ -27,5 +28,5 @@ export function useEditorShortcuts(activeFileId: string | null, activeGroupId: s
 
         globalThis.addEventListener('keydown', handleKeyDown);
         return () => globalThis.removeEventListener('keydown', handleKeyDown);
-    }, [activeFileId, activeGroupId, dispatch]);
+    }, [activeFileId, activeGroupId, isReadOnly, dispatch]);
 }

@@ -39,6 +39,7 @@ export function EditorTabContextMenuContent({
 }: Readonly<TabContextMenuProps>) {
     const metaKey = getKeyLabel();
     const optionKey = getOptionKeyLabel();
+    const isReadOnly = tab.kind === 'formal';
 
     return (
         <ContextMenuContent className="w-48">
@@ -66,8 +67,9 @@ export function EditorTabContextMenuContent({
                     ),
             )}
 
-            {isActive && <ContextMenuSeparator />}
-            {isActive && (
+            {/* Formal (read-only) tabs have no language and cannot be saved. */}
+            {isActive && !isReadOnly && <ContextMenuSeparator />}
+            {isActive && !isReadOnly && (
                 <ContextMenuSub>
                     <ContextMenuSubTrigger>Language</ContextMenuSubTrigger>
                     <ContextMenuSubContent className="w-48">
@@ -84,11 +86,15 @@ export function EditorTabContextMenuContent({
                     </ContextMenuSubContent>
                 </ContextMenuSub>
             )}
-            <ContextMenuSeparator />
-            <ContextMenuItem onClick={onSave} className="flex items-center justify-between">
-                <span>Save</span>
-                <span className="ml-auto tracking-tighter text-muted text-xs opacity-60">{metaKey} + S</span>
-            </ContextMenuItem>
+            {!isReadOnly && (
+                <>
+                    <ContextMenuSeparator />
+                    <ContextMenuItem onClick={onSave} className="flex items-center justify-between">
+                        <span>Save</span>
+                        <span className="ml-auto tracking-tighter text-muted text-xs opacity-60">{metaKey} + S</span>
+                    </ContextMenuItem>
+                </>
+            )}
         </ContextMenuContent>
     );
 }

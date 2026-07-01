@@ -15,7 +15,8 @@ export function TextEditorView() {
     const { groups, activeGroupId, isDragging } = useAppSelector((state) => state.tabs);
     const activeGroup = groups.find((g) => g.id === activeGroupId);
     const activeTabId = activeGroup?.activeTabId || null;
-    useEditorShortcuts(activeTabId, activeGroupId);
+    const activeTab = activeGroup?.openTabs.find((t) => t.id === activeTabId) ?? null;
+    useEditorShortcuts(activeTabId, activeGroupId, activeTab?.kind === 'formal');
     useMonacoGarbageCollector();
     useEditorCommands();
     useLSPSetup();

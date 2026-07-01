@@ -16,6 +16,9 @@ import { FileDetailsResponse, RenameFileRequest } from '@/api/dto/filesystem.ts'
 import { EntityForm } from '@/views/project-manager-view/util/FormUtils.tsx';
 import { getFileIcon } from '@/views/project-manager-view/util/FileIcons.tsx';
 import { toast } from 'sonner';
+import { useAppDispatch } from '@/hooks/useAppDispatch.ts';
+import { openTab } from '@/store/tabs/tabsSlice.ts';
+import { canOpenInFormalEditor, createFormalTab } from '@/views/text-editor-view/components/formal-editor/formalTab.ts';
 
 /**
  * Displays a {@link IFile File}
@@ -48,6 +51,7 @@ export function File(file: Readonly<IFile>) {
                     <ListingElement text={name} icon={getFileIcon(name)} />
                 </ContextMenuTrigger>
                 <ContextMenuContent>
+                    {canOpenInFormalEditor(name) && <OpenWithFormalEditor id={id} name={name} />}
                     {FileRename(id, dialogTrigger)}
                     <Delete endpoint={'/api/file/' + id} openDialog={dialogTrigger} />
                 </ContextMenuContent>
@@ -57,6 +61,19 @@ export function File(file: Readonly<IFile>) {
             </DialogContent>
         </Dialog>
     );
+}
+
+/**
+ * Opens the file in the formal (Dirac notation) editor as a dedicated tab.
+ *
+ * TEMPORARY: shows the single project circuit rather than the file's own circuit — see
+ * {@link canOpenInFormalEditor}.
+ */
+function OpenWithFormalEditor({ id, name }: Readonly<{ id: string; name: string }>) {
+    const dispatch = useAppDispatch();
+    const openFormalTab = () => dispatch(openTab({ tab: createFormalTab(id, name) }));
+
+    return <ContextMenuItem onSelect={openFormalTab}>Open with Formal Editor</ContextMenuItem>;
 }
 
 function FileRename(id: string, trigger: (element: Promise<JSX.Element>) => void) {

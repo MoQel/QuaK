@@ -2,6 +2,7 @@ export interface Tab {
     id: string; // Unique file id
     title: string; // Filename
     language: string; // language setting
+    kind?: 'code' | 'formal'; // Tab content type; absent means a regular code tab.
 }
 
 export interface EditorGroup {
