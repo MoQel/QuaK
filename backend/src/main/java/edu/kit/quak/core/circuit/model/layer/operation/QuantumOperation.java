@@ -2,7 +2,6 @@ package edu.kit.quak.core.circuit.model.layer.operation;
 
 import edu.kit.quak.core.circuit.exceptions.InvalidOperationConfigurationException;
 import edu.kit.quak.core.circuit.model.ElementWithId;
-import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.core.circuit.model.layer.operation.library.QuantumOperationLibrary;
 import java.util.List;
 import lombok.Getter;
@@ -32,50 +31,5 @@ public abstract class QuantumOperation extends ElementWithId {
         }
         this.targetQubits = targetQubits;
         this.controlQubits = controlQubits;
-    }
-
-    public String toCode(QuantumCircuit quantumCircuit) {
-        StringBuilder sb = new StringBuilder();
-
-        String operatorCode = operatorToCode(quantumCircuit);
-        sb.append(operatorCode);
-
-        //TODO
-        // Falls du invertierte Gates hast (in OpenQASM 3 oft via 'inv @ gate')
-        if (this.inverseForm) {
-            // Hinweis: Je nach OpenQASM 3 Dialekt schreibt man "inv @ h"
-            // Wenn du das brauchst, müsstest du den String entsprechend vorne anpassen.
-        }
-
-        // 2. Qubits sammeln (Zuerst Controls, dann Targets – das ist QASM-Standard)
-        List<String> qubitStrings = new java.util.ArrayList<>();
-
-        if (this.controlQubits != null) {
-            for (ElementSelector control : this.controlQubits) {
-                qubitStrings.add(control.toCode(quantumCircuit)); // Angenommen ElementSelector hat ein toCode() für "q[0]"
-            }
-        }
-
-        for (ElementSelector target : this.targetQubits) {
-            qubitStrings.add(target.toCode(quantumCircuit));
-        }
-
-        // 3. Wenn Qubits vorhanden sind, mit Leerzeichen trennen und Komma-separiert anhängen
-        if (!qubitStrings.isEmpty()) {
-            sb.append(" ").append(String.join(", ", qubitStrings));
-        }
-
-        // 4. Jedes Statement in OpenQASM endet mit einem Semikolon
-        sb.append(";");
-
-        return sb.toString();
-    }
-
-    /**
-     * Liefert den Operator-Teil des QASM-Codes (z.B. "h" oder "cx"). Unterklassen wie
-     * {@link ElementaryQuantumGate} hängen hier ggf. Parameter wie den Rotationswinkel an.
-     */
-    protected String operatorToCode(QuantumCircuit quantumCircuit) {
-        return this.operationDefinition.toCode(quantumCircuit);
     }
 }

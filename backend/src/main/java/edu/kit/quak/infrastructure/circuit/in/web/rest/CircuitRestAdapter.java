@@ -2,6 +2,7 @@ package edu.kit.quak.infrastructure.circuit.in.web.rest;
 
 import edu.kit.quak.application.circuit.ports.in.CircuitServicePort;
 import edu.kit.quak.application.user.ports.in.UserServicePort;
+import edu.kit.quak.core.circuit.codegen.QasmCodeGenerator;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.core.circuit.model.layer.Layer;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
@@ -118,7 +119,7 @@ public class CircuitRestAdapter {
         // Canonicalize the layering (same ASAP + span-overlap rule the frontend renders with) so
         // the emitted "// Layer N" blocks match the rendered circuit columns.
         circuit.reschedule();
-        return new GeneratedCodeResponse(circuit.toCode());
+        return new GeneratedCodeResponse(QasmCodeGenerator.toCode(circuit));
     }
 
     /** Maps the request's registers to domain models, tolerating a missing (null) registers field. */
