@@ -111,9 +111,9 @@ public class CircuitRestAdapter {
      * Generates OpenQASM code from the given circuit content without persisting
      * anything. Counterpart of the /qasm/parse endpoint.
      */
-    @PostMapping("/code")
+    @PostMapping("/qasmCode")
     @PreAuthorize("isAuthenticated()")
-    public GeneratedCodeResponse generateCode(@RequestBody UpdateCircuitRequest request) {
+    public GeneratedCodeResponse generateQasmCode(@RequestBody UpdateCircuitRequest request) {
         log.debug("REST request to generate code from circuit content");
         QuantumCircuit circuit = QuantumCircuit.builder().registers(toRegisters(request)).layers(toLayers(request)).build();
         // Canonicalize the layering (same ASAP + span-overlap rule the frontend renders with) so

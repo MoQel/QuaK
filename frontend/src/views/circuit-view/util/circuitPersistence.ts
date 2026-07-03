@@ -20,4 +20,6 @@ export const saveCircuitContent = (circuit: CircuitResponse): Promise<CircuitRes
 
 /** Generates OpenQASM code from the circuit content without persisting anything. */
 export const generateCircuitCode = (circuit: CircuitResponse): Promise<string> =>
-    api.post<{ code: string }>('/api/circuit/code', toCircuitContentPayload(circuit)).then((response) => response.code);
+    api
+        .post<{ code: string }>('/api/circuit/qasmCode', toCircuitContentPayload(circuit))
+        .then((response) => response.code);

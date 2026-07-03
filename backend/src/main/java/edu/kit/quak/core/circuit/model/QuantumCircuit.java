@@ -30,7 +30,7 @@ public class QuantumCircuit extends ElementWithId {
     private final List<Layer> layers = new ArrayList<>();
 
     public QuantumCircuit(String projectId) {
-        this(projectId, (String) null);
+        this(projectId, null);
     }
 
     public QuantumCircuit(String projectId, String fileId) {

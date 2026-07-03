@@ -17,7 +17,7 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
     // Start without any registers; they are created from the qubit declarations found in the code.
     private final QuantumCircuit circuit = QuantumCircuit.builder()
         .id(UUID.randomUUID().toString())
-        .projectId("test-1")
+        .projectId(null) // set in frontend
         .registers(new ArrayList<>())
         .layers(new ArrayList<>())
         .build();
