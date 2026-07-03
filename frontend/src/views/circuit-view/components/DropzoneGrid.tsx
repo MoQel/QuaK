@@ -258,8 +258,18 @@ export function DropzoneGrid({
                                 width: CELL_WIDTH,
                                 height: QUBIT_HEIGHT,
                             }}
+                            onDragEnter={(e) => handleDragOver(e, qIdx, layerIdx)}
                             onDragOver={(e) => handleDragOver(e, qIdx, layerIdx)}
-                            onDragLeave={() => setHoverPos(null)}
+                            // Guarded reset against hover flicker on cell changes: when crossing
+                            // into an adjacent zone, dragenter on the new cell fires BEFORE
+                            // dragleave on the old one (HTML5 event order), so hoverPos already
+                            // points elsewhere and this leave must not clear it. Only leaving
+                            // towards a non-zone area (hoverPos still = this cell) resets.
+                            onDragLeave={() =>
+                                setHoverPos((prev) =>
+                                    prev?.qubitIdx === qIdx && prev?.layerIdx === layerIdx ? null : prev,
+                                )
+                            }
                             onDrop={(e) => handleDrop(e, qubit.regId, qubit.relQubitIdx, layerIdx)}
                         />
                     );
