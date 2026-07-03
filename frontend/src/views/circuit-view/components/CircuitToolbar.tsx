@@ -28,7 +28,7 @@ export function CircuitToolbar({ circuit, setCircuit }: Readonly<CircuitToolbarP
 
         setIsParsing(true);
         try {
-            const parsedCircuit = await apiRequest<unknown>('/qasm/parse', {
+            const parsedCircuit = await apiRequest<unknown>('/api/circuit/parse', {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain' },
                 body: code,
@@ -120,9 +120,9 @@ type ParserLayer = {
     quantumOperations?: ParserOperation[];
 };
 
+// Content-only parse result: the backend returns registers and layers without any
+// circuit identity; ids are re-mapped onto the active circuit during normalization.
 type ParserCircuit = {
-    id?: string;
-    projectId?: string;
     registers?: ParserRegister[];
     layers?: ParserLayer[];
 };
@@ -176,7 +176,7 @@ const normalizeParsedCircuit = (rawCircuit: unknown, currentCircuit: CircuitResp
     });
 
     return {
-        id: currentCircuit?.id ?? parsed.id ?? crypto.randomUUID(),
+        id: currentCircuit?.id ?? crypto.randomUUID(),
         registers,
         layers: (parsed.layers ?? []).map((layer) => ({
             quantumOperations: (layer.quantumOperations ?? []).map((operation) => ({

@@ -32,7 +32,7 @@ class CircuitJpaMapperTest {
     void domainToEntity() {
         // Arrange
         String projectId = "p-id";
-        QuantumCircuit domain = new QuantumCircuit(projectId);
+        QuantumCircuit domain = new QuantumCircuit(projectId, "f-1");
         String circuitId = domain.getId();
 
         // Act

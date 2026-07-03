@@ -10,17 +10,13 @@ import edu.kit.quak.core.circuit.model.register.QuantumRegister;
 import edu.kit.quak.core.circuit.model.register.Register;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
 
-    // Start without any registers; they are created from the qubit declarations found in the code.
-    private final QuantumCircuit circuit = QuantumCircuit.builder()
-        .id(UUID.randomUUID().toString())
-        .projectId(null) // set in frontend
-        .registers(new ArrayList<>())
-        .layers(new ArrayList<>())
-        .build();
+    // Transient content-only circuit: it carries no identity (id/projectId/fileId) because only
+    // its registers and layers are returned to the client. Registers are created from the qubit
+    // declarations found in the code.
+    private final QuantumCircuit circuit = QuantumCircuit.builder().registers(new ArrayList<>()).layers(new ArrayList<>()).build();
 
     public QuantumCircuit getCircuit() {
         return circuit;

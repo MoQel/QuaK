@@ -22,16 +22,15 @@ public class QuantumCircuit extends ElementWithId {
     @Getter
     private final String projectId;
 
-    /** Optional link to the file this circuit belongs to; null for the project-level circuit. */
+    /**
+     * Link to the file this circuit belongs to. Persisted circuits are always file-linked;
+     * only transient circuits (e.g. built for code generation) may have none.
+     */
     @Getter
     private final String fileId;
 
     private final List<Register> registers = new ArrayList<>();
     private final List<Layer> layers = new ArrayList<>();
-
-    public QuantumCircuit(String projectId) {
-        this(projectId, null);
-    }
 
     public QuantumCircuit(String projectId, String fileId) {
         super();

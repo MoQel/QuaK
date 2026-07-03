@@ -1,5 +1,6 @@
 package edu.kit.quak.infrastructure.circuit.in.web.rest;
 
+import edu.kit.quak.application.circuit.antlr.QasmService;
 import edu.kit.quak.application.circuit.ports.in.CircuitServicePort;
 import edu.kit.quak.application.user.ports.in.UserServicePort;
 import edu.kit.quak.core.circuit.codegen.QasmCodeGenerator;
@@ -10,6 +11,7 @@ import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
 import edu.kit.quak.core.circuit.model.register.Register;
 import edu.kit.quak.core.user.model.User;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.AddQuantumOperationRequest;
+import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.CircuitContentResponse;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.CircuitResponse;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.GeneratedCodeResponse;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.MoveQuantumOperationRequest;
@@ -24,6 +26,7 @@ import java.util.List;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -34,6 +37,7 @@ import org.springframework.web.bind.annotation.*;
 public class CircuitRestAdapter {
 
     private final CircuitServicePort service;
+    private final QasmService qasmService;
     private final UserServicePort userService;
     private final CircuitDtoMapper mapper;
     private final QuantumOperationDtoMapper quantumOperationDtoMapper;
@@ -44,6 +48,7 @@ public class CircuitRestAdapter {
 
     public CircuitRestAdapter(
         CircuitServicePort service,
+        QasmService qasmService,
         UserServicePort userService,
         CircuitDtoMapper mapper,
         QuantumOperationDtoMapper quantumOperationDtoMapper,
@@ -53,6 +58,7 @@ public class CircuitRestAdapter {
         AuthenticationMapper authMapper
     ) {
         this.service = service;
+        this.qasmService = qasmService;
         this.userService = userService;
         this.mapper = mapper;
         this.quantumOperationDtoMapper = quantumOperationDtoMapper;
@@ -60,19 +66,6 @@ public class CircuitRestAdapter {
         this.registerDtoMapper = registerDtoMapper;
         this.layerDtoMapper = layerDtoMapper;
         this.authMapper = authMapper;
-    }
-
-    /**
-     * Retrieves the circuit for a given project.
-     * Ownership is verified via the project.
-     */
-    @GetMapping("/{projectId}")
-    @PreAuthorize("isAuthenticated()")
-    public CircuitResponse getByProjectId(@PathVariable String projectId, Authentication authentication) {
-        log.debug("REST request to get circuit by the projectId: {}", projectId);
-        User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
-        QuantumCircuit circuit = service.getByProjectId(projectId, user);
-        return mapper.toResponse(circuit);
     }
 
     /**
@@ -109,7 +102,7 @@ public class CircuitRestAdapter {
 
     /**
      * Generates OpenQASM code from the given circuit content without persisting
-     * anything. Counterpart of the /qasm/parse endpoint.
+     * anything. Counterpart of the /parse endpoint.
      */
     @PostMapping("/qasmCode")
     @PreAuthorize("isAuthenticated()")
@@ -120,6 +113,22 @@ public class CircuitRestAdapter {
         // the emitted "// Layer N" blocks match the rendered circuit columns.
         circuit.reschedule();
         return new GeneratedCodeResponse(QasmCodeGenerator.toCode(circuit));
+    }
+
+    /**
+     * Parses OpenQASM code into circuit content (registers and layers) without
+     * persisting anything. Counterpart of the /qasmCode endpoint; the client
+     * merges the content into its active circuit.
+     */
+    @PostMapping(value = "/parse", consumes = MediaType.TEXT_PLAIN_VALUE)
+    @PreAuthorize("isAuthenticated()")
+    public CircuitContentResponse parseQasmCode(@RequestBody String qasmCode) {
+        log.debug("REST request to parse code into circuit content");
+        QuantumCircuit circuit = qasmService.parse(qasmCode);
+        return new CircuitContentResponse(
+            circuit.getRegisters().stream().map(registerDtoMapper::toResponse).toList(),
+            circuit.getLayers().stream().map(layerDtoMapper::toResponse).toList()
+        );
     }
 
     /** Maps the request's registers to domain models, tolerating a missing (null) registers field. */
@@ -134,10 +143,8 @@ public class CircuitRestAdapter {
 
     /**
      * Resets a specific circuit (deletes it, creates a fresh one with the same
-     * projectId).
+     * projectId and fileId).
      * Ownership is verified via the circuit's associated project.
-     * Using circuitId here ensures this works correctly when multiple circuits per
-     * project are supported.
      */
     @DeleteMapping("/{circuitId}/reset")
     @PreAuthorize("isAuthenticated()")

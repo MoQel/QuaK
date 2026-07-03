@@ -26,13 +26,6 @@ public class CircuitJpaAdapter implements CircuitRepositoryPort {
     }
 
     @Override
-    public Optional<QuantumCircuit> findByProjectId(String id) {
-        // Only the project-level circuit; file-linked circuits share the same projectId.
-        Optional<JpaQuantumCircuit> entity = repository.findByProjectIdAndFileIdIsNull(id);
-        return entity.map(mapper::toDomain);
-    }
-
-    @Override
     public Optional<QuantumCircuit> findByFileId(String fileId) {
         Optional<JpaQuantumCircuit> entity = repository.findByFileId(fileId);
         return entity.map(mapper::toDomain);

@@ -26,7 +26,7 @@ class CircuitDtoMapperTest {
     @Test
     void toResponse() {
         // Arrange
-        QuantumCircuit circuit = new QuantumCircuit("");
+        QuantumCircuit circuit = new QuantumCircuit("", "f-1");
 
         // Act
         CircuitResponse response = mapper.toResponse(circuit);

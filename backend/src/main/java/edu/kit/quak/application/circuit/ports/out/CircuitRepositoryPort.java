@@ -6,8 +6,6 @@ import java.util.Optional;
 public interface CircuitRepositoryPort {
     Optional<QuantumCircuit> findById(String id);
 
-    Optional<QuantumCircuit> findByProjectId(String projectId);
-
     Optional<QuantumCircuit> findByFileId(String fileId);
 
     QuantumCircuit save(QuantumCircuit circuit);

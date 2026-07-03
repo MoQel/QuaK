@@ -45,24 +45,6 @@ public class CircuitService implements CircuitServicePort {
     }
 
     @Override
-    public QuantumCircuit init(String projectId) {
-        QuantumCircuit circuit = new QuantumCircuit(projectId);
-        log.info("Initialized new quantum circuit. circuitId={}", circuit.getId());
-        return repository.save(circuit);
-    }
-
-    @Override
-    public QuantumCircuit getByProjectId(String projectId, User user) {
-        verifyAccess(projectId, user, ProjectRole.VIEWER);
-        return repository
-            .findByProjectId(projectId)
-            .orElseThrow(() -> {
-                log.warn("Circuit lookup failed for projectId={}", projectId);
-                return new CircuitNotFoundException("ID Unknown; projectId: " + projectId);
-            });
-    }
-
-    @Override
     public QuantumCircuit getById(String circuitId) {
         return repository
             .findById(circuitId)
@@ -152,9 +134,6 @@ public class CircuitService implements CircuitServicePort {
         repository.delete(circuitId);
 
         touchProject(projectId);
-        if (fileId == null) {
-            return init(projectId);
-        }
         QuantumCircuit circuit = new QuantumCircuit(projectId, fileId);
         log.info("Initialized new quantum circuit for file. circuitId={}, fileId={}", circuit.getId(), fileId);
         return repository.save(circuit);

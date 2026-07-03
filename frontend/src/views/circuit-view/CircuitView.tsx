@@ -257,9 +257,8 @@ export function CircuitView() {
     const circuitWidth = LABEL_WIDTH + operationAreaWidth;
     const circuitHeight = Math.max(flatQubits.length * QUBIT_HEIGHT, QUBIT_HEIGHT);
 
-    // Without an active file tab the only available circuit is the project-level
-    // circuit (fileId IS NULL), which has no entry in the explorer. Mirror the Code
-    // Editor's "No file open" state instead of exposing that orphaned circuit.
+    // Circuits exist per file only, so without an active file tab there is nothing
+    // to show. Mirror the Code Editor's "No file open" state.
     if (!activeCircuitTabId) {
         return (
             <Card className="h-full overflow-hidden border-none rounded-none bg-bg-subtle p-0 gap-0">

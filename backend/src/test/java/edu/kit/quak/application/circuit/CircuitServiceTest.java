@@ -53,41 +53,11 @@ class CircuitServiceTest {
     }
 
     @Test
-    void get_returnsCircuit_whenFound() {
-        // setup
-        String projectId = "p-1";
-        User user = mockUser();
-        QuantumCircuit circuit = new QuantumCircuit(projectId);
-        when(repository.findByProjectId(projectId)).thenReturn(Optional.of(circuit));
-        mockAccess(projectId, user, ProjectRole.VIEWER);
-
-        // execute
-        QuantumCircuit result = service.getByProjectId(projectId, user);
-
-        // verify state
-        assertEquals(circuit, result);
-    }
-
-    @Test
-    void getByProjectId_throwsException_whenNotFound() {
-        // setup
-        String projectId = "unknown";
-        User user = mockUser();
-        when(repository.findByProjectId(projectId)).thenReturn(Optional.empty());
-        mockAccess(projectId, user, ProjectRole.VIEWER);
-
-        // execute & verify exception
-        CircuitNotFoundException exception = assertThrows(CircuitNotFoundException.class, () -> service.getByProjectId(projectId, user));
-        // verify context data (RFC 7807)
-        assertEquals("Circuit", exception.getResourceType());
-    }
-
-    @Test
     void getById_returnsCircuit_whenFound() {
         // setup
         String projectId = "p-1";
         String circuitId = "c-1";
-        QuantumCircuit circuit = new QuantumCircuit(projectId);
+        QuantumCircuit circuit = new QuantumCircuit(projectId, "f-1");
         circuit.setId(circuitId);
         when(repository.findById(circuitId)).thenReturn(Optional.of(circuit));
 
@@ -117,7 +87,7 @@ class CircuitServiceTest {
         String circuitId = "c-1";
         String projectId = "p-1";
         User user = mockUser();
-        QuantumCircuit circuit = new QuantumCircuit(projectId);
+        QuantumCircuit circuit = new QuantumCircuit(projectId, "f-1");
         circuit.setId(circuitId);
         when(repository.findById(circuitId)).thenReturn(Optional.of(circuit));
         mockAccess(projectId, user, ProjectRole.OWNER);
@@ -135,7 +105,7 @@ class CircuitServiceTest {
         String projectId = "p-1";
         String circuitId = "c-1";
         User user = mockUser();
-        QuantumCircuit circuit = new QuantumCircuit(projectId);
+        QuantumCircuit circuit = new QuantumCircuit(projectId, "f-1");
         circuit.setId(circuitId);
         when(repository.findById(circuitId)).thenReturn(Optional.of(circuit));
         when(repository.save(any(QuantumCircuit.class))).thenAnswer(i -> i.getArguments()[0]);
