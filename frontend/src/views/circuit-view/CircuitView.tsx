@@ -199,14 +199,19 @@ export function CircuitView() {
                     continue;
                 }
 
-                // Only allow placement adjacent to an existing operation on an overlapping qubit.
+                // Only allow placement adjacent to an existing operation whose SPAN overlaps
+                // the dropped span — the same span-overlap rule the collision check and the
+                // scheduler use. Checking only target/control selectors is too narrow: e.g.
+                // an H on q1 next to a ccx q[0],q[2],q[3] is a stable position (the CCX span
+                // blocks column 0) although q1 carries no selector of the CCX; the parser can
+                // produce such layouts, so dragging must be able to reach them too.
+                const dropSpanMax = qubitIdx + draggingOperationSize - 1;
                 const hasOperationAtLeft = layersWithoutDragOp[layerIdx - 1]?.quantumOperations
                     .filter((op) => op.type !== 'DUMMY')
-                    .some((op) =>
-                        [...op.targetQubits, ...op.controlQubits].some(
-                            (sel) => qubitIdx <= sel.index && sel.index < qubitIdx + draggingOperationSize,
-                        ),
-                    );
+                    .some((op) => {
+                        const span = getOperationSpan(op);
+                        return span.min <= dropSpanMax && qubitIdx <= span.max;
+                    });
 
                 if (hasOperationAtLeft) {
                     activeSet.add(`${qubitIdx}-${layerIdx}`);

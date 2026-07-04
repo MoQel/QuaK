@@ -10,8 +10,12 @@ import edu.kit.quak.application.filesystem.delegator.FileElementContainerReposit
 import edu.kit.quak.application.filesystem.ports.out.FileRepositoryPort;
 import edu.kit.quak.application.user.ports.in.ProjectRoleServicePort;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
+import edu.kit.quak.core.circuit.model.layer.Layer;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
+import edu.kit.quak.core.circuit.model.layer.operation.ElementaryQuantumGate;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
+import edu.kit.quak.core.circuit.model.layer.operation.library.QuantumOperationLibrary;
+import edu.kit.quak.core.common.exception.DomainRuleViolationException;
 import edu.kit.quak.core.user.model.ProjectRole;
 import edu.kit.quak.core.user.model.User;
 import edu.kit.quak.shared.tags.UnitTest;
@@ -119,6 +123,93 @@ class CircuitServiceTest {
         verify(repository).save(any(QuantumCircuit.class));
         assertNotNull(result);
         assertEquals(projectId, result.getProjectId());
+    }
+
+    private ElementaryQuantumGate gateWithId(String id) {
+        ElementaryQuantumGate gate = new ElementaryQuantumGate(
+            QuantumOperationLibrary.X,
+            false,
+            List.of(new ElementSelector("r-1", 0)),
+            null,
+            0d
+        );
+        gate.setId(id);
+        return gate;
+    }
+
+    @Test
+    void replaceContent_keepsOwnAndNewOperationIds() {
+        // setup: circuit already owns op "own-1"; request carries "own-1" and a new "new-1"
+        String circuitId = "c-1";
+        String projectId = "p-1";
+        User user = mockUser();
+        QuantumCircuit existing = QuantumCircuit.builder()
+            .id(circuitId)
+            .projectId(projectId)
+            .fileId("f-1")
+            .registers(List.of())
+            .layers(List.of(new Layer(List.of(gateWithId("own-1")))))
+            .build();
+        when(repository.findById(circuitId)).thenReturn(Optional.of(existing));
+        when(repository.findExistingOperationIds(List.of("new-1"))).thenReturn(List.of());
+        when(repository.save(any(QuantumCircuit.class))).thenAnswer(i -> i.getArguments()[0]);
+        mockAccess(projectId, user, ProjectRole.OWNER);
+
+        // execute
+        List<Layer> layers = List.of(new Layer(List.of(gateWithId("own-1"), gateWithId("new-1"))));
+        QuantumCircuit result = service.replaceContent(circuitId, List.of(), layers, user);
+
+        // verify: ids arrive at the repository unchanged
+        List<String> savedIds = result
+            .getLayers()
+            .stream()
+            .flatMap(layer -> layer.getQuantumOperations().stream())
+            .map(QuantumOperation::getId)
+            .toList();
+        assertEquals(List.of("own-1", "new-1"), savedIds);
+    }
+
+    @Test
+    void replaceContent_rejectsOperationIdsOfAnotherCircuit() {
+        // setup: "stolen-1" is persisted for a different circuit
+        String circuitId = "c-1";
+        String projectId = "p-1";
+        User user = mockUser();
+        QuantumCircuit existing = QuantumCircuit.builder()
+            .id(circuitId)
+            .projectId(projectId)
+            .fileId("f-1")
+            .registers(List.of())
+            .layers(List.of())
+            .build();
+        when(repository.findById(circuitId)).thenReturn(Optional.of(existing));
+        when(repository.findExistingOperationIds(List.of("stolen-1"))).thenReturn(List.of("stolen-1"));
+        mockAccess(projectId, user, ProjectRole.OWNER);
+
+        // execute & verify
+        List<Layer> layers = List.of(new Layer(List.of(gateWithId("stolen-1"))));
+        assertThrows(DomainRuleViolationException.class, () -> service.replaceContent(circuitId, List.of(), layers, user));
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void replaceContent_rejectsDuplicateOperationIds() {
+        String circuitId = "c-1";
+        String projectId = "p-1";
+        User user = mockUser();
+        QuantumCircuit existing = QuantumCircuit.builder()
+            .id(circuitId)
+            .projectId(projectId)
+            .fileId("f-1")
+            .registers(List.of())
+            .layers(List.of())
+            .build();
+        when(repository.findById(circuitId)).thenReturn(Optional.of(existing));
+        mockAccess(projectId, user, ProjectRole.OWNER);
+
+        List<Layer> layers = List.of(new Layer(List.of(gateWithId("dup-1"), gateWithId("dup-1"))));
+        assertThrows(DomainRuleViolationException.class, () -> service.replaceContent(circuitId, List.of(), layers, user));
+        verify(repository, never()).save(any());
     }
 
     @Test

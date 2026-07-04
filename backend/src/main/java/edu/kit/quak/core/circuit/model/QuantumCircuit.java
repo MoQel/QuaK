@@ -177,8 +177,7 @@ public class QuantumCircuit extends ElementWithId {
     /**
      * Re-runs the ASAP layer scheduling. Exposed for code generation, which builds a transient
      * circuit from request content and must canonicalize the layering so the emitted {@code
-     * // Layer N} blocks line up with the rendered columns. Regenerates operation ids as a side
-     * effect, so only call this on a transient circuit, never on a persisted one.
+     * // Layer N} blocks line up with the rendered columns.
      */
     public void reschedule() {
         rescheduleOperations();
@@ -228,7 +227,6 @@ public class QuantumCircuit extends ElementWithId {
                 layers.add(new Layer(new ArrayList<>()));
             }
 
-            op.generateNewId(); // Generate new ID because of problems with Hibernate.
             layers.get(layerIdx).addQuantumOperation(op); // Add operation to target layer
 
             // Update the last occupied layer index for all involved qubits

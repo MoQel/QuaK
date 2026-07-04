@@ -179,10 +179,115 @@ class CircuitLifecycleIntegrationTest {
             .andExpect(jsonPath("$.id").value(org.hamcrest.Matchers.not(circuitId)));
     }
 
+    @Test
+    @DisplayName("E2E: Operation ids stay stable across full-replace saves; foreign ids are rejected")
+    void testOperationIdStabilityOnReplace() throws Exception {
+        syncService.syncUser("test", new OidcUserInfo("test-sub", "test@example.com", true, "Test User", null, null, null));
+        MvcResult projectResult = mockMvc
+            .perform(
+                post("/api/project")
+                    .with(authenticatedUser())
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        """
+                        { "name": "Stable Ids Project" }
+                        """
+                    )
+            )
+            .andExpect(status().isCreated())
+            .andReturn();
+        String projectId = objectMapper.readTree(projectResult.getResponse().getContentAsString()).get("id").asText();
+
+        // Circuit 1: PUT content with a client-chosen operation id — it must be persisted as-is.
+        String fileId = createFile(projectId);
+        JsonNode circuit = getCircuitByFile(fileId);
+        String circuitId = circuit.get("id").asText();
+        String registerId = circuit.at("/registers/0/id").asText();
+        String clientOpId = "11111111-2222-3333-4444-555555555555";
+
+        mockMvc
+            .perform(
+                put("/api/circuit/" + circuitId)
+                    .with(authenticatedUser())
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(replaceContentJson(registerId, clientOpId))
+            )
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.layers[0].quantumOperations[0].id").value(clientOpId));
+
+        // Saving the same content again keeps the id (stable identity, no delete/insert churn).
+        mockMvc
+            .perform(
+                put("/api/circuit/" + circuitId)
+                    .with(authenticatedUser())
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(replaceContentJson(registerId, clientOpId))
+            )
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.layers[0].quantumOperations[0].id").value(clientOpId));
+
+        // Circuit 2 (different file): reusing circuit 1's operation id must be rejected.
+        String otherFileId = createFile(projectId, "other.qasm");
+        JsonNode otherCircuit = getCircuitByFile(otherFileId);
+        String otherCircuitId = otherCircuit.get("id").asText();
+        String otherRegisterId = otherCircuit.at("/registers/0/id").asText();
+
+        mockMvc
+            .perform(
+                put("/api/circuit/" + otherCircuitId)
+                    .with(authenticatedUser())
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(replaceContentJson(otherRegisterId, clientOpId))
+            )
+            .andExpect(status().isUnprocessableEntity());
+    }
+
     // --- Helper Methods ---
+
+    private JsonNode getCircuitByFile(String fileId) throws Exception {
+        MvcResult result = mockMvc
+            .perform(get("/api/circuit/file/" + fileId).with(authenticatedUser()))
+            .andExpect(status().isOk())
+            .andReturn();
+        return objectMapper.readTree(result.getResponse().getContentAsString());
+    }
+
+    /** Full-replace payload: one H gate on qubit 0 with an explicit operation id. */
+    private String replaceContentJson(String registerId, String operationId) {
+        return """
+        {
+          "registers": [
+            { "type": "Quantum_Register", "id": "%s", "name": "q", "numberOfQubits": 4 }
+          ],
+          "layers": [
+            {
+              "quantumOperations": [
+                {
+                  "type": "ELEMENTARY_QUANTUM_GATE",
+                  "id": "%s",
+                  "identifier": "H",
+                  "inverseForm": false,
+                  "targetQubits": [ { "registerId": "%s", "index": 0 } ],
+                  "controlQubits": [],
+                  "rotationAngle": 0.0
+                }
+              ]
+            }
+          ]
+        }
+        """.formatted(registerId, operationId, registerId);
+    }
 
     /** Creates a file directly under the project root and returns its id. */
     private String createFile(String projectId) throws Exception {
+        return createFile(projectId, "main.qasm");
+    }
+
+    private String createFile(String projectId, String fileName) throws Exception {
         MvcResult fileResult = mockMvc
             .perform(
                 post("/api/file/")
@@ -192,8 +297,8 @@ class CircuitLifecycleIntegrationTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(
                         """
-                        { "name": "main.qasm" }
-                        """
+                        { "name": "%s" }
+                        """.formatted(fileName)
                     )
             )
             .andExpect(status().isCreated())

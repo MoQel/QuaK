@@ -13,11 +13,14 @@ import edu.kit.quak.core.circuit.model.layer.Layer;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
 import edu.kit.quak.core.circuit.model.register.Register;
+import edu.kit.quak.core.common.exception.DomainRuleViolationException;
 import edu.kit.quak.core.filesystem.model.File;
 import edu.kit.quak.core.user.model.ProjectRole;
 import edu.kit.quak.core.user.model.User;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -90,6 +93,7 @@ public class CircuitService implements CircuitServicePort {
         log.info("Replacing content of circuit. circuitId={}", circuitId);
         QuantumCircuit existing = getById(circuitId);
         verifyAccess(existing.getProjectId(), user, ProjectRole.OWNER);
+        verifyOperationIdIntegrity(existing, layers);
 
         QuantumCircuit replacement = QuantumCircuit.builder()
             .id(existing.getId())
@@ -100,6 +104,45 @@ public class CircuitService implements CircuitServicePort {
             .build();
         touchProject(existing.getProjectId());
         return repository.save(replacement);
+    }
+
+    /**
+     * Client-supplied operation ids are persisted as-is (stable identity across
+     * full-replace saves), so they must not collide: an id may either already belong
+     * to this circuit or be entirely new — reusing an id that is persisted for
+     * another circuit would silently steal that row on save.
+     */
+    private void verifyOperationIdIntegrity(QuantumCircuit existing, List<Layer> incomingLayers) {
+        List<String> incomingIds = incomingLayers
+            .stream()
+            .flatMap(layer -> layer.getQuantumOperations().stream())
+            .map(QuantumOperation::getId)
+            .toList();
+
+        if (incomingIds.size() != Set.copyOf(incomingIds).size()) {
+            throw new DomainRuleViolationException("Duplicate operation ids in circuit content");
+        }
+
+        Set<String> ownIds = existing
+            .getLayers()
+            .stream()
+            .flatMap(layer -> layer.getQuantumOperations().stream())
+            .map(QuantumOperation::getId)
+            .collect(Collectors.toSet());
+
+        List<String> unknownIds = incomingIds
+            .stream()
+            .filter(id -> !ownIds.contains(id))
+            .toList();
+        List<String> takenElsewhere = repository.findExistingOperationIds(unknownIds);
+        if (!takenElsewhere.isEmpty()) {
+            log.warn(
+                "Rejected circuit content: operation ids belong to another circuit. circuitId={}, ids={}",
+                existing.getId(),
+                takenElsewhere
+            );
+            throw new DomainRuleViolationException("Operation ids already in use by another circuit: " + takenElsewhere);
+        }
     }
 
     private void touchProject(String projectId) {
@@ -154,7 +197,34 @@ public class CircuitService implements CircuitServicePort {
     @Override
     public QuantumCircuit addQuantumOperation(String circuitId, QuantumOperation operation, int layerIdx, User user) {
         log.info("Adding quantum operation to circuit. circuitId={}, layerIdx={}", circuitId, layerIdx);
-        return updateCircuit(circuitId, circuit -> circuit.addQuantumOperation(operation, layerIdx), user, ProjectRole.OWNER);
+        return updateCircuit(
+            circuitId,
+            circuit -> {
+                verifyNewOperationId(circuit, operation);
+                circuit.addQuantumOperation(operation, layerIdx);
+            },
+            user,
+            ProjectRole.OWNER
+        );
+    }
+
+    /** Same id-integrity rule as replaceContent, for a single operation added via the granular endpoint. */
+    private void verifyNewOperationId(QuantumCircuit circuit, QuantumOperation operation) {
+        String id = operation.getId();
+        if (id == null) {
+            return;
+        }
+        boolean inThisCircuit = circuit
+            .getLayers()
+            .stream()
+            .flatMap(layer -> layer.getQuantumOperations().stream())
+            .anyMatch(op -> id.equals(op.getId()));
+        if (inThisCircuit) {
+            throw new DomainRuleViolationException("Operation id already exists in this circuit: " + id);
+        }
+        if (!repository.findExistingOperationIds(List.of(id)).isEmpty()) {
+            throw new DomainRuleViolationException("Operation id already in use by another circuit: " + id);
+        }
     }
 
     @Override
