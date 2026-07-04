@@ -36,6 +36,21 @@ export function CircuitView() {
     const [draggingOperationId, setDraggingOperationId] = useState<string | null>(null);
 
     /**
+     * The operation currently being dragged, with its original layer position.
+     * Rendered as a ghost so its DOM element (the drag source) stays mounted —
+     * otherwise the browser may never fire dragend and the drag state gets stuck
+     * when dropping outside a valid drop zone.
+     */
+    const draggingOperation = useMemo(() => {
+        if (!draggingOperationId || !activeCircuit) return null;
+        for (const [layerIdx, layer] of activeCircuit.layers.entries()) {
+            const op = layer.quantumOperations.find((operation) => operation.id === draggingOperationId);
+            if (op) return { op, layerIdx };
+        }
+        return null;
+    }, [draggingOperationId, activeCircuit]);
+
+    /**
      * Flattens the nested register structure into a single array of qubits
      * for easier rendering of wires and drop zones.
      */
@@ -250,7 +265,10 @@ export function CircuitView() {
         allOps.sort(compareCanonicalOrder);
 
         return rescheduleOperations(allOps);
-    }, [activeCircuit, hoverPos]);
+        // layersWithoutDragOp must be a dependency: it changes with draggingOperationId,
+        // and a stale list here keeps the dragged operation filtered out after dragend
+        // (gate stays invisible until some other state change).
+    }, [activeCircuit, hoverPos, layersWithoutDragOp, activeDropZones, flatQubits, draggingOperationSize]);
 
     const operationColumnCount = Math.max(uiLayers.length + 1, 1);
     const operationAreaWidth = operationColumnCount * CELL_WIDTH;
@@ -296,6 +314,7 @@ export function CircuitView() {
                                 removeQuantumOperation={removeQuantumOperation}
                                 setDraggingOperationId={setDraggingOperationId}
                                 setHoverPos={setHoverPos}
+                                draggingOperation={draggingOperation}
                             />
 
                             <DropzoneGrid

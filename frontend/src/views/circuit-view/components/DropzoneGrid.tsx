@@ -34,10 +34,41 @@ export function DropzoneGrid({
 }: Readonly<DropzoneGridProps>) {
     const dispatch = useDispatch();
 
+    /**
+     * Rebuilds the circuit layers from the rendered preview (uiLayers), substituting
+     * the drop placeholder (dummy) with the given operation. This makes the drop
+     * result match the hover preview exactly: re-scheduling after a plain append
+     * would let the new operation slip behind colliding gates (e.g. an H dropped
+     * onto a CX column would land to its right, although the preview showed it
+     * taking the column and pushing the CX). Returns null when no placeholder is
+     * part of the preview (no active hover).
+     */
+    const layersFromPreview = (operation: QuantumOperationDto): CircuitResponse['layers'] | null => {
+        let dummyReplaced = false;
+        const layers = uiLayers.map((layer) => ({
+            quantumOperations: layer.quantumOperations.map((uiOp) => {
+                if (uiOp.type === 'DUMMY') {
+                    dummyReplaced = true;
+                    return operation;
+                }
+                // Strip the UI-only scheduling field before persisting.
+                const { originalLayerIdx: _originalLayerIdx, ...op } = uiOp;
+                return op as QuantumOperationDto;
+            }),
+        }));
+        return dummyReplaced ? layers : null;
+    };
+
     const addQuantumOperationLocally = (operation: QuantumOperationDto, targetLayerIdx: number) => {
         setCircuit((prev) => {
             if (!prev) return prev;
 
+            const newOperation = { ...operation, id: crypto.randomUUID() };
+
+            const previewLayers = layersFromPreview(newOperation);
+            if (previewLayers) return { ...prev, layers: previewLayers };
+
+            // Fallback without an active preview: append to the target layer.
             const layers = prev.layers.map((layer) => ({
                 quantumOperations: [...layer.quantumOperations],
             }));
@@ -46,10 +77,7 @@ export function DropzoneGrid({
                 layers.push({ quantumOperations: [] });
             }
 
-            layers[targetLayerIdx].quantumOperations.push({
-                ...operation,
-                id: crypto.randomUUID(),
-            });
+            layers[targetLayerIdx].quantumOperations.push(newOperation);
 
             return {
                 ...prev,
@@ -78,6 +106,12 @@ export function DropzoneGrid({
 
             if (!movedOperation) return prev;
 
+            // The dragged operation is already excluded from the rendered preview,
+            // so substituting the dummy re-inserts it exactly where the preview showed it.
+            const previewLayers = layersFromPreview(movedOperation);
+            if (previewLayers) return { ...prev, layers: previewLayers };
+
+            // Fallback without an active preview: append to the target layer.
             while (layers.length <= payload.layerIdx) {
                 layers.push({ quantumOperations: [] });
             }

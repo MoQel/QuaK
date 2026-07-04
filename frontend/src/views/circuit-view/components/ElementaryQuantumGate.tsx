@@ -11,6 +11,12 @@ interface ElementaryQuantumGateProps {
     operation: QuantumOperationDto;
     registers: RegisterResponse[];
     layerIdx: number;
+    /**
+     * Renders the gate semi-transparent and non-interactive while it is being
+     * dragged. The element must stay mounted as the drag source (dragend), but it
+     * must not swallow dragover events of the drop zone underneath it.
+     */
+    isGhost?: boolean;
     onDragStart: (operationSize: number) => void;
     onDragEnd: () => void;
     onDelete: () => void;
@@ -29,12 +35,14 @@ export function ElementaryQuantumGate({
     operation,
     registers,
     layerIdx,
+    isGhost = false,
     onDragStart,
     onDragEnd,
     onDelete,
 }: Readonly<ElementaryQuantumGateProps>) {
     const definition = getOperationDefinition(operation.identifier);
     const isDraggingRef = useRef(false);
+    const interactivity = isGhost ? 'pointer-events-none' : 'pointer-events-auto';
 
     // Rotation gates (rx/ry/rz) show their angle on the box, e.g. "π/2".
     const angleLabel =
@@ -95,7 +103,7 @@ export function ElementaryQuantumGate({
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
             onClick={handleClick}
-            className="absolute z-30 flex flex-col items-center group pointer-events-none"
+            className={`absolute z-30 flex flex-col items-center group pointer-events-none ${isGhost ? 'opacity-50' : ''}`}
             style={{
                 top: minY * QUBIT_HEIGHT,
                 left: layerIdx * CELL_WIDTH,
@@ -106,9 +114,9 @@ export function ElementaryQuantumGate({
             {/* Connector Line for Multi-Qubit Gates with hitbox container*/}
             {targetIndices.length + controlIndices.length > 1 && (
                 <div
-                    className="
+                    className={`
                     absolute left-1/2 -translate-x-1/2 w-2
-                    pointer-events-auto cursor-grab active:cursor-grabbing"
+                    ${interactivity} cursor-grab active:cursor-grabbing`}
                     style={{
                         top: QUBIT_HEIGHT / 2,
                         bottom: QUBIT_HEIGHT / 2,
@@ -126,7 +134,12 @@ export function ElementaryQuantumGate({
 
             {/* Render Controls */}
             {controlIndices.map((idx) => (
-                <ControlPoint key={`control-${idx}`} relativeIdx={idx - minY} definition={definition} />
+                <ControlPoint
+                    key={`control-${idx}`}
+                    relativeIdx={idx - minY}
+                    definition={definition}
+                    interactivity={interactivity}
+                />
             ))}
 
             {/* Render Targets */}
@@ -137,21 +150,26 @@ export function ElementaryQuantumGate({
                     definition={definition}
                     isSWAP={operation.identifier === 'SWAP'}
                     angleLabel={angleLabel}
+                    interactivity={interactivity}
                 />
             ))}
         </div>
     );
 }
 
-function ControlPoint({ relativeIdx, definition }: Readonly<{ relativeIdx: number; definition: OperationDefinition }>) {
+function ControlPoint({
+    relativeIdx,
+    definition,
+    interactivity,
+}: Readonly<{ relativeIdx: number; definition: OperationDefinition; interactivity: string }>) {
     const size: number = 12;
     return (
         <div
-            className="
+            className={`
                 absolute left-1/2 -translate-x-1/2 rounded-full
                 bg-bg-light border-border
-                pointer-events-auto cursor-grab active:cursor-grabbing
-                group-hover:brightness-90 dark:group-hover:brightness-125 transition-colors"
+                ${interactivity} cursor-grab active:cursor-grabbing
+                group-hover:brightness-90 dark:group-hover:brightness-125 transition-colors`}
             style={{
                 backgroundColor: definition.color,
                 top: relativeIdx * QUBIT_HEIGHT + QUBIT_HEIGHT / 2 - size / 2,
@@ -167,11 +185,13 @@ function TargetPoint({
     definition,
     isSWAP,
     angleLabel,
+    interactivity,
 }: Readonly<{
     relativeIdx: number;
     definition: OperationDefinition;
     isSWAP: boolean;
     angleLabel?: string | null;
+    interactivity: string;
 }>) {
     let content: React.ReactNode;
 
@@ -203,7 +223,7 @@ function TargetPoint({
                 className={`
                     ${definition.formClass}
                     flex items-center justify-center
-                    pointer-events-auto cursor-grab active:cursor-grabbing
+                    ${interactivity} cursor-grab active:cursor-grabbing
                     group-hover:brightness-90 dark:group-hover:brightness-125 transition-colors
                     ${isSWAP ? '' : styles.quantumOperation}`}
                 style={
