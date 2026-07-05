@@ -2,7 +2,12 @@ import { useMemo } from 'react';
 import { FlatQubit } from '@/views/circuit-view/util/types.ts';
 import { CircuitResponse, isClassicRegister } from '@/api/dto/circuit.ts';
 import { QubitLabel } from '@/views/circuit-view/components/QubitLabel.tsx';
-import { LABEL_WIDTH, QUBIT_HEIGHT, REGISTER_HEADER_HEIGHT } from '@/views/circuit-view/util/layout.ts';
+import {
+    LABEL_WIDTH,
+    QUBIT_HEIGHT,
+    REGISTER_HEADER_HEIGHT,
+    REGISTER_SECTION_HEADER_HEIGHT,
+} from '@/views/circuit-view/util/layout.ts';
 import { Badge } from '@/components/ui/badge';
 
 interface QubitWiresProps {
@@ -12,7 +17,7 @@ interface QubitWiresProps {
 }
 
 export function QubitWires({ circuit, setCircuit, flatQubits }: Readonly<QubitWiresProps>) {
-    /** Group qubits by register index, preserving register boundaries. */
+    /** Group wires by register so headers stay together. */
     const registerGroups = useMemo(() => {
         const groups: { regIdx: number; headerY: number; qubits: FlatQubit[] }[] = [];
         for (const q of flatQubits) {
@@ -20,7 +25,7 @@ export function QubitWires({ circuit, setCircuit, flatQubits }: Readonly<QubitWi
             if (last && last.regIdx === q.regIdx) {
                 last.qubits.push(q);
             } else {
-                // The header Y is visualY of first qubit minus REGISTER_HEADER_HEIGHT
+                // Header sits directly above the first wire of the register.
                 const headerY = q.visualY - REGISTER_HEADER_HEIGHT - q.relQubitIdx * QUBIT_HEIGHT;
                 groups.push({ regIdx: q.regIdx, headerY, qubits: [q] });
             }
@@ -32,13 +37,29 @@ export function QubitWires({ circuit, setCircuit, flatQubits }: Readonly<QubitWi
 
     return (
         <>
-            {registerGroups.map((group) => {
+            {registerGroups.map((group, groupIdx) => {
                 const first = group.qubits[0];
                 const register = circuit?.registers?.find((r) => r.id === first.regId);
                 const isClassic = register ? isClassicRegister(register) : false;
+                const previousGroup = registerGroups[groupIdx - 1];
+                const startsNewSection = !previousGroup || previousGroup.qubits[0].section !== first.section;
 
                 return (
                     <div key={`reg-group-${first.regId}`}>
+                        {startsNewSection && (
+                            <div
+                                className="absolute left-0 right-0 flex items-center px-2"
+                                style={{
+                                    top: group.headerY - REGISTER_SECTION_HEADER_HEIGHT,
+                                    height: REGISTER_SECTION_HEADER_HEIGHT,
+                                }}
+                            >
+                                <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                                    {first.section === 'classic' ? 'Classical Registers' : 'Quantum Registers'}
+                                </span>
+                            </div>
+                        )}
+
                         {/* Register Header */}
                         <div
                             className="absolute left-0 right-0 flex items-center gap-2 px-2 border-b border-border bg-bg-subtle/50"

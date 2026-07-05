@@ -32,19 +32,20 @@ import org.springframework.context.annotation.Import;
 )
 class CircuitJpaAdapterTest {
 
+    private static final int TEST_QUBITS = 4;
+
     @Autowired
     private CircuitJpaAdapter jpaAdapter;
 
     @Autowired
     private SpringDataJpaCircuitRepository springRepository;
 
-    public static final int INIT_QUBITS = 4;
-
     @Test
     void saveAndFindCircuit_ShouldPersistData() {
         // Arrange
         String projectId = "p-id";
         QuantumCircuit domainCircuit = new QuantumCircuit(projectId);
+        domainCircuit.addRegister(new QuantumRegister("q", TEST_QUBITS));
         String circuitId = domainCircuit.getId();
 
         String registerId = domainCircuit.getRegisters().getFirst().getId();
@@ -76,7 +77,7 @@ class CircuitJpaAdapterTest {
         assertThat(foundRegister).isInstanceOf(QuantumRegister.class);
 
         QuantumRegister foundQuantumRegister = (QuantumRegister) foundRegister;
-        assertThat(foundQuantumRegister.getNumberOfQubits()).isEqualTo(INIT_QUBITS + 1);
+        assertThat(foundQuantumRegister.getNumberOfQubits()).isEqualTo(TEST_QUBITS + 1);
 
         Layer foundLayer = foundCircuit.getLayers().getFirst();
         assertThat(foundLayer.getId()).isEqualTo(layerId);

@@ -17,6 +17,7 @@ import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementaryQuantumGate;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
 import edu.kit.quak.core.circuit.model.layer.operation.library.QuantumOperationLibrary;
+import edu.kit.quak.core.circuit.model.register.QuantumRegister;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.*;
 import edu.kit.quak.infrastructure.user.in.web.rest.mapper.AuthenticationMapper;
 import java.util.List;
@@ -58,8 +59,6 @@ class CircuitRestAdapterTest {
     @MockitoBean
     private AuthenticationMapper authMapper;
 
-    public static final int INIT_QUBITS = 4;
-
     @Test
     void getCircuitByProjectId_ProjectHasCircuit_ShouldReturnCircuit() throws Exception {
         // Arrange
@@ -91,6 +90,7 @@ class CircuitRestAdapterTest {
         String circuitId = "c-id";
         QuantumCircuit circuit = new QuantumCircuit(projectId);
         circuit.setId(circuitId);
+        circuit.addRegister(new QuantumRegister("q", 1));
         String registerId = circuit.getRegisters().getFirst().getId();
         circuit.addQubit(registerId);
 
@@ -107,7 +107,7 @@ class CircuitRestAdapterTest {
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.registers").exists())
             .andExpect(jsonPath("$.registers").isArray())
-            .andExpect(jsonPath("$.registers[0].numberOfQubits").value(INIT_QUBITS + 1));
+            .andExpect(jsonPath("$.registers[0].numberOfQubits").value(2));
     }
 
     @Test
@@ -160,8 +160,8 @@ class CircuitRestAdapterTest {
         String circuitId = "c-id";
         QuantumCircuit circuit = new QuantumCircuit(projectId);
         circuit.setId(circuitId);
+        circuit.addRegister(new QuantumRegister("q", 2));
         String registerId = circuit.getRegisters().getFirst().getId();
-        circuit.addQubit(registerId);
         ElementSelector target = new ElementSelector(registerId, 0);
         ElementaryQuantumGate operation = new ElementaryQuantumGate(QuantumOperationLibrary.H, false, List.of(target), null, 0d);
         int layerIdx = 0;

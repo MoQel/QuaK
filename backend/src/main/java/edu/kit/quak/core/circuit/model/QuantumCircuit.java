@@ -30,7 +30,6 @@ public class QuantumCircuit extends ElementWithId {
     public QuantumCircuit(String projectId) {
         super();
         this.projectId = projectId;
-        registers.add(new QuantumRegister("q", 4));
     }
 
     @Builder

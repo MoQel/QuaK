@@ -13,28 +13,28 @@ import org.junit.jupiter.api.Test;
 
 class QuantumCircuitTest {
 
-    public static final int INIT_QUBITS = 4;
+    private static final int TEST_QUBITS = 4;
+
+    private static QuantumCircuit createCircuitWithQuantumRegister() {
+        QuantumCircuit circuit = new QuantumCircuit("");
+        circuit.addRegister(new QuantumRegister("q", TEST_QUBITS));
+        return circuit;
+    }
 
     @Test
-    void constructor_initializesRegisterAndLayer() {
+    void constructor_startsWithNoRegistersAndNoLayers() {
         // Act
         QuantumCircuit circuit = new QuantumCircuit("");
 
         // Assert
-        assertEquals(1, circuit.getRegisters().size(), "Circuit should initialize with one register.");
-        assertTrue(circuit.getRegisters().getFirst().asQuantum().isPresent(), "The default register should be a QuantumRegister.");
-        assertEquals(
-            INIT_QUBITS,
-            circuit.getRegisters().getFirst().asQuantum().get().getNumberOfQubits(),
-            "The register should have the default number of qubits."
-        );
+        assertTrue(circuit.getRegisters().isEmpty(), "Circuit should start without implicit registers.");
         assertEquals(0, circuit.getLayers().size(), "Circuit should start with no layers.");
     }
 
     @Test
     void addAndRemoveQubit() {
         // Arrange
-        QuantumCircuit circuit = new QuantumCircuit("");
+        QuantumCircuit circuit = createCircuitWithQuantumRegister();
         QuantumRegister qr = circuit.getRegisters().getFirst().asQuantum().orElseThrow();
 
         // Act
@@ -46,14 +46,14 @@ class QuantumCircuitTest {
         int afterRemoving = qr.getNumberOfQubits();
 
         // Assert
-        assertEquals(INIT_QUBITS + 2, afterAdding, "Qubit count should increase by two.");
-        assertEquals(INIT_QUBITS + 1, afterRemoving, "Qubit count should decrease by one after removal.");
+        assertEquals(TEST_QUBITS + 2, afterAdding, "Qubit count should increase by two.");
+        assertEquals(TEST_QUBITS + 1, afterRemoving, "Qubit count should decrease by one after removal.");
     }
 
     @Test
     void addQuantumOperation_createsNewLayerIfNecessary() {
         // Arrange
-        QuantumCircuit circuit = new QuantumCircuit("");
+        QuantumCircuit circuit = createCircuitWithQuantumRegister();
         String registerId = circuit.getRegisters().getFirst().asQuantum().orElseThrow().getId();
         ElementSelector target = new ElementSelector(registerId, 1);
         QuantumOperation op = new ElementaryQuantumGate(QuantumOperationLibrary.T, false, List.of(target), List.of(), 0d);
@@ -72,7 +72,7 @@ class QuantumCircuitTest {
     @Test
     void moveQuantumOperation_changesLayerAndSelectors() {
         // Arrange
-        QuantumCircuit circuit = new QuantumCircuit("");
+        QuantumCircuit circuit = createCircuitWithQuantumRegister();
         String registerId = circuit.getRegisters().getFirst().asQuantum().orElseThrow().getId();
 
         ElementSelector target1 = new ElementSelector(registerId, 0);
@@ -108,7 +108,7 @@ class QuantumCircuitTest {
     @Test
     void removeQuantumOperation_byId() {
         // Arrange
-        QuantumCircuit circuit = new QuantumCircuit("");
+        QuantumCircuit circuit = createCircuitWithQuantumRegister();
         String registerId = circuit.getRegisters().getFirst().asQuantum().orElseThrow().getId();
 
         ElementSelector target = new ElementSelector(registerId, 1);
@@ -125,13 +125,13 @@ class QuantumCircuitTest {
     @Test
     void invalidQubitIndexThrowsException() {
         // Arrange
-        QuantumCircuit circuit = new QuantumCircuit("");
+        QuantumCircuit circuit = createCircuitWithQuantumRegister();
         String registerId = circuit.getRegisters().getFirst().asQuantum().orElseThrow().getId();
 
         // Act & Assert
         assertThrows(
             RequestedIndexOutOfBounds.class,
-            () -> circuit.removeQubit(registerId, INIT_QUBITS + 1),
+            () -> circuit.removeQubit(registerId, TEST_QUBITS + 1),
             "Should throw an exception when trying to remove a qubit with an out-of-bounds index."
         );
     }
@@ -139,7 +139,7 @@ class QuantumCircuitTest {
     @Test
     void flushLayers_afterRemovingQubit_emptyLayersAreCleanedUp() {
         // Arrange
-        QuantumCircuit circuit = new QuantumCircuit("");
+        QuantumCircuit circuit = createCircuitWithQuantumRegister();
         String registerId = circuit.getRegisters().getFirst().getId();
         ElementSelector target = new ElementSelector(registerId, 0);
         QuantumOperation op = new ElementaryQuantumGate(QuantumOperationLibrary.Z, false, List.of(target), List.of(), 0d);
@@ -155,7 +155,7 @@ class QuantumCircuitTest {
     @Test
     void flushLayers_afterRemovingLastOperation_layerIsRemoved() {
         // Arrange
-        QuantumCircuit circuit = new QuantumCircuit("");
+        QuantumCircuit circuit = createCircuitWithQuantumRegister();
         String registerId = circuit.getRegisters().getFirst().getId();
         ElementSelector target = new ElementSelector(registerId, 0);
         QuantumOperation op = new ElementaryQuantumGate(QuantumOperationLibrary.X, false, List.of(target), List.of(), 0d);
@@ -171,7 +171,7 @@ class QuantumCircuitTest {
     @Test
     void flushLayers_afterMovingLastOperation_sourceLayerIsRemoved() {
         // Arrange
-        QuantumCircuit circuit = new QuantumCircuit("");
+        QuantumCircuit circuit = createCircuitWithQuantumRegister();
         String registerId = circuit.getRegisters().getFirst().getId();
 
         ElementSelector target1 = new ElementSelector(registerId, 0);

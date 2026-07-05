@@ -1,6 +1,8 @@
 import { QuantumOperationDto, RegisterType } from '@/api/dto/circuit.ts';
 import { OperationIdentifier } from '@/lib/operations.ts';
 
+export type RegisterSection = 'quantum' | 'classic';
+
 export type UiLayer = {
     quantumOperations: UiQuantumOperation[];
 };
@@ -22,6 +24,7 @@ export type FlatQubit = {
     relQubitIdx: number;
     absQubitIdx: number;
     regType: RegisterType;
+    section: RegisterSection;
     /** Absolute Y position in pixels, accounting for preceding register headers. */
     visualY: number;
 };

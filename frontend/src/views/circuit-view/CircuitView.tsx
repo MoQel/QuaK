@@ -1,6 +1,14 @@
 import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button.tsx';
 import { useMemo, useState } from 'react';
-import { ElementSelectorDto, getInvolvedSelectors, getRegisterSize, getSelectorKey } from '@/api/dto/circuit';
+import {
+    ElementSelectorDto,
+    getInvolvedSelectors,
+    getRegisterSize,
+    getSelectorKey,
+    isClassicRegister,
+    isQuantumRegister,
+} from '@/api/dto/circuit';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store.ts';
 import { CircuitToolbar } from './components/CircuitToolbar.tsx';
@@ -13,7 +21,13 @@ import { HoverPos, UiLayer, UiQuantumOperation } from './util/types.ts';
 import { createCircuitService } from '@/views/circuit-view/util/circuitService.ts';
 import { MeasurementDto } from '@/api/dto/circuit';
 import { MeasurementTargetDialog } from './components/MeasurementTargetDialog';
-import { LABEL_WIDTH, QUBIT_HEIGHT, REGISTER_HEADER_HEIGHT } from '@/views/circuit-view/util/layout.ts';
+import {
+    LABEL_WIDTH,
+    QUBIT_HEIGHT,
+    REGISTER_HEADER_HEIGHT,
+    REGISTER_SECTION_GAP,
+    REGISTER_SECTION_HEADER_HEIGHT,
+} from '@/views/circuit-view/util/layout.ts';
 import type { OperationIdentifier } from '@/lib/operations.ts';
 
 import { useProject } from '@/contexts/ProjectContext';
@@ -34,17 +48,33 @@ export function CircuitView() {
         operationIdentifier: OperationIdentifier;
     } | null>(null);
 
-    /**
-     * Flattens the nested register structure into a single array of qubits
-     * for easier rendering of wires and drop zones.
-     */
-    const flatQubits = useMemo(() => {
+    const displayRegisters = useMemo(() => {
         if (!circuit?.registers) return [];
+
+        const quantumRegisters = circuit.registers.filter(isQuantumRegister);
+        const classicRegisters = circuit.registers.filter(isClassicRegister);
+
+        return [...quantumRegisters, ...classicRegisters];
+    }, [circuit?.registers]);
+
+    /** Keep quantum registers above classical ones in the canvas. */
+    const flatQubits = useMemo(() => {
+        if (!displayRegisters.length) return [];
 
         let globalCounter = 0;
         let visualYOffset = 0;
 
-        return circuit.registers.flatMap((reg, regIdx) => {
+        return displayRegisters.flatMap((reg, regIdx) => {
+            const startsClassicSection =
+                isClassicRegister(reg) && !displayRegisters.slice(0, regIdx).some(isClassicRegister);
+
+            if (regIdx === 0 || startsClassicSection) {
+                if (regIdx > 0) {
+                    visualYOffset += REGISTER_SECTION_GAP;
+                }
+                visualYOffset += REGISTER_SECTION_HEADER_HEIGHT;
+            }
+
             const size = getRegisterSize(reg);
             const headerY = visualYOffset;
             visualYOffset += REGISTER_HEADER_HEIGHT + size * QUBIT_HEIGHT;
@@ -56,10 +86,11 @@ export function CircuitView() {
                 relQubitIdx,
                 absQubitIdx: globalCounter++,
                 regType: reg.type,
+                section: isClassicRegister(reg) ? 'classic' : 'quantum',
                 visualY: headerY + REGISTER_HEADER_HEIGHT + relQubitIdx * QUBIT_HEIGHT,
             }));
         });
-    }, [circuit?.registers]);
+    }, [displayRegisters]);
 
     /**
      * Determines whether a quantum operation would cause a qubit collision
@@ -194,7 +225,7 @@ export function CircuitView() {
      * 5. Re-run ASAP scheduling on the combined set to produce the final layer layout.
      */
     const uiLayers: UiLayer[] = useMemo(() => {
-        if (!circuit?.registers) return [];
+        if (!displayRegisters.length) return [];
 
         const allOps: UiQuantumOperation[] = layersWithoutDragOp.flatMap((layer, layerIdx) =>
             layer.quantumOperations.map((op) => ({ ...op, originalLayerIdx: layerIdx })),
@@ -230,7 +261,7 @@ export function CircuitView() {
         allOps.sort((a, b) => a.originalLayerIdx - b.originalLayerIdx);
 
         return rescheduleOperations(allOps);
-    }, [circuit, hoverPos]);
+    }, [displayRegisters, hoverPos, layersWithoutDragOp, activeDropZones, flatQubits]);
 
     return (
         <Card className="h-full overflow-hidden border-none bg-bg-subtle">
@@ -239,13 +270,31 @@ export function CircuitView() {
 
                 {/* Circuit Canvas */}
                 <div className="relative flex-1 overflow-auto">
+                    {displayRegisters.length === 0 && (
+                        <div className="absolute inset-0 z-30 flex items-center justify-center p-6">
+                            <div className="max-w-sm rounded-xl border border-dashed border-border bg-background/80 p-6 text-center shadow-sm backdrop-blur">
+                                <div className="text-sm font-semibold text-text">No registers yet</div>
+                                <p className="mt-2 text-sm text-muted-foreground">
+                                    Create a quantum or classical register to start building the circuit.
+                                </p>
+                                <Button
+                                    className="mt-4"
+                                    size="sm"
+                                    onClick={() => globalThis.dispatchEvent(new CustomEvent('open-register-manager'))}
+                                >
+                                    Open Register Manager
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+
                     <QubitWires circuit={circuit} setCircuit={setCircuit} flatQubits={flatQubits} />
 
                     {/* Circuit Content Container (Offset for labels) */}
                     <div className="absolute inset-y-0 right-0" style={{ left: LABEL_WIDTH }}>
                         <QuantumOperationGrid
                             uiLayers={uiLayers}
-                            registers={circuit?.registers ?? []}
+                            registers={displayRegisters}
                             isOperationDragging={isOperationDragging}
                             removeQuantumOperation={removeQuantumOperation}
                             setDraggingOperationId={setDraggingOperationId}

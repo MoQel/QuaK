@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button.tsx';
-import { Minus, Plus, Trash2 } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import { CircuitResponse } from '@/api/dto/circuit.ts';
 import { createCircuitService } from '@/views/circuit-view/util/circuitService.ts';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover.tsx';
@@ -12,24 +12,12 @@ interface CircuitToolbarProps {
 }
 
 export function CircuitToolbar({ circuit, setCircuit }: Readonly<CircuitToolbarProps>) {
-    const { addQubit, deleteLastQubit, resetCircuit } = createCircuitService(circuit, setCircuit);
+    const { resetCircuit } = createCircuitService(circuit, setCircuit);
     const [isPopoverOpen, setIsPopoverOpen] = useState(false);
 
     return (
         <div className="pb-5 flex justify-end space-x-3">
             <RegisterManager circuit={circuit} setCircuit={setCircuit} />
-            <Button onClick={() => addQubit()} size="icon" className="size-8" variant="secondary" title="Add Qubit">
-                <Plus />
-            </Button>
-            <Button
-                onClick={deleteLastQubit}
-                size="icon"
-                className="size-8"
-                variant="destructive"
-                title="Delete Last Qubit"
-            >
-                <Minus />
-            </Button>
             <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
                 <PopoverTrigger asChild>
                     <Button size="icon" className="size-8" variant="destructive" title="Reset Circuit">
