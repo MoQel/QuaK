@@ -36,8 +36,17 @@ services:
       SPRING_DATASOURCE_PASSWORD: hello
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       FRONTEND_URL: http://localhost:8080
+      QUAK_LSP_SERVERS_PYTHON_COMMAND_0: /opt/lsp/python/bin/pylsp
+      QUAK_LSP_SERVERS_PYTHON_WORKINGDIRECTORY: /var/lib/quak/lsp-workspace
+      QUAK_LSP_SERVERS_PYTHON_ENVIRONMENT_PYTHONUNBUFFERED: "1"
+      QUAK_LSP_SERVERS_QASM_COMMAND_0: /opt/lsp/qasm/qasmlsp
+      QUAK_LSP_SERVERS_QASM_WORKINGDIRECTORY: /var/lib/quak/lsp-workspace
+      QUAK_LSP_LIMITS_MAXPROCESSES: ${QUAK_LSP_MAX_PROCESSES:-40}
+      QUAK_LSP_LIMITS_MAXPROCESSESPERUSER: ${QUAK_LSP_MAX_PROCESSES_PER_USER:-4}
     env_file:
       - ./backend/.env
+    tmpfs:
+      - /var/lib/quak/lsp-workspace:uid=10001,gid=10001,mode=0700
     networks:
       - quak-network
     restart: unless-stopped

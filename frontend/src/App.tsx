@@ -9,6 +9,8 @@ import { PanelHeaderActions } from '@/components/panels/PanelHeaderActions.tsx';
 import { useProject } from '@/contexts/ProjectContext.tsx';
 import { useTabsPersistence } from '@/hooks/useTabsPersistence.ts';
 import { useMonacoGarbageCollector } from '@/hooks/editor/useMonacoGarbageCollector.ts';
+import { lspManager } from '@/lsp/LSPClientManager';
+import { useEffect } from 'react';
 
 function App() {
     const { onReady } = useDockviewLogic();
@@ -20,6 +22,10 @@ function App() {
     // teardown (closeAll + dispose models) fires only when leaving the IDE — not
     // when the Code panel itself is closed, which previously wiped every tab.
     useMonacoGarbageCollector();
+
+    useEffect(() => {
+        return () => lspManager.disposeAll();
+    }, [projectId]);
 
     return (
         <div className="h-full w-full">

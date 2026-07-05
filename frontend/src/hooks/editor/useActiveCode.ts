@@ -1,6 +1,6 @@
 import { useMonaco } from '@monaco-editor/react';
-import { Uri } from 'monaco-editor';
 import { useAppSelector } from '@/hooks/useAppSelector.ts';
+import { getModelId } from '@/views/text-editor-view/utils/editorUtils.ts';
 
 /**
  * Editor-side counterpart to `useCircuitTabs` for the active file's code.
@@ -17,7 +17,12 @@ export function useActiveCode() {
         return activeGroup?.activeTabId ?? null;
     });
 
-    const getModel = () => (activeCodeTabId ? (monaco?.editor.getModel(Uri.file(activeCodeTabId)) ?? null) : null);
+    // Models are keyed by "file:///{fileId}/{fileName}", so look them up by their fileId
+    // segment (getModelId) rather than reconstructing the full Uri from the id alone.
+    const getModel = () =>
+        activeCodeTabId
+            ? (monaco?.editor.getModels().find((model) => getModelId(model) === activeCodeTabId) ?? null)
+            : null;
 
     const getActiveCode = (): string | undefined => {
         const model = getModel();

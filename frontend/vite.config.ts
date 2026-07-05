@@ -1,12 +1,16 @@
 import path from "node:path"
 import tailwindcss from "@tailwindcss/vite"
+import { loadEnv } from "vite";
 import { defineConfig } from "vitest/config";
 import react from '@vitejs/plugin-react'
 import wasm from "vite-plugin-wasm";
 import topLevelAwait from "vite-plugin-top-level-await";
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '');
+  const apiUrl = env.VITE_API_URL ?? 'http://localhost:8080';
+  return {
   plugins: [react(), tailwindcss(), wasm(), topLevelAwait()],
   resolve: {
     alias: {
@@ -22,7 +26,7 @@ export default defineConfig({
       },
     proxy: {
       '/api': {
-        target: 'http://localhost:8080',
+        target: apiUrl,
         changeOrigin: true,
         secure: false,
       }
@@ -52,4 +56,5 @@ export default defineConfig({
             }
         }
     },
+  };
 })
