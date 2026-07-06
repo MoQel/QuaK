@@ -13,6 +13,19 @@ import {
 import { DragData, FlatQubit, HoverPos, UiLayer } from '@/views/circuit-view/util/types.ts';
 import { getOperationDefinition } from '@/lib/operations.ts';
 
+/** Finds the operation with the given id across all layers, or undefined. */
+const findOperation = (layers: CircuitResponse['layers'], operationId: string): QuantumOperationDto | undefined => {
+    for (const layer of layers) {
+        const op = layer.quantumOperations.find((candidate) => candidate.id === operationId);
+        if (op) return op;
+    }
+    return undefined;
+};
+
+/** Removes the operation with the given id from its layer, keeping layer positions (empty layers stay). */
+const stripOperation = (layers: CircuitResponse['layers'], operationId: string): CircuitResponse['layers'] =>
+    layers.map((layer) => ({ quantumOperations: layer.quantumOperations.filter((op) => op.id !== operationId) }));
+
 interface DropzoneGridProps {
     circuit: CircuitResponse | undefined;
     setCircuit: React.Dispatch<SetStateAction<CircuitResponse | undefined>>;
@@ -90,28 +103,21 @@ export function DropzoneGrid({
         setCircuit((prev) => {
             if (!prev) return prev;
 
-            let movedOperation: QuantumOperationDto | undefined;
-            const layers = prev.layers.map((layer) => ({
-                quantumOperations: layer.quantumOperations.filter((operation) => {
-                    if (operation.id !== payload.quantumOperationId) return true;
-
-                    movedOperation = {
-                        ...operation,
-                        targetQubits: payload.targetQubits,
-                        controlQubits: payload.controlQubits,
-                    };
-                    return false;
-                }),
-            }));
-
-            if (!movedOperation) return prev;
+            const original = findOperation(prev.layers, payload.quantumOperationId);
+            if (!original) return prev;
+            const movedOperation: QuantumOperationDto = {
+                ...original,
+                targetQubits: payload.targetQubits,
+                controlQubits: payload.controlQubits,
+            };
 
             // The dragged operation is already excluded from the rendered preview,
             // so substituting the dummy re-inserts it exactly where the preview showed it.
             const previewLayers = layersFromPreview(movedOperation);
             if (previewLayers) return { ...prev, layers: previewLayers };
 
-            // Fallback without an active preview: append to the target layer.
+            // Fallback without an active preview: strip the op from its old layer, then append to the target.
+            const layers = stripOperation(prev.layers, payload.quantumOperationId);
             while (layers.length <= payload.layerIdx) {
                 layers.push({ quantumOperations: [] });
             }
@@ -136,6 +142,14 @@ export function DropzoneGrid({
             }
             return { qubitIdx, layerIdx };
         });
+    };
+
+    // Guarded reset against hover flicker on cell changes: when crossing into an adjacent zone,
+    // dragenter on the new cell fires BEFORE dragleave on the old one (HTML5 event order), so
+    // hoverPos already points elsewhere and this leave must not clear it. Only leaving towards a
+    // non-zone area (hoverPos still = this cell) resets.
+    const handleDragLeave = (qubitIdx: number, layerIdx: number) => {
+        setHoverPos((prev) => (prev?.qubitIdx === qubitIdx && prev?.layerIdx === layerIdx ? null : prev));
     };
 
     /** Creates a lookup map of the server-side circuit state. */
@@ -294,16 +308,7 @@ export function DropzoneGrid({
                             }}
                             onDragEnter={(e) => handleDragOver(e, qIdx, layerIdx)}
                             onDragOver={(e) => handleDragOver(e, qIdx, layerIdx)}
-                            // Guarded reset against hover flicker on cell changes: when crossing
-                            // into an adjacent zone, dragenter on the new cell fires BEFORE
-                            // dragleave on the old one (HTML5 event order), so hoverPos already
-                            // points elsewhere and this leave must not clear it. Only leaving
-                            // towards a non-zone area (hoverPos still = this cell) resets.
-                            onDragLeave={() =>
-                                setHoverPos((prev) =>
-                                    prev?.qubitIdx === qIdx && prev?.layerIdx === layerIdx ? null : prev,
-                                )
-                            }
+                            onDragLeave={() => handleDragLeave(qIdx, layerIdx)}
                             onDrop={(e) => handleDrop(e, qubit.regId, qubit.relQubitIdx, layerIdx)}
                         />
                     );

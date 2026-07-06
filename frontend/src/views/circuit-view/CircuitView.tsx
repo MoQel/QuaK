@@ -1,6 +1,12 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { useMemo, useState } from 'react';
-import { ElementSelectorDto, getInvolvedSelectors, getRegisterSize, getSelectorKey } from '@/api/dto/circuit';
+import {
+    CircuitResponse,
+    ElementSelectorDto,
+    getInvolvedSelectors,
+    getRegisterSize,
+    getSelectorKey,
+} from '@/api/dto/circuit';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store.ts';
 import { CircuitTabBar } from '@/views/circuit-view/components/CircuitTabBar.tsx';
@@ -13,21 +19,18 @@ import { HoverPos, UiLayer, UiQuantumOperation } from './util/types.ts';
 import { CELL_WIDTH, LABEL_WIDTH, QUBIT_HEIGHT } from '@/views/circuit-view/util/layout.ts';
 import { useCircuitTabs } from '@/contexts/CircuitTabsContext.tsx';
 
+/** Removes the operation with the given id from all layers and drops any layer left empty. */
+const dropOperationFromLayers = (layers: CircuitResponse['layers'], operationId: string): CircuitResponse['layers'] =>
+    layers
+        .map((layer) => ({ quantumOperations: layer.quantumOperations.filter((op) => op.id !== operationId) }))
+        .filter((layer) => layer.quantumOperations.length > 0);
+
 export function CircuitView() {
     const { activeCircuit, setActiveCircuit, activeCircuitTabId } = useCircuitTabs();
     const removeQuantumOperation = (operationId: string) => {
-        setActiveCircuit((prev) => {
-            if (!prev) return prev;
-
-            return {
-                ...prev,
-                layers: prev.layers
-                    .map((layer) => ({
-                        quantumOperations: layer.quantumOperations.filter((operation) => operation.id !== operationId),
-                    }))
-                    .filter((layer) => layer.quantumOperations.length > 0),
-            };
-        });
+        setActiveCircuit((prev) =>
+            prev ? { ...prev, layers: dropOperationFromLayers(prev.layers, operationId) } : prev,
+        );
     };
 
     const { isOperationDragging, draggingOperationSize } = useSelector((state: RootState) => state.dragOperation);
