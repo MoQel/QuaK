@@ -48,6 +48,7 @@ public interface CircuitServicePort {
         int layerIdx,
         List<ElementSelector> targetQubits,
         List<ElementSelector> controlQubits,
+        List<ElementSelector> classicBits,
         User user
     );
 

@@ -191,6 +191,7 @@ public class QuantumCircuit extends ElementWithId {
         if (layerIdx < 0 || layerIdx > layers.size()) {
             throw new RequestedIndexOutOfBounds("Layer", layerIdx, layers.size());
         }
+        validateOperationSelectors(operation);
 
         if (layerIdx == layers.size()) {
             layers.add(new Layer(List.of(operation)));
@@ -205,7 +206,8 @@ public class QuantumCircuit extends ElementWithId {
         @NonNull String operationId,
         int layerIdx,
         @NonNull List<ElementSelector> targetQubits,
-        List<ElementSelector> controlQubits
+        List<ElementSelector> controlQubits,
+        List<ElementSelector> classicBits
     ) {
         if (layerIdx < 0 || layerIdx > layers.size()) {
             throw new RequestedIndexOutOfBounds("Layer", layerIdx, layers.size());
@@ -218,9 +220,18 @@ public class QuantumCircuit extends ElementWithId {
             // 'for' loop CANNOT be replaced with enhanced 'for'
             for (QuantumOperation operation : layers.get(idx).getQuantumOperations()) {
                 if (operation.getId().equals(operationId)) {
+                    validateOperationSelectors(operation, targetQubits, controlQubits, classicBits);
+
                     // Set new target and control qubits.
                     operation.setTargetQubits(targetQubits);
-                    operation.setControlQubits(controlQubits);
+                    if (operation instanceof Measurement measurement) {
+                        measurement.setControlQubits(List.of());
+                        if (classicBits != null) {
+                            measurement.setClassicBits(classicBits);
+                        }
+                    } else {
+                        operation.setControlQubits(controlQubits == null ? List.of() : controlQubits);
+                    }
 
                     // Move operation to new layer.
                     layers.get(idx).removeQuantumOperation(operation);
@@ -321,9 +332,59 @@ public class QuantumCircuit extends ElementWithId {
 
     private Set<ElementSelector> getTargetAndControlQubits(QuantumOperation op) {
         Stream<ElementSelector> targetStream = op.getTargetQubits().stream();
-        Stream<ElementSelector> controlStream = op.getControlQubits() != null ? op.getControlQubits().stream() : Stream.empty();
+        Stream<ElementSelector> controlStream = op.getControlQubits().stream();
 
         return Stream.concat(targetStream, controlStream).collect(Collectors.toSet());
+    }
+
+    private void validateOperationSelectors(QuantumOperation operation) {
+        List<ElementSelector> classicBits = operation instanceof Measurement measurement ? measurement.getClassicBits() : null;
+        validateOperationSelectors(operation, operation.getTargetQubits(), operation.getControlQubits(), classicBits);
+    }
+
+    private void validateOperationSelectors(
+        QuantumOperation operation,
+        List<ElementSelector> targetQubits,
+        List<ElementSelector> controlQubits,
+        List<ElementSelector> classicBits
+    ) {
+        validateQuantumSelectors(targetQubits);
+        validateQuantumSelectors(controlQubits);
+
+        if (operation instanceof Measurement measurement) {
+            validateMeasurementSelectors(targetQubits, controlQubits, classicBits == null ? measurement.getClassicBits() : classicBits);
+            return;
+        }
+
+        if (classicBits != null && !classicBits.isEmpty()) {
+            throw new InvalidOperationConfigurationException("Classical bits are only allowed for measurement operations.");
+        }
+    }
+
+    private void validateQuantumSelectors(List<ElementSelector> selectors) {
+        if (selectors == null) return;
+        selectors.forEach(selector -> findQuantumRegisterById(selector.getRegisterId()));
+    }
+
+    private void validateMeasurementSelectors(
+        List<ElementSelector> targetQubits,
+        List<ElementSelector> controlQubits,
+        List<ElementSelector> classicBits
+    ) {
+        if (targetQubits.size() != 1) {
+            throw new InvalidOperationConfigurationException("A measurement operation must target exactly one qubit.");
+        }
+        if (controlQubits != null && !controlQubits.isEmpty()) {
+            throw new InvalidOperationConfigurationException("A measurement operation cannot be controlled.");
+        }
+        validateClassicBits(classicBits);
+    }
+
+    private void validateClassicBits(List<ElementSelector> selectors) {
+        if (selectors == null || selectors.isEmpty()) {
+            throw new InvalidOperationConfigurationException("A measurement operation must assign its result to at least one classic bit.");
+        }
+        selectors.forEach(selector -> findClassicRegisterById(selector.getRegisterId()));
     }
 
     private void flushLayers() {

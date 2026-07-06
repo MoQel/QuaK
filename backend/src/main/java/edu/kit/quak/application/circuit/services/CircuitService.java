@@ -103,12 +103,13 @@ public class CircuitService implements CircuitServicePort {
         int layerIdx,
         List<ElementSelector> targetQubits,
         List<ElementSelector> controlQubits,
+        List<ElementSelector> classicBits,
         User user
     ) {
         log.info("Moving quantum operation. circuitId={}, operationId={}", circuitId, operationId);
         return updateCircuit(
             circuitId,
-            circuit -> circuit.moveQuantumOperation(operationId, layerIdx, targetQubits, controlQubits),
+            circuit -> circuit.moveQuantumOperation(operationId, layerIdx, targetQubits, controlQubits, classicBits),
             user,
             ProjectRole.OWNER
         );

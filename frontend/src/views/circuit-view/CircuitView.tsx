@@ -336,7 +336,7 @@ export function CircuitView() {
                                 identifier: measurementContext.operationIdentifier,
                                 inverseForm: false,
                                 targetQubits: measurementContext.targetQubits,
-                                controlQubits: measurementContext.controlQubits,
+                                controlQubits: [],
                                 classicBits,
                             };
                             addQuantumOperation({ quantumOperation: operation, layerIdx: measurementContext.layerIdx });

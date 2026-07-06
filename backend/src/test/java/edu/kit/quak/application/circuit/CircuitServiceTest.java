@@ -233,10 +233,10 @@ class CircuitServiceTest {
         mockAccess(projectId, user, ProjectRole.OWNER);
 
         // execute
-        QuantumCircuit result = service.moveQuantumOperation(circuitId, operationId, layerIdx, targetQubits, controlQubits, user);
+        QuantumCircuit result = service.moveQuantumOperation(circuitId, operationId, layerIdx, targetQubits, controlQubits, null, user);
 
         // verify delegation and save
-        verify(circuitMock).moveQuantumOperation(operationId, layerIdx, targetQubits, controlQubits);
+        verify(circuitMock).moveQuantumOperation(operationId, layerIdx, targetQubits, controlQubits, null);
         verify(repository).save(circuitMock);
         assertEquals(circuitMock, result);
     }
@@ -274,7 +274,7 @@ class CircuitServiceTest {
 
         // Act & Assert
         CircuitNotFoundException exception = assertThrows(CircuitNotFoundException.class, () ->
-            service.moveQuantumOperation(circuitId, "H", 0, emptyTargets, emptyControls, user)
+            service.moveQuantumOperation(circuitId, "H", 0, emptyTargets, emptyControls, null, user)
         );
 
         // verify context data (RFC 7807)

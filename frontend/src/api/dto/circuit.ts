@@ -25,8 +25,10 @@ export interface ElementaryQuantumGateDto extends AbstractQuantumOperationDto {
     rotationAngle: number;
 }
 
-export interface MeasurementDto extends AbstractQuantumOperationDto {
+export interface MeasurementDto extends Omit<AbstractQuantumOperationDto, 'inverseForm' | 'controlQubits'> {
     type: 'MEASUREMENT';
+    inverseForm: false;
+    controlQubits: [];
     classicBits: ElementSelectorDto[];
 }
 
@@ -112,6 +114,7 @@ export interface MoveQuantumOperationRequest {
     layerIdx: number;
     targetQubits: ElementSelectorDto[];
     controlQubits: ElementSelectorDto[];
+    classicBits?: ElementSelectorDto[];
 }
 
 export interface RegisterRequest {

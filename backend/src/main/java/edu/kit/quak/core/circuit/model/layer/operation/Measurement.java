@@ -5,10 +5,8 @@ import edu.kit.quak.core.circuit.model.layer.operation.library.QuantumOperationL
 import java.util.List;
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.Setter;
 
 @Getter
-@Setter
 public class Measurement extends QuantumOperation {
 
     private List<ElementSelector> classicBits;
@@ -26,10 +24,39 @@ public class Measurement extends QuantumOperation {
                 "Operation type mismatch: expected %s but got %s".formatted(getClass(), operationDefinition.getDefinition().getType())
             );
         }
+        if (targetQubits.size() != 1) {
+            throw new InvalidOperationConfigurationException("A measurement operation must target exactly one qubit.");
+        }
+        if (inverseForm) {
+            throw new InvalidOperationConfigurationException("A measurement operation cannot be inverted.");
+        }
+        if (controlQubits != null && !controlQubits.isEmpty()) {
+            throw new InvalidOperationConfigurationException("A measurement operation cannot be controlled.");
+        }
+        setClassicBits(classicBits);
+    }
+
+    @Override
+    public void setInverseForm(boolean inverseForm) {
+        if (inverseForm) {
+            throw new InvalidOperationConfigurationException("A measurement operation cannot be inverted.");
+        }
+        this.inverseForm = false;
+    }
+
+    @Override
+    public void setControlQubits(List<ElementSelector> controlQubits) {
+        if (controlQubits != null && !controlQubits.isEmpty()) {
+            throw new InvalidOperationConfigurationException("A measurement operation cannot be controlled.");
+        }
+        this.controlQubits = List.of();
+    }
+
+    public void setClassicBits(@NonNull List<ElementSelector> classicBits) {
         if (classicBits.isEmpty()) {
             throw new InvalidOperationConfigurationException("A measurement operation must assign its result to at least one classic bit.");
         }
-        this.classicBits = classicBits;
+        this.classicBits = List.copyOf(classicBits);
     }
 
     @Override
