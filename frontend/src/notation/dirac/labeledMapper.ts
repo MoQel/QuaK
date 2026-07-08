@@ -7,6 +7,7 @@ import {
 } from '@/api/dto/circuit.ts';
 import { gateSymbol } from '@/notation/dirac/symbols.ts';
 import { assembleDirac, buildLayerGroups, Layout } from '@/notation/dirac/layout.ts';
+import { buildWireIndex, WireIndex } from '@/lib/circuitIndex.ts';
 
 /**
  * Export a circuit as labelled Dirac notation.
@@ -17,7 +18,10 @@ export function toLabeledDirac(circuit: CircuitResponse, layout: Layout = 'inlin
     const ket = renderInitialState(circuit.registers, resolveLabel);
     if (!ket) return '';
 
-    const layerGroups = buildLayerGroups(circuit, (gate) => renderOperator(gate, resolveLabel));
+    const wireIndex = buildWireIndex(circuit.registers, 'quantum');
+    const orderKey = (gate: ElementaryQuantumGateDto) => topmostWire(gate, wireIndex);
+
+    const layerGroups = buildLayerGroups(circuit, (gate) => renderOperator(gate, resolveLabel), orderKey);
 
     return assembleDirac(layerGroups, ket, layout);
 }
@@ -70,6 +74,15 @@ function renderOperator(
     const labels = [...gate.controlQubits, ...gate.targetQubits].map(resolveLabel).join(' ');
 
     return `${base}${dagger}${suffix}_{${labels}}`;
+}
+
+// The gate's topmost qubit (lowest wire index), used to order gates within a layer.
+function topmostWire(gate: ElementaryQuantumGateDto, wireIndex: WireIndex): number {
+    const wires = [...gate.controlQubits, ...gate.targetQubits]
+        .map((selector) => wireIndex.getWireIndex(selector))
+        .filter((wire): wire is number => wire !== undefined);
+
+    return wires.length > 0 ? Math.min(...wires) : Number.MAX_SAFE_INTEGER;
 }
 
 // Escape the characters that are special inside a KaTeX \text{} group.

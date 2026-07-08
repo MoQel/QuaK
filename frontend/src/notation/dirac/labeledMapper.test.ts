@@ -166,6 +166,20 @@ describe('toLabeledDirac', () => {
         );
     });
 
+    it('orders gates within a layer by ascending qubit index', () => {
+        // One layer with gates stored as q2, q0, q1 — rendered ascending as q0, q1, q2.
+        const result = toLabeledDirac(
+            circuit(
+                [quantumRegister('q', 3)],
+                [layer(gate('H', [sel('q', 2)]), gate('X', [sel('q', 0)]), gate('Y', [sel('q', 1)]))],
+            ),
+        );
+
+        expect(result).toBe(
+            String.raw`\mathrm{X}_{q_{0}} \cdot \mathrm{Y}_{q_{1}} \cdot \mathrm{H}_{q_{2}} \cdot \lvert 000\rangle_{q_{0} q_{1} q_{2}}`,
+        );
+    });
+
     it('returns an empty string when there are no qubits', () => {
         expect(toLabeledDirac(circuit([], []))).toBe('');
     });

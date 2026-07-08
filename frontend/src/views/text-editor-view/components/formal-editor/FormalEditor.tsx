@@ -9,7 +9,6 @@ import { Card, CardContent, CardDescription, CardTitle } from '@/components/ui/c
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle.tsx';
 import { CircuitResponse } from '@/api/dto/circuit.ts';
 import { toLabeledDirac } from '@/notation/dirac/labeledMapper.ts';
-import { toUnlabeledDirac } from '@/notation/dirac/unlabeledMapper.ts';
 import { Layout } from '@/notation/dirac/layout.ts';
 
 interface FormalEditorViewProps {
@@ -22,7 +21,6 @@ export function FormalEditor({ circuit }: Readonly<FormalEditorViewProps>) {
     const [layout, setLayout] = useState<Layout>('inline');
 
     const labeled = useMemo(() => (circuit ? toLabeledDirac(circuit, layout) : ''), [circuit, layout]);
-    const unlabeled = useMemo(() => (circuit ? toUnlabeledDirac(circuit, layout) : ''), [circuit, layout]);
 
     if (!labeled) {
         return (
@@ -57,7 +55,6 @@ export function FormalEditor({ circuit }: Readonly<FormalEditorViewProps>) {
                 </div>
 
                 <NotationBlock title="Labeled Dirac Notation" latex={labeled} />
-                <NotationBlock title="Unlabeled Dirac Notation" latex={unlabeled} />
             </CardContent>
         </Card>
     );

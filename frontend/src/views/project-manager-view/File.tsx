@@ -73,7 +73,7 @@ function OpenWithFormalEditor({ id, name }: Readonly<{ id: string; name: string 
     const dispatch = useAppDispatch();
     const openFormalTab = () => dispatch(openTab({ tab: createFormalTab(id, name) }));
 
-    return <ContextMenuItem onSelect={openFormalTab}>Open with Formal Editor</ContextMenuItem>;
+    return <ContextMenuItem onSelect={openFormalTab}>Open in Dirac Notation</ContextMenuItem>;
 }
 
 function FileRename(id: string, trigger: (element: Promise<JSX.Element>) => void) {

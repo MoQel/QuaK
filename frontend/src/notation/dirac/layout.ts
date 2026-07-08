@@ -7,26 +7,24 @@ export type Layout = 'inline' | 'layered';
 /**
  * Groups the rendered operators per circuit layer, in reverse application order (last-applied
  * layer first). `renderOperation` turns one gate into its token; an empty token is dropped, and
- * empty layers are omitted. Shared by both Dirac mappers, which only differ in `renderOperation`.
+ * empty layers are omitted. Within a layer the gates commute, so `orderKey` (if given) sorts them
+ * ascending — e.g. by qubit index — for a stable reading order.
  */
 export function buildLayerGroups(
     circuit: CircuitResponse,
     renderOperation: (gate: ElementaryQuantumGateDto) => string,
+    orderKey?: (gate: ElementaryQuantumGateDto) => number,
 ): string[][] {
     const layerGroups: string[][] = [];
 
     for (let layerIdx = circuit.layers.length - 1; layerIdx >= 0; layerIdx--) {
-        const operations = circuit.layers[layerIdx].quantumOperations;
-        const tokens: string[] = [];
+        const gates = circuit.layers[layerIdx].quantumOperations.filter(
+            (operation): operation is ElementaryQuantumGateDto => operation.type === 'ELEMENTARY_QUANTUM_GATE',
+        );
 
-        for (let opIdx = operations.length - 1; opIdx >= 0; opIdx--) {
-            const operation = operations[opIdx];
+        if (orderKey) gates.sort((a, b) => orderKey(a) - orderKey(b));
 
-            if (operation.type !== 'ELEMENTARY_QUANTUM_GATE') continue;
-
-            const token = renderOperation(operation);
-            if (token) tokens.push(token);
-        }
+        const tokens = gates.map(renderOperation).filter((token) => token.length > 0);
 
         if (tokens.length > 0) layerGroups.push(tokens);
     }
