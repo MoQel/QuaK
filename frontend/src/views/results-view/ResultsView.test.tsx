@@ -113,7 +113,8 @@ describe('ResultsView Component', () => {
 
         render(<ResultsView />);
 
-        expect(screen.getByText('|q0>')).toBeInTheDocument();
-        expect(screen.getByText(/Basis:/i)).toBeInTheDocument();
+        expect(screen.getByText('|q[0]>')).toBeInTheDocument();
+        expect(screen.getByText(/Basis order/i)).toBeInTheDocument();
+        expect(screen.getByText(/Final state probabilities/i)).toBeInTheDocument();
     });
 });

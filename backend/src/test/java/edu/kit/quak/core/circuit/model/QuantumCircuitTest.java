@@ -201,9 +201,8 @@ class QuantumCircuitTest {
         ElementSelector classicBit = new ElementSelector("creg", 0);
 
         // Act & Assert
-        assertThrows(
-            InvalidOperationConfigurationException.class,
-            () -> new Measurement(QuantumOperationLibrary.MEASURE, true, List.of(target), List.of(), List.of(classicBit))
+        assertThrows(InvalidOperationConfigurationException.class, () ->
+            new Measurement(QuantumOperationLibrary.MEASURE, true, List.of(target), List.of(), List.of(classicBit))
         );
     }
 
@@ -216,9 +215,8 @@ class QuantumCircuitTest {
         ElementSelector classicBit = new ElementSelector("creg", 0);
 
         // Act & Assert
-        assertThrows(
-            InvalidOperationConfigurationException.class,
-            () -> new Measurement(QuantumOperationLibrary.MEASURE, false, List.of(target), List.of(control), List.of(classicBit))
+        assertThrows(InvalidOperationConfigurationException.class, () ->
+            new Measurement(QuantumOperationLibrary.MEASURE, false, List.of(target), List.of(control), List.of(classicBit))
         );
     }
 
@@ -231,9 +229,8 @@ class QuantumCircuitTest {
         ElementSelector classicBit = new ElementSelector("creg", 0);
 
         // Act & Assert
-        assertThrows(
-            InvalidOperationConfigurationException.class,
-            () -> new Measurement(QuantumOperationLibrary.MEASURE, false, List.of(target0, target1), List.of(), List.of(classicBit))
+        assertThrows(InvalidOperationConfigurationException.class, () ->
+            new Measurement(QuantumOperationLibrary.MEASURE, false, List.of(target0, target1), List.of(), List.of(classicBit))
         );
     }
 
@@ -244,9 +241,8 @@ class QuantumCircuitTest {
         ElementSelector target = new ElementSelector(registerId, 0);
 
         // Act & Assert
-        assertThrows(
-            InvalidOperationConfigurationException.class,
-            () -> new Measurement(QuantumOperationLibrary.MEASURE, false, List.of(target), List.of(), List.of())
+        assertThrows(InvalidOperationConfigurationException.class, () ->
+            new Measurement(QuantumOperationLibrary.MEASURE, false, List.of(target), List.of(), List.of())
         );
     }
 

@@ -129,14 +129,14 @@ export function ElementaryQuantumGate({
                         className="
                             absolute left-[3px] h-full w-[1px]
                             bg-text-muted group-hover:brightness-90 dark:group-hover:brightness-125 transition-colors"
-                        style={{ backgroundColor: 'var(--text-muted)' }}
+                        style={{ backgroundColor: 'var(--text-muted)', top: 1, height: 'calc(100% - 2px)' }}
                     />
                     {/* Right line */}
                     <div
                         className="
                             absolute left-[7px] h-full w-[1px]
                             bg-text-muted group-hover:brightness-90 dark:group-hover:brightness-125 transition-colors"
-                        style={{ backgroundColor: 'var(--text-muted)' }}
+                        style={{ backgroundColor: 'var(--text-muted)', top: 1, height: 'calc(100% - 2px)' }}
                     />
                 </div>
             )}
@@ -229,7 +229,11 @@ function TargetPoint({
                 style={
                     isSWAP
                         ? { backgroundColor: 'transparent', color: definition.color }
-                        : { backgroundColor: definition.color, color: 'var(--bg-dark)' }
+                        : {
+                              backgroundColor: definition.color,
+                              color: 'var(--bg-dark)',
+                              transform: definition.type === 'MEASUREMENT' ? 'translateY(1px)' : undefined,
+                          }
                 }
             >
                 {icon}

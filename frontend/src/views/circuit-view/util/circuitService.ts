@@ -28,6 +28,20 @@ export function createCircuitService(
     circuit: CircuitResponse | undefined,
     setCircuit: (circuit: CircuitResponse) => void,
 ) {
+    const removeOperationLocally = (operationId: string) => {
+        if (!circuit) return null;
+
+        return {
+            ...circuit,
+            layers: circuit.layers
+                .map((layer) => ({
+                    ...layer,
+                    quantumOperations: layer.quantumOperations.filter((operation) => operation.id !== operationId),
+                }))
+                .filter((layer) => layer.quantumOperations.length > 0),
+        } satisfies CircuitResponse;
+    };
+
     const addQubit = (registerId?: string) => {
         if (!circuit) return;
         const targetRegId = registerId ?? circuit.registers.findLast(isQuantumRegister)?.id;
@@ -77,9 +91,20 @@ export function createCircuitService(
 
     const removeQuantumOperation = (operationId: string) => {
         if (!circuit) return;
+
+        const previousCircuit = circuit;
+        const optimisticCircuit = removeOperationLocally(operationId);
+
+        if (optimisticCircuit) {
+            setCircuit(optimisticCircuit);
+        }
+
         api.delete<CircuitResponse>(`/api/circuit/${circuit.id}/operation/${operationId}`)
             .then(setCircuit)
-            .catch(handleError);
+            .catch((error) => {
+                setCircuit(previousCircuit);
+                handleError(error);
+            });
     };
 
     const addRegister = (payload: RegisterRequest) => {

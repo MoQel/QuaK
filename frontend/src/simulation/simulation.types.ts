@@ -21,7 +21,7 @@ export interface SimulationResult {
 export interface MeasurementResult {
     operationId?: string;
     targetQubit: ElementSelectorDto;
-    classicBit: ElementSelectorDto;
+    classicBit?: ElementSelectorDto;
     outcome: 0 | 1;
     probabilities: {
         zero: number;
@@ -45,6 +45,8 @@ export interface SimulationOptions {
     maxCircuitWidth?: number;
     sampleCount?: number;
     mode?: SimulationMode;
+    measurementMode?: MeasurementMode;
 }
 
 export type SimulationMode = 'exact' | 'simulation';
+export type MeasurementMode = 'measurement-gates' | 'measurement-gates-plus-final';

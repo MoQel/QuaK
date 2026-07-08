@@ -10,6 +10,7 @@ import * as qulacs from 'qulacs-wasm';
 import { Complex } from 'qulacs-wasm';
 import {
     Disposable,
+    MeasurementMode,
     SimulationMode,
     SimulationOptions,
     SimulationResult,
@@ -24,6 +25,7 @@ export class CircuitTranslator {
     private static readonly SAMPLE_COUNT = 1024;
     private static readonly MAX_CIRCUIT_WIDTH = 12;
     private static readonly DEFAULT_MODE: SimulationMode = 'exact';
+    private static readonly DEFAULT_MEASUREMENT_MODE: MeasurementMode = 'measurement-gates';
     /**
      * Maps backend Circuit representation into qualacs simulation
      */
@@ -31,6 +33,7 @@ export class CircuitTranslator {
         const maxCircuitWidth = options.maxCircuitWidth ?? this.MAX_CIRCUIT_WIDTH;
         const sampleCount = options.sampleCount ?? this.SAMPLE_COUNT;
         const mode: SimulationMode = options.mode ?? this.DEFAULT_MODE;
+        const measurementMode = options.measurementMode ?? this.DEFAULT_MEASUREMENT_MODE;
 
         const circuitWidth = getCircuitWidth(circuitData);
 
@@ -47,8 +50,23 @@ export class CircuitTranslator {
         try {
             state.set_zero_state();
             const measurementResults = this.executeCircuit(circuitData, state, offsets, sampleCount);
+            const stateVectorBeforeFinalMeasurements =
+                measurementMode === 'measurement-gates-plus-final'
+                    ? this.extractStateVector(state, circuitWidth)
+                    : null;
 
-            return this.processResults(state, measurementResults, circuitWidth, mode, sampleCount);
+            if (measurementMode === 'measurement-gates-plus-final') {
+                measurementResults.push(...this.measureRemainingQubits(state, circuitData, offsets, sampleCount));
+            }
+
+            return this.processResults(
+                state,
+                measurementResults,
+                circuitWidth,
+                mode,
+                sampleCount,
+                stateVectorBeforeFinalMeasurements,
+            );
         } catch (error) {
             console.error('Simulation failed:', error);
             return this.createEmptyResult(circuitWidth);
@@ -174,9 +192,12 @@ export class CircuitTranslator {
         numQubits: number,
         mode: SimulationMode,
         sampleCount: number,
+        stateVectorBeforeFinalMeasurements: StateVectorEntry[] | null,
     ): SimulationResult {
         if (mode === 'simulation') {
-            const rawResult = state.sampling(sampleCount);
+            const rawResult = stateVectorBeforeFinalMeasurements
+                ? this.sampleStateVector(stateVectorBeforeFinalMeasurements, sampleCount)
+                : state.sampling(sampleCount);
             return {
                 stateVector: [],
                 counts: this.aggregateSamples(rawResult, numQubits),
@@ -187,7 +208,7 @@ export class CircuitTranslator {
 
         if (mode === 'exact') {
             return {
-                stateVector: this.extractStateVector(state, numQubits),
+                stateVector: stateVectorBeforeFinalMeasurements ?? this.extractStateVector(state, numQubits),
                 counts: null,
                 measurementResults,
                 simulatedQubits: numQubits,
@@ -225,6 +246,51 @@ export class CircuitTranslator {
         };
     }
 
+    private static measureRemainingQubits(
+        state: qulacs.QuantumState,
+        circuitData: CircuitResponse,
+        offsets: RegisterOffsets,
+        sampleCount: number,
+    ): MeasurementResult[] {
+        const measuredQubits = new Set(
+            circuitData.layers.flatMap((layer) =>
+                layer.quantumOperations.flatMap((op) =>
+                    op.type === 'MEASUREMENT'
+                        ? op.targetQubits.map((target) => `${target.registerId}:${target.index}`)
+                        : [],
+                ),
+            ),
+        );
+        const measurementResults: MeasurementResult[] = [];
+
+        for (const register of circuitData.registers) {
+            if (!isQuantumRegister(register)) continue;
+
+            for (let index = 0; index < register.numberOfQubits; index++) {
+                const key = `${register.id}:${index}`;
+                if (measuredQubits.has(key)) continue;
+
+                const targetQubit = { registerId: register.id, index };
+                const targetIndex = offsets[register.id] + index;
+                const probabilities = this.getSingleQubitProbabilities(state, targetIndex);
+                const outcome = this.sampleMeasurementOutcome(probabilities);
+
+                this.collapseSingleQubit(state, targetIndex, outcome);
+
+                measurementResults.push({
+                    operationId: `auto-measure-${register.id}-${index}`,
+                    targetQubit,
+                    classicBit: { registerId: '__auto__', index: targetIndex },
+                    outcome,
+                    probabilities,
+                    counts: this.countExpectedMeasurementSamples(probabilities, sampleCount),
+                });
+            }
+        }
+
+        return measurementResults;
+    }
+
     private static getSingleQubitProbabilities(
         state: qulacs.QuantumState,
         targetIndex: number,
@@ -245,6 +311,22 @@ export class CircuitTranslator {
         }
 
         return { zero, one };
+    }
+
+    private static sampleStateVector(stateVector: StateVectorEntry[], sampleCount: number): number[] {
+        const cumulativeProbabilities: number[] = [];
+        let cumulative = 0;
+
+        for (const entry of stateVector) {
+            cumulative += entry.prob;
+            cumulativeProbabilities.push(cumulative);
+        }
+
+        return Array.from({ length: sampleCount }, () => {
+            const sample = Math.random();
+            const basisIndex = cumulativeProbabilities.findIndex((probability) => sample <= probability);
+            return basisIndex === -1 ? cumulativeProbabilities.length - 1 : basisIndex;
+        });
     }
 
     private static sampleMeasurementOutcome(probabilities: MeasurementResult['probabilities']): 0 | 1 {

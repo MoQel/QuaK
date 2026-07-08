@@ -131,16 +131,35 @@ export const getClassicCircuitWidth = (circuitData: CircuitResponse): number => 
 
 /**
  * Computes the visual Y position (in pixels) of a qubit/bit within a register,
- * accounting for register header heights that precede it.
+ * accounting for section headers, register headers and the gap between
+ * the quantum and classical sections.
  */
 export const getVisualY = (registers: RegisterResponse[], registerId: string, index: number): number => {
     let visualY = 0;
-    for (const reg of registers) {
+    let classicSectionStarted = false;
+
+    for (const [regIdx, reg] of registers.entries()) {
+        const previousRegister = regIdx > 0 ? registers[regIdx - 1] : undefined;
+        const startsClassicSection = isClassicRegister(reg) && !classicSectionStarted;
+
+        if (!previousRegister || startsClassicSection) {
+            if (previousRegister) {
+                visualY += 20; // REGISTER_SECTION_GAP
+            }
+            visualY += 24; // REGISTER_SECTION_HEADER_HEIGHT
+        }
+
         const size = getRegisterSize(reg);
         if (reg.id === registerId) {
             return visualY + 28 + index * 48; // REGISTER_HEADER_HEIGHT + QUBIT_HEIGHT
         }
+
+        if (isClassicRegister(reg)) {
+            classicSectionStarted = true;
+        }
+
         visualY += 28 + size * 48; // REGISTER_HEADER_HEIGHT + size * QUBIT_HEIGHT
     }
+
     return 0;
 };

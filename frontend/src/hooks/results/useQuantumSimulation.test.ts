@@ -143,6 +143,24 @@ describe('useQuantumSimulation Hook', () => {
         });
     });
 
+    it('should trigger a new request when measurement mode changes', () => {
+        const { rerender } = renderHook(({ opts }) => useQuantumSimulation(mockCircuit, opts), {
+            initialProps: { opts: { measurementMode: 'measurement-gates' as const } },
+        });
+
+        act(() => {
+            vi.advanceTimersByTime(305);
+        });
+
+        rerender({ opts: { measurementMode: 'measurement-gates-plus-final' as const } });
+
+        act(() => {
+            vi.advanceTimersByTime(305);
+        });
+
+        expect(latestWorker?.postMessage).toHaveBeenCalledTimes(2);
+    });
+
     it('should terminate worker on unmount', () => {
         const { unmount } = renderHook(() => useQuantumSimulation(mockCircuit));
         unmount();

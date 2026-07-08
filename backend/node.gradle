@@ -1,9 +1,6 @@
-// Add the commandline-flag "-PdownloadNode" to a task to download node
-// via the gradle-node-plugin.
-// Use the task removeCustomNode to delete the downloaded version
-if (project.hasProperty("downloadNode")) {
-    node.download = true
-}
+// Keep Node/npm project-local so Gradle tasks do not depend on a developer's
+// shell setup or nvm configuration.
+node.download = true
 
 tasks.register("removeCustomNode", Delete) {
     delete node.workDir

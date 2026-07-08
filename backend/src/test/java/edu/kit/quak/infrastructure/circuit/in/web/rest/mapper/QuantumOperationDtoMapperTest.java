@@ -96,17 +96,8 @@ class QuantumOperationDtoMapperTest {
         ElementSelectorDto classicBit = new ElementSelectorDto("creg_id", 0);
 
         // Act & Assert
-        assertThrows(
-            InvalidOperationConfigurationException.class,
-            () ->
-                new MeasurementDto(
-                    "id",
-                    QuantumOperationLibrary.MEASURE.name(),
-                    false,
-                    List.of(target),
-                    List.of(control),
-                    List.of(classicBit)
-                )
+        assertThrows(InvalidOperationConfigurationException.class, () ->
+            new MeasurementDto("id", QuantumOperationLibrary.MEASURE.name(), false, List.of(target), List.of(control), List.of(classicBit))
         );
     }
 }

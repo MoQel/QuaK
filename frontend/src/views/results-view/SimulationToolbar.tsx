@@ -12,6 +12,7 @@ import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip
 interface ToolbarProps {
     options: SimulationOptions;
     setOptions: Dispatch<SetStateAction<SimulationOptions>>;
+    hasConditionalState: boolean;
     showZero: boolean;
     setShowZero: Dispatch<SetStateAction<boolean>>;
     minProbability: number;
@@ -21,6 +22,7 @@ interface ToolbarProps {
 export function SimulationToolbar({
     options,
     setOptions,
+    hasConditionalState,
     showZero,
     setShowZero,
     minProbability,
@@ -30,23 +32,22 @@ export function SimulationToolbar({
         setOptions((prev) => ({ ...prev, [field]: val }));
     };
 
+    const updateSelectOption = (field: keyof SimulationOptions, val: SimulationMode) => {
+        setOptions((prev) => ({ ...prev, [field]: val }));
+    };
+
+    const isExactMode = options.mode === 'exact';
+    const finalReadoutEnabled = options.measurementMode === 'measurement-gates-plus-final';
+
     return (
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
-            <Select
-                value={options.mode}
-                onValueChange={(val) =>
-                    setOptions((prev) => ({
-                        ...prev,
-                        mode: val as SimulationMode,
-                    }))
-                }
-            >
-                <SelectTrigger className="w-full sm:w-[140px] h-8 bg-bg hover:bg-bg-light border-border text-text">
+            <Select value={options.mode} onValueChange={(val) => updateSelectOption('mode', val as SimulationMode)}>
+                <SelectTrigger className="w-full sm:w-[156px] h-9 bg-bg hover:bg-bg-light border-border text-text">
                     <SelectValue placeholder="Mode" />
                 </SelectTrigger>
                 <SelectContent className="bg-bg border-border text-text">
                     <SelectItem value="exact" className="rounded cursor-pointer focus:bg-bg-light focus:text-text">
-                        Exact State
+                        {hasConditionalState ? 'Conditional State' : 'Exact State'}
                     </SelectItem>
                     <SelectItem value="simulation" className="rounded cursor-pointer focus:bg-bg-light focus:text-text">
                         Simulation
@@ -56,76 +57,108 @@ export function SimulationToolbar({
 
             <Popover>
                 <PopoverTrigger asChild>
-                    <Button size="icon" className="h-8 w-8 text-text bg-bg hover:bg-bg-light border-1 border-border">
+                    <Button size="icon" className="h-9 w-9 text-text bg-bg hover:bg-bg-light border border-border">
                         <Settings2 className="h-4 w-4" />
                         <span className="sr-only">Settings</span>
                     </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-80 bg-bg-light border-border text-text" align="end">
+                <PopoverContent
+                    className="w-[min(26rem,calc(100vw-2rem))] max-h-[70vh] overflow-y-auto bg-bg-light border-border text-text"
+                    align="end"
+                >
                     <div className="grid gap-4">
                         <div className="space-y-2">
                             <h4 className="font-medium leading-none text-text">Simulation Settings</h4>
                             <p className="text-xs text-text-muted">Configure simulator parameters.</p>
                         </div>
 
-                        <div className="p-4 space-y-6">
-                            {/* Simulation Parameters */}
+                        <div className="space-y-6">
                             <div className="space-y-3">
                                 <h5 className="text-xs font-medium text-text-muted uppercase tracking-wider flex items-center gap-2">
                                     <Cpu className="w-3 h-3" /> Simulation
                                 </h5>
-                                <div className="flex items-center justify-between">
-                                    <div className="flex">
-                                        <Label htmlFor="maxWidth" className="text-sm text-text font-normal">
+                                <div className="flex items-start justify-between gap-3 rounded-lg border border-border bg-bg/40 px-3 py-3">
+                                    <div className="space-y-1.5">
+                                        <Label htmlFor="final-readout" className="text-sm text-text font-normal">
+                                            Final readout
+                                        </Label>
+                                        <p className="text-xs text-text-muted">
+                                            Explicit measurement gates are always executed. When enabled, terminal
+                                            measurements are added to qubits that do not already have a final
+                                            measurement.
+                                        </p>
+                                    </div>
+                                    <Switch
+                                        id="final-readout"
+                                        checked={finalReadoutEnabled}
+                                        onCheckedChange={(checked) =>
+                                            setOptions((prev) => ({
+                                                ...prev,
+                                                measurementMode: checked
+                                                    ? 'measurement-gates-plus-final'
+                                                    : 'measurement-gates',
+                                            }))
+                                        }
+                                    />
+                                </div>
+                                <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_96px] sm:items-center">
+                                    <div className="flex items-center gap-1.5">
+                                        <Label
+                                            htmlFor="maxWidth"
+                                            className="text-sm text-text font-normal leading-none"
+                                        >
                                             Max Circuit Width
                                         </Label>
                                         {(options.maxCircuitWidth ?? 12) >= 16 && (
                                             <Tooltip>
                                                 <TooltipTrigger>
-                                                    <Button variant="ghost" size="icon">
-                                                        <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0 text-yellow-500" />
+                                                    <Button variant="ghost" size="icon" className="h-6 w-6">
+                                                        <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-yellow-500" />
                                                     </Button>
                                                 </TooltipTrigger>
                                                 <TooltipContent className="bg-destructive">
-                                                    <p className="text-text text-sm leading-tight">
+                                                    <div className="text-text text-sm leading-tight">
                                                         <p>High circuit widths may cause your browser</p>
                                                         <p>to freeze or crash due to high memory usage.</p>
-                                                    </p>
+                                                    </div>
                                                 </TooltipContent>
                                             </Tooltip>
                                         )}
                                     </div>
-                                    <div className="w-24">
-                                        <SmartInput
-                                            id="maxCircuitWidth"
-                                            value={options.maxCircuitWidth ?? 24}
-                                            onChange={(v) => updateOption('maxCircuitWidth', v)}
-                                            min={1}
-                                            max={24}
-                                        />
-                                    </div>
+                                    <SmartInput
+                                        id="maxCircuitWidth"
+                                        value={options.maxCircuitWidth ?? 24}
+                                        onChange={(v) => updateOption('maxCircuitWidth', v)}
+                                        min={1}
+                                        max={24}
+                                    />
                                 </div>
 
                                 <div
-                                    className={`flex items-center justify-between transition-opacity duration-200 ${
-                                        options.mode === 'exact' ? 'opacity-40 pointer-events-none' : ''
+                                    className={`grid gap-3 sm:grid-cols-[minmax(0,1fr)_96px] sm:items-center transition-opacity duration-200 ${
+                                        isExactMode ? 'opacity-40 pointer-events-none' : ''
                                     }`}
                                 >
-                                    <Label htmlFor="shots" className="text-sm text-text font-normal">
-                                        Shots
-                                    </Label>
-                                    <div className="w-24">
-                                        <SmartInput
-                                            id="shots"
-                                            value={options.sampleCount ?? 1024}
-                                            onChange={(v) => updateOption('sampleCount', v)}
-                                            min={1}
-                                            step={100}
-                                        />
+                                    <div className="space-y-1">
+                                        <Label htmlFor="shots" className="text-sm text-text font-normal">
+                                            Shots
+                                        </Label>
+                                        <p className="text-xs text-text-muted">
+                                            Used for sampled simulation runs.{' '}
+                                            {hasConditionalState ? 'Conditional State' : 'Exact State'} does not need
+                                            shots.
+                                        </p>
                                     </div>
+                                    <SmartInput
+                                        id="shots"
+                                        value={options.sampleCount ?? 1024}
+                                        onChange={(v) => updateOption('sampleCount', v)}
+                                        min={1}
+                                        step={100}
+                                    />
                                 </div>
                             </div>
-                            {/* Filters */}
+
                             <div className="space-y-4">
                                 <h5 className="text-xs font-medium text-text-muted uppercase tracking-wider flex items-center gap-2">
                                     <Filter className="w-3 h-3" /> View Filters

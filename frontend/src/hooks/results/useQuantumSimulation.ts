@@ -14,6 +14,7 @@ export function useQuantumSimulation(circuit: CircuitResponse | undefined, optio
     const workerRef = useRef<Worker | null>(null);
     const requestIdRef = useRef(0);
     const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const previousCircuitRef = useRef<CircuitResponse | undefined>(undefined);
 
     useEffect(() => {
         const worker = new Worker(new URL('@/workers/simulation.worker.ts', import.meta.url), {
@@ -54,8 +55,16 @@ export function useQuantumSimulation(circuit: CircuitResponse | undefined, optio
         if (!circuit) {
             setResult(null);
             setIsCalculating(false);
+            previousCircuitRef.current = circuit;
             return;
         }
+
+        if (previousCircuitRef.current !== circuit) {
+            setResult(null);
+            setError(null);
+        }
+
+        previousCircuitRef.current = circuit;
 
         setIsCalculating(true);
 
@@ -81,7 +90,7 @@ export function useQuantumSimulation(circuit: CircuitResponse | undefined, optio
                 clearTimeout(debounceTimerRef.current);
             }
         };
-    }, [circuit, options.mode, options.sampleCount, options.maxCircuitWidth]);
+    }, [circuit, options.mode, options.measurementMode, options.sampleCount, options.maxCircuitWidth]);
     // Note: We decompose 'options' in deps to avoid re-runs on new object references
 
     return { result, isCalculating, error };

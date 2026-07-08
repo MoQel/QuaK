@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { SimulationToolbar } from '@/views/results-view/SimulationToolbar.tsx';
 import { CustomTooltipContent } from '@/views/results-view/CustomTooltipContent.tsx';
-import { getCircuitWidth } from '@/api/dto/circuit';
+import { getCircuitWidth, isQuantumRegister } from '@/api/dto/circuit';
 import { useQuantumSimulation } from '@/hooks/results/useQuantumSimulation.ts';
 import { SimulationOptions } from '@/simulation/simulation.types.ts';
 import { Endianness, useChartData } from '@/hooks/results/useChartData.ts';
@@ -37,6 +37,7 @@ export function ResultsView() {
     const { circuit } = useProject();
     const [options, setOptions] = useState<SimulationOptions>({
         mode: 'exact',
+        measurementMode: 'measurement-gates',
         sampleCount: 1024,
         maxCircuitWidth: 12,
     });
@@ -63,12 +64,46 @@ export function ResultsView() {
         return new Map(circuit?.registers.map((reg) => [reg.id, reg.name]) ?? []);
     }, [circuit?.registers]);
 
+    const orderedQuantumSelectors = useMemo(() => {
+        if (!circuit) return [];
+
+        return circuit.registers
+            .filter(isQuantumRegister)
+            .flatMap((register) =>
+                Array.from({ length: register.numberOfQubits }, (_, index) => `${register.name}[${index}]`),
+            );
+    }, [circuit]);
+
     const measurementRows = useMemo(() => {
         return result?.measurementResults ?? [];
     }, [result?.measurementResults]);
 
+    const intermediateMeasurementRows = useMemo(() => {
+        return measurementRows.filter((measurement) => measurement.classicBit?.registerId !== '__auto__');
+    }, [measurementRows]);
+
+    const finalSweepMeasurementRows = useMemo(() => {
+        return measurementRows.filter((measurement) => measurement.classicBit?.registerId === '__auto__');
+    }, [measurementRows]);
+
     const formatSelector = (registerId: string, index: number) => {
+        if (registerId === '__auto__') {
+            return `auto[${index}]`;
+        }
         return `${registerNames.get(registerId) ?? registerId}[${index}]`;
+    };
+
+    const formatMeasurementEvent = (measurement: (typeof measurementRows)[number]) => {
+        const target = formatSelector(measurement.targetQubit.registerId, measurement.targetQubit.index);
+        const classicTarget = measurement.classicBit
+            ? ` -> ${formatSelector(measurement.classicBit.registerId, measurement.classicBit.index)}`
+            : '';
+        return `${target}${classicTarget} = ${measurement.outcome}`;
+    };
+
+    const formatFinalReadoutEvent = (measurement: (typeof measurementRows)[number]) => {
+        const target = formatSelector(measurement.targetQubit.registerId, measurement.targetQubit.index);
+        return `${target} -> readout[${measurement.targetQubit.index}] = ${measurement.outcome}`;
     };
 
     const [showZero, setShowZero] = useState(false);
@@ -88,10 +123,32 @@ export function ResultsView() {
 
     const basisLabel = useMemo(() => {
         if (simulatedCircuitWidth === 0) return '';
-        if (simulatedCircuitWidth === 1) return '|q0>';
 
-        return endianness === 'big' ? `|q0...q${simulatedCircuitWidth - 1}>` : `|q${simulatedCircuitWidth - 1}...q0>`;
-    }, [simulatedCircuitWidth, endianness]);
+        const visibleSelectors = orderedQuantumSelectors.slice(0, simulatedCircuitWidth);
+        const orderedQubits = endianness === 'big' ? visibleSelectors : [...visibleSelectors].reverse();
+
+        return `|${orderedQubits.join(' ')}>`;
+    }, [simulatedCircuitWidth, endianness, orderedQuantumSelectors]);
+
+    const chartHeading = useMemo(() => {
+        if (intermediateMeasurementRows.length > 0 && options.mode === 'exact') {
+            return 'Conditional final state';
+        }
+
+        return 'Final state probabilities';
+    }, [intermediateMeasurementRows.length, options.mode]);
+
+    const chartDescription = useMemo(() => {
+        if (intermediateMeasurementRows.length > 0) {
+            return `Conditioned on ${intermediateMeasurementRows.map(formatMeasurementEvent).join(', ')}.`;
+        }
+
+        if (finalSweepMeasurementRows.length > 0) {
+            return 'The quantum-state plot still reflects the state immediately before the automatic end-of-circuit measurement sweep.';
+        }
+
+        return 'This plot shows the quantum state after the full circuit execution.';
+    }, [finalSweepMeasurementRows.length, intermediateMeasurementRows]);
 
     // Empty State
     if (!circuit || (simulatedCircuitWidth === 0 && !isCalculating)) {
@@ -272,39 +329,38 @@ export function ResultsView() {
         );
     };
 
+    const chartAreaMinHeight = intermediateMeasurementRows.length > 0 ? 'min-h-[26rem]' : 'min-h-[22rem]';
+
     return (
         <Card className="w-full h-full border-l rounded-none flex flex-col min-w-0 border-none">
-            <CardHeader className="bg-card z-10 shrink-0">
-                <div className="flex flex-col gap-4 lg:flex-row lg:justify-between lg:items-center">
-                    <div className="flex flex-col gap-2">
-                        <div
-                            className={`flex flex-col gap-1 transition-opacity duration-200 ${
-                                isCircuitTooLarge ? 'opacity-50 pointer-events-none grayscale' : ''
-                            }`}
-                        >
-                            <div className="flex items-center gap-3">
-                                <span className="text-text-muted text-[10px] sm:text-xs font-mono w-[45px] sm:w-[60px] w-[70px]">
-                                    Endian:
-                                </span>
+            <CardHeader className="bg-card z-10 shrink-0 px-3 py-3">
+                <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+                    <div
+                        className={`min-w-0 max-w-full transition-opacity duration-200 ${
+                            isCircuitTooLarge ? 'opacity-50 pointer-events-none grayscale' : ''
+                        }`}
+                    >
+                        <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2">
+                            <div className="flex items-center gap-2">
+                                <span className="text-[10px] uppercase tracking-[0.14em] text-text-muted">Endian</span>
                                 <ToggleGroup
-                                    className="scale-[0.55] sm:scale-95 lg:scale-100"
                                     type="single"
                                     value={endianness}
                                     onValueChange={(val) => {
                                         if (val) setEndianness(val as Endianness);
                                     }}
                                     disabled={isCircuitTooLarge}
+                                    className="justify-start"
                                 >
                                     <ToggleGroupItem value="big">Big</ToggleGroupItem>
-
                                     <ToggleGroupItem value="little">Little</ToggleGroupItem>
                                 </ToggleGroup>
                             </div>
-                            <div className="flex items-center gap-3">
-                                <span className="text-[10px] sm:text-xs text-text-muted font-mono w-[70px]">
-                                    Basis:
+                            <div className="flex min-w-0 items-center gap-2">
+                                <span className="shrink-0 text-[10px] uppercase tracking-[0.14em] text-text-muted">
+                                    Basis
                                 </span>
-                                <span className="text-[10px] sm:text-xs font-mono bg-bg px-2 py-0.5 rounded border border-border-muted text-text">
+                                <span className="min-w-0 truncate text-[11px] font-mono text-text" title={basisLabel}>
                                     {basisLabel}
                                 </span>
                             </div>
@@ -312,13 +368,14 @@ export function ResultsView() {
                     </div>
 
                     <div
-                        className={`w-full md:w-auto flex justify-start md:justify-end transition-opacity duration-200 ${
+                        className={`w-full lg:w-auto flex justify-start lg:justify-end transition-opacity duration-200 ${
                             isCircuitTooLarge ? 'opacity-50 pointer-events-none grayscale' : ''
                         }`}
                     >
                         <SimulationToolbar
                             options={options}
                             setOptions={setOptions}
+                            hasConditionalState={intermediateMeasurementRows.length > 0}
                             showZero={showZero}
                             setShowZero={setShowZero}
                             minProbability={minProbability}
@@ -328,31 +385,92 @@ export function ResultsView() {
                 </div>
             </CardHeader>
 
-            <CardContent className="flex-1 p-0 relative overflow-hidden flex flex-col min-h-0 bg-bg-dark">
-                {measurementRows.length > 0 && (
+            <CardContent className="flex-1 p-0 relative overflow-y-auto overflow-x-hidden flex flex-col min-h-0 bg-bg-dark custom-scrollbar">
+                {intermediateMeasurementRows.length > 0 && (
                     <div className="shrink-0 border-b border-border bg-bg px-4 py-3">
-                        <div className="text-xs font-semibold text-text mb-2">Measurement results</div>
-                        <div className="flex flex-wrap gap-2">
-                            {measurementRows.map((measurement, idx) => (
+                        <div className="flex flex-col gap-2">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+                                    Intermediate measurements
+                                </div>
+                                <div className="text-[11px] text-text-muted">
+                                    {intermediateMeasurementRows.length}{' '}
+                                    {intermediateMeasurementRows.length === 1
+                                        ? 'measurement event'
+                                        : 'measurement events'}
+                                </div>
+                            </div>
+                            <div className="text-xs text-text-muted">
+                                These are the explicit measurement events that occurred during circuit execution.
+                            </div>
+                        </div>
+                        <div className="mt-3 flex max-h-28 flex-wrap gap-2 overflow-y-auto pr-1 custom-scrollbar">
+                            {intermediateMeasurementRows.map((measurement, idx) => (
                                 <Badge
                                     key={measurement.operationId ?? `${measurement.targetQubit.registerId}-${idx}`}
                                     variant="outline"
-                                    className="font-mono border-border text-text bg-bg-light"
+                                    className="whitespace-normal break-all font-mono border-border text-text bg-bg-light"
                                 >
-                                    {formatSelector(measurement.targetQubit.registerId, measurement.targetQubit.index)}
-                                    {' -> '}
-                                    {formatSelector(measurement.classicBit.registerId, measurement.classicBit.index)}
-                                    {' = '}
-                                    {measurement.outcome}
+                                    {formatMeasurementEvent(measurement)}
                                 </Badge>
                             ))}
                         </div>
                     </div>
                 )}
 
-                <div className="flex-1 min-h-0 relative">{renderChartArea()}</div>
+                {finalSweepMeasurementRows.length > 0 && (
+                    <div className="shrink-0 border-b border-border bg-bg px-4 py-3">
+                        <div className="flex flex-col gap-2">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+                                    Classical readout
+                                </div>
+                                <div className="text-[11px] text-text-muted">
+                                    {finalSweepMeasurementRows.length}{' '}
+                                    {finalSweepMeasurementRows.length === 1
+                                        ? 'terminal measurement'
+                                        : 'terminal measurements'}
+                                </div>
+                            </div>
+                            <div className="text-xs text-text-muted">
+                                Automatic end-of-circuit measurements for qubits without an explicit final measurement.
+                            </div>
+                        </div>
+                        <div className="mt-3 flex max-h-28 flex-wrap gap-2 overflow-y-auto pr-1 custom-scrollbar">
+                            {finalSweepMeasurementRows.map((measurement, idx) => (
+                                <Badge
+                                    key={
+                                        measurement.operationId ??
+                                        `readout-${measurement.targetQubit.registerId}-${idx}`
+                                    }
+                                    variant="outline"
+                                    className="whitespace-normal break-all font-mono border-border text-text bg-bg-light"
+                                >
+                                    {formatFinalReadoutEvent(measurement)}
+                                </Badge>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
-                {/* Loading State Overlay */}
+                <div className="shrink-0 border-b border-border bg-bg px-4 py-3">
+                    <div className="flex flex-col gap-2">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+                                {chartHeading}
+                            </div>
+                            <div className="text-[11px] text-text-muted">
+                                {options.mode === 'exact' ? 'Exact amplitudes' : 'Sampled distribution'}
+                            </div>
+                        </div>
+                        <div className="text-xs text-text-muted">{chartDescription}</div>
+                    </div>
+                </div>
+
+                <div className={`flex-1 min-h-0 relative px-2 pb-2 sm:px-3 sm:pb-3 ${chartAreaMinHeight}`}>
+                    {renderChartArea()}
+                </div>
+
                 {isCalculating && (
                     <div className="absolute inset-0 bg-bg-dark/50 backdrop-blur-[2px] z-20 flex items-center justify-center cursor">
                         <Badge

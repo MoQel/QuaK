@@ -165,12 +165,10 @@ public class CircuitRestAdapter {
         User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
 
         List<ElementSelector> targetQubits = request.targetQubits().stream().map(elementSelectorDtoMapper::toDomain).toList();
-        List<ElementSelector> controlQubits = request.controlQubits() == null
-            ? List.of()
-            : request.controlQubits().stream().map(elementSelectorDtoMapper::toDomain).toList();
-        List<ElementSelector> classicBits = request.classicBits() == null
-            ? null
-            : request.classicBits().stream().map(elementSelectorDtoMapper::toDomain).toList();
+        List<ElementSelector> controlQubits =
+            request.controlQubits() == null ? List.of() : request.controlQubits().stream().map(elementSelectorDtoMapper::toDomain).toList();
+        List<ElementSelector> classicBits =
+            request.classicBits() == null ? null : request.classicBits().stream().map(elementSelectorDtoMapper::toDomain).toList();
         QuantumCircuit circuit = service.moveQuantumOperation(
             circuitId,
             request.quantumOperationId(),

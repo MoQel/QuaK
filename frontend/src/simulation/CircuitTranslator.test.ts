@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, vi } from 'vitest';
 import { CircuitTranslator } from './CircuitTranslator';
 import { initQulacs } from 'qulacs-wasm'; // Namespace import for robust WASM handling
 import {
@@ -240,6 +240,51 @@ describe('CircuitTranslator', () => {
             expect(result.measurementResults[0].classicBit).toEqual({ registerId: 'creg-0', index: 0 });
             expect(result.measurementResults[1].classicBit).toEqual({ registerId: 'creg-0', index: 1 });
             expect(result.stateVector.find((entry) => entry.state === '|11>')?.prob).toBeCloseTo(1);
+        });
+
+        it('should measure all remaining qubits at the end when final sweep is enabled', () => {
+            const circuit = createCircuit(2, [gate('X', 1)], 0);
+
+            const result = CircuitTranslator.translateAndRun(circuit, {
+                measurementMode: 'measurement-gates-plus-final',
+            });
+
+            expect(result.measurementResults).toHaveLength(2);
+            expect(result.measurementResults[0].targetQubit).toEqual({ registerId: 'qreg-0', index: 0 });
+            expect(result.measurementResults[0].classicBit).toEqual({ registerId: '__auto__', index: 0 });
+            expect(result.measurementResults[0].outcome).toBe(0);
+            expect(result.measurementResults[1].targetQubit).toEqual({ registerId: 'qreg-0', index: 1 });
+            expect(result.measurementResults[1].classicBit).toEqual({ registerId: '__auto__', index: 1 });
+            expect(result.measurementResults[1].outcome).toBe(1);
+        });
+
+        it('should keep the exact state view unchanged before automatic final measurements', () => {
+            const circuit = createCircuit(1, [gate('H')], 0);
+
+            const result = CircuitTranslator.translateAndRun(circuit, {
+                measurementMode: 'measurement-gates-plus-final',
+                mode: 'exact',
+            });
+
+            expect(result.measurementResults).toHaveLength(1);
+            expect(result.stateVector[0].prob).toBeCloseTo(0.5);
+            expect(result.stateVector[1].prob).toBeCloseTo(0.5);
+        });
+
+        it('should keep simulation counts tied to the pre-sweep distribution', () => {
+            const circuit = createCircuit(1, [gate('H')], 0);
+            const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.1);
+
+            const result = CircuitTranslator.translateAndRun(circuit, {
+                measurementMode: 'measurement-gates-plus-final',
+                mode: 'simulation',
+                sampleCount: 4,
+            });
+
+            expect(result.counts).toEqual({ '0': 4 });
+            expect(result.measurementResults).toHaveLength(1);
+
+            randomSpy.mockRestore();
         });
     });
 
