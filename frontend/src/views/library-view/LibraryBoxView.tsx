@@ -1,5 +1,8 @@
 import { LibraryElement } from '@/views/library-view/LibraryElement.tsx';
 import { OperationDefinitionResponse } from '@/api/dto/library.ts';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.tsx';
+import { Separator } from '@/components/ui/separator.tsx';
+import { Fragment } from 'react';
 
 interface LibraryBoxViewProps {
     quantumOperations: OperationDefinitionResponse[];
@@ -7,17 +10,36 @@ interface LibraryBoxViewProps {
 }
 
 function LibraryBoxView({ quantumOperations, onOperationClick }: Readonly<LibraryBoxViewProps>) {
+    const operationsByCategory = quantumOperations.reduce((categories, operation) => {
+        const operations = categories.get(operation.category) ?? [];
+        operations.push(operation);
+        categories.set(operation.category, operations);
+        return categories;
+    }, new Map<string, OperationDefinitionResponse[]>());
+
     return (
-        <div className="grid grid-cols-5 gap-4 content-start">
-            {quantumOperations.map((operation: OperationDefinitionResponse) => (
-                <LibraryElement
-                    key={`${operation.id}`}
-                    identifier={operation.symbol}
-                    matrix={operation.inspectorInfo.matrix.display}
-                    onClick={() => onOperationClick(operation)}
-                />
+        <CardContent className="flex flex-col gap-2 p-0">
+            {[...operationsByCategory].map(([category, operations], index) => (
+                <Fragment key={category}>
+                    <Card className="gap-2 border-none bg-transparent py-0 shadow-none">
+                        <CardHeader className="px-0">
+                            <CardTitle className="text-left text-sm">{category}</CardTitle>
+                        </CardHeader>
+                        <CardContent className="flex flex-wrap gap-2 px-0">
+                            {operations.map((operation) => (
+                                <LibraryElement
+                                    key={operation.id}
+                                    identifier={operation.symbol}
+                                    matrix={operation.inspectorInfo.matrix.display}
+                                    onClick={() => onOperationClick(operation)}
+                                />
+                            ))}
+                        </CardContent>
+                    </Card>
+                    {index < operationsByCategory.size - 1 && <Separator />}
+                </Fragment>
             ))}
-        </div>
+        </CardContent>
     );
 }
 

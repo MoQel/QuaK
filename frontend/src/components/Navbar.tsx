@@ -31,7 +31,6 @@ export const Navbar: React.FC = () => {
         code: !!dockview?.openPanels?.has('code'),
         results: !!dockview?.openPanels?.has('results'),
         inspector: !!dockview?.openPanels?.has('inspector'),
-        library: !!dockview?.openPanels?.has('library'),
     };
 
     const getActiveTab = () => {

@@ -1,5 +1,8 @@
 import { LibraryElement } from '@/views/library-view/LibraryElement.tsx';
 import { OperationDefinitionResponse } from '@/api/dto/library.ts';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.tsx';
+import { Separator } from '@/components/ui/separator.tsx';
+import { Fragment } from 'react';
 
 interface LibraryListViewProps {
     quantumOperations: OperationDefinitionResponse[];
@@ -8,55 +11,43 @@ interface LibraryListViewProps {
 
 function LibraryListView({ quantumOperations, onOperationClick }: Readonly<LibraryListViewProps>) {
     return (
-        <div className="w-full h-full overflow-y-auto will-change-transform transform-gpu border border-border rounded-md bg-bg-dark">
-            <ul className="list-none m-0 p-0">
-                {quantumOperations.map((operation, index) => {
-                    const isNewCategory = index === 0 || quantumOperations[index - 1].category !== operation.category;
+        <CardContent className="h-full overflow-y-auto p-0">
+            {quantumOperations.map((operation, index) => {
+                const isNewCategory = index === 0 || quantumOperations[index - 1].category !== operation.category;
 
-                    return (
-                        <>
-                            {isNewCategory && (
-                                <div
-                                    key={operation.category}
-                                    className="sticky top-0 z-10 bg-bg text-text border-b border-border font-semibold text-sm px-4 py-3"
-                                    style={{ borderTop: index === 0 ? 'none' : '1px solid var(--border)' }}
-                                >
-                                    {operation.category}
-                                </div>
-                            )}
-                            <li
-                                key={operation.name}
-                                className="
-                                    border-b border-border
-                                    last:border-b-0
-                                    hover:bg-bg transition-colors
-                                    cursor-pointer px-4 py-3"
-                                onClick={() => onOperationClick(operation)}
-                            >
-                                <div className="flex items-center gap-4">
-                                    <div className="w-12 min-w-48px flex justify-center items-center">
-                                        <LibraryElement
-                                            identifier={operation.symbol}
-                                            matrix={operation.inspectorInfo.matrix.display}
-                                            onClick={() => onOperationClick(operation)}
-                                        />
-                                    </div>
-
-                                    <div className="text-left">
-                                        <div className="font-semibold text-sm text-text mb-2px">{operation.name}</div>
-                                        {operation.description && (
-                                            <div className="text-xs text-text-muted leading-tight">
-                                                {operation.description}
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </li>
-                        </>
-                    );
-                })}
-            </ul>
-        </div>
+                return (
+                    <Fragment key={operation.id}>
+                        {isNewCategory && (
+                            <>
+                                {index > 0 && <Separator className="my-2" />}
+                                <CardHeader className="sticky top-0 z-10 bg-bg-subtle px-0 py-2">
+                                    <CardTitle className="text-left text-sm">{operation.category}</CardTitle>
+                                </CardHeader>
+                            </>
+                        )}
+                        <Card
+                            className="cursor-pointer gap-3 border-none bg-transparent py-2 shadow-none transition-colors hover:bg-bg"
+                            onClick={() => onOperationClick(operation)}
+                        >
+                            <CardContent className="flex items-center gap-3 px-2">
+                                <LibraryElement
+                                    identifier={operation.symbol}
+                                    matrix={operation.inspectorInfo.matrix.display}
+                                />
+                                <CardHeader className="min-w-0 flex-1 gap-0 px-0 text-left">
+                                    <CardTitle className="text-sm">{operation.name}</CardTitle>
+                                    {operation.description && (
+                                        <CardDescription className="line-clamp-2 text-xs leading-tight">
+                                            {operation.description}
+                                        </CardDescription>
+                                    )}
+                                </CardHeader>
+                            </CardContent>
+                        </Card>
+                    </Fragment>
+                );
+            })}
+        </CardContent>
     );
 }
 

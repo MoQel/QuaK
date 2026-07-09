@@ -1,6 +1,5 @@
 import { usePanelData } from '@/contexts/panel/PanelDataContext';
-import { LibraryView } from '@/views/library-view/LibraryView.tsx';
-import { CircuitView } from '@/views/circuit-view/CircuitView';
+import { CircuitWorkspace } from '@/views/circuit-workspace/CircuitWorkspace.tsx';
 import { TextEditorView } from '@/views/text-editor-view/TextEditorView';
 import { ProjectManagerView } from '@/views/project-manager-view/ProjectManagerView';
 import { ResultsView } from '@/views/results-view/ResultsView';
@@ -20,16 +19,11 @@ export const ProjectPanel = () => {
 };
 
 export const CircuitPanel = () => {
-    return <CircuitView />;
+    return <CircuitWorkspace />;
 };
 
 export const CodePanel = () => {
     return <TextEditorView />;
-};
-
-export const LibraryPanel = () => {
-    const { setSelectedOperation } = usePanelData();
-    return <LibraryView onOperationSelect={setSelectedOperation} />;
 };
 
 export const InspectorPanel = () => {

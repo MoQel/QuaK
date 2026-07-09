@@ -18,7 +18,6 @@ type VisiblePanelsState = {
     code: boolean;
     results: boolean;
     inspector: boolean;
-    library: boolean;
 };
 
 interface IdeMenubarProps {

@@ -1,5 +1,4 @@
 import { Card, CardContent, CardHeader } from '@/components/ui/card.tsx';
-import styles from '@/App.module.css';
 import LibraryBoxView from '@/views/library-view/LibraryBoxView.tsx';
 import { Button } from '@/components/ui/button';
 import { List, LayoutGrid } from 'lucide-react';
@@ -23,40 +22,22 @@ export function LibraryView({ onOperationSelect }: Readonly<LibraryViewProps>) {
             .catch((e) => console.error('Failed to fetch quantum operations:', e));
     }, []);
 
-    const handleOperationClick = (operation: OperationDefinitionResponse) => {
-        if (onOperationSelect) {
-            onOperationSelect(operation);
-        }
-    };
-
     return (
-        <Card className="w-full h-full min-h-0 relative flex flex-col overflow-hidden border-none gap-3 pb-0">
-            <CardHeader className="w-full flex justify-center items-center relative">
-                <Button onClick={() => setBoxMode(!boxMode)} variant="default" size="icon" className="absolute right-5">
+        <Card className="relative flex h-full min-h-0 w-full flex-col gap-3 overflow-hidden border-none bg-bg-subtle pb-0">
+            <CardHeader className="relative flex h-9 w-full items-center justify-end">
+                <Button onClick={() => setBoxMode(!boxMode)} variant="default" size="icon">
                     {boxMode && <List />}
                     {!boxMode && <LayoutGrid />}
                 </Button>
             </CardHeader>
 
-            <CardContent className="flex-1 min-h-0 overflow-hidden p-3">
-                <div className="h-full w-full min-h-0">
-                    <div
-                        className={`h-full ${boxMode ? 'overflow-y-auto' : ''} ${styles.availableQuantumOperationContainer}`}
-                    >
-                        {boxMode && (
-                            <LibraryBoxView
-                                quantumOperations={quantumOperations}
-                                onOperationClick={handleOperationClick}
-                            />
-                        )}
-                        {!boxMode && (
-                            <LibraryListView
-                                quantumOperations={quantumOperations}
-                                onOperationClick={handleOperationClick}
-                            />
-                        )}
-                    </div>
-                </div>
+            <CardContent className={`min-h-0 flex-1 p-3 ${boxMode ? 'overflow-y-auto' : 'overflow-hidden'}`}>
+                {boxMode && (
+                    <LibraryBoxView quantumOperations={quantumOperations} onOperationClick={onOperationSelect} />
+                )}
+                {!boxMode && (
+                    <LibraryListView quantumOperations={quantumOperations} onOperationClick={onOperationSelect} />
+                )}
             </CardContent>
         </Card>
     );
