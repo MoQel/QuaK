@@ -1,5 +1,5 @@
-import { UiLayer } from '@/views/circuit-view/util/types.ts';
-import { CELL_WIDTH, LABEL_WIDTH } from '@/views/circuit-view/util/layout.ts';
+import { UiLayer } from '@/views/circuit-workspace/circuit/util/types.ts';
+import { CELL_WIDTH, LABEL_WIDTH } from '@/views/circuit-workspace/circuit/util/layout.ts';
 
 interface CircuitFooterProps {
     uiLayers: UiLayer[];

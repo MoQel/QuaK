@@ -12,8 +12,8 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog.tsx';
-import { useQuantikzExport } from '@/hooks/useQuantikzExport.ts';
-import { LatexCodeBlock } from '@/views/circuit-view/components/LatexCodeBlock.tsx';
+import { useQuantikzExport } from '@/views/circuit-workspace/circuit/hooks/useQuantikzExport.ts';
+import { LatexCodeBlock } from '@/views/circuit-workspace/circuit/components/LatexCodeBlock.tsx';
 
 interface QuantikzExportButtonProps {
     circuit: CircuitResponse | null;

@@ -1,4 +1,4 @@
-import { LibraryElement } from '@/views/library-view/LibraryElement.tsx';
+import { LibraryElement } from '@/views/circuit-workspace/library/components/LibraryElement.tsx';
 import { OperationDefinitionResponse } from '@/api/dto/library.ts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.tsx';
 import { Separator } from '@/components/ui/separator.tsx';

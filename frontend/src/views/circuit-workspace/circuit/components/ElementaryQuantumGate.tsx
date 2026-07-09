@@ -2,9 +2,9 @@ import React, { useMemo, useRef } from 'react';
 import styles from '@/App.module.css';
 import { QuantumOperationDto, RegisterResponse, ElementSelectorDto, getRegisterSize } from '@/api/dto/circuit.ts';
 import { getOperationDefinition, OperationDefinition } from '@/lib/operations.ts';
-import { CELL_WIDTH, QUBIT_HEIGHT } from '@/views/circuit-view/util/layout.ts';
+import { CELL_WIDTH, QUBIT_HEIGHT } from '@/views/circuit-workspace/circuit/util/layout.ts';
 import { TextIcon } from '@/components/ui/text-icon.tsx';
-import { DragData } from '../util/types';
+import { DragData } from '@/views/circuit-workspace/types.ts';
 
 interface ElementaryQuantumGateProps {
     operation: QuantumOperationDto;
@@ -77,9 +77,23 @@ export function ElementaryQuantumGate({
         }, 100);
     };
 
+    // Actual action, decoupled from the event so mouse and keyboard handlers
+    // can each keep their own correctly-typed event signature.
+    const triggerDelete = () => {
+        if (!isDraggingRef.current) onDelete?.();
+    };
+
     const handleClick = (e: React.MouseEvent) => {
         e.stopPropagation();
-        if (!isDraggingRef.current) onDelete?.();
+        triggerDelete();
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            e.stopPropagation();
+            triggerDelete();
+        }
     };
 
     return (
@@ -88,6 +102,7 @@ export function ElementaryQuantumGate({
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
             onClick={handleClick}
+            onKeyDown={handleKeyDown}
             className="absolute z-30 flex flex-col items-center group pointer-events-none"
             style={{
                 top: minY * QUBIT_HEIGHT,

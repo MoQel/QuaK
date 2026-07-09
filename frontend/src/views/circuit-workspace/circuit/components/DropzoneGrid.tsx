@@ -1,7 +1,5 @@
 import React, { useCallback } from 'react';
-import { useDispatch } from 'react-redux';
-import { stopOperationDrag } from '@/store/circuit/dragOperationSlice.ts';
-import { CELL_WIDTH, QUBIT_HEIGHT } from '@/views/circuit-view/util/layout.ts';
+import { CELL_WIDTH, QUBIT_HEIGHT } from '@/views/circuit-workspace/circuit/util/layout.ts';
 import {
     CircuitResponse,
     ElementaryQuantumGateDto,
@@ -9,9 +7,11 @@ import {
     MeasurementDto,
     MoveQuantumOperationRequest,
 } from '@/api/dto/circuit.ts';
-import { DragData, FlatQubit, HoverPos, UiLayer } from '@/views/circuit-view/util/types.ts';
-import { createCircuitService } from '@/views/circuit-view/util/circuitService.ts';
+import { FlatQubit, HoverPos, UiLayer } from '@/views/circuit-workspace/circuit/util/types.ts';
+import { createCircuitService } from '@/views/circuit-workspace/circuit/util/circuitService.ts';
 import { getOperationDefinition } from '@/lib/operations.ts';
+import { useCircuitDrag } from '@/views/circuit-workspace/CircuitDragContext.tsx';
+import { DragData } from '@/views/circuit-workspace/types.ts';
 
 interface DropzoneGridProps {
     circuit: CircuitResponse | undefined;
@@ -34,7 +34,7 @@ export function DropzoneGrid({
 }: Readonly<DropzoneGridProps>) {
     const { addQuantumOperation, moveQuantumOperation } = createCircuitService(circuit, setCircuit);
 
-    const dispatch = useDispatch();
+    const { stopOperationDrag } = useCircuitDrag();
 
     const handleDragOver = (e: React.DragEvent, qubitIdx: number, layerIdx: number) => {
         e.preventDefault();
@@ -172,18 +172,18 @@ export function DropzoneGrid({
                         break;
                     }
                     default:
-                        console.error(`Unknown drag origin: ${(data as any).origin}`);
+                        console.error('Unknown drag origin', data);
                         break;
                 }
             } catch (error) {
                 console.error('Failed to parse drag data', error);
             } finally {
-                dispatch(stopOperationDrag());
+                stopOperationDrag();
                 setHoverPos(null);
                 setDraggingOperationId(null);
             }
         },
-        [addQuantumOperation, moveQuantumOperation, hasCircuitStateChanged, dispatch],
+        [addQuantumOperation, moveQuantumOperation, hasCircuitStateChanged, stopOperationDrag],
     );
 
     return (

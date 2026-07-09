@@ -1,17 +1,18 @@
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import { usePanelData } from '@/contexts/panel/PanelDataContext.ts';
-import { CircuitView } from '@/views/circuit-view/CircuitView.tsx';
-import { LibraryView } from '@/views/library-view/LibraryView.tsx';
+import { CircuitView } from '@/views/circuit-workspace/circuit/CircuitView.tsx';
+import { LibraryView } from '@/views/circuit-workspace/library/LibraryView.tsx';
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useState } from 'react';
+import { CircuitDragProvider } from '@/views/circuit-workspace/CircuitDragContext.tsx';
 
 const LIBRARY_DEFAULT_SIZE = 30;
 const LIBRARY_MIN_SIZE = 20;
 const LIBRARY_MAX_SIZE = 40;
 const LIBRARY_VISIBILITY_STORAGE_KEY = 'circuit-workspace-library-collapsed';
 
-export function CircuitWorkspace() {
+function CircuitWorkspaceContent() {
     const { setSelectedOperation } = usePanelData();
     const [isLibraryCollapsed, setIsLibraryCollapsed] = useState(
         () => localStorage.getItem(LIBRARY_VISIBILITY_STORAGE_KEY) === 'true',
@@ -28,7 +29,7 @@ export function CircuitWorkspace() {
     if (isLibraryCollapsed) {
         return (
             <div className="flex h-full min-h-0 w-full bg-bg-subtle">
-                <aside className="flex w-12 shrink-0 justify-center border-r border-border pt-6">
+                <aside className="flex w-12 shrink-0 justify-center border-r border-border pt-1">
                     <Button
                         type="button"
                         variant="ghost"
@@ -77,12 +78,20 @@ export function CircuitWorkspace() {
                 variant="ghost"
                 size="icon"
                 onClick={toggleLibrary}
-                className="absolute left-2 top-6 z-20 h-9 w-9"
+                className="absolute left-2 top-1 z-20 h-9 w-9"
                 title="Collapse library"
                 aria-label="Collapse library"
             >
                 <PanelLeftClose className="h-4 w-4" />
             </Button>
         </ResizablePanelGroup>
+    );
+}
+
+export function CircuitWorkspace() {
+    return (
+        <CircuitDragProvider>
+            <CircuitWorkspaceContent />
+        </CircuitDragProvider>
     );
 }

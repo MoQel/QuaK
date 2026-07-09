@@ -1,8 +1,6 @@
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card.tsx';
 import { useMemo, useState } from 'react';
-import { ElementSelectorDto, getInvolvedSelectors, getRegisterSize, getSelectorKey } from '@/api/dto/circuit';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/store/store.ts';
+import { ElementSelectorDto, getInvolvedSelectors, getRegisterSize, getSelectorKey } from '@/api/dto/circuit.ts';
 import { CircuitToolbar } from './components/CircuitToolbar.tsx';
 import { QubitWires } from './components/QubitWires.tsx';
 import { QuantumOperationGrid } from './components/QuantumOperationGrid.tsx';
@@ -10,16 +8,17 @@ import { DropzoneGrid } from './components/DropzoneGrid.tsx';
 import { DropPlaceholder } from './components/DropPlaceholder.tsx';
 import { CircuitFooter } from './components/CircuitFooter.tsx';
 import { HoverPos, UiLayer, UiQuantumOperation } from './util/types.ts';
-import { createCircuitService } from '@/views/circuit-view/util/circuitService.ts';
-import { LABEL_WIDTH } from '@/views/circuit-view/util/layout.ts';
+import { createCircuitService } from '@/views/circuit-workspace/circuit/util/circuitService.ts';
+import { LABEL_WIDTH } from '@/views/circuit-workspace/circuit/util/layout.ts';
 
-import { useProject } from '@/contexts/ProjectContext';
+import { useProject } from '@/contexts/ProjectContext.tsx';
+import { useCircuitDrag } from '@/views/circuit-workspace/CircuitDragContext.tsx';
 
 export function CircuitView() {
     const { circuit, setCircuit } = useProject();
     const { removeQuantumOperation } = createCircuitService(circuit, setCircuit);
 
-    const { isOperationDragging, draggingOperationSize } = useSelector((state: RootState) => state.dragOperation);
+    const { isOperationDragging, draggingOperationSize } = useCircuitDrag();
 
     const [hoverPos, setHoverPos] = useState<HoverPos | null>(null);
     const [draggingOperationId, setDraggingOperationId] = useState<string | null>(null);
@@ -215,7 +214,7 @@ export function CircuitView() {
     }, [circuit, hoverPos]);
 
     return (
-        <Card className="h-full overflow-hidden border-none bg-bg-subtle">
+        <Card className="h-full overflow-hidden border-none bg-bg-subtle py-1">
             <CardContent className="flex flex-col h-full">
                 <CircuitToolbar circuit={circuit} setCircuit={setCircuit} />
 

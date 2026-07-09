@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Button } from '@/components/ui/button';
-import { FlatQubit } from '@/views/circuit-view/util/types.ts';
-import { createCircuitService } from '@/views/circuit-view/util/circuitService.ts';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover.tsx';
+import { Button } from '@/components/ui/button.tsx';
+import { FlatQubit } from '@/views/circuit-workspace/circuit/util/types.ts';
+import { createCircuitService } from '@/views/circuit-workspace/circuit/util/circuitService.ts';
 import { CircuitResponse } from '@/api/dto/circuit.ts';
-import { LABEL_WIDTH, QUBIT_HEIGHT } from '@/views/circuit-view/util/layout.ts';
+import { LABEL_WIDTH, QUBIT_HEIGHT } from '@/views/circuit-workspace/circuit/util/layout.ts';
 
 interface QubitLabelProps {
     circuit: CircuitResponse | undefined;

@@ -1,8 +1,7 @@
 import { RegisterResponse } from '@/api/dto/circuit.ts';
-import { ElementaryQuantumGate } from '@/views/circuit-view/components/ElementaryQuantumGate.tsx';
-import { UiLayer } from '@/views/circuit-view/util/types.ts';
-import { useDispatch } from 'react-redux';
-import { startOperationDrag, stopOperationDrag } from '@/store/circuit/dragOperationSlice.ts';
+import { ElementaryQuantumGate } from '@/views/circuit-workspace/circuit/components/ElementaryQuantumGate.tsx';
+import { UiLayer } from '@/views/circuit-workspace/circuit/util/types.ts';
+import { useCircuitDrag } from '@/views/circuit-workspace/CircuitDragContext.tsx';
 
 interface QuantumOperationGridProps {
     uiLayers: UiLayer[];
@@ -21,15 +20,15 @@ export function QuantumOperationGrid({
     setDraggingOperationId,
     setHoverPos,
 }: Readonly<QuantumOperationGridProps>) {
-    const dispatch = useDispatch();
+    const { startOperationDrag, stopOperationDrag } = useCircuitDrag();
 
     const handleOperationDragStart = (operationId: string, operationSize: number) => {
-        dispatch(startOperationDrag(operationSize));
+        startOperationDrag(operationSize);
         setDraggingOperationId(operationId);
     };
 
     const handleOperationDragEnd = () => {
-        dispatch(stopOperationDrag());
+        stopOperationDrag();
         setHoverPos(null);
         setDraggingOperationId(null);
     };

@@ -1,13 +1,12 @@
 import styles from '@/App.module.css';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip.tsx';
 import { BlockMath } from 'react-katex';
 import 'katex/dist/katex.min.css';
 import React, { useState } from 'react';
-import { useDispatch } from 'react-redux';
-import { startOperationDrag, stopOperationDrag } from '@/store/circuit/dragOperationSlice.ts';
 import { getOperationDefinition, OperationIdentifier } from '@/lib/operations.ts';
-import { DragData } from '@/views/circuit-view/util/types.ts';
+import { DragData } from '@/views/circuit-workspace/types.ts';
 import { TextIcon } from '@/components/ui/text-icon.tsx';
+import { useCircuitDrag } from '@/views/circuit-workspace/CircuitDragContext.tsx';
 
 type LibraryElementProps = {
     identifier: OperationIdentifier;
@@ -22,7 +21,7 @@ export function LibraryElement({ identifier, onClick, matrix }: Readonly<Library
     const [isDragging, setIsDragging] = useState(false);
     const [isOpen, setIsOpen] = useState(false);
 
-    const dispatch = useDispatch();
+    const { startOperationDrag, stopOperationDrag } = useCircuitDrag();
 
     let icon: React.ReactNode;
 
@@ -45,14 +44,14 @@ export function LibraryElement({ identifier, onClick, matrix }: Readonly<Library
         e.dataTransfer.setData('text/plain', JSON.stringify(data));
         e.dataTransfer.effectAllowed = 'copy';
 
-        dispatch(startOperationDrag(definition.totalSize));
+        startOperationDrag(definition.totalSize);
     };
 
     const handleDragEnd = () => {
         // Wait 100ms to avoid opening tooltip after dragging.
         setTimeout(() => {
             setIsDragging(false);
-            dispatch(stopOperationDrag());
+            stopOperationDrag();
         }, 100);
     };
 
@@ -69,6 +68,12 @@ export function LibraryElement({ identifier, onClick, matrix }: Readonly<Library
                 <div
                     id={identifier.toLowerCase()}
                     onClick={onClick}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            onClick?.();
+                        }
+                    }}
                     draggable={identifier !== 'MEASURE'} // Disable Measurement Operation, as it is currently not working.
                     onDragStart={identifier === 'MEASURE' ? undefined : handleDragStart}
                     onDragEnd={identifier === 'MEASURE' ? undefined : handleDragEnd}

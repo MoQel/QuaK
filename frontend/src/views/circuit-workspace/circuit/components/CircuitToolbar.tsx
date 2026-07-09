@@ -1,10 +1,10 @@
 import { Button } from '@/components/ui/button.tsx';
 import { Minus, Plus, Trash2 } from 'lucide-react';
 import { CircuitResponse } from '@/api/dto/circuit.ts';
-import { createCircuitService } from '@/views/circuit-view/util/circuitService.ts';
+import { createCircuitService } from '@/views/circuit-workspace/circuit/util/circuitService.ts';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover.tsx';
 import { useState } from 'react';
-import { QuantikzExportButton } from '@/views/circuit-view/components/QuantikzExportButton.tsx';
+import { QuantikzExportButton } from '@/views/circuit-workspace/circuit/components/QuantikzExportButton.tsx';
 
 interface CircuitToolbarProps {
     circuit: CircuitResponse | undefined;
@@ -16,7 +16,7 @@ export function CircuitToolbar({ circuit, setCircuit }: Readonly<CircuitToolbarP
     const [isPopoverOpen, setIsPopoverOpen] = useState(false);
 
     return (
-        <div className="pb-5 flex justify-between items-center">
+        <div className="flex items-center justify-between pb-1">
             <QuantikzExportButton circuit={circuit ?? null} />
             <div className="flex space-x-3">
                 <Button onClick={addQubit} size="icon" className="size-8" variant="secondary" title="Add Qubit">

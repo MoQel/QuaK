@@ -1,7 +1,7 @@
-import { FlatQubit } from '@/views/circuit-view/util/types.ts';
+import { FlatQubit } from '@/views/circuit-workspace/circuit/util/types.ts';
 import { CircuitResponse } from '@/api/dto/circuit.ts';
-import { QubitLabel } from '@/views/circuit-view/components/QubitLabel.tsx';
-import { LABEL_WIDTH, QUBIT_HEIGHT } from '@/views/circuit-view/util/layout.ts';
+import { QubitLabel } from '@/views/circuit-workspace/circuit/components/QubitLabel.tsx';
+import { LABEL_WIDTH, QUBIT_HEIGHT } from '@/views/circuit-workspace/circuit/util/layout.ts';
 
 interface QubitWiresProps {
     circuit: CircuitResponse | undefined;
