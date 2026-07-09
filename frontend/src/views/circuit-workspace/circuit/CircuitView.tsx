@@ -1,6 +1,12 @@
 import { Card, CardContent } from '@/components/ui/card.tsx';
 import { useMemo, useState } from 'react';
-import { ElementSelectorDto, getInvolvedSelectors, getRegisterSize, getSelectorKey } from '@/api/dto/circuit.ts';
+import {
+    CircuitResponse,
+    ElementSelectorDto,
+    getInvolvedSelectors,
+    getRegisterSize,
+    getSelectorKey,
+} from '@/api/dto/circuit.ts';
 import { CircuitToolbar } from './components/CircuitToolbar.tsx';
 import { QubitWires } from './components/QubitWires.tsx';
 import { QuantumOperationGrid } from './components/QuantumOperationGrid.tsx';
@@ -11,11 +17,14 @@ import { HoverPos, UiLayer, UiQuantumOperation } from './util/types.ts';
 import { createCircuitService } from '@/views/circuit-workspace/circuit/util/circuitService.ts';
 import { LABEL_WIDTH } from '@/views/circuit-workspace/circuit/util/layout.ts';
 
-import { useProject } from '@/contexts/ProjectContext.tsx';
 import { useCircuitDrag } from '@/views/circuit-workspace/CircuitDragContext.tsx';
 
-export function CircuitView() {
-    const { circuit, setCircuit } = useProject();
+interface CircuitViewProps {
+    circuit: CircuitResponse | undefined;
+    setCircuit: (circuit: CircuitResponse) => void;
+}
+
+export function CircuitView({ circuit, setCircuit }: Readonly<CircuitViewProps>) {
     const { removeQuantumOperation } = createCircuitService(circuit, setCircuit);
 
     const { isOperationDragging, draggingOperationSize } = useCircuitDrag();

@@ -4,8 +4,11 @@ import { usePanelData } from '@/contexts/panel/PanelDataContext.ts';
 import { CircuitView } from '@/views/circuit-workspace/circuit/CircuitView.tsx';
 import { LibraryView } from '@/views/circuit-workspace/library/LibraryView.tsx';
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { CircuitDragProvider } from '@/views/circuit-workspace/CircuitDragContext.tsx';
+import { useProject } from '@/contexts/ProjectContext.tsx';
+import { api } from '@/api/api.ts';
+import { OperationDefinitionResponse } from '@/api/dto/library.ts';
 
 const LIBRARY_DEFAULT_SIZE = 30;
 const LIBRARY_MIN_SIZE = 20;
@@ -14,9 +17,19 @@ const LIBRARY_VISIBILITY_STORAGE_KEY = 'circuit-workspace-library-collapsed';
 
 function CircuitWorkspaceContent() {
     const { setSelectedOperation } = usePanelData();
+    const { circuit, setCircuit } = useProject();
+    const [operations, setOperations] = useState<OperationDefinitionResponse[]>([]);
     const [isLibraryCollapsed, setIsLibraryCollapsed] = useState(
         () => localStorage.getItem(LIBRARY_VISIBILITY_STORAGE_KEY) === 'true',
     );
+
+    // Load the gate library once. The circuit editor itself takes these as data,
+    // so it stays renderable without a backend.
+    useEffect(() => {
+        api.get<OperationDefinitionResponse[]>('/api/operations')
+            .then(setOperations)
+            .catch((e) => console.error('Failed to fetch quantum operations:', e));
+    }, []);
 
     const toggleLibrary = () => {
         setIsLibraryCollapsed((currentValue) => {
@@ -44,7 +57,7 @@ function CircuitWorkspaceContent() {
                 </aside>
 
                 <div className="min-w-0 flex-1">
-                    <CircuitView />
+                    <CircuitView circuit={circuit} setCircuit={setCircuit} />
                 </div>
             </div>
         );
@@ -64,13 +77,13 @@ function CircuitWorkspaceContent() {
                 maxSize={LIBRARY_MAX_SIZE}
                 className="min-w-[200px] overflow-hidden"
             >
-                <LibraryView onOperationSelect={setSelectedOperation} />
+                <LibraryView operations={operations} onOperationSelect={setSelectedOperation} />
             </ResizablePanel>
 
             <ResizableHandle />
 
             <ResizablePanel id="circuit-editor" order={1} minSize={40} className="min-w-0">
-                <CircuitView />
+                <CircuitView circuit={circuit} setCircuit={setCircuit} />
             </ResizablePanel>
 
             <Button
