@@ -1,23 +1,10 @@
 import { Gauge, Plus, X as LucideX } from 'lucide-react';
 import { ComponentType } from 'react';
-import { QuantumOperationType } from '@/api/dto/circuit.ts';
+import type { OperationIdentifier, QuantumOperationType } from '@quak/circuit-core';
 
-export type OperationIdentifier =
-    | 'H'
-    | 'X'
-    | 'Y'
-    | 'Z'
-    | 'CX'
-    | 'CCX'
-    | 'CZ'
-    | 'SWAP'
-    | 'S'
-    | 'T'
-    | 'RX'
-    | 'RY'
-    | 'RZ'
-    | 'MEASURE'
-    | 'DUMMY';
+// Domain types live in circuit-core; re-exported here for existing importers.
+// This file owns the presentation layer (icons, colors, shapes).
+export type { OperationIdentifier };
 
 export type ShapeClass = 'rounded-none' | 'rounded-full';
 

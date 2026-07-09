@@ -15,6 +15,7 @@ export default defineConfig(({ mode }) => {
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      "@quak/circuit-core": path.resolve(__dirname, "../packages/circuit-core/src"),
     },
   },
   server: {

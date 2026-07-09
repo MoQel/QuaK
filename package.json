@@ -9,8 +9,9 @@
         "test:backend": "cd backend && ./gradlew test",
         "test:frontend": "cd frontend && npm run test",
         "test:sequential": "npm run test:backend && npm run test:frontend",
-        "lint": "npm run lint:frontend",
+        "lint": "npm run lint:frontend && npm run lint:boundaries",
         "lint:frontend": "cd frontend && npm run lint",
+        "lint:boundaries": "depcruise packages --config .dependency-cruiser.cjs",
         "dev:backend": "cd backend && ./gradlew bootRun",
         "dev:frontend": "cd frontend && npm run dev",
         "build": "npm run build:backend",
@@ -19,10 +20,12 @@
         "prepare": "husky"
     },
     "devDependencies": {
-      "husky": "^9.1.0"
+        "dependency-cruiser": "^18.0.0",
+        "husky": "^9.1.0"
     },
     "workspaces": [
-        "frontend"
+        "frontend",
+        "packages/*"
     ],
     "dependencies": {
         "@reduxjs/toolkit": "^2.11.2",

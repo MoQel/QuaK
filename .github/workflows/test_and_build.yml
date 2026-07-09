@@ -140,3 +140,27 @@ jobs:
           git config --local user.name "GitHub Action"
           git add docs/api/openapi.yaml
           git diff --quiet && git diff --staged --quiet || (git commit -m "docs: automated update of openapi spec" && git pull --rebase origin ${{ github.head_ref || github.ref_name }} && git push)
+
+  boundaries:
+    name: architecture boundaries
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Shared packages/ must not import from frontend/.
+      - name: Check package boundaries (dependency-cruiser)
+        run: npm run lint:boundaries

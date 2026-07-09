@@ -9,4 +9,11 @@ if [ -d "backend" ]; then
     fi
 fi
 
+# Enforce monorepo architecture boundaries (packages/ must not import frontend/).
+echo "Checking package boundaries..."
+npm run --silent lint:boundaries || {
+    echo "❌ Architecture boundary violated. Shared packages must not import from frontend/."
+    exit 1
+}
+
 cd frontend && npx lint-staged

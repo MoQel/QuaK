@@ -5,6 +5,7 @@ import {
     isQuantumRegister,
     MoveQuantumOperationRequest,
 } from '@/api/dto/circuit.ts';
+import type { CircuitPort } from '@quak/circuit-core';
 import { toast } from 'sonner';
 
 const handleError = (error: unknown) => {
@@ -23,10 +24,11 @@ const handleError = (error: unknown) => {
     }
 };
 
+// REST adapter for CircuitPort — the backend is the source of truth.
 export function createCircuitService(
     circuit: CircuitResponse | undefined,
     setCircuit: (circuit: CircuitResponse) => void,
-) {
+): CircuitPort {
     const addQubit = () => {
         if (!circuit) return;
         const lastQR = circuit.registers.findLast(isQuantumRegister);

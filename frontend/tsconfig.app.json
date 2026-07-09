@@ -26,8 +26,10 @@
     "paths": {
       "@/*": [
         "./src/*"
-      ]
+      ],
+      "@quak/circuit-core": ["../packages/circuit-core/src/index.ts"],
+      "@quak/circuit-core/*": ["../packages/circuit-core/src/*"]
     }
   },
-  "include": ["src"]
+  "include": ["src", "../packages/circuit-core/src"]
 }
