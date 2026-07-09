@@ -232,4 +232,211 @@ class QasmTest {
         // Syntax error.
         assertThrows(QasmParseException.class, () -> qasmService.parse("qubit[1] q\nx q[0]\n"));
     }
+
+    @Test
+    void forLoopOverRangeIsUnrolledWithInclusiveStop() {
+        QuantumCircuit circuit = new QasmService().parse(
+            """
+            qubit[5] q;
+            for uint i in [0:4] { h q[i]; }
+            """
+        );
+
+        // [0:4] is inclusive in OpenQASM 3 → 5 iterations, one H per qubit.
+        assertEquals(List.of(0, 1, 2, 3, 4), collectSingleTargetIndices(circuit));
+    }
+
+    @Test
+    void forLoopWithStepIsUnrolled() {
+        QuantumCircuit circuit = new QasmService().parse(
+            """
+            qubit[5] q;
+            for uint i in [0:2:4] { x q[i]; }
+            """
+        );
+
+        assertEquals(List.of(0, 2, 4), collectSingleTargetIndices(circuit));
+    }
+
+    @Test
+    void forLoopWithNegativeStepIsUnrolled() {
+        QuantumCircuit circuit = new QasmService().parse(
+            """
+            qubit[5] q;
+            for int i in [4:-2:0] { x q[i]; }
+            """
+        );
+
+        assertEquals(List.of(0, 2, 4), collectSingleTargetIndices(circuit));
+    }
+
+    @Test
+    void forLoopOverSetIsUnrolled() {
+        QuantumCircuit circuit = new QasmService().parse(
+            """
+            qubit[5] q;
+            for uint i in {0, 3, 1} { x q[i]; }
+            """
+        );
+
+        assertEquals(List.of(0, 1, 3), collectSingleTargetIndices(circuit));
+    }
+
+    @Test
+    void loopVariableWorksInIndexExpressions() {
+        // GHZ chain: the loop variable appears in both operands, once inside an arithmetic expression.
+        QuantumCircuit circuit = new QasmService().parse(
+            """
+            qubit[4] q;
+            h q[0];
+            for uint i in [0:2] { cx q[i], q[i + 1]; }
+            """
+        );
+
+        List<int[]> cxPairs = new ArrayList<>();
+        for (var layer : circuit.getLayers()) {
+            for (var operation : layer.getQuantumOperations()) {
+                if (operation instanceof ElementaryQuantumGate gate && !gate.getControlQubits().isEmpty()) {
+                    cxPairs.add(new int[] { gate.getControlQubits().getFirst().getIndex(), gate.getTargetQubits().getFirst().getIndex() });
+                }
+            }
+        }
+        cxPairs.sort((a, b) -> Integer.compare(a[0], b[0]));
+        assertEquals(3, cxPairs.size());
+        for (int i = 0; i < 3; i++) {
+            assertEquals(i, cxPairs.get(i)[0]);
+            assertEquals(i + 1, cxPairs.get(i)[1]);
+        }
+    }
+
+    @Test
+    void loopVariableWorksInRotationAngles() {
+        QuantumCircuit circuit = new QasmService().parse(
+            """
+            qubit[3] q;
+            for uint i in [0:2] { rx(i * pi / 2) q[i]; }
+            """
+        );
+
+        List<Double> angles = new ArrayList<>();
+        for (var layer : circuit.getLayers()) {
+            for (var operation : layer.getQuantumOperations()) {
+                angles.add(((ElementaryQuantumGate) operation).getRotationAngle());
+            }
+        }
+        angles.sort(Double::compareTo);
+        assertEquals(3, angles.size());
+        assertEquals(0.0, angles.get(0), 1e-9);
+        assertEquals(Math.PI / 2, angles.get(1), 1e-9);
+        assertEquals(Math.PI, angles.get(2), 1e-9);
+    }
+
+    @Test
+    void forLoopBodyWithoutBracesIsSupported() {
+        QuantumCircuit circuit = new QasmService().parse(
+            """
+            qubit[3] q;
+            for uint i in [0:2] h q[i];
+            """
+        );
+
+        assertEquals(List.of(0, 1, 2), collectSingleTargetIndices(circuit));
+    }
+
+    @Test
+    void nestedForLoopsAreUnrolled() {
+        QuantumCircuit circuit = new QasmService().parse(
+            """
+            qubit[4] q;
+            for uint i in [0:1] { for uint j in [0:1] { x q[2 * i + j]; } }
+            """
+        );
+
+        assertEquals(List.of(0, 1, 2, 3), collectSingleTargetIndices(circuit));
+    }
+
+    @Test
+    void constDeclarationCanBeUsedInLoopBoundsAndRegisterSize() {
+        QuantumCircuit circuit = new QasmService().parse(
+            """
+            const uint n = 3;
+            qubit[n] q;
+            for uint i in [0:n - 1] { h q[i]; }
+            """
+        );
+
+        assertEquals(3, ((QuantumRegister) circuit.getRegisters().getFirst()).getNumberOfQubits());
+        assertEquals(List.of(0, 1, 2), collectSingleTargetIndices(circuit));
+    }
+
+    @Test
+    void emptyRangeProducesNoOperations() {
+        // Start beyond stop with a positive step → zero iterations, not an error.
+        QuantumCircuit circuit = new QasmService().parse(
+            """
+            qubit[1] q;
+            for uint i in [3:0] { h q[0]; }
+            """
+        );
+
+        assertEquals(0, circuit.getLayers().size());
+    }
+
+    @Test
+    void unsupportedLoopFormsAreRejected() {
+        QasmService qasmService = new QasmService();
+
+        // Open-ended range (only legal in register slicing, not in for loops).
+        QasmParseException openRange = assertThrows(QasmParseException.class, () ->
+            qasmService.parse("qubit[3] q;\nfor uint i in [:2] { h q[i]; }\n")
+        );
+        assertTrue(openRange.getMessage().contains("start and stop"), "Unexpected message: " + openRange.getMessage());
+        // Step 0 would never terminate.
+        assertThrows(QasmParseException.class, () -> qasmService.parse("qubit[3] q;\nfor uint i in [0:0:2] { h q[i]; }\n"));
+        // Iteration over an array (runtime values).
+        assertThrows(QasmParseException.class, () -> qasmService.parse("qubit[1] q;\nfor float x in angles { rx(x) q[0]; }\n"));
+        // Non-constant loop bound.
+        assertThrows(QasmParseException.class, () -> qasmService.parse("qubit[3] q;\nfor uint i in [0:m] { h q[i]; }\n"));
+    }
+
+    @Test
+    void runtimeControlFlowIsRejected() {
+        QasmService qasmService = new QasmService();
+
+        assertThrows(QasmParseException.class, () -> qasmService.parse("qubit[1] q;\nwhile (true) { h q[0]; }\n"));
+        assertThrows(QasmParseException.class, () -> qasmService.parse("qubit[1] q;\nif (true) { h q[0]; }\n"));
+        assertThrows(QasmParseException.class, () -> qasmService.parse("qubit[1] q;\nfor uint i in [0:2] { break; }\n"));
+        assertThrows(QasmParseException.class, () -> qasmService.parse("qubit[1] q;\nfor uint i in [0:2] { continue; }\n"));
+        assertThrows(QasmParseException.class, () -> qasmService.parse("def f(qubit q) { h q; }\n"));
+        assertThrows(QasmParseException.class, () -> qasmService.parse("gate foo a { x a; }\n"));
+        assertThrows(QasmParseException.class, () -> qasmService.parse("qubit[2] q;\nctrl @ x q[0], q[1];\n"));
+    }
+
+    @Test
+    void loopIterationBudgetIsEnforced() {
+        QasmService qasmService = new QasmService();
+
+        // A single huge range must fail fast instead of materializing the circuit.
+        QasmParseException hugeRange = assertThrows(QasmParseException.class, () ->
+            qasmService.parse("qubit[1] q;\nfor uint i in [0:100000] { h q[0]; }\n")
+        );
+        assertTrue(hugeRange.getMessage().contains("limit"), "Unexpected message: " + hugeRange.getMessage());
+        // Nested loops multiply: 200 × 200 body executions exceed the budget as well.
+        QasmParseException nested = assertThrows(QasmParseException.class, () ->
+            qasmService.parse("qubit[1] q;\nfor uint i in [0:199] { for uint j in [0:199] { h q[0]; } }\n")
+        );
+        assertTrue(nested.getMessage().contains("limit"), "Unexpected message: " + nested.getMessage());
+    }
+
+    /** Collects the target qubit index of every single-target operation in the circuit, sorted ascending. */
+    private List<Integer> collectSingleTargetIndices(QuantumCircuit circuit) {
+        List<Integer> indices = new ArrayList<>();
+        for (var layer : circuit.getLayers()) {
+            for (var operation : layer.getQuantumOperations()) {
+                indices.add(operation.getTargetQubits().getFirst().getIndex());
+            }
+        }
+        indices.sort(Integer::compareTo);
+        return indices;
+    }
 }
