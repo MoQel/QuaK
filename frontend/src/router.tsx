@@ -1,6 +1,6 @@
 import { createBrowserRouter, RouteObject } from 'react-router-dom';
 import Project from './App';
-import LogIn from './pages/LogIn';
+import LogIn from './pages/LandingPage';
 import Home from './pages/Home.tsx';
 import Profile from './pages/Profile';
 import Settings from './pages/Settings';
