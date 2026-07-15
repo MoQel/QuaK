@@ -32,6 +32,8 @@
         "eslint-plugin-react-refresh": "^0.4.19",
         "globals": "^16.0.0",
         "husky": "^9.1.0",
+        "lint-staged": "^16.2.7",
+        "prettier": "^3.8.1",
         "typescript-eslint": "^8.26.1"
     },
     "workspaces": [
@@ -42,5 +44,19 @@
     "dependencies": {
         "@reduxjs/toolkit": "^2.11.2",
         "react-redux": "^9.2.0"
+    },
+    "lint-staged": {
+        "{frontend,vscode-extension}/src/**/*.{js,jsx,ts,tsx,json,css,md}": [
+            "prettier --write"
+        ],
+        "packages/*/src/**/*.{js,jsx,ts,tsx,json,css,md}": [
+            "prettier --write"
+        ],
+        "*.mjs": [
+            "prettier --write"
+        ],
+        "vscode-extension/*.mjs": [
+            "prettier --write"
+        ]
     }
 }

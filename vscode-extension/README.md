@@ -27,9 +27,9 @@ Development Host. In it, open a `.qasm` file and choose
 
 ## Layout
 
-| File | Purpose |
-|---|---|
-| `src/extension.ts` | activation, registration |
+| File                           | Purpose                                                            |
+| ------------------------------ | ------------------------------------------------------------------ |
+| `src/extension.ts`             | activation, registration                                           |
 | `src/circuitEditorProvider.ts` | the custom editor: panel set per document, webview HTML, broadcast |
-| `src/protocol.ts` | message types between host and webview |
-| `src/webview/main.ts` | the webview side (currently the raw-text mirror) |
+| `src/protocol.ts`              | message types between host and webview                             |
+| `src/webview/main.ts`          | the webview side (currently the raw-text mirror)                   |

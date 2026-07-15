@@ -16,4 +16,5 @@ npm run --silent lint:boundaries || {
     exit 1
 }
 
-cd frontend && npx lint-staged
+# Formats staged files across frontend, packages and the extension.
+npx lint-staged

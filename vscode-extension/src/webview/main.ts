@@ -8,15 +8,13 @@ declare function acquireVsCodeApi(): VsCodeApi;
 
 const vscodeApi = acquireVsCodeApi();
 
-// For now the webview only mirrors the document text; the circuit editor replaces
-// this once the sync is proven.
+// For now the webview only mirrors the document text; the circuit editor replaces this once the sync is proven.
 const root = document.getElementById('root');
 
 window.addEventListener('message', (event: MessageEvent<HostMessage>) => {
-    // Only trust messages from our own frame. Compared against window.origin
-    // rather than a fixed string, because the origin differs per environment:
-    // "vscode-webview:" in desktop VSCode, "https:" when VSCode is web-hosted.
-    if (event.origin !== window.origin) {
+    // Only trust messages from our own frame. Compared against globalThis.origin rather than a fixed string, because the origin differs
+    // per environment: "vscode-webview:" in desktop VSCode, "https:" when VSCode is web-hosted.
+    if (event.origin !== globalThis.origin) {
         return;
     }
 

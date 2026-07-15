@@ -2,7 +2,6 @@
 
 import type { OperationIdentifier, QuantumOperationType } from '../gate-types.ts';
 
-
 export interface ElementSelectorDto {
     registerId: string;
     index: number;
@@ -109,4 +108,4 @@ export interface MoveQuantumOperationRequest {
     controlQubits: ElementSelectorDto[];
 }
 
-export {type QuantumOperationType} from '../gate-types.ts';
+export { type QuantumOperationType } from '../gate-types.ts';
