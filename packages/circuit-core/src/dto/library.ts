@@ -7,7 +7,8 @@ export interface OperationDefinitionResponse {
     category: string;
     description: string;
     qubitCount: number;
-    parameters: string[];
+    /** Only the parametric gates have any: the backend omits this for the rest. */
+    parameters?: string[];
     inspectorInfo: InspectorInfoDto;
 }
 

@@ -18,7 +18,8 @@
         "noUnusedParameters": true,
         "noEmit": true,
         "skipLibCheck": true,
-        "jsx": "react-jsx"
+        "jsx": "react-jsx",
+        "resolveJsonModule": true
     },
     "include": [
         "src",

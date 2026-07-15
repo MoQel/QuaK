@@ -1,19 +1,24 @@
-import { CircuitDragProvider, CircuitPortProvider, CircuitView } from '@quak/circuit-editor';
+import { CircuitDragProvider, CircuitPortProvider, CircuitView, LibraryView } from '@quak/circuit-editor';
 import { DEMO_CIRCUIT, NOOP_PORT } from './demoCircuit.ts';
+import { OPERATIONS } from './library.ts';
 import { useDocument } from './useDocument.ts';
 
-// The circuit here is fixed, not derived from the open document: turning QASM
-// text into a circuit needs the transformation, which does not exist yet.
-// Everything around it — the document sync, the theme, the editor itself — is real.
+// The circuit is fixed until the QASM transformation exists. Library and circuit
+// share one webview because drag & drop cannot cross webview boundaries.
 export function App() {
     const { snapshot, status } = useDocument();
 
     return (
         <div className="flex h-screen flex-col bg-bg text-text">
-            <div className="min-h-0 flex-1">
+            <div className="flex min-h-0 flex-1">
                 <CircuitPortProvider port={NOOP_PORT}>
                     <CircuitDragProvider>
-                        <CircuitView circuit={DEMO_CIRCUIT} />
+                        <aside className="w-56 shrink-0 overflow-y-auto border-r border-border">
+                            <LibraryView operations={OPERATIONS} onOperationSelect={() => {}} />
+                        </aside>
+                        <div className="min-w-0 flex-1">
+                            <CircuitView circuit={DEMO_CIRCUIT} />
+                        </div>
                     </CircuitDragProvider>
                 </CircuitPortProvider>
             </div>
