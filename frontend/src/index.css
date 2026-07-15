@@ -1,7 +1,35 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @import './dockview.css';
+
+/* Tailwind only scans this project by default. The circuit editor lives in a
+   workspace package outside it, so its utility classes have to be pointed at
+   explicitly or they are silently never generated. */
+@source '../../packages/circuit-editor/src';
 @custom-variant dark (&:is(.dark *));
+
+/* Global layout. These used to live in App.module.css, where they only loaded as
+   a side effect of the circuit editor importing that file for its class names.
+   CSS modules do not scope element selectors, so they were global by accident. */
+:root {
+    margin: 0 auto;
+    text-align: center;
+    --quantumOperationWidth: 40px;
+    --quantumOperationHeight: 40px;
+    --quantumOperationSpacing: 24px;
+    --qubitWireSpacing: 8px;
+    --colorBack: #2f2e2e;
+    --colorFront: #1e1616;
+}
+
+html,
+body,
+#root {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+}
 
 @theme inline {
     --color-bg-dark: var(--bg-dark);

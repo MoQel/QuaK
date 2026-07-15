@@ -1,13 +1,13 @@
+import { CircuitDragProvider, CircuitPortProvider, CircuitView, LibraryView } from '@quak/circuit-editor';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import { usePanelData } from '@/contexts/panel/PanelDataContext.ts';
-import { CircuitView } from '@/views/circuit-workspace/circuit/CircuitView.tsx';
-import { LibraryView } from '@/views/circuit-workspace/library/LibraryView.tsx';
+
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { CircuitDragProvider } from '@/views/circuit-workspace/CircuitDragContext.tsx';
-import { CircuitPortProvider } from '@/views/circuit-workspace/CircuitPortContext.tsx';
-import { createCircuitService } from '@/views/circuit-workspace/circuit/util/circuitService.ts';
+
+import { QuantikzExportButton } from '@/views/circuit-workspace/notation/QuantikzExportButton.tsx';
+import { createCircuitService } from '@/views/circuit-workspace/circuitService.ts';
 import { useProject } from '@/contexts/ProjectContext.tsx';
 import { api } from '@/api/api.ts';
 import { OperationDefinitionResponse } from '@/api/dto/library.ts';
@@ -59,7 +59,7 @@ function CircuitWorkspaceContent() {
                 </aside>
 
                 <div className="min-w-0 flex-1">
-                    <CircuitView circuit={circuit} />
+                    <CircuitView circuit={circuit} toolbarStart={<QuantikzExportButton circuit={circuit ?? null} />} />
                 </div>
             </div>
         );
@@ -85,7 +85,7 @@ function CircuitWorkspaceContent() {
             <ResizableHandle />
 
             <ResizablePanel id="circuit-editor" order={1} minSize={40} className="min-w-0">
-                <CircuitView circuit={circuit} />
+                <CircuitView circuit={circuit} toolbarStart={<QuantikzExportButton circuit={circuit ?? null} />} />
             </ResizablePanel>
 
             <Button

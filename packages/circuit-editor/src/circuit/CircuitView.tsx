@@ -1,12 +1,12 @@
-import { Card, CardContent } from '@/components/ui/card.tsx';
-import { useMemo, useState } from 'react';
+import { Card, CardContent } from '@quak/ui/card';
+import { useMemo, useState, type ReactNode } from 'react';
 import {
     CircuitResponse,
     ElementSelectorDto,
     getInvolvedSelectors,
     getRegisterSize,
     getSelectorKey,
-} from '@/api/dto/circuit.ts';
+} from '@quak/circuit-core';
 import { CircuitToolbar } from './components/CircuitToolbar.tsx';
 import { QubitWires } from './components/QubitWires.tsx';
 import { QuantumOperationGrid } from './components/QuantumOperationGrid.tsx';
@@ -14,16 +14,18 @@ import { DropzoneGrid } from './components/DropzoneGrid.tsx';
 import { DropPlaceholder } from './components/DropPlaceholder.tsx';
 import { CircuitFooter } from './components/CircuitFooter.tsx';
 import { HoverPos, UiLayer, UiQuantumOperation } from './util/types.ts';
-import { useCircuitPort } from '@/views/circuit-workspace/CircuitPortContext.tsx';
-import { LABEL_WIDTH } from '@/views/circuit-workspace/circuit/util/layout.ts';
+import { useCircuitPort } from '../CircuitPortContext.tsx';
+import { LABEL_WIDTH } from '../circuit/util/layout.ts';
 
-import { useCircuitDrag } from '@/views/circuit-workspace/CircuitDragContext.tsx';
+import { useCircuitDrag } from '../CircuitDragContext.tsx';
 
 interface CircuitViewProps {
     circuit: CircuitResponse | undefined;
+    /** Slot on the left of the toolbar, for actions the host app adds. */
+    toolbarStart?: ReactNode;
 }
 
-export function CircuitView({ circuit }: Readonly<CircuitViewProps>) {
+export function CircuitView({ circuit, toolbarStart }: Readonly<CircuitViewProps>) {
     const { removeQuantumOperation } = useCircuitPort();
 
     const { isOperationDragging, draggingOperationSize } = useCircuitDrag();
@@ -224,7 +226,7 @@ export function CircuitView({ circuit }: Readonly<CircuitViewProps>) {
     return (
         <Card className="h-full overflow-hidden border-none bg-bg-subtle py-1">
             <CardContent className="flex flex-col h-full">
-                <CircuitToolbar circuit={circuit} />
+                <CircuitToolbar start={toolbarStart} />
 
                 {/* Circuit Canvas */}
                 <div className="relative flex-1 overflow-auto">

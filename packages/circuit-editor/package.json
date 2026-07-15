@@ -1,0 +1,27 @@
+{
+    "name": "@quak/circuit-editor",
+    "version": "0.0.0",
+    "private": true,
+    "type": "module",
+    "description": "The circuit editor with its integrated gate library. Backend-free: the host injects the circuit, a CircuitPort and the theme.",
+    "main": "./src/index.ts",
+    "types": "./src/index.ts",
+    "exports": {
+        ".": "./src/index.ts",
+        "./styles.css": "./src/circuit-editor.module.css"
+    },
+    "scripts": {
+        "typecheck": "tsc --noEmit"
+    },
+    "dependencies": {
+        "@quak/circuit-core": "*",
+        "@quak/ui": "*",
+        "katex": "^0.16.27",
+        "lucide-react": "^0.503.0",
+        "react-katex": "^3.1.0"
+    },
+    "peerDependencies": {
+        "react": "^19.0.0",
+        "react-dom": "^19.0.0"
+    }
+}

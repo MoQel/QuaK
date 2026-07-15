@@ -1,17 +1,17 @@
 import React, { useCallback } from 'react';
-import { CELL_WIDTH, QUBIT_HEIGHT } from '@/views/circuit-workspace/circuit/util/layout.ts';
+import { CELL_WIDTH, QUBIT_HEIGHT } from '../../circuit/util/layout.ts';
 import {
     CircuitResponse,
     ElementaryQuantumGateDto,
     ElementSelectorDto,
     MeasurementDto,
     MoveQuantumOperationRequest,
-} from '@/api/dto/circuit.ts';
-import { FlatQubit, HoverPos, UiLayer } from '@/views/circuit-workspace/circuit/util/types.ts';
-import { useCircuitPort } from '@/views/circuit-workspace/CircuitPortContext.tsx';
-import { getOperationDefinition } from '@/lib/operations.ts';
-import { useCircuitDrag } from '@/views/circuit-workspace/CircuitDragContext.tsx';
-import { DragData } from '@/views/circuit-workspace/types.ts';
+} from '@quak/circuit-core';
+import { FlatQubit, HoverPos, UiLayer } from '../../circuit/util/types.ts';
+import { useCircuitPort } from '../../CircuitPortContext.tsx';
+import { getOperationDefinition } from '../../operations.ts';
+import { useCircuitDrag } from '../../CircuitDragContext.tsx';
+import { DragData } from '../../types.ts';
 
 interface DropzoneGridProps {
     circuit: CircuitResponse | undefined;

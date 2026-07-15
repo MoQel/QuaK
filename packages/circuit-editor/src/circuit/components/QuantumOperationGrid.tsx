@@ -1,7 +1,7 @@
-import { RegisterResponse } from '@/api/dto/circuit.ts';
-import { ElementaryQuantumGate } from '@/views/circuit-workspace/circuit/components/ElementaryQuantumGate.tsx';
-import { UiLayer } from '@/views/circuit-workspace/circuit/util/types.ts';
-import { useCircuitDrag } from '@/views/circuit-workspace/CircuitDragContext.tsx';
+import { RegisterResponse } from '@quak/circuit-core';
+import { ElementaryQuantumGate } from '../../circuit/components/ElementaryQuantumGate.tsx';
+import { UiLayer } from '../../circuit/util/types.ts';
+import { useCircuitDrag } from '../../CircuitDragContext.tsx';
 
 interface QuantumOperationGridProps {
     uiLayers: UiLayer[];

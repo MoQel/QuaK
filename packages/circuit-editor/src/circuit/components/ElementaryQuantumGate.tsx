@@ -1,10 +1,10 @@
 import React, { useMemo, useRef } from 'react';
-import styles from '@/App.module.css';
-import { QuantumOperationDto, RegisterResponse, ElementSelectorDto, getRegisterSize } from '@/api/dto/circuit.ts';
-import { getOperationDefinition, OperationDefinition } from '@/lib/operations.ts';
-import { CELL_WIDTH, QUBIT_HEIGHT } from '@/views/circuit-workspace/circuit/util/layout.ts';
-import { TextIcon } from '@/components/ui/text-icon.tsx';
-import { DragData } from '@/views/circuit-workspace/types.ts';
+import styles from '../../circuit-editor.module.css';
+import { QuantumOperationDto, RegisterResponse, ElementSelectorDto, getRegisterSize } from '@quak/circuit-core';
+import { getOperationDefinition, OperationDefinition } from '../../operations.ts';
+import { CELL_WIDTH, QUBIT_HEIGHT } from '../../circuit/util/layout.ts';
+import { TextIcon } from '@quak/ui/text-icon';
+import { DragData } from '../../types.ts';
 
 interface ElementaryQuantumGateProps {
     operation: QuantumOperationDto;

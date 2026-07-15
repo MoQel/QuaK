@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover.tsx';
-import { Button } from '@/components/ui/button.tsx';
-import { FlatQubit } from '@/views/circuit-workspace/circuit/util/types.ts';
-import { useCircuitPort } from '@/views/circuit-workspace/CircuitPortContext.tsx';
-import { LABEL_WIDTH, QUBIT_HEIGHT } from '@/views/circuit-workspace/circuit/util/layout.ts';
+import { Popover, PopoverContent, PopoverTrigger } from '@quak/ui/popover';
+import { Button } from '@quak/ui/button';
+import { FlatQubit } from '../../circuit/util/types.ts';
+import { useCircuitPort } from '../../CircuitPortContext.tsx';
+import { LABEL_WIDTH, QUBIT_HEIGHT } from '../../circuit/util/layout.ts';
 
 interface QubitLabelProps {
     qubit: FlatQubit;

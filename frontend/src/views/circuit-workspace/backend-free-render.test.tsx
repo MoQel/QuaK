@@ -1,3 +1,4 @@
+import { CircuitDragProvider, CircuitPortProvider, CircuitView, LibraryView } from '@quak/circuit-editor';
 import { vi, describe, it, expect } from 'vitest';
 
 // Radix / resizable primitives used deeper in the tree expect these browser APIs.
@@ -10,10 +11,7 @@ globalThis.ResizeObserver = vi.fn().mockImplementation(() => ({
 import { render, screen } from '@testing-library/react';
 import { CircuitResponse } from '@/api/dto/circuit.ts';
 import { OperationDefinitionResponse } from '@/api/dto/library.ts';
-import { CircuitView } from '@/views/circuit-workspace/circuit/CircuitView.tsx';
-import { LibraryView } from '@/views/circuit-workspace/library/LibraryView.tsx';
-import { CircuitDragProvider } from '@/views/circuit-workspace/CircuitDragContext.tsx';
-import { CircuitPortProvider } from '@/views/circuit-workspace/CircuitPortContext.tsx';
+
 import type { CircuitPort } from '@quak/circuit-core';
 
 // The point of these tests: the circuit editor and the library render from plain

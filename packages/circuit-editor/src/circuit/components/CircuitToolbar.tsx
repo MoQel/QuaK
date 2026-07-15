@@ -1,22 +1,21 @@
-import { Button } from '@/components/ui/button.tsx';
+import { Button } from '@quak/ui/button';
 import { Minus, Plus, Trash2 } from 'lucide-react';
-import { CircuitResponse } from '@/api/dto/circuit.ts';
-import { useCircuitPort } from '@/views/circuit-workspace/CircuitPortContext.tsx';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover.tsx';
-import { useState } from 'react';
-import { QuantikzExportButton } from '@/views/circuit-workspace/circuit/components/QuantikzExportButton.tsx';
+import { useCircuitPort } from '../../CircuitPortContext.tsx';
+import { Popover, PopoverContent, PopoverTrigger } from '@quak/ui/popover';
+import { useState, type ReactNode } from 'react';
 
 interface CircuitToolbarProps {
-    circuit: CircuitResponse | undefined;
+    /** Slot on the left of the toolbar, for actions the host app adds. */
+    start?: ReactNode;
 }
 
-export function CircuitToolbar({ circuit }: Readonly<CircuitToolbarProps>) {
+export function CircuitToolbar({ start }: Readonly<CircuitToolbarProps>) {
     const { addQubit, deleteLastQubit, resetCircuit } = useCircuitPort();
     const [isPopoverOpen, setIsPopoverOpen] = useState(false);
 
     return (
         <div className="flex items-center justify-between pb-1">
-            <QuantikzExportButton circuit={circuit ?? null} />
+            <div>{start}</div>
             <div className="flex space-x-3">
                 <Button onClick={addQubit} size="icon" className="size-8" variant="secondary" title="Add Qubit">
                     <Plus />

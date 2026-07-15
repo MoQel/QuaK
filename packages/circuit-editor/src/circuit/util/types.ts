@@ -1,4 +1,4 @@
-import { QuantumOperationDto } from '@/api/dto/circuit.ts';
+import { QuantumOperationDto } from '@quak/circuit-core';
 
 export type UiLayer = {
     quantumOperations: UiQuantumOperation[];

@@ -1,6 +1,6 @@
-import { FlatQubit } from '@/views/circuit-workspace/circuit/util/types.ts';
-import { QubitLabel } from '@/views/circuit-workspace/circuit/components/QubitLabel.tsx';
-import { LABEL_WIDTH, QUBIT_HEIGHT } from '@/views/circuit-workspace/circuit/util/layout.ts';
+import { FlatQubit } from '../../circuit/util/types.ts';
+import { QubitLabel } from '../../circuit/components/QubitLabel.tsx';
+import { LABEL_WIDTH, QUBIT_HEIGHT } from '../../circuit/util/layout.ts';
 
 interface QubitWiresProps {
     flatQubits: FlatQubit[];

@@ -1,4 +1,4 @@
-import { OperationIdentifier } from '@/lib/operations.ts';
+import { OperationIdentifier } from './operations.ts';
 
 export type DragData = {
     origin: 'library' | 'circuit';

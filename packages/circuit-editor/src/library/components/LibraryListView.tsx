@@ -1,7 +1,7 @@
-import { LibraryElement } from '@/views/circuit-workspace/library/components/LibraryElement.tsx';
-import { OperationDefinitionResponse } from '@/api/dto/library.ts';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.tsx';
-import { Separator } from '@/components/ui/separator.tsx';
+import { LibraryElement } from '../../library/components/LibraryElement.tsx';
+import { OperationDefinitionResponse } from '@quak/circuit-core';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@quak/ui/card';
+import { Separator } from '@quak/ui/separator';
 import { Fragment } from 'react';
 
 interface LibraryListViewProps {

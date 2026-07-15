@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { CircuitResponse } from '@/api/dto/circuit.ts';
-import { toQuantikz, toStandaloneQuantikzDocument } from '../util/quantikzMapper.ts';
+import { toQuantikz, toStandaloneQuantikzDocument } from './quantikzMapper.ts';
 
 export type ExportStatus = 'idle' | 'copied' | 'error';
 

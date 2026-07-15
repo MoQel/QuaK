@@ -1,12 +1,12 @@
-import styles from '@/App.module.css';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip.tsx';
+import styles from '../../circuit-editor.module.css';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@quak/ui/tooltip';
 import { BlockMath } from 'react-katex';
 import 'katex/dist/katex.min.css';
 import React, { useState } from 'react';
-import { getOperationDefinition, OperationIdentifier } from '@/lib/operations.ts';
-import { DragData } from '@/views/circuit-workspace/types.ts';
-import { TextIcon } from '@/components/ui/text-icon.tsx';
-import { useCircuitDrag } from '@/views/circuit-workspace/CircuitDragContext.tsx';
+import { getOperationDefinition, OperationIdentifier } from '../../operations.ts';
+import { DragData } from '../../types.ts';
+import { TextIcon } from '@quak/ui/text-icon';
+import { useCircuitDrag } from '../../CircuitDragContext.tsx';
 
 type LibraryElementProps = {
     identifier: OperationIdentifier;
