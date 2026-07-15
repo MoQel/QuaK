@@ -1,0 +1,48 @@
+{
+    "name": "quak-vscode",
+    "displayName": "QuaK",
+    "description": "Visual circuit editor for OpenQASM files",
+    "version": "0.0.1",
+    "private": true,
+    "publisher": "quak",
+    "engines": {
+        "vscode": "^1.90.0"
+    },
+    "categories": [
+        "Visualization"
+    ],
+    "extensionKind": [
+        "workspace"
+    ],
+    "main": "./dist/extension.cjs",
+    "capabilities": {
+        "untrustedWorkspaces": {
+            "supported": "limited",
+            "description": "The circuit editor is disabled in untrusted workspaces."
+        }
+    },
+    "contributes": {
+        "customEditors": [
+            {
+                "viewType": "quak.circuitEditor",
+                "displayName": "QuaK Circuit Editor",
+                "selector": [
+                    {
+                        "filenamePattern": "*.qasm"
+                    }
+                ],
+                "priority": "option"
+            }
+        ]
+    },
+    "scripts": {
+        "build": "node esbuild.mjs",
+        "watch": "node esbuild.mjs --watch",
+        "typecheck": "tsc --noEmit"
+    },
+    "devDependencies": {
+        "@types/vscode": "^1.90.0",
+        "esbuild": "^0.25.0",
+        "typescript": "~5.7.2"
+    }
+}

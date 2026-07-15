@@ -25,7 +25,8 @@
     },
     "workspaces": [
         "frontend",
-        "packages/*"
+        "packages/*",
+        "vscode-extension"
     ],
     "dependencies": {
         "@reduxjs/toolkit": "^2.11.2",
