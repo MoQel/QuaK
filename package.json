@@ -9,9 +9,13 @@
         "test:backend": "cd backend && ./gradlew test",
         "test:frontend": "cd frontend && npm run test",
         "test:sequential": "npm run test:backend && npm run test:frontend",
-        "lint": "npm run lint:frontend && npm run lint:boundaries",
-        "lint:frontend": "cd frontend && npm run lint",
+        "lint": "eslint .",
         "lint:boundaries": "depcruise packages --config .dependency-cruiser.cjs",
+        "typecheck": "npm run typecheck:frontend && npm run typecheck:packages && npm run typecheck:extension",
+        "typecheck:frontend": "cd frontend && npm run typecheck",
+        "typecheck:packages": "cd packages/circuit-core && npm run typecheck",
+        "typecheck:extension": "cd vscode-extension && npm run typecheck",
+        "build:extension": "cd vscode-extension && npm run build",
         "dev:backend": "cd backend && ./gradlew bootRun",
         "dev:frontend": "cd frontend && npm run dev",
         "build": "npm run build:backend",
@@ -20,8 +24,15 @@
         "prepare": "husky"
     },
     "devDependencies": {
+        "@eslint/js": "^9.22.0",
         "dependency-cruiser": "^18.0.0",
-        "husky": "^9.1.0"
+        "eslint": "^9.22.0",
+        "eslint-config-prettier": "^10.1.8",
+        "eslint-plugin-react-hooks": "^5.2.0",
+        "eslint-plugin-react-refresh": "^0.4.19",
+        "globals": "^16.0.0",
+        "husky": "^9.1.0",
+        "typescript-eslint": "^8.26.1"
     },
     "workspaces": [
         "frontend",
