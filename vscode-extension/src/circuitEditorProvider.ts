@@ -82,8 +82,43 @@ export class CircuitEditorProvider implements vscode.CustomTextEditorProvider {
                     content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}';">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 <title>QuaK Circuit Editor</title>
+                <style>
+                    /* A webview is a blank frame: without this the text renders in the
+                       browser default black, which is invisible on a dark theme. */
+                    body {
+                        margin: 0;
+                        padding: 12px;
+                        color: var(--vscode-editor-foreground, #cccccc);
+                        background-color: var(--vscode-editor-background, #1e1e1e);
+                        font-family: var(--vscode-editor-font-family, monospace);
+                        font-size: var(--vscode-editor-font-size, 13px);
+                    }
+                    header {
+                        border-bottom: 1px solid var(--vscode-panel-border, #454545);
+                        margin-bottom: 12px;
+                        padding-bottom: 8px;
+                    }
+                    h1 {
+                        color: var(--vscode-textLink-foreground, #4daafc);
+                        font-size: 14px;
+                        margin: 0;
+                    }
+                    #status {
+                        color: var(--vscode-descriptionForeground, #9d9d9d);
+                        font-size: 12px;
+                        margin: 4px 0 0;
+                    }
+                    #root {
+                        margin: 0;
+                        white-space: pre-wrap;
+                    }
+                </style>
             </head>
             <body>
+                <header>
+                    <h1>QuaK Circuit Editor</h1>
+                    <p id="status"></p>
+                </header>
                 <pre id="root"></pre>
                 <script nonce="${nonce}" src="${scriptUri}"></script>
             </body>

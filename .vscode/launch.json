@@ -5,7 +5,10 @@
             "name": "Run QuaK Extension",
             "type": "extensionHost",
             "request": "launch",
-            "args": ["--extensionDevelopmentPath=${workspaceFolder}/vscode-extension"],
+            "args": [
+                "--disable-extensions",
+                "--extensionDevelopmentPath=${workspaceFolder}/vscode-extension"
+            ],
             "outFiles": ["${workspaceFolder}/vscode-extension/dist/**/*.cjs"]
         }
     ]

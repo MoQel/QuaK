@@ -8,19 +8,36 @@ declare function acquireVsCodeApi(): VsCodeApi;
 
 const vscodeApi = acquireVsCodeApi();
 
-// For now the webview only mirrors the document text; the circuit editor replaces this once the sync is proven.
+// Placeholder until the circuit editor lands. It deliberately does not look like
+// a text editor: mirroring the file alone is indistinguishable from VSCode's own
+// editor, which makes it impossible to tell whether this view is live.
+const status = document.getElementById('status');
 const root = document.getElementById('root');
+
+function setStatus(text: string): void {
+    if (status) {
+        status.textContent = text;
+    }
+}
+
+setStatus('waiting for the document…');
 
 window.addEventListener('message', (event: MessageEvent<HostMessage>) => {
     // Only trust messages from our own frame. Compared against globalThis.origin rather than a fixed string, because the origin differs
     // per environment: "vscode-webview:" in desktop VSCode, "https:" when VSCode is web-hosted.
     if (event.origin !== globalThis.origin) {
+        setStatus(`ignored a message from an unexpected origin: ${event.origin}`);
         return;
     }
 
     const message = event.data;
-    if (message.type === 'documentChanged' && root) {
-        root.textContent = message.text;
+    if (message.type === 'documentChanged') {
+        setStatus(
+            `document version ${message.version} · ${message.text.length} chars · updated ${new Date().toLocaleTimeString()}`,
+        );
+        if (root) {
+            root.textContent = message.text;
+        }
     }
 });
 
