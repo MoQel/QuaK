@@ -23,6 +23,22 @@ function writeQasm(name: string): vscode.Uri {
     return vscode.Uri.file(file);
 }
 
+/** Resolves once the document actually holds `text`. */
+function changeTo(document: vscode.TextDocument, text: string): Promise<void> {
+    if (document.getText() === text) {
+        return Promise.resolve();
+    }
+
+    return new Promise((resolve) => {
+        const sub = vscode.workspace.onDidChangeTextDocument((event) => {
+            if (event.document === document && event.document.getText() === text) {
+                sub.dispose();
+                resolve();
+            }
+        });
+    });
+}
+
 function customTabsFor(uri: vscode.Uri): vscode.Tab[] {
     return vscode.window.tabGroups.all
         .flatMap((group) => group.tabs)
@@ -90,7 +106,12 @@ suite('QuaK circuit editor', () => {
         assert.equal(await vscode.workspace.applyEdit(edit), true);
         assert.notEqual(document.getText(), before);
 
+        // executeCommand resolves once the command is dispatched, not once the
+        // document has caught up, so wait for the change itself. Asserting right
+        // after the await made this test fail every few runs.
+        const restored = changeTo(document, before);
         await vscode.commands.executeCommand('undo');
+        await restored;
 
         assert.equal(document.getText(), before);
     });
