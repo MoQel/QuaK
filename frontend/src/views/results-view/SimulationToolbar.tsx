@@ -13,6 +13,7 @@ interface ToolbarProps {
     options: SimulationOptions;
     setOptions: Dispatch<SetStateAction<SimulationOptions>>;
     hasConditionalState: boolean;
+    forceHistogramMode: boolean;
     showZero: boolean;
     setShowZero: Dispatch<SetStateAction<boolean>>;
     minProbability: number;
@@ -23,6 +24,7 @@ export function SimulationToolbar({
     options,
     setOptions,
     hasConditionalState,
+    forceHistogramMode,
     showZero,
     setShowZero,
     minProbability,
@@ -36,12 +38,16 @@ export function SimulationToolbar({
         setOptions((prev) => ({ ...prev, [field]: val }));
     };
 
-    const isExactMode = options.mode === 'exact';
+    const isExactMode = options.mode === 'exact' && !forceHistogramMode;
     const finalReadoutEnabled = options.measurementMode === 'measurement-gates-plus-final';
 
     return (
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
-            <Select value={options.mode} onValueChange={(val) => updateSelectOption('mode', val as SimulationMode)}>
+            <Select
+                value={forceHistogramMode ? 'simulation' : options.mode}
+                onValueChange={(val) => updateSelectOption('mode', val as SimulationMode)}
+                disabled={forceHistogramMode}
+            >
                 <SelectTrigger className="w-full sm:w-[156px] h-9 bg-bg hover:bg-bg-light border-border text-text">
                     <SelectValue placeholder="Mode" />
                 </SelectTrigger>
@@ -50,7 +56,7 @@ export function SimulationToolbar({
                         {hasConditionalState ? 'Conditional State' : 'Exact State'}
                     </SelectItem>
                     <SelectItem value="simulation" className="rounded cursor-pointer focus:bg-bg-light focus:text-text">
-                        Simulation
+                        {forceHistogramMode ? 'Measurement Results' : 'Simulation'}
                     </SelectItem>
                 </SelectContent>
             </Select>
@@ -69,7 +75,7 @@ export function SimulationToolbar({
                     <div className="grid gap-4">
                         <div className="space-y-2">
                             <h4 className="font-medium leading-none text-text">Simulation Settings</h4>
-                            <p className="text-xs text-text-muted">Configure simulator parameters.</p>
+                            <p className="text-xs text-text-muted">Tune the run settings.</p>
                         </div>
 
                         <div className="space-y-6">
@@ -145,8 +151,9 @@ export function SimulationToolbar({
                                         </Label>
                                         <p className="text-xs text-text-muted">
                                             Used for sampled simulation runs.{' '}
-                                            {hasConditionalState ? 'Conditional State' : 'Exact State'} does not need
-                                            shots.
+                                            {forceHistogramMode
+                                                ? 'Readout histograms are always shot-based.'
+                                                : `${hasConditionalState ? 'Conditional State' : 'Exact State'} does not need shots.`}
                                         </p>
                                     </div>
                                     <SmartInput
@@ -202,7 +209,7 @@ export function SimulationToolbar({
                                         step={0.1}
                                     />
                                     <p className="text-[10px] text-text-muted mt-1">
-                                        Hides states below this threshold.
+                                        Hides 0% states and states below this threshold.
                                     </p>
                                 </div>
                             </div>

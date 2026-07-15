@@ -25,7 +25,6 @@ export type FlatQubit = {
     absQubitIdx: number;
     regType: RegisterType;
     section: RegisterSection;
-    /** Absolute Y position in pixels, accounting for preceding register headers. */
     visualY: number;
 };
 

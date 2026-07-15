@@ -28,10 +28,13 @@ export function QubitLabel({ circuit, setCircuit, qubit }: Readonly<QubitLabelPr
     };
 
     return (
-        <div className="absolute flex items-center justify-center" style={{ height: QUBIT_HEIGHT, width: LABEL_WIDTH }}>
+        <div
+            className="absolute z-40 flex items-center justify-center bg-bg-subtle"
+            style={{ height: QUBIT_HEIGHT, width: LABEL_WIDTH }}
+        >
             <Popover open={open} onOpenChange={setOpen}>
                 <PopoverTrigger asChild>
-                    <div className="font-mono text-[12px] cursor-pointer w-full py-2 hover:border hover:border-border select-none">
+                    <div className="w-full cursor-pointer select-none rounded-sm px-1 py-2 text-left font-mono text-[12px] hover:border hover:border-border">
                         {qubit.regName}[{qubit.relQubitIdx}]
                     </div>
                 </PopoverTrigger>

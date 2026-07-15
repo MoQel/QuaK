@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeAll, vi } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { CircuitTranslator } from './CircuitTranslator';
-import { initQulacs } from 'qulacs-wasm'; // Namespace import for robust WASM handling
+import { initQulacs } from 'qulacs-wasm';
 import {
     CircuitResponse,
     ClassicRegisterResponse,
@@ -15,12 +15,6 @@ import {
 import { OperationIdentifier } from '@/lib/operations.ts';
 import { SimulationResult } from '@/simulation/simulation.types.ts';
 
-// --- Test Helpers ---
-
-/**
- * Helper to construct a strictly typed mock circuit.
- * Allows defining multiple registers with varying number of gates.
- */
 const createCircuit = (
     numQubits: number,
     operations: QuantumOperationDto[] = [],
@@ -56,9 +50,34 @@ const createCircuit = (
     };
 };
 
-/**
- * Helper to create an ElementaryQuantumGate object.
- */
+const createCircuitWithClassicRegisters = (
+    numQubits: number,
+    operations: QuantumOperationDto[],
+    classicRegisters: Array<{ id: string; name: string; numberOfBits: number }>,
+): CircuitResponse => {
+    const registers: QuantumRegisterResponse[] = [
+        {
+            id: 'qreg-0',
+            name: 'q',
+            type: REGISTER_TYPE_QUANTUM,
+            numberOfQubits: numQubits,
+        },
+    ];
+
+    const classics: ClassicRegisterResponse[] = classicRegisters.map((register) => ({
+        id: register.id,
+        name: register.name,
+        type: REGISTER_TYPE_CLASSIC,
+        numberOfBits: register.numberOfBits,
+    }));
+
+    return {
+        id: 'test-circuit-multi-classic',
+        registers: [...registers, ...classics],
+        layers: operations.length ? [{ quantumOperations: operations }] : [],
+    };
+};
+
 const gate = (
     definitionId: OperationIdentifier,
     targetIndex: number = 0,
@@ -87,8 +106,12 @@ const multiGate = (
     controlQubits: controls.map((idx) => ({ registerId: 'qreg-0', index: idx })),
 });
 
-const measurement = (targetIndex: number = 0, classicIndex: number = 0): MeasurementDto => ({
-    id: 'test-measurement',
+const measurement = (
+    targetIndex: number = 0,
+    classicIndex: number = 0,
+    id: string = `test-measurement-${targetIndex}-${classicIndex}`,
+): MeasurementDto => ({
+    id,
     type: 'MEASUREMENT',
     identifier: 'MEASURE',
     inverseForm: false,
@@ -97,10 +120,7 @@ const measurement = (targetIndex: number = 0, classicIndex: number = 0): Measure
     classicBits: [{ registerId: 'creg-0', index: classicIndex }],
 });
 
-// --- Tests ---
-
 describe('CircuitTranslator', () => {
-    // Robust initialization for Qulacs in Node/Vitest environment
     beforeAll(async () => {
         await initQulacs();
     });
@@ -172,6 +192,20 @@ describe('CircuitTranslator', () => {
 
             expect(totalSamples).toBe(10);
         });
+
+        it('should sample the quantum state in simulation mode without measurement gates', () => {
+            const circuit = createCircuit(1, [gate('X')]);
+
+            const result = CircuitTranslator.translateAndRun(circuit, {
+                sampleCount: 6,
+                mode: 'simulation',
+            });
+
+            expect(result.status).toBe('COMPLETED');
+            expect(result.counts).toEqual({ '1': 6 });
+            expect(result.readoutRegisters).toBeUndefined();
+            expect(result.measurementResults).toHaveLength(0);
+        });
     });
 
     describe('Measurements', () => {
@@ -206,6 +240,235 @@ describe('CircuitTranslator', () => {
             });
 
             expect(result.measurementResults[0].counts).toEqual({ zero: 0, one: 10 });
+        });
+
+        it('should aggregate simulation counts by classical target bit positions', () => {
+            const circuit = createCircuit(4, [gate('X', 3), measurement(3, 3)], 4);
+
+            const result = CircuitTranslator.translateAndRun(circuit, {
+                sampleCount: 8,
+                mode: 'simulation',
+            });
+
+            expect(result.counts).toEqual({ '0001': 8 });
+        });
+
+        it('should keep unmeasured classical bits at zero', () => {
+            const circuit = createCircuit(1, [gate('X', 0), measurement(0, 2)], 4);
+
+            const result = CircuitTranslator.translateAndRun(circuit, {
+                sampleCount: 8,
+                mode: 'simulation',
+            });
+
+            expect(result.counts).toEqual({ '0010': 8 });
+        });
+
+        it('should derive histogram labels from classical destinations instead of qubit order', () => {
+            const circuit = createCircuit(
+                2,
+                [gate('X', 0), measurement(0, 1, 'm-q0-c1'), measurement(1, 0, 'm-q1-c0')],
+                2,
+            );
+
+            const result = CircuitTranslator.translateAndRun(circuit, {
+                sampleCount: 8,
+                mode: 'simulation',
+            });
+
+            expect(result.counts).toEqual({ '01': 8 });
+            expect(result.outcomes?.[0].registerValues).toEqual({ c: '01' });
+        });
+
+        it('should format classical readout keys in displayed classical bit order', () => {
+            const circuit = createCircuit(
+                4,
+                [gate('X', 0), gate('X', 1), measurement(0, 0), measurement(1, 1), measurement(2, 2), measurement(3, 3)],
+                4,
+            );
+
+            const result = CircuitTranslator.translateAndRun(circuit, {
+                sampleCount: 8,
+                mode: 'simulation',
+            });
+
+            expect(result.counts).toEqual({ '1100': 8 });
+        });
+
+        it('should distinguish q[3] -> c[3] from q[3] -> c[0] in simulation mode', () => {
+            const highBitCircuit = createCircuit(4, [gate('X', 3), measurement(3, 3)], 4);
+            const lowBitCircuit = createCircuit(4, [gate('X', 3), measurement(3, 0)], 4);
+
+            const highBitResult = CircuitTranslator.translateAndRun(highBitCircuit, {
+                sampleCount: 8,
+                mode: 'simulation',
+            });
+            const lowBitResult = CircuitTranslator.translateAndRun(lowBitCircuit, {
+                sampleCount: 8,
+                mode: 'simulation',
+            });
+
+            expect(highBitResult.counts).toEqual({ '0001': 8 });
+            expect(lowBitResult.counts).toEqual({ '1000': 8 });
+        });
+
+        it('should preserve classical register boundaries in readout keys', () => {
+            const circuit = createCircuitWithClassicRegisters(
+                2,
+                [
+                    gate('X', 0),
+                    gate('X', 1),
+                    {
+                        id: 'm-c',
+                        type: 'MEASUREMENT',
+                        identifier: 'MEASURE',
+                        inverseForm: false,
+                        targetQubits: [{ registerId: 'qreg-0', index: 0 }],
+                        controlQubits: [],
+                        classicBits: [{ registerId: 'creg-c', index: 0 }],
+                    },
+                    {
+                        id: 'm-result',
+                        type: 'MEASUREMENT',
+                        identifier: 'MEASURE',
+                        inverseForm: false,
+                        targetQubits: [{ registerId: 'qreg-0', index: 1 }],
+                        controlQubits: [],
+                        classicBits: [{ registerId: 'creg-result', index: 2 }],
+                    },
+                ],
+                [
+                    { id: 'creg-c', name: 'c', numberOfBits: 2 },
+                    { id: 'creg-result', name: 'result', numberOfBits: 3 },
+                ],
+            );
+
+            const result = CircuitTranslator.translateAndRun(circuit, {
+                sampleCount: 4,
+                mode: 'simulation',
+            });
+
+            expect(result.counts).toEqual({ '001 10': 4 });
+            expect(result.readoutRegisters).toEqual([
+                { registerId: 'creg-result', name: 'result', size: 3 },
+                { registerId: 'creg-c', name: 'c', size: 2 },
+            ]);
+            expect(result.outcomes).toEqual([
+                {
+                    combinedKey: '001 10',
+                    registerValues: { result: '001', c: '10' },
+                    count: 4,
+                    probability: 1,
+                    percentage: 100,
+                },
+            ]);
+        });
+
+        it('should preserve Bell-state correlations in shot-based measurement', () => {
+            const circuit = createCircuit(
+                2,
+                [gate('H', 0), multiGate('CX', [0], [1]), measurement(0, 0, 'm-q0-c0'), measurement(1, 1, 'm-q1-c1')],
+                2,
+            );
+
+            const result = CircuitTranslator.translateAndRun(circuit, {
+                sampleCount: 4096,
+                mode: 'simulation',
+            });
+
+            expect((result.counts?.['00'] ?? 0) + (result.counts?.['11'] ?? 0)).toBe(4096);
+            expect(result.counts?.['01'] ?? 0).toBe(0);
+            expect(result.counts?.['10'] ?? 0).toBe(0);
+            expect((result.counts?.['00'] ?? 0) / 4096).toBeGreaterThanOrEqual(0.4);
+            expect((result.counts?.['00'] ?? 0) / 4096).toBeLessThanOrEqual(0.6);
+        });
+
+        it('should repeat the same result after measuring a collapsed qubit again', () => {
+            const circuit = createCircuit(1, [gate('H'), measurement(0, 0, 'm-first'), measurement(0, 1, 'm-second')], 2);
+
+            const result = CircuitTranslator.translateAndRun(circuit, {
+                sampleCount: 512,
+                mode: 'simulation',
+            });
+
+            expect(Object.keys(result.counts ?? {}).every((key) => ['00', '11'].includes(key))).toBe(true);
+            expect(result.counts?.['01'] ?? 0).toBe(0);
+            expect(result.counts?.['10'] ?? 0).toBe(0);
+            expect(Object.values(result.counts ?? {}).reduce((sum, count) => sum + count, 0)).toBe(512);
+        });
+
+        it('should let gates after a measurement operate on the collapsed state', () => {
+            const circuit = createCircuit(
+                1,
+                [gate('H'), measurement(0, 0, 'm-before-x'), gate('X'), measurement(0, 1, 'm-after-x')],
+                2,
+            );
+
+            const result = CircuitTranslator.translateAndRun(circuit, {
+                sampleCount: 512,
+                mode: 'simulation',
+            });
+
+            expect(result.counts?.['00'] ?? 0).toBe(0);
+            expect(result.counts?.['11'] ?? 0).toBe(0);
+            expect((result.counts?.['01'] ?? 0) + (result.counts?.['10'] ?? 0)).toBe(512);
+        });
+
+        it('should let later measurements overwrite earlier writes to the same classical bit', () => {
+            const circuit = createCircuit(
+                2,
+                [gate('X', 0), measurement(0, 0, 'm-write-one'), measurement(1, 0, 'm-overwrite-zero')],
+                1,
+            );
+
+            const result = CircuitTranslator.translateAndRun(circuit, {
+                sampleCount: 8,
+                mode: 'simulation',
+            });
+
+            expect(result.counts).toEqual({ '0': 8 });
+        });
+
+        it('should reject measurements that reference a missing classical register', () => {
+            const circuit = createCircuit(1, [measurement()], 0);
+
+            expect(() =>
+                CircuitTranslator.translateAndRun(circuit, {
+                    sampleCount: 8,
+                    mode: 'simulation',
+                }),
+            ).toThrow(/CLASSICAL_REGISTER_NOT_FOUND/);
+        });
+
+        it('should reject malformed register-wide measurements with mismatched sizes', () => {
+            const registerMeasurement: MeasurementDto = {
+                id: 'm-register',
+                type: 'MEASUREMENT',
+                identifier: 'MEASURE',
+                inverseForm: false,
+                targetQubits: [
+                    { registerId: 'qreg-0', index: 0 },
+                    { registerId: 'qreg-0', index: 1 },
+                    { registerId: 'qreg-0', index: 2 },
+                ],
+                controlQubits: [],
+                classicBits: [
+                    { registerId: 'creg-c', index: 0 },
+                    { registerId: 'creg-c', index: 1 },
+                ],
+            };
+            const circuit = createCircuitWithClassicRegisters(
+                3,
+                [registerMeasurement],
+                [{ id: 'creg-c', name: 'c', numberOfBits: 2 }],
+            );
+
+            expect(() =>
+                CircuitTranslator.translateAndRun(circuit, {
+                    sampleCount: 8,
+                    mode: 'simulation',
+                }),
+            ).toThrow(/MEASUREMENT_REGISTER_SIZE_MISMATCH/);
         });
 
         it('should collapse the state before applying later gates', () => {
@@ -271,9 +534,8 @@ describe('CircuitTranslator', () => {
             expect(result.stateVector[1].prob).toBeCloseTo(0.5);
         });
 
-        it('should keep simulation counts tied to the pre-sweep distribution', () => {
-            const circuit = createCircuit(1, [gate('H')], 0);
-            const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.1);
+        it('should run automatic final measurements shot-by-shot in simulation mode', () => {
+            const circuit = createCircuit(1, [gate('X')], 0);
 
             const result = CircuitTranslator.translateAndRun(circuit, {
                 measurementMode: 'measurement-gates-plus-final',
@@ -281,15 +543,12 @@ describe('CircuitTranslator', () => {
                 sampleCount: 4,
             });
 
-            expect(result.counts).toEqual({ '0': 4 });
+            expect(result.counts).toEqual({ '1': 4 });
             expect(result.measurementResults).toHaveLength(1);
-
-            randomSpy.mockRestore();
         });
     });
 
     describe('CircuitTranslator - Gate Mapping Tests', () => {
-        // Helper to extract a specific state from the result vector
         const findState = (result: SimulationResult, stateStr: string) => {
             const state = result.stateVector.find((s) => s.state === stateStr);
             if (!state) throw new Error(`State ${stateStr} not found in state vector`);
@@ -300,7 +559,6 @@ describe('CircuitTranslator', () => {
             let circuit = createCircuit(1, [gate('X', 0)]);
             expect(findState(CircuitTranslator.translateAndRun(circuit), '|1>').prob).toBeCloseTo(1);
 
-            // 1 -> 0
             circuit = createCircuit(1, [gate('X', 0), gate('X', 0)]);
             expect(findState(CircuitTranslator.translateAndRun(circuit), '|0>').prob).toBeCloseTo(1);
         });
@@ -350,7 +608,6 @@ describe('CircuitTranslator', () => {
 
             const state1 = findState(result, '|1>');
             expect(state1.prob).toBeCloseTo(0.5);
-            // RX(pi/2)|0> = 1/sqrt(2)(|0> - i|1>) -> phase of |1> should be -pi/2
             expect(state1.phase).toBeCloseTo(-Math.PI / 2);
         });
 
@@ -360,37 +617,30 @@ describe('CircuitTranslator', () => {
 
             const state1 = findState(result, '|1>');
             expect(state1.prob).toBeCloseTo(0.5);
-            // RY(pi/2)|0> = 1/sqrt(2)(|0> + |1>) -> phase is 0
             expect(state1.phase).toBeCloseTo(0);
         });
 
         it('validates RZ gate with angle override check', () => {
-            // Apply H to enter superposition, then RZ(pi/2)
             const circuit = createCircuit(1, [gate('H', 0), gate('RZ', 0, Math.PI / 2)]);
             const result = CircuitTranslator.translateAndRun(circuit);
 
             const state1 = findState(result, '|1>');
             expect(state1.prob).toBeCloseTo(0.5);
-            // Qulacs RZ formula check: phase should reflect the -angle fix
             expect(state1.phase).toBeCloseTo(Math.PI / 4);
         });
 
         it('validates CX (CNOT) gate exhaustively', () => {
-            // Case 1: Control = 0 -> Target stays 0 -> |00>
             let circuit = createCircuit(2, [multiGate('CX', [0], [1])]);
             expect(findState(CircuitTranslator.translateAndRun(circuit), '|00>').prob).toBeCloseTo(1);
 
-            // Case 2: Control = 1 -> Target flips to 1 -> |11>
             circuit = createCircuit(2, [gate('X', 0), multiGate('CX', [0], [1])]);
             expect(findState(CircuitTranslator.translateAndRun(circuit), '|11>').prob).toBeCloseTo(1);
         });
 
         it('validates CZ gate exhaustively', () => {
-            // Superposition on Q0 and Q1 -> creates |00>, |01>, |10>, |11>
             const circuit = createCircuit(2, [gate('H', 0), gate('H', 1), multiGate('CZ', [0], [1])]);
             const result = CircuitTranslator.translateAndRun(circuit);
 
-            // Phase should ONLY be flipped for |11>
             expect(Math.abs(findState(result, '|00>').phase)).toBeCloseTo(0);
             expect(Math.abs(findState(result, '|01>').phase)).toBeCloseTo(0);
             expect(Math.abs(findState(result, '|10>').phase)).toBeCloseTo(0);
@@ -398,37 +648,29 @@ describe('CircuitTranslator', () => {
         });
 
         it('validates SWAP gate exhaustively', () => {
-            // Case 1: |01> (Q0=1, Q1=0) -> SWAP -> |10>
             let circuit = createCircuit(2, [gate('X', 0), multiGate('SWAP', [], [0, 1])]);
             expect(findState(CircuitTranslator.translateAndRun(circuit), '|10>').prob).toBeCloseTo(1);
 
-            // Case 2: |10> (Q0=0, Q1=1) -> SWAP -> |01>
             circuit = createCircuit(2, [gate('X', 1), multiGate('SWAP', [], [0, 1])]);
             expect(findState(CircuitTranslator.translateAndRun(circuit), '|01>').prob).toBeCloseTo(1);
 
-            // Case 3: |11> -> SWAP -> |11> (should do nothing if both are 1)
             circuit = createCircuit(2, [gate('X', 0), gate('X', 1), multiGate('SWAP', [], [0, 1])]);
             expect(findState(CircuitTranslator.translateAndRun(circuit), '|11>').prob).toBeCloseTo(1);
         });
 
         it('validates CCX (Toffoli) gate exhaustively', () => {
-            // Case 1: Controls = 00 -> Target stays 0 -> |000>
             let circuit = createCircuit(3, [multiGate('CCX', [0, 1], [2])]);
             expect(findState(CircuitTranslator.translateAndRun(circuit), '|000>').prob).toBeCloseTo(1);
 
-            // Case 2: Controls = 10 (Q0=1) -> Target stays 0 -> |001>
             circuit = createCircuit(3, [gate('X', 0), multiGate('CCX', [0, 1], [2])]);
             expect(findState(CircuitTranslator.translateAndRun(circuit), '|001>').prob).toBeCloseTo(1);
 
-            // Case 3: Controls = 01 (Q1=1) -> Target stays 0 -> |010>
             circuit = createCircuit(3, [gate('X', 1), multiGate('CCX', [0, 1], [2])]);
             expect(findState(CircuitTranslator.translateAndRun(circuit), '|010>').prob).toBeCloseTo(1);
 
-            // Case 4: Controls = 11 -> Target flips to 1 -> |111>
             circuit = createCircuit(3, [gate('X', 0), gate('X', 1), multiGate('CCX', [0, 1], [2])]);
             expect(findState(CircuitTranslator.translateAndRun(circuit), '|111>').prob).toBeCloseTo(1);
 
-            // Case 5: Target is already 1, Controls = 11 -> Target flips to 0 -> |011>
             circuit = createCircuit(3, [gate('X', 0), gate('X', 1), gate('X', 2), multiGate('CCX', [0, 1], [2])]);
             expect(findState(CircuitTranslator.translateAndRun(circuit), '|011>').prob).toBeCloseTo(1);
         });

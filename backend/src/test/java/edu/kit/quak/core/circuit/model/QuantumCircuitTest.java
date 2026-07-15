@@ -173,6 +173,32 @@ class QuantumCircuitTest {
     }
 
     @Test
+    void removeMeasurementOperation_byId() {
+        // Arrange
+        QuantumCircuit circuit = createCircuitWithQuantumRegister();
+        String quantumRegisterId = circuit.getRegisters().getFirst().asQuantum().orElseThrow().getId();
+        ClassicRegister classicRegister = new ClassicRegister("c", 1);
+        circuit.addRegister(classicRegister);
+
+        ElementSelector target = new ElementSelector(quantumRegisterId, 0);
+        ElementSelector classicBit = new ElementSelector(classicRegister.getId(), 0);
+        QuantumOperation measurement = new Measurement(
+            QuantumOperationLibrary.MEASURE,
+            false,
+            List.of(target),
+            List.of(),
+            List.of(classicBit)
+        );
+        circuit.addQuantumOperation(measurement, 0);
+
+        // Act
+        circuit.removeQuantumOperation(measurement.getId());
+
+        // Assert
+        assertTrue(circuit.getLayers().isEmpty(), "Removing a measurement should also flush the empty layer.");
+    }
+
+    @Test
     void flushLayers_afterMovingLastOperation_sourceLayerIsRemoved() {
         // Arrange
         QuantumCircuit circuit = createCircuitWithQuantumRegister();

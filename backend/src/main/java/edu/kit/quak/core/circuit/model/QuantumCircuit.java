@@ -244,8 +244,12 @@ public class QuantumCircuit extends ElementWithId {
     }
 
     public void removeQuantumOperation(String operationId) {
-        for (Layer layer : layers) {
-            for (QuantumOperation operation : layer.getQuantumOperations()) {
+        for (int layerIdx = 0; layerIdx < layers.size(); layerIdx++) {
+            Layer layer = layers.get(layerIdx);
+            List<QuantumOperation> operations = layer.getQuantumOperations();
+
+            for (int operationIdx = 0; operationIdx < operations.size(); operationIdx++) {
+                QuantumOperation operation = operations.get(operationIdx);
                 if (operation.getId().equals(operationId)) {
                     layer.removeQuantumOperation(operation);
                     rescheduleOperations();

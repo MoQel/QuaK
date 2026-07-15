@@ -1,5 +1,3 @@
-// --- DTOs ---
-
 import { OperationIdentifier } from '@/lib/operations.ts';
 
 export interface ElementSelectorDto {
@@ -12,7 +10,7 @@ export const getSelectorKey = (sel: ElementSelectorDto): string => `${sel.regist
 export type QuantumOperationType = 'ELEMENTARY_QUANTUM_GATE' | 'MEASUREMENT' | 'DUMMY';
 
 export interface AbstractQuantumOperationDto {
-    id?: string; // Only for response
+    id?: string;
     type: QuantumOperationType;
     identifier: OperationIdentifier;
     inverseForm: boolean;
@@ -32,7 +30,6 @@ export interface MeasurementDto extends Omit<AbstractQuantumOperationDto, 'inver
     classicBits: ElementSelectorDto[];
 }
 
-// Temporary placeholder only — must never appear in a finalized or submitted circuit.
 export interface DummyDto extends AbstractQuantumOperationDto {
     type: 'DUMMY';
 }
@@ -47,10 +44,8 @@ export const getInvolvedSelectors = (op: QuantumOperationDto): ElementSelectorDt
     return selectors;
 };
 
-// --- Responses ---
 export type RegisterType = 'Quantum_Register' | 'Classic_Register';
 
-// Constants — single source of truth for register type discriminator values
 export const REGISTER_TYPE_QUANTUM = 'Quantum_Register' as const;
 export const REGISTER_TYPE_CLASSIC = 'Classic_Register' as const;
 
@@ -102,8 +97,6 @@ export interface CircuitResponse {
     layers: LayerResponse[];
 }
 
-// --- Requests ---
-
 export interface AddQuantumOperationRequest {
     quantumOperation: QuantumOperationDto;
     layerIdx: number;
@@ -129,11 +122,6 @@ export const getClassicCircuitWidth = (circuitData: CircuitResponse): number => 
     }, 0);
 };
 
-/**
- * Computes the visual Y position (in pixels) of a qubit/bit within a register,
- * accounting for section headers, register headers and the gap between
- * the quantum and classical sections.
- */
 export const getVisualY = (registers: RegisterResponse[], registerId: string, index: number): number => {
     let visualY = 0;
     let classicSectionStarted = false;
@@ -144,21 +132,20 @@ export const getVisualY = (registers: RegisterResponse[], registerId: string, in
 
         if (!previousRegister || startsClassicSection) {
             if (previousRegister) {
-                visualY += 20; // REGISTER_SECTION_GAP
+                visualY += 20;
             }
-            visualY += 24; // REGISTER_SECTION_HEADER_HEIGHT
         }
 
         const size = getRegisterSize(reg);
         if (reg.id === registerId) {
-            return visualY + 28 + index * 48; // REGISTER_HEADER_HEIGHT + QUBIT_HEIGHT
+            return visualY + 28 + index * 48;
         }
 
         if (isClassicRegister(reg)) {
             classicSectionStarted = true;
         }
 
-        visualY += 28 + size * 48; // REGISTER_HEADER_HEIGHT + size * QUBIT_HEIGHT
+        visualY += 28 + size * 48;
     }
 
     return 0;

@@ -2,16 +2,17 @@ import React, { useCallback } from 'react';
 import { useDispatch } from 'react-redux';
 import { stopOperationDrag } from '@/store/circuit/dragOperationSlice.ts';
 import { CELL_WIDTH, QUBIT_HEIGHT } from '@/views/circuit-view/util/layout.ts';
-import {
+import { REGISTER_TYPE_QUANTUM } from '@/api/dto/circuit.ts';
+import type {
     CircuitResponse,
     ElementaryQuantumGateDto,
     ElementSelectorDto,
     MoveQuantumOperationRequest,
-    REGISTER_TYPE_QUANTUM,
 } from '@/api/dto/circuit.ts';
-import { DragData, FlatQubit, HoverPos, UiLayer } from '@/views/circuit-view/util/types.ts';
+import type { DragData, FlatQubit, HoverPos, UiLayer } from '@/views/circuit-view/util/types.ts';
 import { createCircuitService } from '@/views/circuit-view/util/circuitService.ts';
-import { getOperationDefinition, type OperationIdentifier } from '@/lib/operations.ts';
+import { getOperationDefinition } from '@/lib/operations.ts';
+import type { OperationIdentifier } from '@/lib/operations.ts';
 
 interface DropzoneGridProps {
     circuit: CircuitResponse | undefined;
@@ -74,9 +75,6 @@ export function DropzoneGrid({
 
     const handleDragOver = (e: React.DragEvent, qubitIdx: number, layerIdx: number) => {
         e.preventDefault();
-        // Use a functional update to access the latest state without triggering unnecessary re-renders.
-        // Returning the previous value unchanged causes React to bail out of the render cycle,
-        // preventing performance degradation from rapid mousemove events (render thrashing).
         setHoverPos((prev) => {
             if (prev?.qubitIdx === qubitIdx && prev?.layerIdx === layerIdx) {
                 return prev;
@@ -85,45 +83,31 @@ export function DropzoneGrid({
         });
     };
 
-    /** Creates a lookup map of the server-side circuit state. */
-    const createCircuitLookupMap = () => {
-        const originalPositions = new Map<
-            string,
-            {
-                layerIdx: number;
-                targetQubits: ElementSelectorDto[];
-                controlQubits: ElementSelectorDto[];
-                classicBits?: ElementSelectorDto[];
-            }
-        >();
-
-        if (!circuit) return originalPositions;
-
-        for (const [layerIdx, layer] of circuit.layers.entries()) {
-            for (const op of layer.quantumOperations) {
-                originalPositions.set(op.id!, {
-                    layerIdx,
-                    targetQubits: op.targetQubits,
-                    controlQubits: op.controlQubits,
-                    classicBits: getClassicBits(op),
-                });
-            }
-        }
-        return originalPositions;
-    };
-
-    /**
-     * Compares the current circuit state against the UI layer representation to determine
-     * whether any operation has shifted to a different layer or qubit position.
-     * Used to avoid sending unnecessary move requests to the API when nothing has changed.
-     */
     const hasCircuitStateChanged = useCallback(
         (operationToMove: MoveQuantumOperationRequest): boolean => {
             if (!circuit) return false;
 
-            const originalPositions = createCircuitLookupMap();
+            const originalPositions = new Map<
+                string,
+                {
+                    layerIdx: number;
+                    targetQubits: ElementSelectorDto[];
+                    controlQubits: ElementSelectorDto[];
+                    classicBits?: ElementSelectorDto[];
+                }
+            >();
 
-            // Check if the operation to move has moved.
+            for (const [originalLayerIdx, layer] of circuit.layers.entries()) {
+                for (const operation of layer.quantumOperations) {
+                    originalPositions.set(operation.id!, {
+                        layerIdx: originalLayerIdx,
+                        targetQubits: operation.targetQubits,
+                        controlQubits: operation.controlQubits,
+                        classicBits: getClassicBits(operation),
+                    });
+                }
+            }
+
             const original = originalPositions.get(operationToMove.quantumOperationId);
             if (!original) return false;
 
@@ -139,13 +123,22 @@ export function DropzoneGrid({
                 return true;
             }
 
-            // Check if any other operation has moved (due to temporary detachment of the operation to move).
-            for (let layerIdx = 0; layerIdx < uiLayers.length; layerIdx++) {
-                for (const op of uiLayers[layerIdx].quantumOperations) {
-                    const original = originalPositions.get(op.id!);
-                    if (!original) continue;
+            for (let movedLayerIdx = 0; movedLayerIdx < uiLayers.length; movedLayerIdx++) {
+                for (const operation of uiLayers[movedLayerIdx].quantumOperations) {
+                    const currentOriginal = originalPositions.get(operation.id!);
+                    if (!currentOriginal) continue;
 
-                    if (!hasSamePosition(original, layerIdx, op.targetQubits, op.controlQubits, getClassicBits(op))) return true;
+                    if (
+                        !hasSamePosition(
+                            currentOriginal,
+                            movedLayerIdx,
+                            operation.targetQubits,
+                            operation.controlQubits,
+                            getClassicBits(operation),
+                        )
+                    ) {
+                        return true;
+                    }
                 }
             }
 
@@ -160,18 +153,20 @@ export function DropzoneGrid({
             try {
                 const data: DragData = JSON.parse(e.dataTransfer.getData('text/plain'));
                 const operationDefinition = getOperationDefinition(data.operationIdentifier);
-                const controlSize = operationDefinition.controlSize;
-                const targetSize = operationDefinition.targetSize;
-
-                const controlQubits: ElementSelectorDto[] = Array.from({ length: controlSize }, (_, i) => ({
-                    registerId: regId,
-                    index: regIdx + i,
-                }));
-
-                const targetQubits: ElementSelectorDto[] = Array.from({ length: targetSize }, (_, i) => ({
-                    registerId: regId,
-                    index: regIdx + controlSize + i,
-                }));
+                const controlQubits: ElementSelectorDto[] = Array.from(
+                    { length: operationDefinition.controlSize },
+                    (_, index) => ({
+                        registerId: regId,
+                        index: regIdx + index,
+                    }),
+                );
+                const targetQubits: ElementSelectorDto[] = Array.from(
+                    { length: operationDefinition.targetSize },
+                    (_, index) => ({
+                        registerId: regId,
+                        index: regIdx + operationDefinition.controlSize + index,
+                    }),
+                );
 
                 switch (data.origin) {
                     case 'library': {
@@ -182,31 +177,34 @@ export function DropzoneGrid({
                                 inverseForm: false,
                                 targetQubits,
                                 controlQubits,
-                                rotationAngle: Math.PI / 2, // standard rotation
+                                rotationAngle: Math.PI / 2,
                             };
                             addQuantumOperation({ quantumOperation: operation, layerIdx });
                         } else if (operationDefinition.type === 'MEASUREMENT') {
-                            // Request classic bit selection from parent before creating the measurement
-                            if (onRequestMeasurementTarget) {
-                                onRequestMeasurementTarget({
-                                    layerIdx,
-                                    targetQubits,
-                                    controlQubits: [],
-                                    operationIdentifier: data.operationIdentifier,
-                                });
-                            }
+                            onRequestMeasurementTarget?.({
+                                layerIdx,
+                                targetQubits,
+                                controlQubits: [],
+                                operationIdentifier: data.operationIdentifier,
+                            });
                         }
                         break;
                     }
                     case 'circuit': {
-                        const operationToMove = circuit?.layers.flatMap((layer) => layer.quantumOperations).find((op) => op.id === data.id);
+                        if (!data.id) break;
+
+                        const operationToMove = circuit?.layers
+                            .flatMap((layer) => layer.quantumOperations)
+                            .find((operation) => operation.id === data.id);
                         const payload: MoveQuantumOperationRequest = {
-                            quantumOperationId: data.id!,
+                            quantumOperationId: data.id,
                             layerIdx,
                             targetQubits,
                             controlQubits: operationToMove?.type === 'MEASUREMENT' ? [] : controlQubits,
-                            classicBits: operationToMove?.type === 'MEASUREMENT' ? getClassicBits(operationToMove) : undefined,
+                            classicBits:
+                                operationToMove?.type === 'MEASUREMENT' ? getClassicBits(operationToMove) : undefined,
                         };
+
                         if (hasCircuitStateChanged(payload)) {
                             moveQuantumOperation(payload);
                         }
@@ -224,7 +222,16 @@ export function DropzoneGrid({
                 setDraggingOperationId(null);
             }
         },
-        [addQuantumOperation, moveQuantumOperation, hasCircuitStateChanged, dispatch, onRequestMeasurementTarget],
+        [
+            addQuantumOperation,
+            circuit,
+            dispatch,
+            hasCircuitStateChanged,
+            moveQuantumOperation,
+            onRequestMeasurementTarget,
+            setDraggingOperationId,
+            setHoverPos,
+        ],
     );
 
     return (
@@ -234,7 +241,6 @@ export function DropzoneGrid({
                     const isZoneActive = activeDropZones.has(`${qIdx}-${layerIdx}`);
                     if (!isZoneActive) return null;
 
-                    // Only allow quantum operations on QuantumRegister qubits
                     if (qubit.regType !== REGISTER_TYPE_QUANTUM) return null;
 
                     return (

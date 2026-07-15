@@ -6,7 +6,6 @@ import {
     LABEL_WIDTH,
     QUBIT_HEIGHT,
     REGISTER_HEADER_HEIGHT,
-    REGISTER_SECTION_HEADER_HEIGHT,
 } from '@/views/circuit-view/util/layout.ts';
 import { Badge } from '@/components/ui/badge';
 
@@ -17,7 +16,6 @@ interface QubitWiresProps {
 }
 
 export function QubitWires({ circuit, setCircuit, flatQubits }: Readonly<QubitWiresProps>) {
-    /** Group wires by register so headers stay together. */
     const registerGroups = useMemo(() => {
         const groups: { regIdx: number; headerY: number; qubits: FlatQubit[] }[] = [];
         for (const q of flatQubits) {
@@ -25,7 +23,6 @@ export function QubitWires({ circuit, setCircuit, flatQubits }: Readonly<QubitWi
             if (last && last.regIdx === q.regIdx) {
                 last.qubits.push(q);
             } else {
-                // Header sits directly above the first wire of the register.
                 const headerY = q.visualY - REGISTER_HEADER_HEIGHT - q.relQubitIdx * QUBIT_HEIGHT;
                 groups.push({ regIdx: q.regIdx, headerY, qubits: [q] });
             }
@@ -37,32 +34,15 @@ export function QubitWires({ circuit, setCircuit, flatQubits }: Readonly<QubitWi
 
     return (
         <>
-            {registerGroups.map((group, groupIdx) => {
+            {registerGroups.map((group) => {
                 const first = group.qubits[0];
                 const register = circuit?.registers?.find((r) => r.id === first.regId);
                 const isClassic = register ? isClassicRegister(register) : false;
-                const previousGroup = registerGroups[groupIdx - 1];
-                const startsNewSection = !previousGroup || previousGroup.qubits[0].section !== first.section;
 
                 return (
                     <div key={`reg-group-${first.regId}`}>
-                        {startsNewSection && (
-                            <div
-                                className="absolute left-0 right-0 flex items-center px-2"
-                                style={{
-                                    top: group.headerY - REGISTER_SECTION_HEADER_HEIGHT,
-                                    height: REGISTER_SECTION_HEADER_HEIGHT,
-                                }}
-                            >
-                                <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                                    {first.section === 'classic' ? 'Classical Registers' : 'Quantum Registers'}
-                                </span>
-                            </div>
-                        )}
-
-                        {/* Register Header */}
                         <div
-                            className="absolute left-0 right-0 flex items-center gap-2 px-2 border-b border-border bg-bg-subtle/50"
+                            className="absolute left-0 right-0 z-40 flex items-center gap-2 px-2 border-b border-border bg-bg-subtle"
                             style={{ top: group.headerY, height: REGISTER_HEADER_HEIGHT }}
                         >
                             <span className="font-mono text-[11px] font-semibold text-text truncate">
@@ -73,7 +53,6 @@ export function QubitWires({ circuit, setCircuit, flatQubits }: Readonly<QubitWi
                             </Badge>
                         </div>
 
-                        {/* Wires */}
                         {group.qubits.map((q) => (
                             <div
                                 key={`wire-${q.regId}-${q.relQubitIdx}`}
@@ -83,7 +62,6 @@ export function QubitWires({ circuit, setCircuit, flatQubits }: Readonly<QubitWi
                                 <QubitLabel circuit={circuit} setCircuit={setCircuit} qubit={q} />
 
                                 {isClassic ? (
-                                    /* Classical double wire */
                                     <>
                                         <div
                                             className="absolute border-b border-muted-foreground/60"
@@ -105,7 +83,6 @@ export function QubitWires({ circuit, setCircuit, flatQubits }: Readonly<QubitWi
                                         />
                                     </>
                                 ) : (
-                                    /* Quantum single wire */
                                     <div
                                         className="absolute border-b border-border"
                                         style={{

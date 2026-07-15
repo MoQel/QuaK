@@ -48,7 +48,6 @@ describe('useQuantumSimulation Hook', () => {
     it('should show calculating state immediately but debounce worker call', () => {
         const { result } = renderHook(() => useQuantumSimulation(mockCircuit));
 
-        // State should be calculating even before debounce finishes
         expect(result.current.isCalculating).toBe(true);
         expect(latestWorker?.postMessage).not.toHaveBeenCalled();
 
@@ -67,6 +66,7 @@ describe('useQuantumSimulation Hook', () => {
         const { requestId } = vi.mocked(latestWorker!.postMessage).mock.calls[0][0];
 
         const resultPayload: SimulationResult = {
+            status: 'COMPLETED',
             counts: { '00': 10 },
             stateVector: [],
             measurementResults: [],
@@ -120,7 +120,13 @@ describe('useQuantumSimulation Hook', () => {
                 data: {
                     type: 'SUCCESS',
                     requestId: firstId,
-                    payload: { counts: { '0': 1 }, stateVector: [], measurementResults: [], simulatedQubits: 1 },
+                    payload: {
+                        status: 'COMPLETED',
+                        counts: { '0': 1 },
+                        stateVector: [],
+                        measurementResults: [],
+                        simulatedQubits: 1,
+                    },
                 },
             } as MessageEvent);
         });
@@ -131,11 +137,18 @@ describe('useQuantumSimulation Hook', () => {
                 data: {
                     type: 'SUCCESS',
                     requestId: secondId,
-                    payload: { counts: { '1': 1 }, stateVector: [], measurementResults: [], simulatedQubits: 1 },
+                    payload: {
+                        status: 'COMPLETED',
+                        counts: { '1': 1 },
+                        stateVector: [],
+                        measurementResults: [],
+                        simulatedQubits: 1,
+                    },
                 },
             } as MessageEvent);
         });
         expect(result.current.result).toEqual({
+            status: 'COMPLETED',
             counts: { '1': 1 },
             stateVector: [],
             measurementResults: [],
