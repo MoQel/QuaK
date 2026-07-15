@@ -17,6 +17,7 @@ import { DropPlaceholder } from './components/DropPlaceholder.tsx';
 import { CircuitFooter } from './components/CircuitFooter.tsx';
 import { HoverPos, UiLayer, UiQuantumOperation } from './util/types.ts';
 import { CELL_WIDTH, LABEL_WIDTH, QUBIT_HEIGHT } from '@/views/circuit-view/util/layout.ts';
+import { doSpansOverlap, getOperationSpan as getSpan } from '@/views/circuit-view/util/spans.ts';
 import { useCircuitTabs } from '@/contexts/CircuitTabsContext.tsx';
 
 /** Removes the operation with the given id from all layers and drops any layer left empty. */
@@ -72,20 +73,10 @@ export function CircuitView() {
         );
     }, [activeCircuit?.registers]);
 
-    const getOperationSpan = (op: UiQuantumOperation) => {
-        const involvedIndices = getInvolvedSelectors(op).map((selector) => selector.index);
-        return {
-            min: Math.min(...involvedIndices),
-            max: Math.max(...involvedIndices),
-        };
-    };
+    const getOperationSpan = (op: UiQuantumOperation) => getSpan(activeCircuit?.registers ?? [], op);
 
-    const doOperationSpansOverlap = (a: UiQuantumOperation, b: UiQuantumOperation): boolean => {
-        const spanA = getOperationSpan(a);
-        const spanB = getOperationSpan(b);
-
-        return spanA.min <= spanB.max && spanB.min <= spanA.max;
-    };
+    const doOperationSpansOverlap = (a: UiQuantumOperation, b: UiQuantumOperation): boolean =>
+        doSpansOverlap(getOperationSpan(a), getOperationSpan(b));
 
     /**
      * Canonical operation order for the ASAP scheduler: by original layer, the
