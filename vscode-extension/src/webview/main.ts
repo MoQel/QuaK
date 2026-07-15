@@ -14,13 +14,28 @@ const vscodeApi = acquireVsCodeApi();
 const status = document.getElementById('status');
 const root = document.getElementById('root');
 
+// The last state the host broadcast. Every edit we request is based on it, and the
+// host refuses the edit if the document has moved on since.
+let currentText = '';
+let currentVersion = -1;
+
 function setStatus(text: string): void {
     if (status) {
         status.textContent = text;
     }
 }
 
-setStatus('waiting for the document…');
+function requestEdit(newText: string, baseVersion: number): void {
+    const requestId = crypto.randomUUID();
+    setStatus(`edit ${requestId.slice(0, 8)} sent (base version ${baseVersion})...`);
+    vscodeApi.postMessage({ type: 'applyEdit', requestId, newText, baseVersion });
+}
+
+document.getElementById('edit')?.addEventListener('click', () => {
+    requestEdit(`${currentText.trimEnd()}\nx q[0];\n`, currentVersion);
+});
+
+setStatus('waiting for the document...');
 
 window.addEventListener('message', (event: MessageEvent<HostMessage>) => {
     // Only trust messages from our own frame. Compared against globalThis.origin rather than a fixed string, because the origin differs
@@ -31,13 +46,27 @@ window.addEventListener('message', (event: MessageEvent<HostMessage>) => {
     }
 
     const message = event.data;
-    if (message.type === 'documentChanged') {
-        setStatus(
-            `document version ${message.version} · ${message.text.length} chars · updated ${new Date().toLocaleTimeString()}`,
-        );
-        if (root) {
-            root.textContent = message.text;
-        }
+    switch (message.type) {
+        case 'documentChanged':
+            currentText = message.text;
+            currentVersion = message.version;
+            setStatus(
+                `version ${message.version} | ${message.text.length} chars | ${message.state} | updated ${new Date().toLocaleTimeString()}`,
+            );
+            if (root) {
+                root.textContent = message.text;
+            }
+            break;
+
+        case 'editApplied':
+            setStatus(`edit ${message.requestId.slice(0, 8)} APPLIED -> version ${message.version}`);
+            break;
+
+        case 'editRejected':
+            setStatus(
+                `edit ${message.requestId.slice(0, 8)} REJECTED (${message.reason}) | document is at version ${message.currentVersion}`,
+            );
+            break;
     }
 });
 

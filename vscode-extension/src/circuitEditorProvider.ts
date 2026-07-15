@@ -1,11 +1,23 @@
 import * as vscode from 'vscode';
-import type { HostMessage, WebviewMessage } from './protocol.ts';
+import { decideEdit, PanelRegistry } from './arbitration.ts';
+import type { ApplyEditMessage, DocumentState, EditRejectedReason, HostMessage, WebviewMessage } from './protocol.ts';
+
+/**
+ * Whether the circuit view may write back to this document.
+ *
+ * Placeholder: answering this properly needs the QASM transformation, so that we
+ * only allow edits to documents that round-trip losslessly. Until then every
+ * document counts as editable, and the webview only offers text-preserving
+ * changes that append to the host's latest document snapshot.
+ */
+function classifyDocument(_document: vscode.TextDocument): DocumentState {
+    return 'editable';
+}
 
 export class CircuitEditorProvider implements vscode.CustomTextEditorProvider {
     public static readonly viewType = 'quak.circuitEditor';
 
-    // Every open panel per document URI. A document can be open in several panels (split view, "Open With…"), and all of them get every update.
-    private readonly panelsByDocument = new Map<string, Set<vscode.WebviewPanel>>();
+    private readonly panels = new PanelRegistry<vscode.WebviewPanel>();
 
     private constructor(private readonly context: vscode.ExtensionContext) {}
 
@@ -28,9 +40,7 @@ export class CircuitEditorProvider implements vscode.CustomTextEditorProvider {
         _token: vscode.CancellationToken,
     ): Promise<void> {
         const key = document.uri.toString();
-        const panels = this.panelsByDocument.get(key) ?? new Set<vscode.WebviewPanel>();
-        panels.add(webviewPanel);
-        this.panelsByDocument.set(key, panels);
+        this.panels.add(key, webviewPanel);
 
         webviewPanel.webview.options = {
             enableScripts: true,
@@ -39,24 +49,76 @@ export class CircuitEditorProvider implements vscode.CustomTextEditorProvider {
         webviewPanel.webview.html = this.buildHtml(webviewPanel.webview);
 
         const messageSub = webviewPanel.webview.onDidReceiveMessage((message: WebviewMessage) => {
-            // The webview asks for the current state once it has booted. PostMessage would be dropped until then.
-            if (message.type === 'ready') {
-                this.post(webviewPanel, document);
+            switch (message.type) {
+                // The webview asks for the current state once it has booted. PostMessage would be dropped until then.
+                case 'ready':
+                    this.post(webviewPanel, document);
+                    break;
+                case 'applyEdit':
+                    void this.applyEdit(webviewPanel, document, message);
+                    break;
             }
         });
 
         webviewPanel.onDidDispose(() => {
             messageSub.dispose();
-            const remaining = this.panelsByDocument.get(key);
-            remaining?.delete(webviewPanel);
-            if (remaining?.size === 0) {
-                this.panelsByDocument.delete(key);
-            }
+            this.panels.remove(key, webviewPanel);
         });
     }
 
+    /**
+     * The single place where a webview may change the document.
+     *
+     * Rejecting is always safe, merging is not, so a stale edit is refused rather
+     * than reconciled: the webview re-renders from the broadcast that follows and
+     * the user repeats the action. At human speed those collisions are rare.
+     */
+    private async applyEdit(
+        panel: vscode.WebviewPanel,
+        document: vscode.TextDocument,
+        message: ApplyEditMessage,
+    ): Promise<void> {
+        const decision = decideEdit({
+            documentVersion: document.version,
+            documentState: classifyDocument(document),
+            baseVersion: message.baseVersion,
+        });
+
+        if (decision.kind === 'reject') {
+            this.reject(panel, message.requestId, decision.reason, document.version);
+            return;
+        }
+
+        const edit = new vscode.WorkspaceEdit();
+        edit.replace(document.uri, wholeDocument(document), message.newText);
+
+        // Going through WorkspaceEdit is what puts the change into VSCode's undo
+        // history: ctrl+z in the text editor undoes an edit made in the webview.
+        if (!(await vscode.workspace.applyEdit(edit))) {
+            this.reject(panel, message.requestId, 'applyFailed', document.version);
+            return;
+        }
+
+        const applied: HostMessage = {
+            type: 'editApplied',
+            requestId: message.requestId,
+            version: document.version,
+        };
+        void panel.webview.postMessage(applied);
+    }
+
+    private reject(
+        panel: vscode.WebviewPanel,
+        requestId: string,
+        reason: EditRejectedReason,
+        currentVersion: number,
+    ): void {
+        const rejected: HostMessage = { type: 'editRejected', requestId, reason, currentVersion };
+        void panel.webview.postMessage(rejected);
+    }
+
     private broadcast(document: vscode.TextDocument): void {
-        for (const panel of this.panelsByDocument.get(document.uri.toString()) ?? []) {
+        for (const panel of this.panels.get(document.uri.toString())) {
             this.post(panel, document);
         }
     }
@@ -66,6 +128,7 @@ export class CircuitEditorProvider implements vscode.CustomTextEditorProvider {
             type: 'documentChanged',
             text: document.getText(),
             version: document.version,
+            state: classifyDocument(document),
         };
         void panel.webview.postMessage(message);
     }
@@ -108,6 +171,24 @@ export class CircuitEditorProvider implements vscode.CustomTextEditorProvider {
                         font-size: 12px;
                         margin: 4px 0 0;
                     }
+                    #actions {
+                        display: flex;
+                        gap: 8px;
+                        margin: 8px 0 0;
+                    }
+                    button {
+                        background-color: var(--vscode-button-background, #0e639c);
+                        border: none;
+                        border-radius: 2px;
+                        color: var(--vscode-button-foreground, #ffffff);
+                        cursor: pointer;
+                        font-family: inherit;
+                        font-size: 12px;
+                        padding: 4px 10px;
+                    }
+                    button:hover {
+                        background-color: var(--vscode-button-hoverBackground, #1177bb);
+                    }
                     #root {
                         margin: 0;
                         white-space: pre-wrap;
@@ -118,12 +199,19 @@ export class CircuitEditorProvider implements vscode.CustomTextEditorProvider {
                 <header>
                     <h1>QuaK Circuit Editor</h1>
                     <p id="status"></p>
+                    <div id="actions">
+                        <button id="edit" type="button">Append x q[0];</button>
+                    </div>
                 </header>
                 <pre id="root"></pre>
                 <script nonce="${nonce}" src="${scriptUri}"></script>
             </body>
             </html>`;
     }
+}
+
+function wholeDocument(document: vscode.TextDocument): vscode.Range {
+    return new vscode.Range(document.positionAt(0), document.positionAt(document.getText().length));
 }
 
 // The CSP nonce is what stops injected markup from running scripts in the webview.
