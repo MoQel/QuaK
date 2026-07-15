@@ -2,18 +2,15 @@ import { useState } from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import { FlatQubit } from '@/views/circuit-workspace/circuit/util/types.ts';
-import { createCircuitService } from '@/views/circuit-workspace/circuit/util/circuitService.ts';
-import { CircuitResponse } from '@/api/dto/circuit.ts';
+import { useCircuitPort } from '@/views/circuit-workspace/CircuitPortContext.tsx';
 import { LABEL_WIDTH, QUBIT_HEIGHT } from '@/views/circuit-workspace/circuit/util/layout.ts';
 
 interface QubitLabelProps {
-    circuit: CircuitResponse | undefined;
-    setCircuit: (circuit: CircuitResponse) => void;
     qubit: FlatQubit;
 }
 
-export function QubitLabel({ circuit, setCircuit, qubit }: Readonly<QubitLabelProps>) {
-    const { deleteQubit } = createCircuitService(circuit, setCircuit);
+export function QubitLabel({ qubit }: Readonly<QubitLabelProps>) {
+    const { deleteQubit } = useCircuitPort();
     const [open, setOpen] = useState(false);
 
     const onDelete = () => {

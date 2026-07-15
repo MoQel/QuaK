@@ -8,14 +8,13 @@ import {
     MoveQuantumOperationRequest,
 } from '@/api/dto/circuit.ts';
 import { FlatQubit, HoverPos, UiLayer } from '@/views/circuit-workspace/circuit/util/types.ts';
-import { createCircuitService } from '@/views/circuit-workspace/circuit/util/circuitService.ts';
+import { useCircuitPort } from '@/views/circuit-workspace/CircuitPortContext.tsx';
 import { getOperationDefinition } from '@/lib/operations.ts';
 import { useCircuitDrag } from '@/views/circuit-workspace/CircuitDragContext.tsx';
 import { DragData } from '@/views/circuit-workspace/types.ts';
 
 interface DropzoneGridProps {
     circuit: CircuitResponse | undefined;
-    setCircuit: (circuit: CircuitResponse) => void;
     flatQubits: FlatQubit[];
     uiLayers: UiLayer[];
     activeDropZones: Set<string>;
@@ -25,14 +24,13 @@ interface DropzoneGridProps {
 
 export function DropzoneGrid({
     circuit,
-    setCircuit,
     flatQubits,
     uiLayers,
     activeDropZones,
     setHoverPos,
     setDraggingOperationId,
 }: Readonly<DropzoneGridProps>) {
-    const { addQuantumOperation, moveQuantumOperation } = createCircuitService(circuit, setCircuit);
+    const { addQuantumOperation, moveQuantumOperation } = useCircuitPort();
 
     const { stopOperationDrag } = useCircuitDrag();
 

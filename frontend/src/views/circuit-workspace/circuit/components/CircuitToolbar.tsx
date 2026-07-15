@@ -1,18 +1,17 @@
 import { Button } from '@/components/ui/button.tsx';
 import { Minus, Plus, Trash2 } from 'lucide-react';
 import { CircuitResponse } from '@/api/dto/circuit.ts';
-import { createCircuitService } from '@/views/circuit-workspace/circuit/util/circuitService.ts';
+import { useCircuitPort } from '@/views/circuit-workspace/CircuitPortContext.tsx';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover.tsx';
 import { useState } from 'react';
 import { QuantikzExportButton } from '@/views/circuit-workspace/circuit/components/QuantikzExportButton.tsx';
 
 interface CircuitToolbarProps {
     circuit: CircuitResponse | undefined;
-    setCircuit: (circuit: CircuitResponse) => void;
 }
 
-export function CircuitToolbar({ circuit, setCircuit }: Readonly<CircuitToolbarProps>) {
-    const { addQubit, deleteLastQubit, resetCircuit } = createCircuitService(circuit, setCircuit);
+export function CircuitToolbar({ circuit }: Readonly<CircuitToolbarProps>) {
+    const { addQubit, deleteLastQubit, resetCircuit } = useCircuitPort();
     const [isPopoverOpen, setIsPopoverOpen] = useState(false);
 
     return (

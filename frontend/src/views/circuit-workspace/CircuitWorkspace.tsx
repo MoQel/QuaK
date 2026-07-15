@@ -4,8 +4,10 @@ import { usePanelData } from '@/contexts/panel/PanelDataContext.ts';
 import { CircuitView } from '@/views/circuit-workspace/circuit/CircuitView.tsx';
 import { LibraryView } from '@/views/circuit-workspace/library/LibraryView.tsx';
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { CircuitDragProvider } from '@/views/circuit-workspace/CircuitDragContext.tsx';
+import { CircuitPortProvider } from '@/views/circuit-workspace/CircuitPortContext.tsx';
+import { createCircuitService } from '@/views/circuit-workspace/circuit/util/circuitService.ts';
 import { useProject } from '@/contexts/ProjectContext.tsx';
 import { api } from '@/api/api.ts';
 import { OperationDefinitionResponse } from '@/api/dto/library.ts';
@@ -17,7 +19,7 @@ const LIBRARY_VISIBILITY_STORAGE_KEY = 'circuit-workspace-library-collapsed';
 
 function CircuitWorkspaceContent() {
     const { setSelectedOperation } = usePanelData();
-    const { circuit, setCircuit } = useProject();
+    const { circuit } = useProject();
     const [operations, setOperations] = useState<OperationDefinitionResponse[]>([]);
     const [isLibraryCollapsed, setIsLibraryCollapsed] = useState(
         () => localStorage.getItem(LIBRARY_VISIBILITY_STORAGE_KEY) === 'true',
@@ -57,7 +59,7 @@ function CircuitWorkspaceContent() {
                 </aside>
 
                 <div className="min-w-0 flex-1">
-                    <CircuitView circuit={circuit} setCircuit={setCircuit} />
+                    <CircuitView circuit={circuit} />
                 </div>
             </div>
         );
@@ -83,7 +85,7 @@ function CircuitWorkspaceContent() {
             <ResizableHandle />
 
             <ResizablePanel id="circuit-editor" order={1} minSize={40} className="min-w-0">
-                <CircuitView circuit={circuit} setCircuit={setCircuit} />
+                <CircuitView circuit={circuit} />
             </ResizablePanel>
 
             <Button
@@ -102,9 +104,18 @@ function CircuitWorkspaceContent() {
 }
 
 export function CircuitWorkspace() {
+    const { circuit, setCircuit } = useProject();
+
+    // This is where the web IDE decides how circuit edits are persisted: through
+    // the backend. The port closes over the current circuit, so it is rebuilt
+    // whenever that changes. The VSCode extension injects a different adapter here.
+    const port = useMemo(() => createCircuitService(circuit, setCircuit), [circuit, setCircuit]);
+
     return (
-        <CircuitDragProvider>
-            <CircuitWorkspaceContent />
-        </CircuitDragProvider>
+        <CircuitPortProvider port={port}>
+            <CircuitDragProvider>
+                <CircuitWorkspaceContent />
+            </CircuitDragProvider>
+        </CircuitPortProvider>
     );
 }

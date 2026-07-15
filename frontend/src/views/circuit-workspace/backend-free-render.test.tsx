@@ -13,6 +13,8 @@ import { OperationDefinitionResponse } from '@/api/dto/library.ts';
 import { CircuitView } from '@/views/circuit-workspace/circuit/CircuitView.tsx';
 import { LibraryView } from '@/views/circuit-workspace/library/LibraryView.tsx';
 import { CircuitDragProvider } from '@/views/circuit-workspace/CircuitDragContext.tsx';
+import { CircuitPortProvider } from '@/views/circuit-workspace/CircuitPortContext.tsx';
+import type { CircuitPort } from '@quak/circuit-core';
 
 // The point of these tests: the circuit editor and the library render from plain
 // props alone — no ProjectContext, no /api mock, no backend.
@@ -53,10 +55,24 @@ describe('circuit editor renders without a backend', () => {
     });
 
     it('renders the circuit from a circuit prop', () => {
+        // A stub port: no backend, and the editor cannot tell the difference.
+        const port = {
+            addQubit: vi.fn(),
+            deleteQubit: vi.fn(),
+            deleteLastQubit: vi.fn(),
+            resetCircuit: vi.fn(),
+            deleteCircuit: vi.fn(),
+            addQuantumOperation: vi.fn(),
+            moveQuantumOperation: vi.fn(),
+            removeQuantumOperation: vi.fn(),
+        } satisfies CircuitPort;
+
         const { container } = render(
-            <CircuitDragProvider>
-                <CircuitView circuit={circuit} setCircuit={vi.fn()} />
-            </CircuitDragProvider>,
+            <CircuitPortProvider port={port}>
+                <CircuitDragProvider>
+                    <CircuitView circuit={circuit} />
+                </CircuitDragProvider>
+            </CircuitPortProvider>,
         );
 
         expect(container).not.toBeEmptyDOMElement();
