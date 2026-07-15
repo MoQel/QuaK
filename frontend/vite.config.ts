@@ -1,61 +1,59 @@
-import path from "node:path"
-import tailwindcss from "@tailwindcss/vite"
-import { loadEnv } from "vite";
-import { defineConfig } from "vitest/config";
-import react from '@vitejs/plugin-react'
-import wasm from "vite-plugin-wasm";
-import topLevelAwait from "vite-plugin-top-level-await";
+import path from 'node:path';
+import tailwindcss from '@tailwindcss/vite';
+import { loadEnv } from 'vite';
+import { defineConfig } from 'vitest/config';
+import react from '@vitejs/plugin-react';
+import wasm from 'vite-plugin-wasm';
+import topLevelAwait from 'vite-plugin-top-level-await';
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), '');
-  const apiUrl = env.VITE_API_URL ?? 'http://localhost:8080';
-  return {
-  plugins: [react(), tailwindcss(), wasm(), topLevelAwait()],
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
-      "@quak/circuit-core": path.resolve(__dirname, "../packages/circuit-core/src"),
-    },
-  },
-  server: {
-      // Allow Shared Buffer Array for multithreading
-      headers: {
-          'Cross-Origin-Opener-Policy': 'same-origin',
-          'Cross-Origin-Embedder-Policy': 'require-corp',
-          'Content-Security-Policy': "worker-src 'self' blob:; child-src 'self' blob:;"
-      },
-    proxy: {
-      '/api': {
-        target: apiUrl,
-        changeOrigin: true,
-        secure: false,
-      }
-    }
-  },
-    worker: {
-      format: 'es',
-       plugins: () => [
-           wasm(),
-           topLevelAwait()
-       ]
-    },
-    preview: {
-        headers: {
-            'Cross-Origin-Opener-Policy': 'same-origin',
-            'Cross-Origin-Embedder-Policy': 'require-corp',
-            'Content-Security-Policy': "worker-src 'self' blob:; child-src 'self' blob:;"
+    const env = loadEnv(mode, process.cwd(), '');
+    const apiUrl = env.VITE_API_URL ?? 'http://localhost:8080';
+    return {
+        plugins: [react(), tailwindcss(), wasm(), topLevelAwait()],
+        resolve: {
+            alias: {
+                '@': path.resolve(__dirname, './src'),
+                '@quak/circuit-core': path.resolve(__dirname, '../packages/circuit-core/src'),
+                '@quak/ui': path.resolve(__dirname, '../packages/ui/src'),
+            },
         },
-    },
-    test: {
-        globals: true,
-        environment: 'jsdom',
-        setupFiles: './src/test/setup.ts',
         server: {
-            deps: {
-                inline: ['qulacs-wasm']
-            }
-        }
-    },
-  };
-})
+            // Allow Shared Buffer Array for multithreading
+            headers: {
+                'Cross-Origin-Opener-Policy': 'same-origin',
+                'Cross-Origin-Embedder-Policy': 'require-corp',
+                'Content-Security-Policy': "worker-src 'self' blob:; child-src 'self' blob:;",
+            },
+            proxy: {
+                '/api': {
+                    target: apiUrl,
+                    changeOrigin: true,
+                    secure: false,
+                },
+            },
+        },
+        worker: {
+            format: 'es',
+            plugins: () => [wasm(), topLevelAwait()],
+        },
+        preview: {
+            headers: {
+                'Cross-Origin-Opener-Policy': 'same-origin',
+                'Cross-Origin-Embedder-Policy': 'require-corp',
+                'Content-Security-Policy': "worker-src 'self' blob:; child-src 'self' blob:;",
+            },
+        },
+        test: {
+            globals: true,
+            environment: 'jsdom',
+            setupFiles: './src/test/setup.ts',
+            server: {
+                deps: {
+                    inline: ['qulacs-wasm'],
+                },
+            },
+        },
+    };
+});

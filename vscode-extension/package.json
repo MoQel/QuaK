@@ -36,7 +36,7 @@
         ]
     },
     "scripts": {
-        "build": "node esbuild.mjs",
+        "build": "node esbuild.mjs && vite build --config vite.webview.config.ts",
         "watch": "node esbuild.mjs --watch",
         "typecheck": "tsc --noEmit",
         "test": "vitest run",
@@ -44,12 +44,20 @@
     },
     "devDependencies": {
         "@types/mocha": "^10.0.10",
+        "@types/react": "^19.2.17",
+        "@types/react-dom": "^19.2.3",
         "@types/vscode": "^1.90.0",
+        "@vitejs/plugin-react": "^4.7.0",
         "@vscode/test-cli": "^0.0.10",
         "@vscode/test-electron": "^2.5.2",
         "esbuild": "^0.25.0",
         "mocha": "^10.8.2",
         "typescript": "~5.7.2",
+        "vite": "^6.4.3",
         "vitest": "^3.2.4"
+    },
+    "dependencies": {
+        "react": "^19.2.7",
+        "react-dom": "^19.2.7"
     }
 }

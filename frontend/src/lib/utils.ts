@@ -1,6 +1,3 @@
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
-
-export function cn(...inputs: ClassValue[]) {
-    return twMerge(clsx(inputs));
-}
+// Re-exported from @quak/ui to keep existing importers working.
+// New shared code should import from @quak/ui directly.
+export * from '@quak/ui/lib/utils';

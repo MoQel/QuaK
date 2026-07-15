@@ -27,6 +27,15 @@ module.exports = {
             to: { couldNotResolve: true },
         },
         {
+            name: 'not-in-package.json',
+            comment:
+                'Imports something the package does not declare. It only resolves through hoisting, so it breaks ' +
+                'as soon as the install layout changes. Add it to the package\'s own package.json.',
+            severity: 'error',
+            from: {},
+            to: { dependencyTypes: ['npm-no-pkg', 'npm-unknown'] },
+        },
+        {
             name: 'no-circular',
             comment: 'Circular dependency — break the cycle, usually by extracting the shared piece.',
             severity: 'error',
@@ -40,6 +49,11 @@ module.exports = {
         tsPreCompilationDeps: true,
         enhancedResolveOptions: {
             extensions: ['.ts', '.tsx', '.js', '.jsx', '.json'],
+            // Needed for dependencies that ship an "exports" map with conditions;
+            // without these they look unresolvable even though node resolves them.
+            exportsFields: ['exports'],
+            conditionNames: ['import', 'require', 'node', 'browser', 'default', 'types'],
+            mainFields: ['module', 'main', 'types', 'typings'],
         },
     },
 };

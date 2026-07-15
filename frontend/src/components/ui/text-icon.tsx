@@ -1,3 +1,3 @@
-export const TextIcon = (text: string) => {
-    return ({ className }: { className?: string }) => <span className={className}>{text}</span>;
-};
+// Re-exported from @quak/ui to keep existing importers working.
+// New shared code should import from @quak/ui directly.
+export * from '@quak/ui/text-icon';

@@ -15,7 +15,7 @@
         "lint:boundaries": "depcruise packages --config .dependency-cruiser.cjs",
         "typecheck": "npm run typecheck:frontend && npm run typecheck:packages && npm run typecheck:extension",
         "typecheck:frontend": "cd frontend && npm run typecheck",
-        "typecheck:packages": "cd packages/circuit-core && npm run typecheck",
+        "typecheck:packages": "cd packages/circuit-core && npm run typecheck && cd ../ui && npm run typecheck",
         "typecheck:extension": "cd vscode-extension && npm run typecheck",
         "build:extension": "cd vscode-extension && npm run build",
         "dev:backend": "cd backend && ./gradlew bootRun",

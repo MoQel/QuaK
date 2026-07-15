@@ -135,7 +135,9 @@ export class CircuitEditorProvider implements vscode.CustomTextEditorProvider {
 
     private buildHtml(webview: vscode.Webview): string {
         const nonce = createNonce();
-        const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, 'dist', 'webview.js'));
+        const asset = (file: string) =>
+            webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, 'dist', 'webview', file));
+        const scriptUri = asset('webview.js');
 
         return `<!DOCTYPE html>
             <html lang="en">
@@ -196,14 +198,7 @@ export class CircuitEditorProvider implements vscode.CustomTextEditorProvider {
                 </style>
             </head>
             <body>
-                <header>
-                    <h1>QuaK Circuit Editor</h1>
-                    <p id="status"></p>
-                    <div id="actions">
-                        <button id="edit" type="button">Append x q[0];</button>
-                    </div>
-                </header>
-                <pre id="root"></pre>
+                <div id="app"></div>
                 <script nonce="${nonce}" src="${scriptUri}"></script>
             </body>
             </html>`;

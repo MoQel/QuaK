@@ -3,14 +3,7 @@
         "target": "ES2022",
         "module": "ESNext",
         "moduleResolution": "bundler",
-        "lib": [
-            "ES2023",
-            "DOM"
-        ],
-        "types": [
-            "vscode",
-            "mocha"
-        ],
+        "lib": ["ES2023", "DOM"],
         "strict": true,
         "isolatedModules": true,
         "allowImportingTsExtensions": true,
@@ -20,7 +13,5 @@
         "skipLibCheck": true,
         "jsx": "react-jsx"
     },
-    "include": [
-        "src"
-    ]
+    "include": ["src"]
 }

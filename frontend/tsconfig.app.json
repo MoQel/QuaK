@@ -1,35 +1,35 @@
 {
-  "compilerOptions": {
-    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
-    "useDefineForClassFields": true,
-    "target": "ES2022",
-    "lib": ["ES2023", "DOM", "DOM.Iterable", "WebWorker"],
-    "module": "ESNext",
-    "skipLibCheck": true,
+    "compilerOptions": {
+        "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+        "useDefineForClassFields": true,
+        "target": "ES2022",
+        "lib": ["ES2023", "DOM", "DOM.Iterable", "WebWorker"],
+        "module": "ESNext",
+        "skipLibCheck": true,
 
-    /* Bundler mode */
-    "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
-    "isolatedModules": true,
-    "moduleDetection": "force",
-    "noEmit": true,
-    "jsx": "react-jsx",
+        /* Bundler mode */
+        "moduleResolution": "bundler",
+        "allowImportingTsExtensions": true,
+        "isolatedModules": true,
+        "moduleDetection": "force",
+        "noEmit": true,
+        "jsx": "react-jsx",
 
-    /* Linting */
-    "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true,
+        /* Linting */
+        "strict": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "noFallthroughCasesInSwitch": true,
+        "noUncheckedSideEffectImports": true,
 
-    "baseUrl": ".",
-    "paths": {
-      "@/*": [
-        "./src/*"
-      ],
-      "@quak/circuit-core": ["../packages/circuit-core/src/index.ts"],
-      "@quak/circuit-core/*": ["../packages/circuit-core/src/*"]
-    }
-  },
-  "include": ["src", "../packages/circuit-core/src"]
+        "baseUrl": ".",
+        "paths": {
+            "@/*": ["./src/*"],
+            "@quak/circuit-core": ["../packages/circuit-core/src/index.ts"],
+            "@quak/circuit-core/*": ["../packages/circuit-core/src/*"],
+            "@quak/ui": ["../packages/ui/src/index.ts"],
+            "@quak/ui/*": ["../packages/ui/src/*"]
+        }
+    },
+    "include": ["src", "../packages/circuit-core/src", "../packages/ui/src"]
 }

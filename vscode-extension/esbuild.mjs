@@ -14,17 +14,6 @@ const host = {
     sourcemap: true,
 };
 
-// The webview runs in a sandboxed browser frame.
-const webview = {
-    entryPoints: ['src/webview/main.ts'],
-    outfile: 'dist/webview.js',
-    bundle: true,
-    platform: 'browser',
-    format: 'iife',
-    target: 'es2022',
-    sourcemap: true,
-};
-
 // The integration tests run inside VSCode, so they are bundled like the host.
 const tests = {
     entryPoints: ['src/test/extension.test.ts'],
@@ -38,9 +27,9 @@ const tests = {
 };
 
 if (watch) {
-    const contexts = await Promise.all([esbuild.context(host), esbuild.context(webview)]);
+    const contexts = await esbuild.context(host);
     await Promise.all(contexts.map((c) => c.watch()));
     console.log('watching…');
 } else {
-    await Promise.all([esbuild.build(host), esbuild.build(webview), esbuild.build(tests)]);
+    await Promise.all([esbuild.build(host), esbuild.build(tests)]);
 }
