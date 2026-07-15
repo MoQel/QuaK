@@ -138,6 +138,7 @@ export class CircuitEditorProvider implements vscode.CustomTextEditorProvider {
         const asset = (file: string) =>
             webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, 'dist', 'webview', file));
         const scriptUri = asset('webview.js');
+        const styleUri = asset('webview.css');
 
         return `<!DOCTYPE html>
             <html lang="en">
@@ -147,55 +148,7 @@ export class CircuitEditorProvider implements vscode.CustomTextEditorProvider {
                     content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}';">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 <title>QuaK Circuit Editor</title>
-                <style>
-                    /* A webview is a blank frame: without this the text renders in the
-                       browser default black, which is invisible on a dark theme. */
-                    body {
-                        margin: 0;
-                        padding: 12px;
-                        color: var(--vscode-editor-foreground, #cccccc);
-                        background-color: var(--vscode-editor-background, #1e1e1e);
-                        font-family: var(--vscode-editor-font-family, monospace);
-                        font-size: var(--vscode-editor-font-size, 13px);
-                    }
-                    header {
-                        border-bottom: 1px solid var(--vscode-panel-border, #454545);
-                        margin-bottom: 12px;
-                        padding-bottom: 8px;
-                    }
-                    h1 {
-                        color: var(--vscode-textLink-foreground, #4daafc);
-                        font-size: 14px;
-                        margin: 0;
-                    }
-                    #status {
-                        color: var(--vscode-descriptionForeground, #9d9d9d);
-                        font-size: 12px;
-                        margin: 4px 0 0;
-                    }
-                    #actions {
-                        display: flex;
-                        gap: 8px;
-                        margin: 8px 0 0;
-                    }
-                    button {
-                        background-color: var(--vscode-button-background, #0e639c);
-                        border: none;
-                        border-radius: 2px;
-                        color: var(--vscode-button-foreground, #ffffff);
-                        cursor: pointer;
-                        font-family: inherit;
-                        font-size: 12px;
-                        padding: 4px 10px;
-                    }
-                    button:hover {
-                        background-color: var(--vscode-button-hoverBackground, #1177bb);
-                    }
-                    #root {
-                        margin: 0;
-                        white-space: pre-wrap;
-                    }
-                </style>
+                <link rel="stylesheet" href="${styleUri}">
             </head>
             <body>
                 <div id="app"></div>

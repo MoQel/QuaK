@@ -43,6 +43,7 @@
         "test:integration": "npm run build && vscode-test"
     },
     "devDependencies": {
+        "@tailwindcss/vite": "^4.3.2",
         "@types/mocha": "^10.0.10",
         "@types/react": "^19.2.17",
         "@types/react-dom": "^19.2.3",
@@ -58,6 +59,7 @@
     },
     "dependencies": {
         "react": "^19.2.7",
-        "react-dom": "^19.2.7"
+        "react-dom": "^19.2.7",
+        "tailwindcss": "^4.1.17"
     }
 }

@@ -1,0 +1,16 @@
+@import 'tailwindcss';
+
+/* A webview is a blank frame with no colours of its own. Mapping onto VSCode's
+   theme variables is what makes the view follow the user's light/dark theme
+   instead of shipping a second palette that would drift from it. */
+@theme inline {
+    --color-vscode-fg: var(--vscode-editor-foreground, #cccccc);
+    --color-vscode-bg: var(--vscode-editor-background, #1e1e1e);
+    --color-vscode-border: var(--vscode-panel-border, #454545);
+    --color-vscode-muted: var(--vscode-descriptionForeground, #9d9d9d);
+    --color-vscode-accent: var(--vscode-textLink-foreground, #4daafc);
+    --color-vscode-button: var(--vscode-button-background, #0e639c);
+    --color-vscode-button-hover: var(--vscode-button-hoverBackground, #1177bb);
+    --color-vscode-button-fg: var(--vscode-button-foreground, #ffffff);
+    --font-vscode: var(--vscode-editor-font-family, monospace);
+}
