@@ -2,10 +2,10 @@
 @import 'tw-animate-css';
 @import './dockview.css';
 
-/* Tailwind only scans this project by default. The circuit editor lives in a
-   workspace package outside it, so its utility classes have to be pointed at
-   explicitly or they are silently never generated. */
-@source '../../packages/circuit-editor/src';
+/* Brings what the editor needs everywhere: the @source directives for its own
+   sources, its gate colours and the destructive palette. The tokens it names but
+   leaves to the host are defined below. */
+@import '@quak/circuit-editor/editor.css';
 @custom-variant dark (&:is(.dark *));
 
 /* Global layout. These used to live in App.module.css, where they only loaded as
@@ -14,8 +14,6 @@
 :root {
     margin: 0 auto;
     text-align: center;
-    --quantumOperationWidth: 40px;
-    --quantumOperationHeight: 40px;
     --quantumOperationSpacing: 24px;
     --qubitWireSpacing: 8px;
     --colorBack: #2f2e2e;
@@ -65,10 +63,6 @@ body,
 
     --highlight: hsl(0 0% 50%); /* neutral highlight / emphasis */
 
-    --destructive: hsl(0 50% 50%); /* destructive actions (red) */
-    --destructive-hover: hsl(0 50% 45%); /* destructive hover state */
-    --destructive-text: hsl(0 75% 45%);
-
     --special: hsl(217 91% 70%); /* special / primary accent (blue) */
     --special-hover: hsl(217 91% 60%); /* hover state for special accent */
 
@@ -85,11 +79,6 @@ body,
     --scrollbarSlider-activeBackground: #0000004d;
 
     /* Quantum Operation Colors */
-    --hadamard: hsl(357 95% 45%);
-    --classical: hsl(223 100% 31%);
-    --phase: hsl(203 100% 60%);
-    --quantum: hsl(334 74% 36%);
-    --non-unitary-and-modifiers: hsl(0 0% 50%);
 }
 
 .dark {
@@ -107,10 +96,6 @@ body,
 
     --highlight: hsl(0 0% 50%); /* neutral highlight / emphasis */
 
-    --destructive: hsl(0 50% 30%); /* destructive actions (dark red) */
-    --destructive-hover: hsl(0 50% 40%); /* destructive hover state */
-    --destructive-text: hsl(0 85% 65%);
-
     --special: hsl(217 91% 60%); /* special / primary accent (blue) */
     --special-hover: hsl(217 91% 70%); /* hover state for special accent */
 
@@ -127,11 +112,6 @@ body,
     --scrollbarSlider-activeBackground: #ffffff4d;
 
     /* Quantum Operation Colors */
-    --hadamard: hsl(357 95% 64%);
-    --classical: hsl(218 100% 64%);
-    --phase: hsl(202 100% 86%);
-    --quantum: hsl(334 100% 75%);
-    --non-unitary-and-modifiers: hsl(0 0% 70%);
 }
 
 @layer base {

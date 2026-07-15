@@ -1,0 +1,72 @@
+/*
+ * What the circuit editor needs from whoever renders it.
+ *
+ * Import this once from the host's stylesheet:
+ *     @import '@quak/circuit-editor/editor.css';
+ *
+ * It brings everything that is the same in every host, so no host has to
+ * rediscover it. Two things it deliberately cannot bring, because they differ per
+ * host — supply them yourself:
+ *
+ * 1. The colour tokens below. The editor names them, the host decides what they
+ *    are, which is what lets the web IDE use its palette and the VSCode extension
+ *    follow the user's theme:
+ *
+ *      --bg  --bg-dark  --bg-light  --bg-light-hover  --bg-subtle
+ *      --text  --text-muted  --border
+ *      --special  --special-hover  --highlight  --ring
+ *
+ * 2. Tailwind's `dark` variant, since only the host knows how dark mode is marked:
+ *
+ *      web IDE:   @custom-variant dark (&:is(.dark *));
+ *      extension: @custom-variant dark (&:is(body.vscode-dark *, body.vscode-high-contrast *));
+ *
+ *    Without it the editor's hover feedback silently does nothing.
+ *
+ * The dark colour values below key off both markers, so a host only has to set its
+ * own. Keeping the values here is the point: a circuit has to read the same in
+ * every product.
+ */
+
+/* Tailwind only scans the project its stylesheet sits in, so the editor's own
+   sources and the ui primitives it builds on have to be pointed at explicitly.
+   Otherwise their utilities are silently never generated and the editor loses its
+   styling in ways that are easy to miss. Paths resolve from this file. */
+@source '.';
+@source '../../ui/src';
+
+:root {
+    --quantumOperationWidth: 40px;
+    --quantumOperationHeight: 40px;
+
+    /* Which colour a Hadamard is, and that destructive means red, is the editor's
+       own meaning rather than the host's theme — no host has an equivalent to map
+       onto, so they live here. Light values; dark ones below. */
+    --hadamard: hsl(357 95% 45%);
+    --classical: hsl(223 100% 31%);
+    --phase: hsl(203 100% 60%);
+    --quantum: hsl(334 74% 36%);
+    --non-unitary-and-modifiers: hsl(0 0% 50%);
+
+    --destructive: hsl(0 50% 50%);
+    --destructive-hover: hsl(0 50% 45%);
+    --destructive-text: hsl(0 75% 45%);
+}
+
+/* Matches however the host marks dark mode: the web IDE sets .dark itself, VSCode
+   puts vscode-dark / vscode-high-contrast on the body.
+   Not wrapped in :where(): that would drop the specificity to zero, and :root
+   above already scores higher, so the light values would win even in dark mode. */
+.dark,
+body.vscode-dark,
+body.vscode-high-contrast {
+    --hadamard: hsl(357 95% 64%);
+    --classical: hsl(218 100% 64%);
+    --phase: hsl(202 100% 86%);
+    --quantum: hsl(334 100% 75%);
+    --non-unitary-and-modifiers: hsl(0 0% 70%);
+
+    --destructive: hsl(0 50% 30%);
+    --destructive-hover: hsl(0 50% 40%);
+    --destructive-text: hsl(0 85% 65%);
+}
