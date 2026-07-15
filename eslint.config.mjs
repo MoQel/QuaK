@@ -10,7 +10,7 @@ import eslintConfigPrettier from 'eslint-config-prettier';
 // DOM, the extension host is Node, and only the webview is browser again.
 
 export default tseslint.config(
-    { ignores: ['**/dist/**', '**/coverage/**', 'backend/**'] },
+    { ignores: ['**/dist/**', '**/coverage/**', '**/.vscode-test/**', 'backend/**'] },
 
     // Baseline for every TypeScript file.
     {

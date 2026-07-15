@@ -4,7 +4,7 @@
         "module": "ESNext",
         "moduleResolution": "bundler",
         "lib": ["ES2023", "DOM"],
-        "types": ["vscode"],
+        "types": ["vscode", "mocha"],
         "strict": true,
         "isolatedModules": true,
         "allowImportingTsExtensions": true,

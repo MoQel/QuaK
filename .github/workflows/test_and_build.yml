@@ -174,5 +174,12 @@ jobs:
       - name: Frontend tests
         run: npm run test:frontend
 
+      - name: Extension unit tests
+        run: npm run test:extension
+
       - name: Build extension
         run: npm run build:extension
+
+      # Runs a real VSCode, which needs a virtual display on Linux.
+      - name: Extension integration tests
+        run: xvfb-run -a npm run test:extension:integration

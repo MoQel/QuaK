@@ -38,11 +38,18 @@
     "scripts": {
         "build": "node esbuild.mjs",
         "watch": "node esbuild.mjs --watch",
-        "typecheck": "tsc --noEmit"
+        "typecheck": "tsc --noEmit",
+        "test": "vitest run",
+        "test:integration": "npm run build && vscode-test"
     },
     "devDependencies": {
+        "@types/mocha": "^10.0.10",
         "@types/vscode": "^1.90.0",
+        "@vscode/test-cli": "^0.0.10",
+        "@vscode/test-electron": "^2.5.2",
         "esbuild": "^0.25.0",
-        "typescript": "~5.7.2"
+        "mocha": "^10.8.2",
+        "typescript": "~5.7.2",
+        "vitest": "^3.2.4"
     }
 }

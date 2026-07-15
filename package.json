@@ -8,6 +8,8 @@
         "test:all": "npm run test:backend & npm run test:frontend & wait",
         "test:backend": "cd backend && ./gradlew test",
         "test:frontend": "cd frontend && npm run test",
+        "test:extension": "cd vscode-extension && npm run test",
+        "test:extension:integration": "cd vscode-extension && npm run test:integration",
         "test:sequential": "npm run test:backend && npm run test:frontend",
         "lint": "eslint .",
         "lint:boundaries": "depcruise packages --config .dependency-cruiser.cjs",

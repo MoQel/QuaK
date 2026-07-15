@@ -12,3 +12,6 @@ node_modules/
 
 # Build output
 vscode-extension/dist/
+
+# Downloaded VSCode for integration tests
+vscode-extension/.vscode-test/

@@ -25,10 +25,22 @@ const webview = {
     sourcemap: true,
 };
 
+// The integration tests run inside VSCode, so they are bundled like the host.
+const tests = {
+    entryPoints: ['src/test/extension.test.ts'],
+    outdir: 'dist/test',
+    bundle: true,
+    platform: 'node',
+    format: 'cjs',
+    target: 'node20',
+    external: ['vscode', 'mocha'],
+    sourcemap: true,
+};
+
 if (watch) {
     const contexts = await Promise.all([esbuild.context(host), esbuild.context(webview)]);
     await Promise.all(contexts.map((c) => c.watch()));
     console.log('watching…');
 } else {
-    await Promise.all([esbuild.build(host), esbuild.build(webview)]);
+    await Promise.all([esbuild.build(host), esbuild.build(webview), esbuild.build(tests)]);
 }
