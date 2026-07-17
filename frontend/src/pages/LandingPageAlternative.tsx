@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowUpRight, BookOpen, Braces, CircuitBoard, Github, Play, ShieldCheck, SquareTerminal } from 'lucide-react';
+import { ArrowUpRight, BookOpen, Braces, CircuitBoard, Github, Play, SquareTerminal } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import './LandingPageAlternative.css';
@@ -96,7 +96,7 @@ export const LandingPageAlternative: React.FC = () => {
                         <div className="px-5 py-16 sm:px-8 sm:py-20 lg:border-r lg:border-[#c9cfcc] lg:pr-16">
                             <p className="mb-6 flex items-center gap-3 text-xs font-bold uppercase tracking-[0.17em] text-[#00735c]">
                                 <span className="h-px w-10 bg-[#00876c]" />
-                                Browser-based development environment
+                                Integrated quantum software development
                             </p>
                             <h1 className="max-w-3xl text-5xl font-normal leading-[1.06] tracking-[-0.035em] text-[#17211f] sm:text-6xl">
                                 A practical workspace for quantum software engineering.
@@ -118,14 +118,14 @@ export const LandingPageAlternative: React.FC = () => {
                             </div>
                         </div>
 
-                        <aside id="sign-in" className="bg-[#fbfbf9] px-5 py-10 sm:px-8 lg:py-16">
+                        <aside
+                            id="sign-in"
+                            className="flex flex-col justify-center bg-[#fbfbf9] px-5 py-10 sm:px-8 lg:py-16"
+                        >
                             <p className="text-xs font-bold uppercase tracking-[0.15em] text-[#59635f]">
                                 Workspace access
                             </p>
                             <h2 className="mt-3 text-3xl font-normal">Sign in to QuaK</h2>
-                            <p className="mt-4 text-sm leading-6 text-[#59635f]">
-                                Continue with an existing account. QuaK does not store a separate password.
-                            </p>
                             {errorMessage && (
                                 <div className="mt-5 border-l-4 border-[#a22223] bg-[#f5e8e8] px-4 py-3 text-sm text-[#791f20]">
                                     {errorMessage}
@@ -147,10 +147,6 @@ export const LandingPageAlternative: React.FC = () => {
                                     Continue with GitHub
                                 </button>
                             </div>
-                            <p className="mt-5 flex items-center gap-2 text-xs leading-5 text-[#65706c]">
-                                <ShieldCheck className="h-4 w-4 shrink-0 text-[#00876c]" />
-                                Secure authentication through OAuth 2.0
-                            </p>
                         </aside>
                     </div>
                 </section>
@@ -257,7 +253,6 @@ export const LandingPageAlternative: React.FC = () => {
 
             <footer className="border-t border-[#aeb7b3] bg-[#fbfbf9]">
                 <div className="mx-auto flex max-w-[1180px] flex-col gap-5 px-5 py-9 text-xs text-[#59635f] sm:px-8 md:flex-row md:items-center md:justify-between">
-                    <p>QuaK — Quantum Computing Platform</p>
                     <div className="flex flex-wrap gap-6">
                         <a
                             href="https://github.com/MoQel/QuaK"
