@@ -123,7 +123,7 @@ export function HomePage() {
     }, [ownProjects, pinnedProjectIds, sortMode]);
 
     const handleProjectCreated = (project: ProjectDetailsResponse) => {
-        navigate(`/project/${project.id}`);
+        navigate(`/app/project/${project.id}`);
     };
 
     const renderOwnProjectsContent = () => {

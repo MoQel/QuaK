@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { ArrowUpRight, BookOpen, Braces, CircuitBoard, Github, Play, SquareTerminal } from 'lucide-react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { Link } from 'react-router-dom';
+import { LoginOptions } from './LogIn';
 import './LandingPageAlternative.css';
 
 const capabilities = [
@@ -27,33 +27,7 @@ const capabilities = [
     },
 ];
 
-const GithubMark = () => (
-    <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
-        <path
-            fill="currentColor"
-            d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.44 9.8 8.21 11.39.6.11.79-.26.79-.58v-2.23c-3.34.73-4.03-1.42-4.03-1.42-.55-1.39-1.33-1.76-1.33-1.76-1.09-.74.08-.73.08-.73 1.21.09 1.84 1.24 1.84 1.24 1.07 1.83 2.81 1.3 3.49 1 .11-.78.42-1.31.76-1.61-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.12-.3-.54-1.52.12-3.18 0 0 1.01-.32 3.3 1.23A11.5 11.5 0 0 1 12 6.8c1.02 0 2.05.14 3 .4 2.3-1.55 3.3-1.23 3.3-1.23.66 1.66.24 2.88.12 3.18.77.84 1.24 1.91 1.24 3.22 0 4.61-2.81 5.62-5.48 5.92.43.37.82 1.1.82 2.22v3.3c0 .32.19.69.8.57A12 12 0 0 0 12 0Z"
-        />
-    </svg>
-);
-
 export const LandingPageAlternative: React.FC = () => {
-    const { login, isAuthenticated } = useAuth();
-    const navigate = useNavigate();
-    const [searchParams, setSearchParams] = useSearchParams();
-    const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-    useEffect(() => {
-        if (isAuthenticated) navigate('/');
-    }, [isAuthenticated, navigate]);
-
-    useEffect(() => {
-        if (searchParams.get('error') === 'email_exists') {
-            setErrorMessage('An account with this email address already exists using a different sign-in method.');
-            searchParams.delete('error');
-            setSearchParams(searchParams);
-        }
-    }, [searchParams, setSearchParams]);
-
     return (
         <div className="quak-landing min-h-screen bg-[#f7f6f2] text-[#17211f]">
             <div className="h-1.5 bg-[#00876c]" />
@@ -86,6 +60,12 @@ export const LandingPageAlternative: React.FC = () => {
                         >
                             GitHub <ArrowUpRight className="h-3.5 w-3.5" />
                         </a>
+                        <Link
+                            to="/login"
+                            className="border border-[#17211f] px-4 py-2 font-bold hover:bg-[#17211f] hover:text-white"
+                        >
+                            Sign in
+                        </Link>
                     </nav>
                 </div>
             </header>
@@ -118,35 +98,17 @@ export const LandingPageAlternative: React.FC = () => {
                             </div>
                         </div>
 
-                        <aside
-                            id="sign-in"
-                            className="flex flex-col justify-center bg-[#fbfbf9] px-5 py-10 sm:px-8 lg:py-16"
-                        >
+                        <aside className="flex flex-col justify-center bg-[#fbfbf9] px-5 py-10 sm:px-8 lg:py-16">
                             <p className="text-xs font-bold uppercase tracking-[0.15em] text-[#59635f]">
                                 Workspace access
                             </p>
                             <h2 className="mt-3 text-3xl font-normal">Sign in to QuaK</h2>
-                            {errorMessage && (
-                                <div className="mt-5 border-l-4 border-[#a22223] bg-[#f5e8e8] px-4 py-3 text-sm text-[#791f20]">
-                                    {errorMessage}
-                                </div>
-                            )}
-                            <div className="mt-7 space-y-3">
-                                <button
-                                    onClick={() => login('google')}
-                                    className="flex w-full cursor-pointer items-center justify-center gap-3 border border-[#8d9692] bg-white px-5 py-3.5 text-sm font-bold hover:border-[#00876c] hover:text-[#00735c]"
-                                >
-                                    <span className="text-base font-bold text-[#4664aa]">G</span>
-                                    Continue with Google
-                                </button>
-                                <button
-                                    onClick={() => login('github')}
-                                    className="flex w-full cursor-pointer items-center justify-center gap-3 bg-[#202725] px-5 py-3.5 text-sm font-bold text-white hover:bg-black"
-                                >
-                                    <GithubMark />
-                                    Continue with GitHub
-                                </button>
+                            <div className="mt-7">
+                                <LoginOptions />
                             </div>
+                            <Link to="/login" className="mt-5 text-center text-sm text-[#59635f] hover:text-[#00735c]">
+                                Open the dedicated sign-in page
+                            </Link>
                         </aside>
                     </div>
                 </section>

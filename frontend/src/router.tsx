@@ -1,6 +1,7 @@
 import { createBrowserRouter, RouteObject } from 'react-router-dom';
 import Project from './App';
-import LogIn from './pages/LandingPageAlternative';
+import LandingPage from './pages/LandingPageAlternative';
+import LogIn from './pages/LogIn';
 import Home from './pages/Home.tsx';
 import Profile from './pages/Profile';
 import Settings from './pages/Settings';
@@ -11,6 +12,14 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 
 const routes: RouteObject[] = [
     {
+        path: '/',
+        element: (
+            <AuthProvider>
+                <LandingPage />
+            </AuthProvider>
+        ),
+    },
+    {
         path: '/login',
         element: (
             <AuthProvider>
@@ -19,7 +28,7 @@ const routes: RouteObject[] = [
         ),
     },
     {
-        path: '/',
+        path: '/app',
         element: (
             <AuthProvider>
                 <ProtectedRoute>

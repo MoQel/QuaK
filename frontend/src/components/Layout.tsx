@@ -9,7 +9,7 @@ import { PanelDataProvider } from '@/contexts/panel/PanelDataProvider';
 export const Layout: React.FC = () => {
     const { pathname } = useLocation();
 
-    const isIDE = pathname.startsWith('/project');
+    const isIDE = pathname.startsWith('/app/project');
 
     return (
         <ProjectProvider>

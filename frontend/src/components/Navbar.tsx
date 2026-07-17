@@ -21,7 +21,7 @@ export const Navbar: React.FC = () => {
     const { dialog, openRenameProjectDialog, openDeleteProjectDialog } = useProjectActionsDialog();
     const [isMenubarVisible, setIsMenubarVisible] = useState(false);
 
-    const isIdeView = location.pathname.startsWith('/project');
+    const isIdeView = location.pathname.startsWith('/app/project');
 
     const dockview = useDockviewOptional();
 
@@ -35,13 +35,13 @@ export const Navbar: React.FC = () => {
     };
 
     const getActiveTab = () => {
-        if (location.pathname === '/' || location.pathname.startsWith('/home')) {
+        if (location.pathname === '/app') {
             return 'home';
-        } else if (location.pathname.startsWith('/project')) {
+        } else if (location.pathname.startsWith('/app/project')) {
             return 'project';
-        } else if (location.pathname.startsWith('/profile')) {
+        } else if (location.pathname.startsWith('/app/profile')) {
             return 'profile';
-        } else if (location.pathname.startsWith('/settings')) {
+        } else if (location.pathname.startsWith('/app/settings')) {
             return 'settings';
         }
         return 'home';
@@ -53,7 +53,7 @@ export const Navbar: React.FC = () => {
             <div className="flex items-center justify-between w-full gap-4 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                 {/* Left section */}
                 <div className="flex items-center gap-4 shrink-0">
-                    <Link to="/" className="flex items-center gap-2 shrink-0">
+                    <Link to="/app" className="flex items-center gap-2 shrink-0">
                         <h1 className="text-3xl font-bold bg-gradient-to-r from-logo-start to-logo-end bg-clip-text text-transparent">
                             QuaK
                         </h1>
@@ -113,7 +113,7 @@ export const Navbar: React.FC = () => {
                                     onClick={() =>
                                         openDeleteProjectDialog(
                                             { id: projectId, name: projectName },
-                                            { onDeleted: () => navigate('/') },
+                                            { onDeleted: () => navigate('/app') },
                                         )
                                     }
                                 >
@@ -129,19 +129,19 @@ export const Navbar: React.FC = () => {
                     <div className="flex items-center gap-2 md:gap-4 justify-end flex-nowrap shrink-0">
                         <Tabs value={getActiveTab()} className="w-auto shrink-0">
                             <TabsList>
-                                <Link to="/">
+                                <Link to="/app">
                                     <TabsTrigger value="home" className="gap-2">
                                         <Home className="size-4" />
                                         Home
                                     </TabsTrigger>
                                 </Link>
-                                <Link to="/profile">
+                                <Link to="/app/profile">
                                     <TabsTrigger value="profile" className="gap-2">
                                         <User className="size-4" />
                                         Profile
                                     </TabsTrigger>
                                 </Link>
-                                <Link to="/settings">
+                                <Link to="/app/settings">
                                     <TabsTrigger value="settings" className="gap-2">
                                         <Settings className="size-4" />
                                         Settings

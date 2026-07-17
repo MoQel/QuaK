@@ -162,7 +162,7 @@ export function ProjectCard({
                         )}
                     </div>
                     <div className="mt-2">
-                        <Link to={`/project/${project.id}`}>
+                        <Link to={`/app/project/${project.id}`}>
                             <Button className="w-full" variant="default">
                                 Open Project
                             </Button>
