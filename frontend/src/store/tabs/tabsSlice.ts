@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { DEFAULT_LANG, languages } from '@/views/text-editor-view/languages/languages.ts';
-import { EditorGroup, PendingClose, Tab, TabsState } from '@/store/tabs/tabsTypes.ts';
+import { EditorGroup, PendingClose, Tab, TabsState, TabViewMode } from '@/store/tabs/tabsTypes.ts';
 
 export const GROUP_MAIN = 'group-main';
 export const GROUP_RIGHT = 'group-right';
@@ -239,8 +239,7 @@ export const tabsSlice = createSlice({
             const tab = action.payload.tab;
             const newTab: Tab = {
                 ...tab,
-                // Formal tabs aren't backed by the editor, so they have no language to derive.
-                language: tab.kind === 'formal' ? tab.language : getLanguageByExtension(tab.title),
+                language: getLanguageByExtension(tab.title),
             };
 
             const exists = group.openTabs.find((t) => t.id === action.payload.tab.id);
@@ -281,6 +280,16 @@ export const tabsSlice = createSlice({
         },
 
         closeAll: () => initialState,
+
+        // Switches how a tab is displayed (source vs. Dirac notation). Applied to every group the
+        // tab is open in so split views stay in sync, since both share the same underlying file.
+        setTabViewMode: (state, action: PayloadAction<{ tabId: string; viewMode: TabViewMode }>) => {
+            const { tabId, viewMode } = action.payload;
+            state.groups.forEach((group) => {
+                const tab = group.openTabs.find((t) => t.id === tabId);
+                if (tab) tab.viewMode = viewMode;
+            });
+        },
 
         setActiveTab: (state, action: PayloadAction<{ tabId: string; groupId: string }>) => {
             const group = state.groups.find((g) => g.id === action.payload.groupId);
@@ -360,6 +369,7 @@ export const {
     closeTab,
     closeOthers,
     closeAll,
+    setTabViewMode,
     setActiveTab,
     moveTab,
     requestLanguageChange,

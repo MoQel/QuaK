@@ -5,26 +5,34 @@ import { EditorTabBar } from '@/views/text-editor-view/components/tabs/EditorTab
 import { CardContent } from '@/components/ui/card.tsx';
 import QLPEditor from '@/views/text-editor-view/components/core/QLPEditor.tsx';
 import { FormalEditor } from '@/views/text-editor-view/components/formal-editor/FormalEditor.tsx';
-import { useProject } from '@/contexts/ProjectContext.tsx';
+import { useCircuitTabs } from '@/contexts/CircuitTabsContext.tsx';
 
 export function EditorSlot({ groupId }: Readonly<{ groupId: string }>) {
     const dispatch = useAppDispatch();
 
-    // A formal tab renders the Dirac notation instead of the Monaco editor. Non-formal (code) keep the existing editor.
+    // When the active tab is in Dirac view, overlay the read-only notation. The Monaco editor stays
+    // mounted underneath (just hidden) so unsaved edits and editor state survive the view switch.
     const isFormalActive = useAppSelector((state) => {
         const group = state.tabs.groups.find((g) => g.id === groupId);
         const activeTab = group?.openTabs.find((t) => t.id === group.activeTabId);
-        return activeTab?.kind === 'formal';
+        return activeTab?.viewMode === 'formal';
     });
 
-    // TODO: resolve the circuit the tab was opened from. Atm formal tab only shows the single project circuit (wait for #146)
-    const { circuit } = useProject();
+    // The Dirac view renders the per-file circuit of the active file, so it reflects circuit edits.
+    const { activeCircuit } = useCircuitTabs();
 
     return (
         <div className={'h-full flex flex-col'} onClickCapture={() => dispatch(setActiveGroup(groupId))}>
             <EditorTabBar groupId={groupId} />
             <CardContent className="flex flex-col flex-1 p-0 overflow-hidden relative">
-                {isFormalActive ? <FormalEditor circuit={circuit} /> : <QLPEditor groupId={groupId} />}
+                <div className="h-full w-full" style={{ display: isFormalActive ? 'none' : 'block' }}>
+                    <QLPEditor groupId={groupId} />
+                </div>
+                {isFormalActive && (
+                    <div className="absolute inset-0">
+                        <FormalEditor circuit={activeCircuit} />
+                    </div>
+                )}
             </CardContent>
         </div>
     );
