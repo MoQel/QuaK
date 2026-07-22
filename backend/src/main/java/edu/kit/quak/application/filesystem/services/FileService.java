@@ -1,5 +1,6 @@
 package edu.kit.quak.application.filesystem.services;
 
+import edu.kit.quak.application.circuit.ports.in.CircuitServicePort;
 import edu.kit.quak.application.filesystem.delegator.FileElementContainerRepositoryDelegator;
 import edu.kit.quak.application.filesystem.exception.FileContentNotFoundException;
 import edu.kit.quak.application.filesystem.exception.FileNotFoundException;
@@ -21,16 +22,19 @@ public class FileService extends AbstractFileElementService<File> implements Fil
 
     private final FileRepositoryPort repository;
     private final FileContentRepositoryPort contentRepository;
+    private final CircuitServicePort circuitService;
 
     public FileService(
         FileRepositoryPort repository,
         FileContentRepositoryPort contentRepository,
         FileElementContainerRepositoryDelegator delegator,
-        ProjectRoleServicePort roleService
+        ProjectRoleServicePort roleService,
+        CircuitServicePort circuitService
     ) {
         super(delegator, roleService);
         this.repository = repository;
         this.contentRepository = contentRepository;
+        this.circuitService = circuitService;
     }
 
     // region Create
@@ -46,6 +50,7 @@ public class FileService extends AbstractFileElementService<File> implements Fil
         // Create initially empty content entry
         File createdFile = findElementInParent(savedParent, element.getId());
         contentRepository.saveContent(createdFile.getId(), new byte[0]);
+        delegator.touchRootProject(parentId);
 
         log.info("File created. fileId={}, parentId={}, userId={}", createdFile.getId(), parentId, user.getId());
         return createdFile;
@@ -88,7 +93,9 @@ public class FileService extends AbstractFileElementService<File> implements Fil
         File file = retrieveWithoutAuth(fId);
         verifyOwnershipByParentId(file.getParentId(), user);
         checkForDuplicateName(fId, newName);
-        return modifyElementInParent(fId, f -> f.rename(newName));
+        File renamedFile = modifyElementInParent(fId, f -> f.rename(newName));
+        delegator.touchRootProject(file.getParentId());
+        return renamedFile;
     }
 
     @Override
@@ -101,6 +108,7 @@ public class FileService extends AbstractFileElementService<File> implements Fil
         modifyElementInParent(fId, FileElement::setLastAccessNow);
         // Store content blob seperate
         contentRepository.saveContent(fId, content);
+        delegator.touchRootProject(file.getParentId());
     }
 
     // endregion Update
@@ -117,6 +125,8 @@ public class FileService extends AbstractFileElementService<File> implements Fil
         parent.removeChild(file);
         delegator.save(parent);
         contentRepository.deleteContent(fId);
+        circuitService.deleteByFileId(fId);
+        delegator.touchRootProject(file.getParentId());
 
         log.info("File removed. fileId={}, userId={}", fId, user.getId());
     }

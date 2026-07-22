@@ -15,6 +15,8 @@ public class JpaQuantumCircuit extends JpaElementWithId {
 
     private String projectId;
 
+    private String fileId;
+
     @OneToMany(mappedBy = "circuit", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderColumn(name = "register_pos")
     private List<JpaRegister> registers = new ArrayList<>();

@@ -21,9 +21,8 @@ export interface TabsState {
     pendingCloseAction: PendingClose | null;
 }
 
-export type PendingClose = (
+export type PendingClose =
     | { type: 'tab'; payload: { tabId: string; groupId: string } }
     | { type: 'group'; payload: { groupId: string } }
     | { type: 'all' }
-    | { type: 'others'; payload: { tabId: string; groupId: string } }
-) & { shouldCloseCodePanel?: boolean };
+    | { type: 'others'; payload: { tabId: string; groupId: string } };

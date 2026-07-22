@@ -4,7 +4,6 @@ import { useMemo } from 'react';
 import { GROUP_BOTTOM, GROUP_MAIN, GROUP_RIGHT } from '@/store/tabs/tabsSlice.ts';
 import { useEditorShortcuts } from '@/hooks/editor/useEditorShortcuts.ts';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
-import { useMonacoGarbageCollector } from '@/hooks/editor/useMonacoGarbageCollector.ts';
 import { useEditorCommands } from '@/hooks/editor/useEditorCommands.ts';
 import { EditorDropZoneSlot } from '@/views/text-editor-view/components/layout/EditorDropZoneSlot.tsx';
 import { EditorSlot } from '@/views/text-editor-view/components/layout/EditorSlot.tsx';
@@ -15,9 +14,7 @@ export function TextEditorView() {
     const { groups, activeGroupId, isDragging } = useAppSelector((state) => state.tabs);
     const activeGroup = groups.find((g) => g.id === activeGroupId);
     const activeTabId = activeGroup?.activeTabId || null;
-    const activeTab = activeGroup?.openTabs.find((t) => t.id === activeTabId) ?? null;
-    useEditorShortcuts(activeTabId, activeGroupId, activeTab?.kind === 'formal');
-    useMonacoGarbageCollector();
+    useEditorShortcuts(activeTabId, activeGroupId);
     useEditorCommands();
     useLSPSetup();
 

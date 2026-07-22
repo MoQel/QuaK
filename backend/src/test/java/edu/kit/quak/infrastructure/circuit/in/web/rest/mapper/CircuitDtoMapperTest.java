@@ -26,7 +26,7 @@ class CircuitDtoMapperTest {
     @Test
     void toResponse() {
         // Arrange
-        QuantumCircuit circuit = new QuantumCircuit("");
+        QuantumCircuit circuit = new QuantumCircuit("", "f-1");
 
         // Act
         CircuitResponse response = mapper.toResponse(circuit);
@@ -35,7 +35,7 @@ class CircuitDtoMapperTest {
         assertNotNull(response);
         assertEquals(circuit.getId(), response.id());
         assertEquals(1, response.registers().size());
-        assertEquals("x", response.registers().getFirst().getName());
+        assertEquals("q", response.registers().getFirst().getName());
         assertEquals(0, response.layers().size());
     }
 }

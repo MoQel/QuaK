@@ -4,12 +4,19 @@ import { QuantumOperationDto, RegisterResponse, ElementSelectorDto, getRegisterS
 import { getOperationDefinition, OperationDefinition } from '@/lib/operations.ts';
 import { CELL_WIDTH, QUBIT_HEIGHT } from '@/views/circuit-view/util/layout.ts';
 import { TextIcon } from '@/components/ui/text-icon.tsx';
+import { formatRotationAngle } from '@/views/circuit-view/util/angle.ts';
 import { DragData } from '../util/types';
 
 interface ElementaryQuantumGateProps {
     operation: QuantumOperationDto;
     registers: RegisterResponse[];
     layerIdx: number;
+    /**
+     * Renders the gate semi-transparent and non-interactive while it is being
+     * dragged. The element must stay mounted as the drag source (dragend), but it
+     * must not swallow dragover events of the drop zone underneath it.
+     */
+    isGhost?: boolean;
     onDragStart: (operationSize: number) => void;
     onDragEnd: () => void;
     onDelete: () => void;
@@ -28,12 +35,20 @@ export function ElementaryQuantumGate({
     operation,
     registers,
     layerIdx,
+    isGhost = false,
     onDragStart,
     onDragEnd,
     onDelete,
 }: Readonly<ElementaryQuantumGateProps>) {
     const definition = getOperationDefinition(operation.identifier);
     const isDraggingRef = useRef(false);
+    const interactivity = isGhost ? 'pointer-events-none' : 'pointer-events-auto';
+
+    // Rotation gates (rx/ry/rz) show their angle on the box, e.g. "π/2".
+    const angleLabel =
+        definition.hasRotationAngle && operation.type === 'ELEMENTARY_QUANTUM_GATE'
+            ? formatRotationAngle(operation.rotationAngle)
+            : null;
 
     // Compute geometry (indices, span, bounds)
     const { targetIndices, controlIndices, minY, spanHeight } = useMemo(() => {
@@ -88,7 +103,7 @@ export function ElementaryQuantumGate({
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
             onClick={handleClick}
-            className="absolute z-30 flex flex-col items-center group pointer-events-none"
+            className={`absolute z-30 flex flex-col items-center group pointer-events-none ${isGhost ? 'opacity-50' : ''}`}
             style={{
                 top: minY * QUBIT_HEIGHT,
                 left: layerIdx * CELL_WIDTH,
@@ -99,9 +114,9 @@ export function ElementaryQuantumGate({
             {/* Connector Line for Multi-Qubit Gates with hitbox container*/}
             {targetIndices.length + controlIndices.length > 1 && (
                 <div
-                    className="
+                    className={`
                     absolute left-1/2 -translate-x-1/2 w-2
-                    pointer-events-auto cursor-grab active:cursor-grabbing"
+                    ${interactivity} cursor-grab active:cursor-grabbing`}
                     style={{
                         top: QUBIT_HEIGHT / 2,
                         bottom: QUBIT_HEIGHT / 2,
@@ -119,7 +134,12 @@ export function ElementaryQuantumGate({
 
             {/* Render Controls */}
             {controlIndices.map((idx) => (
-                <ControlPoint key={`control-${idx}`} relativeIdx={idx - minY} definition={definition} />
+                <ControlPoint
+                    key={`control-${idx}`}
+                    relativeIdx={idx - minY}
+                    definition={definition}
+                    interactivity={interactivity}
+                />
             ))}
 
             {/* Render Targets */}
@@ -129,21 +149,27 @@ export function ElementaryQuantumGate({
                     relativeIdx={idx - minY}
                     definition={definition}
                     isSWAP={operation.identifier === 'SWAP'}
+                    angleLabel={angleLabel}
+                    interactivity={interactivity}
                 />
             ))}
         </div>
     );
 }
 
-function ControlPoint({ relativeIdx, definition }: Readonly<{ relativeIdx: number; definition: OperationDefinition }>) {
+function ControlPoint({
+    relativeIdx,
+    definition,
+    interactivity,
+}: Readonly<{ relativeIdx: number; definition: OperationDefinition; interactivity: string }>) {
     const size: number = 12;
     return (
         <div
-            className="
+            className={`
                 absolute left-1/2 -translate-x-1/2 rounded-full
                 bg-bg-light border-border
-                pointer-events-auto cursor-grab active:cursor-grabbing
-                group-hover:brightness-90 dark:group-hover:brightness-125 transition-colors"
+                ${interactivity} cursor-grab active:cursor-grabbing
+                group-hover:brightness-90 dark:group-hover:brightness-125 transition-colors`}
             style={{
                 backgroundColor: definition.color,
                 top: relativeIdx * QUBIT_HEIGHT + QUBIT_HEIGHT / 2 - size / 2,
@@ -158,15 +184,33 @@ function TargetPoint({
     relativeIdx,
     definition,
     isSWAP,
-}: Readonly<{ relativeIdx: number; definition: OperationDefinition; isSWAP: boolean }>) {
-    let icon: React.ReactNode;
+    angleLabel,
+    interactivity,
+}: Readonly<{
+    relativeIdx: number;
+    definition: OperationDefinition;
+    isSWAP: boolean;
+    angleLabel?: string | null;
+    interactivity: string;
+}>) {
+    let content: React.ReactNode;
 
     if (definition.icon.type === 'component') {
         const ComponentIcon = definition.icon.component;
-        icon = <ComponentIcon className="size-4 stroke-4" />;
+        content = <ComponentIcon className="size-4 stroke-4" />;
+    } else if (angleLabel) {
+        // Rotation gate: stack the identifier over its angle so both fit the box.
+        content = (
+            <div className="flex flex-col items-center justify-center leading-none">
+                <span style={{ fontSize: '12px' }}>{definition.icon.text}</span>
+                <span style={{ fontSize: '9px' }} className="font-semibold opacity-90">
+                    {angleLabel}
+                </span>
+            </div>
+        );
     } else {
         const TextIconComponent = TextIcon(definition.icon.text);
-        icon = <TextIconComponent />;
+        content = <TextIconComponent />;
     }
 
     return (
@@ -179,16 +223,20 @@ function TargetPoint({
                 className={`
                     ${definition.formClass}
                     flex items-center justify-center
-                    pointer-events-auto cursor-grab active:cursor-grabbing
+                    ${interactivity} cursor-grab active:cursor-grabbing
                     group-hover:brightness-90 dark:group-hover:brightness-125 transition-colors
                     ${isSWAP ? '' : styles.quantumOperation}`}
                 style={
                     isSWAP
                         ? { backgroundColor: 'transparent', color: definition.color }
-                        : { backgroundColor: definition.color, color: 'var(--bg-dark)' }
+                        : {
+                              backgroundColor: definition.color,
+                              color: 'var(--bg-dark)',
+                              ...(angleLabel ? { padding: '2px 3px' } : {}),
+                          }
                 }
             >
-                {icon}
+                {content}
             </div>
         </div>
     );
