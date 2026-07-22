@@ -1,11 +1,4 @@
-import {
-    moveTab,
-    requestLanguageChange,
-    requestSave,
-    setActiveTab,
-    setDragging,
-    setTabViewMode,
-} from '@/store/tabs/tabsSlice.ts';
+import { moveTab, requestLanguageChange, requestSave, setActiveTab, setDragging } from '@/store/tabs/tabsSlice.ts';
 import { ContextMenu, ContextMenuTrigger } from '@/components/ui/context-menu.tsx';
 import { useAppDispatch } from '@/hooks/useAppDispatch.ts';
 import { useAppSelector } from '@/hooks/useAppSelector.ts';
@@ -110,10 +103,6 @@ export function EditorTabBar({ groupId }: Readonly<TabBarProps>) {
                                     }),
                                 )
                             }
-                            onOpenWith={(viewMode) => {
-                                dispatch(setTabViewMode({ tabId: tab.id, viewMode }));
-                                dispatch(setActiveTab({ tabId: tab.id, groupId }));
-                            }}
                             onSave={() => dispatch(requestSave(tab.id))}
                         />
                     </ContextMenu>

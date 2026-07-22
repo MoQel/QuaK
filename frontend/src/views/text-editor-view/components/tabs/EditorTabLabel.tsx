@@ -27,10 +27,7 @@ export const EditorTabLabel = React.forwardRef<HTMLDivElement, EditorTabLabelPro
                     className,
                 )}
             >
-                <span className="mr-2 flex-1 truncate">
-                    {tab.title}
-                    {tab.viewMode === 'formal' && ' (Dirac)'}
-                </span>
+                <span className="mr-2 flex-1 truncate">{tab.title}</span>
 
                 <Button
                     type="button"

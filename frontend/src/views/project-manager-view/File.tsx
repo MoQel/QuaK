@@ -4,15 +4,7 @@ import {
     ParentRefresh,
     SelectedFolder,
 } from '@/views/project-manager-view/ProjectManagerContexts.ts';
-import {
-    ContextMenu,
-    ContextMenuContent,
-    ContextMenuItem,
-    ContextMenuSub,
-    ContextMenuSubContent,
-    ContextMenuSubTrigger,
-    ContextMenuTrigger,
-} from '@/components/ui/context-menu.tsx';
+import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu.tsx';
 import { Delete } from '@/views/project-manager-view/Delete.tsx';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog.tsx';
 import { JSX, useCallback, useContext, useState } from 'react';
@@ -24,10 +16,6 @@ import { FileDetailsResponse, RenameFileRequest } from '@/api/dto/filesystem.ts'
 import { EntityForm } from '@/views/project-manager-view/util/FormUtils.tsx';
 import { getFileIcon } from '@/views/project-manager-view/util/FileIcons.tsx';
 import { toast } from 'sonner';
-import { useAppDispatch } from '@/hooks/useAppDispatch.ts';
-import { openTab, setTabViewMode } from '@/store/tabs/tabsSlice.ts';
-import { canOpenInFormalEditor } from '@/views/text-editor-view/components/formal-editor/formalTab.ts';
-import { TabViewMode } from '@/store/tabs/tabsTypes.ts';
 
 /**
  * Displays a {@link IFile File}
@@ -60,7 +48,6 @@ export function File(file: Readonly<IFile>) {
                     <ListingElement text={name} icon={getFileIcon(name)} />
                 </ContextMenuTrigger>
                 <ContextMenuContent>
-                    {canOpenInFormalEditor(name) && <OpenWithSubmenu id={id} name={name} />}
                     {FileRename(id, dialogTrigger)}
                     <Delete endpoint={'/api/file/' + id} openDialog={dialogTrigger} />
                 </ContextMenuContent>
@@ -69,29 +56,6 @@ export function File(file: Readonly<IFile>) {
                 <DialogClose.Provider value={handleClose}>{dialogContent}</DialogClose.Provider>
             </DialogContent>
         </Dialog>
-    );
-}
-
-/**
- * Lets the user open the file in a chosen view. Both views share one tab; opening either also makes
- * the file's circuit the active one, and the Dirac notation is just a read-only view of that tab.
- */
-function OpenWithSubmenu({ id, name }: Readonly<{ id: string; name: string }>) {
-    const dispatch = useAppDispatch();
-    const openWith = (viewMode: TabViewMode) => {
-        // Open (or focus) the file's tab, then switch it to the requested view.
-        dispatch(openTab({ tab: { id, title: name, language: '' } }));
-        dispatch(setTabViewMode({ tabId: id, viewMode }));
-    };
-
-    return (
-        <ContextMenuSub>
-            <ContextMenuSubTrigger>Open With</ContextMenuSubTrigger>
-            <ContextMenuSubContent>
-                <ContextMenuItem onSelect={() => openWith('code')}>Text Editor</ContextMenuItem>
-                <ContextMenuItem onSelect={() => openWith('formal')}>Dirac Notation</ContextMenuItem>
-            </ContextMenuSubContent>
-        </ContextMenuSub>
     );
 }
 

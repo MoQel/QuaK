@@ -11,8 +11,7 @@ import { GROUP_BOTTOM, GROUP_MAIN, GROUP_RIGHT } from '@/store/tabs/tabsSlice.ts
 import { languages } from '@/views/text-editor-view/languages/languages.ts';
 import { Check } from 'lucide-react';
 import { getKeyLabel, getOptionKeyLabel } from '@/views/text-editor-view/utils/getKeyLabel.ts';
-import { Tab, TabViewMode } from '@/store/tabs/tabsTypes.ts';
-import { canOpenInFormalEditor } from '@/views/text-editor-view/components/formal-editor/formalTab.ts';
+import { Tab } from '@/store/tabs/tabsTypes.ts';
 
 interface TabContextMenuProps {
     tab: Tab;
@@ -24,7 +23,6 @@ interface TabContextMenuProps {
     onCloseAll: () => void;
     onMoveTab: (toGroupId: string) => void;
     onChangeLanguage: (langId: string) => void;
-    onOpenWith: (viewMode: TabViewMode) => void;
     onSave: () => void;
 }
 
@@ -37,14 +35,10 @@ export function EditorTabContextMenuContent({
     onCloseAll,
     onMoveTab,
     onChangeLanguage,
-    onOpenWith,
     onSave,
 }: Readonly<TabContextMenuProps>) {
     const metaKey = getKeyLabel();
     const optionKey = getOptionKeyLabel();
-    // The Dirac notation is only a meaningful view for OpenQASM files.
-    const canShowDirac = canOpenInFormalEditor(tab.title);
-    const currentViewMode: TabViewMode = tab.viewMode ?? 'code';
 
     return (
         <ContextMenuContent className="w-48">
@@ -56,30 +50,6 @@ export function EditorTabContextMenuContent({
             <ContextMenuItem onClick={onCloseOthers}>Close Others</ContextMenuItem>
 
             <ContextMenuItem onClick={onCloseAll}>Close All</ContextMenuItem>
-
-            {canShowDirac && (
-                <>
-                    <ContextMenuSeparator />
-                    <ContextMenuSub>
-                        <ContextMenuSubTrigger>Open With</ContextMenuSubTrigger>
-                        <ContextMenuSubContent className="w-40">
-                            {[
-                                { mode: 'code' as const, label: 'Text Editor' },
-                                { mode: 'formal' as const, label: 'Dirac Notation' },
-                            ].map((option) => (
-                                <ContextMenuItem key={option.mode} onClick={() => onOpenWith(option.mode)}>
-                                    {option.label}
-                                    {option.mode === currentViewMode && (
-                                        <ContextMenuShortcut>
-                                            <Check className="size-3.5" />
-                                        </ContextMenuShortcut>
-                                    )}
-                                </ContextMenuItem>
-                            ))}
-                        </ContextMenuSubContent>
-                    </ContextMenuSub>
-                </>
-            )}
 
             <ContextMenuSeparator />
 

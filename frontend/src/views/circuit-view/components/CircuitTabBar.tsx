@@ -1,25 +1,42 @@
 import { TabBar } from '@/components/TabBar.tsx';
 import { EditorTabLabel } from '@/views/text-editor-view/components/tabs/EditorTabLabel.tsx';
-import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu.tsx';
+import {
+    ContextMenu,
+    ContextMenuContent,
+    ContextMenuItem,
+    ContextMenuSeparator,
+    ContextMenuTrigger,
+} from '@/components/ui/context-menu.tsx';
 import { useAppDispatch } from '@/hooks/useAppDispatch.ts';
 import { useAppSelector } from '@/hooks/useAppSelector.ts';
 import { moveTab, setActiveTab, setDragging } from '@/store/tabs/tabsSlice.ts';
 import { safeCloseAll, safeCloseOthers, safeCloseTab } from '@/store/tabs/tabsThunks.ts';
+import { usePanelData } from '@/contexts/panel/PanelDataContext.ts';
+import { canInspectWithDirac } from '@/views/inspector-view/diracInspect.ts';
 
 /**
  * The circuit's file-tab bar. It shares the open-file tabs with the editor but only exposes
- * the actions that have a meaning for the single circuit panel: closing tabs (which close the
- * shared file) and drag-to-reorder. The editor's split/move/group actions are intentionally
- * left out — those rearrange the code-editor panes, which the circuit panel does not have.
+ * the actions that have a meaning for the single circuit panel: inspecting a circuit as Dirac
+ * notation, closing tabs (which close the shared file) and drag-to-reorder. The editor's
+ * split/move/group actions are intentionally left out — those rearrange the code-editor panes,
+ * which the circuit panel does not have.
  */
 export function CircuitTabBar() {
     const dispatch = useAppDispatch();
+    const { setSelectedOperation } = usePanelData();
     const activeGroupId = useAppSelector((state) => state.tabs.activeGroupId);
     const group = useAppSelector((state) => state.tabs.groups.find((candidate) => candidate.id === activeGroupId));
     const dirtyFiles = useAppSelector((state) => state.tabs.dirtyFiles);
 
     if (!group || group.openTabs.length === 0) return null;
     const groupId = group.id;
+
+    // Show this circuit's Dirac notation in the Inspector: make it the active circuit and clear any
+    // inspected gate so the Inspector falls back to its default Dirac view.
+    const inspectWithDirac = (tabId: string) => {
+        dispatch(setActiveTab({ tabId, groupId }));
+        setSelectedOperation(undefined);
+    };
 
     return (
         <TabBar
@@ -42,6 +59,14 @@ export function CircuitTabBar() {
                         />
                     </ContextMenuTrigger>
                     <ContextMenuContent className="w-48">
+                        {canInspectWithDirac(tab.title) && (
+                            <>
+                                <ContextMenuItem onClick={() => inspectWithDirac(tab.id)}>
+                                    Inspect with Dirac
+                                </ContextMenuItem>
+                                <ContextMenuSeparator />
+                            </>
+                        )}
                         <ContextMenuItem onClick={() => dispatch(safeCloseTab({ tabId: tab.id, groupId }))}>
                             Close
                         </ContextMenuItem>
