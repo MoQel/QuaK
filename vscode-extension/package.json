@@ -28,6 +28,9 @@
     "extensionKind": [
         "workspace"
     ],
+    "extensionPack": [
+        "orangekame3.vscode-qasm"
+    ],
     "main": "./dist/extension.cjs",
     "capabilities": {
         "untrustedWorkspaces": {
