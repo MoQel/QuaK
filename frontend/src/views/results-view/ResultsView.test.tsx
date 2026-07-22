@@ -146,7 +146,7 @@ describe('ResultsView Component', () => {
 
         render(<ResultsView />);
 
-        expect(screen.getByText(/Probabilities/i)).toBeInTheDocument();
+        expect(screen.getByText('Probabilities')).toBeInTheDocument();
         expect(screen.getByText(/Sampled computational-basis probabilities/i)).toBeInTheDocument();
     });
 
@@ -207,7 +207,7 @@ describe('ResultsView Component', () => {
         render(<ResultsView />);
 
         expect(screen.getByText('c[0]')).toBeInTheDocument();
-        expect(screen.getByText(/Measurement Results/i)).toBeInTheDocument();
+        expect(screen.getAllByText('Measurement Results').length).toBeGreaterThan(0);
         expect(screen.getByText(/1,024 shots, 1 observed outcome/i)).toBeInTheDocument();
         expect(screen.getByText(/Outcomes/i)).toBeInTheDocument();
         expect(screen.getByText(/Measurement mappings/i)).toBeInTheDocument();

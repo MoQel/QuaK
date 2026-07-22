@@ -1,14 +1,14 @@
-import { getVisualY } from '@/api/dto/circuit.ts';
-import type { QuantumOperationDto, RegisterResponse } from '@/api/dto/circuit.ts';
+import type { RegisterResponse } from '@/api/dto/circuit.ts';
 import { ElementaryQuantumGate } from '@/views/circuit-view/components/ElementaryQuantumGate.tsx';
-import { UiLayer } from '@/views/circuit-view/util/types.ts';
+import { FlatQubit, UiLayer } from '@/views/circuit-view/util/types.ts';
 import { useDispatch } from 'react-redux';
 import { startOperationDrag, stopOperationDrag } from '@/store/circuit/dragOperationSlice.ts';
-import { CELL_WIDTH, QUBIT_HEIGHT } from '@/views/circuit-view/util/layout.ts';
+import { CELL_WIDTH, getSelectorVisualY, QUBIT_HEIGHT } from '@/views/circuit-view/util/layout.ts';
 
 interface QuantumOperationGridProps {
     uiLayers: UiLayer[];
     registers: RegisterResponse[];
+    flatQubits: FlatQubit[];
     isOperationDragging: boolean;
     removeQuantumOperation: (operationId: string) => void;
     setDraggingOperationId: (id: string | null) => void;
@@ -27,9 +27,12 @@ type MeasurementRoute = {
     labelY: number;
 };
 
+type UiMeasurementOperation = Extract<UiLayer['quantumOperations'][number], { type: 'MEASUREMENT' }>;
+
 export function QuantumOperationGrid({
     uiLayers,
     registers,
+    flatQubits,
     isOperationDragging,
     removeQuantumOperation,
     setDraggingOperationId,
@@ -50,7 +53,7 @@ export function QuantumOperationGrid({
 
     return (
         <div className={`absolute inset-0 z-20 ${isOperationDragging ? 'pointer-events-none' : ''}`}>
-            <MeasurementConnectorLayer uiLayers={uiLayers} registers={registers} />
+            <MeasurementConnectorLayer uiLayers={uiLayers} registers={registers} flatQubits={flatQubits} />
 
             {uiLayers.map((layer, layerIdx) => {
                 const measurementOperations = layer.quantumOperations.filter((op) => op.type === 'MEASUREMENT');
@@ -64,6 +67,7 @@ export function QuantumOperationGrid({
                             key={op.id}
                             operation={op}
                             registers={registers}
+                            flatQubits={flatQubits}
                             layerIdx={layerIdx}
                             measurementColor={
                                 measurementIndex >= 0 ? getMeasurementRouteColor(measurementIndex) : undefined
@@ -82,13 +86,14 @@ export function QuantumOperationGrid({
 function MeasurementConnectorLayer({
     uiLayers,
     registers,
-}: Readonly<{ uiLayers: UiLayer[]; registers: RegisterResponse[] }>) {
+    flatQubits,
+}: Readonly<{ uiLayers: UiLayer[]; registers: RegisterResponse[]; flatQubits: FlatQubit[] }>) {
     const registerNameById = new Map(registers.map((register) => [register.id, register.name]));
     const formatSelector = (selector: { registerId: string; index: number }) =>
         `${registerNameById.get(selector.registerId) ?? selector.registerId}[${selector.index}]`;
     const routes: Array<MeasurementRoute | null> = uiLayers.flatMap((layer, layerIdx) => {
         const measurementOperations = layer.quantumOperations.filter(
-            (op): op is Extract<QuantumOperationDto, { type: 'MEASUREMENT' }> => op.type === 'MEASUREMENT',
+            (op): op is UiMeasurementOperation => op.type === 'MEASUREMENT',
         );
 
         return measurementOperations.flatMap((operation, measurementIndex) => {
@@ -100,8 +105,8 @@ function MeasurementConnectorLayer({
                 if (!classicBit) return null;
 
                 const routeX = centerX + getMeasurementRouteOffset(pairIndex, operation.targetQubits.length);
-                const targetY = getVisualY(registers, targetQubit.registerId, targetQubit.index) + QUBIT_HEIGHT / 2;
-                const classicY = getVisualY(registers, classicBit.registerId, classicBit.index) + QUBIT_HEIGHT / 2;
+                const targetY = getSelectorVisualY(flatQubits, targetQubit) + QUBIT_HEIGHT / 2;
+                const classicY = getSelectorVisualY(flatQubits, classicBit) + QUBIT_HEIGHT / 2;
 
                 return {
                     id: `${operation.id ?? 'measurement'}-${pairIndex}`,
@@ -124,13 +129,7 @@ function MeasurementConnectorLayer({
             {visibleRoutes.map((route) => (
                 <g key={route.id}>
                     <title>{route.title}</title>
-                    <path
-                        d={route.d}
-                        fill="none"
-                        stroke="var(--bg-subtle)"
-                        strokeWidth={7}
-                        strokeLinecap="round"
-                    />
+                    <path d={route.d} fill="none" stroke="var(--bg-subtle)" strokeWidth={7} strokeLinecap="round" />
                     <path
                         d={route.d}
                         fill="none"

@@ -1,14 +1,15 @@
 import React, { useMemo, useRef } from 'react';
 import styles from '@/App.module.css';
-import { QuantumOperationDto, RegisterResponse, getVisualY } from '@/api/dto/circuit.ts';
+import { QuantumOperationDto, RegisterResponse } from '@/api/dto/circuit.ts';
 import { getOperationDefinition, OperationDefinition } from '@/lib/operations.ts';
-import { CELL_WIDTH, QUBIT_HEIGHT } from '@/views/circuit-view/util/layout.ts';
+import { CELL_WIDTH, getSelectorVisualY, isSelectorCollapsed, QUBIT_HEIGHT } from '@/views/circuit-view/util/layout.ts';
 import { TextIcon } from '@/components/ui/text-icon.tsx';
-import { DragData } from '../util/types';
+import { DragData, FlatQubit } from '../util/types';
 
 interface ElementaryQuantumGateProps {
     operation: QuantumOperationDto;
     registers: RegisterResponse[];
+    flatQubits: FlatQubit[];
     layerIdx: number;
     measurementColor?: string;
     onDragStart: (operationSize: number) => void;
@@ -19,6 +20,7 @@ interface ElementaryQuantumGateProps {
 export function ElementaryQuantumGate({
     operation,
     registers,
+    flatQubits,
     layerIdx,
     measurementColor = 'var(--classical)',
     onDragStart,
@@ -35,34 +37,36 @@ export function ElementaryQuantumGate({
         `${registerNameById.get(selector.registerId) ?? selector.registerId}[${selector.index}]`;
     const measurementHints =
         operation.type === 'MEASUREMENT'
-            ? operation.targetQubits
-                  .map((targetQubit, index) => {
-                      const classicBit = operation.classicBits[index];
-                      if (!classicBit) return formatSelector(targetQubit);
-                      return `${formatSelector(targetQubit)} -> ${formatSelector(classicBit)}`;
-                  })
+            ? operation.targetQubits.map((targetQubit, index) => {
+                  const classicBit = operation.classicBits[index];
+                  if (!classicBit) return formatSelector(targetQubit);
+                  return `${formatSelector(targetQubit)} -> ${formatSelector(classicBit)}`;
+              })
             : [];
     const measurementHint = measurementHints.join('\n');
 
-    const { targetYs, controlYs, classicYs, visualTop, spanHeight } = useMemo(() => {
-        const tYs = operation.targetQubits.map((t) => getVisualY(registers, t.registerId, t.index));
-        const cYs = operation.controlQubits.map((c) => getVisualY(registers, c.registerId, c.index));
-        const clYs =
+    const { targetYs, controlYs, classicPoints, visualTop, spanHeight } = useMemo(() => {
+        const tYs = operation.targetQubits.map((target) => getSelectorVisualY(flatQubits, target));
+        const cYs = operation.controlQubits.map((control) => getSelectorVisualY(flatQubits, control));
+        const clPoints =
             operation.type === 'MEASUREMENT'
-                ? operation.classicBits.map((cl) => getVisualY(registers, cl.registerId, cl.index))
+                ? operation.classicBits.map((classicBit) => ({
+                      y: getSelectorVisualY(flatQubits, classicBit),
+                      collapsed: isSelectorCollapsed(flatQubits, classicBit),
+                  }))
                 : [];
-        const allYs = [...tYs, ...cYs, ...clYs];
+        const allYs = [...tYs, ...cYs, ...clPoints.map((point) => point.y)];
         const visualTop = allYs.length > 0 ? Math.min(...allYs) : 0;
         const visualBottom = allYs.length > 0 ? Math.max(...allYs) : 0;
 
         return {
             targetYs: tYs,
             controlYs: cYs,
-            classicYs: clYs,
+            classicPoints: clPoints,
             visualTop,
             spanHeight: visualBottom - visualTop,
         };
-    }, [operation, registers]);
+    }, [flatQubits, operation]);
 
     const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
         isDraggingRef.current = true;
@@ -141,14 +145,16 @@ export function ElementaryQuantumGate({
             ))}
 
             {operation.type === 'MEASUREMENT' &&
-                classicYs.map((y, idx) => (
-                    <ClassicBitTargetPoint
-                        key={`classic-${idx}`}
-                        relativeY={y - visualTop}
-                        title={measurementHints[idx] ?? measurementHint}
-                        color={measurementColor}
-                    />
-                ))}
+                classicPoints.map((point, idx) =>
+                    point.collapsed ? null : (
+                        <ClassicBitTargetPoint
+                            key={`classic-${idx}`}
+                            relativeY={point.y - visualTop}
+                            title={measurementHints[idx] ?? measurementHint}
+                            color={measurementColor}
+                        />
+                    ),
+                )}
         </div>
     );
 }

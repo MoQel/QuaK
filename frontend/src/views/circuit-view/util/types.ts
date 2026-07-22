@@ -25,6 +25,9 @@ export type FlatQubit = {
     absQubitIdx: number;
     regType: RegisterType;
     section: RegisterSection;
+    headerY: number;
+    registerSize: number;
+    isCollapsed: boolean;
     visualY: number;
 };
 

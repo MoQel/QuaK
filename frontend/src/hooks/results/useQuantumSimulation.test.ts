@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useQuantumSimulation } from './useQuantumSimulation.ts';
 import { CircuitResponse } from '@/api/dto/circuit.ts';
 import { WorkerResponse } from '@/workers/messages.ts';
-import { SimulationResult } from '@/simulation/simulation.types.ts';
+import { SimulationOptions, SimulationResult } from '@/simulation/simulation.types.ts';
 
 interface MockWorkerInstance extends Worker {
     onmessage: ((e: MessageEvent<WorkerResponse>) => void) | null;
@@ -157,15 +157,20 @@ describe('useQuantumSimulation Hook', () => {
     });
 
     it('should trigger a new request when measurement mode changes', () => {
-        const { rerender } = renderHook(({ opts }) => useQuantumSimulation(mockCircuit, opts), {
-            initialProps: { opts: { measurementMode: 'measurement-gates' as const } },
-        });
+        const initialProps: { opts: SimulationOptions } = { opts: { measurementMode: 'measurement-gates' } };
+        const nextProps: { opts: SimulationOptions } = { opts: { measurementMode: 'measurement-gates-plus-final' } };
+        const { rerender } = renderHook(
+            ({ opts }: { opts: SimulationOptions }) => useQuantumSimulation(mockCircuit, opts),
+            {
+                initialProps,
+            },
+        );
 
         act(() => {
             vi.advanceTimersByTime(305);
         });
 
-        rerender({ opts: { measurementMode: 'measurement-gates-plus-final' as const } });
+        rerender(nextProps);
 
         act(() => {
             vi.advanceTimersByTime(305);
