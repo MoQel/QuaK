@@ -1,4 +1,10 @@
-import { CircuitDragProvider, CircuitPortProvider, CircuitView, LibraryView } from '@quak/circuit-editor';
+import {
+    CircuitDragProvider,
+    CircuitPortProvider,
+    CircuitView,
+    LibraryView,
+    QuantikzExportButton,
+} from '@quak/circuit-editor';
 import { DEMO_CIRCUIT, NOOP_PORT } from './demoCircuit.ts';
 import { OPERATIONS } from './library.ts';
 import { useDocument } from './useDocument.ts';
@@ -17,7 +23,11 @@ export function App() {
                             <LibraryView operations={OPERATIONS} onOperationSelect={() => {}} />
                         </aside>
                         <div className="min-w-0 flex-1">
-                            <CircuitView circuit={DEMO_CIRCUIT} />
+                            {/* Exports the demo circuit for now; switches to the real one once the QASM transform lands. */}
+                            <CircuitView
+                                circuit={DEMO_CIRCUIT}
+                                toolbarStart={<QuantikzExportButton circuit={DEMO_CIRCUIT} />}
+                            />
                         </div>
                     </CircuitDragProvider>
                 </CircuitPortProvider>

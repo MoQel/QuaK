@@ -62,3 +62,11 @@ npm run watch
 
 Then press <kbd>F5</kbd> in VS Code and use the **Run QuaK Extension** launch
 configuration to open an Extension Development Host.
+
+Install extension local:
+
+```bash
+cd vscode-extension && npm run package  
+```
+
+Then go to extensions click install from vsix and install the created extension package.

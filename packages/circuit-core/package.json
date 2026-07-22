@@ -12,7 +12,9 @@
         "./dto/circuit": "./src/dto/circuit.ts",
         "./dto/library": "./src/dto/library.ts",
         "./port": "./src/port/CircuitPort.ts",
-        "./support-matrix": "./src/support-matrix.ts"
+        "./support-matrix": "./src/support-matrix.ts",
+        "./circuitIndex": "./src/circuitIndex.ts",
+        "./quantikz": "./src/quantikz.ts"
     },
     "scripts": {
         "typecheck": "tsc --noEmit"

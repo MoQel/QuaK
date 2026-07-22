@@ -1,0 +1,122 @@
+import { describe, it, expect } from 'vitest';
+import { toQuantikz, toStandaloneQuantikzDocument } from '@quak/circuit-core/quantikz';
+import type {
+    CircuitResponse,
+    ClassicRegisterResponse,
+    ElementaryQuantumGateDto,
+    ElementSelectorDto,
+    MeasurementDto,
+    OperationIdentifier,
+    QuantumOperationDto,
+    QuantumRegisterResponse,
+    RegisterResponse,
+} from '@quak/circuit-core';
+
+// fixture builders
+
+const sel = (registerId: string, index: number): ElementSelectorDto => ({ registerId, index });
+
+const qreg = (id: string, numberOfQubits: number): QuantumRegisterResponse => ({
+    id,
+    name: id,
+    type: 'Quantum_Register',
+    numberOfQubits,
+});
+
+const creg = (id: string, numberOfBits: number): ClassicRegisterResponse => ({
+    id,
+    name: id,
+    type: 'Classic_Register',
+    numberOfBits,
+});
+
+const gate = (
+    identifier: OperationIdentifier,
+    targetQubits: ElementSelectorDto[],
+    opts: { controlQubits?: ElementSelectorDto[]; rotationAngle?: number } = {},
+): ElementaryQuantumGateDto => ({
+    type: 'ELEMENTARY_QUANTUM_GATE',
+    identifier,
+    inverseForm: false,
+    targetQubits,
+    controlQubits: opts.controlQubits ?? [],
+    rotationAngle: opts.rotationAngle ?? 0,
+});
+
+const measurement = (targetQubits: ElementSelectorDto[], classicBits: ElementSelectorDto[]): MeasurementDto => ({
+    type: 'MEASUREMENT',
+    identifier: 'MEASURE',
+    inverseForm: false,
+    targetQubits,
+    controlQubits: [],
+    classicBits,
+});
+
+const circuit = (registers: RegisterResponse[], layers: QuantumOperationDto[][]): CircuitResponse => ({
+    id: 'c1',
+    registers,
+    layers: layers.map((quantumOperations) => ({ quantumOperations })),
+});
+
+// tests
+
+describe('toQuantikz', () => {
+    it('wraps a single gate in a quantikz environment with lstick labels', () => {
+        const latex = toQuantikz(circuit([qreg('q', 1)], [[gate('H', [sel('q', 0)])]]));
+
+        expect(latex).toContain(String.raw`\begin{quantikz}[wire types={q}]`);
+        expect(latex).toContain(String.raw`\lstick{q[0]}`);
+        expect(latex).toContain(String.raw`\gate{H}`);
+        expect(latex).toContain(String.raw`\end{quantikz}`);
+    });
+
+    it('renders a controlled-X as a target with a control offset to the target wire', () => {
+        // control on wire 0, target on wire 1 -> \ctrl{1} points down one wire.
+        const latex = toQuantikz(
+            circuit([qreg('q', 2)], [[gate('CX', [sel('q', 1)], { controlQubits: [sel('q', 0)] })]]),
+        );
+
+        expect(latex).toContain(String.raw`\targ{}`);
+        expect(latex).toContain(String.raw`\ctrl{1}`);
+    });
+
+    it('renders a SWAP as a swap marker plus a targX on the connected wire', () => {
+        const latex = toQuantikz(circuit([qreg('q', 2)], [[gate('SWAP', [sel('q', 0), sel('q', 1)])]]));
+
+        expect(latex).toContain(String.raw`\swap{1}`);
+        expect(latex).toContain(String.raw`\targX{}`);
+    });
+
+    it('formats a rotation angle as a symbolic pi fraction', () => {
+        const latex = toQuantikz(
+            circuit([qreg('q', 1)], [[gate('RX', [sel('q', 0)], { rotationAngle: Math.PI / 2 })]]),
+        );
+
+        expect(latex).toContain(String.raw`\gate{\ensuremath{R_X(\frac{\pi}{2})}}`);
+    });
+
+    it('renders a measurement as a meter on the measured wire and marks the classic wire type', () => {
+        const latex = toQuantikz(circuit([qreg('q', 1), creg('c', 1)], [[measurement([sel('q', 0)], [sel('c', 0)])]]));
+
+        expect(latex).toContain(String.raw`\meter{}`);
+        expect(latex).toContain(String.raw`\begin{quantikz}[wire types={q,c}]`);
+    });
+
+    it('escapes LaTeX-special characters in register names', () => {
+        const latex = toQuantikz(circuit([qreg('q_a', 1)], [[gate('H', [sel('q_a', 0)])]]));
+
+        expect(latex).toContain(String.raw`\lstick{q\_a[0]}`);
+    });
+});
+
+describe('toStandaloneQuantikzDocument', () => {
+    it('wraps the circuit in a compilable standalone document', () => {
+        const latex = toStandaloneQuantikzDocument(circuit([qreg('q', 1)], [[gate('H', [sel('q', 0)])]]));
+
+        expect(latex).toContain(String.raw`\documentclass[tikz,border=2pt]{standalone}`);
+        expect(latex).toContain(String.raw`\usetikzlibrary{quantikz2}`);
+        expect(latex).toContain(String.raw`\begin{document}`);
+        expect(latex).toContain(String.raw`\gate{H}`);
+        expect(latex).toContain(String.raw`\end{document}`);
+    });
+});
