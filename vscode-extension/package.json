@@ -2,6 +2,7 @@
     "name": "quak-vscode",
     "displayName": "QuaK",
     "description": "Visual circuit editor for OpenQASM files",
+    "icon": "icon.png",
     "license": "MIT",
     "repository": {
         "type": "git",
