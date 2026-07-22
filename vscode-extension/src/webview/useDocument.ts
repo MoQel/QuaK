@@ -1,14 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import type { DocumentState, HostMessage, WebviewMessage } from '../protocol.ts';
-
-interface VsCodeApi {
-    postMessage(message: WebviewMessage): void;
-}
-
-declare function acquireVsCodeApi(): VsCodeApi;
-
-// Must be called exactly once per webview; calling it twice throws.
-const vscodeApi = acquireVsCodeApi();
+import type { DocumentState, HostMessage } from '../protocol.ts';
+import { vscodeApi } from './vscodeApi.ts';
 
 export interface DocumentSnapshot {
     text: string;

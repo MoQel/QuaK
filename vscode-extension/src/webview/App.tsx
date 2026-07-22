@@ -2,12 +2,14 @@ import {
     CircuitDragProvider,
     CircuitPortProvider,
     CircuitView,
+    CircuitWorkspaceShell,
     LibraryView,
     QuantikzExportButton,
 } from '@quak/circuit-editor';
 import { DEMO_CIRCUIT, NOOP_PORT } from './demoCircuit.ts';
 import { OPERATIONS } from './library.ts';
 import { useDocument } from './useDocument.ts';
+import { vscodeApi } from './vscodeApi.ts';
 
 // The circuit is fixed until the QASM transformation exists. Library and circuit
 // share one webview because drag & drop cannot cross webview boundaries.
@@ -19,16 +21,20 @@ export function App() {
             <div className="flex min-h-0 flex-1">
                 <CircuitPortProvider port={NOOP_PORT}>
                     <CircuitDragProvider>
-                        <aside className="w-56 shrink-0 overflow-y-auto border-r border-border">
-                            <LibraryView operations={OPERATIONS} onOperationSelect={() => {}} />
-                        </aside>
-                        <div className="min-w-0 flex-1">
-                            {/* Exports the demo circuit for now; switches to the real one once the QASM transform lands. */}
-                            <CircuitView
-                                circuit={DEMO_CIRCUIT}
-                                toolbarStart={<QuantikzExportButton circuit={DEMO_CIRCUIT} />}
-                            />
-                        </div>
+                        {/* Exports/edits the demo circuit for now; switches to the real one once the QASM transform lands. */}
+                        <CircuitWorkspaceShell
+                            defaultCollapsed={vscodeApi.getState()?.libraryCollapsed ?? false}
+                            onCollapsedChange={(collapsed) =>
+                                vscodeApi.setState({ ...vscodeApi.getState(), libraryCollapsed: collapsed })
+                            }
+                            library={<LibraryView operations={OPERATIONS} onOperationSelect={() => {}} />}
+                            editor={
+                                <CircuitView
+                                    circuit={DEMO_CIRCUIT}
+                                    toolbarStart={<QuantikzExportButton circuit={DEMO_CIRCUIT} />}
+                                />
+                            }
+                        />
                     </CircuitDragProvider>
                 </CircuitPortProvider>
             </div>

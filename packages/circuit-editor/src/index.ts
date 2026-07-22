@@ -6,6 +6,7 @@
 export { CircuitView } from './circuit/CircuitView.tsx';
 export { LibraryView } from './library/LibraryView.tsx';
 export { CircuitDragProvider, useCircuitDrag } from './CircuitDragContext.tsx';
+export { CircuitWorkspaceShell } from './CircuitWorkspaceShell.tsx';
 export { CircuitPortProvider, useCircuitPort } from './CircuitPortContext.tsx';
 export { QuantikzExportButton, type LatexCodePreviewProps } from './notation/QuantikzExportButton.tsx';
 export { useQuantikzExport, type ExportStatus } from './notation/useQuantikzExport.ts';
