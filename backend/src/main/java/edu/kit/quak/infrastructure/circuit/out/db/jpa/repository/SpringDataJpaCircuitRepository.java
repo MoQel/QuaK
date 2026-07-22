@@ -5,5 +5,9 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface SpringDataJpaCircuitRepository extends JpaRepository<JpaQuantumCircuit, String> {
-    Optional<JpaQuantumCircuit> findByProjectId(String projectId);
+    Optional<JpaQuantumCircuit> findByFileId(String fileId);
+
+    void deleteByFileId(String fileId);
+
+    void deleteAllByProjectId(String projectId);
 }

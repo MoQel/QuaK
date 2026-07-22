@@ -8,7 +8,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import edu.kit.quak.application.circuit.exceptions.CircuitNotFoundException;
+import edu.kit.quak.application.circuit.antlr.QasmService;
 import edu.kit.quak.application.circuit.ports.in.CircuitServicePort;
 import edu.kit.quak.application.filesystem.ports.in.ProjectServicePort;
 import edu.kit.quak.application.user.ports.in.UserServicePort;
@@ -33,6 +33,7 @@ import org.springframework.test.web.servlet.MockMvc;
 @WebMvcTest(CircuitRestAdapter.class)
 @Import(
     {
+        QasmService.class,
         CircuitDtoMapperImpl.class,
         RegisterDtoMapperImpl.class,
         LayerDtoMapperImpl.class,
@@ -61,27 +62,30 @@ class CircuitRestAdapterTest {
     public static final int INIT_QUBITS = 4;
 
     @Test
-    void getCircuitByProjectId_ProjectHasCircuit_ShouldReturnCircuit() throws Exception {
-        // Arrange
-        String projectId = "p-id";
-        QuantumCircuit circuit = new QuantumCircuit(projectId);
-        given(circuitServicePort.getByProjectId(eq(projectId), any())).willReturn(circuit);
+    void parseQasmCode_ShouldReturnContentWithoutIdentity() throws Exception {
+        String qasm = """
+            OPENQASM 3.0;
+            include "stdgates.inc";
+            qubit[2] q;
+            h q[0];
+            cx q[0], q[1];
+            """;
 
-        // Act & Assert
         mockMvc
-            .perform(get("/api/circuit/{projectId}", projectId).with(csrf()))
+            .perform(post("/api/circuit/parse").with(csrf()).contentType(MediaType.TEXT_PLAIN).content(qasm))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.projectId").value(projectId));
+            .andExpect(jsonPath("$.id").doesNotExist())
+            .andExpect(jsonPath("$.projectId").doesNotExist())
+            .andExpect(jsonPath("$.fileId").doesNotExist())
+            .andExpect(jsonPath("$.registers[0].numberOfQubits").value(2))
+            .andExpect(jsonPath("$.layers[0].quantumOperations[0].identifier").value("H"));
     }
 
     @Test
-    void getCircuitByProjectId_ProjectHasNoCircuit_ShouldThrow404() throws Exception {
-        // Arrange
-        String projectId = "unknown";
-        given(circuitServicePort.getByProjectId(eq(projectId), any())).willThrow(CircuitNotFoundException.class);
-
-        // Act & Assert
-        mockMvc.perform(get("/api/circuit/{projectId}", projectId).with(csrf())).andExpect(status().is(404));
+    void parseQasmCode_InvalidCode_ShouldReturnBadRequest() throws Exception {
+        mockMvc
+            .perform(post("/api/circuit/parse").with(csrf()).contentType(MediaType.TEXT_PLAIN).content("qubit[2 q; oops"))
+            .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -89,7 +93,7 @@ class CircuitRestAdapterTest {
         // Arrange
         String projectId = "p-id";
         String circuitId = "c-id";
-        QuantumCircuit circuit = new QuantumCircuit(projectId);
+        QuantumCircuit circuit = new QuantumCircuit(projectId, "f-1");
         circuit.setId(circuitId);
         String registerId = circuit.getRegisters().getFirst().getId();
         circuit.addQubit(registerId);
@@ -117,7 +121,7 @@ class CircuitRestAdapterTest {
         String circuitId = "c-id";
         String registerId = "register-456";
         int qubitIdx = 0;
-        QuantumCircuit updatedCircuit = new QuantumCircuit(projectId);
+        QuantumCircuit updatedCircuit = new QuantumCircuit(projectId, "f-1");
         updatedCircuit.setId(circuitId);
 
         given(circuitServicePort.getById(circuitId)).willReturn(updatedCircuit);
@@ -139,9 +143,9 @@ class CircuitRestAdapterTest {
         // Arrange
         String projectId = "p-id";
         String circuitId = "c-id";
-        QuantumCircuit existingCircuit = new QuantumCircuit(projectId);
+        QuantumCircuit existingCircuit = new QuantumCircuit(projectId, "f-1");
         existingCircuit.setId(circuitId);
-        QuantumCircuit freshCircuit = new QuantumCircuit(projectId);
+        QuantumCircuit freshCircuit = new QuantumCircuit(projectId, "f-1");
 
         given(circuitServicePort.getById(circuitId)).willReturn(existingCircuit);
         given(circuitServicePort.resetCircuit(eq(circuitId), any())).willReturn(freshCircuit);
@@ -158,7 +162,7 @@ class CircuitRestAdapterTest {
         // Arrange
         String projectId = "p-id";
         String circuitId = "c-id";
-        QuantumCircuit circuit = new QuantumCircuit(projectId);
+        QuantumCircuit circuit = new QuantumCircuit(projectId, "f-1");
         circuit.setId(circuitId);
         String registerId = circuit.getRegisters().getFirst().getId();
         circuit.addQubit(registerId);

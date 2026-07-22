@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { saveFileContent } from '@/views/text-editor-view/utils/fileService';
 import { getModelId, savedVersionIds } from '@/views/text-editor-view/utils/editorUtils';
@@ -11,12 +11,17 @@ export function useEditorCommands() {
     const monaco = useMonaco();
     const dispatch = useAppDispatch();
     const saveRequest = useAppSelector((state) => state.tabs.lastSaveRequest);
+    // Only act on save requests raised AFTER this hook mounted. Seeding the ref with the
+    // current timestamp means a remount (e.g. reopening the Code panel) does not re-fire the
+    // last save: that spurious re-save raced with itself (StrictMode double-invokes effects)
+    // and two concurrent PUTs to the same file content row could 500 (duplicate-key / lock).
+    const lastProcessedTimestamp = useRef(saveRequest.timestamp);
 
     // Handle Save
     const handleSave = async (targetFileId: string) => {
         if (!monaco) return;
-        const models = monaco.editor.getModels();
-        const model = models.find((m) => getModelId(m) === targetFileId);
+        // Models are keyed by "file:///{fileId}/{fileName}", so match on the fileId segment.
+        const model = monaco.editor.getModels().find((m) => getModelId(m) === targetFileId);
         if (!model || model.isDisposed()) return;
 
         try {
@@ -33,7 +38,12 @@ export function useEditorCommands() {
     };
 
     useEffect(() => {
-        if (saveRequest.timestamp > 0 && saveRequest.fileId) {
+        if (
+            saveRequest.timestamp > 0 &&
+            saveRequest.fileId &&
+            saveRequest.timestamp !== lastProcessedTimestamp.current
+        ) {
+            lastProcessedTimestamp.current = saveRequest.timestamp;
             void handleSave(saveRequest.fileId);
         }
     }, [saveRequest.timestamp]);

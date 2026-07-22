@@ -138,6 +138,21 @@ export const tabsSlice = createSlice({
             state.activeGroupId = action.payload;
         },
 
+        restoreTabs: (state, action: PayloadAction<{ groups: EditorGroup[]; activeGroupId: string }>) => {
+            const groups = action.payload.groups.filter((g) => g.openTabs.length > 0 || g.id === GROUP_MAIN);
+            if (!groups.some((g) => g.id === GROUP_MAIN)) {
+                groups.unshift({ id: GROUP_MAIN, openTabs: [], activeTabId: null });
+            }
+
+            state.groups = groups;
+            state.activeGroupId = groups.some((g) => g.id === action.payload.activeGroupId)
+                ? action.payload.activeGroupId
+                : GROUP_MAIN;
+            state.dirtyFiles = [];
+            state.isDragging = false;
+            state.pendingCloseAction = null;
+        },
+
         splitGroup: (state, action: PayloadAction<{ fromGroupId: string; toGroupId: string }>) => {
             const { fromGroupId, toGroupId } = action.payload;
             const fromGroup = state.groups.find((g) => g.id === fromGroupId);
@@ -334,6 +349,7 @@ export const tabsSlice = createSlice({
 
 export const {
     setActiveGroup,
+    restoreTabs,
     splitGroup,
     unsplitGroup,
     unsplitAllGroups,

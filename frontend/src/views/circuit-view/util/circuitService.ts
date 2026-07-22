@@ -1,28 +1,32 @@
-import { api, ProblemDetailError } from '@/api/api.ts';
 import {
-    AddQuantumOperationRequest,
     CircuitResponse,
+    ElementSelectorDto,
+    getInvolvedSelectors,
     isQuantumRegister,
-    MoveQuantumOperationRequest,
+    QuantumOperationDto,
+    RegisterResponse,
 } from '@/api/dto/circuit.ts';
-import { toast } from 'sonner';
 
-const handleError = (error: unknown) => {
-    if (error instanceof Response && error.status === 403) {
-        toast.error('Access Denied', {
-            description: 'You must be the project owner to modify the circuit.',
-        });
-    } else if (error instanceof ProblemDetailError) {
-        toast.error(error.title || 'Operation Failed', {
-            description: error.detail || 'An unexpected error occured on the server.',
-        });
-    } else {
-        toast.error('Operation Failed', {
-            description: 'An error occurred while performing the circuit operation.',
-        });
-    }
-};
+/** True if the operation acts on the given qubit (target or control). */
+const operationTouchesQubit = (op: QuantumOperationDto, registerId: string, qubitIdx: number): boolean =>
+    getInvolvedSelectors(op).some((sel) => sel.registerId === registerId && sel.index === qubitIdx);
 
+/** Shifts selectors above the removed qubit down by one to mirror the backend's re-indexing. */
+const shiftSelectorsAfterRemoval = (
+    selectors: ElementSelectorDto[],
+    registerId: string,
+    qubitIdx: number,
+): ElementSelectorDto[] =>
+    selectors.map((sel) =>
+        sel.registerId === registerId && sel.index > qubitIdx ? { ...sel, index: sel.index - 1 } : sel,
+    );
+
+/**
+ * Local mutations on the active circuit. All changes go through setCircuit and
+ * are persisted to the backend by the debounced full-circuit save in
+ * CircuitTabsContext, which keeps a single write path and avoids races with
+ * unsaved local edits.
+ */
 export function createCircuitService(
     circuit: CircuitResponse | undefined,
     setCircuit: (circuit: CircuitResponse) => void,
@@ -30,55 +34,71 @@ export function createCircuitService(
     const addQubit = () => {
         if (!circuit) return;
         const lastQR = circuit.registers.findLast(isQuantumRegister);
-        if (lastQR) {
-            api.post<CircuitResponse>(`/api/circuit/${circuit.id}/register/${lastQR.id}`)
-                .then(setCircuit)
-                .catch(handleError);
-        }
+        if (!lastQR) return;
+
+        setCircuit({
+            ...circuit,
+            registers: circuit.registers.map((register) =>
+                register.id === lastQR.id && isQuantumRegister(register)
+                    ? { ...register, numberOfQubits: register.numberOfQubits + 1 }
+                    : register,
+            ),
+        });
     };
 
+    /**
+     * Removes a qubit and mirrors the backend semantics: operations touching the
+     * removed qubit are dropped, selectors above it shift down by one.
+     */
     const deleteQubit = (registerId: string, qubitIdx: number) => {
         if (!circuit) return;
-        api.delete<CircuitResponse>(`/api/circuit/${circuit.id}/register/${registerId}/${qubitIdx}`)
-            .then(setCircuit)
-            .catch(handleError);
+        const register = circuit.registers.find((candidate) => candidate.id === registerId);
+        if (!register || !isQuantumRegister(register)) return;
+        if (qubitIdx < 0 || qubitIdx >= register.numberOfQubits) return;
+
+        const registers: RegisterResponse[] = circuit.registers.map((candidate) =>
+            candidate.id === registerId && isQuantumRegister(candidate)
+                ? { ...candidate, numberOfQubits: candidate.numberOfQubits - 1 }
+                : candidate,
+        );
+
+        const layers = circuit.layers
+            .map((layer) => ({
+                quantumOperations: layer.quantumOperations
+                    .filter((op) => !operationTouchesQubit(op, registerId, qubitIdx))
+                    .map((op) => ({
+                        ...op,
+                        targetQubits: shiftSelectorsAfterRemoval(op.targetQubits, registerId, qubitIdx),
+                        controlQubits: shiftSelectorsAfterRemoval(op.controlQubits, registerId, qubitIdx),
+                    })),
+            }))
+            .filter((layer) => layer.quantumOperations.length > 0);
+
+        setCircuit({ ...circuit, registers, layers });
     };
 
     const deleteLastQubit = () => {
         if (!circuit) return;
         const lastQR = circuit.registers.findLast(isQuantumRegister);
         if (lastQR && lastQR.numberOfQubits > 0) {
-            api.delete<CircuitResponse>(`/api/circuit/${circuit.id}/register/${lastQR.id}/${lastQR.numberOfQubits - 1}`)
-                .then(setCircuit)
-                .catch(handleError);
+            deleteQubit(lastQR.id, lastQR.numberOfQubits - 1);
         }
     };
 
     const resetCircuit = () => {
         if (!circuit) return;
-        api.delete<CircuitResponse>(`/api/circuit/${circuit.id}/reset`).then(setCircuit).catch(handleError);
-    };
-
-    const deleteCircuit = () => {
-        if (!circuit) return;
-        api.delete(`/api/circuit/${circuit.id}`).catch(handleError);
-    };
-
-    const addQuantumOperation = (payload: AddQuantumOperationRequest) => {
-        if (!circuit) return;
-        api.post<CircuitResponse>(`/api/circuit/${circuit.id}/operation`, payload).then(setCircuit).catch(handleError);
-    };
-
-    const moveQuantumOperation = (payload: MoveQuantumOperationRequest) => {
-        if (!circuit) return;
-        api.patch<CircuitResponse>(`/api/circuit/${circuit.id}/operation`, payload).then(setCircuit).catch(handleError);
-    };
-
-    const removeQuantumOperation = (operationId: string) => {
-        if (!circuit) return;
-        api.delete<CircuitResponse>(`/api/circuit/${circuit.id}/operation/${operationId}`)
-            .then(setCircuit)
-            .catch(handleError);
+        setCircuit({
+            ...circuit,
+            registers: [
+                {
+                    id: crypto.randomUUID(),
+                    name: 'q',
+                    type: 'Quantum_Register',
+                    numberOfQubits: 4,
+                },
+            ],
+            layers: [],
+        });
     };
 
     return {
@@ -86,9 +106,5 @@ export function createCircuitService(
         deleteQubit,
         deleteLastQubit,
         resetCircuit,
-        deleteCircuit,
-        addQuantumOperation,
-        moveQuantumOperation,
-        removeQuantumOperation,
     };
 }

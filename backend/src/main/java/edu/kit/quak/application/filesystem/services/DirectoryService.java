@@ -38,6 +38,7 @@ public class DirectoryService extends AbstractFileElementService<Directory> impl
         FileElementContainer<?> parent = getParentById(parentId);
         parent.addChild(container);
         FileElementContainer<?> savedParent = delegator.save(parent);
+        delegator.touchRootProject(parentId);
         return findElementInParent(savedParent, container.getId());
     }
 
@@ -63,7 +64,9 @@ public class DirectoryService extends AbstractFileElementService<Directory> impl
         Directory directory = retrieveWithoutAuth(dId);
         verifyOwnershipByParentId(directory.getParentId(), user);
         checkForDuplicateName(dId, newName);
-        return modifyElementInParent(dId, d -> d.rename(newName));
+        Directory renamedDirectory = modifyElementInParent(dId, d -> d.rename(newName));
+        delegator.touchRootProject(directory.getParentId());
+        return renamedDirectory;
     }
 
     // endregion Update
@@ -79,6 +82,7 @@ public class DirectoryService extends AbstractFileElementService<Directory> impl
         FileElementContainer<?> parent = getParentById(directory.getParentId());
         parent.removeChild(directory);
         delegator.save(parent);
+        delegator.touchRootProject(directory.getParentId());
     }
 
     // endregion Delete
