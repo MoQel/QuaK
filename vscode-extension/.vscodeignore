@@ -1,0 +1,14 @@
+# Everything runtime is bundled into dist/, so only that ships.
+src/**
+node_modules/**
+.vscode-test/**
+.vscode-test.mjs
+esbuild.mjs
+vite.webview.config.ts
+vitest.config.ts
+tsconfig.json
+**/*.map
+**/*.ts
+
+# The integration tests are built next to the extension but must not be shipped.
+dist/test/**

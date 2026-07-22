@@ -18,6 +18,7 @@
         "typecheck:packages": "cd packages/circuit-core && npm run typecheck && cd ../ui && npm run typecheck && cd ../circuit-editor && npm run typecheck",
         "typecheck:extension": "cd vscode-extension && npm run typecheck",
         "build:extension": "cd vscode-extension && npm run build",
+        "package:extension": "cd vscode-extension && npm run check:vsix",
         "dev:backend": "cd backend && ./gradlew bootRun",
         "dev:frontend": "cd frontend && npm run dev",
         "build": "npm run build:backend",

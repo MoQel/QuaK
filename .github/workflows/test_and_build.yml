@@ -180,6 +180,11 @@ jobs:
       - name: Build extension
         run: npm run build:extension
 
+      # Packaging is where a stray runtime dependency would drag .git and .env
+      # into a published extension, so the artifact is checked on every push.
+      - name: Package extension and check the vsix
+        run: npm run package:extension
+
       # Runs a real VSCode, which needs a virtual display on Linux.
       - name: Extension integration tests
         run: xvfb-run -a npm run test:extension:integration
