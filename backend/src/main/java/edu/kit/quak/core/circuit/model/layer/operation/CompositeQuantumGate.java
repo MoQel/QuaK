@@ -4,8 +4,10 @@ import edu.kit.quak.core.circuit.exceptions.InvalidOperationConfigurationExcepti
 import edu.kit.quak.core.circuit.model.gate.GateDefinition;
 import edu.kit.quak.core.circuit.model.layer.operation.library.QuantumOperationLibrary;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import lombok.Getter;
 import lombok.NonNull;
 
@@ -41,6 +43,71 @@ public class CompositeQuantumGate extends QuantumOperation {
             );
         }
         this.definition = definition;
+    }
+
+    /**
+     * Rebuilds a call — definition included — from a body that is already bound to the call's qubits.
+     *
+     * <p>This is how a composite is read back from a request or from the database, neither of which
+     * carries the definition's formal body. It works because a call may not pass the same qubit
+     * twice (the constructor rejects that): the binding formal → actual is injective, so the
+     * <em>position</em> of a qubit in {@code qubits} is exactly the parameter it stands for, and the
+     * mapping can be inverted. A nested composite in the body is rebuilt the same way beforehand and
+     * simply gets rebound here.
+     *
+     * @param parameterNames the port labels, which also fix the arity
+     * @param qubits the call's qubits in parameter order
+     * @param boundBody the body in program order, addressing {@code qubits}
+     */
+    public static CompositeQuantumGate fromBoundBody(
+        @NonNull String gateName,
+        @NonNull List<String> parameterNames,
+        boolean inverseForm,
+        @NonNull List<ElementSelector> qubits,
+        @NonNull List<QuantumOperation> boundBody
+    ) {
+        GateDefinition definition = new GateDefinition(gateName, parameterNames);
+        // Built first so arity and distinctness are validated before the inversion relies on them.
+        CompositeQuantumGate call = new CompositeQuantumGate(definition, inverseForm, qubits);
+
+        Map<ElementSelector, Integer> parameterOfQubit = new HashMap<>();
+        for (int position = 0; position < qubits.size(); position++) {
+            parameterOfQubit.put(qubits.get(position), position);
+        }
+
+        for (QuantumOperation operation : boundBody) {
+            definition.addOperation(
+                operation.copyForQubits(
+                    toFormalSelectors(definition, parameterOfQubit, operation.getTargetQubits()),
+                    toFormalSelectors(definition, parameterOfQubit, operation.getControlQubits())
+                )
+            );
+        }
+        return call;
+    }
+
+    /** Maps qubits of the call back onto the definition's formal parameters. */
+    private static List<ElementSelector> toFormalSelectors(
+        GateDefinition definition,
+        Map<ElementSelector, Integer> parameterOfQubit,
+        List<ElementSelector> boundSelectors
+    ) {
+        if (boundSelectors == null) {
+            return new ArrayList<>();
+        }
+        List<ElementSelector> formal = new ArrayList<>(boundSelectors.size());
+        for (ElementSelector selector : boundSelectors) {
+            Integer parameter = parameterOfQubit.get(selector);
+            if (parameter == null) {
+                // Only possible from a malformed payload: a body operation may never reach a qubit
+                // outside the gate's own parameters.
+                throw new InvalidOperationConfigurationException(
+                    "The body of gate '%s' acts on a qubit that the call does not pass.".formatted(definition.getName())
+                );
+            }
+            formal.add(definition.selectorFor(parameter));
+        }
+        return formal;
     }
 
     /** Display name of the box, e.g. {@code "bell"}. */

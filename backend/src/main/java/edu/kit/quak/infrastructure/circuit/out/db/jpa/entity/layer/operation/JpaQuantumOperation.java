@@ -19,6 +19,25 @@ public abstract class JpaQuantumOperation extends JpaElementWithId {
     @JoinColumn(name = "layer_id", referencedColumnName = "id")
     protected JpaLayer layer;
 
+    /**
+     * Set instead of {@link #layer} when this operation is part of a composite gate's body.
+     *
+     * <p>The association is deliberately bidirectional, mirroring layer↔operation: a unidirectional
+     * {@code @OneToMany @JoinColumn} on the composite made Hibernate lose the whole body when a
+     * circuit that already contained the gate was saved again (the layer's cascading delete and the
+     * merge of the same operation id raced), which is exactly the autosave path.
+     */
+    @ManyToOne
+    @JoinColumn(name = "composite_gate_id", referencedColumnName = "id")
+    protected JpaCompositeQuantumGate compositeGate;
+
+    /**
+     * Position within {@link #compositeGate}'s body, i.e. program order. Stored explicitly rather
+     * than via {@code @OrderColumn}: an order column is only maintained by the owning side, and the
+     * owning side of this association has to be the child (see {@link #compositeGate}).
+     */
+    protected Integer bodyPosition;
+
     @Enumerated(EnumType.STRING)
     protected QuantumOperationLibrary operationDefinition;
 

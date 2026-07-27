@@ -5,7 +5,6 @@ import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementaryQuantumGate;
 import edu.kit.quak.core.circuit.model.layer.operation.Measurement;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
-import edu.kit.quak.core.common.exception.DomainRuleViolationException;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.*;
 import java.util.List;
 import org.mapstruct.*;
@@ -60,15 +59,30 @@ public interface QuantumOperationDtoMapper {
     QuantumOperation toDomain(QuantumOperationDto request);
 
     /**
-     * Composites cannot be read back yet: the DTO carries the body already bound to this call's
-     * qubits, which is what a client needs to draw the box but not enough to rebuild the
-     * definition's formal body. Until the definition itself is part of the wire format (and has a
-     * JPA counterpart), saving such a circuit fails here with a clear message instead of the
-     * generated dispatch's "Not all subclasses are supported".
+     * Hand-written for the same reason as the response direction: the gate name lives in
+     * {@code identifier} and the definition is rebuilt rather than mapped field by field.
+     *
+     * <p>The DTO carries the body bound to this call's qubits, not the definition's formal body —
+     * {@link CompositeQuantumGate#fromBoundBody} inverts that binding. The id is taken from the
+     * request so an operation keeps its identity across the frontend's full-replace saves, exactly
+     * like the generated mappings do for the other operation types.
      */
     default CompositeQuantumGate toDomain(CompositeQuantumGateDto request) {
-        throw new DomainRuleViolationException(
-            "Saving a circuit that contains the user-defined gate '%s' is not supported yet.".formatted(request.getIdentifier())
+        if (request == null) {
+            return null;
+        }
+        CompositeQuantumGate call = CompositeQuantumGate.fromBoundBody(
+            request.getIdentifier(),
+            request.getPortLabels(),
+            request.isInverseForm(),
+            toSelectors(request.getTargetQubits()),
+            request.getBody() == null ? List.of() : request.getBody().stream().map(this::toDomain).toList()
         );
+        if (request.getId() != null) {
+            call.setId(request.getId());
+        }
+        return call;
     }
+
+    List<ElementSelector> toSelectors(List<ElementSelectorDto> selectors);
 }
