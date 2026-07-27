@@ -1,8 +1,11 @@
 package edu.kit.quak.core.circuit.model.layer.operation;
 
+import static java.util.stream.Collectors.toCollection;
+
 import edu.kit.quak.core.circuit.exceptions.InvalidOperationConfigurationException;
 import edu.kit.quak.core.circuit.model.ElementWithId;
 import edu.kit.quak.core.circuit.model.layer.operation.library.QuantumOperationLibrary;
+import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
 import lombok.NonNull;
@@ -31,5 +34,34 @@ public abstract class QuantumOperation extends ElementWithId {
         }
         this.targetQubits = targetQubits;
         this.controlQubits = controlQubits;
+    }
+
+    /**
+     * Returns a copy of this operation acting on different qubits, keeping everything else (gate
+     * type, inverse flag, rotation angle, ...) untouched.
+     *
+     * <p>This is what instantiates the body of a {@code GateDefinition} at a call site: the body is
+     * written against the definition's formal qubits and has to be rebound to the actual ones. It is
+     * polymorphic rather than a type switch so that a future composite operation only has to
+     * implement it, instead of every caller learning about a new subclass.
+     *
+     * <p>Implementations must not share {@link ElementSelector} instances with the original —
+     * selectors are mutable (see {@link ElementSelector#decreaseIndex()}), so a shared one would let
+     * a qubit removal corrupt an unrelated operation.
+     */
+    public abstract QuantumOperation copyForQubits(
+        @NonNull List<ElementSelector> targetQubits,
+        @NonNull List<ElementSelector> controlQubits
+    );
+
+    /** Defensive copy of a selector list, so callers never alias the originals. */
+    protected static List<ElementSelector> copySelectors(List<ElementSelector> selectors) {
+        if (selectors == null) {
+            return new ArrayList<>();
+        }
+        return selectors
+            .stream()
+            .map(selector -> new ElementSelector(selector.getRegisterId(), selector.getIndex()))
+            .collect(toCollection(ArrayList::new));
     }
 }

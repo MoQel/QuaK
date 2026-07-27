@@ -9,6 +9,7 @@ import edu.kit.quak.application.circuit.exceptions.QasmParseException;
 import edu.kit.quak.application.circuit.ports.out.QasmIncludeLoader;
 import edu.kit.quak.application.circuit.ports.out.QasmSource;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
+import edu.kit.quak.core.circuit.model.layer.operation.CompositeQuantumGate;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
 import edu.kit.quak.shared.tags.UnitTest;
 import java.util.HashMap;
@@ -51,11 +52,20 @@ class QasmIncludeTest {
         }
         """;
 
+    /**
+     * The circuit's gates with user-defined ones expanded. An included `gate` is parsed into a
+     * single composite, so these tests look at the expansion to assert what the gate resolved to.
+     */
     private static String flatten(QuantumCircuit circuit) {
         return circuit
             .getLayers()
             .stream()
             .flatMap(layer -> layer.getQuantumOperations().stream())
+            .flatMap(operation ->
+                operation instanceof CompositeQuantumGate composite
+                    ? composite.expandToElementary().stream()
+                    : java.util.stream.Stream.of(operation)
+            )
             .map(QuantumOperation::getOperationDefinition)
             .map(Enum::name)
             .reduce((a, b) -> a + "," + b)

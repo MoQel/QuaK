@@ -2,6 +2,7 @@ package edu.kit.quak.core.circuit.codegen;
 
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.core.circuit.model.layer.Layer;
+import edu.kit.quak.core.circuit.model.layer.operation.CompositeQuantumGate;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementaryQuantumGate;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
@@ -108,6 +109,11 @@ public class QasmCodeGenerator {
     }
 
     private static String operatorToCode(QuantumOperation quantumOperation) {
+        // A composite's name comes from its definition, not from the library enum.
+        if (quantumOperation instanceof CompositeQuantumGate composite) {
+            return composite.getGateName();
+        }
+
         QuantumOperationLibrary operationDefinition = quantumOperation.getOperationDefinition();
         String operatorCode = toCode(operationDefinition);
         if (quantumOperation instanceof ElementaryQuantumGate elementaryQuantumGate) {
@@ -227,6 +233,8 @@ public class QasmCodeGenerator {
             case RY -> "ry";
             case RZ -> "rz";
             case MEASURE -> "measure";
+            // Unreachable: operatorToCode resolves composites from their definition beforehand.
+            case COMPOSITE -> throw new IllegalStateException("A composite gate must be named by its definition, not by the library.");
         };
     }
 

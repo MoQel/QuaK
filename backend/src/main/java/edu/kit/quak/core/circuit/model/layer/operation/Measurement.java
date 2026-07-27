@@ -33,6 +33,17 @@ public class Measurement extends QuantumOperation {
     }
 
     @Override
+    public Measurement copyForQubits(@NonNull List<ElementSelector> targetQubits, @NonNull List<ElementSelector> controlQubits) {
+        return new Measurement(
+            operationDefinition,
+            inverseForm,
+            copySelectors(targetQubits),
+            copySelectors(controlQubits),
+            copySelectors(classicBits)
+        );
+    }
+
+    @Override
     public String toString() {
         return String.format("[Measurement (quantumOperationId=%s)]", getId());
     }

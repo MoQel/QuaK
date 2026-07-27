@@ -110,11 +110,16 @@ class CircuitRestAdapterTest {
             bell q[0], q[1];
             """;
 
+        // The included gate arrives as one composite box, carrying its ports and its contents.
         mockMvc
             .perform(post("/api/circuit/parse").param("fileId", "f-main").with(csrf()).contentType(MediaType.TEXT_PLAIN).content(main))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.layers[0].quantumOperations[0].identifier").value("H"))
-            .andExpect(jsonPath("$.layers[1].quantumOperations[0].identifier").value("CX"));
+            .andExpect(jsonPath("$.layers[0].quantumOperations[0].type").value("COMPOSITE_QUANTUM_GATE"))
+            .andExpect(jsonPath("$.layers[0].quantumOperations[0].identifier").value("bell"))
+            .andExpect(jsonPath("$.layers[0].quantumOperations[0].portLabels").value(org.hamcrest.Matchers.contains("a", "b")))
+            .andExpect(jsonPath("$.layers[0].quantumOperations[0].usedQubitPositions").value(org.hamcrest.Matchers.contains(0, 1)))
+            .andExpect(jsonPath("$.layers[0].quantumOperations[0].body[0].identifier").value("H"))
+            .andExpect(jsonPath("$.layers[0].quantumOperations[0].body[1].identifier").value("CX"));
     }
 
     /** Without a fileId the endpoint stays content-only, so an unresolvable include is a 400. */

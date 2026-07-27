@@ -4,6 +4,8 @@ import edu.kit.quak.application.circuit.exceptions.QasmParseException;
 import edu.kit.quak.application.circuit.ports.out.QasmIncludeLoader;
 import edu.kit.quak.application.circuit.ports.out.QasmSource;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
+import edu.kit.quak.core.circuit.model.gate.GateDefinition;
+import edu.kit.quak.core.circuit.model.layer.operation.CompositeQuantumGate;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementaryQuantumGate;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
@@ -12,7 +14,6 @@ import edu.kit.quak.core.circuit.model.register.QuantumRegister;
 import edu.kit.quak.core.circuit.model.register.Register;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -53,8 +54,14 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
 
     private final QasmExpressionEvaluator evaluator = new QasmExpressionEvaluator();
 
-    /** Custom gate definitions, inlined into elementary gates at each call site. */
+    /** Parsed `gate` declarations by name, turned into a {@link GateDefinition} on first call. */
     private final Map<String, OpenQASM3Parser.GateStatementContext> gateDefinitions = new HashMap<>();
+
+    /** Built definitions, keyed by gate name plus arguments (a parametrized gate differs per call). */
+    private final Map<String, GateDefinition> definitionCache = new HashMap<>();
+
+    /** The gate definition whose body is currently being built, or null when emitting into the circuit. */
+    private GateDefinition definitionUnderConstruction = null;
 
     /** Call chain of the gates currently being inlined, used to detect recursion. */
     private final List<String> gateCallStack = new ArrayList<>();
@@ -243,7 +250,9 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
 
         OpenQASM3Parser.GateStatementContext customGate = gateDefinitions.get(gateName);
         if (customGate != null) {
-            inlineCustomGate(gateName, customGate, operands, arguments);
+            // A user-defined gate stays one operation instead of being expanded, so the editor can
+            // draw it as a box. Its contents remain reachable via the definition.
+            addOperation(new CompositeQuantumGate(resolveDefinition(gateName, customGate, arguments), false, operands));
             return null;
         }
 
@@ -412,43 +421,51 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
     }
 
     /**
-     * Inlines a call to a custom gate: the formal qubits are bound to the actual operands, the
-     * formal parameters to the evaluated arguments, and the body is then visited like ordinary
-     * code. Nested gate calls work through the recursion.
+     * Returns the {@link GateDefinition} for a call, building it on first use.
+     *
+     * <p>The cache key includes the arguments because a parametrized gate's body depends on them:
+     * {@code myrot(pi)} and {@code myrot(pi/2)} are different bodies and therefore different
+     * definitions, while repeated identical calls share one — so {@code bell q[0], q[1]} and
+     * {@code bell q[2], q[3]} refer to the same definition, as a reader would expect.
      */
-    private void inlineCustomGate(
-        String gateName,
-        OpenQASM3Parser.GateStatementContext definition,
-        List<ElementSelector> operands,
-        List<Double> arguments
-    ) {
+    private GateDefinition resolveDefinition(String gateName, OpenQASM3Parser.GateStatementContext definition, List<Double> arguments) {
+        String cacheKey = gateName + arguments;
+        GateDefinition cached = definitionCache.get(cacheKey);
+        if (cached != null) {
+            return cached;
+        }
+        GateDefinition built = buildDefinition(gateName, definition, arguments);
+        definitionCache.put(cacheKey, built);
+        return built;
+    }
+
+    /**
+     * Builds a gate definition by visiting its body with the formal qubits bound to the definition's
+     * own formal selectors — rather than to a call site's qubits, which is what the previous inlining
+     * did. Emitted operations are redirected into the definition's body via
+     * {@link #definitionUnderConstruction}, so a nested gate call becomes a nested composite instead
+     * of being flattened.
+     */
+    private GateDefinition buildDefinition(String gateName, OpenQASM3Parser.GateStatementContext definition, List<Double> arguments) {
         if (gateCallStack.contains(gateName)) {
             List<String> chain = new ArrayList<>(gateCallStack);
             chain.add(gateName);
             throw new QasmParseException("Recursive gate definition: %s.".formatted(String.join(" -> ", chain)));
         }
 
-        List<String> formalQubits = identifiers(definition.qubits);
-        if (formalQubits.size() != operands.size()) {
-            throw new QasmParseException(
-                "Gate '%s' expects %d qubit(s) but got %d.".formatted(gateName, formalQubits.size(), operands.size())
-            );
-        }
         List<String> formalParameters = definition.params == null ? List.of() : identifiers(definition.params);
         if (formalParameters.size() != arguments.size()) {
             throw new QasmParseException(
                 "Gate '%s' expects %d parameter(s) but got %d.".formatted(gateName, formalParameters.size(), arguments.size())
             );
         }
-        if (new HashSet<>(operands).size() != operands.size()) {
-            throw new QasmParseException("Gate '%s' was called with the same qubit more than once.".formatted(gateName));
-        }
+
+        GateDefinition gate = new GateDefinition(gateName, identifiers(definition.qubits));
 
         Map<String, ElementSelector> bindings = new HashMap<>();
+        List<String> formalQubits = gate.getParameterNames();
         for (int i = 0; i < formalQubits.size(); i++) {
-            if (bindings.put(formalQubits.get(i), operands.get(i)) != null) {
-                throw new QasmParseException("Gate '%s' declares the qubit '%s' more than once.".formatted(gateName, formalQubits.get(i)));
-            }
+            bindings.put(formalQubits.get(i), gate.selectorFor(i));
         }
 
         Map<String, Double> previousParameters = new HashMap<>();
@@ -457,15 +474,19 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
         }
 
         Map<String, ElementSelector> previousQubitBindings = qubitBindings;
+        GateDefinition previousDefinition = definitionUnderConstruction;
         qubitBindings = bindings;
+        definitionUnderConstruction = gate;
         gateCallStack.add(gateName);
         try {
             visit(definition.scope());
         } finally {
             gateCallStack.removeLast();
+            definitionUnderConstruction = previousDefinition;
             qubitBindings = previousQubitBindings;
             previousParameters.forEach(evaluator::restore);
         }
+        return gate;
     }
 
     /** Resolves the iteration values of a for loop: a constant range `[start:(step:)?stop]` or a set `{a, b, c}`. */
@@ -535,11 +556,19 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
         return new QasmParseException("Loop unrolling exceeded the limit of %d total iterations.".formatted(MAX_LOOP_ITERATIONS));
     }
 
+    /**
+     * Emits an operation into whatever is currently being built: the body of a gate definition while
+     * one is under construction, the circuit itself otherwise.
+     */
     private void addOperation(QuantumOperation operation) {
         if (++emittedOperations > MAX_OPERATIONS) {
             throw new QasmParseException("Expanding loops and gate calls exceeded the limit of %d operations.".formatted(MAX_OPERATIONS));
         }
-        circuit.addQuantumOperation(operation, circuit.getLayers().size());
+        if (definitionUnderConstruction != null) {
+            definitionUnderConstruction.addOperation(operation);
+        } else {
+            circuit.addQuantumOperation(operation, circuit.getLayers().size());
+        }
     }
 
     /** Resolves a single gate operand (e.g. {@code q[0]}, {@code q[i + 1]} or a formal gate qubit). */
@@ -589,7 +618,7 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
 
     private boolean isBuiltInGate(String gateName) {
         for (QuantumOperationLibrary operation : QuantumOperationLibrary.values()) {
-            if (operation.name().equalsIgnoreCase(gateName)) {
+            if (operation != QuantumOperationLibrary.COMPOSITE && operation.name().equalsIgnoreCase(gateName)) {
                 return true;
             }
         }
@@ -597,11 +626,12 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
     }
 
     private QuantumOperationLibrary resolveGate(String gateName) {
-        try {
-            return QuantumOperationLibrary.valueOf(gateName.toUpperCase());
-        } catch (IllegalArgumentException ex) {
+        // COMPOSITE is the marker for user-defined gates, not a callable gate itself, so a literal
+        // `composite q[0];` must fail like any other unknown name instead of resolving to it.
+        if (!isBuiltInGate(gateName)) {
             throw new QasmParseException("Unsupported gate '" + gateName + "'.");
         }
+        return QuantumOperationLibrary.valueOf(gateName.toUpperCase(Locale.ROOT));
     }
 
     /** Declared bit width of a scalar type (the 4 in `uint[4]`), or null when not a constant designator. */

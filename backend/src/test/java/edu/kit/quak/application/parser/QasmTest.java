@@ -1,6 +1,7 @@
 package edu.kit.quak.application.parser;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -11,6 +12,7 @@ import edu.kit.quak.application.circuit.antlr.QasmService;
 import edu.kit.quak.application.circuit.exceptions.QasmParseException;
 import edu.kit.quak.core.circuit.codegen.QasmCodeGenerator;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
+import edu.kit.quak.core.circuit.model.layer.operation.CompositeQuantumGate;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementaryQuantumGate;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
 import edu.kit.quak.core.circuit.model.register.QuantumRegister;
@@ -428,7 +430,7 @@ class QasmTest {
     }
 
     @Test
-    void customGateIsInlined() {
+    void customGateBecomesOneCompositeOperation() {
         QuantumCircuit circuit = new QasmService().parse(
             """
             gate bell a, b {
@@ -440,11 +442,83 @@ class QasmTest {
             """
         );
 
-        assertEquals(List.of("CX", "H"), sortedIdentifiers(circuit));
+        // One box, not two elementary gates.
+        assertEquals(1, circuit.getLayers().size());
+        assertEquals(1, circuit.getLayers().getFirst().getQuantumOperations().size());
 
+        CompositeQuantumGate bell = (CompositeQuantumGate) circuit.getLayers().getFirst().getQuantumOperations().getFirst();
+        assertEquals("bell", bell.getGateName());
+        assertEquals(List.of("a", "b"), bell.getDefinition().getParameterNames());
+        assertEquals(
+            List.of(0, 1),
+            bell
+                .getTargetQubits()
+                .stream()
+                .map(sel -> sel.getIndex())
+                .toList()
+        );
+        // Both ports are used, so the box has no pass-through wire.
+        assertEquals(bell.getTargetQubits(), bell.getUsedQubits());
+
+        // ...and it still stands for exactly the circuit the old inlining produced.
+        assertEquals(List.of("CX", "H"), sortedIdentifiers(circuit));
         ElementaryQuantumGate cx = (ElementaryQuantumGate) findOperation(circuit, "CX");
         assertEquals(0, cx.getControlQubits().getFirst().getIndex());
         assertEquals(1, cx.getTargetQubits().getFirst().getIndex());
+    }
+
+    /** A parameter the body never touches must not be reported as a port of the box. */
+    @Test
+    void unusedGateParameterIsReportedAsUnused() {
+        QuantumCircuit circuit = new QasmService().parse(
+            """
+            gate skip a, b, c {
+                h a;
+                cx a, c;
+            }
+            qubit[3] q;
+            skip q[0], q[1], q[2];
+            """
+        );
+
+        CompositeQuantumGate skip = (CompositeQuantumGate) circuit.getLayers().getFirst().getQuantumOperations().getFirst();
+        assertEquals(List.of("a", "c"), skip.getDefinition().getUsedParameterNames());
+        assertEquals(
+            List.of(0, 2),
+            skip
+                .getUsedQubits()
+                .stream()
+                .map(sel -> sel.getIndex())
+                .toList()
+        );
+        // The box still spans all three wires it was called on.
+        assertEquals(3, skip.getTargetQubits().size());
+    }
+
+    /** Two calls of the same gate share one definition, so the editor can treat them as the same gate. */
+    @Test
+    void repeatedCallsShareOneDefinition() {
+        QuantumCircuit circuit = new QasmService().parse(
+            """
+            gate bell a, b {
+                h a;
+                cx a, b;
+            }
+            qubit[4] q;
+            bell q[0], q[1];
+            bell q[2], q[3];
+            """
+        );
+
+        List<CompositeQuantumGate> calls = circuit
+            .getLayers()
+            .stream()
+            .flatMap(layer -> layer.getQuantumOperations().stream())
+            .map(CompositeQuantumGate.class::cast)
+            .toList();
+
+        assertEquals(2, calls.size());
+        assertSame(calls.get(0).getDefinition(), calls.get(1).getDefinition());
     }
 
     @Test
@@ -487,8 +561,9 @@ class QasmTest {
         assertEquals(Math.PI / 2, rx.getRotationAngle(), 1e-9);
     }
 
+    /** A gate built from another gate must stay visibly built from it rather than being flattened. */
     @Test
-    void nestedCustomGatesAreInlined() {
+    void nestedCustomGatesKeepTheirNesting() {
         QuantumCircuit circuit = new QasmService().parse(
             """
             gate inner a, b {
@@ -501,6 +576,34 @@ class QasmTest {
             qubit[2] q;
             outer q[0], q[1];
             """
+        );
+
+        CompositeQuantumGate outer = (CompositeQuantumGate) circuit.getLayers().getFirst().getQuantumOperations().getFirst();
+        assertEquals("outer", outer.getGateName());
+
+        List<QuantumOperation> oneLevel = outer.expand();
+        assertEquals(2, oneLevel.size());
+        assertEquals(
+            List.of("inner", "inner"),
+            oneLevel
+                .stream()
+                .map(op -> ((CompositeQuantumGate) op).getGateName())
+                .toList()
+        );
+        // The second call swaps the operands, and that must survive the binding.
+        assertEquals(
+            List.of(0, 1),
+            ((CompositeQuantumGate) oneLevel.get(0)).getTargetQubits()
+                .stream()
+                .map(s -> s.getIndex())
+                .toList()
+        );
+        assertEquals(
+            List.of(1, 0),
+            ((CompositeQuantumGate) oneLevel.get(1)).getTargetQubits()
+                .stream()
+                .map(s -> s.getIndex())
+                .toList()
         );
 
         assertEquals(List.of("CX", "CX"), sortedIdentifiers(circuit));
@@ -758,24 +861,41 @@ class QasmTest {
         assertEquals(30, identifiers.size(), "total operations");
     }
 
+    /**
+     * Every operation of the circuit with user-defined gates expanded to elementary ones.
+     *
+     * <p>A custom gate is parsed into a single {@link CompositeQuantumGate} so the editor can draw it
+     * as a box. Tests that are about the resulting gates rather than about the grouping therefore
+     * look at the expansion, which is the same circuit the previous inlining produced.
+     */
+    private List<QuantumOperation> elementaryOperations(QuantumCircuit circuit) {
+        List<QuantumOperation> operations = new ArrayList<>();
+        for (var layer : circuit.getLayers()) {
+            for (var operation : layer.getQuantumOperations()) {
+                if (operation instanceof CompositeQuantumGate composite) {
+                    operations.addAll(composite.expandToElementary());
+                } else {
+                    operations.add(operation);
+                }
+            }
+        }
+        return operations;
+    }
+
     /** All operation identifiers in the circuit, sorted so ASAP scheduling cannot flake the test. */
     private List<String> sortedIdentifiers(QuantumCircuit circuit) {
         List<String> identifiers = new ArrayList<>();
-        for (var layer : circuit.getLayers()) {
-            for (var operation : layer.getQuantumOperations()) {
-                identifiers.add(operation.getOperationDefinition().name());
-            }
+        for (var operation : elementaryOperations(circuit)) {
+            identifiers.add(operation.getOperationDefinition().name());
         }
         identifiers.sort(String::compareTo);
         return identifiers;
     }
 
     private QuantumOperation findOperation(QuantumCircuit circuit, String identifier) {
-        for (var layer : circuit.getLayers()) {
-            for (var operation : layer.getQuantumOperations()) {
-                if (operation.getOperationDefinition().name().equals(identifier)) {
-                    return operation;
-                }
+        for (var operation : elementaryOperations(circuit)) {
+            if (operation.getOperationDefinition().name().equals(identifier)) {
+                return operation;
             }
         }
         throw new AssertionError("No " + identifier + " operation in circuit");
@@ -784,10 +904,8 @@ class QasmTest {
     /** Collects the target qubit index of every single-target operation in the circuit, sorted ascending. */
     private List<Integer> collectSingleTargetIndices(QuantumCircuit circuit) {
         List<Integer> indices = new ArrayList<>();
-        for (var layer : circuit.getLayers()) {
-            for (var operation : layer.getQuantumOperations()) {
-                indices.add(operation.getTargetQubits().getFirst().getIndex());
-            }
+        for (var operation : elementaryOperations(circuit)) {
+            indices.add(operation.getTargetQubits().getFirst().getIndex());
         }
         indices.sort(Integer::compareTo);
         return indices;
