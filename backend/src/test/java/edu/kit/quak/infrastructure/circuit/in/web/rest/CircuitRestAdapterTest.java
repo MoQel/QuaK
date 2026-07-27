@@ -10,6 +10,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import edu.kit.quak.application.circuit.antlr.QasmService;
 import edu.kit.quak.application.circuit.ports.in.CircuitServicePort;
+import edu.kit.quak.application.circuit.ports.out.QasmSource;
+import edu.kit.quak.application.circuit.services.ProjectQasmIncludeResolver;
 import edu.kit.quak.application.filesystem.ports.in.ProjectServicePort;
 import edu.kit.quak.application.user.ports.in.UserServicePort;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
@@ -51,6 +53,9 @@ class CircuitRestAdapterTest {
     private CircuitServicePort circuitServicePort;
 
     @MockitoBean
+    private ProjectQasmIncludeResolver includeResolver;
+
+    @MockitoBean
     private ProjectServicePort projectService;
 
     @MockitoBean
@@ -79,6 +84,51 @@ class CircuitRestAdapterTest {
             .andExpect(jsonPath("$.fileId").doesNotExist())
             .andExpect(jsonPath("$.registers[0].numberOfQubits").value(2))
             .andExpect(jsonPath("$.layers[0].quantumOperations[0].identifier").value("H"));
+    }
+
+    /**
+     * The fileId query parameter is what lets `include` reach the project's other files. This
+     * pins the wiring from the parameter through the resolver into the parser.
+     */
+    @Test
+    void parseQasmCode_WithFileId_ShouldResolveIncludes() throws Exception {
+        String bell = """
+            OPENQASM 3.0;
+            gate bell a, b {
+                h a;
+                cx a, b;
+            }
+            """;
+        given(includeResolver.forUser(any())).willReturn((fromFileId, path) ->
+            "bell.qasm".equals(path) ? java.util.Optional.of(new QasmSource("f-bell", "bell.qasm", bell)) : java.util.Optional.empty()
+        );
+
+        String main = """
+            OPENQASM 3.0;
+            include "bell.qasm";
+            qubit[2] q;
+            bell q[0], q[1];
+            """;
+
+        mockMvc
+            .perform(post("/api/circuit/parse").param("fileId", "f-main").with(csrf()).contentType(MediaType.TEXT_PLAIN).content(main))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.layers[0].quantumOperations[0].identifier").value("H"))
+            .andExpect(jsonPath("$.layers[1].quantumOperations[0].identifier").value("CX"));
+    }
+
+    /** Without a fileId the endpoint stays content-only, so an unresolvable include is a 400. */
+    @Test
+    void parseQasmCode_UnresolvableInclude_ShouldReturnBadRequest() throws Exception {
+        String main = """
+            OPENQASM 3.0;
+            include "bell.qasm";
+            qubit[2] q;
+            """;
+
+        mockMvc
+            .perform(post("/api/circuit/parse").with(csrf()).contentType(MediaType.TEXT_PLAIN).content(main))
+            .andExpect(status().isBadRequest());
     }
 
     @Test

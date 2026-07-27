@@ -18,7 +18,7 @@ export function CircuitToolbar({ circuit, setCircuit }: Readonly<CircuitToolbarP
     const { addQubit, deleteLastQubit, resetCircuit } = createCircuitService(circuit, setCircuit);
     const [isPopoverOpen, setIsPopoverOpen] = useState(false);
     const [isParsing, setIsParsing] = useState(false);
-    const { getActiveCode } = useActiveCode();
+    const { activeCodeTabId, getActiveCode } = useActiveCode();
 
     const parseActiveEditor = async () => {
         const code = getActiveCode();
@@ -29,7 +29,12 @@ export function CircuitToolbar({ circuit, setCircuit }: Readonly<CircuitToolbarP
 
         setIsParsing(true);
         try {
-            const parsedCircuit = await apiRequest<unknown>('/api/circuit/parse', {
+            // The tab id is the file id; the backend needs it to resolve `include "..."`
+            // against the project's other files. Without it only the standard libraries work.
+            const url = activeCodeTabId
+                ? `/api/circuit/parse?fileId=${encodeURIComponent(activeCodeTabId)}`
+                : '/api/circuit/parse';
+            const parsedCircuit = await apiRequest<unknown>(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain' },
                 body: code,

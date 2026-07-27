@@ -1,6 +1,8 @@
 package edu.kit.quak.application.circuit.antlr;
 
 import edu.kit.quak.application.circuit.exceptions.QasmParseException;
+import edu.kit.quak.application.circuit.ports.out.QasmIncludeLoader;
+import edu.kit.quak.application.circuit.ports.out.QasmSource;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementaryQuantumGate;
@@ -12,7 +14,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
@@ -25,6 +30,21 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
 
     /** Upper bound on the operations produced by expanding loops and gate calls. */
     private static final int MAX_OPERATIONS = 2000;
+
+    /** Upper bounds on include expansion, guarding against deep or fanned-out include graphs. */
+    private static final int MAX_INCLUDE_DEPTH = 8;
+
+    private static final int MAX_INCLUDES = 32;
+
+    /**
+     * Includes that are satisfied by the built-in gate library and therefore resolve to nothing.
+     * `stdgates.inc` (OpenQASM 3) and `qelib1.inc` (OpenQASM 2) define exactly the elementary gates
+     * {@link QuantumOperationLibrary} already provides.
+     */
+    private static final Set<String> STANDARD_LIBRARIES = Set.of("stdgates.inc", "qelib1.inc");
+
+    /** The built-in include names, listed in error messages so the user sees what needs no file. */
+    private static final String STANDARD_LIBRARY_LIST = STANDARD_LIBRARIES.stream().sorted().collect(Collectors.joining("', '"));
 
     // Transient content-only circuit: it carries no identity (id/projectId/fileId) because only
     // its registers and layers are returned to the client. Registers are created from the qubit
@@ -49,8 +69,113 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
 
     private int emittedOperations = 0;
 
+    /** Loads the files pulled in by `include` statements, already bound to the requesting user. */
+    private final QasmIncludeLoader includeLoader;
+
+    /**
+     * The file whose code is currently being visited. Includes resolve relative to it, so an
+     * include inside an included file is relative to that file rather than to the root.
+     */
+    private String currentFileId;
+
+    /** The file the parse started from. Not on {@link #includeStack}, but still part of any cycle. */
+    private final String rootFileId;
+
+    /** Files currently being included, innermost last; used to detect circular includes. */
+    private final List<QasmSource> includeStack = new ArrayList<>();
+
+    private int includeCount = 0;
+
+    public QasmCircuitVisitor() {
+        this(null, QasmIncludeLoader.NONE);
+    }
+
+    public QasmCircuitVisitor(String rootFileId, QasmIncludeLoader includeLoader) {
+        this.rootFileId = rootFileId;
+        this.currentFileId = rootFileId;
+        this.includeLoader = includeLoader == null ? QasmIncludeLoader.NONE : includeLoader;
+    }
+
     public QuantumCircuit getCircuit() {
         return circuit;
+    }
+
+    /**
+     * Pulls an included file into the parse, exactly as if its source stood in place of the include
+     * statement. That is what makes a gate defined in `bell.qasm` usable from `main.qasm`.
+     *
+     * <p>Standard-library includes resolve to nothing because their gates are built in. Everything
+     * else is looked up in the project; a target that does not exist is an error rather than a
+     * silent no-op, since the gate calls that follow would otherwise fail with a confusing
+     * "Unsupported gate" further down.
+     */
+    @Override
+    public Void visitIncludeStatement(OpenQASM3Parser.IncludeStatementContext ctx) {
+        String path = unquote(ctx.StringLiteral().getText());
+        if (STANDARD_LIBRARIES.contains(path.toLowerCase(Locale.ROOT))) {
+            return null;
+        }
+
+        if (includeStack.size() >= MAX_INCLUDE_DEPTH) {
+            throw new QasmParseException("Includes are nested more than %d levels deep.".formatted(MAX_INCLUDE_DEPTH));
+        }
+        if (++includeCount > MAX_INCLUDES) {
+            throw new QasmParseException("Expanding includes exceeded the limit of %d files.".formatted(MAX_INCLUDES));
+        }
+
+        QasmSource source = includeLoader
+            .load(currentFileId, path)
+            .orElseThrow(() ->
+                new QasmParseException(
+                    "Could not resolve include '%s': no such file in this project. (Only '%s' are built in.)".formatted(
+                        path,
+                        STANDARD_LIBRARY_LIST
+                    )
+                )
+            );
+        rejectCircularInclude(source, path);
+
+        visitIncludedSource(source);
+        return null;
+    }
+
+    /** Visits an included file's source with the include context switched to that file. */
+    private void visitIncludedSource(QasmSource source) {
+        String previousFileId = currentFileId;
+        currentFileId = source.fileId();
+        includeStack.add(source);
+        try {
+            visit(QasmService.toParseTree(source.code()));
+        } catch (QasmParseException ex) {
+            // Without the file name the location in the message ("line 3:5") points at the wrong file.
+            throw new QasmParseException("In included file '%s': %s".formatted(source.name(), ex.getMessage()), ex);
+        } finally {
+            includeStack.removeLast();
+            currentFileId = previousFileId;
+        }
+    }
+
+    private void rejectCircularInclude(QasmSource source, String path) {
+        // The root file is not on the stack but closes a cycle just the same (a -> b -> a).
+        boolean alreadyOpen =
+            source.fileId().equals(rootFileId) || includeStack.stream().anyMatch(open -> open.fileId().equals(source.fileId()));
+        if (!alreadyOpen) {
+            return;
+        }
+        List<String> chain = new ArrayList<>(includeStack.stream().map(QasmSource::name).toList());
+        chain.add(path);
+        throw new QasmParseException("Circular include: %s.".formatted(String.join(" -> ", chain)));
+    }
+
+    /** Strips the surrounding quotes from an include's string literal. */
+    private String unquote(String stringLiteral) {
+        if (stringLiteral.length() >= 2) {
+            char first = stringLiteral.charAt(0);
+            if ((first == '"' || first == '\'') && stringLiteral.charAt(stringLiteral.length() - 1) == first) {
+                return stringLiteral.substring(1, stringLiteral.length() - 1);
+            }
+        }
+        return stringLiteral;
     }
 
     @Override
