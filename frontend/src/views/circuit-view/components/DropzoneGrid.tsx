@@ -224,8 +224,14 @@ export function DropzoneGrid({
             try {
                 const data: DragData = JSON.parse(e.dataTransfer.getData('text/plain'));
                 const operationDefinition = getOperationDefinition(data.operationIdentifier);
-                const controlSize = operationDefinition.controlSize;
-                const targetSize = operationDefinition.targetSize;
+
+                // For an operation already in the circuit, its own qubits are the truth. The gate
+                // library only knows the built-in gates, so a user-defined gate would otherwise be
+                // truncated to the single-qubit fallback and lose qubits on every move.
+                const dragged =
+                    data.origin === 'circuit' && data.id ? findOperation(circuit?.layers ?? [], data.id) : undefined;
+                const controlSize = dragged ? dragged.controlQubits.length : operationDefinition.controlSize;
+                const targetSize = dragged ? dragged.targetQubits.length : operationDefinition.targetSize;
 
                 const controlQubits: ElementSelectorDto[] = Array.from({ length: controlSize }, (_, i) => ({
                     registerId: regId,
@@ -286,7 +292,9 @@ export function DropzoneGrid({
                 setDraggingOperationId(null);
             }
         },
-        [hasCircuitStateChanged, dispatch],
+        // `circuit` is read directly now (to size a dragged operation from its own qubits), so it
+        // must be a dependency rather than riding along on hasCircuitStateChanged's identity.
+        [circuit, hasCircuitStateChanged, dispatch],
     );
 
     return (

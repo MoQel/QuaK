@@ -1,4 +1,10 @@
-import { CircuitResponse, ElementaryQuantumGateDto, getCircuitWidth } from '@/api/dto/circuit.ts';
+import {
+    CircuitResponse,
+    ElementaryQuantumGateDto,
+    getCircuitWidth,
+    isCompositeGate,
+    QuantumOperationDto,
+} from '@/api/dto/circuit.ts';
 import * as qulacs from 'qulacs-wasm';
 import { Complex } from 'qulacs-wasm';
 import {
@@ -81,10 +87,26 @@ export class QulacsMapper {
         // Iterate layer by layer (Time Step by Time Step)
         for (const layer of layers) {
             for (const op of layer.quantumOperations) {
-                if (op.type !== 'ELEMENTARY_QUANTUM_GATE') continue;
-                this.applyGate(circuit, op, wireIndex);
+                for (const gate of this.toElementaryGates(op)) {
+                    this.applyGate(circuit, gate, wireIndex);
+                }
             }
         }
+    }
+
+    /**
+     * The elementary gates an operation stands for, in program order.
+     *
+     * A user-defined gate carries the gates it is made of, already bound to the qubits of its call,
+     * so it is expanded here (recursively, since a body may contain further user-defined gates).
+     * Skipping it instead would silently simulate a *different* circuit — the gate would simply have
+     * no effect — which is far worse than failing loudly.
+     */
+    private static toElementaryGates(op: QuantumOperationDto): ElementaryQuantumGateDto[] {
+        if (isCompositeGate(op)) {
+            return (op.body ?? []).flatMap((part) => this.toElementaryGates(part));
+        }
+        return op.type === 'ELEMENTARY_QUANTUM_GATE' ? [op] : [];
     }
 
     /**

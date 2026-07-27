@@ -18,8 +18,9 @@ public class CompositeQuantumGateDto extends QuantumOperationDto {
     private List<String> portLabels;
 
     /**
-     * Positions in {@code targetQubits} the gate body actually acts on. A declared but unused
-     * parameter is absent, so its wire can be drawn as passing through rather than as a port.
+     * Positions in {@code targetQubits} the gate body actually acts on; a declared but unused
+     * parameter is absent. Analysis information for clients that want to tell the two apart — the
+     * editor still draws a port for every declared parameter.
      */
     private List<Integer> usedQubitPositions;
 

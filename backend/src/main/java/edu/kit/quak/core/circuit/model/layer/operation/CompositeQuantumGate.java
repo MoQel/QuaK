@@ -80,9 +80,12 @@ public class CompositeQuantumGate extends QuantumOperation {
     }
 
     /**
-     * The qubits the body actually acts on, as opposed to every qubit the box spans. A parameter a
-     * definition never uses (e.g. {@code b} in {@code gate foo a, b, c { h a; cx a, c; }}) leaves its
-     * wire untouched, and the editor should draw it as passing through rather than as a port.
+     * The qubits the body actually acts on, as opposed to every qubit the call binds. A parameter a
+     * definition never uses (e.g. {@code b} in {@code gate foo a, b, c { h a; cx a, c; }}) still
+     * occupies its wire, it just leaves it unchanged.
+     *
+     * <p>This is analysis information, not a rendering rule: the editor deliberately draws a port
+     * for <em>every</em> declared parameter so a box shows the gate's full signature.
      */
     public List<ElementSelector> getUsedQubits() {
         List<ElementSelector> qubits = getTargetQubits();

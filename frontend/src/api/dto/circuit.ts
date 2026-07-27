@@ -9,12 +9,16 @@ export interface ElementSelectorDto {
 
 export const getSelectorKey = (sel: ElementSelectorDto): string => `${sel.registerId}-${sel.index}`;
 
-export type QuantumOperationType = 'ELEMENTARY_QUANTUM_GATE' | 'MEASUREMENT' | 'DUMMY';
+export type QuantumOperationType = 'ELEMENTARY_QUANTUM_GATE' | 'MEASUREMENT' | 'COMPOSITE_QUANTUM_GATE' | 'DUMMY';
 
 export interface AbstractQuantumOperationDto {
     id?: string; // Only for response
     type: QuantumOperationType;
-    identifier: OperationIdentifier;
+    /**
+     * A library gate's name for built-in operations. A composite carries its user-defined gate
+     * name here instead, which is why `type` — not this field — decides how an operation renders.
+     */
+    identifier: OperationIdentifier | string;
     inverseForm: boolean;
     targetQubits: ElementSelectorDto[];
     controlQubits: ElementSelectorDto[];
@@ -30,12 +34,35 @@ export interface MeasurementDto extends AbstractQuantumOperationDto {
     classicBits: ElementSelectorDto[];
 }
 
+/**
+ * A call to a user-defined gate, drawn as a single box spanning its wires.
+ *
+ * `targetQubits` holds every qubit of the call in the gate's parameter order, so position *i*
+ * belongs to port `portLabels[i]`. The box therefore spans from the topmost to the bottommost of
+ * them even when the call skips wires in between.
+ */
+export interface CompositeQuantumGateDto extends AbstractQuantumOperationDto {
+    type: 'COMPOSITE_QUANTUM_GATE';
+    /** Port labels in `targetQubits` order, e.g. `["a", "b"]`. */
+    portLabels: string[];
+    /**
+     * Positions in `targetQubits` the gate body actually acts on; a declared but unused parameter
+     * is absent. Analysis information only — the box still draws a port for every parameter.
+     */
+    usedQubitPositions: number[];
+    /** What the gate is made of, one level deep and already bound to this call's qubits. */
+    body: QuantumOperationDto[];
+}
+
 // Temporary placeholder only — must never appear in a finalized or submitted circuit.
 export interface DummyDto extends AbstractQuantumOperationDto {
     type: 'DUMMY';
 }
 
-export type QuantumOperationDto = ElementaryQuantumGateDto | MeasurementDto | DummyDto;
+export type QuantumOperationDto = ElementaryQuantumGateDto | MeasurementDto | CompositeQuantumGateDto | DummyDto;
+
+export const isCompositeGate = (op: QuantumOperationDto): op is CompositeQuantumGateDto =>
+    op.type === 'COMPOSITE_QUANTUM_GATE';
 
 export const getInvolvedSelectors = (op: QuantumOperationDto): ElementSelectorDto[] => {
     const selectors = [...op.targetQubits];

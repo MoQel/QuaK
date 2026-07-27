@@ -1,4 +1,5 @@
-import { QuantumOperationDto, RegisterResponse } from '@/api/dto/circuit.ts';
+import { isCompositeGate, QuantumOperationDto, RegisterResponse } from '@/api/dto/circuit.ts';
+import { CompositeQuantumGate } from '@/views/circuit-view/components/CompositeQuantumGate.tsx';
 import { ElementaryQuantumGate } from '@/views/circuit-view/components/ElementaryQuantumGate.tsx';
 import { UiLayer } from '@/views/circuit-view/util/types.ts';
 import { useDispatch } from 'react-redux';
@@ -53,18 +54,32 @@ export function QuantumOperationGrid({
 
     return (
         <div className={`absolute inset-0 z-20 ${isOperationDragging ? 'pointer-events-none' : ''}`}>
-            {renderedOperations.map(({ op, layerIdx, isGhost }) => (
-                <ElementaryQuantumGate
-                    key={op.id}
-                    operation={op}
-                    registers={registers}
-                    layerIdx={layerIdx}
-                    isGhost={isGhost}
-                    onDragStart={(operationSize) => handleOperationDragStart(op.id!, operationSize)}
-                    onDragEnd={handleOperationDragEnd}
-                    onDelete={() => removeQuantumOperation(op.id!)}
-                />
-            ))}
+            {renderedOperations.map(({ op, layerIdx, isGhost }) =>
+                // A user-defined gate is one box rather than a set of target/control markers.
+                isCompositeGate(op) ? (
+                    <CompositeQuantumGate
+                        key={op.id}
+                        operation={op}
+                        registers={registers}
+                        layerIdx={layerIdx}
+                        isGhost={isGhost}
+                        onDragStart={(operationSize) => handleOperationDragStart(op.id!, operationSize)}
+                        onDragEnd={handleOperationDragEnd}
+                        onDelete={() => removeQuantumOperation(op.id!)}
+                    />
+                ) : (
+                    <ElementaryQuantumGate
+                        key={op.id}
+                        operation={op}
+                        registers={registers}
+                        layerIdx={layerIdx}
+                        isGhost={isGhost}
+                        onDragStart={(operationSize) => handleOperationDragStart(op.id!, operationSize)}
+                        onDragEnd={handleOperationDragEnd}
+                        onDelete={() => removeQuantumOperation(op.id!)}
+                    />
+                ),
+            )}
         </div>
     );
 }
