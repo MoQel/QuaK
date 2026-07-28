@@ -7,6 +7,8 @@ import jakarta.persistence.*;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Getter
 @Setter
@@ -38,7 +40,17 @@ public abstract class JpaQuantumOperation extends JpaElementWithId {
      */
     protected Integer bodyPosition;
 
+    /**
+     * Stored as a plain VARCHAR, not Hibernate's default native {@code ENUM('H','X',...)} column:
+     * {@code ddl-auto=update} never alters an existing column, so on MariaDB every enum constant
+     * added later (as {@code COMPOSITE} was) would fail existing databases with "Data truncated for
+     * column" on insert — invisible on the dev H2, which starts from a fresh schema every time.
+     * Databases created before this change need a one-time
+     * {@code ALTER TABLE jpa_quantum_operation MODIFY COLUMN operation_definition varchar(32)}.
+     */
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(length = 32)
     protected QuantumOperationLibrary operationDefinition;
 
     protected boolean inverseForm;

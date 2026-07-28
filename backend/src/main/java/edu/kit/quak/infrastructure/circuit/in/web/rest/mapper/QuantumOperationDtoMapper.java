@@ -5,8 +5,10 @@ import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementaryQuantumGate;
 import edu.kit.quak.core.circuit.model.layer.operation.Measurement;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
+import edu.kit.quak.core.common.exception.DomainRuleViolationException;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.*;
 import java.util.List;
+import java.util.Objects;
 import org.mapstruct.*;
 
 @Mapper(
@@ -71,12 +73,31 @@ public interface QuantumOperationDtoMapper {
         if (request == null) {
             return null;
         }
+        // Without these checks a payload missing any of the three dies in a Lombok @NonNull check
+        // deep inside the model — an unmapped NullPointerException, i.e. a 500 with no usable message.
+        if (request.getIdentifier() == null || request.getPortLabels() == null || request.getTargetQubits() == null) {
+            throw new DomainRuleViolationException(
+                "A composite gate needs a name, its port labels and its qubits, but got name=%s, portLabels=%s, targetQubits=%s.".formatted(
+                    request.getIdentifier(),
+                    request.getPortLabels(),
+                    request.getTargetQubits()
+                )
+            );
+        }
+        List<QuantumOperationDto> bodyDtos = request.getBody() == null ? List.of() : request.getBody();
+        // A null entry would only surface as a NullPointerException further down; say so instead of
+        // silently dropping it, which would quietly change what the gate does.
+        // Not List.contains(null): an immutable List.of() throws a NullPointerException on that.
+        if (bodyDtos.stream().anyMatch(Objects::isNull)) {
+            throw new DomainRuleViolationException("The body of gate '%s' contains an empty operation.".formatted(request.getIdentifier()));
+        }
+
         CompositeQuantumGate call = CompositeQuantumGate.fromBoundBody(
             request.getIdentifier(),
             request.getPortLabels(),
             request.isInverseForm(),
             toSelectors(request.getTargetQubits()),
-            request.getBody() == null ? List.of() : request.getBody().stream().map(this::toDomain).toList()
+            bodyDtos.stream().map(this::toDomain).toList()
         );
         if (request.getId() != null) {
             call.setId(request.getId());

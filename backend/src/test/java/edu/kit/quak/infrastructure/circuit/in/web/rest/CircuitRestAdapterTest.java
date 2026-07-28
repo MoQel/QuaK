@@ -23,6 +23,8 @@ import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.*;
 import edu.kit.quak.infrastructure.user.in.web.rest.mapper.AuthenticationMapper;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
@@ -120,6 +122,66 @@ class CircuitRestAdapterTest {
             .andExpect(jsonPath("$.layers[0].quantumOperations[0].usedQubitPositions").value(org.hamcrest.Matchers.contains(0, 1)))
             .andExpect(jsonPath("$.layers[0].quantumOperations[0].body[0].identifier").value("H"))
             .andExpect(jsonPath("$.layers[0].quantumOperations[0].body[1].identifier").value("CX"));
+    }
+
+    /**
+     * A malformed composite used to die in a Lombok {@code @NonNull} check deep in the model or in
+     * Jackson's subtype resolution, and the catch-all handler turned both into a 500 "An unexpected
+     * error occurred." — blaming the server for a client mistake and naming nothing actionable.
+     * Every shape below has to answer with a self-explaining 4xx instead.
+     */
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("malformedCompositePayloads")
+    void putCircuit_MalformedComposite_ShouldNotBeAServerError(String name, String body, int expectedStatus, String expectedText)
+        throws Exception {
+        mockMvc
+            .perform(put("/api/circuit/c1").with(csrf()).contentType(MediaType.APPLICATION_JSON).content(body))
+            .andExpect(status().is(expectedStatus))
+            .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString(expectedText)));
+    }
+
+    private static java.util.stream.Stream<org.junit.jupiter.params.provider.Arguments> malformedCompositePayloads() {
+        String registers = "\"registers\":[{\"type\":\"Quantum_Register\",\"id\":\"r1\",\"name\":\"q\",\"numberOfQubits\":2}]";
+        String qubits = "\"targetQubits\":[{\"registerId\":\"r1\",\"index\":0},{\"registerId\":\"r1\",\"index\":1}]";
+        java.util.function.Function<String, String> circuit = operation ->
+            "{" + registers + ",\"layers\":[{\"quantumOperations\":[" + operation + "]}]}";
+
+        return java.util.stream.Stream.of(
+            org.junit.jupiter.params.provider.Arguments.of(
+                "port labels missing",
+                circuit.apply(
+                    "{\"type\":\"COMPOSITE_QUANTUM_GATE\",\"identifier\":\"BELL\",\"inverseForm\":false," +
+                        qubits +
+                        ",\"controlQubits\":[]}"
+                ),
+                422,
+                "port labels"
+            ),
+            org.junit.jupiter.params.provider.Arguments.of(
+                "qubits missing",
+                circuit.apply(
+                    "{\"type\":\"COMPOSITE_QUANTUM_GATE\",\"identifier\":\"BELL\",\"inverseForm\":false,\"portLabels\":[\"a\",\"b\"],\"controlQubits\":[]}"
+                ),
+                422,
+                "qubits"
+            ),
+            org.junit.jupiter.params.provider.Arguments.of(
+                "type discriminator missing",
+                circuit.apply("{\"identifier\":\"BELL\",\"inverseForm\":false," + qubits + ",\"controlQubits\":[]}"),
+                400,
+                "could not be read"
+            ),
+            org.junit.jupiter.params.provider.Arguments.of(
+                "null entry in body",
+                circuit.apply(
+                    "{\"type\":\"COMPOSITE_QUANTUM_GATE\",\"identifier\":\"BELL\",\"inverseForm\":false," +
+                        qubits +
+                        ",\"controlQubits\":[],\"portLabels\":[\"a\",\"b\"],\"body\":[null]}"
+                ),
+                422,
+                "empty operation"
+            )
+        );
     }
 
     /** Without a fileId the endpoint stays content-only, so an unresolvable include is a 400. */
