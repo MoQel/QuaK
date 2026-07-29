@@ -7,25 +7,24 @@ import {
     LibraryView,
     QuantikzExportButton,
 } from '@quak/circuit-editor';
-import type { CircuitResponse } from '@quak/circuit-core';
-import { useState } from 'react';
-import { DEMO_CIRCUIT } from './demoCircuit.ts';
+import { DocumentNotice } from './DocumentNotice.tsx';
 import { OPERATIONS } from './library.ts';
-import { useDocument } from './useDocument.ts';
+import { useCircuitDocument } from './useCircuitDocument.ts';
 import { vscodeApi } from './vscodeApi.ts';
 
-// The circuit is fixed until the QASM transformation exists. Library and circuit
-// share one webview because drag & drop cannot cross webview boundaries.
+// Library and circuit share one webview because drag & drop cannot cross webview
+// boundaries. The circuit itself is the open .qasm file, parsed.
 export function App() {
-    const { snapshot, status } = useDocument();
-
-    // Local only: edits change the circuit inside the webview but are not written
-    // back to the document yet. That needs circuit→QASM (packages/qasm-transform),
-    // after which setCircuit becomes "generate, then requestEdit".
-    const [circuit, setCircuit] = useState<CircuitResponse | undefined>(DEMO_CIRCUIT);
+    const { circuit, setCircuit, status, state, diagnostics, hasDocument } = useCircuitDocument();
 
     return (
         <div className="flex h-screen flex-col bg-bg text-text">
+            <DocumentNotice
+                state={state}
+                diagnostics={diagnostics}
+                onEditAnyway={() => vscodeApi.postMessage({ type: 'enableEditing' })}
+            />
+
             <div className="flex min-h-0 flex-1">
                 <CircuitStoreProvider circuit={circuit} setCircuit={setCircuit}>
                     <CircuitDragProvider>
@@ -52,10 +51,8 @@ export function App() {
             </div>
 
             <details className="border-t border-border px-3 py-2 text-xs text-text-muted">
-                <summary className="cursor-pointer">
-                    {status} · fixed demo circuit until the QASM transformation lands
-                </summary>
-                <pre className="mt-2 whitespace-pre-wrap">{snapshot?.text ?? ''}</pre>
+                <summary className="cursor-pointer">{hasDocument ? status : 'waiting for the document…'}</summary>
+                <pre className="mt-2 whitespace-pre-wrap">{JSON.stringify(diagnostics, null, 2)}</pre>
             </details>
         </div>
     );

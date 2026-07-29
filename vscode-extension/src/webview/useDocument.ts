@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import type { DocumentState, HostMessage } from '../protocol.ts';
+import type { DocumentDiagnostic, DocumentState, HostMessage } from '../protocol.ts';
 import { vscodeApi } from './vscodeApi.ts';
 
 export interface DocumentSnapshot {
     text: string;
     version: number;
     state: DocumentState;
+    diagnostics: DocumentDiagnostic[];
 }
 
 /**
@@ -31,7 +32,12 @@ export function useDocument() {
             const message = event.data;
             switch (message.type) {
                 case 'documentChanged': {
-                    const next = { text: message.text, version: message.version, state: message.state };
+                    const next = {
+                        text: message.text,
+                        version: message.version,
+                        state: message.state,
+                        diagnostics: message.diagnostics,
+                    };
                     snapshotRef.current = next;
                     setSnapshot(next);
                     setStatus(`version ${message.version} | ${message.text.length} chars | ${message.state}`);

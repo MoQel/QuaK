@@ -15,24 +15,45 @@ export interface ApplyEditMessage {
     baseVersion: number;
 }
 
+/**
+ * The user chose to edit a document the transform cannot round-trip losslessly,
+ * having been told what it will cost. Deliberately an explicit act: the default
+ * is read-only, and the host is the one that remembers the choice.
+ */
+export interface EnableEditingMessage {
+    type: 'enableEditing';
+}
+
 /** Webview -> host. */
-export type WebviewMessage = ReadyMessage | ApplyEditMessage;
+export type WebviewMessage = ReadyMessage | ApplyEditMessage | EnableEditingMessage;
 
 /**
  * Whether the document may be edited through the circuit view.
  *
  * Only documents that survive a parse/generate round trip without losing
  * anything may be written back to. Everything else is rendered read-only, so a
- * visual edit can never silently drop content. Deciding this needs the QASM
- * transformation, which does not exist yet; see classifyDocument().
+ * visual edit can never silently drop content.
+ *
+ * `editableByChoice` is the escape hatch: the user was shown what would be lost
+ * and asked for it anyway. Kept distinct from `editable` so the view can keep
+ * saying so — the warning belongs before the work, not after it.
  */
-export type DocumentState = 'editable' | 'readOnly';
+export type DocumentState = 'editable' | 'readOnly' | 'editableByChoice';
+
+/** Why a document is not editable, in the user's terms. */
+export interface DocumentDiagnostic {
+    line: number;
+    construct: string;
+    message: string;
+}
 
 export interface DocumentChangedMessage {
     type: 'documentChanged';
     text: string;
     version: number;
     state: DocumentState;
+    /** What the transform could not represent. Empty when the document is clean. */
+    diagnostics: DocumentDiagnostic[];
 }
 
 export interface EditAppliedMessage {

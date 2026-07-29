@@ -1,23 +1,56 @@
 import * as vscode from 'vscode';
+import { isEditable, toCircuit } from '@quak/qasm-transform';
 import { decideEdit, PanelRegistry } from './arbitration.ts';
-import type { ApplyEditMessage, DocumentState, EditRejectedReason, HostMessage, WebviewMessage } from './protocol.ts';
+import type {
+    ApplyEditMessage,
+    DocumentDiagnostic,
+    DocumentState,
+    EditRejectedReason,
+    HostMessage,
+    WebviewMessage,
+} from './protocol.ts';
 
 /**
- * Whether the circuit view may write back to this document.
+ * Whether the circuit view may write back to this document, and why not.
  *
- * Placeholder: answering this properly needs the QASM transformation, so that we
- * only allow edits to documents that round-trip losslessly. Until then every
- * document counts as editable, and the webview only offers text-preserving
- * changes that append to the host's latest document snapshot.
+ * The transform is the authority: a document is editable exactly when reading it
+ * lost nothing, so regenerating cannot destroy anything the user wrote. What it
+ * could not represent comes back with it, because "read-only" on its own is not
+ * an answer anyone can act on.
  */
-function classifyDocument(_document: vscode.TextDocument): DocumentState {
-    return 'editable';
+function classifyDocument(document: vscode.TextDocument): {
+    state: Exclude<DocumentState, 'editableByChoice'>;
+    diagnostics: DocumentDiagnostic[];
+} {
+    const result = toCircuit(document.getText());
+
+    const diagnostics: DocumentDiagnostic[] = [
+        ...result.syntaxErrors.map((error) => ({
+            line: error.line,
+            construct: 'syntax',
+            message: error.message,
+        })),
+        ...result.unsupported.map((entry) => ({
+            line: entry.line,
+            construct: entry.construct,
+            message: entry.message,
+        })),
+    ];
+
+    return { state: isEditable(result) ? 'editable' : 'readOnly', diagnostics };
 }
 
 export class CircuitEditorProvider implements vscode.CustomTextEditorProvider {
     public static readonly viewType = 'quak.circuitEditor';
 
     private readonly panels = new PanelRegistry<vscode.WebviewPanel>();
+
+    /**
+     * Documents the user chose to edit despite the transform not round-tripping
+     * them. Held per session rather than persisted: the consent is to losing
+     * something specific that is on screen right now, not a standing preference.
+     */
+    private readonly editingEnabled = new Set<string>();
 
     private constructor(private readonly context: vscode.ExtensionContext) {}
 
@@ -57,6 +90,12 @@ export class CircuitEditorProvider implements vscode.CustomTextEditorProvider {
                 case 'applyEdit':
                     void this.applyEdit(webviewPanel, document, message);
                     break;
+                case 'enableEditing':
+                    this.editingEnabled.add(key);
+                    // Every panel on this document, so two views cannot disagree
+                    // about whether it is editable.
+                    this.broadcast(document);
+                    break;
             }
         });
 
@@ -80,7 +119,7 @@ export class CircuitEditorProvider implements vscode.CustomTextEditorProvider {
     ): Promise<void> {
         const decision = decideEdit({
             documentVersion: document.version,
-            documentState: classifyDocument(document),
+            documentState: this.stateOf(document),
             baseVersion: message.baseVersion,
         });
 
@@ -123,12 +162,22 @@ export class CircuitEditorProvider implements vscode.CustomTextEditorProvider {
         }
     }
 
+    /** Classification, with the user's opt-in applied on top. */
+    private stateOf(document: vscode.TextDocument): DocumentState {
+        const { state } = classifyDocument(document);
+        if (state === 'editable') return 'editable';
+
+        return this.editingEnabled.has(document.uri.toString()) ? 'editableByChoice' : 'readOnly';
+    }
+
     private post(panel: vscode.WebviewPanel, document: vscode.TextDocument): void {
+        const { diagnostics } = classifyDocument(document);
         const message: HostMessage = {
             type: 'documentChanged',
             text: document.getText(),
             version: document.version,
-            state: classifyDocument(document),
+            state: this.stateOf(document),
+            diagnostics,
         };
         void panel.webview.postMessage(message);
     }

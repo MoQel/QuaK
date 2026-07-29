@@ -22,8 +22,10 @@ export function decideEdit(input: {
     }
 
     // A document that cannot be regenerated losslessly must never be written back
-    // to, or a visual edit would silently drop content.
-    if (input.documentState !== 'editable') {
+    // to, or a visual edit would silently drop content. Unless the user was told
+    // exactly what would be lost and asked for it anyway — that is what
+    // 'editableByChoice' records, and it is the only way past this.
+    if (input.documentState === 'readOnly') {
         return { kind: 'reject', reason: 'readOnly' };
     }
 

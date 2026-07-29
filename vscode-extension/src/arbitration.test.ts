@@ -36,6 +36,22 @@ describe('decideEdit', () => {
             reason: 'stale',
         });
     });
+
+    it('writes to a document the user opted into editing', () => {
+        // The one way past the read-only rule, and it takes a deliberate act:
+        // the user was shown what would be lost and asked for it anyway.
+        expect(decideEdit({ documentVersion: 7, documentState: 'editableByChoice', baseVersion: 7 })).toEqual({
+            kind: 'apply',
+        });
+    });
+
+    it('still refuses a stale edit on a document the user opted into', () => {
+        // Consent to losing comments is not consent to overwriting someone else's change.
+        expect(decideEdit({ documentVersion: 8, documentState: 'editableByChoice', baseVersion: 7 })).toEqual({
+            kind: 'reject',
+            reason: 'stale',
+        });
+    });
 });
 
 describe('PanelRegistry', () => {
