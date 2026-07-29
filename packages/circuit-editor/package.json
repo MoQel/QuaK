@@ -3,7 +3,7 @@
     "version": "0.0.0",
     "private": true,
     "type": "module",
-    "description": "The circuit editor with its integrated gate library. Backend-free: the host injects the circuit, a CircuitPort and the theme.",
+    "description": "The circuit editor with its integrated gate library. Backend-free: the host injects the circuit, a setter and the theme.",
     "main": "./src/index.ts",
     "types": "./src/index.ts",
     "exports": {

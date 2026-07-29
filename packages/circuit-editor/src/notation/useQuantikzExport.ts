@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { CircuitResponse } from '@quak/circuit-core';
-import { toQuantikz, toStandaloneQuantikzDocument } from '@quak/circuit-core/quantikz';
+import { toQuantikz, toStandaloneQuantikzDocument } from '@quak/circuit-core/notation/quantikz';
 
 export type ExportStatus = 'idle' | 'copied' | 'error';
 

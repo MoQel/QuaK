@@ -18,10 +18,20 @@ describe('toCircuit — registers', () => {
         expect(qubitsIn(`${HEADER}qubit q;\n`)).toBe(1);
     });
 
-    it('resizes rather than duplicating when a register is declared twice', () => {
-        const source = `${HEADER}qubit[2] q;\nqubit[5] q;\n`;
-        expect(toCircuit(source).content?.registers).toHaveLength(1);
-        expect(qubitsIn(source)).toBe(5);
+    it('rejects a register declared twice instead of resizing it', () => {
+        // Resizing would invalidate gates already placed on the old register.
+        const result = toCircuit(`${HEADER}qubit[2] q;\nqubit[5] q;\n`);
+
+        expect(result.content?.registers).toHaveLength(1);
+        expect(result.unsupported.map((u) => u.construct)).toContain('quantumDeclarationStatement');
+        expect(isEditable(result)).toBe(false);
+    });
+
+    it('rejects a register size that is zero or negative', () => {
+        for (const size of ['0', '-2']) {
+            const result = toCircuit(`${HEADER}qubit[${size}] q;\n`);
+            expect(result.unsupported.map((u) => u.construct)).toContain('qubitType');
+        }
     });
 
     it('rejects a non-constant register size instead of guessing', () => {
@@ -61,7 +71,7 @@ describe('toCircuit — gates', () => {
         expect(content!.layers.map((l) => l.quantumOperations[0].identifier)).toEqual(['H', 'X', 'Z']);
     });
 
-    it('defaults the qubit index to 0 when the operand is unindexed', () => {
+    it('reads an unindexed operand on a single-qubit register as that qubit', () => {
         const { content } = toCircuit(`${HEADER}qubit q;\nh q;\n`);
         expect(content!.layers[0].quantumOperations[0].targetQubits).toEqual([{ registerId: 'qreg:q', index: 0 }]);
     });
@@ -79,6 +89,37 @@ describe('toCircuit — gates', () => {
     it('rejects a gate on a register that was never declared', () => {
         const result = toCircuit(`${HEADER}qubit[1] q;\nh r[0];\n`);
         expect(result.unsupported[0].message).toMatch(/unknown qubit register 'r'/);
+    });
+});
+
+// Operands that name several qubits cannot be represented as one visual gate.
+describe('toCircuit — an operand must name exactly one qubit', () => {
+    it.each([
+        ['a range', 'h q[0:1];'],
+        ['a list', 'h q[0, 2];'],
+        ['a set', 'h q[{0, 2}];'],
+        ['nested indexing', 'h q[0][0];'],
+    ])('rejects %s rather than reading its first index', (_case, statement) => {
+        const result = toCircuit(`${HEADER}qubit[3] q;\n${statement}\n`);
+
+        expect(result.unsupported.map((u) => u.construct)).toContain('indexOperator');
+        expect(isEditable(result)).toBe(false);
+    });
+
+    it('rejects a broadcast over a whole multi-qubit register', () => {
+        const result = toCircuit(`${HEADER}qubit[3] q;\nh q;\n`);
+
+        expect(result.unsupported[0].message).toMatch(/all 3 qubits/);
+        expect(isEditable(result)).toBe(false);
+    });
+
+    it.each([
+        ['past the end', 'h q[9];'],
+        ['negative', 'h q[-1];'],
+    ])('rejects an index %s of the register', (_case, statement) => {
+        const result = toCircuit(`${HEADER}qubit[3] q;\n${statement}\n`);
+
+        expect(result.unsupported[0].message).toMatch(/outside register 'q' \(size 3\)/);
     });
 });
 
@@ -112,11 +153,22 @@ describe('toCircuit — rotation angles', () => {
         const result = toCircuit(`${HEADER}qubit[1] q;\nh(pi) q[0];\n`);
         expect(result.unsupported[0].message).toMatch(/does not take a parameter/);
     });
+
+    it('rejects extra parameters rather than reading only the first', () => {
+        const result = toCircuit(`${HEADER}qubit[1] q;\nrx(pi/2, pi) q[0];\n`);
+        expect(result.unsupported[0].message).toMatch(/takes one parameter but got 2/);
+    });
+
+    // Prototype keys must not resolve as named constants.
+    it.each(['constructor', '__proto__', 'valueOf'])('rejects the prototype key %s as an angle', (name) => {
+        const result = toCircuit(`${HEADER}qubit[1] q;\nrx(${name}) q[0];\n`);
+
+        expect(result.unsupported[0].message).toMatch(/Could not evaluate angle expression/);
+        expect(isEditable(result)).toBe(false);
+    });
 });
 
-// The point of the strict visitor (D8): a construct outside the subset must be
-// *detected*, never walked past. Anything missed here becomes silent data loss
-// the moment the circuit is written back over the user's file.
+// Unsupported constructs must be detected before the extension rewrites the file.
 describe('toCircuit — strictness', () => {
     it.each([
         ['control flow', 'for int i in [0:2] { h q[0]; }'],
@@ -147,9 +199,7 @@ describe('toCircuit — strictness', () => {
     });
 });
 
-// The header is not circuit content, but it is the user's file. The backend's
-// generator emits neither the version nor the includes, so its round trip loses
-// them; capturing them here is what lets the TS generator put them back.
+// Preamble is not circuit content, but it belongs to the user's file.
 describe('toCircuit — preamble is preserved, not dropped', () => {
     it('captures the version and the includes in source order', () => {
         const result = toCircuit('OPENQASM 3.0;\ninclude "stdgates.inc";\ninclude "custom.inc";\nqubit[1] q;\n');
@@ -169,8 +219,6 @@ describe('toCircuit — preamble is preserved, not dropped', () => {
 });
 
 describe('toCircuit — stable identity across re-parses', () => {
-    // The extension re-parses on every keystroke. Fresh ids would change every
-    // React key, remounting the circuit and dropping an in-flight drag.
     it('gives the same ids for the same source', () => {
         const source = `${HEADER}qubit[2] q;\nh q[0];\ncx q[0], q[1];\n`;
         const first = toCircuit(source);

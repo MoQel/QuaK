@@ -6,7 +6,7 @@ import { Fragment } from 'react';
 
 interface LibraryBoxViewProps {
     quantumOperations: OperationDefinitionResponse[];
-    onOperationClick: (operation: OperationDefinitionResponse) => void;
+    onOperationClick?: (operation: OperationDefinitionResponse) => void;
 }
 
 function LibraryBoxView({ quantumOperations, onOperationClick }: Readonly<LibraryBoxViewProps>) {
@@ -31,7 +31,7 @@ function LibraryBoxView({ quantumOperations, onOperationClick }: Readonly<Librar
                                     key={operation.id}
                                     identifier={operation.symbol}
                                     matrix={operation.inspectorInfo.matrix.display}
-                                    onClick={() => onOperationClick(operation)}
+                                    onClick={onOperationClick ? () => onOperationClick(operation) : undefined}
                                 />
                             ))}
                         </CardContent>

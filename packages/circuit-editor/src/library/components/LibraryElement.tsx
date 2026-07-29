@@ -17,6 +17,7 @@ type LibraryElementProps = {
 export function LibraryElement({ identifier, onClick, matrix }: Readonly<LibraryElementProps>) {
     const definition = getOperationDefinition(identifier);
     const DELAY_DURATION = 700;
+    const isClickable = onClick !== undefined;
 
     const [isDragging, setIsDragging] = useState(false);
     const [isOpen, setIsOpen] = useState(false);
@@ -62,18 +63,22 @@ export function LibraryElement({ identifier, onClick, matrix }: Readonly<Library
         setIsOpen(open);
     };
 
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+
+        e.preventDefault();
+        onClick?.();
+    };
+
     return (
         <Tooltip delayDuration={DELAY_DURATION} open={isOpen} onOpenChange={handleOpenChange}>
             <TooltipTrigger asChild>
                 <div
                     id={identifier.toLowerCase()}
                     onClick={onClick}
-                    onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            onClick?.();
-                        }
-                    }}
+                    onKeyDown={isClickable ? handleKeyDown : undefined}
+                    role={isClickable ? 'button' : undefined}
+                    tabIndex={isClickable ? 0 : undefined}
                     draggable={identifier !== 'MEASURE'} // Disable Measurement Operation, as it is currently not working.
                     onDragStart={identifier === 'MEASURE' ? undefined : handleDragStart}
                     onDragEnd={identifier === 'MEASURE' ? undefined : handleDragEnd}

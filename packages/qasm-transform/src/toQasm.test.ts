@@ -27,9 +27,7 @@ describe('toQasm — emission', () => {
         expect(isEditable(toCircuit(emitted))).toBe(true);
     });
 
-    // The load-bearing property of the marker design: the generator annotates its
-    // output, and that output is still editable. If markers counted as content,
-    // writing the file would make it read-only the instant we wrote it.
+    // Generated markers must not make generated files read-only.
     it('emits structural markers without making its own output read-only', () => {
         const parsed = toCircuit('OPENQASM 3.0;\nqubit[2] q;\nh q[0];\ncx q[0], q[1];\n');
         const emitted = toQasm(parsed.content!, parsed.preamble);
@@ -52,8 +50,6 @@ describe('toQasm — emission', () => {
     });
 
     it('keeps a document with comments below the header read-only', () => {
-        // The honest half of the deal: those cannot be re-anchored, so the user is
-        // told before editing rather than after their comments are gone.
         const parsed = toCircuit('OPENQASM 3.0;\nqubit[2] q;\n// prepare the state\nh q[0];\n');
 
         expect(isEditable(parsed)).toBe(false);
@@ -87,10 +83,7 @@ describe('toQasm — emission', () => {
     });
 });
 
-// Circuits reach the generator from two places, and they do not look alike. The
-// fixtures above all came from parsing, where a non-rotation gate has no angle.
-// The editor is the other producer, and it stamps a default angle on everything
-// it creates — which is how `x(pi/2)` got written to a real file.
+// Editor-created DTOs may carry default angles on gates that are not parametric.
 describe('circuits built by the editor, not by the parser', () => {
     const gateDroppedByEditor = (identifier: OperationIdentifier, rotationAngle: number): CircuitContent => ({
         registers: [{ id: 'r', name: 'q', type: 'Quantum_Register' as const, numberOfQubits: 1 }],
@@ -131,6 +124,27 @@ describe('circuits built by the editor, not by the parser', () => {
         expect(emitted).toContain('rx(0)');
         expect(isEditable(toCircuit(emitted))).toBe(true);
     });
+
+    it('never emits a modifier the parser refuses, whatever the DTO claims', () => {
+        const inverse = gateDroppedByEditor('S', 0);
+        inverse.layers[0].quantumOperations[0].inverseForm = true;
+
+        const emitted = toQasm(inverse);
+
+        expect(emitted).not.toContain('inv');
+        expect(isEditable(toCircuit(emitted))).toBe(true);
+    });
+
+    it('numbers layer markers contiguously across an empty layer', () => {
+        const content = gateDroppedByEditor('H', 0);
+        content.layers.push({ quantumOperations: [] }, gateDroppedByEditor('X', 0).layers[0]);
+
+        const emitted = toQasm(content);
+
+        expect(emitted).toContain('// Layer 1');
+        expect(emitted).toContain('// Layer 2');
+        expect(emitted).not.toContain('// Layer 3');
+    });
 });
 
 describe('formatAngle — symbolic, so round trips do not decay', () => {
@@ -153,7 +167,6 @@ describe('formatAngle — symbolic, so round trips do not decay', () => {
     });
 });
 
-// The contract that matters (D8): what comes back must mean the same thing.
 describe('round trip is idempotent', () => {
     const fixtures: Record<string, string> = {
         'single gate': 'OPENQASM 3.0;\ninclude "stdgates.inc";\nqubit[1] q;\nh q[0];\n',
@@ -182,8 +195,6 @@ describe('round trip is idempotent', () => {
     });
 
     it('round-trips a file the web IDE generated, markers and all', () => {
-        // The interop case: the Java generator annotates its output the same way.
-        // If markers were treated as content this would be read-only on arrival.
         const webIdeStyle = '// Register q\nqubit[2] q;\n\n// Layer 1\nh q[0];\n\n// Layer 2\ncx q[0], q[1];\n';
         const parsed = toCircuit(webIdeStyle);
 

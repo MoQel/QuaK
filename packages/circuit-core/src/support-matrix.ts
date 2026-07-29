@@ -1,38 +1,27 @@
-// OpenQASM 3 support matrix: which constructs the circuit editor can round-trip
-// losslessly. Documents using an unsupported construct are shown read-only, so
-// nothing is silently dropped (D2).
-//
-// This is the single source D8 asks for: the strict visitor decides what to
-// reject by reading it, the tests assert it agrees with the gate table, and the
-// README is generated from it. Adding a construct means editing this file, not
-// a list buried in the transform.
-
 import { GATE_ARITY, type OperationIdentifier } from './gate-types.ts';
 
 export type SupportStatus = 'supported' | 'unsupported';
 
 export type ConstructKind =
-    /** A rule name from OpenQASM3Parser.g4, matched against the parse tree. */
+    /** Rule name from OpenQASM3Parser.g4. */
     | 'statement'
-    /** A gate identifier, matched against the name in a gate call. */
+    /** Gate identifier from a gate call. */
     | 'gate'
-    /** Neither — something about the document the parser sees outside the tree. */
+    /** Source content outside normal statement support, such as comments. */
     | 'lexical';
 
+/** OpenQASM construct support for lossless visual editing. */
 export interface SupportMatrixEntry {
     construct: string;
     kind: ConstructKind;
     status: SupportStatus;
-    /** Not yet proven by a round-trip fixture. */
+    /** Supported by implementation but not yet backed by a dedicated fixture. */
     provisional?: boolean;
-    /** Shown to the user when this is why the document is read-only. */
+    /** Human-readable reason shown when this construct makes a document read-only. */
     note?: string;
 }
 
-// Gates the editor renders. Their shapes live in GATE_ARITY; this only records
-// whether the round trip is believed to work. MEASURE and DUMMY are deliberately
-// absent: `measure` is not a gate call in the grammar, and DUMMY is a drag-time
-// placeholder that never exists in a document.
+// Gate shapes live in GATE_ARITY. This list only records which gate calls round-trip through QASM.
 const SUPPORTED_GATES: readonly OperationIdentifier[] = [
     'H',
     'X',
@@ -49,8 +38,7 @@ const SUPPORTED_GATES: readonly OperationIdentifier[] = [
     'RZ',
 ];
 
-// Statement rules the circuit model has no representation for. The note is shown
-// to the user, so it names the concept rather than the grammar rule.
+// Statement rules the circuit model cannot represent. Values are user-facing reasons.
 const UNSUPPORTED_STATEMENT_RULES: Readonly<Record<string, string>> = {
     aliasDeclarationStatement: 'aliases',
     assignmentStatement: 'classical assignment',
@@ -81,8 +69,8 @@ const UNSUPPORTED_STATEMENT_RULES: Readonly<Record<string, string>> = {
     whileStatement: 'control flow',
 };
 
+/** Constructs the visual editor can and cannot preserve when rewriting OpenQASM. */
 export const SUPPORT_MATRIX: readonly SupportMatrixEntry[] = [
-    // Statements the transform reads.
     { construct: 'version', kind: 'statement', status: 'supported', provisional: true },
     { construct: 'includeStatement', kind: 'statement', status: 'supported', provisional: true },
     { construct: 'quantumDeclarationStatement', kind: 'statement', status: 'supported', provisional: true },
@@ -104,17 +92,14 @@ export const SUPPORT_MATRIX: readonly SupportMatrixEntry[] = [
     },
 ];
 
-/** Grammar rule -> human reason, for the strict visitor's rejection messages. */
+/** Grammar rule to user-facing rejection reason. */
 export const unsupportedStatementRules = (): Readonly<Record<string, string>> => UNSUPPORTED_STATEMENT_RULES;
-
-export const isConstructSupported = (construct: string): boolean =>
-    SUPPORT_MATRIX.some((entry) => entry.construct === construct && entry.status === 'supported');
 
 export const isGateSupported = (identifier: string): boolean =>
     SUPPORT_MATRIX.some(
         (entry) => entry.kind === 'gate' && entry.construct === identifier && entry.status === 'supported',
     );
 
-/** Every gate the matrix claims support for must have a shape the editor can draw. */
+/** Supported gate calls that also have editor arity metadata. */
 export const supportedGates = (): readonly OperationIdentifier[] =>
     SUPPORTED_GATES.filter((gate) => gate in GATE_ARITY);

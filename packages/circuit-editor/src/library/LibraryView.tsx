@@ -8,7 +8,7 @@ import { OperationDefinitionResponse } from '@quak/circuit-core';
 
 interface LibraryViewProps {
     operations: OperationDefinitionResponse[];
-    onOperationSelect: (operation: OperationDefinitionResponse) => void;
+    onOperationSelect?: (operation: OperationDefinitionResponse) => void;
 }
 
 export function LibraryView({ operations, onOperationSelect }: Readonly<LibraryViewProps>) {

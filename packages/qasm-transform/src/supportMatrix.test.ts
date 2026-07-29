@@ -6,10 +6,9 @@ import {
     supportedGates,
     unsupportedStatementRules,
 } from '@quak/circuit-core';
-import { toCircuit } from './toCircuit.ts';
+import { isEditable, toCircuit } from './toCircuit.ts';
 
-// The matrix is only a single source if nothing can quietly disagree with it.
-// These tests are the mechanism that makes that true.
+// The matrix is useful only if the transform cannot quietly disagree with it.
 describe('support matrix is consistent with the rest of the transform', () => {
     it('claims support only for gates the editor has a shape for', () => {
         for (const gate of supportedGates()) {
@@ -39,8 +38,6 @@ describe('support matrix is consistent with the rest of the transform', () => {
 
 describe('the visitor rejects what the matrix says it rejects', () => {
     it('reports the matrix note as the reason, for every unsupported statement rule', () => {
-        // Rather than trusting that the visitor reads the matrix, check the
-        // reason text actually surfaces — a hardcoded list would fail here.
         const result = toCircuit('OPENQASM 3.0;\nqubit[2] q;\nfor int i in [0:2] { h q[0]; }\n');
         const rejection = result.unsupported.find((u) => u.construct === 'forStatement');
 
@@ -48,12 +45,7 @@ describe('the visitor rejects what the matrix says it rejects', () => {
     });
 
     it('rejects a gate the matrix omits, even when GATE_ARITY knows its shape', () => {
-        // Support is the matrix's call; arity is not. `dummy` is the one case that
-        // exercises this: it has an arity, it parses as an ordinary gate call, and
-        // the matrix deliberately omits it. (`measure` cannot be used here — the
-        // grammar routes it to measureArrowAssignmentStatement, so it would be
-        // rejected on the statement path and the test would pass for the wrong
-        // reason.)
+        // Support is the matrix's call; arity alone is not enough.
         expect(GATE_ARITY.DUMMY).toBeDefined();
 
         const rejection = toCircuit('OPENQASM 3.0;\nqubit[1] q;\ndummy q[0];\n').unsupported;
@@ -62,8 +54,6 @@ describe('the visitor rejects what the matrix says it rejects', () => {
     });
 });
 
-// The matrix has always claimed comments force read-only. Until now nothing
-// implemented that, so a user's note would have been deleted by the first edit.
 describe('comments are detected, not silently dropped', () => {
     it('detects a line comment', () => {
         const result = toCircuit('OPENQASM 3.0;\nqubit[1] q;\n// my note\nh q[0];\n');
@@ -86,5 +76,40 @@ describe('comments are detected, not silently dropped', () => {
     it('leaves a comment-free document editable', () => {
         const result = toCircuit('OPENQASM 3.0;\nqubit[1] q;\nh q[0];\n');
         expect(result.unsupported).toEqual([]);
+    });
+
+    it('accepts generated structural markers only at generated positions', () => {
+        const result = toCircuit('OPENQASM 3.0;\n// Register q\nqubit[1] q;\n\n// Layer 1\nh q[0];\n');
+
+        expect(isEditable(result)).toBe(true);
+    });
+
+    it('detects marker-looking comments below the header when they are not generated markers', () => {
+        const result = toCircuit('OPENQASM 3.0;\nqubit[1] q;\n// Register q\nh q[0];\n');
+
+        expect(result.unsupported).toEqual([
+            expect.objectContaining({
+                line: 3,
+                construct: 'comment',
+            }),
+        ]);
+    });
+
+    it('preserves marker-looking header comments', () => {
+        const result = toCircuit('// Register q\nOPENQASM 3.0;\nqubit[1] q;\n');
+
+        expect(isEditable(result)).toBe(true);
+        expect(result.preamble.headerComments).toEqual(['// Register q']);
+    });
+
+    it('detects layer markers with the wrong generated number', () => {
+        const result = toCircuit('OPENQASM 3.0;\nqubit[1] q;\n// Layer 99\nh q[0];\n');
+
+        expect(result.unsupported).toEqual([
+            expect.objectContaining({
+                line: 3,
+                construct: 'comment',
+            }),
+        ]);
     });
 });

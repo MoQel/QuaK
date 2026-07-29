@@ -12,10 +12,15 @@
         "./dto/circuit": "./src/dto/circuit.ts",
         "./dto/library": "./src/dto/library.ts",
         "./angle": "./src/angle.ts",
+        "./lib/quantumAngle": "./src/lib/quantumAngle.ts",
         "./circuitContent": "./src/circuitContent.ts",
         "./support-matrix": "./src/support-matrix.ts",
         "./circuitIndex": "./src/circuitIndex.ts",
-        "./quantikz": "./src/quantikz.ts"
+        "./lib/circuitIndex": "./src/lib/circuitIndex.ts",
+        "./quantikz": "./src/quantikz.ts",
+        "./notation": "./src/notation/index.ts",
+        "./notation/quantikz": "./src/notation/quantikz/index.ts",
+        "./notation/latex/escape": "./src/notation/latex/escape.ts"
     },
     "scripts": {
         "typecheck": "tsc --noEmit"

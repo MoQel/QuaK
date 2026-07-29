@@ -1,11 +1,6 @@
 #!/usr/bin/env node
-// Guards the one hazard of committing generated code: someone edits a .g4 and
-// forgets to regenerate, so the backend's parser and the extension's silently
-// disagree.
-//
-// Regenerating in CI would catch it too, but that needs a JDK in the js-checks
-// job, which is Node-only on purpose. Hashing the grammars is Node-only and
-// catches exactly this case.
+// Keeps the committed TypeScript parser in sync with the backend grammars.
+// Hashing avoids requiring a JDK in ordinary JS checks.
 import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';

@@ -17,9 +17,8 @@ export interface QasmSyntaxError {
 }
 
 /**
- * ANTLR's default listener prints to stderr and carries on. A `.qasm` the user
- * is editing is malformed most of the time, so the errors are data we act on
- * (the editor goes read-only), not console noise.
+ * ANTLR's default listener prints to stderr. Syntax errors are part of the
+ * document state, so the extension collects them instead.
  */
 class CollectingErrorListener extends BaseErrorListener {
     readonly errors: QasmSyntaxError[] = [];
@@ -45,22 +44,13 @@ export interface QasmComment {
 export interface ParseResult {
     tree: ProgramContext;
     errors: QasmSyntaxError[];
-    /**
-     * Comments, which the grammar puts on the hidden channel rather than
-     * discarding. They never reach the parse tree, but they are the user's
-     * content: regenerating the file over them would delete them silently, so
-     * the transform has to know they are there.
-     */
+    /** Comments are hidden-channel tokens, not parse-tree nodes. */
     comments: QasmComment[];
 }
 
 /**
- * Parses OpenQASM 3 source into a parse tree, collecting syntax errors instead
- * of throwing: a tree is still produced for partially valid input, which is what
- * lets the editor show something while the user is mid-keystroke.
- *
- * This is only the grammar layer. Turning the tree into a circuit — and deciding
- * which constructs are supported at all — is the visitor's job.
+ * Parses OpenQASM 3 source and collects syntax errors without throwing.
+ * Turning the tree into a supported circuit is handled by `toCircuit`.
  */
 export function parseQasm(source: string): ParseResult {
     const listener = new CollectingErrorListener();
@@ -76,8 +66,7 @@ export function parseQasm(source: string): ParseResult {
 
     const tree = parser.program();
 
-    // Only after parsing: the stream is filled by then, so the hidden-channel
-    // tokens the parser skipped past are all available.
+    // The token stream is filled after parsing, including hidden-channel comments.
     const comments = tokens
         .getTokens()
         .filter((token) => token.channel === Token.HIDDEN_CHANNEL)

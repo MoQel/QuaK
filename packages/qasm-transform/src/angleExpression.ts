@@ -8,7 +8,7 @@ import {
     UnaryExpressionContext,
 } from './generated/OpenQASM3Parser.js';
 
-/** Raised for anything inside the grammar that the circuit model cannot represent. */
+/** Raised when a syntactically valid angle cannot be represented by the circuit model. */
 export class QasmUnsupportedError extends Error {
     constructor(message: string) {
         super(message);
@@ -28,8 +28,8 @@ const NAMED_CONSTANTS: Record<string, number> = {
 const parseConstantOrNumber = (text: string): number => {
     const normalized = text.trim().toLowerCase();
 
-    const named = NAMED_CONSTANTS[normalized];
-    if (named !== undefined) return named;
+    // Own properties only: prototype keys such as `__proto__` are not constants.
+    if (Object.hasOwn(NAMED_CONSTANTS, normalized)) return NAMED_CONSTANTS[normalized];
 
     const value = Number(normalized);
     if (Number.isFinite(value) && normalized !== '') return value;
@@ -40,13 +40,9 @@ const parseConstantOrNumber = (text: string): number => {
 /**
  * Evaluates a gate parameter — the `pi/2` in `rx(pi/2) q[0]` — to radians.
  *
- * Port of the backend's `QasmCircuitVisitor.evaluateAngle`, and it has to stay
- * one: the editor shows the angle, the generator writes it back, and a value
- * that differs by so much as a sign would silently corrupt the user's file.
- *
- * Supports the named constants, numeric literals and simple arithmetic. Anything
- * else (a variable, a function call) is genuinely unsupported rather than
- * guessed at.
+ * Mirrors the backend's `QasmCircuitVisitor.evaluateAngle`. Supports named
+ * constants, numeric literals and simple arithmetic; variables and calls are
+ * rejected instead of guessed.
  */
 export function evaluateAngle(expression: ExpressionContext): number {
     if (expression instanceof ParenthesisExpressionContext) {

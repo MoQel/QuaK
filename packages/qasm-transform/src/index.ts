@@ -1,9 +1,9 @@
 // @quak/qasm-transform — OpenQASM 3 <-> circuit, in TypeScript.
 //
-// The VSCode extension has no backend (D3), so it cannot use the Java parser the
-// web IDE calls over REST. Both are generated from the *same* grammars in
-// backend/src/main/antlr — see check:generated, which fails the build if the
-// grammars move and this parser does not follow.
+// Intended for the VSCode extension only. The web IDE talks to the backend over
+// REST and should not bundle this parser. Both parsers are generated from the
+// same grammars in backend/src/main/antlr; check:generated fails when this copy
+// falls behind.
 
 export { parseQasm, type ParseResult, type QasmComment, type QasmSyntaxError } from './parse.ts';
 export {

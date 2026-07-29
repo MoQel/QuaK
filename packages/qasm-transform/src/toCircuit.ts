@@ -10,7 +10,7 @@ import {
     type QuantumRegisterResponse,
 } from '@quak/circuit-core';
 import { evaluateAngle, QasmUnsupportedError } from './angleExpression.ts';
-import { isStructuralComment } from './structuralComments.ts';
+import { layerMarker, registerMarker } from './structuralComments.ts';
 import { parseQasm, type QasmSyntaxError } from './parse.ts';
 import {
     GateCallStatementContext,
@@ -31,10 +31,8 @@ export interface QasmUnsupportedConstruct {
 /**
  * The parts of the document that frame the circuit without being part of it.
  *
- * They have to survive the round trip: the backend's generator emits neither,
- * so its output is not even valid standalone OpenQASM (no version, and `h`/`cx`
- * used without including the standard gates). Regenerating over the user's file
- * must not quietly delete their header, so it is captured here and written back.
+ * The extension rewrites the full file after a visual edit. Version, includes
+ * and top-of-file comments are preserved here so they are not dropped.
  */
 export interface QasmPreamble {
     /** e.g. "3.0" from `OPENQASM 3.0;`. */
@@ -42,11 +40,8 @@ export interface QasmPreamble {
     /** Include targets verbatim, in source order, e.g. `"stdgates.inc"`. */
     includes: string[];
     /**
-     * Comments above the first statement — a licence block, an author, a note on
-     * what the file is. The only comments that can be preserved honestly: their
-     * anchor is "the top of the file", which no amount of re-scheduling moves.
-     * Comments further down belong to statements that the editor may reorder or
-     * delete, so they are reported as unsupported instead of being relocated.
+     * Comments before the first statement. Later comments are tied to statements
+     * the visual editor may move or delete, so they are reported as unsupported.
      */
     headerComments: string[];
 }
@@ -59,18 +54,14 @@ export interface ToCircuitResult {
     unsupported: QasmUnsupportedConstruct[];
 }
 
-/** The document may only be edited visually when nothing was lost reading it (D2). */
+/** The document is visually editable only when the transform preserved everything. */
 export const isEditable = (result: ToCircuitResult): boolean =>
     result.content !== null && result.syntaxErrors.length === 0 && result.unsupported.length === 0;
 
-// What counts as outside the subset is the support matrix's call, not this
-// file's — that single source is what D8 asks for, and it is what keeps the
-// visitor, the tests and the README from each believing something different.
 const UNSUPPORTED_STATEMENTS = unsupportedStatementRules();
 
 class CircuitBuilder {
-    // Only quantum registers: a `bit[n] c;` declaration is a classical register
-    // the circuit model does not carry, and it is rejected rather than collected.
+    // Classical registers are rejected because CircuitContent carries only qubits.
     readonly registers: QuantumRegisterResponse[] = [];
     readonly layers: LayerResponse[] = [];
     readonly unsupported: QasmUnsupportedConstruct[] = [];
@@ -93,35 +84,24 @@ class CircuitBuilder {
 /**
  * Turns OpenQASM 3 source into the circuit's registers and layers.
  *
- * Port of the backend's `QasmCircuitVisitor`, with one deliberate difference:
- * where the Java visitor throws on the first problem and silently walks past
- * statements it does not implement, this one collects every issue. The extension
- * needs the whole list to tell the user *why* their file is read-only, and a
- * construct that is quietly ignored is exactly the silent data loss D2 forbids.
+ * Mirrors the backend visitor for supported constructs, but is stricter: it
+ * collects unsupported syntax so the extension can keep risky files read-only.
  *
  * Each operation becomes its own layer, in source order — the editor re-schedules
  * them ASAP for display, so layer packing is not this function's business.
  *
- * Ids are derived from the source (register name, statement position) rather than
- * generated. The extension re-parses on every keystroke, and fresh UUIDs each time
- * would change every React key — remounting the circuit and dropping any in-flight
- * drag. Derived ids stay put as long as the statement does.
+ * Ids are derived from source positions so React keys stay stable across reparses.
  */
 export function toCircuit(source: string): ToCircuitResult {
     const { tree, errors, comments } = parseQasm(source);
     const builder = new CircuitBuilder();
 
-    // Comments never reach the parse tree, so the statement walk below cannot see
-    // them. Three kinds, and only one is a problem:
-    //   - QuaK's own `// Register`/`// Layer` markers: regenerable, so ignored.
-    //   - above the first statement: anchored to the top of the file, preserved.
-    //   - anywhere else: anchored to a statement the editor may move or delete,
-    //     so they are reported and the document goes read-only.
     const firstStatementLine = startOfFirstStatement(tree);
+    const generatedMarkerKeys = generatedStructuralMarkerKeys(tree);
     const headerComments: string[] = [];
 
     for (const comment of comments) {
-        if (isStructuralComment(comment.text)) continue;
+        if (generatedMarkerKeys.has(commentKey(comment.line, comment.text))) continue;
 
         if (comment.line < firstStatementLine) {
             headerComments.push(comment.text.trim());
@@ -147,7 +127,6 @@ export function toCircuit(source: string): ToCircuitResult {
 
     const content: CircuitContent = { registers: builder.registers, layers: builder.layers };
     return {
-        // Registers alone are a valid (empty) circuit; nothing at all is not.
         content: builder.registers.length > 0 ? content : null,
         preamble: {
             version: tree.version()?.VersionSpecifier().getText() ?? null,
@@ -172,23 +151,20 @@ function visitStatement(statement: StatementContext, builder: CircuitBuilder): v
         return;
     }
 
-    // Not circuit content, but part of the document — kept so the generator can
-    // put it back instead of deleting the user's header.
+    // Includes are file preamble, not circuit content.
     const include = statement.includeStatement();
     if (include) {
         builder.includes.push(include.StringLiteral().getText());
         return;
     }
 
-    // Anything else: name it if we can, and reject it either way. The accessors
-    // exist on StatementContext for *every* alternative, so the rule has to be
-    // identified by calling them — a truthy return is the one that matched.
+    // The generated StatementContext exposes every alternative as an accessor.
     const rule = Object.keys(UNSUPPORTED_STATEMENTS).find((name) => {
         const accessor = (statement as unknown as Record<string, unknown>)[name];
         return typeof accessor === 'function' && (accessor as () => unknown).call(statement) != null;
     });
     const reason = rule ? UNSUPPORTED_STATEMENTS[rule] : 'unrecognized statement';
-    builder.reject(statement, rule ?? 'statement', `Unsupported ${reason}: ${firstLine(statement.getText())}`);
+    builder.reject(statement, rule ?? 'statement', `Unsupported ${reason}: ${truncate(statement.getText())}`);
 }
 
 function visitQuantumDeclaration(ctx: QuantumDeclarationStatementContext, builder: CircuitBuilder): void {
@@ -198,16 +174,16 @@ function visitQuantumDeclaration(ctx: QuantumDeclarationStatementContext, builde
     let size = 1; // `qubit q;` with no [n] is a single qubit.
     if (designator) {
         const parsed = constantInt(designator.expression().getText());
-        if (parsed === null) {
-            builder.reject(ctx, 'qubitType', `Register size must be a constant integer: ${ctx.getText()}`);
+        if (parsed === null || parsed < 1) {
+            builder.reject(ctx, 'qubitType', `Register size must be a positive constant integer: ${ctx.getText()}`);
             return;
         }
         size = parsed;
     }
 
-    const existing = builder.registerByName(name);
-    if (existing) {
-        existing.numberOfQubits = size;
+    // Duplicate declarations would make earlier gate indices ambiguous.
+    if (builder.registerByName(name)) {
+        builder.reject(ctx, 'quantumDeclarationStatement', `Qubit register '${name}' is declared more than once.`);
         return;
     }
 
@@ -224,19 +200,24 @@ function visitGateCall(ctx: GateCallStatementContext, builder: CircuitBuilder): 
     const operandList = ctx.gateOperandList();
     if (!identifierNode || !operandList) {
         // gphase and other operand-less calls have no editor representation.
-        builder.reject(ctx, 'gateCallStatement', `Unsupported gate call: ${firstLine(ctx.getText())}`);
+        builder.reject(ctx, 'gateCallStatement', `Unsupported gate call: ${truncate(ctx.getText())}`);
         return;
     }
 
     if (ctx.gateModifier().length > 0) {
-        builder.reject(ctx, 'gateModifier', `Gate modifiers are not supported: ${firstLine(ctx.getText())}`);
+        builder.reject(ctx, 'gateModifier', `Gate modifiers are not supported: ${truncate(ctx.getText())}`);
+        return;
+    }
+
+    // The `[4]` in `h[4] q;` — a timing designator the circuit model does not carry.
+    if (ctx.designator()) {
+        builder.reject(ctx, 'gateCallStatement', `Gate designators are not supported: ${truncate(ctx.getText())}`);
         return;
     }
 
     const gateName = identifierNode.getText();
     const identifier = toOperationIdentifier(gateName);
-    // The matrix decides support; GATE_ARITY only says what shape a gate has.
-    // MEASURE has an arity but is not a gate call, so it is rightly rejected here.
+    // Support is explicit. Arity alone does not make a gate call round-trippable.
     if (!identifier || !isGateSupported(identifier)) {
         builder.reject(ctx, identifier ?? gateName.toUpperCase(), `Unsupported gate '${gateName}'.`);
         return;
@@ -270,6 +251,15 @@ function visitGateCall(ctx: GateCallStatementContext, builder: CircuitBuilder): 
             builder.reject(ctx, identifier, `Gate '${gateName}' does not take a parameter.`);
             return;
         }
+        // Reading only the first parameter would lose the rest on write.
+        if (angleExpressions.length > 1) {
+            builder.reject(
+                ctx,
+                identifier,
+                `Gate '${gateName}' takes one parameter but got ${angleExpressions.length}.`,
+            );
+            return;
+        }
         try {
             rotationAngle = evaluateAngle(angleExpressions[0]);
         } catch (error) {
@@ -292,6 +282,12 @@ function visitGateCall(ctx: GateCallStatementContext, builder: CircuitBuilder): 
     builder.layers.push({ quantumOperations: [operation] });
 }
 
+/**
+ * Resolves one gate operand — the `q[0]` in `h q[0]` — to a single qubit.
+ *
+ * OpenQASM operands can name a whole register or slice. The visual circuit model
+ * needs one concrete qubit, so broader operands are rejected.
+ */
 function parseOperand(operand: GateOperandContext, builder: CircuitBuilder): ElementSelectorDto | null {
     const indexed = operand.indexedIdentifier();
     if (!indexed) {
@@ -306,41 +302,65 @@ function parseOperand(operand: GateOperandContext, builder: CircuitBuilder): Ele
         builder.reject(operand, 'gateOperand', `Gate references unknown qubit register '${registerName}'.`);
         return null;
     }
+    const size = register.numberOfQubits;
 
-    let index = 0;
     const indexOperators = indexed.indexOperator();
-    if (indexOperators.length > 0) {
-        const expressions = indexOperators[0].expression();
-        if (expressions.length > 0) {
-            const parsed = constantInt(expressions[0].getText());
-            if (parsed === null) {
-                builder.reject(
-                    operand,
-                    'indexOperator',
-                    `Qubit index must be a constant integer: ${operand.getText()}`,
-                );
-                return null;
-            }
-            index = parsed;
+    if (indexOperators.length === 0) {
+        // `h q;` is only unambiguous for a single-qubit register.
+        if (size !== 1) {
+            builder.reject(
+                operand,
+                'gateOperand',
+                `'${operand.getText()}' applies the gate to all ${size} qubits of '${registerName}'; broadcasting is not supported.`,
+            );
+            return null;
         }
+        return { registerId: register.id, index: 0 };
+    }
+
+    if (indexOperators.length > 1) {
+        builder.reject(operand, 'indexOperator', `Nested indexing is not supported: ${operand.getText()}`);
+        return null;
+    }
+
+    const indexOperator = indexOperators[0];
+    const expressions = indexOperator.expression();
+    // Ranges, sets and lists name more than one qubit.
+    if (indexOperator.setExpression() || indexOperator.rangeExpression().length > 0 || expressions.length !== 1) {
+        builder.reject(operand, 'indexOperator', `Qubit index must select a single qubit: ${operand.getText()}`);
+        return null;
+    }
+
+    const index = constantInt(expressions[0].getText());
+    if (index === null) {
+        builder.reject(operand, 'indexOperator', `Qubit index must be a constant integer: ${operand.getText()}`);
+        return null;
+    }
+
+    // Out-of-range gates would be invisible in the editor.
+    if (index < 0 || index >= size) {
+        builder.reject(
+            operand,
+            'indexOperator',
+            `Qubit index ${index} is outside register '${registerName}' (size ${size}).`,
+        );
+        return null;
     }
 
     return { registerId: register.id, index };
 }
 
-/** Variable or expression indices are not supported — the backend rejects them too. */
+/** Variable or expression indices are not supported. */
 const constantInt = (text: string): number | null => {
     const trimmed = text.trim();
     if (!/^-?\d+$/.test(trimmed)) return null;
     return Number.parseInt(trimmed, 10);
 };
 
-const firstLine = (text: string): string => (text.length > 60 ? `${text.slice(0, 60)}…` : text);
+const truncate = (text: string): string => (text.length > 60 ? `${text.slice(0, 60)}…` : text);
 
 /**
- * Line of the first thing that is not a comment — the boundary between "header"
- * and "the body". Infinity for a file with no statements at all, so every comment
- * in it counts as header.
+ * Line of the first non-comment statement. Empty files treat all comments as header.
  */
 function startOfFirstStatement(tree: ProgramContext): number {
     const versionLine = tree.version()?.start?.line;
@@ -348,3 +368,36 @@ function startOfFirstStatement(tree: ProgramContext): number {
 
     return Math.min(versionLine ?? Number.POSITIVE_INFINITY, firstStatementLine ?? Number.POSITIVE_INFINITY);
 }
+
+function generatedStructuralMarkerKeys(tree: ProgramContext): Set<string> {
+    const keys = new Set<string>();
+    let layerNumber = 1;
+
+    for (const statementOrScope of tree.statementOrScope()) {
+        const statement = statementOrScope.statement();
+        if (!statement) continue;
+
+        const declaration = statement.quantumDeclarationStatement();
+        if (declaration) {
+            addMarkerBefore(keys, declaration, registerMarker(declaration.Identifier().getText()));
+            continue;
+        }
+
+        const gateCall = statement.gateCallStatement();
+        if (gateCall) {
+            addMarkerBefore(keys, gateCall, layerMarker(layerNumber));
+            layerNumber += 1;
+        }
+    }
+
+    return keys;
+}
+
+function addMarkerBefore(keys: Set<string>, ctx: { start: { line: number } | null }, marker: string): void {
+    const statementLine = ctx.start?.line;
+    if (!statementLine || statementLine <= 1) return;
+
+    keys.add(commentKey(statementLine - 1, marker));
+}
+
+const commentKey = (line: number, text: string): string => `${line}:${text.trim()}`;

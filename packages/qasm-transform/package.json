@@ -3,7 +3,7 @@
     "version": "0.0.0",
     "private": true,
     "type": "module",
-    "description": "OpenQASM 3 <-> circuit transformation in TypeScript, generated from the same ANTLR grammars the backend uses. Lets the VSCode extension parse and emit .qasm without a server.",
+    "description": "OpenQASM 3 <-> circuit transformation for the VSCode extension, generated from the same ANTLR grammars the backend uses. The web IDE uses the backend parser instead.",
     "main": "./src/index.ts",
     "types": "./src/index.ts",
     "exports": {

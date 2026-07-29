@@ -7,13 +7,14 @@ export interface OperationDefinitionResponse {
     category: string;
     description: string;
     qubitCount: number;
-    /** Only the parametric gates have any: the backend omits this for the rest. */
+    /** Present only for parametric gates. */
     parameters?: string[];
     inspectorInfo: InspectorInfoDto;
 }
 
 export interface InspectorInfoDto {
-    operatorDefinition: string; // LaTeX
+    /** LaTeX operator definition. */
+    operatorDefinition: string;
     truthTable: TruthTableEntryDto[];
     matrix: MatrixInfoDto;
 }
@@ -24,8 +25,10 @@ export interface TruthTableEntryDto {
 }
 
 export interface MatrixInfoDto {
-    display: string; // LaTeX
+    /** LaTeX matrix for display. */
+    display: string;
     rows: number;
     cols: number;
-    computable: string[][]; // Matrix as 2D Array of Strings
+    /** Matrix entries as computable string expressions. */
+    computable: string[][];
 }
