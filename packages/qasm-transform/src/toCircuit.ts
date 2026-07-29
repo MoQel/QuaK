@@ -1,6 +1,8 @@
 import {
     GATE_ARITY,
+    isGateSupported,
     toOperationIdentifier,
+    unsupportedStatementRules,
     type CircuitContent,
     type ElementSelectorDto,
     type LayerResponse,
@@ -51,39 +53,10 @@ export interface ToCircuitResult {
 export const isEditable = (result: ToCircuitResult): boolean =>
     result.content !== null && result.syntaxErrors.length === 0 && result.unsupported.length === 0;
 
-// Statements the circuit model has no representation for. Listing them explicitly
-// — rather than ignoring whatever the visitor does not handle — is what makes this
-// visitor strict per D8: a construct outside the subset is *detected*, so the
-// document goes read-only instead of being silently rewritten without it.
-const UNSUPPORTED_STATEMENTS: Record<string, string> = {
-    aliasDeclarationStatement: 'aliases',
-    assignmentStatement: 'classical assignment',
-    barrierStatement: 'barrier',
-    boxStatement: 'box',
-    breakStatement: 'control flow',
-    calStatement: 'calibration',
-    calibrationGrammarStatement: 'calibration',
-    classicalDeclarationStatement: 'classical declarations',
-    constDeclarationStatement: 'constant declarations',
-    continueStatement: 'control flow',
-    defStatement: 'subroutine definitions',
-    defcalStatement: 'calibration',
-    delayStatement: 'timing',
-    endStatement: 'end',
-    expressionStatement: 'bare expressions',
-    externStatement: 'extern',
-    forStatement: 'control flow',
-    gateStatement: 'gate definitions',
-    ifStatement: 'control flow',
-    ioDeclarationStatement: 'io declarations',
-    measureArrowAssignmentStatement: 'measurement',
-    oldStyleDeclarationStatement: 'OpenQASM 2 style declarations',
-    resetStatement: 'reset',
-    returnStatement: 'control flow',
-    switchStatement: 'control flow',
-    whileStatement: 'control flow',
-    pragma: 'pragma',
-};
+// What counts as outside the subset is the support matrix's call, not this
+// file's — that single source is what D8 asks for, and it is what keeps the
+// visitor, the tests and the README from each believing something different.
+const UNSUPPORTED_STATEMENTS = unsupportedStatementRules();
 
 class CircuitBuilder {
     // Only quantum registers: a `bit[n] c;` declaration is a classical register
@@ -125,8 +98,20 @@ class CircuitBuilder {
  * drag. Derived ids stay put as long as the statement does.
  */
 export function toCircuit(source: string): ToCircuitResult {
-    const { tree, errors } = parseQasm(source);
+    const { tree, errors, comments } = parseQasm(source);
     const builder = new CircuitBuilder();
+
+    // Comments never reach the parse tree, so the statement walk below cannot see
+    // them — but they are the user's content, and the generator has nowhere to put
+    // them back. Detecting them is what stops an edit from deleting them.
+    for (const comment of comments) {
+        builder.unsupported.push({
+            line: comment.line,
+            column: comment.column,
+            construct: 'comment',
+            message: 'Comments would be lost when the circuit is written back.',
+        });
+    }
 
     for (const statementOrScope of tree.statementOrScope()) {
         const statement = statementOrScope.statement();
@@ -223,8 +208,10 @@ function visitGateCall(ctx: GateCallStatementContext, builder: CircuitBuilder): 
 
     const gateName = identifierNode.getText();
     const identifier = toOperationIdentifier(gateName);
-    if (!identifier || identifier === 'DUMMY') {
-        builder.reject(ctx, gateName.toUpperCase(), `Unsupported gate '${gateName}'.`);
+    // The matrix decides support; GATE_ARITY only says what shape a gate has.
+    // MEASURE has an arity but is not a gate call, so it is rightly rejected here.
+    if (!identifier || !isGateSupported(identifier)) {
+        builder.reject(ctx, identifier ?? gateName.toUpperCase(), `Unsupported gate '${gateName}'.`);
         return;
     }
 

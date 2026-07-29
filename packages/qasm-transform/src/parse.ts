@@ -2,10 +2,10 @@ import {
     BaseErrorListener,
     CharStream,
     CommonTokenStream,
+    Token,
     type ATNSimulator,
     type RecognitionException,
     type Recognizer,
-    type Token,
 } from 'antlr4ng';
 import { OpenQASM3Lexer } from './generated/OpenQASM3Lexer.js';
 import { OpenQASM3Parser, type ProgramContext } from './generated/OpenQASM3Parser.js';
@@ -36,9 +36,22 @@ class CollectingErrorListener extends BaseErrorListener {
     }
 }
 
+export interface QasmComment {
+    line: number;
+    column: number;
+    text: string;
+}
+
 export interface ParseResult {
     tree: ProgramContext;
     errors: QasmSyntaxError[];
+    /**
+     * Comments, which the grammar puts on the hidden channel rather than
+     * discarding. They never reach the parse tree, but they are the user's
+     * content: regenerating the file over them would delete them silently, so
+     * the transform has to know they are there.
+     */
+    comments: QasmComment[];
 }
 
 /**
@@ -56,9 +69,19 @@ export function parseQasm(source: string): ParseResult {
     lexer.removeErrorListeners();
     lexer.addErrorListener(listener);
 
-    const parser = new OpenQASM3Parser(new CommonTokenStream(lexer));
+    const tokens = new CommonTokenStream(lexer);
+    const parser = new OpenQASM3Parser(tokens);
     parser.removeErrorListeners();
     parser.addErrorListener(listener);
 
-    return { tree: parser.program(), errors: listener.errors };
+    const tree = parser.program();
+
+    // Only after parsing: the stream is filled by then, so the hidden-channel
+    // tokens the parser skipped past are all available.
+    const comments = tokens
+        .getTokens()
+        .filter((token) => token.channel === Token.HIDDEN_CHANNEL)
+        .map((token) => ({ line: token.line, column: token.column, text: token.text ?? '' }));
+
+    return { tree, errors: listener.errors, comments };
 }
