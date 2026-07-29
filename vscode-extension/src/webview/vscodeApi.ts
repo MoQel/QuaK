@@ -1,8 +1,6 @@
-import type { WebviewMessage } from '../protocol.ts';
+import type { WebviewMessage } from '../shared/protocol.ts';
 
-// Small, view-local UI state that VSCode persists for us across webview reloads
-// (and keeps in memory while the panel is hidden). Not the document — that stays
-// the host's authority; this is only ephemeral view preference.
+// View-local state persisted by VSCode across webview reloads.
 export interface WebviewState {
     libraryCollapsed?: boolean;
 }
@@ -15,6 +13,5 @@ interface VsCodeApi {
 
 declare function acquireVsCodeApi(): VsCodeApi;
 
-// Must be called exactly once per webview; calling it twice throws. Everything
-// that needs to talk to the host or persist view state shares this one handle.
+// acquireVsCodeApi may only be called once per webview.
 export const vscodeApi = acquireVsCodeApi();

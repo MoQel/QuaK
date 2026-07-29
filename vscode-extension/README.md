@@ -19,14 +19,10 @@ source control and side-by-side text editing continue to work through VS Code.
 
 ## Current Preview State
 
-QuaK currently renders the real QuaK circuit editor and gate library inside VS
-Code, but the circuit shown in the editor is still a fixed demo circuit. The open
-`.qasm` file is not parsed into the visual circuit yet, and visual circuit edits
-are not written back to the file yet.
-
-This means the extension is useful today for validating the VS Code integration,
-theme behavior and editor workflow, but not yet as a complete visual OpenQASM
-editing workflow.
+QuaK currently supports a strict, lossless OpenQASM subset. Files that can be
+round-tripped safely are editable through the circuit view. Files with syntax
+errors, unsupported constructs or comments that would be lost are shown
+read-only with an explanation.
 
 ## Language Support
 
@@ -45,28 +41,3 @@ prefer another OpenQASM extension, you can keep using that instead.
 1. Open a `.qasm` file.
 2. Run **Reopen Editor With...** or **Open With...**.
 3. Select **QuaK Circuit Editor**.
-
-## Development
-
-From the repository root:
-
-```bash
-npm run build:extension
-```
-
-Or from this folder, rebuild on change:
-
-```bash
-npm run watch
-```
-
-Then press <kbd>F5</kbd> in VS Code and use the **Run QuaK Extension** launch
-configuration to open an Extension Development Host.
-
-Install extension local:
-
-```bash
-cd vscode-extension && npm run package  
-```
-
-Then go to extensions click install from vsix and install the created extension package.

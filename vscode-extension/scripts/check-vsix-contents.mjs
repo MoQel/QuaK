@@ -3,11 +3,8 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-// Checks the artifact the project's own `package` script produces, not a fresh
-// vsce invocation of its own: the danger is precisely that packaging is done the
-// wrong way. vsce resolves dependencies through node_modules, which in this
-// monorepo are symlinks to the repo root, so it happily packs .git, .env and the
-// backend into a published extension — 39169 files when this was first measured.
+// Checks the same VSIX produced by the package script, catching accidental
+// publication of workspace files through monorepo dependency symlinks.
 
 const vsix = join(mkdtempSync(join(tmpdir(), 'quak-vsix-')), 'quak.vsix');
 execFileSync('npm', ['run', 'package', '--silent', '--', '-o', vsix], { stdio: 'inherit' });

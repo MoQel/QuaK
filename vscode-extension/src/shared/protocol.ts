@@ -1,25 +1,20 @@
-// Messages between the extension host and the circuit editor webview.
-//
-// The host is the single authority over the document. Webviews are clients that render whatever state the host broadcasts.
-// A document can have several panels open at once, so every change goes to all of them. There is no privileged "originating" panel.
+// Shared message types for the VSCode extension host and the circuit editor webview.
+// VSCode provides the postMessage transport; this file defines the application protocol.
+import type { CircuitContent, CircuitResponse } from '@quak/circuit-core';
 
 export interface ReadyMessage {
     type: 'ready';
 }
 
-/** Asks the host to write `newText` to the document, assuming it is still at `baseVersion`. */
+/** Asks the host to write `content` to the document, assuming it is still at `baseVersion`. */
 export interface ApplyEditMessage {
     type: 'applyEdit';
     requestId: string;
-    newText: string;
+    content: CircuitContent;
     baseVersion: number;
 }
 
-/**
- * The user chose to edit a document the transform cannot round-trip losslessly,
- * having been told what it will cost. Deliberately an explicit act: the default
- * is read-only, and the host is the one that remembers the choice.
- */
+/** User opt-in to edit a document that cannot be round-tripped losslessly. */
 export interface EnableEditingMessage {
     type: 'enableEditing';
 }
@@ -27,17 +22,7 @@ export interface EnableEditingMessage {
 /** Webview -> host. */
 export type WebviewMessage = ReadyMessage | ApplyEditMessage | EnableEditingMessage;
 
-/**
- * Whether the document may be edited through the circuit view.
- *
- * Only documents that survive a parse/generate round trip without losing
- * anything may be written back to. Everything else is rendered read-only, so a
- * visual edit can never silently drop content.
- *
- * `editableByChoice` is the escape hatch: the user was shown what would be lost
- * and asked for it anyway. Kept distinct from `editable` so the view can keep
- * saying so — the warning belongs before the work, not after it.
- */
+/** Whether the document may be edited through the circuit view. */
 export type DocumentState = 'editable' | 'readOnly' | 'editableByChoice';
 
 /** Why a document is not editable, in the user's terms. */
@@ -49,7 +34,7 @@ export interface DocumentDiagnostic {
 
 export interface DocumentChangedMessage {
     type: 'documentChanged';
-    text: string;
+    circuit: CircuitResponse | null;
     version: number;
     state: DocumentState;
     /** What the transform could not represent. Empty when the document is clean. */

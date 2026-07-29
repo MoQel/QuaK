@@ -1,4 +1,4 @@
-import type { DocumentDiagnostic, DocumentState } from '../protocol.ts';
+import type { DocumentDiagnostic, DocumentState } from '../../shared/protocol.ts';
 
 interface DocumentNoticeProps {
     state: DocumentState | undefined;
@@ -6,11 +6,7 @@ interface DocumentNoticeProps {
     onEditAnyway: () => void;
 }
 
-/**
- * Says why the circuit cannot be edited, and offers the way past it — before the
- * user starts working, not after. Telling someone their comments are gone once
- * they have rearranged a circuit is information arriving too late to act on.
- */
+/** Shows why the circuit is read-only and offers safe ways to continue. */
 export function DocumentNotice({ state, diagnostics, onEditAnyway }: Readonly<DocumentNoticeProps>) {
     if (state === 'editable') return null;
 
@@ -26,8 +22,7 @@ export function DocumentNotice({ state, diagnostics, onEditAnyway }: Readonly<Do
     const comments = diagnostics.filter((entry) => entry.construct === 'comment');
     const other = diagnostics.filter((entry) => entry.construct !== 'syntax' && entry.construct !== 'comment');
 
-    // A file that does not parse is not a choice the user can opt past — there is
-    // no circuit to edit in the first place.
+    // Without a parsed circuit there is nothing the visual editor can update.
     if (syntaxErrors.length > 0) {
         return (
             <div className="border-b border-border bg-bg-light px-3 py-2 text-xs">

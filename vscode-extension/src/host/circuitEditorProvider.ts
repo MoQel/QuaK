@@ -1,5 +1,8 @@
+// Host-side controller for the .qasm custom editor. It owns the VSCode document,
+// creates webviews, broadcasts document snapshots, and applies approved edits.
 import * as vscode from 'vscode';
-import { isEditable, toCircuit } from '@quak/qasm-transform';
+import type { CircuitResponse } from '@quak/circuit-core';
+import { isEditable, toCircuit, toQasm, type QasmPreamble } from '@quak/qasm-transform';
 import { decideEdit, PanelRegistry } from './arbitration.ts';
 import type {
     ApplyEditMessage,
@@ -8,21 +11,19 @@ import type {
     EditRejectedReason,
     HostMessage,
     WebviewMessage,
-} from './protocol.ts';
+} from '../shared/protocol.ts';
 
-/**
- * Whether the circuit view may write back to this document, and why not.
- *
- * The transform is the authority: a document is editable exactly when reading it
- * lost nothing, so regenerating cannot destroy anything the user wrote. What it
- * could not represent comes back with it, because "read-only" on its own is not
- * an answer anyone can act on.
- */
-function classifyDocument(document: vscode.TextDocument): {
+/** Parses QASM text and reports whether visual edits can be applied without data loss. */
+function classifyText(text: string): {
     state: Exclude<DocumentState, 'editableByChoice'>;
+    circuit: CircuitResponse | null;
+    preamble: QasmPreamble;
     diagnostics: DocumentDiagnostic[];
 } {
-    const result = toCircuit(document.getText());
+    const result = toCircuit(text);
+    const circuit = result.content
+        ? { id: 'document', registers: result.content.registers, layers: result.content.layers }
+        : null;
 
     const diagnostics: DocumentDiagnostic[] = [
         ...result.syntaxErrors.map((error) => ({
@@ -37,19 +38,14 @@ function classifyDocument(document: vscode.TextDocument): {
         })),
     ];
 
-    return { state: isEditable(result) ? 'editable' : 'readOnly', diagnostics };
+    return { state: isEditable(result) ? 'editable' : 'readOnly', circuit, preamble: result.preamble, diagnostics };
 }
 
 export class CircuitEditorProvider implements vscode.CustomTextEditorProvider {
     public static readonly viewType = 'quak.circuitEditor';
 
     private readonly panels = new PanelRegistry<vscode.WebviewPanel>();
-
-    /**
-     * Documents the user chose to edit despite the transform not round-tripping
-     * them. Held per session rather than persisted: the consent is to losing
-     * something specific that is on screen right now, not a standing preference.
-     */
+    // Per-session opt-in for lossy editing of this document.
     private readonly editingEnabled = new Set<string>();
 
     private constructor(private readonly context: vscode.ExtensionContext) {}
@@ -59,7 +55,6 @@ export class CircuitEditorProvider implements vscode.CustomTextEditorProvider {
 
         return [
             vscode.window.registerCustomEditorProvider(CircuitEditorProvider.viewType, provider, {
-                // Cheap start. If memory turns out to matter revisit it, since the view is fully reconstructible from the file.
                 webviewOptions: { retainContextWhenHidden: true },
                 supportsMultipleEditorsPerDocument: true,
             }),
@@ -83,7 +78,6 @@ export class CircuitEditorProvider implements vscode.CustomTextEditorProvider {
 
         const messageSub = webviewPanel.webview.onDidReceiveMessage((message: WebviewMessage) => {
             switch (message.type) {
-                // The webview asks for the current state once it has booted. PostMessage would be dropped until then.
                 case 'ready':
                     this.post(webviewPanel, document);
                     break;
@@ -92,8 +86,6 @@ export class CircuitEditorProvider implements vscode.CustomTextEditorProvider {
                     break;
                 case 'enableEditing':
                     this.editingEnabled.add(key);
-                    // Every panel on this document, so two views cannot disagree
-                    // about whether it is editable.
                     this.broadcast(document);
                     break;
             }
@@ -105,21 +97,16 @@ export class CircuitEditorProvider implements vscode.CustomTextEditorProvider {
         });
     }
 
-    /**
-     * The single place where a webview may change the document.
-     *
-     * Rejecting is always safe, merging is not, so a stale edit is refused rather
-     * than reconciled: the webview re-renders from the broadcast that follows and
-     * the user repeats the action. At human speed those collisions are rare.
-     */
+    /** Applies a webview edit if it still matches the current document version. */
     private async applyEdit(
         panel: vscode.WebviewPanel,
         document: vscode.TextDocument,
         message: ApplyEditMessage,
     ): Promise<void> {
+        const current = classifyText(document.getText());
         const decision = decideEdit({
             documentVersion: document.version,
-            documentState: this.stateOf(document),
+            documentState: this.applyOptIn(document, current.state),
             baseVersion: message.baseVersion,
         });
 
@@ -128,11 +115,11 @@ export class CircuitEditorProvider implements vscode.CustomTextEditorProvider {
             return;
         }
 
+        const text = toQasm(message.content, current.preamble);
         const edit = new vscode.WorkspaceEdit();
-        edit.replace(document.uri, wholeDocument(document), message.newText);
+        edit.replace(document.uri, wholeDocument(document), text);
 
-        // Going through WorkspaceEdit is what puts the change into VSCode's undo
-        // history: ctrl+z in the text editor undoes an edit made in the webview.
+        // WorkspaceEdit keeps the change in VSCode's undo history.
         if (!(await vscode.workspace.applyEdit(edit))) {
             this.reject(panel, message.requestId, 'applyFailed', document.version);
             return;
@@ -157,29 +144,39 @@ export class CircuitEditorProvider implements vscode.CustomTextEditorProvider {
     }
 
     private broadcast(document: vscode.TextDocument): void {
-        for (const panel of this.panels.get(document.uri.toString())) {
-            this.post(panel, document);
+        const panels = this.panels.get(document.uri.toString());
+        if (panels.length === 0) return;
+
+        // Parse once and broadcast the same snapshot to all panels.
+        const message = this.documentChanged(document);
+        for (const panel of panels) {
+            void panel.webview.postMessage(message);
         }
     }
 
-    /** Classification, with the user's opt-in applied on top. */
-    private stateOf(document: vscode.TextDocument): DocumentState {
-        const { state } = classifyDocument(document);
+    private applyOptIn(
+        document: vscode.TextDocument,
+        state: Exclude<DocumentState, 'editableByChoice'>,
+    ): DocumentState {
         if (state === 'editable') return 'editable';
 
         return this.editingEnabled.has(document.uri.toString()) ? 'editableByChoice' : 'readOnly';
     }
 
-    private post(panel: vscode.WebviewPanel, document: vscode.TextDocument): void {
-        const { diagnostics } = classifyDocument(document);
-        const message: HostMessage = {
+    private documentChanged(document: vscode.TextDocument): HostMessage {
+        const text = document.getText();
+        const { state, circuit, diagnostics } = classifyText(text);
+        return {
             type: 'documentChanged',
-            text: document.getText(),
+            circuit,
             version: document.version,
-            state: this.stateOf(document),
+            state: this.applyOptIn(document, state),
             diagnostics,
         };
-        void panel.webview.postMessage(message);
+    }
+
+    private post(panel: vscode.WebviewPanel, document: vscode.TextDocument): void {
+        void panel.webview.postMessage(this.documentChanged(document));
     }
 
     private buildHtml(webview: vscode.Webview): string {
@@ -194,14 +191,14 @@ export class CircuitEditorProvider implements vscode.CustomTextEditorProvider {
             <head>
                 <meta charset="UTF-8">
                 <meta http-equiv="Content-Security-Policy"
-                    content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}';">
+                    content="default-src 'none'; font-src ${webview.cspSource}; style-src ${webview.cspSource} 'unsafe-inline'; script-src ${webview.cspSource} 'nonce-${nonce}';">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 <title>QuaK Circuit Editor</title>
                 <link rel="stylesheet" href="${styleUri}">
             </head>
             <body>
                 <div id="app"></div>
-                <script nonce="${nonce}" src="${scriptUri}"></script>
+                <script type="module" nonce="${nonce}" src="${scriptUri}"></script>
             </body>
             </html>`;
     }
@@ -211,7 +208,6 @@ function wholeDocument(document: vscode.TextDocument): vscode.Range {
     return new vscode.Range(document.positionAt(0), document.positionAt(document.getText().length));
 }
 
-// The CSP nonce is what stops injected markup from running scripts in the webview.
 function createNonce(): string {
     return crypto.randomUUID().replaceAll('-', '');
 }

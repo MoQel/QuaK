@@ -2,10 +2,7 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig, type Plugin } from 'vite';
 
-// KaTeX ships every glyph font in woff2, woff and ttf. The webview runs in
-// Chromium, which always picks woff2 — the woff and ttf variants (~876 KB) are
-// only dead weight in the vsix. Strip their @font-face sources before Vite
-// resolves the url()s, so only the woff2 assets get emitted.
+// The VSCode webview runs in Chromium, so KaTeX only needs woff2 fonts.
 function stripKatexLegacyFonts(): Plugin {
     return {
         name: 'strip-katex-legacy-fonts',
@@ -21,22 +18,28 @@ function stripKatexLegacyFonts(): Plugin {
     };
 }
 
-// The provider writes the HTML itself (it needs the CSP nonce and webview URIs),
-// so this only has to emit predictable asset names it can point at.
+// The provider writes the HTML itself, so Vite emits fixed asset names.
 export default defineConfig({
     plugins: [stripKatexLegacyFonts(), react(), tailwindcss()],
     build: {
         outDir: 'dist/webview',
         emptyOutDir: true,
-        // Emit a real stylesheet instead of letting Vite inline the CSS and inject
-        // a <style> tag at runtime: no flash of unstyled content, smaller bundle.
+        // Emit a real stylesheet instead of injecting CSS at runtime.
         cssCodeSplit: false,
         rollupOptions: {
             input: 'src/webview/main.tsx',
             output: {
-                format: 'iife',
+                format: 'es',
                 entryFileNames: 'webview.js',
+                chunkFileNames: 'webview-[name]-[hash].js',
                 assetFileNames: 'webview.[ext]',
+                manualChunks(id) {
+                    if (id.includes('node_modules/react')) return 'react';
+                    if (id.includes('node_modules/katex') || id.includes('node_modules/react-katex')) return 'katex';
+                    if (id.includes('node_modules/lucide-react')) return 'icons';
+                    if (id.includes('node_modules/@radix-ui')) return 'ui';
+                    return undefined;
+                },
             },
         },
     },

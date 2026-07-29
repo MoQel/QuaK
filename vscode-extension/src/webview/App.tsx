@@ -7,15 +7,15 @@ import {
     LibraryView,
     QuantikzExportButton,
 } from '@quak/circuit-editor';
-import { DocumentNotice } from './DocumentNotice.tsx';
-import { OPERATIONS } from './library.ts';
-import { useCircuitDocument } from './useCircuitDocument.ts';
+import { DocumentNotice } from './components/DocumentNotice.tsx';
+import { OPERATIONS } from './data/library.ts';
+import { useCircuitDocument } from './hooks/useCircuitDocument.ts';
 import { vscodeApi } from './vscodeApi.ts';
 
-// Library and circuit share one webview because drag & drop cannot cross webview
-// boundaries. The circuit itself is the open .qasm file, parsed.
+/** Root React component for the VSCode webview circuit editor. */
 export function App() {
-    const { circuit, setCircuit, status, state, diagnostics, hasDocument } = useCircuitDocument();
+    const { circuit, setCircuit, state, diagnostics } = useCircuitDocument();
+    const initialLibraryCollapsed = vscodeApi.getState()?.libraryCollapsed ?? false;
 
     return (
         <div className="flex h-screen flex-col bg-bg text-text">
@@ -29,11 +29,11 @@ export function App() {
                 <CircuitStoreProvider circuit={circuit} setCircuit={setCircuit}>
                     <CircuitDragProvider>
                         <CircuitWorkspaceShell
-                            defaultCollapsed={vscodeApi.getState()?.libraryCollapsed ?? false}
-                            onCollapsedChange={(collapsed) =>
-                                vscodeApi.setState({ ...vscodeApi.getState(), libraryCollapsed: collapsed })
+                            defaultCollapsed={initialLibraryCollapsed}
+                            onCollapsedChange={(libraryCollapsed) =>
+                                vscodeApi.setState({ ...vscodeApi.getState(), libraryCollapsed })
                             }
-                            library={<LibraryView operations={OPERATIONS} onOperationSelect={() => {}} />}
+                            library={<LibraryView operations={OPERATIONS} />}
                             editor={
                                 <CircuitView
                                     header={
@@ -49,11 +49,6 @@ export function App() {
                     </CircuitDragProvider>
                 </CircuitStoreProvider>
             </div>
-
-            <details className="border-t border-border px-3 py-2 text-xs text-text-muted">
-                <summary className="cursor-pointer">{hasDocument ? status : 'waiting for the document…'}</summary>
-                <pre className="mt-2 whitespace-pre-wrap">{JSON.stringify(diagnostics, null, 2)}</pre>
-            </details>
         </div>
     );
 }

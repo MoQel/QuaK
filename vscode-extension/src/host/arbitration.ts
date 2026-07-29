@@ -1,30 +1,18 @@
-import type { DocumentState, EditRejectedReason } from './protocol.ts';
+// Pure helpers for edit arbitration and multi-panel tracking in the VSCode extension.
+import type { DocumentState, EditRejectedReason } from '../shared/protocol.ts';
 
 export type EditDecision = { kind: 'apply' } | { kind: 'reject'; reason: EditRejectedReason };
 
-/**
- * Decides whether a webview may write its text to the document.
- *
- * Kept free of the vscode API so the rule itself can be tested directly: a
- * webview's messages cannot be observed from an integration test, so this is the
- * only place where the behaviour is actually verifiable.
- */
+/** Decides whether a webview edit may be applied to the current document version. */
 export function decideEdit(input: {
     documentVersion: number;
     documentState: DocumentState;
     baseVersion: number;
 }): EditDecision {
-    // Someone changed the document since the webview last saw it; the edit was
-    // computed from text that no longer exists. Rejecting is always safe, merging
-    // is not, so the webview rebases on the next broadcast and the user retries.
     if (input.documentVersion !== input.baseVersion) {
         return { kind: 'reject', reason: 'stale' };
     }
 
-    // A document that cannot be regenerated losslessly must never be written back
-    // to, or a visual edit would silently drop content. Unless the user was told
-    // exactly what would be lost and asked for it anyway — that is what
-    // 'editableByChoice' records, and it is the only way past this.
     if (input.documentState === 'readOnly') {
         return { kind: 'reject', reason: 'readOnly' };
     }
@@ -32,10 +20,7 @@ export function decideEdit(input: {
     return { kind: 'apply' };
 }
 
-/**
- * Tracks which panels show which document, so a change reaches all of them.
- * Multi-panel is the normal case (split view, "Open With..."), not an edge case.
- */
+/** Tracks all webview panels opened for each document URI. */
 export class PanelRegistry<TPanel> {
     private readonly panelsByKey = new Map<string, Set<TPanel>>();
 

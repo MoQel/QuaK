@@ -57,7 +57,7 @@
         "build": "node esbuild.mjs && vite build --config vite.webview.config.ts",
         "package": "npm run build && vsce package --no-dependencies",
         "check:vsix": "node scripts/check-vsix-contents.mjs",
-        "watch": "node esbuild.mjs --watch",
+        "watch": "node scripts/watch.mjs",
         "typecheck": "tsc --noEmit",
         "test": "vitest run",
         "test:integration": "npm run build && vscode-test"

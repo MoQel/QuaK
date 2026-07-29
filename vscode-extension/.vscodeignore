@@ -1,6 +1,8 @@
 # Everything runtime is bundled into dist/, so only that ships.
+README.dev.md
 src/**
 node_modules/**
+scripts/**
 .vscode-test/**
 .vscode-test.mjs
 esbuild.mjs
