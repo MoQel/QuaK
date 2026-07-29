@@ -5,4 +5,12 @@
 // backend/src/main/antlr — see check:generated, which fails the build if the
 // grammars move and this parser does not follow.
 
-export { parseQasm, type ParseResult, type QasmSyntaxError } from './parse.ts';
+export { parseQasm, type ParseResult, type QasmComment, type QasmSyntaxError } from './parse.ts';
+export {
+    isEditable,
+    toCircuit,
+    type QasmPreamble,
+    type QasmUnsupportedConstruct,
+    type ToCircuitResult,
+} from './toCircuit.ts';
+export { formatAngle, toQasm } from './toQasm.ts';
