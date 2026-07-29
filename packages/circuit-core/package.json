@@ -3,7 +3,7 @@
     "version": "0.0.0",
     "private": true,
     "type": "module",
-    "description": "Backend-free domain layer shared by the QuaK web IDE and the VSCode extension: DTOs, core gate types, the CircuitPort seam and the OpenQASM support matrix.",
+    "description": "Backend-free domain layer shared by the QuaK web IDE and the VSCode extension: DTOs, core gate types, angle formatting and the OpenQASM support matrix.",
     "main": "./src/index.ts",
     "types": "./src/index.ts",
     "exports": {
@@ -11,7 +11,8 @@
         "./gate-types": "./src/gate-types.ts",
         "./dto/circuit": "./src/dto/circuit.ts",
         "./dto/library": "./src/dto/library.ts",
-        "./port": "./src/port/CircuitPort.ts",
+        "./angle": "./src/angle.ts",
+        "./circuitContent": "./src/circuitContent.ts",
         "./support-matrix": "./src/support-matrix.ts",
         "./circuitIndex": "./src/circuitIndex.ts",
         "./quantikz": "./src/quantikz.ts"

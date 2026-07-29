@@ -21,3 +21,7 @@ vscode-extension/.vscode-test/
 
 # Packaged extension
 *.vsix
+
+# ANTLR debug output. The generated .ts and .tokens ARE committed (the JS CI job
+# has no JDK); these are only for grammar debugging and nothing reads them.
+packages/qasm-transform/src/generated/*.interp

@@ -39,7 +39,11 @@ module.exports = {
             name: 'no-circular',
             comment: 'Circular dependency — break the cycle, usually by extracting the shared piece.',
             severity: 'error',
-            from: {},
+            // ANTLR's output is inherently circular: the parser's context classes accept a
+            // visitor, and the visitor interface is typed on those same contexts. Nobody can
+            // break that cycle, so only generated files are exempt as a *source* — a cycle
+            // that runs through hand-written code is still reported from there.
+            from: { pathNot: '^packages/qasm-transform/src/generated/' },
             to: { circular: true },
         },
     ],

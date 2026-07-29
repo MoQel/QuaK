@@ -168,6 +168,11 @@ jobs:
       - name: Check package boundaries (dependency-cruiser)
         run: npm run lint:boundaries
 
+      # The TS parser is generated from the same .g4 the backend uses and is
+      # committed (this job has no JDK). Fails if the grammars moved without it.
+      - name: Check the generated QASM parser is current
+        run: npm run check:generated
+
       - name: Typecheck (frontend, packages, extension)
         run: npm run typecheck
 

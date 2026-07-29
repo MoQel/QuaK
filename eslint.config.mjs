@@ -10,7 +10,18 @@ import eslintConfigPrettier from 'eslint-config-prettier';
 // DOM, the extension host is Node, and only the webview is browser again.
 
 export default tseslint.config(
-    { ignores: ['**/dist/**', '**/coverage/**', '**/.vscode-test/**', 'backend/**'] },
+    // packages/qasm-transform/src/generated is ANTLR output, not hand-written code:
+    // linting it would only produce findings nobody may fix, since regenerating
+    // from the .g4 overwrites the file.
+    {
+        ignores: [
+            '**/dist/**',
+            '**/coverage/**',
+            '**/.vscode-test/**',
+            'backend/**',
+            'packages/qasm-transform/src/generated/**',
+        ],
+    },
 
     // Baseline for every TypeScript file.
     {

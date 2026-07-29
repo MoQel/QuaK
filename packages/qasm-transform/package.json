@@ -1,0 +1,23 @@
+{
+    "name": "@quak/qasm-transform",
+    "version": "0.0.0",
+    "private": true,
+    "type": "module",
+    "description": "OpenQASM 3 <-> circuit transformation in TypeScript, generated from the same ANTLR grammars the backend uses. Lets the VSCode extension parse and emit .qasm without a server.",
+    "main": "./src/index.ts",
+    "types": "./src/index.ts",
+    "exports": {
+        ".": "./src/index.ts"
+    },
+    "scripts": {
+        "generate": "antlr4ng -Dlanguage=TypeScript -visitor -no-listener -Xexact-output-dir -o src/generated ../../backend/src/main/antlr/OpenQASM3Lexer.g4 ../../backend/src/main/antlr/OpenQASM3Parser.g4 && node scripts/seal-generated.mjs && node scripts/check-generated-current.mjs --write",
+        "check:generated": "node scripts/check-generated-current.mjs",
+        "typecheck": "tsc --noEmit"
+    },
+    "dependencies": {
+        "antlr4ng": "^3.0.16"
+    },
+    "devDependencies": {
+        "antlr4ng-cli": "^2.0.0"
+    }
+}

@@ -136,11 +136,27 @@ source in the repo. Only the two Java classes need porting:
 
 **Phase 5 — `packages/qasm-transform`.** In this order, each step independently verifiable:
 
-1. **Generator wiring.** `antlr4ng-cli` generates the TS parser from `backend/src/main/antlr/*.g4`
-   into `packages/qasm-transform/src/generated/` at build time. Decide now whether generated code
-   is committed (reproducible CI, no toolchain in the webview build) or generated in CI. Measure
-   the bundle cost immediately — the serialized ATN for this grammar is a real size risk for a
-   454 KB vsix, and it may force the ES-module/code-splitting decision deferred in the bundle diet.
+1. **Generator wiring — done, and the size risk is settled.** `antlr4ng-cli` (ANTLR 4.13,
+   TypeScript target) generates from `backend/src/main/antlr/*.g4` into
+   `packages/qasm-transform/src/generated/`. Both grammars generate without a single warning
+   and the parser works: Bell pair, rotations with `pi/2` and `tau`, `ccx`/`swap` all parse
+   with 0 syntax errors, malformed input reports 3.
+
+   *Generated code is committed*, because the `js-checks` CI job is deliberately Node-only
+   and generating would force a JDK into it. The hazard that creates — someone edits a `.g4`
+   and the two parsers silently diverge — is covered by `npm run check:generated`, which
+   hashes the grammars against a stamp written at generation time (Node-only, runs in CI,
+   verified to fail on a one-line grammar edit).
+
+   **Measured bundle cost** (real webview build, not an estimate): `webview.js` goes
+   641 KB → 1011 KB minified, 201 KB → 287 KB gzipped, so **+370 KB / +86 KB compressed**.
+   That is affordable — it lands roughly where KaTeX already sits, and ~86 KB on a vsix that
+   is ~450 KB once the placeholder icon is fixed. No code-splitting needed: the parser is
+   wanted immediately at webview startup, so lazy-loading would buy nothing.
+
+   Worth knowing if size ever gets critical: that 370 KB carries the **full** OpenQASM 3
+   grammar while the visitor supports a small subset of it. A trimmed grammar would cut it
+   substantially — at the price of D8's single-source property, so not now.
 2. **Port the visitor**, strict per D8: every AST node type either explicitly handled or explicitly
    marked unsupported — no silent fall-through.
 3. **Port the code generator.** Watch the round-trip details already solved in Java: symbolic
