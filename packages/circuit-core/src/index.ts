@@ -4,4 +4,5 @@ export * from './gate-types.ts';
 export * from './dto/circuit.ts';
 export * from './dto/library.ts';
 export * from './angle.ts';
+export * from './circuitContent.ts';
 export * from './support-matrix.ts';
