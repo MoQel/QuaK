@@ -1,198 +1,54 @@
 import { Gauge, Plus, X as LucideX } from 'lucide-react';
 import { ComponentType } from 'react';
-import type { OperationIdentifier, QuantumOperationType } from '@quak/circuit-core';
+import { GATE_ARITY, type GateArity, type OperationIdentifier } from '@quak/circuit-core';
 
 // Domain types live in circuit-core; re-exported here for existing importers.
-// This file owns the presentation layer (icons, colors, shapes).
+// This file owns the presentation layer (icons, colors, shapes) and composes it
+// onto the shared arity — which the QASM transform reads too, so the two cannot
+// disagree about how many qubits a gate takes.
 export type { OperationIdentifier };
 
 export type ShapeClass = 'rounded-none' | 'rounded-full';
 
 export type Color = `var(--${string})` | 'transparent';
 
-export type OperationDefinition = {
-    type: QuantumOperationType;
-    targetSize: number;
-    controlSize: number;
-    totalSize: number;
+export interface OperationPresentation {
     icon: { type: 'component'; component: ComponentType<{ className?: string }> } | { type: 'text'; text: string };
     label?: string;
     formClass: ShapeClass;
     color: Color;
-    /** Parametric rotation gate (rx/ry/rz): its `rotationAngle` is shown on the gate box. */
-    hasRotationAngle?: boolean;
+}
+
+export type OperationDefinition = GateArity & OperationPresentation;
+
+const PRESENTATION: Record<OperationIdentifier, OperationPresentation> = {
+    H: { icon: { type: 'text', text: 'H' }, formClass: 'rounded-none', color: 'var(--hadamard)' },
+    X: { icon: { type: 'component', component: Plus }, formClass: 'rounded-full', color: 'var(--classical)' },
+    Y: { icon: { type: 'text', text: 'Y' }, formClass: 'rounded-none', color: 'var(--quantum)' },
+    Z: { icon: { type: 'text', text: 'Z' }, formClass: 'rounded-none', color: 'var(--phase)' },
+    CX: { icon: { type: 'component', component: Plus }, formClass: 'rounded-full', color: 'var(--classical)' },
+    CCX: { icon: { type: 'component', component: Plus }, formClass: 'rounded-full', color: 'var(--classical)' },
+    CZ: { icon: { type: 'text', text: 'Z' }, formClass: 'rounded-none', color: 'var(--phase)' },
+    SWAP: { icon: { type: 'component', component: LucideX }, formClass: 'rounded-none', color: 'var(--classical)' },
+    S: { icon: { type: 'text', text: 'S' }, formClass: 'rounded-none', color: 'var(--phase)' },
+    T: { icon: { type: 'text', text: 'T' }, formClass: 'rounded-none', color: 'var(--phase)' },
+    RX: { icon: { type: 'text', text: 'RX' }, formClass: 'rounded-none', color: 'var(--quantum)' },
+    RY: { icon: { type: 'text', text: 'RY' }, formClass: 'rounded-none', color: 'var(--quantum)' },
+    RZ: { icon: { type: 'text', text: 'RZ' }, formClass: 'rounded-none', color: 'var(--quantum)' },
+    MEASURE: {
+        icon: { type: 'component', component: Gauge },
+        formClass: 'rounded-none',
+        color: 'var(--non-unitary-and-modifiers)',
+    },
+    DUMMY: { icon: { type: 'text', text: '' }, formClass: 'rounded-none', color: 'var(--non-unitary-and-modifiers)' },
 };
 
-const H: OperationDefinition = {
-    type: 'ELEMENTARY_QUANTUM_GATE',
-    targetSize: 1,
-    controlSize: 0,
-    totalSize: 1,
-    icon: { type: 'text', text: 'H' },
-    formClass: 'rounded-none',
-    color: 'var(--hadamard)',
-};
-
-const X: OperationDefinition = {
-    type: 'ELEMENTARY_QUANTUM_GATE',
-    targetSize: 1,
-    controlSize: 0,
-    totalSize: 1,
-    icon: { type: 'component', component: Plus },
-    formClass: 'rounded-full',
-    color: 'var(--classical)',
-};
-
-const Y: OperationDefinition = {
-    type: 'ELEMENTARY_QUANTUM_GATE',
-    targetSize: 1,
-    controlSize: 0,
-    totalSize: 1,
-    icon: { type: 'text', text: 'Y' },
-    formClass: 'rounded-none',
-    color: 'var(--quantum)',
-};
-
-const Z: OperationDefinition = {
-    type: 'ELEMENTARY_QUANTUM_GATE',
-    targetSize: 1,
-    controlSize: 0,
-    totalSize: 1,
-    icon: { type: 'text', text: 'Z' },
-    formClass: 'rounded-none',
-    color: 'var(--phase)',
-};
-
-const CX: OperationDefinition = {
-    type: 'ELEMENTARY_QUANTUM_GATE',
-    targetSize: 1,
-    controlSize: 1,
-    totalSize: 2,
-    icon: { type: 'component', component: Plus },
-    formClass: 'rounded-full',
-    color: 'var(--classical)',
-};
-
-const CCX: OperationDefinition = {
-    type: 'ELEMENTARY_QUANTUM_GATE',
-    targetSize: 1,
-    controlSize: 2,
-    totalSize: 3,
-    icon: { type: 'component', component: Plus },
-    formClass: 'rounded-full',
-    color: 'var(--classical)',
-};
-
-const CZ: OperationDefinition = {
-    type: 'ELEMENTARY_QUANTUM_GATE',
-    targetSize: 1,
-    controlSize: 1,
-    totalSize: 2,
-    icon: { type: 'text', text: 'Z' },
-    formClass: 'rounded-none',
-    color: 'var(--phase)',
-};
-
-const SWAP: OperationDefinition = {
-    type: 'ELEMENTARY_QUANTUM_GATE',
-    targetSize: 2,
-    controlSize: 0,
-    totalSize: 2,
-    icon: { type: 'component', component: LucideX },
-    formClass: 'rounded-none',
-    color: 'var(--classical)',
-};
-
-const S: OperationDefinition = {
-    type: 'ELEMENTARY_QUANTUM_GATE',
-    targetSize: 1,
-    controlSize: 0,
-    totalSize: 1,
-    icon: { type: 'text', text: 'S' },
-    formClass: 'rounded-none',
-    color: 'var(--phase)',
-};
-
-const T: OperationDefinition = {
-    type: 'ELEMENTARY_QUANTUM_GATE',
-    targetSize: 1,
-    controlSize: 0,
-    totalSize: 1,
-    icon: { type: 'text', text: 'T' },
-    formClass: 'rounded-none',
-    color: 'var(--phase)',
-};
-
-const RX: OperationDefinition = {
-    type: 'ELEMENTARY_QUANTUM_GATE',
-    targetSize: 1,
-    controlSize: 0,
-    totalSize: 1,
-    icon: { type: 'text', text: 'RX' },
-    formClass: 'rounded-none',
-    color: 'var(--quantum)',
-    hasRotationAngle: true,
-};
-
-const RY: OperationDefinition = {
-    type: 'ELEMENTARY_QUANTUM_GATE',
-    targetSize: 1,
-    controlSize: 0,
-    totalSize: 1,
-    icon: { type: 'text', text: 'RY' },
-    formClass: 'rounded-none',
-    color: 'var(--quantum)',
-    hasRotationAngle: true,
-};
-
-const RZ: OperationDefinition = {
-    type: 'ELEMENTARY_QUANTUM_GATE',
-    targetSize: 1,
-    controlSize: 0,
-    totalSize: 1,
-    icon: { type: 'text', text: 'RZ' },
-    formClass: 'rounded-none',
-    color: 'var(--quantum)',
-    hasRotationAngle: true,
-};
-
-const MEASURE: OperationDefinition = {
-    type: 'MEASUREMENT',
-    targetSize: 1,
-    controlSize: 0,
-    totalSize: 1,
-    icon: { type: 'component', component: Gauge },
-    formClass: 'rounded-none',
-    color: 'var(--non-unitary-and-modifiers)',
-};
-
-const DUMMY: OperationDefinition = {
-    type: 'DUMMY',
-    targetSize: 1,
-    controlSize: 0,
-    totalSize: 1,
-    icon: { type: 'text', text: '' },
-    formClass: 'rounded-none',
-    color: 'var(--non-unitary-and-modifiers)',
-};
-
-const OPERATION_DEFINITIONS: Record<OperationIdentifier, OperationDefinition> = {
-    H,
-    X,
-    Y,
-    Z,
-    CX,
-    CCX,
-    CZ,
-    SWAP,
-    S,
-    T,
-    RX,
-    RY,
-    RZ,
-    MEASURE,
-    DUMMY,
-};
+const OPERATION_DEFINITIONS = Object.fromEntries(
+    Object.entries(PRESENTATION).map(([identifier, presentation]) => [
+        identifier,
+        { ...GATE_ARITY[identifier as OperationIdentifier], ...presentation },
+    ]),
+) as Record<OperationIdentifier, OperationDefinition>;
 
 const isOperationIdentifier = (identifier: string): identifier is OperationIdentifier => {
     return identifier in OPERATION_DEFINITIONS;
@@ -217,7 +73,7 @@ export const getOperationDefinition = (identifier: unknown): OperationDefinition
     if (!normalizedIdentifier) {
         console.warn('Unknown quantum operation identifier:', identifier);
         return {
-            ...DUMMY,
+            ...OPERATION_DEFINITIONS.DUMMY,
             type: 'ELEMENTARY_QUANTUM_GATE',
             icon: { type: 'text', text: typeof identifier === 'string' ? identifier.toUpperCase() : '?' },
         };
