@@ -5,10 +5,9 @@ const COMPOSITION = String.raw` \cdot `;
 export type Layout = 'inline' | 'layered';
 
 /**
- * Groups the rendered operators per circuit layer, in reverse application order (last-applied
- * layer first). `renderOperation` turns one gate into its token; an empty token is dropped, and
- * empty layers are omitted. Within a layer the gates commute, so `orderKey` (if given) sorts them
- * ascending — e.g. by qubit index — for a stable reading order.
+ * Builds operator groups from last layer to first.
+ * Empty gate tokens and empty layers are skipped.
+ * `orderKey` sorts gates inside a layer for stable output.
  */
 export function buildLayerGroups(
     circuit: CircuitResponse,
@@ -33,9 +32,8 @@ export function buildLayerGroups(
 }
 
 /**
- * Joins the operator tokens (grouped per circuit layer) and the initial state into one Dirac
- * expression. `inline` renders a single product; `layered` breaks after each layer, wrapping the
- * layer in parentheses and continuing with a leading `\cdot` on the next line.
+ * Builds the final Dirac product.
+ * `inline` returns one line; `layered` returns an aligned block with one row per layer.
  */
 export function assembleDirac(layerGroups: string[][], ket: string, layout: Layout): string {
     const groups = layerGroups.filter((tokens) => tokens.length > 0);
@@ -50,7 +48,7 @@ export function assembleDirac(layerGroups: string[][], ket: string, layout: Layo
     return `\\begin{aligned}\n${rows.join(' \\\\\n')}\n\\end{aligned}`;
 }
 
-// A single, already-parenthesised factor (an unlabelled tensor token) needs no extra grouping.
+// A single pre-grouped factor does not need another pair of parentheses.
 function groupLayer(tokens: string[]): string {
     if (tokens.length === 1 && tokens[0].startsWith(String.raw`\left(`)) return tokens[0];
 

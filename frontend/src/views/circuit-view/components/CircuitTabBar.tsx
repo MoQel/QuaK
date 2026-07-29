@@ -15,11 +15,10 @@ import { usePanelData } from '@/contexts/panel/PanelDataContext.ts';
 import { canInspectWithDirac } from '@/views/inspector-view/diracInspect.ts';
 
 /**
- * The circuit's file-tab bar. It shares the open-file tabs with the editor but only exposes
- * the actions that have a meaning for the single circuit panel: inspecting a circuit as Dirac
- * notation, closing tabs (which close the shared file) and drag-to-reorder. The editor's
- * split/move/group actions are intentionally left out — those rearrange the code-editor panes,
- * which the circuit panel does not have.
+ * Renders the shared file tabs for the circuit panel.
+ *
+ * Supports Dirac inspection, closing and reordering, but omits editor-specific
+ * split and group actions.
  */
 export function CircuitTabBar() {
     const dispatch = useAppDispatch();
@@ -31,8 +30,7 @@ export function CircuitTabBar() {
     if (!group || group.openTabs.length === 0) return null;
     const groupId = group.id;
 
-    // Show this circuit's Dirac notation in the Inspector: make it the active circuit and clear any
-    // inspected gate so the Inspector falls back to its default Dirac view.
+    // Activate the circuit and clear the selected gate to show the default Dirac inspection.
     const inspectWithDirac = (tabId: string) => {
         dispatch(setActiveTab({ tabId, groupId }));
         setSelectedOperation(undefined);

@@ -7,15 +7,15 @@ import {
     QuantumOperationDto,
     RegisterResponse,
 } from '@/api/dto/circuit.ts';
-import { buildWireIndex, WireIndex } from '@/lib/circuitIndex.ts';
+import { buildWireIndex, resolveWireIndices, WireIndex } from '@/lib/circuitIndex.ts';
 import { angleToLatex, resolveAngle } from '@/lib/quantumAngle.ts';
+import { escapeLatexText } from '@/notation/latex/escape.ts';
 
 const ROTATION_GATES = new Set(['RX', 'RY', 'RZ']);
 const TRAILING_COLUMNS = 1; // Keep trailing wire column so the rendered circuit does not end directly at the last gate.
 
 /**
- * Exports circuits using Quantikz2 syntax
- * (quantikz package v1.0+, loaded via \usetikzlibrary{quantikz2}).
+ * Exports a circuit using Quantikz2 syntax.
  */
 export function toQuantikz(circuit: CircuitResponse): string {
     const wireIndex = buildWireIndex(circuit.registers);
@@ -47,6 +47,9 @@ export function toStandaloneQuantikzDocument(circuit: CircuitResponse): string {
     return toStandaloneDocument(toQuantikz(circuit));
 }
 
+/**
+ * Wraps Quantikz code in a minimal standalone LaTeX document.
+ */
 export function toStandaloneDocument(latexCode: string): string {
     return [
         String.raw`\documentclass[tikz,border=2pt]{standalone}`,
@@ -132,9 +135,9 @@ function applyElementaryGate(
     layerIdx: number,
 ): void {
     const identifier = gate.identifier.toUpperCase();
-    const targetWires = getTargetWires(wireIndex, gate);
+    const targetWires = resolveWireIndices(wireIndex, gate.targetQubits);
 
-    // Do not allow multitarget gates
+    // Only SWAP supports multiple targets.
     if (identifier !== 'SWAP' && targetWires.length !== 1) {
         return;
     }
@@ -159,7 +162,7 @@ function applySwapGate(grid: string[][], targetWires: number[], layerIdx: number
 
     const [topWire, bottomWire] = [...targetWires].sort((a, b) => a - b);
 
-    // Quantikz draws SWAP as a swap marker plus a target-X marker on the connected wire.
+    // Quantikz draws SWAP with one swap marker and one target-X marker.
     grid[topWire][layerIdx] = String.raw`\swap{${bottomWire - topWire}}`;
     grid[bottomWire][layerIdx] = String.raw`\targX{}`;
 }
@@ -211,18 +214,12 @@ function applyControls(
     }
 }
 
-function getTargetWires(wireIndex: WireIndex, gate: ElementaryQuantumGateDto): number[] {
-    return gate.targetQubits
-        .map((target) => wireIndex.getWireIndex(target))
-        .filter((wireIdx): wireIdx is number => wireIdx !== undefined);
-}
-
 function gateLabel(gate: ElementaryQuantumGateDto): string {
     const identifier = gate.identifier.toUpperCase();
 
     if (ROTATION_GATES.has(identifier)) {
         const axis = identifier[1];
-        // \ensuremath works with both quantikz versions where gate labels may be handled in text or math mode.
+        // Works when gate labels are handled in text or math mode.
         return String.raw`\ensuremath{R_${axis}(${angleToLatex(resolveAngle(gate.rotationAngle))})}`;
     }
 
@@ -235,18 +232,4 @@ function gateLabel(gate: ElementaryQuantumGateDto): string {
 
 function isControlledXGate(identifier: string, gate: ElementaryQuantumGateDto): boolean {
     return ['X', 'CX', 'CCX'].includes(identifier) && Boolean(gate.controlQubits?.length);
-}
-
-function escapeLatexText(value: string): string {
-    return value
-        .replaceAll('\\', String.raw`\textbackslash{}`)
-        .replaceAll('&', String.raw`\&`)
-        .replaceAll('%', String.raw`\%`)
-        .replaceAll('$', String.raw`\$`)
-        .replaceAll('#', String.raw`\#`)
-        .replaceAll('_', String.raw`\_`)
-        .replaceAll('{', String.raw`\{`)
-        .replaceAll('}', String.raw`\}`)
-        .replaceAll('~', String.raw`\textasciitilde{}`)
-        .replaceAll('^', String.raw`\textasciicircum{}`);
 }

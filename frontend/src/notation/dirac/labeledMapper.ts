@@ -7,10 +7,13 @@ import {
 } from '@/api/dto/circuit.ts';
 import { gateSymbol } from '@/notation/dirac/symbols.ts';
 import { assembleDirac, buildLayerGroups, Layout } from '@/notation/dirac/layout.ts';
-import { buildWireIndex, WireIndex } from '@/lib/circuitIndex.ts';
+import { buildWireIndex, getGateOperands, resolveWireIndices, WireIndex } from '@/lib/circuitIndex.ts';
+import { escapeLatexText } from '@/notation/latex/escape.ts';
+
+type LabelResolver = (selector: ElementSelectorDto) => string;
 
 /**
- * Export a circuit as labelled Dirac notation.
+ * Exports a circuit as labeled Dirac notation.
  */
 export function toLabeledDirac(circuit: CircuitResponse, layout: Layout = 'inline'): string {
     const resolveLabel = buildLabelResolver(circuit.registers);
@@ -27,14 +30,14 @@ export function toLabeledDirac(circuit: CircuitResponse, layout: Layout = 'inlin
 }
 
 /**
- * Resolve a qubit selector to its labelled Dirac form.
+ * Creates LaTeX labels for qubit selectors.
  */
-function buildLabelResolver(registers: RegisterResponse[]): (selector: ElementSelectorDto) => string {
+function buildLabelResolver(registers: RegisterResponse[]): LabelResolver {
     const nameById = new Map(registers.map((register) => [register.id, register.name]));
 
     return (selector) => {
         const name = nameById.get(selector.registerId) ?? selector.registerId;
-        // Keep a single letter/digit italic; anything else goes through \text{} and must be escaped.
+        // Keep one letter or digit italic. Escape longer names inside \text{}.
         const base = /^[a-zA-Z0-9]$/.test(name) ? name : String.raw`\text{${escapeLatexText(name)}}`;
 
         return `${base}_{${selector.index}}`;
@@ -42,12 +45,9 @@ function buildLabelResolver(registers: RegisterResponse[]): (selector: ElementSe
 }
 
 /**
- * Render |00...0⟩ with explicit qubit labels.
+ * Renders the all-zero initial state with qubit labels.
  */
-function renderInitialState(
-    registers: RegisterResponse[],
-    resolveLabel: (selector: ElementSelectorDto) => string,
-): string {
+function renderInitialState(registers: RegisterResponse[], resolveLabel: LabelResolver): string {
     const labels: string[] = [];
 
     for (const register of registers) {
@@ -63,37 +63,18 @@ function renderInitialState(
     return String.raw`\lvert ${'0'.repeat(labels.length)}\rangle_{${labels.join(' ')}}`;
 }
 
-function renderOperator(
-    gate: ElementaryQuantumGateDto,
-    resolveLabel: (selector: ElementSelectorDto) => string,
-): string {
-    const { base, suffix } = gateSymbol(gate);
-    const dagger = gate.inverseForm ? String.raw`^{\dagger}` : '';
+function renderOperator(gate: ElementaryQuantumGateDto, resolveLabel: LabelResolver): string {
+    const symbol = gateSymbol(gate);
 
     // Keep operand order: controls first, then targets.
-    const labels = [...gate.controlQubits, ...gate.targetQubits].map(resolveLabel).join(' ');
+    const labels = getGateOperands(gate).map(resolveLabel).join(' ');
 
-    return `${base}${dagger}${suffix}_{${labels}}`;
+    return `${symbol}_{${labels}}`;
 }
 
-// The gate's topmost qubit (lowest wire index), used to order gates within a layer.
+// Used to order gates inside a layer.
 function topmostWire(gate: ElementaryQuantumGateDto, wireIndex: WireIndex): number {
-    const wires = [...gate.controlQubits, ...gate.targetQubits]
-        .map((selector) => wireIndex.getWireIndex(selector))
-        .filter((wire): wire is number => wire !== undefined);
+    const wires = resolveWireIndices(wireIndex, getGateOperands(gate));
 
     return wires.length > 0 ? Math.min(...wires) : Number.MAX_SAFE_INTEGER;
-}
-
-// Escape the characters that are special inside a KaTeX \text{} group.
-function escapeLatexText(value: string): string {
-    return value
-        .replaceAll('\\', String.raw`\textbackslash{}`)
-        .replaceAll('{', String.raw`\{`)
-        .replaceAll('}', String.raw`\}`)
-        .replaceAll('_', String.raw`\_`)
-        .replaceAll('#', String.raw`\#`)
-        .replaceAll('$', String.raw`\$`)
-        .replaceAll('%', String.raw`\%`)
-        .replaceAll('&', String.raw`\&`);
 }

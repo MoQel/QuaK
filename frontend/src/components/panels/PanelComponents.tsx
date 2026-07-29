@@ -38,8 +38,7 @@ export const InspectorPanel = () => {
     const { selectedOperation, setSelectedOperation } = usePanelData();
     const { activeCircuit } = useCircuitTabs();
 
-    // A gate being inspected takes over the panel; clearing it (the X) falls back to the default
-    // Dirac notation of the active circuit.
+    // A gate being inspected takes over the panel; clearing it (the X) falls back to the default Dirac notation of the active circuit.
     return (
         <PanelWrapper>
             {selectedOperation ? (

@@ -1,7 +1,5 @@
-// Denominators of π tried during recognition, in ascending order. Curated for quantum gates:
-// powers of two cover phase/QFT angles (π/2, π/4, …, π/128), while 3/6/12 cover the common
-// thirds and sixths. Uncommon fractions like π/5 or π/7 are intentionally excluded here — pass
-// a custom `denominators` list to `resolveAngle` for a fully general formatter.
+// Default π denominators used for recognition. Chosen for common quantum-gate angles: powers of two plus 3, 6, and 12.
+// Pass custom `denominators` for other π fractions.
 const DEFAULT_PI_DENOMINATORS = [1, 2, 3, 4, 6, 8, 12, 16, 32, 64, 128];
 const DEFAULT_TOLERANCE = 1e-9;
 
@@ -13,8 +11,7 @@ const FOUR_PI = 4 * Math.PI;
  * every output format (LaTeX, Unicode, OpenQASM, …) is rendered from.
  *
  * - zero: an exact (within tolerance) zero rotation.
- * - pi: a rational multiple of π, i.e. `(numerator / denominator) * π`, always stored in the lowest terms with `denominator ≥ 1` and `numerator ≠ 0`. Named constants are just special
- *   cases: `2π` (τ) is `{ numerator: 2, denominator: 1 }` - weather that is `2π`, `τ`, or `\tau` is a renderer decision.
+ * - pi: a rational multiple of π, stored in lowest terms (`denominator ≥ 1`, `numerator ≠ 0`).
  * - number: any angle that does not match a known π multiple keeps the full-precision value.
  */
 export type QuantumAngle =
@@ -68,7 +65,7 @@ export function resolveAngle(radians: number, options: ResolveAngleOptions = {})
     return { kind: 'number', radians: normalized };
 }
 
-/** Folds an angle onto a canonical window (see {@link ResolveAngleOptions.normalize}). */
+/** Folds an angle onto a canonical window (see {@link ResolveAngleOptions.normalize}). In Quantum systems a rotation of 4 pi equals the identity. */
 function normalizeRadians(radians: number, mode: NonNullable<ResolveAngleOptions['normalize']>): number {
     if (mode === 'none') return radians;
 

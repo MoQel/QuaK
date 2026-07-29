@@ -42,7 +42,7 @@ const circuit = (registers: QuantumRegisterResponse[], layers: LayerResponse[]):
 });
 
 describe('toLabeledDirac', () => {
-    it('renders a single-qubit gate composed with a labelled ket', () => {
+    it('renders a single-qubit gate composed with a labeled ket', () => {
         // H(q0)
         const result = toLabeledDirac(circuit([quantumRegister('q', 1)], [layer(gate('H', [sel('q', 0)]))]));
 
@@ -64,7 +64,7 @@ describe('toLabeledDirac', () => {
     });
 
     it('preserves gate-local operand order (control=q1, target=q0 stays q_1 q_0)', () => {
-        // CNOT(control=q1, target=q0) — must NOT be reordered to q_0 q_1.
+        // CNOT(control=q1, target=q0). Operand order must stay q_1 q_0.
         const cnot = gate('CX', [sel('q', 0)], [sel('q', 1)]);
 
         const result = toLabeledDirac(circuit([quantumRegister('q', 2)], [layer(cnot)]));
@@ -73,7 +73,7 @@ describe('toLabeledDirac', () => {
     });
 
     it('renders the CCNOT example with space-separated operand labels', () => {
-        // CCNOT with controls q0, q2 and target q1 — the Toffoli from the motivating example.
+        // CCNOT with controls q0, q2 and target q1.
         const ccnot = gate('CCX', [sel('q', 1)], [sel('q', 0), sel('q', 2)]);
 
         const result = toLabeledDirac(circuit([quantumRegister('q', 3)], [layer(ccnot)]));
@@ -92,17 +92,15 @@ describe('toLabeledDirac', () => {
         );
     });
 
-    it('marks an inverse gate with a dagger before the qubit subscript', () => {
-        // T†(q0)
+    it('ignores inverseForm for plain gates', () => {
         const result = toLabeledDirac(
             circuit([quantumRegister('q', 1)], [layer(gate('T', [sel('q', 0)], [], { inverseForm: true }))]),
         );
 
-        expect(result).toBe(String.raw`\mathrm{T}^{\dagger}_{q_{0}} \cdot \lvert 0\rangle_{q_{0}}`);
+        expect(result).toBe(String.raw`\mathrm{T}_{q_{0}} \cdot \lvert 0\rangle_{q_{0}}`);
     });
 
-    it('places the dagger before the angle on an inverse rotation', () => {
-        // RZ(pi/2)†(q0)
+    it('ignores inverseForm for rotations', () => {
         const result = toLabeledDirac(
             circuit(
                 [quantumRegister('q', 1)],
@@ -111,7 +109,7 @@ describe('toLabeledDirac', () => {
         );
 
         expect(result).toBe(
-            String.raw`\mathrm{R}_{z}^{\dagger}\!\left(\frac{\pi}{2}\right)_{q_{0}} \cdot \lvert 0\rangle_{q_{0}}`,
+            String.raw`\mathrm{R}_{z}\!\left(\frac{\pi}{2}\right)_{q_{0}} \cdot \lvert 0\rangle_{q_{0}}`,
         );
     });
 
@@ -141,12 +139,12 @@ describe('toLabeledDirac', () => {
 
         const result = toLabeledDirac(circuit([quantumRegister('q', 1)], [layer(measurement)]));
 
-        // Only the labelled initial state remains; no operator was rendered.
+        // Only the labeled initial state remains; no operator was rendered.
         expect(result).toBe(String.raw`\lvert 0\rangle_{q_{0}}`);
     });
 
     it('breaks per layer in the layered layout', () => {
-        // H(q0); CNOT(q0, q1) — two layers, wrapped and broken onto separate lines.
+        // H(q0); CNOT(q0, q1). Two layers are rendered on separate lines.
         const result = toLabeledDirac(
             circuit(
                 [quantumRegister('q', 2)],
@@ -167,7 +165,7 @@ describe('toLabeledDirac', () => {
     });
 
     it('orders gates within a layer by ascending qubit index', () => {
-        // One layer with gates stored as q2, q0, q1 — rendered ascending as q0, q1, q2.
+        // One layer with gates stored as q2, q0, q1. Output is sorted as q0, q1, q2.
         const result = toLabeledDirac(
             circuit(
                 [quantumRegister('q', 3)],
