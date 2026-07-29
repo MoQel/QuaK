@@ -1,8 +1,10 @@
 import {
+    GATE_ARITY,
     getRegisterSize,
     isQuantumRegister,
     type CircuitContent,
     type ElementSelectorDto,
+    type OperationIdentifier,
     type QuantumOperationDto,
 } from '@quak/circuit-core';
 import type { QasmPreamble } from './toCircuit.ts';
@@ -93,7 +95,12 @@ function operationToQasm(operation: QuantumOperationDto, registerNames: Map<stri
     const keyword = GATE_KEYWORDS[operation.identifier] ?? operation.identifier.toLowerCase();
 
     let head = operation.inverseForm ? `inv @ ${keyword}` : keyword;
-    if ('rotationAngle' in operation && operation.rotationAngle !== 0) {
+
+    // Whether a gate takes a parameter is a property of the gate, not of the value
+    // that happens to sit in its DTO — the editor puts a default angle on every
+    // gate it creates, so `x` would otherwise be emitted as `x(pi/2)`, which is not
+    // a thing. Same condition the backend's generator uses.
+    if (GATE_ARITY[operation.identifier as OperationIdentifier]?.hasRotationAngle && 'rotationAngle' in operation) {
         head += `(${formatAngle(operation.rotationAngle)})`;
     }
 

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { CircuitContent, OperationIdentifier } from '@quak/circuit-core';
 import { isEditable, toCircuit } from './toCircuit.ts';
 import { formatAngle, toQasm } from './toQasm.ts';
 
@@ -83,6 +84,52 @@ describe('toQasm — emission', () => {
         });
 
         expect(emitted).not.toContain('dummy');
+    });
+});
+
+// Circuits reach the generator from two places, and they do not look alike. The
+// fixtures above all came from parsing, where a non-rotation gate has no angle.
+// The editor is the other producer, and it stamps a default angle on everything
+// it creates — which is how `x(pi/2)` got written to a real file.
+describe('circuits built by the editor, not by the parser', () => {
+    const gateDroppedByEditor = (identifier: OperationIdentifier, rotationAngle: number): CircuitContent => ({
+        registers: [{ id: 'r', name: 'q', type: 'Quantum_Register' as const, numberOfQubits: 1 }],
+        layers: [
+            {
+                quantumOperations: [
+                    {
+                        id: 'op',
+                        type: 'ELEMENTARY_QUANTUM_GATE' as const,
+                        identifier,
+                        inverseForm: false,
+                        targetQubits: [{ registerId: 'r', index: 0 }],
+                        controlQubits: [],
+                        rotationAngle,
+                    },
+                ],
+            },
+        ],
+    });
+
+    it.each(['X', 'H', 'Z', 'S', 'T'] as const)(
+        'never writes a parameter on %s, whatever angle the DTO carries',
+        (identifier) => {
+            const emitted = toQasm(gateDroppedByEditor(identifier, Math.PI / 2));
+
+            expect(emitted).not.toMatch(/\w+\(/);
+            expect(isEditable(toCircuit(emitted))).toBe(true);
+        },
+    );
+
+    it.each(['RX', 'RY', 'RZ'] as const)('does write the parameter on %s', (identifier) => {
+        expect(toQasm(gateDroppedByEditor(identifier, Math.PI / 2))).toContain(`${identifier.toLowerCase()}(pi/2)`);
+    });
+
+    it('writes rx(0) rather than dropping the angle, so the round trip stays exact', () => {
+        const emitted = toQasm(gateDroppedByEditor('RX', 0));
+
+        expect(emitted).toContain('rx(0)');
+        expect(isEditable(toCircuit(emitted))).toBe(true);
     });
 });
 

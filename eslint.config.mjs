@@ -20,6 +20,9 @@ export default tseslint.config(
             '**/.vscode-test/**',
             'backend/**',
             'packages/qasm-transform/src/generated/**',
+            // Agent worktrees are whole checkouts of this repo; linting them
+            // reports every finding twice and from paths nobody can act on.
+            '.claude/**',
         ],
     },
 

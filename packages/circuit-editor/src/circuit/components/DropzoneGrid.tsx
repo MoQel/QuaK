@@ -244,7 +244,11 @@ export function DropzoneGrid({
                                 inverseForm: false,
                                 targetQubits,
                                 controlQubits,
-                                rotationAngle: Math.PI / 2, // standard rotation
+                                // Only rx/ry/rz carry an angle. Giving an H or an X a
+                                // "default rotation" is data that means nothing, and
+                                // anything writing the circuit out has to know to
+                                // ignore it again.
+                                rotationAngle: operationDefinition.hasRotationAngle ? Math.PI / 2 : 0,
                             };
                             addQuantumOperationLocally(operation, layerIdx);
                         } else if (operationDefinition.type === 'MEASUREMENT') {
