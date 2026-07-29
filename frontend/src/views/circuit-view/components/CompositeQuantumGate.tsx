@@ -16,7 +16,7 @@ interface CompositeQuantumGateProps {
     layerIdx: number;
     /** Semi-transparent and non-interactive while dragged; see ElementaryQuantumGate. */
     isGhost?: boolean;
-    onDragStart: (operationSize: number) => void;
+    onDragStart: (operationSize: number, grabOffset: number) => void;
     onDragEnd: () => void;
     onDelete: () => void;
 }
@@ -74,8 +74,12 @@ export function CompositeQuantumGate({
         e.dataTransfer.setData('text/plain', JSON.stringify(data));
         e.dataTransfer.effectAllowed = 'move';
 
+        // Which wire of the box the pointer grabbed; see ElementaryQuantumGate.
+        const bounds = e.currentTarget.getBoundingClientRect();
+        const grabOffset = Math.floor((e.clientY - bounds.top) / QUBIT_HEIGHT);
+
         // Deferred so the browser can capture the element as the drag image first.
-        setTimeout(() => onDragStart?.(operation.targetQubits.length), 0);
+        setTimeout(() => onDragStart?.(operation.targetQubits.length, grabOffset), 0);
     };
 
     const handleDragEnd = () => {

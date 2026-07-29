@@ -26,8 +26,8 @@ export function QuantumOperationGrid({
 }: Readonly<QuantumOperationGridProps>) {
     const dispatch = useDispatch();
 
-    const handleOperationDragStart = (operationId: string, operationSize: number) => {
-        dispatch(startOperationDrag(operationSize));
+    const handleOperationDragStart = (operationId: string, operationSize: number, grabOffset: number) => {
+        dispatch(startOperationDrag({ size: operationSize, grabOffset }));
         setDraggingOperationId(operationId);
     };
 
@@ -63,7 +63,9 @@ export function QuantumOperationGrid({
                         registers={registers}
                         layerIdx={layerIdx}
                         isGhost={isGhost}
-                        onDragStart={(operationSize) => handleOperationDragStart(op.id!, operationSize)}
+                        onDragStart={(operationSize, grabOffset) =>
+                            handleOperationDragStart(op.id!, operationSize, grabOffset)
+                        }
                         onDragEnd={handleOperationDragEnd}
                         onDelete={() => removeQuantumOperation(op.id!)}
                     />
@@ -74,7 +76,9 @@ export function QuantumOperationGrid({
                         registers={registers}
                         layerIdx={layerIdx}
                         isGhost={isGhost}
-                        onDragStart={(operationSize) => handleOperationDragStart(op.id!, operationSize)}
+                        onDragStart={(operationSize, grabOffset) =>
+                            handleOperationDragStart(op.id!, operationSize, grabOffset)
+                        }
                         onDragEnd={handleOperationDragEnd}
                         onDelete={() => removeQuantumOperation(op.id!)}
                     />

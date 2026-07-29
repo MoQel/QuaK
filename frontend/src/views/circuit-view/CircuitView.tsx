@@ -34,7 +34,9 @@ export function CircuitView() {
         );
     };
 
-    const { isOperationDragging, draggingOperationSize } = useSelector((state: RootState) => state.dragOperation);
+    const { isOperationDragging, draggingOperationSize, draggingGrabOffset } = useSelector(
+        (state: RootState) => state.dragOperation,
+    );
 
     const [hoverPos, setHoverPos] = useState<HoverPos | null>(null);
     const [draggingOperationId, setDraggingOperationId] = useState<string | null>(null);
@@ -323,6 +325,7 @@ export function CircuitView() {
                                 uiLayers={uiLayers}
                                 activeDropZones={activeDropZones}
                                 draggingOperationSize={draggingOperationSize}
+                                draggingGrabOffset={draggingGrabOffset}
                                 setHoverPos={setHoverPos}
                                 setDraggingOperationId={setDraggingOperationId}
                             />

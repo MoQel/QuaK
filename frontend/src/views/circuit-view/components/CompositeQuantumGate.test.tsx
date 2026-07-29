@@ -111,8 +111,11 @@ describe('CompositeQuantumGate', () => {
         expect(parseFloat(portA.style.top)).toBeGreaterThan(parseFloat(portB.style.top));
     });
 
-    it('reports its full qubit count when a drag starts, so a move keeps every wire', () => {
-        const onDragStart = vi.fn();
+    /**
+     * Starts a drag on the rendered box, with the pointer `clientY` pixels down the page and the box
+     * itself starting at y = 0.
+     */
+    const startDrag = (onDragStart: ReturnType<typeof vi.fn>, clientY = 0) => {
         vi.useFakeTimers();
         const { container } = render(
             <CompositeQuantumGate
@@ -126,14 +129,44 @@ describe('CompositeQuantumGate', () => {
         );
 
         const wrapper = container.firstElementChild as HTMLElement;
-        const event = new Event('dragstart', { bubbles: true });
-        Object.defineProperty(event, 'dataTransfer', {
-            value: { setData: vi.fn(), effectAllowed: '' },
+        wrapper.getBoundingClientRect = () => ({
+            top: 0,
+            left: 0,
+            bottom: 0,
+            right: 0,
+            width: 0,
+            height: 0,
+            x: 0,
+            y: 0,
+            toJSON: () => ({}),
         });
+
+        const event = new Event('dragstart', { bubbles: true });
+        Object.defineProperty(event, 'dataTransfer', { value: { setData: vi.fn(), effectAllowed: '' } });
+        Object.defineProperty(event, 'clientY', { value: clientY });
         wrapper.dispatchEvent(event);
         vi.runAllTimers();
         vi.useRealTimers();
+    };
 
-        expect(onDragStart).toHaveBeenCalledWith(2);
+    it('reports its full qubit count when a drag starts, so a move keeps every wire', () => {
+        const onDragStart = vi.fn();
+
+        startDrag(onDragStart);
+
+        expect(onDragStart).toHaveBeenCalledWith(2, 0);
+    });
+
+    /**
+     * Grabbing the box low must be reported, otherwise the drop anchor lands under the pointer and
+     * the box jumps down by the grab distance.
+     */
+    it('reports which wire it was grabbed by', () => {
+        const onDragStart = vi.fn();
+
+        // Pointer on the second wire of the box (wires are QUBIT_HEIGHT apart).
+        startDrag(onDragStart, QUBIT_HEIGHT + 5);
+
+        expect(onDragStart).toHaveBeenCalledWith(2, 1);
     });
 });
