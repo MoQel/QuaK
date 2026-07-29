@@ -1,4 +1,4 @@
-import React, { SetStateAction, useCallback } from 'react';
+import React, { SetStateAction, useCallback, useRef } from 'react';
 import { useDispatch } from 'react-redux';
 import { stopOperationDrag } from '@/store/circuit/dragOperationSlice.ts';
 import { CELL_WIDTH, QUBIT_HEIGHT } from '@/views/circuit-view/util/layout.ts';
@@ -6,10 +6,12 @@ import {
     CircuitResponse,
     ElementaryQuantumGateDto,
     ElementSelectorDto,
+    isCompositeGate,
     MeasurementDto,
     MoveQuantumOperationRequest,
     QuantumOperationDto,
 } from '@/api/dto/circuit.ts';
+import { rebindComposite } from '@/views/circuit-view/util/rebindComposite.ts';
 import { DragData, FlatQubit, HoverPos, UiLayer } from '@/views/circuit-view/util/types.ts';
 import { getOperationDefinition } from '@/lib/operations.ts';
 
@@ -32,6 +34,8 @@ interface DropzoneGridProps {
     flatQubits: FlatQubit[];
     uiLayers: UiLayer[];
     activeDropZones: Set<string>;
+    /** Number of wires the dragged operation covers; decides how far its anchor may sit. */
+    draggingOperationSize: number;
     setHoverPos: React.Dispatch<React.SetStateAction<HoverPos | null>>;
     setDraggingOperationId: (id: string | null) => void;
 }
@@ -42,6 +46,7 @@ export function DropzoneGrid({
     flatQubits,
     uiLayers,
     activeDropZones,
+    draggingOperationSize,
     setHoverPos,
     setDraggingOperationId,
 }: Readonly<DropzoneGridProps>) {
@@ -105,11 +110,13 @@ export function DropzoneGrid({
 
             const original = findOperation(prev.layers, payload.quantumOperationId);
             if (!original) return prev;
-            const movedOperation: QuantumOperationDto = {
-                ...original,
-                targetQubits: payload.targetQubits,
-                controlQubits: payload.controlQubits,
-            };
+            const movedOperation: QuantumOperationDto = isCompositeGate(original)
+                ? rebindComposite(original, payload.targetQubits)
+                : {
+                      ...original,
+                      targetQubits: payload.targetQubits,
+                      controlQubits: payload.controlQubits,
+                  };
 
             // The dragged operation is already excluded from the rendered preview,
             // so substituting the dummy re-inserts it exactly where the preview showed it.
@@ -131,25 +138,29 @@ export function DropzoneGrid({
         });
     };
 
-    const handleDragOver = (e: React.DragEvent, qubitIdx: number, layerIdx: number) => {
+    /** The cell the pointer is currently over; see the drag-leave guard below. */
+    const hoveredCellRef = useRef<string | null>(null);
+
+    const handleDragOver = (e: React.DragEvent, cellKey: string, anchorIdx: number, layerIdx: number) => {
         e.preventDefault();
+        hoveredCellRef.current = cellKey;
         // Use a functional update to access the latest state without triggering unnecessary re-renders.
         // Returning the previous value unchanged causes React to bail out of the render cycle,
         // preventing performance degradation from rapid mousemove events (render thrashing).
-        setHoverPos((prev) => {
-            if (prev?.qubitIdx === qubitIdx && prev?.layerIdx === layerIdx) {
-                return prev;
-            }
-            return { qubitIdx, layerIdx };
-        });
+        setHoverPos((prev) =>
+            prev?.qubitIdx === anchorIdx && prev?.layerIdx === layerIdx ? prev : { qubitIdx: anchorIdx, layerIdx },
+        );
     };
 
     // Guarded reset against hover flicker on cell changes: when crossing into an adjacent zone,
-    // dragenter on the new cell fires BEFORE dragleave on the old one (HTML5 event order), so
-    // hoverPos already points elsewhere and this leave must not clear it. Only leaving towards a
-    // non-zone area (hoverPos still = this cell) resets.
-    const handleDragLeave = (qubitIdx: number, layerIdx: number) => {
-        setHoverPos((prev) => (prev?.qubitIdx === qubitIdx && prev?.layerIdx === layerIdx ? null : prev));
+    // dragenter on the new cell fires BEFORE dragleave on the old one (HTML5 event order), so by the
+    // time this runs the pointer may already be somewhere else. The guard keys on the *cell* rather
+    // than on the resulting hover position, because several rows now resolve to the same anchor and
+    // comparing anchors would let the old cell's leave wipe the hover its neighbour just set.
+    const handleDragLeave = (cellKey: string) => {
+        if (hoveredCellRef.current !== cellKey) return;
+        hoveredCellRef.current = null;
+        setHoverPos(null);
     };
 
     /** Creates a lookup map of the server-side circuit state. */
@@ -299,14 +310,21 @@ export function DropzoneGrid({
 
     return (
         <div className="absolute inset-0 z-10">
-            {flatQubits.map((qubit, qIdx) =>
+            {flatQubits.map((_qubit, qIdx) =>
                 Array.from({ length: uiLayers.length + 1 }).map((_, layerIdx) => {
-                    const isZoneActive = activeDropZones.has(`${qIdx}-${layerIdx}`);
-                    if (!isZoneActive) return null;
+                    // An operation is anchored at its topmost wire, so a drop cell only in that row
+                    // would make a tall gate hit a fraction of its own height (a 4-wire box: a
+                    // quarter, and its bottom rows reject the drop entirely). Every row the gate
+                    // would cover therefore resolves to the same anchor.
+                    const anchorIdx = Math.min(qIdx, Math.max(flatQubits.length - draggingOperationSize, 0));
+                    if (!activeDropZones.has(`${anchorIdx}-${layerIdx}`)) return null;
+
+                    const anchor = flatQubits[anchorIdx];
+                    const cellKey = `${qIdx}-${layerIdx}`;
 
                     return (
                         <div
-                            key={`drop-${qIdx}-${layerIdx}`}
+                            key={`drop-${cellKey}`}
                             style={{
                                 position: 'absolute',
                                 left: layerIdx * CELL_WIDTH,
@@ -314,10 +332,10 @@ export function DropzoneGrid({
                                 width: CELL_WIDTH,
                                 height: QUBIT_HEIGHT,
                             }}
-                            onDragEnter={(e) => handleDragOver(e, qIdx, layerIdx)}
-                            onDragOver={(e) => handleDragOver(e, qIdx, layerIdx)}
-                            onDragLeave={() => handleDragLeave(qIdx, layerIdx)}
-                            onDrop={(e) => handleDrop(e, qubit.regId, qubit.relQubitIdx, layerIdx)}
+                            onDragEnter={(e) => handleDragOver(e, cellKey, anchorIdx, layerIdx)}
+                            onDragOver={(e) => handleDragOver(e, cellKey, anchorIdx, layerIdx)}
+                            onDragLeave={() => handleDragLeave(cellKey)}
+                            onDrop={(e) => handleDrop(e, anchor.regId, anchor.relQubitIdx, layerIdx)}
                         />
                     );
                 }),

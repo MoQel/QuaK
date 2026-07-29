@@ -322,6 +322,7 @@ export function CircuitView() {
                                 flatQubits={flatQubits}
                                 uiLayers={uiLayers}
                                 activeDropZones={activeDropZones}
+                                draggingOperationSize={draggingOperationSize}
                                 setHoverPos={setHoverPos}
                                 setDraggingOperationId={setDraggingOperationId}
                             />
