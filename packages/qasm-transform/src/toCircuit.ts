@@ -10,12 +10,14 @@ import {
     type QuantumRegisterResponse,
 } from '@quak/circuit-core';
 import { evaluateAngle, QasmUnsupportedError } from './angleExpression.ts';
+import { isStructuralComment } from './structuralComments.ts';
 import { parseQasm, type QasmSyntaxError } from './parse.ts';
 import {
     GateCallStatementContext,
     GateOperandContext,
     QuantumDeclarationStatementContext,
     StatementContext,
+    type ProgramContext,
 } from './generated/OpenQASM3Parser.js';
 
 export interface QasmUnsupportedConstruct {
@@ -39,6 +41,14 @@ export interface QasmPreamble {
     version: string | null;
     /** Include targets verbatim, in source order, e.g. `"stdgates.inc"`. */
     includes: string[];
+    /**
+     * Comments above the first statement — a licence block, an author, a note on
+     * what the file is. The only comments that can be preserved honestly: their
+     * anchor is "the top of the file", which no amount of re-scheduling moves.
+     * Comments further down belong to statements that the editor may reorder or
+     * delete, so they are reported as unsupported instead of being relocated.
+     */
+    headerComments: string[];
 }
 
 export interface ToCircuitResult {
@@ -102,14 +112,27 @@ export function toCircuit(source: string): ToCircuitResult {
     const builder = new CircuitBuilder();
 
     // Comments never reach the parse tree, so the statement walk below cannot see
-    // them — but they are the user's content, and the generator has nowhere to put
-    // them back. Detecting them is what stops an edit from deleting them.
+    // them. Three kinds, and only one is a problem:
+    //   - QuaK's own `// Register`/`// Layer` markers: regenerable, so ignored.
+    //   - above the first statement: anchored to the top of the file, preserved.
+    //   - anywhere else: anchored to a statement the editor may move or delete,
+    //     so they are reported and the document goes read-only.
+    const firstStatementLine = startOfFirstStatement(tree);
+    const headerComments: string[] = [];
+
     for (const comment of comments) {
+        if (isStructuralComment(comment.text)) continue;
+
+        if (comment.line < firstStatementLine) {
+            headerComments.push(comment.text.trim());
+            continue;
+        }
+
         builder.unsupported.push({
             line: comment.line,
             column: comment.column,
             construct: 'comment',
-            message: 'Comments would be lost when the circuit is written back.',
+            message: 'Comments below the header would be lost when the circuit is written back.',
         });
     }
 
@@ -126,7 +149,11 @@ export function toCircuit(source: string): ToCircuitResult {
     return {
         // Registers alone are a valid (empty) circuit; nothing at all is not.
         content: builder.registers.length > 0 ? content : null,
-        preamble: { version: tree.version()?.VersionSpecifier().getText() ?? null, includes: builder.includes },
+        preamble: {
+            version: tree.version()?.VersionSpecifier().getText() ?? null,
+            includes: builder.includes,
+            headerComments,
+        },
         syntaxErrors: errors,
         unsupported: builder.unsupported,
     };
@@ -309,3 +336,15 @@ const constantInt = (text: string): number | null => {
 };
 
 const firstLine = (text: string): string => (text.length > 60 ? `${text.slice(0, 60)}…` : text);
+
+/**
+ * Line of the first thing that is not a comment — the boundary between "header"
+ * and "the body". Infinity for a file with no statements at all, so every comment
+ * in it counts as header.
+ */
+function startOfFirstStatement(tree: ProgramContext): number {
+    const versionLine = tree.version()?.start?.line;
+    const firstStatementLine = tree.statementOrScope()[0]?.start?.line;
+
+    return Math.min(versionLine ?? Number.POSITIVE_INFINITY, firstStatementLine ?? Number.POSITIVE_INFINITY);
+}

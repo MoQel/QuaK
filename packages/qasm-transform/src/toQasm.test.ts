@@ -9,11 +9,11 @@ const roundTrip = (source: string) => {
 };
 
 describe('toQasm — emission', () => {
-    it('writes a valid standalone document, header included', () => {
+    it('writes a valid standalone document, header and markers included', () => {
         const parsed = toCircuit('OPENQASM 3.0;\ninclude "stdgates.inc";\nqubit[2] q;\nh q[0];\n');
 
         expect(toQasm(parsed.content!, parsed.preamble)).toBe(
-            'OPENQASM 3.0;\ninclude "stdgates.inc";\n\nqubit[2] q;\n\nh q[0];\n',
+            'OPENQASM 3.0;\ninclude "stdgates.inc";\n\n// Register q\nqubit[2] q;\n\n// Layer 1\nh q[0];\n',
         );
     });
 
@@ -26,12 +26,37 @@ describe('toQasm — emission', () => {
         expect(isEditable(toCircuit(emitted))).toBe(true);
     });
 
-    it('emits no comments — they would make its own output read-only', () => {
+    // The load-bearing property of the marker design: the generator annotates its
+    // output, and that output is still editable. If markers counted as content,
+    // writing the file would make it read-only the instant we wrote it.
+    it('emits structural markers without making its own output read-only', () => {
         const parsed = toCircuit('OPENQASM 3.0;\nqubit[2] q;\nh q[0];\ncx q[0], q[1];\n');
         const emitted = toQasm(parsed.content!, parsed.preamble);
 
-        expect(emitted).not.toContain('//');
-        expect(isEditable(toCircuit(emitted))).toBe(true);
+        expect(emitted).toContain('// Register q');
+        expect(emitted).toContain('// Layer 1');
+
+        const reparsed = toCircuit(emitted);
+        expect(reparsed.unsupported).toEqual([]);
+        expect(isEditable(reparsed)).toBe(true);
+    });
+
+    it('preserves the header comment block, above everything else', () => {
+        const source = '// Copyright 2026 KIT\n// Bell pair demo\nOPENQASM 3.0;\nqubit[2] q;\nh q[0];\n';
+        const parsed = toCircuit(source);
+
+        expect(isEditable(parsed)).toBe(true);
+        expect(parsed.preamble.headerComments).toEqual(['// Copyright 2026 KIT', '// Bell pair demo']);
+        expect(toQasm(parsed.content!, parsed.preamble)).toMatch(/^\/\/ Copyright 2026 KIT\n\/\/ Bell pair demo\n\n/);
+    });
+
+    it('keeps a document with comments below the header read-only', () => {
+        // The honest half of the deal: those cannot be re-anchored, so the user is
+        // told before editing rather than after their comments are gone.
+        const parsed = toCircuit('OPENQASM 3.0;\nqubit[2] q;\n// prepare the state\nh q[0];\n');
+
+        expect(isEditable(parsed)).toBe(false);
+        expect(parsed.unsupported.map((u) => u.construct)).toEqual(['comment']);
     });
 
     it('writes controls before targets', () => {
@@ -107,6 +132,16 @@ describe('round trip is idempotent', () => {
 
         // Ids are position-derived, so regenerating moves them; the circuit itself must not change.
         expect(stripIds(after)).toEqual(stripIds(before));
+    });
+
+    it('round-trips a file the web IDE generated, markers and all', () => {
+        // The interop case: the Java generator annotates its output the same way.
+        // If markers were treated as content this would be read-only on arrival.
+        const webIdeStyle = '// Register q\nqubit[2] q;\n\n// Layer 1\nh q[0];\n\n// Layer 2\ncx q[0], q[1];\n';
+        const parsed = toCircuit(webIdeStyle);
+
+        expect(isEditable(parsed)).toBe(true);
+        expect(isEditable(toCircuit(toQasm(parsed.content!, parsed.preamble)))).toBe(true);
     });
 
     it('preserves the angle exactly, not just approximately', () => {
