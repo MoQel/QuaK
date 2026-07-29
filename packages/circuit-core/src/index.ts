@@ -1,7 +1,7 @@
-// @quak/circuit-core — shared domain layer: DTOs, gate types, CircuitPort, support matrix.
+// @quak/circuit-core — shared domain layer: DTOs, gate types, angle formatting, support matrix.
 
 export * from './gate-types.ts';
 export * from './dto/circuit.ts';
 export * from './dto/library.ts';
-export * from './port/CircuitPort.ts';
+export * from './angle.ts';
 export * from './support-matrix.ts';

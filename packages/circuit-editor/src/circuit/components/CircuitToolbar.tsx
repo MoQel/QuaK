@@ -1,21 +1,28 @@
 import { Button } from '@quak/ui/button';
 import { Minus, Plus, Trash2 } from 'lucide-react';
-import { useCircuitPort } from '../../CircuitPortContext.tsx';
 import { Popover, PopoverContent, PopoverTrigger } from '@quak/ui/popover';
 import { useState, type ReactNode } from 'react';
+import { useCircuitStore } from '../../CircuitStoreContext.tsx';
+import { createCircuitMutations } from '../../circuitMutations.ts';
 
 interface CircuitToolbarProps {
-    /** Slot on the left of the toolbar, for actions the host app adds. */
+    /**
+     * Slot on the left of the toolbar, for actions only the host has: the web IDE
+     * puts the quantikz export and "parse active editor" here, the extension its
+     * own export button.
+     */
     start?: ReactNode;
 }
 
+/** The circuit controls that need nothing but the circuit itself. */
 export function CircuitToolbar({ start }: Readonly<CircuitToolbarProps>) {
-    const { addQubit, deleteLastQubit, resetCircuit } = useCircuitPort();
+    const { circuit, setCircuit } = useCircuitStore();
+    const { addQubit, deleteLastQubit, resetCircuit } = createCircuitMutations(circuit, setCircuit);
     const [isPopoverOpen, setIsPopoverOpen] = useState(false);
 
     return (
-        <div className="flex items-center justify-between pb-1">
-            <div>{start}</div>
+        <div className="flex items-center justify-start gap-2">
+            {start}
             <div className="flex space-x-3">
                 <Button onClick={addQubit} size="icon" className="size-8" variant="secondary" title="Add Qubit">
                     <Plus />

@@ -1,21 +1,32 @@
 package edu.kit.quak.infrastructure.circuit.in.web.rest;
 
+import edu.kit.quak.application.circuit.antlr.QasmService;
 import edu.kit.quak.application.circuit.ports.in.CircuitServicePort;
 import edu.kit.quak.application.user.ports.in.UserServicePort;
+import edu.kit.quak.core.circuit.codegen.QasmCodeGenerator;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
+import edu.kit.quak.core.circuit.model.layer.Layer;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
+import edu.kit.quak.core.circuit.model.register.Register;
 import edu.kit.quak.core.user.model.User;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.AddQuantumOperationRequest;
+import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.CircuitContentResponse;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.CircuitResponse;
+import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.GeneratedCodeResponse;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.MoveQuantumOperationRequest;
+import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.UpdateCircuitRequest;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.CircuitDtoMapper;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.ElementSelectorDtoMapper;
+import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.LayerDtoMapper;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.QuantumOperationDtoMapper;
+import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.RegisterDtoMapper;
 import edu.kit.quak.infrastructure.user.in.web.rest.mapper.AuthenticationMapper;
 import java.util.List;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -26,47 +37,114 @@ import org.springframework.web.bind.annotation.*;
 public class CircuitRestAdapter {
 
     private final CircuitServicePort service;
+    private final QasmService qasmService;
     private final UserServicePort userService;
     private final CircuitDtoMapper mapper;
     private final QuantumOperationDtoMapper quantumOperationDtoMapper;
     private final ElementSelectorDtoMapper elementSelectorDtoMapper;
+    private final RegisterDtoMapper registerDtoMapper;
+    private final LayerDtoMapper layerDtoMapper;
     private final AuthenticationMapper authMapper;
 
     public CircuitRestAdapter(
         CircuitServicePort service,
+        QasmService qasmService,
         UserServicePort userService,
         CircuitDtoMapper mapper,
         QuantumOperationDtoMapper quantumOperationDtoMapper,
         ElementSelectorDtoMapper elementSelectorDtoMapper,
+        RegisterDtoMapper registerDtoMapper,
+        LayerDtoMapper layerDtoMapper,
         AuthenticationMapper authMapper
     ) {
         this.service = service;
+        this.qasmService = qasmService;
         this.userService = userService;
         this.mapper = mapper;
         this.quantumOperationDtoMapper = quantumOperationDtoMapper;
         this.elementSelectorDtoMapper = elementSelectorDtoMapper;
+        this.registerDtoMapper = registerDtoMapper;
+        this.layerDtoMapper = layerDtoMapper;
         this.authMapper = authMapper;
     }
 
     /**
-     * Retrieves the circuit for a given project.
-     * Ownership is verified via the project.
+     * Returns the circuit linked to the given file, creating it if it does not
+     * exist yet. Ownership is verified via the file's project.
      */
-    @GetMapping("/{projectId}")
+    @GetMapping("/file/{fileId}")
     @PreAuthorize("isAuthenticated()")
-    public CircuitResponse getByProjectId(@PathVariable String projectId, Authentication authentication) {
-        log.debug("REST request to get circuit by the projectId: {}", projectId);
+    public CircuitResponse getByFileId(@PathVariable String fileId, Authentication authentication) {
+        log.debug("REST request to get circuit by fileId: {}", fileId);
         User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
-        QuantumCircuit circuit = service.getByProjectId(projectId, user);
+        QuantumCircuit circuit = service.getOrCreateByFileId(fileId, user);
         return mapper.toResponse(circuit);
     }
 
     /**
-     * Resets a specific circuit (deletes it, creates a fresh one with the same
-     * projectId).
+     * Replaces the full content (registers and layers) of a specific circuit.
+     * Used by the circuit editor to persist client-side edits and parse results.
      * Ownership is verified via the circuit's associated project.
-     * Using circuitId here ensures this works correctly when multiple circuits per
-     * project are supported.
+     */
+    @PutMapping("/{circuitId}")
+    @PreAuthorize("isAuthenticated()")
+    public CircuitResponse replaceContent(
+        @PathVariable String circuitId,
+        @RequestBody UpdateCircuitRequest request,
+        Authentication authentication
+    ) {
+        log.debug("REST request to replace content of circuit: {}", circuitId);
+        User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
+
+        QuantumCircuit circuit = service.replaceContent(circuitId, toRegisters(request), toLayers(request), user);
+        return mapper.toResponse(circuit);
+    }
+
+    /**
+     * Generates OpenQASM code from the given circuit content without persisting
+     * anything. Counterpart of the /parse endpoint.
+     */
+    @PostMapping("/qasmCode")
+    @PreAuthorize("isAuthenticated()")
+    public GeneratedCodeResponse generateQasmCode(@RequestBody UpdateCircuitRequest request) {
+        log.debug("REST request to generate code from circuit content");
+        QuantumCircuit circuit = QuantumCircuit.builder().registers(toRegisters(request)).layers(toLayers(request)).build();
+        // Canonicalize the layering (same ASAP + span-overlap rule the frontend renders with) so
+        // the emitted "// Layer N" blocks match the rendered circuit columns.
+        circuit.reschedule();
+        return new GeneratedCodeResponse(QasmCodeGenerator.toCode(circuit));
+    }
+
+    /**
+     * Parses OpenQASM code into circuit content (registers and layers) without
+     * persisting anything. Counterpart of the /qasmCode endpoint; the client
+     * merges the content into its active circuit.
+     */
+    @PostMapping(value = "/parse", consumes = MediaType.TEXT_PLAIN_VALUE)
+    @PreAuthorize("isAuthenticated()")
+    public CircuitContentResponse parseQasmCode(@RequestBody String qasmCode) {
+        log.debug("REST request to parse code into circuit content");
+        QuantumCircuit circuit = qasmService.parse(qasmCode);
+        return new CircuitContentResponse(
+            circuit.getRegisters().stream().map(registerDtoMapper::toResponse).toList(),
+            circuit.getLayers().stream().map(layerDtoMapper::toResponse).toList()
+        );
+    }
+
+    /** Maps the request's registers to domain models, tolerating a missing (null) registers field. */
+    private List<Register> toRegisters(UpdateCircuitRequest request) {
+        return Optional.ofNullable(request.registers()).orElseGet(List::of).stream().map(registerDtoMapper::toDomain).toList();
+    }
+
+    /** Maps the request's layers to domain models, tolerating a missing (null) layers field. */
+    private List<Layer> toLayers(UpdateCircuitRequest request) {
+        return Optional.ofNullable(request.layers()).orElseGet(List::of).stream().map(layerDtoMapper::toDomain).toList();
+    }
+
+    /**
+     * Resets a specific circuit (deletes it, creates a fresh one with the same
+     * projectId and fileId).
+     * Ownership is verified via the circuit's associated project.
      */
     @DeleteMapping("/{circuitId}/reset")
     @PreAuthorize("isAuthenticated()")

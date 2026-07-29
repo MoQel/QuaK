@@ -4,16 +4,17 @@ import { LABEL_WIDTH, QUBIT_HEIGHT } from '../../circuit/util/layout.ts';
 
 interface QubitWiresProps {
     flatQubits: FlatQubit[];
+    circuitWidth: number;
 }
 
-export function QubitWires({ flatQubits }: Readonly<QubitWiresProps>) {
+export function QubitWires({ flatQubits, circuitWidth }: Readonly<QubitWiresProps>) {
     return (
         <>
             {flatQubits.map((q, i) => (
                 <div
                     key={`wire-${q.regName}-${q.relQubitIdx}`}
-                    className="absolute left-0 right-0"
-                    style={{ top: i * QUBIT_HEIGHT, height: QUBIT_HEIGHT }}
+                    className="absolute left-0"
+                    style={{ top: i * QUBIT_HEIGHT, height: QUBIT_HEIGHT, width: circuitWidth }}
                 >
                     <QubitLabel qubit={q} />
                     <div
@@ -21,7 +22,7 @@ export function QubitWires({ flatQubits }: Readonly<QubitWiresProps>) {
                         style={{
                             top: QUBIT_HEIGHT / 2,
                             left: LABEL_WIDTH,
-                            right: 0,
+                            width: Math.max(circuitWidth - LABEL_WIDTH, 0),
                             height: '1px',
                         }}
                     />

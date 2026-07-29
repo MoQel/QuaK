@@ -1,4 +1,4 @@
-import type { CircuitPort, CircuitResponse } from '@quak/circuit-core';
+import type { CircuitResponse } from '@quak/circuit-core';
 
 /**
  * A fixed circuit, so the editor can be rendered before the QASM transformation
@@ -49,20 +49,4 @@ export const DEMO_CIRCUIT: CircuitResponse = {
             ],
         },
     ],
-};
-
-/**
- * Accepts every operation and does nothing with it. The real adapter turns a
- * circuit change into QASM and asks the host to write it to the document, which
- * needs the transformation first.
- */
-export const NOOP_PORT: CircuitPort = {
-    addQubit: () => {},
-    deleteQubit: () => {},
-    deleteLastQubit: () => {},
-    resetCircuit: () => {},
-    deleteCircuit: () => {},
-    addQuantumOperation: () => {},
-    moveQuantumOperation: () => {},
-    removeQuantumOperation: () => {},
 };

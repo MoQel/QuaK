@@ -1,17 +1,17 @@
 import {
     CircuitDragProvider,
-    CircuitPortProvider,
+    CircuitStoreProvider,
     CircuitView,
     CircuitWorkspaceShell,
     LibraryView,
 } from '@quak/circuit-editor';
 import { usePanelData } from '@/contexts/panel/PanelDataContext.ts';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 
-import { QuantikzExportButton } from '@/views/circuit-workspace/notation/QuantikzExportButton.tsx';
-import { createCircuitService } from '@/views/circuit-workspace/circuitService.ts';
-import { useProject } from '@/contexts/ProjectContext.tsx';
+import { Card, CardContent } from '@/components/ui/card';
+import { CircuitTabBar } from '@/views/circuit-workspace/CircuitTabBar.tsx';
+import { useCircuitTabs } from '@/contexts/CircuitTabsContext.tsx';
 import { api } from '@/api/api.ts';
 import { OperationDefinitionResponse } from '@/api/dto/library.ts';
 
@@ -19,7 +19,7 @@ const LIBRARY_VISIBILITY_STORAGE_KEY = 'circuit-workspace-library-collapsed';
 
 function CircuitWorkspaceContent() {
     const { setSelectedOperation } = usePanelData();
-    const { circuit } = useProject();
+    const { activeCircuitTabId } = useCircuitTabs();
     const [operations, setOperations] = useState<OperationDefinitionResponse[]>([]);
     const [initialCollapsed] = useState(() => localStorage.getItem(LIBRARY_VISIBILITY_STORAGE_KEY) === 'true');
 
@@ -36,24 +36,35 @@ function CircuitWorkspaceContent() {
             defaultCollapsed={initialCollapsed}
             onCollapsedChange={(collapsed) => localStorage.setItem(LIBRARY_VISIBILITY_STORAGE_KEY, String(collapsed))}
             library={<LibraryView operations={operations} onOperationSelect={setSelectedOperation} />}
-            editor={<CircuitView circuit={circuit} toolbarStart={<QuantikzExportButton circuit={circuit ?? null} />} />}
+            editor={activeCircuitTabId ? <CircuitView header={<CircuitTabBar />} /> : <NoFileOpen />}
         />
     );
 }
 
-export function CircuitWorkspace() {
-    const { circuit, setCircuit } = useProject();
-
-    // This is where the web IDE decides how circuit edits are persisted: through
-    // the backend. The port closes over the current circuit, so it is rebuilt
-    // whenever that changes. The VSCode extension injects a different adapter here.
-    const port = useMemo(() => createCircuitService(circuit, setCircuit), [circuit, setCircuit]);
-
+// Circuits exist per file only, so without an active file tab there is nothing to
+// show. Mirrors the Code Editor's "No file open" state. This is a web-IDE concept,
+// which is why it lives here and not in the shared editor.
+function NoFileOpen() {
     return (
-        <CircuitPortProvider port={port}>
+        <Card className="h-full overflow-hidden border-none rounded-none bg-bg-subtle p-0 gap-0">
+            <CardContent className="flex h-full items-center justify-center p-0 text-gray-500">
+                No file open
+            </CardContent>
+        </Card>
+    );
+}
+
+export function CircuitWorkspace() {
+    const { activeCircuit, setActiveCircuit } = useCircuitTabs();
+
+    // This is where the web IDE decides what an edit means: a local change plus the
+    // debounced full-circuit save in CircuitTabsContext. The extension provides the
+    // same two values backed by the .qasm document instead.
+    return (
+        <CircuitStoreProvider circuit={activeCircuit} setCircuit={setActiveCircuit}>
             <CircuitDragProvider>
                 <CircuitWorkspaceContent />
             </CircuitDragProvider>
-        </CircuitPortProvider>
+        </CircuitStoreProvider>
     );
 }

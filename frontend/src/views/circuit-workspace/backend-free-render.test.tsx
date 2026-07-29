@@ -1,4 +1,4 @@
-import { CircuitDragProvider, CircuitPortProvider, CircuitView, LibraryView } from '@quak/circuit-editor';
+import { CircuitDragProvider, CircuitStoreProvider, CircuitView, LibraryView } from '@quak/circuit-editor';
 import { vi, describe, it, expect } from 'vitest';
 
 // Radix / resizable primitives used deeper in the tree expect these browser APIs.
@@ -12,10 +12,8 @@ import { render, screen } from '@testing-library/react';
 import { CircuitResponse } from '@/api/dto/circuit.ts';
 import { OperationDefinitionResponse } from '@/api/dto/library.ts';
 
-import type { CircuitPort } from '@quak/circuit-core';
-
 // The point of these tests: the circuit editor and the library render from plain
-// props alone — no ProjectContext, no /api mock, no backend.
+// props alone — no CircuitTabsContext, no /api mock, no backend.
 
 const circuit: CircuitResponse = {
     id: 'c1',
@@ -52,25 +50,14 @@ describe('circuit editor renders without a backend', () => {
         expect(container.querySelector('#h')).not.toBeNull();
     });
 
-    it('renders the circuit from a circuit prop', () => {
-        // A stub port: no backend, and the editor cannot tell the difference.
-        const port = {
-            addQubit: vi.fn(),
-            deleteQubit: vi.fn(),
-            deleteLastQubit: vi.fn(),
-            resetCircuit: vi.fn(),
-            deleteCircuit: vi.fn(),
-            addQuantumOperation: vi.fn(),
-            moveQuantumOperation: vi.fn(),
-            removeQuantumOperation: vi.fn(),
-        } satisfies CircuitPort;
-
+    it('renders the circuit from the store alone', () => {
+        // A plain state setter: no backend, and the editor cannot tell the difference.
         const { container } = render(
-            <CircuitPortProvider port={port}>
+            <CircuitStoreProvider circuit={circuit} setCircuit={vi.fn()}>
                 <CircuitDragProvider>
-                    <CircuitView circuit={circuit} />
+                    <CircuitView />
                 </CircuitDragProvider>
-            </CircuitPortProvider>,
+            </CircuitStoreProvider>,
         );
 
         expect(container).not.toBeEmptyDOMElement();

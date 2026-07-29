@@ -1,5 +1,6 @@
 package edu.kit.quak.infrastructure;
 
+import edu.kit.quak.application.circuit.exceptions.QasmParseException;
 import edu.kit.quak.application.common.exceptions.AccessDeniedException;
 import edu.kit.quak.application.common.exceptions.ResourceNotFoundException;
 import edu.kit.quak.application.user.exceptions.UserNotFoundException;
@@ -101,6 +102,19 @@ public class GlobalExceptionHandler {
         problem.setTitle("Resource Not Found");
         problem.setProperty("componentType", ex.getComponentType());
         problem.setProperty("componentId", ex.getComponentId());
+        return problem;
+    }
+
+    /**
+     * Handles failures while translating OpenQASM source into a circuit (syntax errors,
+     * unsupported gates/operands, non-constant indices). Mapped to 400 Bad Request.
+     */
+    @ExceptionHandler(QasmParseException.class)
+    public ProblemDetail handleQasmParseError(QasmParseException ex) {
+        log.warn("OpenQASM parsing failed: {}", ex.getMessage());
+
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problem.setTitle("Invalid OpenQASM Code");
         return problem;
     }
 

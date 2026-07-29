@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from '@quak/ui/popover';
 import { Button } from '@quak/ui/button';
 import { FlatQubit } from '../../circuit/util/types.ts';
-import { useCircuitPort } from '../../CircuitPortContext.tsx';
+import { useCircuitStore } from '../../CircuitStoreContext.tsx';
+import { createCircuitMutations } from '../../circuitMutations.ts';
 import { LABEL_WIDTH, QUBIT_HEIGHT } from '../../circuit/util/layout.ts';
 
 interface QubitLabelProps {
@@ -10,7 +11,8 @@ interface QubitLabelProps {
 }
 
 export function QubitLabel({ qubit }: Readonly<QubitLabelProps>) {
-    const { deleteQubit } = useCircuitPort();
+    const { circuit, setCircuit } = useCircuitStore();
+    const { deleteQubit } = createCircuitMutations(circuit, setCircuit);
     const [open, setOpen] = useState(false);
 
     const onDelete = () => {

@@ -6,15 +6,28 @@ import {
     ElementSelectorDto,
     MeasurementDto,
     MoveQuantumOperationRequest,
+    QuantumOperationDto,
 } from '@quak/circuit-core';
 import { FlatQubit, HoverPos, UiLayer } from '../../circuit/util/types.ts';
-import { useCircuitPort } from '../../CircuitPortContext.tsx';
+import { useCircuitStore } from '../../CircuitStoreContext.tsx';
 import { getOperationDefinition } from '../../operations.ts';
 import { useCircuitDrag } from '../../CircuitDragContext.tsx';
 import { DragData } from '../../types.ts';
 
+/** Finds the operation with the given id across all layers, or undefined. */
+const findOperation = (layers: CircuitResponse['layers'], operationId: string): QuantumOperationDto | undefined => {
+    for (const layer of layers) {
+        const op = layer.quantumOperations.find((candidate) => candidate.id === operationId);
+        if (op) return op;
+    }
+    return undefined;
+};
+
+/** Removes the operation with the given id from its layer, keeping layer positions (empty layers stay). */
+const stripOperation = (layers: CircuitResponse['layers'], operationId: string): CircuitResponse['layers'] =>
+    layers.map((layer) => ({ quantumOperations: layer.quantumOperations.filter((op) => op.id !== operationId) }));
+
 interface DropzoneGridProps {
-    circuit: CircuitResponse | undefined;
     flatQubits: FlatQubit[];
     uiLayers: UiLayer[];
     activeDropZones: Set<string>;
@@ -23,16 +36,98 @@ interface DropzoneGridProps {
 }
 
 export function DropzoneGrid({
-    circuit,
     flatQubits,
     uiLayers,
     activeDropZones,
     setHoverPos,
     setDraggingOperationId,
 }: Readonly<DropzoneGridProps>) {
-    const { addQuantumOperation, moveQuantumOperation } = useCircuitPort();
-
+    const { circuit, setCircuit } = useCircuitStore();
     const { stopOperationDrag } = useCircuitDrag();
+
+    /**
+     * Rebuilds the circuit layers from the rendered preview (uiLayers), substituting
+     * the drop placeholder (dummy) with the given operation. This makes the drop
+     * result match the hover preview exactly: re-scheduling after a plain append
+     * would let the new operation slip behind colliding gates (e.g. an H dropped
+     * onto a CX column would land to its right, although the preview showed it
+     * taking the column and pushing the CX). Returns null when no placeholder is
+     * part of the preview (no active hover).
+     */
+    const layersFromPreview = (operation: QuantumOperationDto): CircuitResponse['layers'] | null => {
+        let dummyReplaced = false;
+        const layers = uiLayers.map((layer) => ({
+            quantumOperations: layer.quantumOperations.map((uiOp) => {
+                if (uiOp.type === 'DUMMY') {
+                    dummyReplaced = true;
+                    return operation;
+                }
+                // Strip the UI-only scheduling field before persisting.
+                const { originalLayerIdx: _originalLayerIdx, ...op } = uiOp;
+                return op as QuantumOperationDto;
+            }),
+        }));
+        return dummyReplaced ? layers : null;
+    };
+
+    const addQuantumOperationLocally = (operation: QuantumOperationDto, targetLayerIdx: number) => {
+        setCircuit((prev) => {
+            if (!prev) return prev;
+
+            const newOperation = { ...operation, id: crypto.randomUUID() };
+
+            const previewLayers = layersFromPreview(newOperation);
+            if (previewLayers) return { ...prev, layers: previewLayers };
+
+            // Fallback without an active preview: append to the target layer.
+            const layers = prev.layers.map((layer) => ({
+                quantumOperations: [...layer.quantumOperations],
+            }));
+
+            while (layers.length <= targetLayerIdx) {
+                layers.push({ quantumOperations: [] });
+            }
+
+            layers[targetLayerIdx].quantumOperations.push(newOperation);
+
+            return {
+                ...prev,
+                layers,
+            };
+        });
+    };
+
+    const moveQuantumOperationLocally = (payload: MoveQuantumOperationRequest) => {
+        setCircuit((prev) => {
+            if (!prev) return prev;
+
+            const original = findOperation(prev.layers, payload.quantumOperationId);
+            if (!original) return prev;
+            const movedOperation: QuantumOperationDto = {
+                ...original,
+                targetQubits: payload.targetQubits,
+                controlQubits: payload.controlQubits,
+            };
+
+            // The dragged operation is already excluded from the rendered preview,
+            // so substituting the dummy re-inserts it exactly where the preview showed it.
+            const previewLayers = layersFromPreview(movedOperation);
+            if (previewLayers) return { ...prev, layers: previewLayers };
+
+            // Fallback without an active preview: strip the op from its old layer, then append to the target.
+            const layers = stripOperation(prev.layers, payload.quantumOperationId);
+            while (layers.length <= payload.layerIdx) {
+                layers.push({ quantumOperations: [] });
+            }
+
+            layers[payload.layerIdx].quantumOperations.push(movedOperation);
+
+            return {
+                ...prev,
+                layers: layers.filter((layer) => layer.quantumOperations.length > 0),
+            };
+        });
+    };
 
     const handleDragOver = (e: React.DragEvent, qubitIdx: number, layerIdx: number) => {
         e.preventDefault();
@@ -45,6 +140,14 @@ export function DropzoneGrid({
             }
             return { qubitIdx, layerIdx };
         });
+    };
+
+    // Guarded reset against hover flicker on cell changes: when crossing into an adjacent zone,
+    // dragenter on the new cell fires BEFORE dragleave on the old one (HTML5 event order), so
+    // hoverPos already points elsewhere and this leave must not clear it. Only leaving towards a
+    // non-zone area (hoverPos still = this cell) resets.
+    const handleDragLeave = (qubitIdx: number, layerIdx: number) => {
+        setHoverPos((prev) => (prev?.qubitIdx === qubitIdx && prev?.layerIdx === layerIdx ? null : prev));
     };
 
     /** Creates a lookup map of the server-side circuit state. */
@@ -143,7 +246,7 @@ export function DropzoneGrid({
                                 controlQubits,
                                 rotationAngle: Math.PI / 2, // standard rotation
                             };
-                            addQuantumOperation({ quantumOperation: operation, layerIdx });
+                            addQuantumOperationLocally(operation, layerIdx);
                         } else if (operationDefinition.type === 'MEASUREMENT') {
                             const operation: MeasurementDto = {
                                 type: 'MEASUREMENT',
@@ -153,7 +256,7 @@ export function DropzoneGrid({
                                 controlQubits,
                                 classicBits: [],
                             };
-                            addQuantumOperation({ quantumOperation: operation, layerIdx });
+                            addQuantumOperationLocally(operation, layerIdx);
                         }
                         break;
                     }
@@ -165,12 +268,12 @@ export function DropzoneGrid({
                             controlQubits,
                         };
                         if (hasCircuitStateChanged(payload)) {
-                            moveQuantumOperation(payload);
+                            moveQuantumOperationLocally(payload);
                         }
                         break;
                     }
                     default:
-                        console.error('Unknown drag origin', data);
+                        console.error(`Unknown drag origin: ${(data as { origin?: string }).origin}`);
                         break;
                 }
             } catch (error) {
@@ -181,7 +284,9 @@ export function DropzoneGrid({
                 setDraggingOperationId(null);
             }
         },
-        [addQuantumOperation, moveQuantumOperation, hasCircuitStateChanged, stopOperationDrag],
+        // hasCircuitStateChanged carries circuit + uiLayers, so the local mutation
+        // helpers below it never close over a stale preview.
+        [hasCircuitStateChanged, stopOperationDrag, setCircuit, setHoverPos, setDraggingOperationId],
     );
 
     return (
@@ -201,8 +306,9 @@ export function DropzoneGrid({
                                 width: CELL_WIDTH,
                                 height: QUBIT_HEIGHT,
                             }}
+                            onDragEnter={(e) => handleDragOver(e, qIdx, layerIdx)}
                             onDragOver={(e) => handleDragOver(e, qIdx, layerIdx)}
-                            onDragLeave={() => setHoverPos(null)}
+                            onDragLeave={() => handleDragLeave(qIdx, layerIdx)}
                             onDrop={(e) => handleDrop(e, qubit.regId, qubit.relQubitIdx, layerIdx)}
                         />
                     );
