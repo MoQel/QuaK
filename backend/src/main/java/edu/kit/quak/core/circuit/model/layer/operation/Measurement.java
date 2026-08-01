@@ -44,6 +44,11 @@ public class Measurement extends QuantumOperation {
     }
 
     @Override
+    public boolean isStructurallyEqualTo(QuantumOperation other) {
+        return super.isStructurallyEqualTo(other) && selectorsEqual(classicBits, ((Measurement) other).classicBits);
+    }
+
+    @Override
     public String toString() {
         return String.format("[Measurement (quantumOperationId=%s)]", getId());
     }

@@ -169,6 +169,19 @@ public class CompositeQuantumGate extends QuantumOperation {
         return new CompositeQuantumGate(definition, inverseForm, copySelectors(targetQubits));
     }
 
+    /**
+     * Two calls match when they run the same definition on the same qubits.
+     *
+     * <p>Comparing the definition by id rather than by content is exact here, not an approximation:
+     * the parser caches definitions by gate name <em>plus arguments</em>, so two calls share one
+     * instance precisely when the gate and its parameters agree. A gate parametrized by a loop
+     * counter therefore yields a different definition per iteration and correctly compares unequal.
+     */
+    @Override
+    public boolean isStructurallyEqualTo(QuantumOperation other) {
+        return super.isStructurallyEqualTo(other) && definition.getId().equals(((CompositeQuantumGate) other).definition.getId());
+    }
+
     @Override
     public String toString() {
         return String.format("[CompositeQuantumGate: %s (quantumOperationId=%s)]", getGateName(), getId());

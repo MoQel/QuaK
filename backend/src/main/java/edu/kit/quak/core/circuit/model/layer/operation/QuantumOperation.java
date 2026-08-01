@@ -54,6 +54,36 @@ public abstract class QuantumOperation extends ElementWithId {
         @NonNull List<ElementSelector> controlQubits
     );
 
+    /**
+     * Whether two operations do the same thing to the same qubits — everything that defines the
+     * operation, except its identity.
+     *
+     * <p>This is what lets the QASM parser decide whether a loop is a genuine repetition: it unrolls
+     * the loop and compares what each iteration emitted against the first one. Equal means the loop
+     * variable never reached the gates, so the body can be kept once and framed with a repeat count;
+     * unequal means every pass touches different wires (or angles) and the loop stays unrolled.
+     *
+     * <p>Polymorphic for the same reason as {@link #copyForQubits}: a new operation type only has to
+     * say what makes it equal, instead of every caller learning about it. Deliberately not
+     * {@code equals}, which stays identity-based — two distinct rows in a circuit may well have the
+     * same effect and must not collapse into one in a set or map.
+     */
+    public boolean isStructurallyEqualTo(QuantumOperation other) {
+        return (
+            other != null &&
+            getClass() == other.getClass() &&
+            operationDefinition == other.operationDefinition &&
+            inverseForm == other.inverseForm &&
+            selectorsEqual(targetQubits, other.targetQubits) &&
+            selectorsEqual(controlQubits, other.controlQubits)
+        );
+    }
+
+    /** Compares selector lists treating null and empty as the same thing, which callers mix freely. */
+    protected static boolean selectorsEqual(List<ElementSelector> a, List<ElementSelector> b) {
+        return (a == null ? List.<ElementSelector>of() : a).equals(b == null ? List.<ElementSelector>of() : b);
+    }
+
     /** Defensive copy of a selector list, so callers never alias the originals. */
     protected static List<ElementSelector> copySelectors(List<ElementSelector> selectors) {
         if (selectors == null) {

@@ -40,6 +40,12 @@ public class ElementaryQuantumGate extends QuantumOperation {
         );
     }
 
+    /** Same gate on the same qubits, and — for rx/ry/rz — turned by the same angle. */
+    @Override
+    public boolean isStructurallyEqualTo(QuantumOperation other) {
+        return super.isStructurallyEqualTo(other) && Double.compare(rotationAngle, ((ElementaryQuantumGate) other).rotationAngle) == 0;
+    }
+
     @Override
     public String toString() {
         return String.format("[ElementaryQuantumGate: %s (quantumOperationId=%s)]", getOperationDefinition(), getId());
