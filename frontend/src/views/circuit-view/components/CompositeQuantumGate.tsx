@@ -1,5 +1,6 @@
 import React, { useMemo, useRef } from 'react';
 import { CompositeQuantumGateDto, RegisterResponse } from '@/api/dto/circuit.ts';
+import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu.tsx';
 import { CELL_WIDTH, QUBIT_HEIGHT } from '@/views/circuit-view/util/layout.ts';
 import { toGlobalQubitIndex } from '@/views/circuit-view/util/spans.ts';
 import { DragData } from '../util/types';
@@ -19,6 +20,8 @@ interface CompositeQuantumGateProps {
     onDragStart: (operationSize: number, grabOffset: number) => void;
     onDragEnd: () => void;
     onDelete: () => void;
+    /** Dissolves the box into the gates it is made of; offered on right-click. */
+    onUngroup: () => void;
 }
 
 /**
@@ -35,6 +38,7 @@ export function CompositeQuantumGate({
     onDragStart,
     onDragEnd,
     onDelete,
+    onUngroup,
 }: Readonly<CompositeQuantumGateProps>) {
     const isDraggingRef = useRef(false);
     const interactivity = isGhost ? 'pointer-events-none' : 'pointer-events-auto';
@@ -98,47 +102,62 @@ export function CompositeQuantumGate({
     const contents = operation.body?.map((part) => part.identifier).join(', ');
 
     return (
-        <div
-            draggable
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-            onClick={handleClick}
-            className={`absolute z-30 group pointer-events-none ${isGhost ? 'opacity-50' : ''}`}
-            style={{
-                top: minY * QUBIT_HEIGHT,
-                left: layerIdx * CELL_WIDTH,
-                width: CELL_WIDTH,
-                height: spanHeight + QUBIT_HEIGHT,
-            }}
-        >
-            <div
-                title={contents ? `${operation.identifier} (${contents})` : operation.identifier}
-                className={`
-                    absolute rounded-none flex items-center justify-center select-none
-                    ${interactivity} cursor-grab active:cursor-grabbing
-                    group-hover:brightness-90 dark:group-hover:brightness-125 transition-colors`}
-                style={{
-                    top: BOX_INSET_Y,
-                    left: BOX_INSET_X,
-                    width: CELL_WIDTH - 2 * BOX_INSET_X,
-                    height: spanHeight + QUBIT_HEIGHT - 2 * BOX_INSET_Y,
-                    backgroundColor: 'var(--composite)',
-                    color: 'var(--bg-dark)',
-                }}
-            >
-                <span className="px-1 truncate text-[13px] font-semibold leading-none">{operation.identifier}</span>
-
-                {/* Port markers, positioned on the wire each parameter is bound to. */}
-                {ports.map((port) => (
-                    <span
-                        key={port.position}
-                        className="absolute left-[3px] font-mono leading-none opacity-80 text-[9px]"
-                        style={{ top: (port.wire - minY) * QUBIT_HEIGHT + QUBIT_HEIGHT / 2 - BOX_INSET_Y - 4 }}
+        <ContextMenu>
+            {/* `asChild` keeps the box itself the trigger: it is the HTML5 drag source and must stay
+                the very same DOM node across a drag, so it must not be wrapped in another element. */}
+            <ContextMenuTrigger asChild disabled={isGhost}>
+                <div
+                    draggable
+                    onDragStart={handleDragStart}
+                    onDragEnd={handleDragEnd}
+                    onClick={handleClick}
+                    className={`absolute z-30 group pointer-events-none ${isGhost ? 'opacity-50' : ''}`}
+                    style={{
+                        top: minY * QUBIT_HEIGHT,
+                        left: layerIdx * CELL_WIDTH,
+                        width: CELL_WIDTH,
+                        height: spanHeight + QUBIT_HEIGHT,
+                    }}
+                >
+                    <div
+                        title={contents ? `${operation.identifier} (${contents})` : operation.identifier}
+                        className={`
+                            absolute rounded-none flex items-center justify-center select-none
+                            ${interactivity} cursor-grab active:cursor-grabbing
+                            group-hover:brightness-90 dark:group-hover:brightness-125 transition-colors`}
+                        style={{
+                            top: BOX_INSET_Y,
+                            left: BOX_INSET_X,
+                            width: CELL_WIDTH - 2 * BOX_INSET_X,
+                            height: spanHeight + QUBIT_HEIGHT - 2 * BOX_INSET_Y,
+                            backgroundColor: 'var(--composite)',
+                            color: 'var(--bg-dark)',
+                        }}
                     >
-                        {port.label}
-                    </span>
-                ))}
-            </div>
-        </div>
+                        <span className="px-1 truncate text-[13px] font-semibold leading-none">
+                            {operation.identifier}
+                        </span>
+
+                        {/* Port markers, positioned on the wire each parameter is bound to. */}
+                        {ports.map((port) => (
+                            <span
+                                key={port.position}
+                                className="absolute left-[3px] font-mono leading-none opacity-80 text-[9px]"
+                                style={{ top: (port.wire - minY) * QUBIT_HEIGHT + QUBIT_HEIGHT / 2 - BOX_INSET_Y - 4 }}
+                            >
+                                {port.label}
+                            </span>
+                        ))}
+                    </div>
+                </div>
+            </ContextMenuTrigger>
+
+            <ContextMenuContent>
+                <ContextMenuItem onSelect={onUngroup}>Ungroup</ContextMenuItem>
+                <ContextMenuItem variant="destructive" onSelect={onDelete}>
+                    Delete
+                </ContextMenuItem>
+            </ContextMenuContent>
+        </ContextMenu>
     );
 }

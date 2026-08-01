@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { CompositeQuantumGate } from './CompositeQuantumGate.tsx';
 import type { CompositeQuantumGateDto, RegisterResponse } from '@/api/dto/circuit.ts';
 import { QUBIT_HEIGHT } from '@/views/circuit-view/util/layout.ts';
@@ -32,7 +32,10 @@ const bell = (overrides: Partial<CompositeQuantumGateDto> = {}): CompositeQuantu
     ...overrides,
 });
 
-const renderGate = (operation: CompositeQuantumGateDto) =>
+const renderGate = (
+    operation: CompositeQuantumGateDto,
+    handlers: { onUngroup?: () => void; onDelete?: () => void } = {},
+) =>
     render(
         <CompositeQuantumGate
             operation={operation}
@@ -40,7 +43,8 @@ const renderGate = (operation: CompositeQuantumGateDto) =>
             layerIdx={0}
             onDragStart={vi.fn()}
             onDragEnd={vi.fn()}
-            onDelete={vi.fn()}
+            onDelete={handlers.onDelete ?? vi.fn()}
+            onUngroup={handlers.onUngroup ?? vi.fn()}
         />,
     );
 
@@ -125,6 +129,7 @@ describe('CompositeQuantumGate', () => {
                 onDragStart={onDragStart}
                 onDragEnd={vi.fn()}
                 onDelete={vi.fn()}
+                onUngroup={vi.fn()}
             />,
         );
 
@@ -168,5 +173,21 @@ describe('CompositeQuantumGate', () => {
         startDrag(onDragStart, QUBIT_HEIGHT + 5);
 
         expect(onDragStart).toHaveBeenCalledWith(2, 1);
+    });
+
+    /**
+     * Ungroup needs a trigger of its own: a plain click already deletes the gate, and the box has no
+     * room for a control. Right-click is where the rest of the IDE puts per-element actions.
+     */
+    it('offers Ungroup on right-click', async () => {
+        const onUngroup = vi.fn();
+        const { container } = renderGate(bell(), { onUngroup });
+
+        fireEvent.contextMenu(container.firstElementChild as HTMLElement);
+
+        const item = await screen.findByText('Ungroup');
+        fireEvent.click(item);
+
+        expect(onUngroup).toHaveBeenCalledTimes(1);
     });
 });

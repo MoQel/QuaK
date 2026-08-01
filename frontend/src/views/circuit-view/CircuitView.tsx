@@ -18,6 +18,7 @@ import { CircuitFooter } from './components/CircuitFooter.tsx';
 import { HoverPos, UiLayer, UiQuantumOperation } from './util/types.ts';
 import { CELL_WIDTH, LABEL_WIDTH, QUBIT_HEIGHT } from '@/views/circuit-view/util/layout.ts';
 import { doSpansOverlap, getOperationSpan as getSpan } from '@/views/circuit-view/util/spans.ts';
+import { ungroupComposite } from '@/views/circuit-view/util/ungroupComposite.ts';
 import { useCircuitTabs } from '@/contexts/CircuitTabsContext.tsx';
 
 /** Removes the operation with the given id from all layers and drops any layer left empty. */
@@ -32,6 +33,11 @@ export function CircuitView() {
         setActiveCircuit((prev) =>
             prev ? { ...prev, layers: dropOperationFromLayers(prev.layers, operationId) } : prev,
         );
+    };
+
+    /** Dissolves a composite gate into the operations it is made of, one level deep. */
+    const ungroupQuantumOperation = (operationId: string) => {
+        setActiveCircuit((prev) => (prev ? { ...prev, layers: ungroupComposite(prev.layers, operationId) } : prev));
     };
 
     const { isOperationDragging, draggingOperationSize, draggingGrabOffset } = useSelector(
@@ -313,6 +319,7 @@ export function CircuitView() {
                                 registers={activeCircuit?.registers ?? []}
                                 isOperationDragging={isOperationDragging}
                                 removeQuantumOperation={removeQuantumOperation}
+                                ungroupQuantumOperation={ungroupQuantumOperation}
                                 setDraggingOperationId={setDraggingOperationId}
                                 setHoverPos={setHoverPos}
                                 draggingOperation={draggingOperation}

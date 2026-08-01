@@ -10,6 +10,8 @@ interface QuantumOperationGridProps {
     registers: RegisterResponse[];
     isOperationDragging: boolean;
     removeQuantumOperation: (operationId: string) => void;
+    /** Replaces a composite gate by the operations it is made of. */
+    ungroupQuantumOperation: (operationId: string) => void;
     setDraggingOperationId: (id: string | null) => void;
     setHoverPos: (pos: null) => void;
     draggingOperation: { op: QuantumOperationDto; layerIdx: number } | null;
@@ -20,6 +22,7 @@ export function QuantumOperationGrid({
     registers,
     isOperationDragging,
     removeQuantumOperation,
+    ungroupQuantumOperation,
     setDraggingOperationId,
     setHoverPos,
     draggingOperation,
@@ -68,6 +71,7 @@ export function QuantumOperationGrid({
                         }
                         onDragEnd={handleOperationDragEnd}
                         onDelete={() => removeQuantumOperation(op.id!)}
+                        onUngroup={() => ungroupQuantumOperation(op.id!)}
                     />
                 ) : (
                     <ElementaryQuantumGate
