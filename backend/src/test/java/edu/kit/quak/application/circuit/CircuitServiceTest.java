@@ -157,7 +157,7 @@ class CircuitServiceTest {
 
         // execute
         List<Layer> layers = List.of(new Layer(List.of(gateWithId("own-1"), gateWithId("new-1"))));
-        QuantumCircuit result = service.replaceContent(circuitId, List.of(), layers, user);
+        QuantumCircuit result = service.replaceContent(circuitId, List.of(), layers, List.of(), user);
 
         // verify: ids arrive at the repository unchanged
         List<String> savedIds = result
@@ -188,7 +188,7 @@ class CircuitServiceTest {
 
         // execute & verify
         List<Layer> layers = List.of(new Layer(List.of(gateWithId("stolen-1"))));
-        assertThrows(DomainRuleViolationException.class, () -> service.replaceContent(circuitId, List.of(), layers, user));
+        assertThrows(DomainRuleViolationException.class, () -> service.replaceContent(circuitId, List.of(), layers, List.of(), user));
         verify(repository, never()).save(any());
     }
 
@@ -208,7 +208,7 @@ class CircuitServiceTest {
         mockAccess(projectId, user, ProjectRole.OWNER);
 
         List<Layer> layers = List.of(new Layer(List.of(gateWithId("dup-1"), gateWithId("dup-1"))));
-        assertThrows(DomainRuleViolationException.class, () -> service.replaceContent(circuitId, List.of(), layers, user));
+        assertThrows(DomainRuleViolationException.class, () -> service.replaceContent(circuitId, List.of(), layers, List.of(), user));
         verify(repository, never()).save(any());
     }
 

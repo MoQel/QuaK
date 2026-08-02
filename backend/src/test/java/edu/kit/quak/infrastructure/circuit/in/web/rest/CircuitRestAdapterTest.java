@@ -41,6 +41,7 @@ import org.springframework.test.web.servlet.MockMvc;
         CircuitDtoMapperImpl.class,
         RegisterDtoMapperImpl.class,
         LayerDtoMapperImpl.class,
+        LoopBlockDtoMapperImpl.class,
         QuantumOperationDtoMapperImpl.class,
         ElementSelectorDtoMapperImpl.class,
     }
@@ -86,6 +87,47 @@ class CircuitRestAdapterTest {
             .andExpect(jsonPath("$.fileId").doesNotExist())
             .andExpect(jsonPath("$.registers[0].numberOfQubits").value(2))
             .andExpect(jsonPath("$.layers[0].quantumOperations[0].identifier").value("H"));
+    }
+
+    /**
+     * A repeated loop body reaches the client as one copy plus a frame. Without the frame in the
+     * response the editor would show a loop as three loose gates and could never draw the box.
+     */
+    @Test
+    void parseQasmCode_RepeatedLoop_ShouldReturnAFrame() throws Exception {
+        String qasm = """
+            OPENQASM 3.0;
+            include "stdgates.inc";
+            qubit[2] q;
+            for uint i in [0:2] { h q[0]; cx q[0], q[1]; }
+            """;
+
+        mockMvc
+            .perform(post("/api/circuit/parse").with(csrf()).contentType(MediaType.TEXT_PLAIN).content(qasm))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.loopBlocks.length()").value(1))
+            .andExpect(jsonPath("$.loopBlocks[0].repeatCount").value(3))
+            .andExpect(jsonPath("$.loopBlocks[0].operationIds.length()").value(2))
+            // The body is kept once, so the frame's members are the only two operations there are.
+            .andExpect(jsonPath("$.layers[0].quantumOperations[0].identifier").value("H"))
+            .andExpect(jsonPath("$.layers[1].quantumOperations[0].identifier").value("CX"));
+    }
+
+    /** A sweep is not a repetition, so it must arrive unrolled and unframed. */
+    @Test
+    void parseQasmCode_SweepingLoop_ShouldReturnNoFrame() throws Exception {
+        String qasm = """
+            OPENQASM 3.0;
+            include "stdgates.inc";
+            qubit[4] q;
+            for uint i in [0:2] { cx q[i], q[i + 1]; }
+            """;
+
+        mockMvc
+            .perform(post("/api/circuit/parse").with(csrf()).contentType(MediaType.TEXT_PLAIN).content(qasm))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.loopBlocks.length()").value(0))
+            .andExpect(jsonPath("$.layers.length()").value(3));
     }
 
     /**

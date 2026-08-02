@@ -61,6 +61,11 @@ public class QuantumCircuit extends ElementWithId {
         this.registers.addAll(registers);
         this.layers.addAll(layers);
         if (loopBlocks != null) {
+            // Checked here too, not only in addLoopBlock: this is the path a stored circuit and a
+            // client's full-replace payload come in through, and a frame naming an operation that is
+            // not here would draw around nothing and make code generation repeat a body that is not
+            // there. Deliberately no rescheduling — a save must store the layering it was sent.
+            loopBlocks.forEach(this::requireCoveredOperationsExist);
             this.loopBlocks.addAll(loopBlocks);
         }
     }
@@ -90,6 +95,14 @@ public class QuantumCircuit extends ElementWithId {
      * body that is not there.
      */
     public void addLoopBlock(@NonNull LoopBlock loopBlock) {
+        requireCoveredOperationsExist(loopBlock);
+        loopBlocks.add(loopBlock);
+        // A frame constrains the layout — it has to keep its rectangle to itself — so the columns
+        // have to be worked out again, exactly as when an operation is added.
+        rescheduleOperations();
+    }
+
+    private void requireCoveredOperationsExist(LoopBlock loopBlock) {
         Set<String> known = allOperations().map(QuantumOperation::getId).collect(Collectors.toSet());
         List<String> unknown = loopBlock
             .getOperationIds()
@@ -99,10 +112,6 @@ public class QuantumCircuit extends ElementWithId {
         if (!unknown.isEmpty()) {
             throw new InvalidOperationConfigurationException("Loop block covers operations that are not in this circuit: " + unknown);
         }
-        loopBlocks.add(loopBlock);
-        // A frame constrains the layout — it has to keep its rectangle to itself — so the columns
-        // have to be worked out again, exactly as when an operation is added.
-        rescheduleOperations();
     }
 
     private Stream<QuantumOperation> allOperations() {

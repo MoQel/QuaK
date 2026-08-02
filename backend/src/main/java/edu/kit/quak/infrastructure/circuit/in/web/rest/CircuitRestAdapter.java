@@ -5,6 +5,7 @@ import edu.kit.quak.application.circuit.ports.in.CircuitServicePort;
 import edu.kit.quak.application.circuit.services.ProjectQasmIncludeResolver;
 import edu.kit.quak.application.user.ports.in.UserServicePort;
 import edu.kit.quak.core.circuit.codegen.QasmCodeGenerator;
+import edu.kit.quak.core.circuit.model.LoopBlock;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.core.circuit.model.layer.Layer;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
@@ -20,6 +21,7 @@ import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.UpdateCircuitRequest;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.CircuitDtoMapper;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.ElementSelectorDtoMapper;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.LayerDtoMapper;
+import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.LoopBlockDtoMapper;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.QuantumOperationDtoMapper;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.RegisterDtoMapper;
 import edu.kit.quak.infrastructure.user.in.web.rest.mapper.AuthenticationMapper;
@@ -46,6 +48,7 @@ public class CircuitRestAdapter {
     private final ElementSelectorDtoMapper elementSelectorDtoMapper;
     private final RegisterDtoMapper registerDtoMapper;
     private final LayerDtoMapper layerDtoMapper;
+    private final LoopBlockDtoMapper loopBlockDtoMapper;
     private final AuthenticationMapper authMapper;
 
     public CircuitRestAdapter(
@@ -58,6 +61,7 @@ public class CircuitRestAdapter {
         ElementSelectorDtoMapper elementSelectorDtoMapper,
         RegisterDtoMapper registerDtoMapper,
         LayerDtoMapper layerDtoMapper,
+        LoopBlockDtoMapper loopBlockDtoMapper,
         AuthenticationMapper authMapper
     ) {
         this.service = service;
@@ -69,6 +73,7 @@ public class CircuitRestAdapter {
         this.elementSelectorDtoMapper = elementSelectorDtoMapper;
         this.registerDtoMapper = registerDtoMapper;
         this.layerDtoMapper = layerDtoMapper;
+        this.loopBlockDtoMapper = loopBlockDtoMapper;
         this.authMapper = authMapper;
     }
 
@@ -100,7 +105,7 @@ public class CircuitRestAdapter {
         log.debug("REST request to replace content of circuit: {}", circuitId);
         User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
 
-        QuantumCircuit circuit = service.replaceContent(circuitId, toRegisters(request), toLayers(request), user);
+        QuantumCircuit circuit = service.replaceContent(circuitId, toRegisters(request), toLayers(request), toLoopBlocks(request), user);
         return mapper.toResponse(circuit);
     }
 
@@ -112,7 +117,11 @@ public class CircuitRestAdapter {
     @PreAuthorize("isAuthenticated()")
     public GeneratedCodeResponse generateQasmCode(@RequestBody UpdateCircuitRequest request) {
         log.debug("REST request to generate code from circuit content");
-        QuantumCircuit circuit = QuantumCircuit.builder().registers(toRegisters(request)).layers(toLayers(request)).build();
+        QuantumCircuit circuit = QuantumCircuit.builder()
+            .registers(toRegisters(request))
+            .layers(toLayers(request))
+            .loopBlocks(toLoopBlocks(request))
+            .build();
         // Canonicalize the layering (same ASAP + span-overlap rule the frontend renders with) so
         // the emitted "// Layer N" blocks match the rendered circuit columns.
         circuit.reschedule();
@@ -140,7 +149,8 @@ public class CircuitRestAdapter {
         QuantumCircuit circuit = qasmService.parse(qasmCode, fileId, includeResolver.forUser(user));
         return new CircuitContentResponse(
             circuit.getRegisters().stream().map(registerDtoMapper::toResponse).toList(),
-            circuit.getLayers().stream().map(layerDtoMapper::toResponse).toList()
+            circuit.getLayers().stream().map(layerDtoMapper::toResponse).toList(),
+            loopBlockDtoMapper.toResponses(circuit.getLoopBlocks())
         );
     }
 
@@ -152,6 +162,16 @@ public class CircuitRestAdapter {
     /** Maps the request's layers to domain models, tolerating a missing (null) layers field. */
     private List<Layer> toLayers(UpdateCircuitRequest request) {
         return Optional.ofNullable(request.layers()).orElseGet(List::of).stream().map(layerDtoMapper::toDomain).toList();
+    }
+
+    /**
+     * Maps the request's repetition frames, tolerating a missing (null) field.
+     *
+     * <p>Missing means none: this is a full-replace endpoint, so a client that does not send frames
+     * removes them, exactly as it would by omitting a layer.
+     */
+    private List<LoopBlock> toLoopBlocks(UpdateCircuitRequest request) {
+        return Optional.ofNullable(request.loopBlocks()).orElseGet(List::of).stream().map(loopBlockDtoMapper::toDomain).toList();
     }
 
     /**

@@ -24,4 +24,12 @@ public class JpaQuantumCircuit extends JpaElementWithId {
     @OneToMany(mappedBy = "circuit", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderColumn(name = "layer_pos")
     private List<JpaLayer> layers = new ArrayList<>();
+
+    /**
+     * Repetition frames. Bidirectional like the other two — a unidirectional {@code @JoinColumn}
+     * here is what silently dropped a composite gate's body on every autosave.
+     */
+    @OneToMany(mappedBy = "circuit", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderColumn(name = "loop_block_pos")
+    private List<JpaLoopBlock> loopBlocks = new ArrayList<>();
 }

@@ -8,6 +8,7 @@ import edu.kit.quak.application.common.exceptions.ResourceNotFoundException;
 import edu.kit.quak.application.filesystem.delegator.FileElementContainerRepositoryDelegator;
 import edu.kit.quak.application.filesystem.ports.out.FileRepositoryPort;
 import edu.kit.quak.application.user.ports.in.ProjectRoleServicePort;
+import edu.kit.quak.core.circuit.model.LoopBlock;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.core.circuit.model.layer.Layer;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
@@ -89,7 +90,13 @@ public class CircuitService implements CircuitServicePort {
     }
 
     @Override
-    public QuantumCircuit replaceContent(String circuitId, List<Register> registers, List<Layer> layers, User user) {
+    public QuantumCircuit replaceContent(
+        String circuitId,
+        List<Register> registers,
+        List<Layer> layers,
+        List<LoopBlock> loopBlocks,
+        User user
+    ) {
         log.info("Replacing content of circuit. circuitId={}", circuitId);
         QuantumCircuit existing = getById(circuitId);
         verifyAccess(existing.getProjectId(), user, ProjectRole.OWNER);
@@ -101,6 +108,7 @@ public class CircuitService implements CircuitServicePort {
             .fileId(existing.getFileId())
             .registers(registers)
             .layers(layers)
+            .loopBlocks(loopBlocks)
             .build();
         touchProject(existing.getProjectId());
         return repository.save(replacement);
