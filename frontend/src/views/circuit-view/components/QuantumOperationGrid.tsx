@@ -9,6 +9,8 @@ interface QuantumOperationGridProps {
     uiLayers: UiLayer[];
     registers: RegisterResponse[];
     isOperationDragging: boolean;
+    /** Ids of the operations covered by a repetition frame; those are drawn a little smaller. */
+    loopMemberIds: Set<string>;
     removeQuantumOperation: (operationId: string) => void;
     /** Replaces a composite gate by the operations it is made of. */
     ungroupQuantumOperation: (operationId: string) => void;
@@ -21,6 +23,7 @@ export function QuantumOperationGrid({
     uiLayers,
     registers,
     isOperationDragging,
+    loopMemberIds,
     removeQuantumOperation,
     ungroupQuantumOperation,
     setDraggingOperationId,
@@ -66,6 +69,7 @@ export function QuantumOperationGrid({
                         registers={registers}
                         layerIdx={layerIdx}
                         isGhost={isGhost}
+                        isInLoop={loopMemberIds.has(op.id!)}
                         onDragStart={(operationSize, grabOffset) =>
                             handleOperationDragStart(op.id!, operationSize, grabOffset)
                         }
@@ -80,6 +84,7 @@ export function QuantumOperationGrid({
                         registers={registers}
                         layerIdx={layerIdx}
                         isGhost={isGhost}
+                        isInLoop={loopMemberIds.has(op.id!)}
                         onDragStart={(operationSize, grabOffset) =>
                             handleOperationDragStart(op.id!, operationSize, grabOffset)
                         }

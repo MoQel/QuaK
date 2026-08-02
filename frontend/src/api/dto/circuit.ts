@@ -117,10 +117,27 @@ export interface LayerResponse {
     quantumOperations: QuantumOperationDto[];
 }
 
+/**
+ * A repetition frame: the `×n` box drawn *around* part of the circuit.
+ *
+ * Unlike a composite gate this is not an operation and does not live in a layer — the operations it
+ * covers stay in their layers and stay individually editable. It therefore carries no geometry: the
+ * frame is derived as the bounding box of `operationIds`, wherever those operations currently sit,
+ * which is what keeps it correct across re-scheduling.
+ */
+export interface LoopBlockDto {
+    id: string;
+    /** How often the covered body runs. Always at least 2. */
+    repeatCount: number;
+    /** The covered operations in program order, referencing operation ids in `layers`. */
+    operationIds: string[];
+}
+
 export interface CircuitResponse {
     id: string;
     registers: RegisterResponse[];
     layers: LayerResponse[];
+    loopBlocks?: LoopBlockDto[];
 }
 
 // --- Requests ---

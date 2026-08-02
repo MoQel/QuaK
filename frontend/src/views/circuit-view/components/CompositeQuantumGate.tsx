@@ -1,7 +1,7 @@
 import React, { useMemo, useRef } from 'react';
 import { CompositeQuantumGateDto, RegisterResponse } from '@/api/dto/circuit.ts';
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu.tsx';
-import { CELL_WIDTH, QUBIT_HEIGHT } from '@/views/circuit-view/util/layout.ts';
+import { CELL_WIDTH, LOOP_GATE_SCALE, QUBIT_HEIGHT } from '@/views/circuit-view/util/layout.ts';
 import { toGlobalQubitIndex } from '@/views/circuit-view/util/spans.ts';
 import { DragData } from '../util/types';
 
@@ -11,12 +11,23 @@ const BOX_INSET_Y = 4;
 /** Horizontal gutter left and right of the box, so adjacent columns stay visually separate. */
 const BOX_INSET_X = 8;
 
+/**
+ * Strip along the left edge of the box that belongs to the port labels alone.
+ *
+ * The gate name is centred in the box, so on a box spanning an odd number of wires it lands exactly
+ * on the middle wire — on top of that wire's port label. Keeping the name out of this strip is what
+ * stops the name from hiding which qubit a parameter is bound to.
+ */
+const PORT_GUTTER = 11;
+
 interface CompositeQuantumGateProps {
     operation: CompositeQuantumGateDto;
     registers: RegisterResponse[];
     layerIdx: number;
     /** Semi-transparent and non-interactive while dragged; see ElementaryQuantumGate. */
     isGhost?: boolean;
+    /** Drawn slightly narrower when the gate sits inside a repetition frame, so the box has room. */
+    isInLoop?: boolean;
     onDragStart: (operationSize: number, grabOffset: number) => void;
     onDragEnd: () => void;
     onDelete: () => void;
@@ -35,6 +46,7 @@ export function CompositeQuantumGate({
     registers,
     layerIdx,
     isGhost = false,
+    isInLoop = false,
     onDragStart,
     onDragEnd,
     onDelete,
@@ -42,6 +54,13 @@ export function CompositeQuantumGate({
 }: Readonly<CompositeQuantumGateProps>) {
     const isDraggingRef = useRef(false);
     const interactivity = isGhost ? 'pointer-events-none' : 'pointer-events-auto';
+
+    // Vertically only, and by inset rather than transform. A transform would pull the ports off the
+    // wires they are bound to, and the width is already spoken for: the port gutter plus the gate
+    // name have to fit into 48px, so there is nothing there to give away.
+    const insetY = isInLoop
+        ? BOX_INSET_Y + (QUBIT_HEIGHT - 2 * BOX_INSET_Y) * ((1 - LOOP_GATE_SCALE) / 2)
+        : BOX_INSET_Y;
 
     const { minY, spanHeight, ports } = useMemo(() => {
         // Parameter order, not wire order: position i belongs to portLabels[i]. A call may pass its
@@ -101,6 +120,9 @@ export function CompositeQuantumGate({
 
     const contents = operation.body?.map((part) => part.identifier).join(', ');
 
+    /** A box covering more than one wire has more height than width, so the name reads better turned. */
+    const isTall = spanHeight > 0;
+
     return (
         <ContextMenu>
             {/* `asChild` keeps the box itself the trigger: it is the HTML5 drag source and must stay
@@ -126,15 +148,30 @@ export function CompositeQuantumGate({
                             ${interactivity} cursor-grab active:cursor-grabbing
                             group-hover:brightness-90 dark:group-hover:brightness-125 transition-colors`}
                         style={{
-                            top: BOX_INSET_Y,
+                            top: insetY,
                             left: BOX_INSET_X,
                             width: CELL_WIDTH - 2 * BOX_INSET_X,
-                            height: spanHeight + QUBIT_HEIGHT - 2 * BOX_INSET_Y,
+                            height: spanHeight + QUBIT_HEIGHT - 2 * insetY,
                             backgroundColor: 'var(--composite)',
                             color: 'var(--bg-dark)',
                         }}
                     >
-                        <span className="px-1 truncate text-[13px] font-semibold leading-none">
+                        {/*
+                         * Set sideways once the box covers more than one wire. A box is only 48px
+                         * wide but as tall as its wires, so upright the name is cut to three or
+                         * four letters while metres of room go unused next to it; turned, a gate
+                         * like `majority` fits whole. Either way it starts right of the port
+                         * gutter, so it can never sit on a port label.
+                         */}
+                        <span
+                            className="truncate text-[13px] font-semibold leading-none"
+                            style={{
+                                marginLeft: PORT_GUTTER,
+                                ...(isTall
+                                    ? { writingMode: 'vertical-rl', maxHeight: '100%', paddingBlock: 4 }
+                                    : { paddingInline: 4 }),
+                            }}
+                        >
                             {operation.identifier}
                         </span>
 
@@ -143,7 +180,7 @@ export function CompositeQuantumGate({
                             <span
                                 key={port.position}
                                 className="absolute left-[3px] font-mono leading-none opacity-80 text-[9px]"
-                                style={{ top: (port.wire - minY) * QUBIT_HEIGHT + QUBIT_HEIGHT / 2 - BOX_INSET_Y - 4 }}
+                                style={{ top: (port.wire - minY) * QUBIT_HEIGHT + QUBIT_HEIGHT / 2 - insetY - 4 }}
                             >
                                 {port.label}
                             </span>

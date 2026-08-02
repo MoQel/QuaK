@@ -2,7 +2,7 @@ import React, { useMemo, useRef } from 'react';
 import styles from '@/App.module.css';
 import { QuantumOperationDto, RegisterResponse, ElementSelectorDto, getRegisterSize } from '@/api/dto/circuit.ts';
 import { getOperationDefinition, OperationDefinition } from '@/lib/operations.ts';
-import { CELL_WIDTH, QUBIT_HEIGHT } from '@/views/circuit-view/util/layout.ts';
+import { CELL_WIDTH, LOOP_GATE_SCALE, QUBIT_HEIGHT } from '@/views/circuit-view/util/layout.ts';
 import { TextIcon } from '@/components/ui/text-icon.tsx';
 import { formatRotationAngle } from '@/views/circuit-view/util/angle.ts';
 import { DragData } from '../util/types';
@@ -17,6 +17,8 @@ interface ElementaryQuantumGateProps {
      * must not swallow dragover events of the drop zone underneath it.
      */
     isGhost?: boolean;
+    /** Drawn slightly smaller when the gate sits inside a repetition frame, so the box has room. */
+    isInLoop?: boolean;
     onDragStart: (operationSize: number, grabOffset: number) => void;
     onDragEnd: () => void;
     onDelete: () => void;
@@ -36,6 +38,7 @@ export function ElementaryQuantumGate({
     registers,
     layerIdx,
     isGhost = false,
+    isInLoop = false,
     onDragStart,
     onDragEnd,
     onDelete,
@@ -43,6 +46,7 @@ export function ElementaryQuantumGate({
     const definition = getOperationDefinition(operation.identifier);
     const isDraggingRef = useRef(false);
     const interactivity = isGhost ? 'pointer-events-none' : 'pointer-events-auto';
+    const scale = isInLoop ? LOOP_GATE_SCALE : 1;
 
     // Rotation gates (rx/ry/rz) show their angle on the box, e.g. "π/2".
     const angleLabel =
@@ -144,6 +148,7 @@ export function ElementaryQuantumGate({
                     relativeIdx={idx - minY}
                     definition={definition}
                     interactivity={interactivity}
+                    scale={scale}
                 />
             ))}
 
@@ -156,6 +161,7 @@ export function ElementaryQuantumGate({
                     isSWAP={operation.identifier === 'SWAP'}
                     angleLabel={angleLabel}
                     interactivity={interactivity}
+                    scale={scale}
                 />
             ))}
         </div>
@@ -166,8 +172,9 @@ function ControlPoint({
     relativeIdx,
     definition,
     interactivity,
-}: Readonly<{ relativeIdx: number; definition: OperationDefinition; interactivity: string }>) {
-    const size: number = 12;
+    scale,
+}: Readonly<{ relativeIdx: number; definition: OperationDefinition; interactivity: string; scale: number }>) {
+    const size: number = 12 * scale;
     return (
         <div
             className={`
@@ -191,12 +198,14 @@ function TargetPoint({
     isSWAP,
     angleLabel,
     interactivity,
+    scale,
 }: Readonly<{
     relativeIdx: number;
     definition: OperationDefinition;
     isSWAP: boolean;
     angleLabel?: string | null;
     interactivity: string;
+    scale: number;
 }>) {
     let content: React.ReactNode;
 
@@ -231,15 +240,18 @@ function TargetPoint({
                     ${interactivity} cursor-grab active:cursor-grabbing
                     group-hover:brightness-90 dark:group-hover:brightness-125 transition-colors
                     ${isSWAP ? '' : styles.quantumOperation}`}
-                style={
-                    isSWAP
+                style={{
+                    // Scaled rather than resized: a transform leaves the grid geometry alone, so a
+                    // gate inside a frame keeps sitting exactly on its wire and in its column.
+                    ...(scale === 1 ? {} : { transform: `scale(${scale})` }),
+                    ...(isSWAP
                         ? { backgroundColor: 'transparent', color: definition.color }
                         : {
                               backgroundColor: definition.color,
                               color: 'var(--bg-dark)',
                               ...(angleLabel ? { padding: '2px 3px' } : {}),
-                          }
-                }
+                          }),
+                }}
             >
                 {content}
             </div>

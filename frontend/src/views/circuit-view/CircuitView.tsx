@@ -1,12 +1,6 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { useMemo, useState } from 'react';
-import {
-    CircuitResponse,
-    ElementSelectorDto,
-    getInvolvedSelectors,
-    getRegisterSize,
-    getSelectorKey,
-} from '@/api/dto/circuit';
+import { CircuitResponse, ElementSelectorDto, getRegisterSize } from '@/api/dto/circuit';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store.ts';
 import { CircuitTabBar } from '@/views/circuit-view/components/CircuitTabBar.tsx';
@@ -14,10 +8,13 @@ import { QubitWires } from './components/QubitWires.tsx';
 import { QuantumOperationGrid } from './components/QuantumOperationGrid.tsx';
 import { DropzoneGrid } from './components/DropzoneGrid.tsx';
 import { DropPlaceholder } from './components/DropPlaceholder.tsx';
+import { LoopFrames } from './components/LoopFrames.tsx';
 import { CircuitFooter } from './components/CircuitFooter.tsx';
 import { HoverPos, UiLayer, UiQuantumOperation } from './util/types.ts';
 import { CELL_WIDTH, LABEL_WIDTH, QUBIT_HEIGHT } from '@/views/circuit-view/util/layout.ts';
-import { doSpansOverlap, getOperationSpan as getSpan } from '@/views/circuit-view/util/spans.ts';
+import { getOperationSpan as getSpan } from '@/views/circuit-view/util/spans.ts';
+import { layOutColumns } from '@/views/circuit-view/util/scheduling.ts';
+import { getLoopFrames } from '@/views/circuit-view/util/loopFrames.ts';
 import { ungroupComposite } from '@/views/circuit-view/util/ungroupComposite.ts';
 import { useCircuitTabs } from '@/contexts/CircuitTabsContext.tsx';
 
@@ -83,9 +80,6 @@ export function CircuitView() {
 
     const getOperationSpan = (op: UiQuantumOperation) => getSpan(activeCircuit?.registers ?? [], op);
 
-    const doOperationSpansOverlap = (a: UiQuantumOperation, b: UiQuantumOperation): boolean =>
-        doSpansOverlap(getOperationSpan(a), getOperationSpan(b));
-
     /**
      * Canonical operation order for the ASAP scheduler: by original layer, the
      * dummy operation first (placement priority), then by topmost involved qubit.
@@ -103,66 +97,19 @@ export function CircuitView() {
     };
 
     /**
-     * Determines whether a quantum operation would visually collide within the
-     * specified layer. Besides exact qubit conflicts, multi-qubit gates also
-     * reserve the vertical area between their target and control qubits.
-     */
-    const isQubitCollisionInLayer = (op: UiQuantumOperation, layer: UiLayer): boolean => {
-        const requiredKeys = new Set(getInvolvedSelectors(op).map(getSelectorKey));
-
-        return layer.quantumOperations.some((existingOp) => {
-            const existingKeys = getInvolvedSelectors(existingOp).map(getSelectorKey);
-            return existingKeys.some((key) => requiredKeys.has(key)) || doOperationSpansOverlap(op, existingOp);
-        });
-    };
-
-    /**
-     * Applies ASAP (as-soon-as-possible) left-justified scheduling to a flat list of operations.
-     * Each operation is placed in the earliest layer where none of its qubits are already occupied.
+     * Applies ASAP (as-soon-as-possible) left-justified scheduling to a flat list of operations,
+     * keeping every repetition frame's rectangle to itself (see `util/scheduling.ts`).
      * If a dummy operation is present, it is additionally constrained to the layer indicated by the
      * current hover position to reflect the user's intended placement.
      *
      * @param allOps - Flat list of operations, pre-sorted by their original layer index.
      * @returns Reconstructed layer array with no empty layers.
      */
-    const rescheduleOperations = (allOps: UiQuantumOperation[]): UiLayer[] => {
-        const newLayers: UiLayer[] = [];
-        const lastLayerPerQubit = new Map<string, number>();
-
-        for (const op of allOps) {
-            const involvedKeys = getInvolvedSelectors(op).map(getSelectorKey);
-
-            // Find the earliest possible layer based on the last occupied layer per qubit.
-            let minLayerIdx = 0;
-            for (const key of involvedKeys) {
-                minLayerIdx = Math.max(minLayerIdx, lastLayerPerQubit.get(key) ?? -1);
-            }
-
-            // The dummy operation must not land further left than the user's current hover position.
-            if (op.type === 'DUMMY' && hoverPos) {
-                minLayerIdx = Math.max(minLayerIdx, hoverPos.layerIdx);
-            }
-
-            // Advance to the right until there is no qubit collision.
-            let layerIdx = minLayerIdx;
-            while (layerIdx < newLayers.length && isQubitCollisionInLayer(op, newLayers[layerIdx])) {
-                layerIdx++;
-            }
-
-            while (newLayers.length <= layerIdx) {
-                newLayers.push({ quantumOperations: [] });
-            }
-
-            newLayers[layerIdx].quantumOperations.push(op);
-
-            for (const key of involvedKeys) {
-                lastLayerPerQubit.set(key, layerIdx);
-            }
-        }
-
-        // Drop empty layers.
-        return newLayers.filter((layer) => layer.quantumOperations.length > 0);
-    };
+    const rescheduleOperations = (allOps: UiQuantumOperation[]): UiLayer[] =>
+        layOutColumns(allOps, activeCircuit?.loopBlocks ?? [], {
+            spanOf: getOperationSpan,
+            minColumnFor: (op: UiQuantumOperation) => (op.type === 'DUMMY' && hoverPos ? hoverPos.layerIdx : 0),
+        });
 
     /**
      * Circuit state without the currently dragged operation, used to compute valid drop zones.
@@ -277,6 +224,18 @@ export function CircuitView() {
         // (gate stays invisible until some other state change).
     }, [activeCircuit, hoverPos, layersWithoutDragOp, activeDropZones, flatQubits, draggingOperationSize]);
 
+    /** Repetition frames, derived from where their members ended up after scheduling. */
+    const loopFrames = useMemo(
+        () => getLoopFrames(uiLayers, activeCircuit?.loopBlocks ?? [], activeCircuit?.registers ?? []),
+        [uiLayers, activeCircuit?.loopBlocks, activeCircuit?.registers],
+    );
+
+    /** Every operation covered by some frame, so the gate components can draw themselves smaller. */
+    const loopMemberIds = useMemo(
+        () => new Set((activeCircuit?.loopBlocks ?? []).flatMap((block) => block.operationIds)),
+        [activeCircuit?.loopBlocks],
+    );
+
     const operationColumnCount = Math.max(uiLayers.length + 1, 1);
     const operationAreaWidth = operationColumnCount * CELL_WIDTH;
     const circuitWidth = LABEL_WIDTH + operationAreaWidth;
@@ -318,6 +277,7 @@ export function CircuitView() {
                                 uiLayers={uiLayers}
                                 registers={activeCircuit?.registers ?? []}
                                 isOperationDragging={isOperationDragging}
+                                loopMemberIds={loopMemberIds}
                                 removeQuantumOperation={removeQuantumOperation}
                                 ungroupQuantumOperation={ungroupQuantumOperation}
                                 setDraggingOperationId={setDraggingOperationId}
@@ -336,6 +296,8 @@ export function CircuitView() {
                                 setHoverPos={setHoverPos}
                                 setDraggingOperationId={setDraggingOperationId}
                             />
+
+                            <LoopFrames frames={loopFrames} />
 
                             <DropPlaceholder hoverPos={hoverPos} draggingOperationSize={draggingOperationSize} />
                         </div>

@@ -15,6 +15,7 @@ import {
     StateVectorEntry,
 } from '@/simulation/simulation.types.ts';
 import { buildWireIndex, WireIndex } from '@/lib/circuitIndex.ts';
+import { toExecutionOrder } from '@/lib/loopBlocks.ts';
 
 type GateType = ElementaryQuantumGateDto['identifier'];
 
@@ -77,19 +78,19 @@ export class QulacsMapper {
 
     /**
      * Builds the circuit based on the filtered registers.
+     *
+     * Operations are taken in execution order rather than layer by layer, because a repetition frame
+     * means its body runs *n* times. Reading the layers directly would run it once and simulate a
+     * different circuit than the editor shows — silently, since the frame still looks right there.
      */
     private static buildCircuit(
         circuitData: CircuitResponse,
         circuit: qulacs.QuantumCircuit,
         wireIndex: WireIndex,
     ): void {
-        const layers = circuitData.layers;
-        // Iterate layer by layer (Time Step by Time Step)
-        for (const layer of layers) {
-            for (const op of layer.quantumOperations) {
-                for (const gate of this.toElementaryGates(op)) {
-                    this.applyGate(circuit, gate, wireIndex);
-                }
+        for (const op of toExecutionOrder(circuitData)) {
+            for (const gate of this.toElementaryGates(op)) {
+                this.applyGate(circuit, gate, wireIndex);
             }
         }
     }
