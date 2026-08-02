@@ -1,6 +1,8 @@
 package edu.kit.quak.core.circuit.codegen;
 
+import edu.kit.quak.core.circuit.model.LoopBlock;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
+import edu.kit.quak.core.circuit.model.gate.GateDefinition;
 import edu.kit.quak.core.circuit.model.layer.Layer;
 import edu.kit.quak.core.circuit.model.layer.operation.CompositeQuantumGate;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
@@ -10,10 +12,28 @@ import edu.kit.quak.core.circuit.model.layer.operation.library.ConcreteQuantumOp
 import edu.kit.quak.core.circuit.model.layer.operation.library.QuantumOperationLibrary;
 import edu.kit.quak.core.circuit.model.register.QuantumRegister;
 import edu.kit.quak.core.circuit.model.register.Register;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
 
 public class QasmCodeGenerator {
+
+    /**
+     * How to write a qubit and which name each user-defined gate is declared under.
+     *
+     * <p>Qubit naming differs by where the code is being written: in the circuit a selector is
+     * {@code q[0]}, inside a {@code gate} body the very same selector points at the definition's
+     * formal parameters and has to come out as {@code a}. The gate names are looked up rather than
+     * taken from the definition because two definitions can carry the same name (see
+     * {@link #assignGateNames}).
+     */
+    private record Emission(Function<ElementSelector, String> qubitName, Map<String, String> gateNames) {}
 
     public static String toCode(QuantumCircuit quantumCircuit) {
         StringBuilder codeStringBuilder = new StringBuilder();
@@ -34,17 +54,225 @@ public class QasmCodeGenerator {
 
         codeStringBuilder.append("\n");
 
+        // Declarations first: the parser records a `gate` when it reaches it, so a call before its
+        // declaration fails. Without this the emitted code referred to gates it never defined, and a
+        // parse -> toCode -> parse round trip died on "Unsupported gate".
+        List<String> declarations = new ArrayList<>();
+        Map<String, String> gateNames = assignGateNames(collectDefinitions(quantumCircuit), declarations);
+        for (String declaration : declarations) {
+            codeStringBuilder.append(declaration).append("\n");
+        }
+
+        Emission emission = new Emission(selector -> toCode(quantumCircuit, selector), gateNames);
+        // A frame's members are written out as one `for`, at the position of its first member; the
+        // rest are skipped when their layer comes round, which is what `written` keeps track of.
+        Frames frames = new Frames(quantumCircuit.getLoopBlocks(), operationsById(quantumCircuit), new HashSet<>());
+
         List<Layer> layers = quantumCircuit.getLayers();
         for (int layerIdx = 0; layerIdx < layers.size(); layerIdx++) {
-            Layer layer = layers.get(layerIdx);
+            String layerCode = toCode(layers.get(layerIdx), emission, frames);
+            // A layer holding nothing but members of a frame written earlier contributes no code;
+            // its heading would just dangle.
+            if (layerCode.isEmpty()) {
+                continue;
+            }
             codeStringBuilder.append("// Layer ").append(layerIdx + 1).append("\n");
-            codeStringBuilder.append(toCode(quantumCircuit, layer)).append("\n");
+            codeStringBuilder.append(layerCode).append("\n");
         }
 
         return codeStringBuilder.toString();
     }
 
-    private static String toCode(QuantumCircuit quantumCircuit, Layer layer) {
+    /** Repetition frames plus the bookkeeping needed to write each of their members exactly once. */
+    private record Frames(List<LoopBlock> blocks, Map<String, QuantumOperation> byId, Set<String> written) {
+        Frames nestedIn(LoopBlock block) {
+            return new Frames(
+                blocks
+                    .stream()
+                    .filter(candidate -> candidate.isStrictlyInside(block))
+                    .toList(),
+                byId,
+                written
+            );
+        }
+    }
+
+    private static Map<String, QuantumOperation> operationsById(QuantumCircuit quantumCircuit) {
+        Map<String, QuantumOperation> byId = new HashMap<>();
+        for (Layer layer : quantumCircuit.getLayers()) {
+            for (QuantumOperation operation : layer.getQuantumOperations()) {
+                byId.put(operation.getId(), operation);
+            }
+        }
+        return byId;
+    }
+
+    /**
+     * Writes one operation — or, when it is the first member of a repetition frame, the whole
+     * {@code for} loop that frame stands for.
+     *
+     * <p>The frame is written where its first member sits, which is correct because the scheduler
+     * keeps a frame's rectangle to itself: anything sharing one of its columns lies outside its
+     * wires and therefore commutes with everything inside.
+     *
+     * <p>Several frames over the very same operations become nested {@code for} loops, so the body
+     * runs the product of their counts — the same reading the simulator takes.
+     */
+    private static String statementFor(QuantumOperation operation, Emission emission, Frames frames, int depth) {
+        if (frames.written().contains(operation.getId())) {
+            return "";
+        }
+
+        List<LoopBlock> enclosing = LoopBlock.outermostCovering(frames.blocks(), operation.getId());
+        if (enclosing.isEmpty()) {
+            frames.written().add(operation.getId());
+            return indent(depth) + toCode(operation, emission) + "\n";
+        }
+
+        LoopBlock block = enclosing.getFirst();
+        List<QuantumOperation> members = block
+            .getOperationIds()
+            .stream()
+            .map(frames.byId()::get)
+            .filter(java.util.Objects::nonNull)
+            .toList();
+
+        StringBuilder body = new StringBuilder();
+        Frames inner = frames.nestedIn(block);
+        for (QuantumOperation member : members) {
+            body.append(statementFor(member, emission, inner, depth + enclosing.size()));
+        }
+        members.forEach(member -> frames.written().add(member.getId()));
+
+        String code = body.toString();
+        for (int level = enclosing.size() - 1; level >= 0; level--) {
+            code = wrapInLoop(code, enclosing.get(level).getRepeatCount(), depth + level);
+        }
+        return code;
+    }
+
+    private static String wrapInLoop(String body, int repeatCount, int depth) {
+        // Inclusive stop, so [0:n-1] is exactly n passes. The counter is unused — the body is the
+        // same every time, which is the very reason this is a frame and not an unrolled sweep.
+        return "%sfor uint %s in [0:%d] {\n%s%s}\n".formatted(indent(depth), loopVariable(depth), repeatCount - 1, body, indent(depth));
+    }
+
+    private static String loopVariable(int depth) {
+        return depth < LOOP_VARIABLES.length() ? String.valueOf(LOOP_VARIABLES.charAt(depth)) : "i" + depth;
+    }
+
+    private static final String LOOP_VARIABLES = "ijklmn";
+
+    private static String indent(int depth) {
+        return "    ".repeat(depth);
+    }
+
+    /**
+     * The user-defined gates the circuit uses, dependencies before their users.
+     *
+     * <p>A gate body may call further gates, and OpenQASM needs those declared first, so this is a
+     * depth-first walk that appends a definition only after everything it builds on. Termination is
+     * guaranteed by {@link GateDefinition}, which rejects a recursive body.
+     */
+    private static List<GateDefinition> collectDefinitions(QuantumCircuit quantumCircuit) {
+        List<GateDefinition> ordered = new ArrayList<>();
+        Set<String> visited = new HashSet<>();
+        for (Layer layer : quantumCircuit.getLayers()) {
+            for (QuantumOperation operation : layer.getQuantumOperations()) {
+                collectDefinitions(operation, ordered, visited);
+            }
+        }
+        return ordered;
+    }
+
+    private static void collectDefinitions(QuantumOperation operation, List<GateDefinition> ordered, Set<String> visited) {
+        if (!(operation instanceof CompositeQuantumGate composite)) {
+            return;
+        }
+        GateDefinition definition = composite.getDefinition();
+        if (!visited.add(definition.getId())) {
+            return;
+        }
+        for (QuantumOperation bodyOperation : definition.getBody()) {
+            collectDefinitions(bodyOperation, ordered, visited);
+        }
+        ordered.add(definition);
+    }
+
+    /**
+     * Decides under which name each definition is declared, and renders the declarations.
+     *
+     * <p>Two things force this indirection instead of just using {@code definition.getName()}.
+     * Reading a circuit back from the database rebuilds a definition per call site, so the same gate
+     * arrives as several equal definitions — declaring each would be "gate defined more than once".
+     * And a gate parametrized by an angle produces one definition per argument value, all carrying
+     * the same name but different bodies — declaring only the first would silently change the
+     * circuit. Identical definitions therefore collapse onto one declaration, and genuinely
+     * different ones with the same name get a suffix.
+     *
+     * @param definitions dependencies first, so a nested gate's name is already known here
+     * @param declarations receives the rendered {@code gate ... { ... }} blocks, in emission order
+     * @return the name to write at a call site, by definition id
+     */
+    private static Map<String, String> assignGateNames(List<GateDefinition> definitions, List<String> declarations) {
+        Map<String, String> nameByDefinition = new HashMap<>();
+        Map<String, String> nameByShape = new HashMap<>();
+        Set<String> takenNames = builtInGateNames();
+
+        for (GateDefinition definition : definitions) {
+            String body = declarationBody(definition, nameByDefinition);
+            String shape = definition.getParameterNames() + "|" + body;
+
+            String sameShape = nameByShape.get(shape);
+            if (sameShape != null) {
+                nameByDefinition.put(definition.getId(), sameShape);
+                continue;
+            }
+
+            String name = uniqueName(definition.getName(), takenNames);
+            takenNames.add(name);
+            nameByShape.put(shape, name);
+            nameByDefinition.put(definition.getId(), name);
+            declarations.add("gate %s %s {\n%s}\n".formatted(name, String.join(", ", definition.getParameterNames()), body));
+        }
+        return nameByDefinition;
+    }
+
+    /** Built-in gate names, so a user-defined gate can never be declared over one of them. */
+    private static Set<String> builtInGateNames() {
+        return Arrays.stream(QuantumOperationLibrary.values())
+            .filter(gate -> gate != QuantumOperationLibrary.COMPOSITE)
+            .map(QasmCodeGenerator::toCode)
+            .collect(java.util.stream.Collectors.toCollection(HashSet::new));
+    }
+
+    private static String uniqueName(String preferred, Set<String> taken) {
+        if (!taken.contains(preferred)) {
+            return preferred;
+        }
+        int suffix = 2;
+        while (taken.contains(preferred + "_" + suffix)) {
+            suffix++;
+        }
+        return preferred + "_" + suffix;
+    }
+
+    /**
+     * The statements of a gate body, in program order.
+     *
+     * <p>Deliberately not sorted by qubit the way a layer is: a body is a sequence, and reordering it
+     * would change what the gate does.
+     */
+    private static String declarationBody(GateDefinition definition, Map<String, String> gateNames) {
+        Emission emission = new Emission(selector -> definition.getParameterName(selector.getIndex()), gateNames);
+        StringBuilder body = new StringBuilder();
+        for (QuantumOperation operation : definition.getBody()) {
+            body.append("    ").append(toCode(operation, emission)).append("\n");
+        }
+        return body.toString();
+    }
+
+    private static String toCode(Layer layer, Emission emission, Frames frames) {
         //TODO rotation angle aus Elementary holen falls vorhanden
         StringBuilder codeStringBuilder = new StringBuilder();
         // Emit operations in canonical order (topmost involved qubit first) so that
@@ -55,7 +283,7 @@ public class QasmCodeGenerator {
             .sorted(Comparator.comparingInt(QasmCodeGenerator::minInvolvedQubitIndex))
             .toList();
         for (QuantumOperation operation : sortedOperations) {
-            codeStringBuilder.append(toCode(quantumCircuit, operation)).append("\n");
+            codeStringBuilder.append(statementFor(operation, emission, frames, 0));
         }
         return codeStringBuilder.toString();
     }
@@ -73,7 +301,7 @@ public class QasmCodeGenerator {
         return min;
     }
 
-    private static String toCode(QuantumCircuit quantumCircuit, QuantumOperation quantumOperation) {
+    private static String toCode(QuantumOperation quantumOperation, Emission emission) {
         StringBuilder codeStringBuilder = new StringBuilder();
 
         // Prefix
@@ -82,7 +310,7 @@ public class QasmCodeGenerator {
         }
 
         // Operator
-        String operatorCode = operatorToCode(quantumOperation);
+        String operatorCode = operatorToCode(quantumOperation, emission);
         codeStringBuilder.append(operatorCode);
 
         // Control and Target Qubits
@@ -90,12 +318,12 @@ public class QasmCodeGenerator {
 
         if (quantumOperation.getControlQubits() != null) {
             for (ElementSelector control : quantumOperation.getControlQubits()) {
-                qubitStrings.add(toCode(quantumCircuit, control));
+                qubitStrings.add(emission.qubitName().apply(control));
             }
         }
 
         for (ElementSelector target : quantumOperation.getTargetQubits()) {
-            qubitStrings.add(toCode(quantumCircuit, target));
+            qubitStrings.add(emission.qubitName().apply(target));
         }
 
         if (!qubitStrings.isEmpty()) {
@@ -108,10 +336,11 @@ public class QasmCodeGenerator {
         return codeStringBuilder.toString();
     }
 
-    private static String operatorToCode(QuantumOperation quantumOperation) {
-        // A composite's name comes from its definition, not from the library enum.
+    private static String operatorToCode(QuantumOperation quantumOperation, Emission emission) {
+        // A composite is written under the name its definition was declared with, which is not
+        // necessarily its own name -- see assignGateNames.
         if (quantumOperation instanceof CompositeQuantumGate composite) {
-            return composite.getGateName();
+            return emission.gateNames().getOrDefault(composite.getDefinition().getId(), composite.getGateName());
         }
 
         QuantumOperationLibrary operationDefinition = quantumOperation.getOperationDefinition();

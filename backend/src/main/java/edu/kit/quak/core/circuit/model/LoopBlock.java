@@ -28,8 +28,8 @@ import lombok.NonNull;
  * client-generated and stable across saves, which is what makes them usable as an anchor.
  *
  * <p>Consequence for anyone rendering or simulating this: the frame is only honest while its
- * bounding box contains exactly its members. Nothing enforces that yet — the scheduler still has to
- * learn to reserve a block's rectangle.
+ * bounding box contains exactly its members. {@code QuantumCircuit.layOutColumns} is what keeps it
+ * that way, by placing a block as a unit and reserving its rectangle against everything else.
  */
 public class LoopBlock extends ElementWithId {
 
@@ -63,6 +63,45 @@ public class LoopBlock extends ElementWithId {
 
     public boolean covers(@NonNull String operationId) {
         return operationIds.contains(operationId);
+    }
+
+    /**
+     * The frames to treat as one unit at this operation: the widest ones covering it.
+     *
+     * <p>Taking the outermost is what lets nesting be handled by recursion — the inner frames are
+     * dealt with one level down, over the members of the loop around them.
+     *
+     * <p>A list rather than a single block, because two loops can cover <em>exactly</em> the same
+     * operations: {@code for i in [0:1] { for j in [0:2] { h q[0]; } }} collapses to one H carrying a
+     * ×2 and a ×3 frame. Member sets cannot say which of those is the inner one, and they need not —
+     * the body runs 2·3 times either way. Whoever cares about the count must use all of them.
+     */
+    public static List<LoopBlock> outermostCovering(@NonNull List<LoopBlock> blocks, @NonNull String operationId) {
+        List<LoopBlock> covering = blocks
+            .stream()
+            .filter(block -> block.covers(operationId))
+            .toList();
+        if (covering.isEmpty()) {
+            return List.of();
+        }
+        // Frames nest or are disjoint, never partially overlap, so equal size means equal members.
+        int widest = covering
+            .stream()
+            .mapToInt(block -> block.operationIds.size())
+            .max()
+            .orElseThrow();
+        return covering
+            .stream()
+            .filter(block -> block.operationIds.size() == widest)
+            .toList();
+    }
+
+    /**
+     * Whether this frame sits strictly inside the given one. Equal member sets do not nest, which is
+     * also what stops the recursion when two loops cover exactly the same operations.
+     */
+    public boolean isStrictlyInside(@NonNull LoopBlock other) {
+        return this != other && operationIds.size() < other.operationIds.size() && other.operationIds.containsAll(operationIds);
     }
 
     /**

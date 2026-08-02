@@ -335,7 +335,8 @@ public class QuantumCircuit extends ElementWithId {
             if (placed.contains(operation.getId())) {
                 continue;
             }
-            LoopBlock block = outermostBlockCovering(blocks, operation.getId());
+            // Frames over the same operations share one rectangle, so any of them lays it out.
+            LoopBlock block = LoopBlock.outermostCovering(blocks, operation.getId()).stream().findFirst().orElse(null);
             if (block == null) {
                 placeOperation(operation, columns, lastColumnPerQubit, reserved);
                 placed.add(operation.getId());
@@ -383,7 +384,7 @@ public class QuantumCircuit extends ElementWithId {
 
         List<LoopBlock> nested = blocks
             .stream()
-            .filter(candidate -> isStrictlyInside(candidate, block))
+            .filter(candidate -> candidate.isStrictlyInside(block))
             .toList();
         List<List<QuantumOperation>> localColumns = layOutColumns(members, nested);
         int width = localColumns.size();
@@ -405,27 +406,6 @@ public class QuantumCircuit extends ElementWithId {
             }
         }
         reserved.add(new int[] { blockSpan[0], blockSpan[1], start, start + width - 1 });
-    }
-
-    /**
-     * The frame to place when this operation comes up — the widest one covering it, so an outer loop
-     * is laid out as a whole and its inner loops fall out of the recursion.
-     */
-    private static LoopBlock outermostBlockCovering(List<LoopBlock> blocks, String operationId) {
-        return blocks
-            .stream()
-            .filter(block -> block.covers(operationId))
-            .max(Comparator.comparingInt(block -> block.getOperationIds().size()))
-            .orElse(null);
-    }
-
-    /** Whether one frame sits strictly inside another. Equal member sets do not nest, which is what stops the recursion. */
-    private static boolean isStrictlyInside(LoopBlock candidate, LoopBlock block) {
-        return (
-            candidate != block &&
-            candidate.getOperationIds().size() < block.getOperationIds().size() &&
-            block.getOperationIds().containsAll(candidate.getOperationIds())
-        );
     }
 
     /** Leftmost column an operation could go by its qubits alone, ignoring collisions and frames. */
