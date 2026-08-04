@@ -33,6 +33,10 @@ RUN if [ "$SKIP_FRONTEND" = "false" ]; then \
     rm -rf /var/lib/apt/lists/*; \
     fi
 
+# Node's default old-space heap cap (~2GB) is hit regardless of host RAM;
+# the frontend build (vite + swc native addon) needs more headroom.
+ENV NODE_OPTIONS="--max-old-space-size=6144"
+
 WORKDIR /app
 
 # Use the checked-in wrapper so local, CI and Docker builds use the same Gradle version.
