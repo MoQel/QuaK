@@ -44,7 +44,7 @@ class CircuitJpaAdapterTest {
     void saveAndFindCircuit_ShouldPersistData() {
         // Arrange
         String projectId = "p-id";
-        QuantumCircuit domainCircuit = new QuantumCircuit(projectId);
+        QuantumCircuit domainCircuit = new QuantumCircuit(projectId, "f-1");
         String circuitId = domainCircuit.getId();
 
         String registerId = domainCircuit.getRegisters().getFirst().getId();
@@ -105,15 +105,16 @@ class CircuitJpaAdapterTest {
     }
 
     @Test
-    void findCircuitByProjectId() {
+    void findCircuitByFileId() {
         // Arrange
         String projectId = "p-id";
-        QuantumCircuit domainCircuit = new QuantumCircuit(projectId);
+        String fileId = "f-id";
+        QuantumCircuit domainCircuit = new QuantumCircuit(projectId, fileId);
 
         // Act
         jpaAdapter.save(domainCircuit);
-        Optional<QuantumCircuit> found = jpaAdapter.findByProjectId(projectId);
-        Optional<QuantumCircuit> notFound = jpaAdapter.findByProjectId("unknown");
+        Optional<QuantumCircuit> found = jpaAdapter.findByFileId(fileId);
+        Optional<QuantumCircuit> notFound = jpaAdapter.findByFileId("unknown");
 
         // Assert
         assertThat(found).isPresent();

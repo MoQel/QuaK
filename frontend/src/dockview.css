@@ -25,9 +25,11 @@
     background-color: var(--bg-dark);
 }
 
-/* Header Strip (Background behind the tabs) for Circuit and Code Editor */
+/* Header Strip (Background behind the tabs) for Circuit and Code Editor.
+   Taller than the default 35px so the toolbar buttons get breathing room above/below. */
 .dockview-theme-custom [data-group-type='primary'] .dv-tabs-and-actions-container {
     background-color: var(--bg-subtle);
+    height: 48px;
 }
 
 /* Header Strip (Background behind the tabs) for all other panels */
