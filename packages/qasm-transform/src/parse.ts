@@ -1,7 +1,10 @@
 import {
+    BailErrorStrategy,
     BaseErrorListener,
     CharStream,
     CommonTokenStream,
+    ParseCancellationException,
+    PredictionMode,
     Token,
     type ATNSimulator,
     type RecognitionException,
@@ -116,8 +119,17 @@ export interface ParseResult {
 /**
  * Parses OpenQASM 3 source and collects syntax errors without throwing.
  * Turning the tree into a supported circuit is handled by `toCircuit`.
+ *
+ * Two stages, because the editor reparses on every keystroke: SLL is an order of
+ * magnitude faster on long files but gives up more readily and reports nothing
+ * usable when it does, so whatever it rejects is parsed again the accurate way.
  */
 export function parseQasm(source: string): ParseResult {
+    return parseFast(source) ?? parseThorough(source);
+}
+
+/** Lexer, parser and error listener, wired the same way for both stages. */
+function newParser(source: string) {
     const lexer = new OpenQASM3Lexer(CharStream.fromString(source));
     const tokens = new CommonTokenStream(lexer);
 
@@ -130,13 +142,42 @@ export function parseQasm(source: string): ParseResult {
     parser.removeErrorListeners();
     parser.addErrorListener(listener);
 
+    return { parser, tokens, listener };
+}
+
+/**
+ * Null for anything the second stage has to look at again — which is not only real
+ * syntax errors: SLL also bails on input full LL prediction would have accepted.
+ *
+ * Bailing skips the error listener, so a rejected parse has no errors to hand on.
+ */
+function parseFast(source: string): ParseResult | null {
+    const { parser, tokens, listener } = newParser(source);
+    parser.interpreter.predictionMode = PredictionMode.SLL;
+    parser.errorHandler = new BailErrorStrategy();
+
+    try {
+        const tree = parser.program();
+
+        // A lexer error does not bail the parse, but it is still a syntax error to report.
+        return listener.errors.length > 0 ? null : { tree, errors: [], comments: commentsIn(tokens) };
+    } catch (error) {
+        if (error instanceof ParseCancellationException) return null;
+        throw error;
+    }
+}
+
+/** ANTLR's defaults: full LL prediction, and the recovery that makes errors reportable. */
+function parseThorough(source: string): ParseResult {
+    const { parser, tokens, listener } = newParser(source);
     const tree = parser.program();
 
-    // The token stream is filled after parsing, including hidden-channel comments.
-    const comments = tokens
+    return { tree, errors: listener.errors, comments: commentsIn(tokens) };
+}
+
+// The token stream is filled after parsing, including hidden-channel comments.
+const commentsIn = (tokens: CommonTokenStream): QasmComment[] =>
+    tokens
         .getTokens()
         .filter((token) => token.channel === Token.HIDDEN_CHANNEL)
         .map((token) => ({ line: token.line, column: token.column, text: token.text ?? '' }));
-
-    return { tree, errors: listener.errors, comments };
-}

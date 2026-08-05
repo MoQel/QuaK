@@ -87,3 +87,27 @@ describe('parseQasm — errors ANTLR already places well', () => {
         expect(parseQasm(`${HEADER}qubit[2] q;\nh q[0];\n`).errors).toEqual([]);
     });
 });
+
+// The fast first stage reports nothing and gives up on more than just broken files,
+// so everything below it has to come out of the second stage unchanged.
+describe('parseQasm — what the fast stage skips', () => {
+    it('reports a missing token, the one kind of error the fast stage swallows', () => {
+        // `missing ';'` fails a token match rather than an alternative prediction, and
+        // that path throws past the error listener when the parser is told to bail.
+        const { errors } = parseQasm(`${HEADER}qubit[2] q\nh q[0];\n`);
+
+        expect(errors).toHaveLength(1);
+    });
+
+    it('still returns the recovered tree of a broken file', () => {
+        const { tree } = parseQasm(`${HEADER}qubit[2] q\nh q[0];\n`);
+
+        expect(tree.statementOrScope()).not.toHaveLength(0);
+    });
+
+    it('keeps the comments of a file that parses cleanly', () => {
+        const { comments } = parseQasm(`${HEADER}// Register q\nqubit[2] q;\n`);
+
+        expect(comments.map((comment) => comment.text)).toEqual(['// Register q']);
+    });
+});
