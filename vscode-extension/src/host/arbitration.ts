@@ -5,12 +5,11 @@ import type { DocumentState, EditRejectedReason } from '../shared/protocol.ts';
 export type EditDecision = { kind: 'apply' } | { kind: 'reject'; reason: EditRejectedReason };
 
 /**
- * Turns the document's classification into what the user is allowed to do with it.
+ * Turns the classification into what the user may do with the document.
  *
- * The opt-in is remembered per document, but a document keeps changing while it is
- * open: a file unlocked for its comments can grow a `barrier` a minute later, and
- * regenerating it would drop that too. The user agreed to lose comments, nothing
- * else, so the opt-in only ever applies to `commentsOnly`.
+ * The opt-in is remembered per document, but the document keeps changing: a file
+ * unlocked for its comments can grow an unsupported statement a minute later. The
+ * user agreed to lose comments, nothing else.
  */
 export function applyOptIn(input: { classification: DocumentClassification; hasOptedIn: boolean }): DocumentState {
     if (input.classification.kind === 'editable') {

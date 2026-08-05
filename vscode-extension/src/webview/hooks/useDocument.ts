@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { CircuitContent, CircuitResponse } from '@quak/circuit-core';
 import type { DocumentClassification } from '@quak/qasm-transform';
-import type { DocumentDiagnostic, DocumentState, HostMessage } from '../../shared/protocol.ts';
+import type { DocumentState, HostMessage } from '../../shared/protocol.ts';
 import { vscodeApi } from '../vscodeApi.ts';
 
 export interface DocumentSnapshot {
@@ -10,7 +10,6 @@ export interface DocumentSnapshot {
     version: number;
     state: DocumentState;
     classification: DocumentClassification;
-    diagnostics: DocumentDiagnostic[];
 }
 
 export interface RequestedEdit {
@@ -40,7 +39,6 @@ export function useDocument() {
                         version: message.version,
                         state: message.state,
                         classification: message.classification,
-                        diagnostics: message.diagnostics,
                     };
                     snapshotRef.current = next;
                     setSnapshot(next);

@@ -38,6 +38,5 @@ export function useCircuitDocument() {
         readOnly,
         state: snapshot?.state,
         classification: snapshot?.classification,
-        diagnostics: snapshot?.diagnostics ?? [],
     };
 }

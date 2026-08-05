@@ -27,13 +27,6 @@ export type WebviewMessage = ReadyMessage | ApplyEditMessage | EnableEditingMess
 /** Whether the document may be edited through the circuit view. */
 export type DocumentState = 'editable' | 'readOnly' | 'editableByChoice';
 
-/** Why a document is not editable, in the user's terms. */
-export interface DocumentDiagnostic {
-    line: number;
-    construct: string;
-    message: string;
-}
-
 export interface DocumentChangedMessage {
     type: 'documentChanged';
     circuit: CircuitResponse | null;
@@ -41,8 +34,6 @@ export interface DocumentChangedMessage {
     state: DocumentState;
     /** Why the document is in that state, decided once by the transform. */
     classification: DocumentClassification;
-    /** What the transform could not represent. Empty when the document is clean. */
-    diagnostics: DocumentDiagnostic[];
 }
 
 export interface EditAppliedMessage {

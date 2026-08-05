@@ -19,12 +19,7 @@ interface NoticeCopy {
     offersOptIn?: boolean;
 }
 
-/**
- * Every wording the notice can show, in one place.
- *
- * Keyed by classification kind, so adding a kind is a type error right here
- * rather than a notice that silently renders nothing.
- */
+/** Keyed by kind, so a new kind is a type error here rather than a silent blank notice. */
 const COPY: {
     [K in DocumentClassification['kind']]: (
         classification: Extract<DocumentClassification, { kind: K }>,
@@ -110,12 +105,12 @@ function noticeFor(
     state: DocumentState | undefined,
     classification: DocumentClassification | undefined,
 ): NoticeCopy | null {
-    // The opt-in outranks the classification: the comments are still there, but the
-    // user has already been shown this notice and accepted what happens to them.
+    // Outranks the classification: the comments are still there, but the user has
+    // already seen this notice and accepted what happens to them.
     if (state === 'editableByChoice') return EDITING_BY_CHOICE;
     if (!classification) return null;
 
-    // COPY holds exactly one entry per kind, so the entry always matches this payload.
+    // One entry per kind, so the entry always matches this payload.
     const copy = COPY[classification.kind] as (classification: DocumentClassification) => NoticeCopy | null;
     return copy(classification);
 }

@@ -1,4 +1,3 @@
-import type { DocumentDiagnostic, DocumentState } from '../shared/protocol.ts';
 import type { CircuitResponse } from '@quak/circuit-core';
 import {
     classify,
@@ -7,13 +6,28 @@ import {
     type QasmPreamble,
     type QasmUnsupportedConstruct,
 } from '@quak/qasm-transform';
+import type { DocumentState } from '../shared/protocol.ts';
+
+/** Not `vscode.DiagnosticSeverity`: this module stays loadable, and testable, without VSCode. */
+export type DiagnosticSeverity = 'error' | 'info' | 'hint';
+
+/** A finding the transform can point at, ready to become a squiggle. */
+export interface DocumentDiagnostic {
+    /** 1-based, the way ANTLR counts. */
+    line: number;
+    /** 0-based, the way ANTLR and VSCode both count. */
+    column: number;
+    /** Grammar rule or gate name; shown as the diagnostic code. */
+    construct: string;
+    message: string;
+    severity: DiagnosticSeverity;
+}
 
 /** Parses QASM text and reports whether visual edits can be applied without data loss. */
 export function classifyText(text: string): {
     state: Exclude<DocumentState, 'editableByChoice'>;
     circuit: CircuitResponse | null;
     preamble: QasmPreamble;
-    diagnostics: DocumentDiagnostic[];
     classification: DocumentClassification;
 } {
     const result = toCircuit(text);
@@ -26,32 +40,37 @@ export function classifyText(text: string): {
         state: classification.kind === 'editable' ? 'editable' : 'readOnly',
         circuit,
         preamble: result.preamble,
-        diagnostics: diagnosticsFor(classification),
-        classification: classification,
+        classification,
     };
 }
 
 /**
- * The lines worth marking — never simply everything the transform rejected.
- *
- * A recovered parse tree makes the visitor reject fragments the user never wrote,
- * and a cause such as the file's version already accounts for the rejections under
- * it. Reporting those next to the real finding buries it.
+ * The lines worth marking — never simply everything the transform rejected. A cause
+ * such as the file's version already accounts for the rejections under it, and next
+ * to the real finding they bury it.
  */
-function diagnosticsFor(classification: DocumentClassification): DocumentDiagnostic[] {
+export function diagnosticsFor(classification: DocumentClassification): DocumentDiagnostic[] {
     switch (classification.kind) {
+        // Nobody else reports these: the bundled language server lints a lenient parse
+        // and stays silent on a missing bracket. Measured, not assumed.
         case 'invalid':
             return classification.syntaxErrors.map((error) => ({
                 line: error.line,
+                column: error.column,
                 construct: 'syntax',
                 message: error.message,
+                severity: 'error',
             }));
+
+        // Valid OpenQASM this editor cannot write back — informational, not a defect.
         case 'unsupported':
-            return classification.constructs.map(toDiagnostic);
+            return classification.constructs.map((entry) => toDiagnostic(entry, 'info'));
+
+        // Which comments block visual editing, so the opt-in is an informed choice.
         case 'commentsOnly':
-            return classification.comments.map(toDiagnostic);
-        // A wrong version, a missing register and an empty file are facts about the
-        // document as a whole. The notice states them; there is no line to underline.
+            return classification.comments.map((entry) => toDiagnostic(entry, 'hint'));
+
+        // Facts about the whole document; the notice states them, no line to underline.
         case 'unsupportedVersion':
         case 'empty':
         case 'noRegister':
@@ -60,8 +79,16 @@ function diagnosticsFor(classification: DocumentClassification): DocumentDiagnos
     }
 }
 
-const toDiagnostic = (entry: QasmUnsupportedConstruct): DocumentDiagnostic => ({
+/** Tested on its own: an off-by-one here moves every marker a line and still looks right. */
+export const positionOf = (entry: DocumentDiagnostic): { line: number; column: number } => ({
+    line: Math.max(0, entry.line - 1),
+    column: Math.max(0, entry.column),
+});
+
+const toDiagnostic = (entry: QasmUnsupportedConstruct, severity: DiagnosticSeverity): DocumentDiagnostic => ({
     line: entry.line,
+    column: entry.column,
     construct: entry.construct,
     message: entry.message,
+    severity,
 });

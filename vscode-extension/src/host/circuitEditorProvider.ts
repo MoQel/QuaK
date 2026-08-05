@@ -131,14 +131,13 @@ export class CircuitEditorProvider implements vscode.CustomTextEditorProvider {
 
     private documentChanged(document: vscode.TextDocument): HostMessage {
         const text = document.getText();
-        const { circuit, diagnostics, classification } = classifyText(text);
+        const { circuit, classification } = classifyText(text);
         return {
             type: 'documentChanged',
             circuit,
             version: document.version,
             state: this.documentState(document, classification),
             classification,
-            diagnostics,
         };
     }
 

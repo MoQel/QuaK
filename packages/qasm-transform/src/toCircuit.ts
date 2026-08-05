@@ -77,10 +77,8 @@ const isComment = (entry: QasmUnsupportedConstruct): boolean => entry.construct 
 /**
  * Names the single most useful reason a document cannot be edited visually.
  *
- * The order of the checks is the design here: whatever matches first is the
- * cause, and most of what follows it is a consequence. A wrong version explains
- * every `qreg` rejection under it; a syntax error explains the nonsense the
- * visitor finds in a recovered parse tree.
+ * The order of the checks is the design: whatever matches first is the cause, and
+ * most of what follows is a consequence of it.
  */
 export function classify(result: ToCircuitResult): DocumentClassification {
     if (result.syntaxErrors.length > 0) {
@@ -92,8 +90,7 @@ export function classify(result: ToCircuitResult): DocumentClassification {
         return { kind: 'unsupportedVersion', version };
     }
 
-    // Ahead of the register checks: `qreg q[2];` does declare a register, only
-    // in a spelling this transform does not read.
+    // Ahead of the register checks: `qreg q[2];` does declare one, just not readably.
     const constructs = result.unsupported.filter((entry) => !isComment(entry));
     if (constructs.length > 0) {
         return { kind: 'unsupported', constructs };
@@ -113,7 +110,7 @@ export function classify(result: ToCircuitResult): DocumentClassification {
     return { kind: 'editable' };
 }
 
-/** The document is visually editable when no syntax errors, version mismatches and unsupported operations are placed. */
+/** Editable means the transform can regenerate the document; `classify` names the reasons it cannot. */
 export const isEditable = (result: ToCircuitResult): boolean => classify(result).kind === 'editable';
 
 const UNSUPPORTED_STATEMENTS = unsupportedStatementRules();
