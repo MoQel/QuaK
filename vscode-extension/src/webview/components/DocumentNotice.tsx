@@ -1,63 +1,99 @@
-import type { DocumentDiagnostic, DocumentState } from '../../shared/protocol.ts';
+import type { ReactNode } from 'react';
+import type { DocumentClassification } from '@quak/qasm-transform';
+import type { DocumentState } from '../../shared/protocol.ts';
 
 interface DocumentNoticeProps {
     state: DocumentState | undefined;
-    diagnostics: DocumentDiagnostic[];
+    classification: DocumentClassification | undefined;
     onEditAnyway: () => void;
 }
 
-/** Shows why the circuit is read-only and offers safe ways to continue. */
-export function DocumentNotice({ state, diagnostics, onEditAnyway }: Readonly<DocumentNoticeProps>) {
-    if (state === 'editable') return null;
+/** How many findings to name before the list stops being useful. */
+const SHOWN = 3;
 
-    if (state === 'editableByChoice') {
-        return (
-            <div className="border-b border-border bg-bg-light px-3 py-2 text-xs text-text-muted">
-                Editing this file. Comments below the header will be dropped when the circuit is written back.
-            </div>
-        );
-    }
+/** What a notice says. */
+interface NoticeCopy {
+    headline: string;
+    detail?: ReactNode;
+    /** Set only where accepting the loss actually unlocks editing. */
+    offersOptIn?: boolean;
+}
 
-    const syntaxErrors = diagnostics.filter((entry) => entry.construct === 'syntax');
-    const comments = diagnostics.filter((entry) => entry.construct === 'comment');
-    const other = diagnostics.filter((entry) => entry.construct !== 'syntax' && entry.construct !== 'comment');
+/**
+ * Every wording the notice can show, in one place.
+ *
+ * Keyed by classification kind, so adding a kind is a type error right here
+ * rather than a notice that silently renders nothing.
+ */
+const COPY: {
+    [K in DocumentClassification['kind']]: (
+        classification: Extract<DocumentClassification, { kind: K }>,
+    ) => NoticeCopy | null;
+} = {
+    editable: () => null,
 
-    // Without a parsed circuit there is nothing the visual editor can update.
-    if (syntaxErrors.length > 0) {
-        return (
-            <div className="border-b border-border bg-bg-light px-3 py-2 text-xs">
-                <p className="font-medium text-text">
-                    This file has syntax errors, so it cannot be shown as a circuit.
-                </p>
-                <ul className="mt-1 list-disc pl-4 text-text-muted">
-                    {syntaxErrors.slice(0, 3).map((entry) => (
-                        <li key={`${entry.line}-${entry.message}`}>
-                            Line {entry.line}: {entry.message}
-                        </li>
-                    ))}
-                </ul>
-            </div>
-        );
-    }
+    empty: () => ({
+        headline: 'This file is empty.',
+        detail: (
+            <>
+                A circuit needs a version and at least one qubit register — start with <code>OPENQASM 3.0;</code> and{' '}
+                <code>qubit[4] q;</code>.
+            </>
+        ),
+    }),
+
+    noRegister: () => ({
+        headline: 'This file does not declare a qubit register yet.',
+        detail: (
+            <>
+                Add one — for example <code>qubit[4] q;</code> — and the circuit appears here.
+            </>
+        ),
+    }),
+
+    unsupportedVersion: ({ version }) => ({
+        headline: `This file declares OpenQASM ${version}.`,
+        detail: 'The circuit editor reads OpenQASM 3. Text editing is unaffected.',
+    }),
+
+    // Not an error: the file is valid OpenQASM, it just holds more than the editor can write back.
+    unsupported: ({ constructs }) => ({
+        headline: 'Read-only: this file uses constructs the circuit editor cannot write back.',
+        detail: <Findings entries={constructs} />,
+    }),
+
+    commentsOnly: ({ comments }) => ({
+        headline: 'Read-only: editing this circuit would drop your comments.',
+        detail: `${count(comments.length, 'comment')} below the header would be lost when the circuit is written back. Comments at the top of the file are kept.`,
+        offersOptIn: true,
+    }),
+
+    invalid: ({ syntaxErrors }) => ({
+        headline: 'This file has syntax errors, so it cannot be shown as a circuit.',
+        detail: <Findings entries={syntaxErrors} />,
+    }),
+};
+
+/** The user has been told what happens to the comments and asked for it anyway. */
+const EDITING_BY_CHOICE: NoticeCopy = {
+    headline: 'Editing this file.',
+    detail: 'Comments below the header will be dropped when the circuit is written back.',
+};
+
+/**
+ * Explains why the circuit cannot be edited, and what to do about it.
+ *
+ * The reason is decided in the transform; this only puts it in words.
+ */
+export function DocumentNotice({ state, classification, onEditAnyway }: Readonly<DocumentNoticeProps>) {
+    const copy = noticeFor(state, classification);
+    if (!copy) return null;
 
     return (
         <div className="border-b border-border bg-bg-light px-3 py-2 text-xs">
-            <p className="font-medium text-text">Read-only: editing this circuit would change more than the circuit.</p>
-            <ul className="mt-1 list-disc pl-4 text-text-muted">
-                {comments.length > 0 && (
-                    <li>
-                        {comments.length === 1 ? '1 comment' : `${comments.length} comments`} below the header would be
-                        lost. Comments at the top of the file are kept.
-                    </li>
-                )}
-                {other.slice(0, 3).map((entry) => (
-                    <li key={`${entry.line}-${entry.construct}`}>
-                        Line {entry.line}: {entry.message}
-                    </li>
-                ))}
-            </ul>
-
-            {other.length === 0 && comments.length > 0 && (
+            <p className="font-medium text-text">{copy.headline}</p>
+            {copy.detail && <div className="mt-1 text-text-muted">{copy.detail}</div>}
+            {copy.offersOptIn && (
                 <button
                     type="button"
                     onClick={onEditAnyway}
@@ -69,3 +105,35 @@ export function DocumentNotice({ state, diagnostics, onEditAnyway }: Readonly<Do
         </div>
     );
 }
+
+function noticeFor(
+    state: DocumentState | undefined,
+    classification: DocumentClassification | undefined,
+): NoticeCopy | null {
+    // The opt-in outranks the classification: the comments are still there, but the
+    // user has already been shown this notice and accepted what happens to them.
+    if (state === 'editableByChoice') return EDITING_BY_CHOICE;
+    if (!classification) return null;
+
+    // COPY holds exactly one entry per kind, so the entry always matches this payload.
+    const copy = COPY[classification.kind] as (classification: DocumentClassification) => NoticeCopy | null;
+    return copy(classification);
+}
+
+/** Lines worth naming, from either the parser or the visitor. */
+function Findings({ entries }: Readonly<{ entries: readonly { line: number; message: string }[] }>) {
+    return (
+        <>
+            <ul className="list-disc pl-4">
+                {entries.slice(0, SHOWN).map((entry) => (
+                    <li key={`${entry.line}-${entry.message}`}>
+                        Line {entry.line}: {entry.message}
+                    </li>
+                ))}
+            </ul>
+            {entries.length > SHOWN && <p className="mt-1">and {entries.length - SHOWN} more.</p>}
+        </>
+    );
+}
+
+const count = (amount: number, noun: string): string => `${amount} ${noun}${amount === 1 ? '' : 's'}`;

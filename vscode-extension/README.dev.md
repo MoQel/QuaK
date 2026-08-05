@@ -77,7 +77,7 @@ Extension Development Host after changes that should be picked up by VSCode.
 For shared editor changes, also run:
 
 ```bash
-npm run typecheck:packages
+npm run typecheck:packages 
 npm run typecheck:frontend
 npm run test:frontend
 ```

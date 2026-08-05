@@ -1,12 +1,11 @@
 import {
+    type AngleSymbols,
+    type CircuitContent,
+    type ElementSelectorDto,
     formatAngle as formatAngleWith,
     GATE_ARITY,
     getRegisterSize,
     isQuantumRegister,
-    type AngleSymbols,
-    type CircuitContent,
-    type ElementSelectorDto,
-    type OperationIdentifier,
     type QuantumOperationDto,
 } from '@quak/circuit-core';
 import type { QasmPreamble } from './toCircuit.ts';
@@ -36,8 +35,7 @@ export function toQasm(content: CircuitContent, preamble: QasmPreamble = DEFAULT
     // CircuitContent carries only quantum registers.
     const quantumRegisters = content.registers.filter(isQuantumRegister);
     for (const register of quantumRegisters) {
-        lines.push(registerMarker(register.name));
-        lines.push(`qubit[${getRegisterSize(register)}] ${register.name};`);
+        lines.push(registerMarker(register.name), `qubit[${getRegisterSize(register)}] ${register.name};`);
     }
     if (quantumRegisters.length > 0) lines.push('');
 
@@ -71,7 +69,7 @@ function operationToQasm(operation: QuantumOperationDto, registerNames: Map<stri
     let head = operation.identifier.toLowerCase();
 
     // Gate arity decides whether an angle is part of the QASM spelling.
-    if (GATE_ARITY[operation.identifier as OperationIdentifier]?.hasRotationAngle && 'rotationAngle' in operation) {
+    if (GATE_ARITY[operation.identifier]?.hasRotationAngle && 'rotationAngle' in operation) {
         head += `(${formatAngle(operation.rotationAngle)})`;
     }
 

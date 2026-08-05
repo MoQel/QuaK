@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { isQuantumRegister, type ElementaryQuantumGateDto } from '@quak/circuit-core';
-import { isEditable, toCircuit } from './toCircuit.ts';
+import { classify, isEditable, toCircuit } from './toCircuit.ts';
 
 /** The transform only ever produces quantum registers; narrows for assertions. */
 const qubitsIn = (source: string): number =>
@@ -234,5 +234,77 @@ describe('toCircuit — stable identity across re-parses', () => {
         expect(after.content!.layers[0].quantumOperations[0].id).toBe(
             before.content!.layers[0].quantumOperations[0].id,
         );
+    });
+});
+
+// The reason a document is read-only is decided once, here, and only worded elsewhere.
+describe('classify — the reason a document cannot be edited', () => {
+    const kindOf = (source: string) => classify(toCircuit(source)).kind;
+
+    it('reports syntax errors, and suppresses what the recovered tree makes up', () => {
+        const classification = classify(toCircuit(`${HEADER}qubit[2 q;\nh q[0]\nfoo q[1];\n`));
+
+        expect(classification.kind).toBe('invalid');
+        if (classification.kind !== 'invalid') throw new Error('unreachable');
+        expect(classification.syntaxErrors.length).toBeGreaterThan(0);
+    });
+
+    it('names the version instead of every rejection it causes', () => {
+        const classification = classify(toCircuit('OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[2];\nh q[0];\n'));
+
+        expect(classification.kind).toBe('unsupportedVersion');
+        if (classification.kind !== 'unsupportedVersion') throw new Error('unreachable');
+        expect(classification.version).toBe('2.0');
+    });
+
+    it('rejects a version 2 header even when the body is valid OpenQASM 3', () => {
+        // Writing this circuit back would keep the header and emit `qubit[n]` under it.
+        expect(kindOf('OPENQASM 2.0;\nqubit[2] q;\nh q[0];\n')).toBe('unsupportedVersion');
+    });
+
+    it.each(['OPENQASM 3;', 'OPENQASM 3.0;', 'OPENQASM 3.1;'])('accepts %s as version 3', (version) => {
+        expect(kindOf(`${version}\nqubit[1] q;\n`)).toBe('editable');
+    });
+
+    it('accepts a file that omits the version header', () => {
+        // The version statement is optional in the grammar.
+        expect(kindOf('qubit[2] q;\nh q[0];\n')).toBe('editable');
+    });
+
+    it('names the unsupported construct rather than the register it prevented', () => {
+        expect(kindOf('OPENQASM 3.0;\nqreg q[2];\nh q[0];\n')).toBe('unsupported');
+        expect(kindOf(`${HEADER}barrier;\n`)).toBe('unsupported');
+    });
+
+    it('calls a file empty only when nothing has been written yet', () => {
+        expect(kindOf('')).toBe('empty');
+        expect(kindOf('\n\n   \n')).toBe('empty');
+    });
+
+    it('does not call a file with content empty just because it has no register', () => {
+        expect(kindOf('// hallo\n')).toBe('noRegister');
+        expect(kindOf('OPENQASM 3.0;\n')).toBe('noRegister');
+        expect(kindOf(HEADER)).toBe('noRegister');
+    });
+
+    it('does not offer the comment opt-in when there is no circuit to unlock', () => {
+        // The comment is the only rejection, but accepting its loss would change nothing.
+        expect(kindOf('OPENQASM 3.0;\n// hier\n')).toBe('noRegister');
+    });
+
+    it('offers the comment opt-in when only comments stand in the way', () => {
+        const classification = classify(toCircuit(`${HEADER}qubit[2] q;\n// unten\nh q[0];\n`));
+
+        expect(classification.kind).toBe('commentsOnly');
+        if (classification.kind !== 'commentsOnly') throw new Error('unreachable');
+        expect(classification.comments.map((entry) => entry.message)).toHaveLength(1);
+    });
+
+    it('keeps the comment opt-in behind constructs that cannot be opted out of', () => {
+        expect(kindOf(`${HEADER}qubit[2] q;\n// unten\nbarrier q;\n`)).toBe('unsupported');
+    });
+
+    it('accepts a register without any gates', () => {
+        expect(kindOf(`${HEADER}qubit[4] q;\n`)).toBe('editable');
     });
 });

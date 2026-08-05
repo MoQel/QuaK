@@ -14,14 +14,14 @@ import { vscodeApi } from './vscodeApi.ts';
 
 /** Root React component for the VSCode webview circuit editor. */
 export function App() {
-    const { circuit, setCircuit, state, diagnostics } = useCircuitDocument();
+    const { circuit, setCircuit, state, classification } = useCircuitDocument();
     const initialLibraryCollapsed = vscodeApi.getState()?.libraryCollapsed ?? false;
 
     return (
         <div className="flex h-screen flex-col bg-bg text-text">
             <DocumentNotice
                 state={state}
-                diagnostics={diagnostics}
+                classification={classification}
                 onEditAnyway={() => vscodeApi.postMessage({ type: 'enableEditing' })}
             />
 

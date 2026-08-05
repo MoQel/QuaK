@@ -1,6 +1,8 @@
 // Shared message types for the VSCode extension host and the circuit editor webview.
 // VSCode provides the postMessage transport; this file defines the application protocol.
 import type { CircuitContent, CircuitResponse } from '@quak/circuit-core';
+// Type-only on purpose: a value import here would pull the ANTLR parser into the webview bundle.
+import type { DocumentClassification } from '@quak/qasm-transform';
 
 export interface ReadyMessage {
     type: 'ready';
@@ -37,6 +39,8 @@ export interface DocumentChangedMessage {
     circuit: CircuitResponse | null;
     version: number;
     state: DocumentState;
+    /** Why the document is in that state, decided once by the transform. */
+    classification: DocumentClassification;
     /** What the transform could not represent. Empty when the document is clean. */
     diagnostics: DocumentDiagnostic[];
 }

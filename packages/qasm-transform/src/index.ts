@@ -7,8 +7,10 @@
 
 export { parseQasm, type ParseResult, type QasmComment, type QasmSyntaxError } from './parse.ts';
 export {
+    classify,
     isEditable,
     toCircuit,
+    type DocumentClassification,
     type QasmPreamble,
     type QasmUnsupportedConstruct,
     type ToCircuitResult,

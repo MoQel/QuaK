@@ -8,6 +8,7 @@ import {
     type LayerResponse,
     type QuantumOperationDto,
     type QuantumRegisterResponse,
+    OperationIdentifier,
 } from '@quak/circuit-core';
 import { evaluateAngle, QasmUnsupportedError } from './angleExpression.ts';
 import { layerMarker, registerMarker } from './structuralComments.ts';
@@ -18,6 +19,7 @@ import {
     QuantumDeclarationStatementContext,
     StatementContext,
     type ProgramContext,
+    GateOperandListContext,
 } from './generated/OpenQASM3Parser.js';
 
 export interface QasmUnsupportedConstruct {
@@ -54,9 +56,65 @@ export interface ToCircuitResult {
     unsupported: QasmUnsupportedConstruct[];
 }
 
-/** The document is visually editable only when the transform preserved everything. */
-export const isEditable = (result: ToCircuitResult): boolean =>
-    result.content !== null && result.syntaxErrors.length === 0 && result.unsupported.length === 0;
+/** Why a document is, or is not, editable through the circuit view. */
+export type DocumentClassification =
+    | { kind: 'editable' }
+    | { kind: 'invalid'; syntaxErrors: QasmSyntaxError[] }
+    | { kind: 'unsupportedVersion'; version: string }
+    | { kind: 'unsupported'; constructs: QasmUnsupportedConstruct[] }
+    | { kind: 'commentsOnly'; comments: QasmUnsupportedConstruct[] }
+    | { kind: 'empty' }
+    | { kind: 'noRegister' };
+
+const SUPPORTED_MAJOR_VERSION = '3';
+
+/** `OPENQASM 3;` and `OPENQASM 3.0;` declare the same major version. */
+const majorVersion = (version: string): string => version.split('.')[0];
+
+/** Comments are the one rejection a user can knowingly accept, so they stand apart. */
+const isComment = (entry: QasmUnsupportedConstruct): boolean => entry.construct === 'comment';
+
+/**
+ * Names the single most useful reason a document cannot be edited visually.
+ *
+ * The order of the checks is the design here: whatever matches first is the
+ * cause, and most of what follows it is a consequence. A wrong version explains
+ * every `qreg` rejection under it; a syntax error explains the nonsense the
+ * visitor finds in a recovered parse tree.
+ */
+export function classify(result: ToCircuitResult): DocumentClassification {
+    if (result.syntaxErrors.length > 0) {
+        return { kind: 'invalid', syntaxErrors: result.syntaxErrors };
+    }
+
+    const { version, includes, headerComments } = result.preamble;
+    if (version !== null && majorVersion(version) !== SUPPORTED_MAJOR_VERSION) {
+        return { kind: 'unsupportedVersion', version };
+    }
+
+    // Ahead of the register checks: `qreg q[2];` does declare a register, only
+    // in a spelling this transform does not read.
+    const constructs = result.unsupported.filter((entry) => !isComment(entry));
+    if (constructs.length > 0) {
+        return { kind: 'unsupported', constructs };
+    }
+
+    if (result.content === null) {
+        const nothingWritten = version === null && includes.length === 0 && headerComments.length === 0;
+        return nothingWritten ? { kind: 'empty' } : { kind: 'noRegister' };
+    }
+
+    // Last, so the opt-in is only offered where accepting it actually unlocks editing.
+    const comments = result.unsupported.filter(isComment);
+    if (comments.length > 0) {
+        return { kind: 'commentsOnly', comments };
+    }
+
+    return { kind: 'editable' };
+}
+
+/** The document is visually editable when no syntax errors, version mismatches and unsupported operations are placed. */
+export const isEditable = (result: ToCircuitResult): boolean => classify(result).kind === 'editable';
 
 const UNSUPPORTED_STATEMENTS = unsupportedStatementRules();
 
@@ -204,31 +262,14 @@ function visitGateCall(ctx: GateCallStatementContext, builder: CircuitBuilder): 
         return;
     }
 
-    if (ctx.gateModifier().length > 0) {
-        builder.reject(ctx, 'gateModifier', `Gate modifiers are not supported: ${truncate(ctx.getText())}`);
-        return;
-    }
-
-    // The `[4]` in `h[4] q;` — a timing designator the circuit model does not carry.
-    if (ctx.designator()) {
-        builder.reject(ctx, 'gateCallStatement', `Gate designators are not supported: ${truncate(ctx.getText())}`);
-        return;
-    }
+    if (!checkNoModifiersOrDesignator(ctx, builder)) return;
 
     const gateName = identifierNode.getText();
-    const identifier = toOperationIdentifier(gateName);
-    // Support is explicit. Arity alone does not make a gate call round-trippable.
-    if (!identifier || !isGateSupported(identifier)) {
-        builder.reject(ctx, identifier ?? gateName.toUpperCase(), `Unsupported gate '${gateName}'.`);
-        return;
-    }
+    const identifier = resolveSupportedGate(gateName, ctx, builder);
+    if (!identifier) return;
 
-    const operands: ElementSelectorDto[] = [];
-    for (const operand of operandList.gateOperand()) {
-        const selector = parseOperand(operand, builder);
-        if (!selector) return;
-        operands.push(selector);
-    }
+    const operands = parseOperands(operandList, builder);
+    if (!operands) return;
 
     const { controlSize, targetSize, type, hasRotationAngle } = GATE_ARITY[identifier];
     if (operands.length !== controlSize + targetSize) {
@@ -280,6 +321,45 @@ function visitGateCall(ctx: GateCallStatementContext, builder: CircuitBuilder): 
     } as QuantumOperationDto;
 
     builder.layers.push({ quantumOperations: [operation] });
+}
+
+function checkNoModifiersOrDesignator(ctx: GateCallStatementContext, builder: CircuitBuilder): boolean {
+    if (ctx.gateModifier().length > 0) {
+        builder.reject(ctx, 'gateModifier', `Gate modifiers are not supported: ${truncate(ctx.getText())}`);
+        return false;
+    }
+
+    // The `[4]` in `h[4] q;` — a timing designator the circuit model does not carry.
+    if (ctx.designator()) {
+        builder.reject(ctx, 'gateCallStatement', `Gate designators are not supported: ${truncate(ctx.getText())}`);
+        return false;
+    }
+
+    return true;
+}
+
+function resolveSupportedGate(
+    gateName: string,
+    ctx: GateCallStatementContext,
+    builder: CircuitBuilder,
+): OperationIdentifier | undefined {
+    const identifier = toOperationIdentifier(gateName);
+    // Support is explicit. Arity alone does not make a gate call round-trippable.
+    if (!identifier || !isGateSupported(identifier)) {
+        builder.reject(ctx, identifier ?? gateName.toUpperCase(), `Unsupported gate '${gateName}'.`);
+        return undefined;
+    }
+    return identifier;
+}
+
+function parseOperands(operandList: GateOperandListContext, builder: CircuitBuilder): ElementSelectorDto[] | undefined {
+    const operands: ElementSelectorDto[] = [];
+    for (const operand of operandList.gateOperand()) {
+        const selector = parseOperand(operand, builder);
+        if (!selector) return undefined;
+        operands.push(selector);
+    }
+    return operands;
 }
 
 /**

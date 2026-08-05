@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { decideEdit, PanelRegistry } from './arbitration.ts';
+import type { DocumentClassification } from '@quak/qasm-transform';
+import { applyOptIn, decideEdit, PanelRegistry } from './arbitration.ts';
 
 describe('decideEdit', () => {
     it('applies an edit based on the current version of an editable document', () => {
@@ -51,6 +52,36 @@ describe('decideEdit', () => {
             kind: 'reject',
             reason: 'stale',
         });
+    });
+});
+
+describe('applyOptIn', () => {
+    const comments = [{ line: 3, column: 0, construct: 'comment', message: 'would be lost' }];
+
+    it('needs no opt-in for a document that regenerates losslessly', () => {
+        expect(applyOptIn({ classification: { kind: 'editable' }, hasOptedIn: false })).toBe('editable');
+    });
+
+    it('keeps a comment-bearing document read-only until the user opts in', () => {
+        expect(applyOptIn({ classification: { kind: 'commentsOnly', comments }, hasOptedIn: false })).toBe('readOnly');
+    });
+
+    it('unlocks a comment-bearing document the user opted into', () => {
+        expect(applyOptIn({ classification: { kind: 'commentsOnly', comments }, hasOptedIn: true })).toBe(
+            'editableByChoice',
+        );
+    });
+
+    it.each<[string, DocumentClassification]>([
+        ['an unsupported construct', { kind: 'unsupported', constructs: comments }],
+        ['a syntax error', { kind: 'invalid', syntaxErrors: [{ line: 1, column: 0, message: 'boom' }] }],
+        ['an OpenQASM 2 header', { kind: 'unsupportedVersion', version: '2.0' }],
+        ['no register', { kind: 'noRegister' }],
+        ['nothing at all', { kind: 'empty' }],
+    ])('does not let the opt-in carry over to %s', (_case, classification) => {
+        // The document changes while it is open. Consent to losing comments is not
+        // consent to losing a statement that appeared afterwards.
+        expect(applyOptIn({ classification, hasOptedIn: true })).toBe('readOnly');
     });
 });
 

@@ -1,6 +1,7 @@
 // React hook for the webview side of the VSCode document protocol.
 import { useEffect, useRef, useState } from 'react';
 import type { CircuitContent, CircuitResponse } from '@quak/circuit-core';
+import type { DocumentClassification } from '@quak/qasm-transform';
 import type { DocumentDiagnostic, DocumentState, HostMessage } from '../../shared/protocol.ts';
 import { vscodeApi } from '../vscodeApi.ts';
 
@@ -8,6 +9,7 @@ export interface DocumentSnapshot {
     circuit: CircuitResponse | null;
     version: number;
     state: DocumentState;
+    classification: DocumentClassification;
     diagnostics: DocumentDiagnostic[];
 }
 
@@ -37,6 +39,7 @@ export function useDocument() {
                         circuit: message.circuit,
                         version: message.version,
                         state: message.state,
+                        classification: message.classification,
                         diagnostics: message.diagnostics,
                     };
                     snapshotRef.current = next;

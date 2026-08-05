@@ -1,45 +1,16 @@
 // Host-side controller for the .qasm custom editor. It owns the VSCode document,
 // creates webviews, broadcasts document snapshots, and applies approved edits.
 import * as vscode from 'vscode';
-import type { CircuitResponse } from '@quak/circuit-core';
-import { isEditable, toCircuit, toQasm, type QasmPreamble } from '@quak/qasm-transform';
-import { decideEdit, PanelRegistry } from './arbitration.ts';
+import { toQasm, type DocumentClassification } from '@quak/qasm-transform';
+import { applyOptIn, decideEdit, PanelRegistry } from './arbitration.ts';
 import type {
     ApplyEditMessage,
-    DocumentDiagnostic,
     DocumentState,
     EditRejectedReason,
     HostMessage,
     WebviewMessage,
 } from '../shared/protocol.ts';
-
-/** Parses QASM text and reports whether visual edits can be applied without data loss. */
-function classifyText(text: string): {
-    state: Exclude<DocumentState, 'editableByChoice'>;
-    circuit: CircuitResponse | null;
-    preamble: QasmPreamble;
-    diagnostics: DocumentDiagnostic[];
-} {
-    const result = toCircuit(text);
-    const circuit = result.content
-        ? { id: 'document', registers: result.content.registers, layers: result.content.layers }
-        : null;
-
-    const diagnostics: DocumentDiagnostic[] = [
-        ...result.syntaxErrors.map((error) => ({
-            line: error.line,
-            construct: 'syntax',
-            message: error.message,
-        })),
-        ...result.unsupported.map((entry) => ({
-            line: entry.line,
-            construct: entry.construct,
-            message: entry.message,
-        })),
-    ];
-
-    return { state: isEditable(result) ? 'editable' : 'readOnly', circuit, preamble: result.preamble, diagnostics };
-}
+import { classifyText } from './documentModel.ts';
 
 export class CircuitEditorProvider implements vscode.CustomTextEditorProvider {
     public static readonly viewType = 'quak.circuitEditor';
@@ -106,7 +77,7 @@ export class CircuitEditorProvider implements vscode.CustomTextEditorProvider {
         const current = classifyText(document.getText());
         const decision = decideEdit({
             documentVersion: document.version,
-            documentState: this.applyOptIn(document, current.state),
+            documentState: this.documentState(document, current.classification),
             baseVersion: message.baseVersion,
         });
 
@@ -154,23 +125,19 @@ export class CircuitEditorProvider implements vscode.CustomTextEditorProvider {
         }
     }
 
-    private applyOptIn(
-        document: vscode.TextDocument,
-        state: Exclude<DocumentState, 'editableByChoice'>,
-    ): DocumentState {
-        if (state === 'editable') return 'editable';
-
-        return this.editingEnabled.has(document.uri.toString()) ? 'editableByChoice' : 'readOnly';
+    private documentState(document: vscode.TextDocument, classification: DocumentClassification): DocumentState {
+        return applyOptIn({ classification, hasOptedIn: this.editingEnabled.has(document.uri.toString()) });
     }
 
     private documentChanged(document: vscode.TextDocument): HostMessage {
         const text = document.getText();
-        const { state, circuit, diagnostics } = classifyText(text);
+        const { circuit, diagnostics, classification } = classifyText(text);
         return {
             type: 'documentChanged',
             circuit,
             version: document.version,
-            state: this.applyOptIn(document, state),
+            state: this.documentState(document, classification),
+            classification,
             diagnostics,
         };
     }
