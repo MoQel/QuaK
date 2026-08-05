@@ -9,7 +9,8 @@
         ],
         "types": [
             "vscode",
-            "mocha"
+            "mocha",
+            "node"
         ],
         "strict": true,
         "isolatedModules": true,
