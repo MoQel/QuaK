@@ -6,7 +6,6 @@
             "type": "extensionHost",
             "request": "launch",
             "args": [
-                "--disable-extensions",
                 "--extensionDevelopmentPath=${workspaceFolder}/vscode-extension"
             ],
             "outFiles": ["${workspaceFolder}/vscode-extension/dist/**/*.cjs"]
