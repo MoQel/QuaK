@@ -32,11 +32,14 @@
     "extensionPack": [
         "orangekame3.vscode-qasm"
     ],
+    "activationEvents": [
+        "onLanguage:qasm",
+        "workspaceContains:**/*.qasm"
+    ],
     "main": "./dist/extension.cjs",
     "capabilities": {
         "untrustedWorkspaces": {
-            "supported": "limited",
-            "description": "The circuit editor is disabled in untrusted workspaces."
+            "supported": true
         }
     },
     "contributes": {

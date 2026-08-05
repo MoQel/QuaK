@@ -13,13 +13,15 @@ import * as vscode from 'vscode';
 
 const EXTENSION_ID = 'quak.quak-vscode';
 const VIEW_TYPE = 'quak.circuitEditor';
+const SOURCE = 'QuaK';
 const SAMPLE = 'OPENQASM 3.0;\ninclude "stdgates.inc";\n\nqubit[2] q;\n\nh q[0];\ncx q[0], q[1];\n';
 
-let tempDir: string;
+let tempDir: string | undefined;
 
-function writeQasm(name: string): vscode.Uri {
+function writeQasm(name: string, content: string = SAMPLE): vscode.Uri {
+    tempDir ??= fs.mkdtempSync(path.join(os.tmpdir(), 'quak-test-'));
     const file = path.join(tempDir, name);
-    fs.writeFileSync(file, SAMPLE);
+    fs.writeFileSync(file, content);
     return vscode.Uri.file(file);
 }
 
@@ -51,10 +53,6 @@ function customTabsFor(uri: vscode.Uri): vscode.Tab[] {
 }
 
 suite('QuaK circuit editor', () => {
-    suiteSetup(() => {
-        tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'quak-test-'));
-    });
-
     teardown(async () => {
         await vscode.commands.executeCommand('workbench.action.closeAllEditors');
     });
@@ -130,4 +128,87 @@ suite('QuaK circuit editor', () => {
             `expected version to advance, got ${startVersion} -> ${document.version}`,
         );
     });
+});
+
+// The circuit editor is deliberately never opened here: the findings belong to the
+// file, and this is the part unit tests cannot reach — that they are published at
+// all, land on the right line, and go away again.
+const HEADER = 'OPENQASM 3.0;\ninclude "stdgates.inc";\n';
+const UNSUPPORTED = `${HEADER}qubit[2] q;\nbarrier q;\n`;
+const MISSING_SEMICOLON = `${HEADER}qubit[2] q\nh q[0];\n`;
+
+const ourDiagnostics = (uri: vscode.Uri): vscode.Diagnostic[] =>
+    // Other extensions publish for .qasm too; only ours carry this source.
+    vscode.languages.getDiagnostics(uri).filter((diagnostic) => diagnostic.source === SOURCE);
+
+/** Resolves once our diagnostics for `uri` look the way the test expects. */
+function waitForDiagnostics(
+    uri: vscode.Uri,
+    predicate: (diagnostics: vscode.Diagnostic[]) => boolean,
+): Promise<vscode.Diagnostic[]> {
+    if (predicate(ourDiagnostics(uri))) {
+        return Promise.resolve(ourDiagnostics(uri));
+    }
+
+    return new Promise((resolve) => {
+        const sub = vscode.languages.onDidChangeDiagnostics((event) => {
+            const affected = event.uris.some((changed) => changed.toString() === uri.toString());
+            if (!affected || !predicate(ourDiagnostics(uri))) return;
+
+            sub.dispose();
+            resolve(ourDiagnostics(uri));
+        });
+    });
+}
+
+suite('QuaK diagnostics', () => {
+    suiteSetup(async () => {
+        // Publishing starts at activation, so do not rely on another suite for it.
+        await vscode.extensions.getExtension(EXTENSION_ID)?.activate();
+    });
+
+    teardown(async () => {
+        await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+    });
+
+    test('reports an unsupported construct on the line it sits on', async () => {
+        const uri = writeQasm('unsupported.qasm', UNSUPPORTED);
+        await vscode.workspace.openTextDocument(uri);
+
+        const [diagnostic] = await waitForDiagnostics(uri, (found) => found.length > 0);
+
+        assert.equal(diagnostic.code, 'barrierStatement');
+        assert.equal(diagnostic.range.start.line, 3);
+        // Valid OpenQASM, just outside what the editor can write back.
+        assert.equal(diagnostic.severity, vscode.DiagnosticSeverity.Information);
+    });
+
+    test('marks a missing token at the gap, with something to see', async () => {
+        const uri = writeQasm('syntax.qasm', MISSING_SEMICOLON);
+        await vscode.workspace.openTextDocument(uri);
+
+        const [diagnostic] = await waitForDiagnostics(uri, (found) => found.length > 0);
+
+        assert.equal(diagnostic.severity, vscode.DiagnosticSeverity.Error);
+        // Line 3 of the file, not the `h` below it that ANTLR blames.
+        assert.equal(diagnostic.range.start.line, 2);
+        // A range that starts where the token is missing would be empty, and invisible.
+        assert.ok(!diagnostic.range.isEmpty, 'expected a range wide enough to show');
+    });
+
+    test('takes the finding back once the document is fixed', async () => {
+        const uri = writeQasm('fixed.qasm', UNSUPPORTED);
+        await vscode.workspace.openTextDocument(uri);
+        await waitForDiagnostics(uri, (found) => found.length > 0);
+
+        const edit = new vscode.WorkspaceEdit();
+        edit.delete(uri, new vscode.Range(new vscode.Position(3, 0), new vscode.Position(4, 0)));
+        await vscode.workspace.applyEdit(edit);
+
+        assert.deepEqual(await waitForDiagnostics(uri, (found) => found.length === 0), []);
+    });
+
+    // Not covered: that closing a file takes its findings with it. VSCode disposes a
+    // TextDocument some time after its last editor closes, not with it, so a test for
+    // that waits on a timer nobody controls — it timed out at 20s when tried.
 });
