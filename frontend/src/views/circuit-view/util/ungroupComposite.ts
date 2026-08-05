@@ -1,4 +1,10 @@
-import { CircuitResponse, CompositeQuantumGateDto, isCompositeGate, QuantumOperationDto } from '@/api/dto/circuit.ts';
+import {
+    CircuitResponse,
+    CompositeQuantumGateDto,
+    isCompositeGate,
+    LoopBlockDto,
+    QuantumOperationDto,
+} from '@/api/dto/circuit.ts';
 
 type Layers = CircuitResponse['layers'];
 
@@ -42,26 +48,61 @@ const findComposite = (
  *
  * A gate with an empty body simply disappears, which is what ungrouping nothing amounts to.
  *
- * @param operationId the composite to dissolve; anything else leaves the layers untouched
+ * <p>A repetition frame around the box survives: its members are ids, and the box's id is replaced
+ * in place by the ids of what came out of it. Without that the frame would lose its only member and
+ * vanish — dissolving a gate would silently drop the loop it was sitting in.
+ *
+ * @param operationId the composite to dissolve; anything else leaves the circuit untouched
  */
-export const ungroupComposite = (layers: Layers, operationId: string): Layers => {
-    const found = findComposite(layers, operationId);
-    if (!found) return layers;
+export const ungroupComposite = (circuit: CircuitResponse, operationId: string): CircuitResponse => {
+    const found = findComposite(circuit.layers, operationId);
+    if (!found) return circuit;
 
     const { layerIdx, gate } = found;
+    const layers = circuit.layers;
+    const freed = (gate.body ?? []).map(withFreshId);
 
     // Everything left of the box is unaffected; its own layer keeps whatever else stood in it.
     const rebuilt: Layers = layers.slice(0, layerIdx).map(copyLayer);
     rebuilt.push({ quantumOperations: layers[layerIdx].quantumOperations.filter((op) => op.id !== operationId) });
 
-    (gate.body ?? []).forEach((operation, position) => {
+    freed.forEach((operation, position) => {
         const targetIdx = layerIdx + position;
         while (rebuilt.length <= targetIdx) rebuilt.push({ quantumOperations: [] });
-        rebuilt[targetIdx].quantumOperations.push(withFreshId(operation));
+        rebuilt[targetIdx].quantumOperations.push(operation);
     });
 
     // Appended after the inserted layers, so everything that came after the box still does.
     rebuilt.push(...layers.slice(layerIdx + 1).map(copyLayer));
 
-    return rebuilt.filter((layer) => layer.quantumOperations.length > 0);
+    return {
+        ...circuit,
+        layers: rebuilt.filter((layer) => layer.quantumOperations.length > 0),
+        loopBlocks: inheritMembership(circuit.loopBlocks ?? [], operationId, freed),
+    };
+};
+
+/**
+ * Hands the dissolved gate's place in every frame over to the operations that replaced it.
+ *
+ * The freed ids go in at the position the box held, so the members stay in program order — which is
+ * what code generation writes inside the `for`.
+ */
+const inheritMembership = (
+    loopBlocks: LoopBlockDto[],
+    operationId: string,
+    freed: QuantumOperationDto[],
+): LoopBlockDto[] => {
+    const freedIds = freed.map((operation) => operation.id!);
+
+    return loopBlocks
+        .map((block) =>
+            block.operationIds.includes(operationId)
+                ? {
+                      ...block,
+                      operationIds: block.operationIds.flatMap((id) => (id === operationId ? freedIds : [id])),
+                  }
+                : block,
+        )
+        .filter((block) => block.operationIds.length > 0);
 };

@@ -33,6 +33,10 @@ interface CompositeQuantumGateProps {
     onDelete: () => void;
     /** Dissolves the box into the gates it is made of; offered on right-click. */
     onUngroup: () => void;
+    /** How often the enclosing frame repeats, shown on the menu entry that removes it. */
+    loopRepeatCount?: number;
+    /** Drops the enclosing repetition frame; absent when the gate is not in one. */
+    onRemoveLoop?: () => void;
 }
 
 /**
@@ -51,6 +55,8 @@ export function CompositeQuantumGate({
     onDragEnd,
     onDelete,
     onUngroup,
+    loopRepeatCount,
+    onRemoveLoop,
 }: Readonly<CompositeQuantumGateProps>) {
     const isDraggingRef = useRef(false);
     const interactivity = isGhost ? 'pointer-events-none' : 'pointer-events-auto';
@@ -191,6 +197,9 @@ export function CompositeQuantumGate({
 
             <ContextMenuContent>
                 <ContextMenuItem onSelect={onUngroup}>Ungroup</ContextMenuItem>
+                {onRemoveLoop && (
+                    <ContextMenuItem onSelect={onRemoveLoop}>Remove loop ×{loopRepeatCount}</ContextMenuItem>
+                )}
                 <ContextMenuItem variant="destructive" onSelect={onDelete}>
                     Delete
                 </ContextMenuItem>

@@ -34,7 +34,19 @@ export function CircuitView() {
 
     /** Dissolves a composite gate into the operations it is made of, one level deep. */
     const ungroupQuantumOperation = (operationId: string) => {
-        setActiveCircuit((prev) => (prev ? { ...prev, layers: ungroupComposite(prev.layers, operationId) } : prev));
+        setActiveCircuit((prev) => (prev ? ungroupComposite(prev, operationId) : prev));
+    };
+
+    /**
+     * Drops a repetition frame, leaving the gates it covered in place.
+     *
+     * The body then runs once instead of n times, so this changes what the circuit computes — it is
+     * the deliberate counterpart to the frame being only an annotation, not a container.
+     */
+    const removeLoopBlock = (loopBlockId: string) => {
+        setActiveCircuit((prev) =>
+            prev ? { ...prev, loopBlocks: (prev.loopBlocks ?? []).filter((block) => block.id !== loopBlockId) } : prev,
+        );
     };
 
     const { isOperationDragging, draggingOperationSize, draggingGrabOffset } = useSelector(
@@ -230,12 +242,6 @@ export function CircuitView() {
         [uiLayers, activeCircuit?.loopBlocks, activeCircuit?.registers],
     );
 
-    /** Every operation covered by some frame, so the gate components can draw themselves smaller. */
-    const loopMemberIds = useMemo(
-        () => new Set((activeCircuit?.loopBlocks ?? []).flatMap((block) => block.operationIds)),
-        [activeCircuit?.loopBlocks],
-    );
-
     const operationColumnCount = Math.max(uiLayers.length + 1, 1);
     const operationAreaWidth = operationColumnCount * CELL_WIDTH;
     const circuitWidth = LABEL_WIDTH + operationAreaWidth;
@@ -277,8 +283,9 @@ export function CircuitView() {
                                 uiLayers={uiLayers}
                                 registers={activeCircuit?.registers ?? []}
                                 isOperationDragging={isOperationDragging}
-                                loopMemberIds={loopMemberIds}
+                                loopBlocks={activeCircuit?.loopBlocks ?? []}
                                 removeQuantumOperation={removeQuantumOperation}
+                                removeLoopBlock={removeLoopBlock}
                                 ungroupQuantumOperation={ungroupQuantumOperation}
                                 setDraggingOperationId={setDraggingOperationId}
                                 setHoverPos={setHoverPos}

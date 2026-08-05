@@ -1,5 +1,6 @@
 import React, { useMemo, useRef } from 'react';
 import styles from '@/App.module.css';
+import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu.tsx';
 import { QuantumOperationDto, RegisterResponse, ElementSelectorDto, getRegisterSize } from '@/api/dto/circuit.ts';
 import { getOperationDefinition, OperationDefinition } from '@/lib/operations.ts';
 import { CELL_WIDTH, LOOP_GATE_SCALE, QUBIT_HEIGHT } from '@/views/circuit-view/util/layout.ts';
@@ -22,6 +23,10 @@ interface ElementaryQuantumGateProps {
     onDragStart: (operationSize: number, grabOffset: number) => void;
     onDragEnd: () => void;
     onDelete: () => void;
+    /** How often the enclosing frame repeats, shown on the menu entry that removes it. */
+    loopRepeatCount?: number;
+    /** Drops the enclosing repetition frame; absent when the gate is not in one. */
+    onRemoveLoop?: () => void;
 }
 
 const getGlobalIndex = (selector: ElementSelectorDto, registers: RegisterResponse[]): number => {
@@ -42,6 +47,8 @@ export function ElementaryQuantumGate({
     onDragStart,
     onDragEnd,
     onDelete,
+    loopRepeatCount,
+    onRemoveLoop,
 }: Readonly<ElementaryQuantumGateProps>) {
     const definition = getOperationDefinition(operation.identifier);
     const isDraggingRef = useRef(false);
@@ -106,7 +113,7 @@ export function ElementaryQuantumGate({
         if (!isDraggingRef.current) onDelete?.();
     };
 
-    return (
+    const gate = (
         <div
             draggable
             onDragStart={handleDragStart}
@@ -165,6 +172,22 @@ export function ElementaryQuantumGate({
                 />
             ))}
         </div>
+    );
+
+    // Only wrapped when there is something to offer: an elementary gate has no actions of its own,
+    // so outside a frame it stays the plain draggable element it always was. `asChild` keeps that
+    // very element the drag source — a wrapper node would break the HTML5 drag.
+    if (!onRemoveLoop) return gate;
+
+    return (
+        <ContextMenu>
+            <ContextMenuTrigger asChild disabled={isGhost}>
+                {gate}
+            </ContextMenuTrigger>
+            <ContextMenuContent>
+                <ContextMenuItem onSelect={onRemoveLoop}>Remove loop ×{loopRepeatCount}</ContextMenuItem>
+            </ContextMenuContent>
+        </ContextMenu>
     );
 }
 

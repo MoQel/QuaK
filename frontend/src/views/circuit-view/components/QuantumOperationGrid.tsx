@@ -1,4 +1,5 @@
-import { isCompositeGate, QuantumOperationDto, RegisterResponse } from '@/api/dto/circuit.ts';
+import { isCompositeGate, LoopBlockDto, QuantumOperationDto, RegisterResponse } from '@/api/dto/circuit.ts';
+import { innermostBlockCovering } from '@/lib/loopBlocks.ts';
 import { CompositeQuantumGate } from '@/views/circuit-view/components/CompositeQuantumGate.tsx';
 import { ElementaryQuantumGate } from '@/views/circuit-view/components/ElementaryQuantumGate.tsx';
 import { UiLayer } from '@/views/circuit-view/util/types.ts';
@@ -9,9 +10,11 @@ interface QuantumOperationGridProps {
     uiLayers: UiLayer[];
     registers: RegisterResponse[];
     isOperationDragging: boolean;
-    /** Ids of the operations covered by a repetition frame; those are drawn a little smaller. */
-    loopMemberIds: Set<string>;
+    /** Repetition frames, so each gate knows whether it sits in one and which to offer removing. */
+    loopBlocks: LoopBlockDto[];
     removeQuantumOperation: (operationId: string) => void;
+    /** Drops a repetition frame, leaving its gates where they are. */
+    removeLoopBlock: (loopBlockId: string) => void;
     /** Replaces a composite gate by the operations it is made of. */
     ungroupQuantumOperation: (operationId: string) => void;
     setDraggingOperationId: (id: string | null) => void;
@@ -23,8 +26,9 @@ export function QuantumOperationGrid({
     uiLayers,
     registers,
     isOperationDragging,
-    loopMemberIds,
+    loopBlocks,
     removeQuantumOperation,
+    removeLoopBlock,
     ungroupQuantumOperation,
     setDraggingOperationId,
     setHoverPos,
@@ -60,22 +64,29 @@ export function QuantumOperationGrid({
 
     return (
         <div className={`absolute inset-0 z-20 ${isOperationDragging ? 'pointer-events-none' : ''}`}>
-            {renderedOperations.map(({ op, layerIdx, isGhost }) =>
+            {renderedOperations.map(({ op, layerIdx, isGhost }) => {
+                // The frame drawn tightest around this gate: it decides both the smaller rendering
+                // and which loop the gate's context menu offers to remove.
+                const enclosingLoop = op.id ? innermostBlockCovering(loopBlocks, op.id) : undefined;
+                const onRemoveLoop = enclosingLoop ? () => removeLoopBlock(enclosingLoop.id) : undefined;
+
                 // A user-defined gate is one box rather than a set of target/control markers.
-                isCompositeGate(op) ? (
+                return isCompositeGate(op) ? (
                     <CompositeQuantumGate
                         key={op.id}
                         operation={op}
                         registers={registers}
                         layerIdx={layerIdx}
                         isGhost={isGhost}
-                        isInLoop={loopMemberIds.has(op.id!)}
+                        isInLoop={enclosingLoop !== undefined}
+                        loopRepeatCount={enclosingLoop?.repeatCount}
                         onDragStart={(operationSize, grabOffset) =>
                             handleOperationDragStart(op.id!, operationSize, grabOffset)
                         }
                         onDragEnd={handleOperationDragEnd}
                         onDelete={() => removeQuantumOperation(op.id!)}
                         onUngroup={() => ungroupQuantumOperation(op.id!)}
+                        onRemoveLoop={onRemoveLoop}
                     />
                 ) : (
                     <ElementaryQuantumGate
@@ -84,15 +95,17 @@ export function QuantumOperationGrid({
                         registers={registers}
                         layerIdx={layerIdx}
                         isGhost={isGhost}
-                        isInLoop={loopMemberIds.has(op.id!)}
+                        isInLoop={enclosingLoop !== undefined}
+                        loopRepeatCount={enclosingLoop?.repeatCount}
                         onDragStart={(operationSize, grabOffset) =>
                             handleOperationDragStart(op.id!, operationSize, grabOffset)
                         }
                         onDragEnd={handleOperationDragEnd}
                         onDelete={() => removeQuantumOperation(op.id!)}
+                        onRemoveLoop={onRemoveLoop}
                     />
-                ),
-            )}
+                );
+            })}
         </div>
     );
 }

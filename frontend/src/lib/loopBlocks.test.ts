@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CircuitResponse, ElementaryQuantumGateDto, LoopBlockDto } from '@/api/dto/circuit.ts';
-import { toExecutionOrder } from './loopBlocks.ts';
+import { innermostBlockCovering, toExecutionOrder } from './loopBlocks.ts';
 
 const gate = (id: string, identifier: string, qubitIdx = 0): ElementaryQuantumGateDto => ({
     id,
@@ -87,5 +87,34 @@ describe('toExecutionOrder', () => {
         const circuit = circuitOf([[gate('a', 'H')], [{ ...gate('dummy', 'DUMMY'), type: 'DUMMY' } as never]]);
 
         expect(identifiers(circuit)).toEqual(['H']);
+    });
+});
+
+describe('innermostBlockCovering', () => {
+    const blocks: LoopBlockDto[] = [
+        { id: 'outer', repeatCount: 2, operationIds: ['a', 'b'] },
+        { id: 'inner', repeatCount: 3, operationIds: ['b'] },
+    ];
+
+    it('picks the frame drawn tightest around the gate', () => {
+        expect(innermostBlockCovering(blocks, 'b')?.id).toBe('inner');
+    });
+
+    it('falls back to the only frame covering the gate', () => {
+        expect(innermostBlockCovering(blocks, 'a')?.id).toBe('outer');
+    });
+
+    it('returns nothing for a gate outside every frame', () => {
+        expect(innermostBlockCovering(blocks, 'loose')).toBeUndefined();
+    });
+
+    /** Two frames over the same operations are staggered by list order, and so is the pick. */
+    it('takes the last of frames covering exactly the same operations', () => {
+        const equal: LoopBlockDto[] = [
+            { id: 'first', repeatCount: 2, operationIds: ['a'] },
+            { id: 'second', repeatCount: 3, operationIds: ['a'] },
+        ];
+
+        expect(innermostBlockCovering(equal, 'a')?.id).toBe('second');
     });
 });

@@ -21,6 +21,23 @@ export const outermostBlocksCovering = (blocks: LoopBlockDto[], operationId: str
 };
 
 /**
+ * The frame drawn closest around this operation, or undefined when it is in none.
+ *
+ * The mirror image of {@link outermostBlocksCovering}, and what a per-gate "remove this loop" acts
+ * on: the innermost box is the one the user sees hugging the gate. Frames covering exactly the same
+ * operations are ordered by their position in the list, matching how `loopFrames.nestingDepth`
+ * staggers them on screen, so the one that *looks* innermost is the one that goes.
+ */
+export const innermostBlockCovering = (blocks: LoopBlockDto[], operationId: string): LoopBlockDto | undefined => {
+    const covering = blocks.filter((block) => block.operationIds.includes(operationId));
+    if (covering.length === 0) return undefined;
+
+    const tightest = Math.min(...covering.map((block) => block.operationIds.length));
+    const candidates = covering.filter((block) => block.operationIds.length === tightest);
+    return candidates[candidates.length - 1];
+};
+
+/**
  * Whether one frame sits strictly inside another. Equal member sets do not nest — which is also what
  * stops the recursion when two loops end up covering exactly the same operations.
  */
