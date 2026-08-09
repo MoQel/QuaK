@@ -27,6 +27,8 @@ interface ElementaryQuantumGateProps {
     loopRepeatCount?: number;
     /** Drops the enclosing repetition frame; absent when the gate is not in one. */
     onRemoveLoop?: () => void;
+    /** Opens the angle editor; only offered on a rotation gate (rx/ry/rz). */
+    onEditAngle?: () => void;
 }
 
 const getGlobalIndex = (selector: ElementSelectorDto, registers: RegisterResponse[]): number => {
@@ -49,6 +51,7 @@ export function ElementaryQuantumGate({
     onDelete,
     loopRepeatCount,
     onRemoveLoop,
+    onEditAngle,
 }: Readonly<ElementaryQuantumGateProps>) {
     const definition = getOperationDefinition(operation.identifier);
     const isDraggingRef = useRef(false);
@@ -174,10 +177,14 @@ export function ElementaryQuantumGate({
         </div>
     );
 
-    // Only wrapped when there is something to offer: an elementary gate has no actions of its own,
-    // so outside a frame it stays the plain draggable element it always was. `asChild` keeps that
-    // very element the drag source — a wrapper node would break the HTML5 drag.
-    if (!onRemoveLoop) return gate;
+    // Only a rotation gate has an angle to edit; everything else would get a menu entry that does
+    // not apply to it. The gate decides this itself because it already holds the definition.
+    const canEditAngle = definition.hasRotationAngle && onEditAngle !== undefined;
+
+    // Only wrapped when there is something to offer: a gate with neither an angle nor an enclosing
+    // frame stays the plain draggable element it always was. `asChild` keeps that very element the
+    // drag source — a wrapper node would break the HTML5 drag.
+    if (!onRemoveLoop && !canEditAngle) return gate;
 
     return (
         <ContextMenu>
@@ -185,7 +192,10 @@ export function ElementaryQuantumGate({
                 {gate}
             </ContextMenuTrigger>
             <ContextMenuContent>
-                <ContextMenuItem onSelect={onRemoveLoop}>Remove loop ×{loopRepeatCount}</ContextMenuItem>
+                {canEditAngle && <ContextMenuItem onSelect={onEditAngle}>Change angle…</ContextMenuItem>}
+                {onRemoveLoop && (
+                    <ContextMenuItem onSelect={onRemoveLoop}>Remove loop ×{loopRepeatCount}</ContextMenuItem>
+                )}
             </ContextMenuContent>
         </ContextMenu>
     );

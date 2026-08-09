@@ -17,6 +17,8 @@ interface QuantumOperationGridProps {
     removeLoopBlock: (loopBlockId: string) => void;
     /** Replaces a composite gate by the operations it is made of. */
     ungroupQuantumOperation: (operationId: string) => void;
+    /** Asks for the angle editor; the gate itself decides whether it has an angle to edit. */
+    editRotationAngle: (operation: QuantumOperationDto) => void;
     setDraggingOperationId: (id: string | null) => void;
     setHoverPos: (pos: null) => void;
     draggingOperation: { op: QuantumOperationDto; layerIdx: number } | null;
@@ -30,6 +32,7 @@ export function QuantumOperationGrid({
     removeQuantumOperation,
     removeLoopBlock,
     ungroupQuantumOperation,
+    editRotationAngle,
     setDraggingOperationId,
     setHoverPos,
     draggingOperation,
@@ -103,6 +106,7 @@ export function QuantumOperationGrid({
                         onDragEnd={handleOperationDragEnd}
                         onDelete={() => removeQuantumOperation(op.id!)}
                         onRemoveLoop={onRemoveLoop}
+                        onEditAngle={() => editRotationAngle(op)}
                     />
                 );
             })}

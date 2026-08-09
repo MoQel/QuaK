@@ -5,7 +5,10 @@ import type { QuantumOperationDto, RegisterResponse } from '@/api/dto/circuit.ts
 
 const registers: RegisterResponse[] = [{ id: 'r1', name: 'q', type: 'Quantum_Register', numberOfQubits: 1 }];
 
-const renderGate = (operation: QuantumOperationDto, loop: { repeatCount?: number; onRemoveLoop?: () => void } = {}) =>
+const renderGate = (
+    operation: QuantumOperationDto,
+    extras: { repeatCount?: number; onRemoveLoop?: () => void; onEditAngle?: () => void } = {},
+) =>
     render(
         <ElementaryQuantumGate
             operation={operation}
@@ -14,8 +17,9 @@ const renderGate = (operation: QuantumOperationDto, loop: { repeatCount?: number
             onDragStart={vi.fn()}
             onDragEnd={vi.fn()}
             onDelete={vi.fn()}
-            loopRepeatCount={loop.repeatCount}
-            onRemoveLoop={loop.onRemoveLoop}
+            loopRepeatCount={extras.repeatCount}
+            onRemoveLoop={extras.onRemoveLoop}
+            onEditAngle={extras.onEditAngle}
         />,
     );
 
@@ -27,6 +31,16 @@ const hGate = (): QuantumOperationDto => ({
     targetQubits: [{ registerId: 'r1', index: 0 }],
     controlQubits: [],
     rotationAngle: 0,
+});
+
+const rxGate = (): QuantumOperationDto => ({
+    id: 'op-rx',
+    type: 'ELEMENTARY_QUANTUM_GATE',
+    identifier: 'RX',
+    inverseForm: false,
+    targetQubits: [{ registerId: 'r1', index: 0 }],
+    controlQubits: [],
+    rotationAngle: Math.PI / 2,
 });
 
 describe('ElementaryQuantumGate', () => {
@@ -81,5 +95,24 @@ describe('ElementaryQuantumGate', () => {
         fireEvent.contextMenu(container.firstElementChild as HTMLElement);
 
         expect(screen.queryByText(/Remove loop/)).toBeNull();
+    });
+    /** The angle is shown on the box, so the box is where it has to be editable from. */
+    it('offers changing the angle of a rotation gate on right-click', async () => {
+        const onEditAngle = vi.fn();
+        const { container } = renderGate(rxGate(), { onEditAngle });
+
+        fireEvent.contextMenu(container.firstElementChild as HTMLElement);
+
+        fireEvent.click(await screen.findByText('Change angle…'));
+        expect(onEditAngle).toHaveBeenCalledTimes(1);
+    });
+
+    /** An H has no angle, so the entry would be an action that does nothing. */
+    it('does not offer an angle on a gate that has none', () => {
+        const { container } = renderGate(hGate(), { onEditAngle: vi.fn() });
+
+        fireEvent.contextMenu(container.firstElementChild as HTMLElement);
+
+        expect(screen.queryByText('Change angle…')).toBeNull();
     });
 });

@@ -1,6 +1,6 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { useMemo, useState } from 'react';
-import { CircuitResponse, ElementSelectorDto, getRegisterSize } from '@/api/dto/circuit';
+import { CircuitResponse, ElementSelectorDto, getRegisterSize, QuantumOperationDto } from '@/api/dto/circuit';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store.ts';
 import { CircuitTabBar } from '@/views/circuit-view/components/CircuitTabBar.tsx';
@@ -10,6 +10,7 @@ import { DropzoneGrid } from './components/DropzoneGrid.tsx';
 import { DropPlaceholder } from './components/DropPlaceholder.tsx';
 import { LoopFrames } from './components/LoopFrames.tsx';
 import { CircuitFooter } from './components/CircuitFooter.tsx';
+import { AngleEditTarget, RotationAngleDialog } from './components/RotationAngleDialog.tsx';
 import { HoverPos, UiLayer, UiQuantumOperation } from './util/types.ts';
 import { CELL_WIDTH, LABEL_WIDTH, QUBIT_HEIGHT } from '@/views/circuit-view/util/layout.ts';
 import { getOperationSpan as getSpan } from '@/views/circuit-view/util/spans.ts';
@@ -46,6 +47,41 @@ export function CircuitView() {
     const removeLoopBlock = (loopBlockId: string) => {
         setActiveCircuit((prev) =>
             prev ? { ...prev, loopBlocks: (prev.loopBlocks ?? []).filter((block) => block.id !== loopBlockId) } : prev,
+        );
+    };
+
+    /** The rotation gate whose angle is being edited, or null while the dialog is closed. */
+    const [angleTarget, setAngleTarget] = useState<AngleEditTarget | null>(null);
+
+    const editRotationAngle = (operation: QuantumOperationDto) => {
+        if (operation.type !== 'ELEMENTARY_QUANTUM_GATE' || !operation.id) return;
+        setAngleTarget({
+            operationId: operation.id,
+            identifier: String(operation.identifier),
+            angle: operation.rotationAngle,
+        });
+    };
+
+    /**
+     * Writes a new angle onto one gate.
+     *
+     * Goes through `setActiveCircuit` like every other circuit edit, so the debounced full-replace
+     * save picks it up — there is deliberately no granular endpoint for a single operation.
+     */
+    const setRotationAngle = (operationId: string, rotationAngle: number) => {
+        setActiveCircuit((prev) =>
+            prev
+                ? {
+                      ...prev,
+                      layers: prev.layers.map((layer) => ({
+                          quantumOperations: layer.quantumOperations.map((op) =>
+                              op.id === operationId && op.type === 'ELEMENTARY_QUANTUM_GATE'
+                                  ? { ...op, rotationAngle }
+                                  : op,
+                          ),
+                      })),
+                  }
+                : prev,
         );
     };
 
@@ -287,6 +323,7 @@ export function CircuitView() {
                                 removeQuantumOperation={removeQuantumOperation}
                                 removeLoopBlock={removeLoopBlock}
                                 ungroupQuantumOperation={ungroupQuantumOperation}
+                                editRotationAngle={editRotationAngle}
                                 setDraggingOperationId={setDraggingOperationId}
                                 setHoverPos={setHoverPos}
                                 draggingOperation={draggingOperation}
@@ -311,6 +348,13 @@ export function CircuitView() {
                     </div>
                     <CircuitFooter uiLayers={uiLayers} circuitWidth={circuitWidth} />
                 </div>
+
+                {/* Outside the scrolling canvas: it is a modal, not part of the circuit. */}
+                <RotationAngleDialog
+                    target={angleTarget}
+                    onSubmit={setRotationAngle}
+                    onClose={() => setAngleTarget(null)}
+                />
             </CardContent>
         </Card>
     );
