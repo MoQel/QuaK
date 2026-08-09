@@ -1,4 +1,3 @@
-import styles from '@/App.module.css';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
@@ -66,16 +65,19 @@ export function LibraryCompositeElement({ gate }: Readonly<LibraryCompositeEleme
                     draggable
                     onDragStart={handleDragStart}
                     onDragEnd={handleDragEnd}
-                    className={`
+                    className="
                         group cursor-grab active:cursor-grabbing
                         flex items-center justify-center
-                        hover:brightness-90 dark:hover:brightness-125 transition-colors
-                        ${styles.libraryElement}`}
+                        h-10 w-max min-w-[84px] px-3
+                        font-mono font-bold select-none
+                        hover:brightness-90 dark:hover:brightness-125 transition-colors"
                     style={{ backgroundColor: 'var(--composite)', color: 'var(--bg-dark)' }}
                 >
-                    {/* A gate name is arbitrarily long and the tile is 40px, so it is cut here and
-                        spelled out in the tooltip rather than pushing the grid out of shape. */}
-                    <span className="truncate text-[11px] font-semibold leading-none">{gate.label}</span>
+                    {/* The name sets the width. A built-in's 40px square fits a symbol, not a name:
+                        cut to size, every custom gate read as `b…`, `d…`, `r…` and they were
+                        indistinguishable. A name too long for the panel scrolls the section
+                        sideways rather than being shortened. */}
+                    <span className="whitespace-nowrap text-[11px] leading-none">{gate.label}</span>
                 </div>
             </TooltipTrigger>
 
