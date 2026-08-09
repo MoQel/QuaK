@@ -13,6 +13,7 @@ import {
     QuantumOperationDto,
 } from '@/api/dto/circuit.ts';
 import { dropAnchorRow } from '@/views/circuit-view/util/dropAnchor.ts';
+import { withFreshIds } from '@/lib/operationIds.ts';
 import { rebindComposite } from '@/views/circuit-view/util/rebindComposite.ts';
 import { DragData, FlatQubit, HoverPos, UiLayer } from '@/views/circuit-view/util/types.ts';
 import { getOperationDefinition } from '@/lib/operations.ts';
@@ -29,6 +30,23 @@ const findOperation = (layers: CircuitResponse['layers'], operationId: string): 
 /** Removes the operation with the given id from its layer, keeping layer positions (empty layers stay). */
 const stripOperation = (layers: CircuitResponse['layers'], operationId: string): CircuitResponse['layers'] =>
     layers.map((layer) => ({ quantumOperations: layer.quantumOperations.filter((op) => op.id !== operationId) }));
+
+/**
+ * How many wires a dropped operation takes, and how they split into controls and targets.
+ *
+ * An operation that already exists — the one being moved, or the template of a user-defined gate
+ * dragged in from the library — answers for itself. Only a built-in has to be looked up, which is
+ * just as well: the catalogue holds nothing else and warns about every name it does not know.
+ */
+const qubitCountsOf = (
+    own: QuantumOperationDto | undefined,
+    identifier: string,
+): { controlSize: number; targetSize: number } => {
+    if (own) return { controlSize: own.controlQubits.length, targetSize: own.targetQubits.length };
+
+    const definition = getOperationDefinition(identifier);
+    return { controlSize: definition.controlSize, targetSize: definition.targetSize };
+};
 
 interface DropzoneGridProps {
     circuit: CircuitResponse | undefined;
@@ -250,15 +268,14 @@ export function DropzoneGrid({
             e.preventDefault();
             try {
                 const data: DragData = JSON.parse(e.dataTransfer.getData('text/plain'));
-                const operationDefinition = getOperationDefinition(data.operationIdentifier);
 
-                // For an operation already in the circuit, its own qubits are the truth. The gate
-                // library only knows the built-in gates, so a user-defined gate would otherwise be
-                // truncated to the single-qubit fallback and lose qubits on every move.
+                // Whenever there is an actual operation to ask, its own qubits are the truth: the one
+                // already in the circuit for a move, the dragged template for a custom gate from the
+                // library. The built-in catalogue knows only the built-ins, so a user-defined gate
+                // would otherwise be truncated to the single-qubit fallback and lose qubits.
                 const dragged =
                     data.origin === 'circuit' && data.id ? findOperation(circuit?.layers ?? [], data.id) : undefined;
-                const controlSize = dragged ? dragged.controlQubits.length : operationDefinition.controlSize;
-                const targetSize = dragged ? dragged.targetQubits.length : operationDefinition.targetSize;
+                const { controlSize, targetSize } = qubitCountsOf(dragged ?? data.composite, data.operationIdentifier);
 
                 const controlQubits: ElementSelectorDto[] = Array.from({ length: controlSize }, (_, i) => ({
                     registerId: regId,
@@ -272,6 +289,19 @@ export function DropzoneGrid({
 
                 switch (data.origin) {
                     case 'library': {
+                        if (data.composite) {
+                            // A user-defined gate, recognised by the template rather than by the
+                            // catalogue lookup: its name is an arbitrary identifier the catalogue
+                            // does not have. The body travels bound to the wires the template was
+                            // collected from, so it has to be re-bound onto the drop's wires — and
+                            // copied under fresh ids, body included, since this is a new operation
+                            // and not the one the template came from.
+                            const operation = withFreshIds(rebindComposite(data.composite, targetQubits));
+                            addQuantumOperationLocally(operation, layerIdx);
+                            break;
+                        }
+
+                        const operationDefinition = getOperationDefinition(data.operationIdentifier);
                         if (operationDefinition.type === 'ELEMENTARY_QUANTUM_GATE') {
                             const operation: ElementaryQuantumGateDto = {
                                 type: 'ELEMENTARY_QUANTUM_GATE',
