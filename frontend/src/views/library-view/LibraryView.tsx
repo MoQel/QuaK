@@ -69,9 +69,11 @@ export function LibraryView({ onOperationSelect }: Readonly<LibraryViewProps>) {
                     {/* Capped and separately scrollable, so a file full of custom gates cannot push
                         the built-ins off the panel. Absent entirely while there are none. */}
                     {customGates.length > 0 && (
-                        <div className="shrink-0 max-h-[45%] overflow-y-auto border-t border-border pt-3">
+                        <div className="shrink-0 max-h-[45%] overflow-auto border-t border-border pt-3">
                             <div className="text-xs font-semibold text-text-muted mb-2">Custom Gates</div>
-                            <div className="grid grid-cols-5 gap-4 content-start">
+                            {/* Wrapping row rather than the built-ins' fixed 5-column grid: these
+                                tiles are labelled with a name and need whatever width is going. */}
+                            <div className="flex flex-wrap gap-3">
                                 {customGates.map((gate) => (
                                     <LibraryCompositeElement key={gate.key} gate={gate} />
                                 ))}
