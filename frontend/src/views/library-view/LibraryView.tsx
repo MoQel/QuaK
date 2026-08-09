@@ -4,9 +4,12 @@ import LibraryBoxView from '@/views/library-view/LibraryBoxView.tsx';
 import { Button } from '@/components/ui/button';
 import { List, LayoutGrid } from 'lucide-react';
 import LibraryListView from '@/views/library-view/LibraryListView.tsx';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { api } from '@/api/api.ts';
 import { OperationDefinitionResponse } from '@/api/dto/library.ts';
+import { useCircuitTabs } from '@/contexts/CircuitTabsContext.tsx';
+import { LibraryCompositeElement } from '@/views/library-view/LibraryCompositeElement.tsx';
+import { collectCustomGates } from '@/views/library-view/util/customGates.ts';
 
 interface LibraryViewProps {
     onOperationSelect: (operation: OperationDefinitionResponse) => void;
@@ -15,6 +18,12 @@ interface LibraryViewProps {
 export function LibraryView({ onOperationSelect }: Readonly<LibraryViewProps>) {
     const [boxMode, setBoxMode] = useState(true);
     const [quantumOperations, setQuantumOperations] = useState<OperationDefinitionResponse[]>([]);
+
+    // The gates the open circuit itself defines. They are not part of the catalogue — the backend
+    // only serves the built-ins — so they are read straight off the circuit and follow it: parsing
+    // a file with a new `gate` in it makes that gate appear here without a round trip.
+    const { activeCircuit } = useCircuitTabs();
+    const customGates = useMemo(() => collectCustomGates(activeCircuit), [activeCircuit]);
 
     // Load Data centralized (Single Source of Truth)
     useEffect(() => {
@@ -39,9 +48,9 @@ export function LibraryView({ onOperationSelect }: Readonly<LibraryViewProps>) {
             </CardHeader>
 
             <CardContent className="flex-1 min-h-0 overflow-hidden p-3">
-                <div className="h-full w-full min-h-0">
+                <div className="h-full w-full min-h-0 flex flex-col gap-3">
                     <div
-                        className={`h-full ${boxMode ? 'overflow-y-auto' : ''} ${styles.availableQuantumOperationContainer}`}
+                        className={`flex-1 min-h-0 ${boxMode ? 'overflow-y-auto' : ''} ${styles.availableQuantumOperationContainer}`}
                     >
                         {boxMode && (
                             <LibraryBoxView
@@ -56,6 +65,19 @@ export function LibraryView({ onOperationSelect }: Readonly<LibraryViewProps>) {
                             />
                         )}
                     </div>
+
+                    {/* Capped and separately scrollable, so a file full of custom gates cannot push
+                        the built-ins off the panel. Absent entirely while there are none. */}
+                    {customGates.length > 0 && (
+                        <div className="shrink-0 max-h-[45%] overflow-y-auto border-t border-border pt-3">
+                            <div className="text-xs font-semibold text-text-muted mb-2">Custom Gates</div>
+                            <div className="grid grid-cols-5 gap-4 content-start">
+                                {customGates.map((gate) => (
+                                    <LibraryCompositeElement key={gate.key} gate={gate} />
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </CardContent>
         </Card>
