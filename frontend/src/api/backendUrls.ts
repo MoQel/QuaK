@@ -10,7 +10,11 @@ export function resolveWebSocketBaseUrl(
     location: BrowserLocation,
 ): string {
     if (configuredUrl) {
-        return configuredUrl.replace(/\/+$/, '');
+        let end = configuredUrl.length;
+        while (end > 0 && configuredUrl[end - 1] === '/') {
+            end--;
+        }
+        return configuredUrl.slice(0, end);
     }
 
     if (isDevelopment) {
