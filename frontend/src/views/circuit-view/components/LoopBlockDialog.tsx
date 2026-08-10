@@ -69,8 +69,9 @@ function RepeatForm({ draft, onSubmit, onClose }: Readonly<LoopBlockDialogProps 
             <DialogHeader>
                 <DialogTitle>Repeat</DialogTitle>
                 <DialogDescription>
-                    Wraps the selected {gateCount} {gateCount === 1 ? 'gate' : 'gates'} in a loop. They stay editable —
-                    the frame only says how often they run.
+                    {gateCount === 1
+                        ? 'Wraps the selected gate in a loop. It stays editable — the frame only says how often it runs.'
+                        : `Wraps the selected ${gateCount} gates in a loop. They stay editable — the frame only says how often they run.`}
                 </DialogDescription>
             </DialogHeader>
 

@@ -22,6 +22,18 @@ import { Cell, operationsInRect, rectBetween } from '@/views/circuit-view/util/s
 import { ungroupComposite } from '@/views/circuit-view/util/ungroupComposite.ts';
 import { useCircuitTabs } from '@/contexts/CircuitTabsContext.tsx';
 
+/** How far the pointer has to travel before a right-press counts as drawing a rectangle. */
+const DRAG_THRESHOLD = 4;
+
+/** A rectangle being dragged out, with what it takes to tell a drag from a click. */
+type Selection = {
+    from: Cell;
+    to: Cell;
+    /** Where the press started, in client pixels. */
+    origin: { x: number; y: number };
+    dragged: boolean;
+};
+
 /** Removes the operation with the given id from all layers and drops any layer left empty. */
 const dropOperationFromLayers = (layers: CircuitResponse['layers'], operationId: string): CircuitResponse['layers'] =>
     layers
@@ -57,7 +69,21 @@ export function CircuitView() {
     const [angleTarget, setAngleTarget] = useState<AngleEditTarget | null>(null);
 
     /** The rectangle currently being dragged out over the circuit, in grid cells. */
-    const [selection, setSelection] = useState<{ from: Cell; to: Cell } | null>(null);
+    const [selection, setSelection] = useState<Selection | null>(null);
+
+    /**
+     * The same value, updated synchronously.
+     *
+     * The pointer handlers have to see what the previous one just set: state updates land on the
+     * next render, so a press and release close together would leave the release looking at `null`
+     * and quietly drop the selection. The state copy is only there to draw the rectangle.
+     */
+    const selectionRef = useRef<Selection | null>(null);
+
+    const updateSelection = (next: Selection | null) => {
+        selectionRef.current = next;
+        setSelection(next);
+    };
 
     /** Operations chosen for a new frame, waiting for the repeat count. */
     const [loopDraft, setLoopDraft] = useState<LoopDraft | null>(null);
@@ -318,38 +344,66 @@ export function CircuitView() {
         };
     };
 
+    /** Whether a pointer event landed on a gate rather than on empty canvas. */
+    const isOnGate = (event: React.PointerEvent | React.MouseEvent) =>
+        (event.target as Element).closest('[data-gate]') !== null;
+
     /**
-     * Starts dragging out a selection — but only on empty canvas. On a gate the pointer belongs to
-     * that gate's own HTML5 drag, which is what moves it; hijacking it here would make gates
-     * unmovable. The marker sits on each gate rather than on the layer holding them: that layer
-     * covers the whole canvas, so testing against it would call every empty cell a gate.
+     * Starts dragging out a selection — on the **right** button, and only on empty canvas.
+     *
+     * Drawing a loop is a deliberate act and has to be asked for: on the left button every stray
+     * click in the circuit tore open a rectangle and popped up the repeat dialog, which got in the
+     * way of everything else. The right button is free here — a gate's own context menu keeps it,
+     * which is why a pointer landing on a gate is left alone.
      */
     const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
-        if (event.button !== 0 || (event.target as Element).closest('[data-gate]')) return;
+        if (event.button !== 2 || isOnGate(event)) return;
 
         // Capturing means the rest of the drag arrives here even when the pointer leaves the canvas,
         // so releasing outside cannot leave a selection stuck open.
         event.currentTarget.setPointerCapture(event.pointerId);
         const cell = cellAt(event.clientX, event.clientY);
-        setSelection({ from: cell, to: cell });
+        updateSelection({ from: cell, to: cell, origin: { x: event.clientX, y: event.clientY }, dragged: false });
+    };
+
+    /**
+     * Keeps the browser's own menu out of the way of a right-drag on empty canvas — but only there,
+     * so right-clicking a gate still opens its menu (remove loop, change angle, ungroup).
+     */
+    const handleContextMenu = (event: React.MouseEvent<HTMLDivElement>) => {
+        if (!isOnGate(event)) event.preventDefault();
     };
 
     const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
-        if (!selection) return;
-        const to = cellAt(event.clientX, event.clientY);
-        setSelection((previous) => (previous ? { ...previous, to } : previous));
+        const current = selectionRef.current;
+        if (!current) return;
+
+        const travelled =
+            Math.abs(event.clientX - current.origin.x) + Math.abs(event.clientY - current.origin.y) > DRAG_THRESHOLD;
+
+        updateSelection({
+            ...current,
+            to: cellAt(event.clientX, event.clientY),
+            dragged: current.dragged || travelled,
+        });
     };
 
     const handlePointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
-        if (!selection) return;
+        const current = selectionRef.current;
+        if (!current) return;
         event.currentTarget.releasePointerCapture(event.pointerId);
 
         const covered = operationsInRect(
             uiLayers,
             activeCircuit?.registers ?? [],
-            rectBetween(selection.from, selection.to),
+            rectBetween(current.from, current.to),
         );
-        setSelection(null);
+        updateSelection(null);
+
+        // A plain click is not a selection. Gates inside a frame are drawn smaller, so aiming at one
+        // and missing by a few pixels is easy — and putting a dialog in the way of that miss is how
+        // the frame's own context menu became unreachable.
+        if (!current.dragged) return;
 
         // An empty rectangle is how the user cancels: nothing selected, nothing to ask about.
         if (covered.length > 0) {
@@ -395,6 +449,7 @@ export function CircuitView() {
                             onPointerDown={handlePointerDown}
                             onPointerMove={handlePointerMove}
                             onPointerUp={handlePointerUp}
+                            onContextMenu={handleContextMenu}
                         >
                             <QuantumOperationGrid
                                 uiLayers={uiLayers}
