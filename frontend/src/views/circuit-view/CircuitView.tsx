@@ -1,5 +1,5 @@
 import { Card, CardContent } from '@/components/ui/card';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { CircuitResponse, ElementSelectorDto, getRegisterSize, QuantumOperationDto } from '@/api/dto/circuit';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store.ts';
@@ -11,11 +11,14 @@ import { DropPlaceholder } from './components/DropPlaceholder.tsx';
 import { LoopFrames } from './components/LoopFrames.tsx';
 import { CircuitFooter } from './components/CircuitFooter.tsx';
 import { AngleEditTarget, RotationAngleDialog } from './components/RotationAngleDialog.tsx';
+import { LoopBlockDialog, LoopDraft } from './components/LoopBlockDialog.tsx';
+import { SelectionBox } from './components/SelectionBox.tsx';
 import { HoverPos, UiLayer, UiQuantumOperation } from './util/types.ts';
 import { CELL_WIDTH, LABEL_WIDTH, QUBIT_HEIGHT } from '@/views/circuit-view/util/layout.ts';
 import { getOperationSpan as getSpan } from '@/views/circuit-view/util/spans.ts';
 import { layOutColumns } from '@/views/circuit-view/util/scheduling.ts';
 import { getLoopFrames } from '@/views/circuit-view/util/loopFrames.ts';
+import { Cell, operationsInRect, rectBetween } from '@/views/circuit-view/util/selection.ts';
 import { ungroupComposite } from '@/views/circuit-view/util/ungroupComposite.ts';
 import { useCircuitTabs } from '@/contexts/CircuitTabsContext.tsx';
 
@@ -53,6 +56,15 @@ export function CircuitView() {
     /** The rotation gate whose angle is being edited, or null while the dialog is closed. */
     const [angleTarget, setAngleTarget] = useState<AngleEditTarget | null>(null);
 
+    /** The rectangle currently being dragged out over the circuit, in grid cells. */
+    const [selection, setSelection] = useState<{ from: Cell; to: Cell } | null>(null);
+
+    /** Operations chosen for a new frame, waiting for the repeat count. */
+    const [loopDraft, setLoopDraft] = useState<LoopDraft | null>(null);
+
+    /** The operation area, so pointer positions can be turned into grid cells. */
+    const operationAreaRef = useRef<HTMLDivElement>(null);
+
     const editRotationAngle = (operation: QuantumOperationDto) => {
         if (operation.type !== 'ELEMENTARY_QUANTUM_GATE' || !operation.id) return;
         setAngleTarget({
@@ -80,6 +92,18 @@ export function CircuitView() {
                                   : op,
                           ),
                       })),
+                  }
+                : prev,
+        );
+    };
+
+    /** Adds a repetition frame over already chosen operations. */
+    const addLoopBlock = (operationIds: string[], repeatCount: number) => {
+        setActiveCircuit((prev) =>
+            prev
+                ? {
+                      ...prev,
+                      loopBlocks: [...(prev.loopBlocks ?? []), { id: crypto.randomUUID(), repeatCount, operationIds }],
                   }
                 : prev,
         );
@@ -283,6 +307,56 @@ export function CircuitView() {
     const circuitWidth = LABEL_WIDTH + operationAreaWidth;
     const circuitHeight = Math.max(flatQubits.length * QUBIT_HEIGHT, QUBIT_HEIGHT);
 
+    /** The cell under a pointer position, clamped to the grid. */
+    const cellAt = (clientX: number, clientY: number): Cell => {
+        const bounds = operationAreaRef.current!.getBoundingClientRect();
+        const clamp = (value: number, max: number) => Math.min(Math.max(value, 0), Math.max(max, 0));
+
+        return {
+            column: clamp(Math.floor((clientX - bounds.left) / CELL_WIDTH), uiLayers.length),
+            wire: clamp(Math.floor((clientY - bounds.top) / QUBIT_HEIGHT), flatQubits.length - 1),
+        };
+    };
+
+    /**
+     * Starts dragging out a selection — but only on empty canvas. On a gate the pointer belongs to
+     * that gate's own HTML5 drag, which is what moves it; hijacking it here would make gates
+     * unmovable. The marker sits on each gate rather than on the layer holding them: that layer
+     * covers the whole canvas, so testing against it would call every empty cell a gate.
+     */
+    const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+        if (event.button !== 0 || (event.target as Element).closest('[data-gate]')) return;
+
+        // Capturing means the rest of the drag arrives here even when the pointer leaves the canvas,
+        // so releasing outside cannot leave a selection stuck open.
+        event.currentTarget.setPointerCapture(event.pointerId);
+        const cell = cellAt(event.clientX, event.clientY);
+        setSelection({ from: cell, to: cell });
+    };
+
+    const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+        if (!selection) return;
+        const to = cellAt(event.clientX, event.clientY);
+        setSelection((previous) => (previous ? { ...previous, to } : previous));
+    };
+
+    const handlePointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
+        if (!selection) return;
+        event.currentTarget.releasePointerCapture(event.pointerId);
+
+        const covered = operationsInRect(
+            uiLayers,
+            activeCircuit?.registers ?? [],
+            rectBetween(selection.from, selection.to),
+        );
+        setSelection(null);
+
+        // An empty rectangle is how the user cancels: nothing selected, nothing to ask about.
+        if (covered.length > 0) {
+            setLoopDraft({ id: crypto.randomUUID(), operationIds: covered.map((operation) => operation.id!) });
+        }
+    };
+
     // Circuits exist per file only, so without an active file tab there is nothing
     // to show. Mirror the Code Editor's "No file open" state.
     if (!activeCircuitTabId) {
@@ -314,7 +388,14 @@ export function CircuitView() {
                         />
 
                         {/* Circuit Content Container (Offset for labels) */}
-                        <div className="absolute inset-y-0" style={{ left: LABEL_WIDTH, width: operationAreaWidth }}>
+                        <div
+                            ref={operationAreaRef}
+                            className="absolute inset-y-0"
+                            style={{ left: LABEL_WIDTH, width: operationAreaWidth }}
+                            onPointerDown={handlePointerDown}
+                            onPointerMove={handlePointerMove}
+                            onPointerUp={handlePointerUp}
+                        >
                             <QuantumOperationGrid
                                 uiLayers={uiLayers}
                                 registers={activeCircuit?.registers ?? []}
@@ -344,6 +425,8 @@ export function CircuitView() {
                             <LoopFrames frames={loopFrames} />
 
                             <DropPlaceholder hoverPos={hoverPos} draggingOperationSize={draggingOperationSize} />
+
+                            {selection && <SelectionBox rect={rectBetween(selection.from, selection.to)} />}
                         </div>
                     </div>
                     <CircuitFooter uiLayers={uiLayers} circuitWidth={circuitWidth} />
@@ -355,6 +438,8 @@ export function CircuitView() {
                     onSubmit={setRotationAngle}
                     onClose={() => setAngleTarget(null)}
                 />
+
+                <LoopBlockDialog draft={loopDraft} onSubmit={addLoopBlock} onClose={() => setLoopDraft(null)} />
             </CardContent>
         </Card>
     );

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button.tsx';
 import {
     Dialog,
@@ -35,13 +35,19 @@ interface RotationAngleDialogProps {
  * else without looking any different.
  */
 export function RotationAngleDialog({ target, onSubmit, onClose }: Readonly<RotationAngleDialogProps>) {
+    // Kept rendered while the dialog fades out: dropping it the moment `open` goes false would
+    // leave an empty box animating away for 150ms.
+    const lastTargetRef = useRef(target);
+    if (target !== null) lastTargetRef.current = target;
+    const shown = lastTargetRef.current;
+
     return (
         <Dialog open={target !== null} onOpenChange={(open) => !open && onClose()}>
             <DialogContent className="sm:max-w-sm">
-                {target && (
+                {shown && (
                     // Keyed on the gate so switching to another one re-seeds the field with its angle
                     // instead of keeping whatever was typed for the previous gate.
-                    <AngleForm key={target.operationId} target={target} onSubmit={onSubmit} onClose={onClose} />
+                    <AngleForm key={shown.operationId} target={shown} onSubmit={onSubmit} onClose={onClose} />
                 )}
             </DialogContent>
         </Dialog>

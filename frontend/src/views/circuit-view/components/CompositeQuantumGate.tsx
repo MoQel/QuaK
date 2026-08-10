@@ -135,6 +135,7 @@ export function CompositeQuantumGate({
                 the very same DOM node across a drag, so it must not be wrapped in another element. */}
             <ContextMenuTrigger asChild disabled={isGhost}>
                 <div
+                    data-gate
                     draggable
                     onDragStart={handleDragStart}
                     onDragEnd={handleDragEnd}

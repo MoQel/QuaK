@@ -118,6 +118,7 @@ export function ElementaryQuantumGate({
 
     const gate = (
         <div
+            data-gate
             draggable
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
