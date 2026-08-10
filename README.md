@@ -85,16 +85,22 @@ Access the app at `http://localhost:5173`.
 
 To run the full application (Backend + Frontend served statically):
 
-1. **Create and configure the environment file once:**
+1. **Create and configure the environment files once:**
 
     ```bash
+    cp .env.prod.example .env.prod
     cp backend/.env.example backend/.env
     ```
+
+    Set a strong, unique `MARIADB_ROOT_PASSWORD` and the externally visible
+    `FRONTEND_URL` in `.env.prod`. The URL must include its scheme and origin,
+    without a trailing slash or path. Configure the OAuth credentials in
+    `backend/.env`.
 
 2. **Start Application:**
 
     ```bash
-    docker compose -f docker-compose.prod.yaml up --build
+    docker compose --env-file .env.prod -f docker-compose.prod.yaml up --build
     ```
 
     * Builds the frontend and serves it via the backend.
