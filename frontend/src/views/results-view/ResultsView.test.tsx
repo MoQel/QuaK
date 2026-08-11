@@ -208,7 +208,7 @@ describe('ResultsView Component', () => {
 
         expect(screen.getByText('c[0]')).toBeInTheDocument();
         expect(screen.getAllByText('Measurement Results').length).toBeGreaterThan(0);
-        expect(screen.getByText(/1,024 shots, 1 observed outcome/i)).toBeInTheDocument();
+        expect(screen.getByText(`${(1024).toLocaleString()} shots, 1 observed outcome.`)).toBeInTheDocument();
         expect(screen.getByText(/Outcomes/i)).toBeInTheDocument();
         expect(screen.getByText(/Measurement mappings/i)).toBeInTheDocument();
         expect(screen.queryByText(/Intermediate measurements/i)).not.toBeInTheDocument();

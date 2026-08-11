@@ -1,6 +1,8 @@
-// Keep Node/npm project-local so Gradle tasks do not depend on a developer's
-// shell setup or nvm configuration.
-node.download = true
+// Keep frontend builds reproducible and independent from system Node.js installations.
+node {
+    version = '22.23.2'
+    download = true
+}
 
 tasks.register("removeCustomNode", Delete) {
     delete node.workDir
