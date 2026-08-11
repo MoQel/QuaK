@@ -19,8 +19,8 @@ vi.mock('@/hooks/results/useChartData.ts', () => ({
     useChartData: vi.fn(() => []),
 }));
 
-import { useProject } from '@/contexts/ProjectContext';
-vi.mock('@/contexts/ProjectContext');
+import { useCircuitTabs } from '@/contexts/CircuitTabsContext.tsx';
+vi.mock('@/contexts/CircuitTabsContext.tsx');
 
 vi.mock('recharts', async (importOriginal) => {
     const actual = await importOriginal<typeof import('recharts')>();
@@ -95,7 +95,7 @@ describe('ResultsView Component', () => {
     });
 
     it('shows empty state when no circuit is provided', () => {
-        (useProject as Mock).mockReturnValue({ circuit: undefined });
+        (useCircuitTabs as Mock).mockReturnValue({ activeCircuit: undefined });
         (useQuantumSimulation as Mock).mockReturnValue({
             result: null,
             isCalculating: false,
@@ -108,7 +108,7 @@ describe('ResultsView Component', () => {
     });
 
     it('shows loading state correctly', () => {
-        (useProject as Mock).mockReturnValue({ circuit: mockCircuit });
+        (useCircuitTabs as Mock).mockReturnValue({ activeCircuit: mockCircuit });
         (useQuantumSimulation as Mock).mockReturnValue({
             result: null,
             isCalculating: true,
@@ -123,7 +123,7 @@ describe('ResultsView Component', () => {
     });
 
     it('shows error message when simulation fails', () => {
-        (useProject as Mock).mockReturnValue({ circuit: mockCircuit });
+        (useCircuitTabs as Mock).mockReturnValue({ activeCircuit: mockCircuit });
         (useQuantumSimulation as Mock).mockReturnValue({
             result: null,
             isCalculating: false,
@@ -137,7 +137,7 @@ describe('ResultsView Component', () => {
     });
 
     it('renders the chart area when simulation succeeds', () => {
-        (useProject as Mock).mockReturnValue({ circuit: mockCircuit });
+        (useCircuitTabs as Mock).mockReturnValue({ activeCircuit: mockCircuit });
         (useQuantumSimulation as Mock).mockReturnValue({
             result: mockSuccessResult,
             isCalculating: false,
@@ -151,7 +151,7 @@ describe('ResultsView Component', () => {
     });
 
     it('shows classical register labels for shot-based measurement results', () => {
-        (useProject as Mock).mockReturnValue({ circuit: mockMeasuredCircuit });
+        (useCircuitTabs as Mock).mockReturnValue({ activeCircuit: mockMeasuredCircuit });
         (useQuantumSimulation as Mock).mockReturnValue({
             result: {
                 status: 'COMPLETED',

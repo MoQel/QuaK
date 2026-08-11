@@ -4,6 +4,7 @@ import { QuantumOperationDto, RegisterResponse } from '@/api/dto/circuit.ts';
 import { getOperationDefinition, OperationDefinition } from '@/lib/operations.ts';
 import { CELL_WIDTH, getSelectorVisualY, isSelectorCollapsed, QUBIT_HEIGHT } from '@/views/circuit-view/util/layout.ts';
 import { TextIcon } from '@/components/ui/text-icon.tsx';
+import { formatRotationAngle } from '@/views/circuit-view/util/angle.ts';
 import { DragData, FlatQubit } from '../util/types';
 
 interface ElementaryQuantumGateProps {
@@ -12,6 +13,7 @@ interface ElementaryQuantumGateProps {
     flatQubits: FlatQubit[];
     layerIdx: number;
     measurementColor?: string;
+    isGhost?: boolean;
     onDragStart: (operationSize: number) => void;
     onDragEnd: () => void;
     onDelete: () => void;
@@ -23,12 +25,14 @@ export function ElementaryQuantumGate({
     flatQubits,
     layerIdx,
     measurementColor = 'var(--classical)',
+    isGhost = false,
     onDragStart,
     onDragEnd,
     onDelete,
 }: Readonly<ElementaryQuantumGateProps>) {
     const definition = getOperationDefinition(operation.identifier);
     const isDraggingRef = useRef(false);
+    const interactivity = isGhost ? 'pointer-events-none' : 'pointer-events-auto';
     const registerNameById = useMemo(
         () => new Map(registers.map((register) => [register.id, register.name])),
         [registers],
@@ -44,6 +48,11 @@ export function ElementaryQuantumGate({
               })
             : [];
     const measurementHint = measurementHints.join('\n');
+
+    const angleLabel =
+        definition.hasRotationAngle && operation.type === 'ELEMENTARY_QUANTUM_GATE'
+            ? formatRotationAngle(operation.rotationAngle)
+            : null;
 
     const { targetYs, controlYs, classicPoints, visualTop, spanHeight } = useMemo(() => {
         const tYs = operation.targetQubits.map((target) => getSelectorVisualY(flatQubits, target));
@@ -92,16 +101,16 @@ export function ElementaryQuantumGate({
 
     const handleClick = (e: React.MouseEvent) => {
         e.stopPropagation();
-        if (!isDraggingRef.current) onDelete?.();
+        if (!isDraggingRef.current && !isGhost) onDelete?.();
     };
 
     return (
         <div
-            draggable
+            draggable={!isGhost}
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
             onClick={handleClick}
-            className="absolute z-30 flex flex-col items-center group pointer-events-none"
+            className={`absolute z-30 flex flex-col items-center group pointer-events-none ${isGhost ? 'opacity-50' : ''}`}
             style={{
                 top: visualTop,
                 left: layerIdx * CELL_WIDTH,
@@ -111,9 +120,9 @@ export function ElementaryQuantumGate({
         >
             {targetYs.length + controlYs.length > 1 && operation.type !== 'MEASUREMENT' && (
                 <div
-                    className="
+                    className={`
                     absolute left-1/2 -translate-x-1/2 w-2
-                    pointer-events-auto cursor-grab active:cursor-grabbing"
+                    ${interactivity} cursor-grab active:cursor-grabbing`}
                     style={{
                         top: QUBIT_HEIGHT / 2,
                         bottom: QUBIT_HEIGHT / 2,
@@ -130,7 +139,12 @@ export function ElementaryQuantumGate({
             )}
 
             {controlYs.map((y, idx) => (
-                <ControlPoint key={`control-${idx}`} relativeY={y - visualTop} definition={definition} />
+                <ControlPoint
+                    key={`control-${idx}`}
+                    relativeY={y - visualTop}
+                    definition={definition}
+                    interactivity={interactivity}
+                />
             ))}
 
             {targetYs.map((y, idx) => (
@@ -141,6 +155,8 @@ export function ElementaryQuantumGate({
                     isSWAP={operation.identifier === 'SWAP'}
                     accentColor={operation.type === 'MEASUREMENT' ? measurementColor : undefined}
                     title={operation.type === 'MEASUREMENT' ? (measurementHints[idx] ?? measurementHint) : undefined}
+                    angleLabel={angleLabel}
+                    interactivity={interactivity}
                 />
             ))}
 
@@ -152,6 +168,7 @@ export function ElementaryQuantumGate({
                             relativeY={point.y - visualTop}
                             title={measurementHints[idx] ?? measurementHint}
                             color={measurementColor}
+                            interactivity={interactivity}
                         />
                     ),
                 )}
@@ -163,7 +180,8 @@ function ClassicBitTargetPoint({
     relativeY,
     title,
     color,
-}: Readonly<{ relativeY: number; title?: string; color: string }>) {
+    interactivity,
+}: Readonly<{ relativeY: number; title?: string; color: string; interactivity: string }>) {
     return (
         <div
             className="absolute inset-x-0 z-20 flex items-center justify-center pointer-events-none"
@@ -172,9 +190,9 @@ function ClassicBitTargetPoint({
             aria-label={title}
         >
             <div
-                className="
+                className={`
                     size-3 rounded-full border-2 border-bg-subtle
-                    pointer-events-auto cursor-grab active:cursor-grabbing"
+                    ${interactivity} cursor-grab active:cursor-grabbing`}
                 title={title}
                 aria-label={title}
                 style={{
@@ -186,15 +204,19 @@ function ClassicBitTargetPoint({
     );
 }
 
-function ControlPoint({ relativeY, definition }: Readonly<{ relativeY: number; definition: OperationDefinition }>) {
+function ControlPoint({
+    relativeY,
+    definition,
+    interactivity,
+}: Readonly<{ relativeY: number; definition: OperationDefinition; interactivity: string }>) {
     const size: number = 12;
     return (
         <div
-            className="
+            className={`
                 absolute left-1/2 z-20 -translate-x-1/2 rounded-full
                 bg-bg-light border-border
-                pointer-events-auto cursor-grab active:cursor-grabbing
-                group-hover:brightness-90 dark:group-hover:brightness-125 transition-colors"
+                ${interactivity} cursor-grab active:cursor-grabbing
+                group-hover:brightness-90 dark:group-hover:brightness-125 transition-colors`}
             style={{
                 backgroundColor: definition.color,
                 top: relativeY + QUBIT_HEIGHT / 2 - size / 2,
@@ -211,21 +233,34 @@ function TargetPoint({
     isSWAP,
     accentColor,
     title,
+    angleLabel,
+    interactivity,
 }: Readonly<{
     relativeY: number;
     definition: OperationDefinition;
     isSWAP: boolean;
     accentColor?: string;
     title?: string;
+    angleLabel?: string | null;
+    interactivity: string;
 }>) {
-    let icon: React.ReactNode;
+    let content: React.ReactNode;
 
     if (definition.icon.type === 'component') {
         const ComponentIcon = definition.icon.component;
-        icon = <ComponentIcon className="size-4 stroke-4" />;
+        content = <ComponentIcon className="size-4 stroke-4" />;
+    } else if (angleLabel) {
+        content = (
+            <div className="flex flex-col items-center justify-center leading-none">
+                <span style={{ fontSize: '12px' }}>{definition.icon.text}</span>
+                <span style={{ fontSize: '9px' }} className="font-semibold opacity-90">
+                    {angleLabel}
+                </span>
+            </div>
+        );
     } else {
         const TextIconComponent = TextIcon(definition.icon.text);
-        icon = <TextIconComponent />;
+        content = <TextIconComponent />;
     }
 
     return (
@@ -239,7 +274,7 @@ function TargetPoint({
                 className={`
                     ${definition.formClass}
                     flex items-center justify-center
-                    pointer-events-auto cursor-grab active:cursor-grabbing
+                    ${interactivity} cursor-grab active:cursor-grabbing
                     group-hover:brightness-90 dark:group-hover:brightness-125 transition-colors
                     ${isSWAP ? '' : styles.quantumOperation}`}
                 title={title}
@@ -252,10 +287,11 @@ function TargetPoint({
                               color: 'var(--bg-dark)',
                               transform: definition.type === 'MEASUREMENT' ? 'translateY(1px)' : undefined,
                               boxShadow: accentColor ? `0 0 0 3px ${accentColor}` : undefined,
+                              ...(angleLabel ? { padding: '2px 3px' } : {}),
                           }
                 }
             >
-                {icon}
+                {content}
             </div>
         </div>
     );

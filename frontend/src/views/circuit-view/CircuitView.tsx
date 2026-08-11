@@ -15,7 +15,7 @@ import {
 } from '@/api/dto/circuit';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store.ts';
-import { CircuitToolbar } from './components/CircuitToolbar.tsx';
+import { CircuitTabBar } from '@/views/circuit-view/components/CircuitTabBar.tsx';
 import { QubitWires } from './components/QubitWires.tsx';
 import { QuantumOperationGrid } from './components/QuantumOperationGrid.tsx';
 import { DropzoneGrid } from './components/DropzoneGrid.tsx';
@@ -25,17 +25,17 @@ import type { FlatQubit, HoverPos, UiLayer, UiQuantumOperation } from './util/ty
 import { createCircuitService } from '@/views/circuit-view/util/circuitService.ts';
 import { MeasurementTargetDialog } from './components/MeasurementTargetDialog';
 import {
+    CELL_WIDTH,
     LABEL_WIDTH,
     QUBIT_HEIGHT,
     REGISTER_HEADER_HEIGHT,
     REGISTER_SECTION_GAP,
 } from '@/views/circuit-view/util/layout.ts';
 import type { OperationIdentifier } from '@/lib/operations.ts';
-
-import { useProject } from '@/contexts/ProjectContext';
+import { useCircuitTabs } from '@/contexts/CircuitTabsContext.tsx';
 
 export function CircuitView() {
-    const { circuit, setCircuit } = useProject();
+    const { activeCircuit: circuit, setActiveCircuit: setCircuit, activeCircuitTabId } = useCircuitTabs();
     const { removeQuantumOperation, addQuantumOperation } = createCircuitService(circuit, setCircuit);
 
     const { isOperationDragging, draggingOperationSize } = useSelector((state: RootState) => state.dragOperation);
@@ -73,13 +73,24 @@ export function CircuitView() {
         return buildFlatQubits(displayRegisters, collapsedClassicRegisterIds);
     }, [displayRegisters, collapsedClassicRegisterIds]);
 
+    const selectorRowIndex = useMemo(() => buildSelectorRowIndex(flatQubits), [flatQubits]);
+
+    const draggingOperation = useMemo(() => {
+        if (!draggingOperationId || !circuit) return null;
+        for (const [layerIdx, layer] of circuit.layers.entries()) {
+            const op = layer.quantumOperations.find((operation) => operation.id === draggingOperationId);
+            if (op) return { op, layerIdx };
+        }
+        return null;
+    }, [draggingOperationId, circuit]);
+
     const layersWithoutDragOp = useMemo(() => {
-        return buildLayersWithoutDragOp(circuit, draggingOperationId);
-    }, [circuit, draggingOperationId]);
+        return buildLayersWithoutDragOp(circuit, draggingOperationId, selectorRowIndex);
+    }, [circuit, draggingOperationId, selectorRowIndex]);
 
     const activeDropZones = useMemo(() => {
-        return buildActiveDropZones(flatQubits, layersWithoutDragOp, draggingOperationSize);
-    }, [layersWithoutDragOp, flatQubits, draggingOperationSize]);
+        return buildActiveDropZones(flatQubits, layersWithoutDragOp, draggingOperationSize, selectorRowIndex);
+    }, [layersWithoutDragOp, flatQubits, draggingOperationSize, selectorRowIndex]);
 
     const uiLayers = useMemo(() => {
         return buildUiLayers({
@@ -89,8 +100,25 @@ export function CircuitView() {
             flatQubits,
             hoverPos,
             layersWithoutDragOp,
+            selectorRowIndex,
         });
-    }, [displayRegisters, hoverPos, layersWithoutDragOp, activeDropZones, flatQubits, draggingOperationSize]);
+    }, [
+        displayRegisters,
+        hoverPos,
+        layersWithoutDragOp,
+        activeDropZones,
+        flatQubits,
+        draggingOperationSize,
+        selectorRowIndex,
+    ]);
+
+    const operationColumnCount = Math.max(uiLayers.length + 1, 1);
+    const operationAreaWidth = operationColumnCount * CELL_WIDTH;
+    const circuitWidth = LABEL_WIDTH + operationAreaWidth;
+    const contentHeight = flatQubits.length
+        ? Math.max(...flatQubits.map((qubit) => qubit.visualY + QUBIT_HEIGHT))
+        : QUBIT_HEIGHT;
+    const circuitHeight = Math.max(contentHeight, QUBIT_HEIGHT);
 
     const toggleClassicRegister = (registerId: string) => {
         setExpandedClassicRegisterIds((current) => {
@@ -104,12 +132,22 @@ export function CircuitView() {
         });
     };
 
-    return (
-        <Card className="h-full overflow-hidden border-none bg-bg-subtle">
-            <CardContent className="flex flex-col h-full">
-                <CircuitToolbar circuit={circuit} setCircuit={setCircuit} />
+    if (!activeCircuitTabId) {
+        return (
+            <Card className="h-full overflow-hidden border-none rounded-none bg-bg-subtle p-0 gap-0">
+                <CardContent className="flex h-full items-center justify-center p-0 text-gray-500">
+                    No file open
+                </CardContent>
+            </Card>
+        );
+    }
 
-                <div className="relative flex-1 overflow-auto">
+    return (
+        <Card className="h-full overflow-hidden border-none rounded-none bg-bg-subtle p-0 gap-0">
+            <CardContent className="flex flex-col h-full p-0">
+                <CircuitTabBar />
+
+                <div className="relative flex-1 overflow-auto flex flex-col [&::-webkit-scrollbar-track]:bg-bg-subtle">
                     {displayRegisters.length === 0 && (
                         <div className="absolute inset-0 z-30 flex items-center justify-center p-6">
                             <div className="max-w-sm rounded-xl border border-dashed border-border bg-background/80 p-6 text-center shadow-sm backdrop-blur">
@@ -128,44 +166,52 @@ export function CircuitView() {
                         </div>
                     )}
 
-                    <QubitWires
-                        circuit={circuit}
-                        setCircuit={setCircuit}
-                        flatQubits={flatQubits}
-                        onToggleClassicRegister={toggleClassicRegister}
-                    />
-
-                    <div className="absolute inset-y-0 right-0" style={{ left: LABEL_WIDTH }}>
-                        <QuantumOperationGrid
-                            uiLayers={uiLayers}
-                            registers={displayRegisters}
-                            flatQubits={flatQubits}
-                            isOperationDragging={isOperationDragging}
-                            removeQuantumOperation={removeQuantumOperation}
-                            setDraggingOperationId={setDraggingOperationId}
-                            setHoverPos={setHoverPos}
-                        />
-
-                        <DropzoneGrid
+                    <div
+                        className="relative flex-1 shrink-0 isolate"
+                        style={{ width: circuitWidth, minHeight: circuitHeight }}
+                    >
+                        <QubitWires
                             circuit={circuit}
                             setCircuit={setCircuit}
                             flatQubits={flatQubits}
-                            uiLayers={uiLayers}
-                            activeDropZones={activeDropZones}
-                            setHoverPos={setHoverPos}
-                            setDraggingOperationId={setDraggingOperationId}
-                            onRequestMeasurementTarget={(ctx) => {
-                                setMeasurementContext(ctx);
-                                setMeasurementDialogOpen(true);
-                            }}
+                            circuitWidth={circuitWidth}
+                            onToggleClassicRegister={toggleClassicRegister}
                         />
 
-                        <DropPlaceholder
-                            hoverPos={hoverPos}
-                            draggingOperationSize={draggingOperationSize}
-                            flatQubits={flatQubits}
-                        />
+                        <div className="absolute inset-y-0" style={{ left: LABEL_WIDTH, width: operationAreaWidth }}>
+                            <QuantumOperationGrid
+                                uiLayers={uiLayers}
+                                registers={displayRegisters}
+                                flatQubits={flatQubits}
+                                isOperationDragging={isOperationDragging}
+                                removeQuantumOperation={removeQuantumOperation}
+                                setDraggingOperationId={setDraggingOperationId}
+                                setHoverPos={setHoverPos}
+                                draggingOperation={draggingOperation}
+                            />
+
+                            <DropzoneGrid
+                                circuit={circuit}
+                                setCircuit={setCircuit}
+                                flatQubits={flatQubits}
+                                uiLayers={uiLayers}
+                                activeDropZones={activeDropZones}
+                                setHoverPos={setHoverPos}
+                                setDraggingOperationId={setDraggingOperationId}
+                                onRequestMeasurementTarget={(ctx) => {
+                                    setMeasurementContext(ctx);
+                                    setMeasurementDialogOpen(true);
+                                }}
+                            />
+
+                            <DropPlaceholder
+                                hoverPos={hoverPos}
+                                draggingOperationSize={draggingOperationSize}
+                                flatQubits={flatQubits}
+                            />
+                        </div>
                     </div>
+                    <CircuitFooter uiLayers={uiLayers} circuitWidth={circuitWidth} />
                     <MeasurementTargetDialog
                         open={measurementDialogOpen}
                         onOpenChange={(open) => {
@@ -190,8 +236,6 @@ export function CircuitView() {
                         }}
                     />
                 </div>
-
-                <CircuitFooter uiLayers={uiLayers} />
             </CardContent>
         </Card>
     );
@@ -204,6 +248,7 @@ interface BuildUiLayersInput {
     flatQubits: FlatQubit[];
     hoverPos: HoverPos | null;
     layersWithoutDragOp: UiLayer[];
+    selectorRowIndex: Map<string, number>;
 }
 
 function buildFlatQubits(displayRegisters: RegisterResponse[], collapsedClassicRegisterIds: Set<string>): FlatQubit[] {
@@ -245,7 +290,20 @@ function buildFlatQubits(displayRegisters: RegisterResponse[], collapsedClassicR
     });
 }
 
-function buildLayersWithoutDragOp(circuit: CircuitResponse | undefined, draggingOperationId: string | null): UiLayer[] {
+function buildSelectorRowIndex(flatQubits: FlatQubit[]): Map<string, number> {
+    return new Map(
+        flatQubits.map((qubit, index) => [
+            getSelectorKey({ registerId: qubit.regId, index: qubit.relQubitIdx }),
+            index,
+        ]),
+    );
+}
+
+function buildLayersWithoutDragOp(
+    circuit: CircuitResponse | undefined,
+    draggingOperationId: string | null,
+    selectorRowIndex: Map<string, number>,
+): UiLayer[] {
     if (!circuit?.layers) return [];
 
     const operations = circuit.layers.flatMap((layer, layerIndex) =>
@@ -254,21 +312,17 @@ function buildLayersWithoutDragOp(circuit: CircuitResponse | undefined, dragging
             .map((operation) => ({ ...operation, originalLayerIdx: layerIndex }) as UiQuantumOperation),
     );
 
-    return rescheduleOperations(operations);
+    operations.sort((left, right) => compareCanonicalOrder(left, right, selectorRowIndex));
+    return rescheduleOperations(operations, selectorRowIndex);
 }
 
 function buildActiveDropZones(
     flatQubits: FlatQubit[],
     layersWithoutDragOp: UiLayer[],
     draggingOperationSize: number,
+    selectorRowIndex: Map<string, number>,
 ): Set<string> {
     const activeSet = new Set<string>();
-    const selectorRowIndex = new Map(
-        flatQubits.map((qubit, index) => [
-            getSelectorKey({ registerId: qubit.regId, index: qubit.relQubitIdx }),
-            index,
-        ]),
-    );
 
     for (let qubitIndex = 0; qubitIndex < flatQubits.length; qubitIndex++) {
         for (let layerIndex = 0; layerIndex <= layersWithoutDragOp.length; layerIndex++) {
@@ -297,6 +351,7 @@ function buildUiLayers({
     flatQubits,
     hoverPos,
     layersWithoutDragOp,
+    selectorRowIndex,
 }: BuildUiLayersInput): UiLayer[] {
     if (!displayRegisters.length) return [];
 
@@ -309,18 +364,22 @@ function buildUiLayers({
         allOperations.unshift(dummyOperation);
     }
 
-    allOperations.sort((left, right) => left.originalLayerIdx - right.originalLayerIdx);
-    return rescheduleOperations(allOperations, hoverPos?.layerIdx);
+    allOperations.sort((left, right) => compareCanonicalOrder(left, right, selectorRowIndex));
+    return rescheduleOperations(allOperations, selectorRowIndex, hoverPos?.layerIdx);
 }
 
-function rescheduleOperations(allOperations: UiQuantumOperation[], dummyLayerIndex?: number): UiLayer[] {
+function rescheduleOperations(
+    allOperations: UiQuantumOperation[],
+    selectorRowIndex: Map<string, number>,
+    dummyLayerIndex?: number,
+): UiLayer[] {
     const newLayers: UiLayer[] = [];
     const lastLayerPerSelector = new Map<string, number>();
 
     for (const operation of allOperations) {
         const involvedKeys = getInvolvedSelectors(operation).map(getSelectorKey);
         const earliestLayer = findEarliestLayer(involvedKeys, lastLayerPerSelector, operation, dummyLayerIndex);
-        const layerIndex = findAvailableLayer(earliestLayer, newLayers, operation);
+        const layerIndex = findAvailableLayer(earliestLayer, newLayers, operation, selectorRowIndex);
 
         while (newLayers.length <= layerIndex) {
             newLayers.push({ quantumOperations: [] });
@@ -390,19 +449,13 @@ function hasOperationAtLeft(
     draggingOperationSize: number,
     selectorRowIndex: Map<string, number>,
 ): boolean {
+    const dropSpan = [qubitIndex, qubitIndex + draggingOperationSize - 1] as const;
+
     return Boolean(
-        layersWithoutDragOp[layerIndex - 1]?.quantumOperations.some(
-            (operation) =>
-                operation.type !== 'DUMMY' &&
-                getInvolvedSelectors(operation).some((selector) => {
-                    const rowIndex = selectorRowIndex.get(getSelectorKey(selector));
-                    return (
-                        rowIndex !== undefined &&
-                        qubitIndex <= rowIndex &&
-                        rowIndex < qubitIndex + draggingOperationSize
-                    );
-                }),
-        ),
+        layersWithoutDragOp[layerIndex - 1]?.quantumOperations.some((operation) => {
+            if (operation.type === 'DUMMY') return false;
+            return spansOverlap(dropSpan, getOperationSpan(operation, selectorRowIndex));
+        }),
     );
 }
 
@@ -419,20 +472,60 @@ function findEarliestLayer(
         : earliestLayer;
 }
 
-function findAvailableLayer(startLayer: number, layers: UiLayer[], operation: UiQuantumOperation): number {
+function findAvailableLayer(
+    startLayer: number,
+    layers: UiLayer[],
+    operation: UiQuantumOperation,
+    selectorRowIndex: Map<string, number>,
+): number {
     let layerIndex = startLayer;
 
-    while (layerIndex < layers.length && hasCollisionInLayer(operation, layers[layerIndex])) {
+    while (layerIndex < layers.length && hasCollisionInLayer(operation, layers[layerIndex], selectorRowIndex)) {
         layerIndex++;
     }
 
     return layerIndex;
 }
 
-function hasCollisionInLayer(operation: UiQuantumOperation, layer: UiLayer): boolean {
+function hasCollisionInLayer(
+    operation: UiQuantumOperation,
+    layer: UiLayer,
+    selectorRowIndex: Map<string, number>,
+): boolean {
     const requiredKeys = new Set(getInvolvedSelectors(operation).map(getSelectorKey));
+    const operationSpan = getOperationSpan(operation, selectorRowIndex);
+
     return layer.quantumOperations.some((existingOperation) => {
-        if (operation.type === 'MEASUREMENT' && existingOperation.type === 'MEASUREMENT') return true;
-        return getInvolvedSelectors(existingOperation).some((selector) => requiredKeys.has(getSelectorKey(selector)));
+        const existingKeys = getInvolvedSelectors(existingOperation).map(getSelectorKey);
+        return (
+            existingKeys.some((key) => requiredKeys.has(key)) ||
+            spansOverlap(operationSpan, getOperationSpan(existingOperation, selectorRowIndex))
+        );
     });
+}
+
+function compareCanonicalOrder(
+    left: UiQuantumOperation,
+    right: UiQuantumOperation,
+    selectorRowIndex: Map<string, number>,
+): number {
+    if (left.originalLayerIdx !== right.originalLayerIdx) return left.originalLayerIdx - right.originalLayerIdx;
+
+    const leftIsDummy = left.type === 'DUMMY';
+    const rightIsDummy = right.type === 'DUMMY';
+    if (leftIsDummy !== rightIsDummy) return leftIsDummy ? -1 : 1;
+
+    return getOperationSpan(left, selectorRowIndex)[0] - getOperationSpan(right, selectorRowIndex)[0];
+}
+
+function getOperationSpan(operation: UiQuantumOperation, selectorRowIndex: Map<string, number>): [number, number] {
+    const indices = getInvolvedSelectors(operation).map(
+        (selector) => selectorRowIndex.get(getSelectorKey(selector)) ?? selector.index,
+    );
+    if (indices.length === 0) return [0, 0];
+    return [Math.min(...indices), Math.max(...indices)];
+}
+
+function spansOverlap(left: readonly [number, number], right: readonly [number, number]): boolean {
+    return left[0] <= right[1] && right[0] <= left[1];
 }

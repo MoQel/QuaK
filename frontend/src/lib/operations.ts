@@ -19,6 +19,19 @@ export type OperationIdentifier =
     | 'MEASURE'
     | 'DUMMY';
 
+const isOperationIdentifier = (identifier: string): identifier is OperationIdentifier => {
+    return identifier in OPERATION_DEFINITIONS;
+};
+
+const normalizeOperationIdentifier = (identifier: unknown): OperationIdentifier | null => {
+    if (typeof identifier !== 'string') return null;
+
+    const normalized = identifier.toUpperCase();
+    if (isOperationIdentifier(normalized)) return normalized;
+
+    return null;
+};
+
 export type ShapeClass = 'rounded-none' | 'rounded-full';
 
 export type Color = `var(--${string})` | 'transparent';
@@ -32,6 +45,8 @@ export type OperationDefinition = {
     label?: string;
     formClass: ShapeClass;
     color: Color;
+    /** Parametric rotation gate (rx/ry/rz): its `rotationAngle` is shown on the gate box. */
+    hasRotationAngle?: boolean;
 };
 
 const H: OperationDefinition = {
@@ -142,6 +157,7 @@ const RX: OperationDefinition = {
     icon: { type: 'text', text: 'RX' },
     formClass: 'rounded-none',
     color: 'var(--quantum)',
+    hasRotationAngle: true,
 };
 
 const RY: OperationDefinition = {
@@ -152,6 +168,7 @@ const RY: OperationDefinition = {
     icon: { type: 'text', text: 'RY' },
     formClass: 'rounded-none',
     color: 'var(--quantum)',
+    hasRotationAngle: true,
 };
 
 const RZ: OperationDefinition = {
@@ -162,6 +179,7 @@ const RZ: OperationDefinition = {
     icon: { type: 'text', text: 'RZ' },
     formClass: 'rounded-none',
     color: 'var(--quantum)',
+    hasRotationAngle: true,
 };
 
 const MEASURE: OperationDefinition = {
@@ -202,6 +220,17 @@ const OPERATION_DEFINITIONS: Record<OperationIdentifier, OperationDefinition> = 
     DUMMY,
 };
 
-export const getOperationDefinition = (identifier: OperationIdentifier): OperationDefinition => {
-    return OPERATION_DEFINITIONS[identifier];
+export const getOperationDefinition = (identifier: unknown): OperationDefinition => {
+    const normalizedIdentifier = normalizeOperationIdentifier(identifier);
+
+    if (!normalizedIdentifier) {
+        console.warn('Unknown quantum operation identifier:', identifier);
+        return {
+            ...DUMMY,
+            type: 'ELEMENTARY_QUANTUM_GATE',
+            icon: { type: 'text', text: typeof identifier === 'string' ? identifier.toUpperCase() : '?' },
+        };
+    }
+
+    return OPERATION_DEFINITIONS[normalizedIdentifier];
 };

@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { SetStateAction, useCallback } from 'react';
 import { useDispatch } from 'react-redux';
 import { stopOperationDrag } from '@/store/circuit/dragOperationSlice.ts';
 import { CELL_WIDTH, QUBIT_HEIGHT } from '@/views/circuit-view/util/layout.ts';
@@ -8,15 +8,55 @@ import type {
     ElementaryQuantumGateDto,
     ElementSelectorDto,
     MoveQuantumOperationRequest,
+    QuantumOperationDto,
 } from '@/api/dto/circuit.ts';
-import type { DragData, FlatQubit, HoverPos, UiLayer } from '@/views/circuit-view/util/types.ts';
-import { createCircuitService } from '@/views/circuit-view/util/circuitService.ts';
+import { DragData, FlatQubit, HoverPos, UiLayer } from '@/views/circuit-view/util/types.ts';
 import { getOperationDefinition } from '@/lib/operations.ts';
 import type { OperationIdentifier } from '@/lib/operations.ts';
 
+const findOperation = (layers: CircuitResponse['layers'], operationId: string): QuantumOperationDto | undefined => {
+    for (const layer of layers) {
+        const op = layer.quantumOperations.find((candidate) => candidate.id === operationId);
+        if (op) return op;
+    }
+    return undefined;
+};
+
+const stripOperation = (layers: CircuitResponse['layers'], operationId: string): CircuitResponse['layers'] =>
+    layers.map((layer) => ({ quantumOperations: layer.quantumOperations.filter((op) => op.id !== operationId) }));
+
+const selectorsEqual = (left: ElementSelectorDto[] = [], right: ElementSelectorDto[] = []) =>
+    JSON.stringify(left) === JSON.stringify(right);
+
+const getClassicBits = (
+    operation:
+        | {
+              type: string;
+              classicBits?: ElementSelectorDto[];
+          }
+        | undefined,
+) => (operation?.type === 'MEASUREMENT' ? (operation.classicBits ?? []) : []);
+
+const hasSamePosition = (
+    original: {
+        layerIdx: number;
+        targetQubits: ElementSelectorDto[];
+        controlQubits: ElementSelectorDto[];
+        classicBits?: ElementSelectorDto[];
+    },
+    layerIdx: number,
+    targetQubits: ElementSelectorDto[],
+    controlQubits: ElementSelectorDto[],
+    classicBits: ElementSelectorDto[] = [],
+) =>
+    original.layerIdx === layerIdx &&
+    selectorsEqual(original.targetQubits, targetQubits) &&
+    selectorsEqual(original.controlQubits, controlQubits) &&
+    selectorsEqual(original.classicBits ?? [], classicBits);
+
 interface DropzoneGridProps {
     circuit: CircuitResponse | undefined;
-    setCircuit: (circuit: CircuitResponse) => void;
+    setCircuit: React.Dispatch<SetStateAction<CircuitResponse | undefined>>;
     flatQubits: FlatQubit[];
     uiLayers: UiLayer[];
     activeDropZones: Set<string>;
@@ -40,38 +80,85 @@ export function DropzoneGrid({
     setDraggingOperationId,
     onRequestMeasurementTarget,
 }: Readonly<DropzoneGridProps>) {
-    const { addQuantumOperation, moveQuantumOperation } = createCircuitService(circuit, setCircuit);
-
     const dispatch = useDispatch();
 
-    const selectorsEqual = (left: ElementSelectorDto[] = [], right: ElementSelectorDto[] = []) =>
-        JSON.stringify(left) === JSON.stringify(right);
+    const layersFromPreview = (operation: QuantumOperationDto): CircuitResponse['layers'] | null => {
+        let dummyReplaced = false;
+        const layers = uiLayers.map((layer) => ({
+            quantumOperations: layer.quantumOperations.map((uiOp) => {
+                if (uiOp.type === 'DUMMY') {
+                    dummyReplaced = true;
+                    return operation;
+                }
+                const { originalLayerIdx: _originalLayerIdx, ...op } = uiOp;
+                return op as QuantumOperationDto;
+            }),
+        }));
+        return dummyReplaced ? layers : null;
+    };
 
-    const getClassicBits = (
-        operation:
-            | {
-                  type: string;
-                  classicBits?: ElementSelectorDto[];
-              }
-            | undefined,
-    ) => (operation?.type === 'MEASUREMENT' ? operation.classicBits ?? [] : []);
+    const addQuantumOperationLocally = (operation: QuantumOperationDto, targetLayerIdx: number) => {
+        setCircuit((prev) => {
+            if (!prev) return prev;
 
-    const hasSamePosition = (
-        original: {
-            layerIdx: number;
-            targetQubits: ElementSelectorDto[];
-            controlQubits: ElementSelectorDto[];
-            classicBits?: ElementSelectorDto[];
-        },
-        layerIdx: number,
-        targetQubits: ElementSelectorDto[],
-        controlQubits: ElementSelectorDto[],
-        classicBits: ElementSelectorDto[] = [],
-    ) =>
-        original.layerIdx === layerIdx &&
-        selectorsEqual(original.targetQubits, targetQubits) &&
-        selectorsEqual(original.controlQubits, controlQubits) &&
-        selectorsEqual(original.classicBits ?? [], classicBits);
+            const newOperation = { ...operation, id: crypto.randomUUID() };
+
+            const previewLayers = layersFromPreview(newOperation);
+            if (previewLayers) return { ...prev, layers: previewLayers };
+
+            const layers = prev.layers.map((layer) => ({
+                quantumOperations: [...layer.quantumOperations],
+            }));
+
+            while (layers.length <= targetLayerIdx) {
+                layers.push({ quantumOperations: [] });
+            }
+
+            layers[targetLayerIdx].quantumOperations.push(newOperation);
+
+            return {
+                ...prev,
+                layers,
+            };
+        });
+    };
+
+    const moveQuantumOperationLocally = (payload: MoveQuantumOperationRequest) => {
+        setCircuit((prev) => {
+            if (!prev) return prev;
+
+            const original = findOperation(prev.layers, payload.quantumOperationId);
+            if (!original) return prev;
+            const movedOperation: QuantumOperationDto =
+                original.type === 'MEASUREMENT'
+                    ? {
+                          ...original,
+                          targetQubits: payload.targetQubits,
+                          controlQubits: [],
+                          classicBits: payload.classicBits ?? original.classicBits,
+                      }
+                    : {
+                          ...original,
+                          targetQubits: payload.targetQubits,
+                          controlQubits: payload.controlQubits,
+                      };
+
+            const previewLayers = layersFromPreview(movedOperation);
+            if (previewLayers) return { ...prev, layers: previewLayers };
+
+            const layers = stripOperation(prev.layers, payload.quantumOperationId);
+            while (layers.length <= payload.layerIdx) {
+                layers.push({ quantumOperations: [] });
+            }
+
+            layers[payload.layerIdx].quantumOperations.push(movedOperation);
+
+            return {
+                ...prev,
+                layers: layers.filter((layer) => layer.quantumOperations.length > 0),
+            };
+        });
+    };
 
     const handleDragOver = (e: React.DragEvent, qubitIdx: number, layerIdx: number) => {
         e.preventDefault();
@@ -81,6 +168,10 @@ export function DropzoneGrid({
             }
             return { qubitIdx, layerIdx };
         });
+    };
+
+    const handleDragLeave = (qubitIdx: number, layerIdx: number) => {
+        setHoverPos((prev) => (prev?.qubitIdx === qubitIdx && prev?.layerIdx === layerIdx ? null : prev));
     };
 
     const hasCircuitStateChanged = useCallback(
@@ -147,92 +238,80 @@ export function DropzoneGrid({
         [circuit, uiLayers],
     );
 
-    const handleDrop = useCallback(
-        (e: React.DragEvent<HTMLDivElement>, regId: string, regIdx: number, layerIdx: number) => {
-            e.preventDefault();
-            try {
-                const data: DragData = JSON.parse(e.dataTransfer.getData('text/plain'));
-                const operationDefinition = getOperationDefinition(data.operationIdentifier);
-                const controlQubits: ElementSelectorDto[] = Array.from(
-                    { length: operationDefinition.controlSize },
-                    (_, index) => ({
-                        registerId: regId,
-                        index: regIdx + index,
-                    }),
-                );
-                const targetQubits: ElementSelectorDto[] = Array.from(
-                    { length: operationDefinition.targetSize },
-                    (_, index) => ({
-                        registerId: regId,
-                        index: regIdx + operationDefinition.controlSize + index,
-                    }),
-                );
+    const handleDrop = (e: React.DragEvent<HTMLDivElement>, regId: string, regIdx: number, layerIdx: number) => {
+        e.preventDefault();
+        try {
+            const data: DragData = JSON.parse(e.dataTransfer.getData('text/plain'));
+            const operationDefinition = getOperationDefinition(data.operationIdentifier);
+            const controlQubits: ElementSelectorDto[] = Array.from(
+                { length: operationDefinition.controlSize },
+                (_, index) => ({
+                    registerId: regId,
+                    index: regIdx + index,
+                }),
+            );
+            const targetQubits: ElementSelectorDto[] = Array.from(
+                { length: operationDefinition.targetSize },
+                (_, index) => ({
+                    registerId: regId,
+                    index: regIdx + operationDefinition.controlSize + index,
+                }),
+            );
 
-                switch (data.origin) {
-                    case 'library': {
-                        if (operationDefinition.type === 'ELEMENTARY_QUANTUM_GATE') {
-                            const operation: ElementaryQuantumGateDto = {
-                                type: 'ELEMENTARY_QUANTUM_GATE',
-                                identifier: data.operationIdentifier,
-                                inverseForm: false,
-                                targetQubits,
-                                controlQubits,
-                                rotationAngle: Math.PI / 2,
-                            };
-                            addQuantumOperation({ quantumOperation: operation, layerIdx });
-                        } else if (operationDefinition.type === 'MEASUREMENT') {
-                            onRequestMeasurementTarget?.({
-                                layerIdx,
-                                targetQubits,
-                                controlQubits: [],
-                                operationIdentifier: data.operationIdentifier,
-                            });
-                        }
-                        break;
-                    }
-                    case 'circuit': {
-                        if (!data.id) break;
-
-                        const operationToMove = circuit?.layers
-                            .flatMap((layer) => layer.quantumOperations)
-                            .find((operation) => operation.id === data.id);
-                        const payload: MoveQuantumOperationRequest = {
-                            quantumOperationId: data.id,
+            switch (data.origin) {
+                case 'library': {
+                    if (operationDefinition.type === 'ELEMENTARY_QUANTUM_GATE') {
+                        const operation: ElementaryQuantumGateDto = {
+                            type: 'ELEMENTARY_QUANTUM_GATE',
+                            identifier: data.operationIdentifier,
+                            inverseForm: false,
+                            targetQubits,
+                            controlQubits,
+                            rotationAngle: Math.PI / 2,
+                        };
+                        addQuantumOperationLocally(operation, layerIdx);
+                    } else if (operationDefinition.type === 'MEASUREMENT') {
+                        onRequestMeasurementTarget?.({
                             layerIdx,
                             targetQubits,
-                            controlQubits: operationToMove?.type === 'MEASUREMENT' ? [] : controlQubits,
-                            classicBits:
-                                operationToMove?.type === 'MEASUREMENT' ? getClassicBits(operationToMove) : undefined,
-                        };
-
-                        if (hasCircuitStateChanged(payload)) {
-                            moveQuantumOperation(payload);
-                        }
-                        break;
+                            controlQubits: [],
+                            operationIdentifier: data.operationIdentifier,
+                        });
                     }
-                    default:
-                        console.error(`Unknown drag origin: ${String((data as Partial<DragData>).origin)}`);
-                        break;
+                    break;
                 }
-            } catch (error) {
-                console.error('Failed to parse drag data', error);
-            } finally {
-                dispatch(stopOperationDrag());
-                setHoverPos(null);
-                setDraggingOperationId(null);
+                case 'circuit': {
+                    if (!data.id) break;
+
+                    const operationToMove = circuit?.layers
+                        .flatMap((layer) => layer.quantumOperations)
+                        .find((operation) => operation.id === data.id);
+                    const payload: MoveQuantumOperationRequest = {
+                        quantumOperationId: data.id,
+                        layerIdx,
+                        targetQubits,
+                        controlQubits: operationToMove?.type === 'MEASUREMENT' ? [] : controlQubits,
+                        classicBits:
+                            operationToMove?.type === 'MEASUREMENT' ? getClassicBits(operationToMove) : undefined,
+                    };
+
+                    if (hasCircuitStateChanged(payload)) {
+                        moveQuantumOperationLocally(payload);
+                    }
+                    break;
+                }
+                default:
+                    console.error(`Unknown drag origin: ${String((data as Partial<DragData>).origin)}`);
+                    break;
             }
-        },
-        [
-            addQuantumOperation,
-            circuit,
-            dispatch,
-            hasCircuitStateChanged,
-            moveQuantumOperation,
-            onRequestMeasurementTarget,
-            setDraggingOperationId,
-            setHoverPos,
-        ],
-    );
+        } catch (error) {
+            console.error('Failed to parse drag data', error);
+        } finally {
+            dispatch(stopOperationDrag());
+            setHoverPos(null);
+            setDraggingOperationId(null);
+        }
+    };
 
     return (
         <div className="absolute inset-0 z-10">
@@ -253,8 +332,9 @@ export function DropzoneGrid({
                                 width: CELL_WIDTH,
                                 height: QUBIT_HEIGHT,
                             }}
+                            onDragEnter={(e) => handleDragOver(e, qIdx, layerIdx)}
                             onDragOver={(e) => handleDragOver(e, qIdx, layerIdx)}
-                            onDragLeave={() => setHoverPos(null)}
+                            onDragLeave={() => handleDragLeave(qIdx, layerIdx)}
                             onDrop={(e) => handleDrop(e, qubit.regId, qubit.relQubitIdx, layerIdx)}
                         />
                     );

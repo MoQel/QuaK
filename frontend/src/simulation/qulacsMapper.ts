@@ -1,9 +1,4 @@
-import {
-    CircuitResponse,
-    MeasurementDto,
-    getCircuitWidth,
-    isQuantumRegister,
-} from '@/api/dto/circuit.ts';
+import { CircuitResponse, MeasurementDto, getCircuitWidth, isQuantumRegister } from '@/api/dto/circuit.ts';
 import * as qulacs from 'qulacs-wasm';
 import { Complex } from 'qulacs-wasm';
 import {
@@ -44,7 +39,7 @@ interface MeasurementAccumulator {
     oneCount: number;
 }
 
-export class CircuitTranslator {
+export class QulacsMapper {
     private static readonly SAMPLE_COUNT = 1024;
     private static readonly MIN_SAMPLE_COUNT = 1;
     private static readonly MAX_SAMPLE_COUNT = 100000;
@@ -532,5 +527,4 @@ export class CircuitTranslator {
             simulatedQubits: numQubits,
         };
     }
-
 }

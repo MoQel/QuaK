@@ -34,7 +34,7 @@ import {
 } from '@/components/ui/dialog.tsx';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle';
 import type { ReactNode } from 'react';
-import { useProject } from '@/contexts/ProjectContext';
+import { useCircuitTabs } from '@/contexts/CircuitTabsContext.tsx';
 
 type RegisterNames = Map<string, string>;
 type EventPanelType = 'intermediate' | 'final';
@@ -62,7 +62,7 @@ const eventCopy: Record<EventPanelType, { title: string; singular: string; plura
 };
 
 export function ResultsView() {
-    const { circuit } = useProject();
+    const { activeCircuit: circuit } = useCircuitTabs();
     const [options, setOptions] = useState<SimulationOptions>({
         mode: 'simulation',
         measurementMode: 'measurement-gates',
@@ -320,13 +320,16 @@ function ChartArea({
                             </DialogTitle>
                             <DialogDescription className="text-text-muted mt-3">
                                 Increasing the limit to <strong>{circuitWidth} qubits</strong> can use a lot of memory.
-                                State simulation stores 2^n amplitudes, and above 16-20 qubits the browser may freeze
-                                or crash.
+                                State simulation stores 2^n amplitudes, and above 16-20 qubits the browser may freeze or
+                                crash.
                             </DialogDescription>
                         </DialogHeader>
                         <DialogFooter className="mt-4 gap-2 sm:gap-0">
                             <DialogClose asChild>
-                                <Button variant="outline" className="bg-bg border-border text-text hover:bg-bg-light-hover">
+                                <Button
+                                    variant="outline"
+                                    className="bg-bg border-border text-text hover:bg-bg-light-hover"
+                                >
                                     Cancel
                                 </Button>
                             </DialogClose>
@@ -435,7 +438,10 @@ function MeasurementEventsPanel({
 
     return (
         <ResultPanel border="border-b">
-            <PanelHeader title={copy.title} meta={`${rows.length} ${rows.length === 1 ? copy.singular : copy.plural}`} />
+            <PanelHeader
+                title={copy.title}
+                meta={`${rows.length} ${rows.length === 1 ? copy.singular : copy.plural}`}
+            />
             <div className="text-xs text-text-muted">{copy.description}</div>
             <div className="mt-3 flex max-h-28 flex-wrap gap-2 overflow-y-auto pr-1 custom-scrollbar">
                 {rows.map((measurement, index) => (
@@ -561,10 +567,7 @@ function ProcessingOverlay() {
     );
 }
 
-function ResultPanel({
-    border,
-    children,
-}: Readonly<{ border: 'border-b' | 'border-t'; children: ReactNode }>) {
+function ResultPanel({ border, children }: Readonly<{ border: 'border-b' | 'border-t'; children: ReactNode }>) {
     return <div className={`shrink-0 ${border} border-border bg-bg px-4 py-3`}>{children}</div>;
 }
 
@@ -636,9 +639,7 @@ function getReadoutBasisLabel(result: SimulationResult | null, hasClassicalReado
     if (!hasClassicalReadout || !result?.readoutRegisters?.length) return '';
 
     return result.readoutRegisters
-        .map((register) =>
-            Array.from({ length: register.size }, (_, index) => `${register.name}[${index}]`).join(' '),
-        )
+        .map((register) => Array.from({ length: register.size }, (_, index) => `${register.name}[${index}]`).join(' '))
         .join('   ');
 }
 

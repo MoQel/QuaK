@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { CircuitTranslator } from './CircuitTranslator';
+import { QulacsMapper } from './qulacsMapper.ts';
 import { initQulacs } from 'qulacs-wasm';
 import {
     CircuitResponse,
@@ -120,7 +120,7 @@ const measurement = (
     classicBits: [{ registerId: 'creg-0', index: classicIndex }],
 });
 
-describe('CircuitTranslator', () => {
+describe('QulacsMapper', () => {
     beforeAll(async () => {
         await initQulacs();
     });
@@ -128,7 +128,7 @@ describe('CircuitTranslator', () => {
     describe('Basic Initialization', () => {
         it('should handle an empty circuit (0 qubits) gracefully', () => {
             const circuit = createCircuit(0);
-            const result = CircuitTranslator.translateAndRun(circuit);
+            const result = QulacsMapper.translateAndRun(circuit);
 
             expect(result.stateVector).toHaveLength(0);
             expect(result.counts).toBeNull();
@@ -136,7 +136,7 @@ describe('CircuitTranslator', () => {
 
         it('should initialize a single qubit to state |0> (Identity)', () => {
             const circuit = createCircuit(1);
-            const result = CircuitTranslator.translateAndRun(circuit);
+            const result = QulacsMapper.translateAndRun(circuit);
 
             expect(result.stateVector).toHaveLength(2);
 
@@ -150,7 +150,7 @@ describe('CircuitTranslator', () => {
         it('should apply X gate (Bit Flip)', () => {
             const circuit = createCircuit(1, [gate('X')]);
 
-            const result = CircuitTranslator.translateAndRun(circuit);
+            const result = QulacsMapper.translateAndRun(circuit);
 
             expect(result.stateVector[0].prob).toBeCloseTo(0.0);
             expect(result.stateVector[1].state).toBe('|1>');
@@ -160,7 +160,7 @@ describe('CircuitTranslator', () => {
         it('should apply H gate (Superposition)', () => {
             const circuit = createCircuit(1, [gate('H')]);
 
-            const result = CircuitTranslator.translateAndRun(circuit);
+            const result = QulacsMapper.translateAndRun(circuit);
 
             expect(result.stateVector[0].prob).toBeCloseTo(0.5);
             expect(result.stateVector[1].prob).toBeCloseTo(0.5);
@@ -172,7 +172,7 @@ describe('CircuitTranslator', () => {
             const circuit = createCircuit(3, [gate('X', 0), gate('X', 1), gate('X', 2)]);
 
             expect(() => {
-                CircuitTranslator.translateAndRun(circuit, {
+                QulacsMapper.translateAndRun(circuit, {
                     maxCircuitWidth: 2,
                 });
             }).toThrow(/Circuit exceeds maximum limit/);
@@ -181,7 +181,7 @@ describe('CircuitTranslator', () => {
         it('should respect custom sampleCount', () => {
             const circuit = createCircuit(1, [measurement()], 1);
 
-            const result = CircuitTranslator.translateAndRun(circuit, {
+            const result = QulacsMapper.translateAndRun(circuit, {
                 sampleCount: 10,
                 mode: 'simulation',
             });
@@ -196,7 +196,7 @@ describe('CircuitTranslator', () => {
         it('should sample the quantum state in simulation mode without measurement gates', () => {
             const circuit = createCircuit(1, [gate('X')]);
 
-            const result = CircuitTranslator.translateAndRun(circuit, {
+            const result = QulacsMapper.translateAndRun(circuit, {
                 sampleCount: 6,
                 mode: 'simulation',
             });
@@ -212,7 +212,7 @@ describe('CircuitTranslator', () => {
         it('should return a deterministic single qubit measurement result for |1>', () => {
             const circuit = createCircuit(1, [gate('X'), measurement()], 1);
 
-            const result = CircuitTranslator.translateAndRun(circuit);
+            const result = QulacsMapper.translateAndRun(circuit);
 
             expect(result.measurementResults).toHaveLength(1);
             expect(result.measurementResults[0].probabilities.zero).toBeCloseTo(0);
@@ -224,7 +224,7 @@ describe('CircuitTranslator', () => {
         it('should return balanced probabilities for measuring H|0>', () => {
             const circuit = createCircuit(1, [gate('H'), measurement()], 1);
 
-            const result = CircuitTranslator.translateAndRun(circuit);
+            const result = QulacsMapper.translateAndRun(circuit);
 
             expect(result.measurementResults).toHaveLength(1);
             expect(result.measurementResults[0].probabilities.zero).toBeCloseTo(0.5);
@@ -234,7 +234,7 @@ describe('CircuitTranslator', () => {
         it('should include sampled measurement counts in simulation mode', () => {
             const circuit = createCircuit(1, [gate('X'), measurement()], 1);
 
-            const result = CircuitTranslator.translateAndRun(circuit, {
+            const result = QulacsMapper.translateAndRun(circuit, {
                 sampleCount: 10,
                 mode: 'simulation',
             });
@@ -245,7 +245,7 @@ describe('CircuitTranslator', () => {
         it('should aggregate simulation counts by classical target bit positions', () => {
             const circuit = createCircuit(4, [gate('X', 3), measurement(3, 3)], 4);
 
-            const result = CircuitTranslator.translateAndRun(circuit, {
+            const result = QulacsMapper.translateAndRun(circuit, {
                 sampleCount: 8,
                 mode: 'simulation',
             });
@@ -256,7 +256,7 @@ describe('CircuitTranslator', () => {
         it('should keep unmeasured classical bits at zero', () => {
             const circuit = createCircuit(1, [gate('X', 0), measurement(0, 2)], 4);
 
-            const result = CircuitTranslator.translateAndRun(circuit, {
+            const result = QulacsMapper.translateAndRun(circuit, {
                 sampleCount: 8,
                 mode: 'simulation',
             });
@@ -271,7 +271,7 @@ describe('CircuitTranslator', () => {
                 2,
             );
 
-            const result = CircuitTranslator.translateAndRun(circuit, {
+            const result = QulacsMapper.translateAndRun(circuit, {
                 sampleCount: 8,
                 mode: 'simulation',
             });
@@ -283,11 +283,18 @@ describe('CircuitTranslator', () => {
         it('should format classical readout keys in displayed classical bit order', () => {
             const circuit = createCircuit(
                 4,
-                [gate('X', 0), gate('X', 1), measurement(0, 0), measurement(1, 1), measurement(2, 2), measurement(3, 3)],
+                [
+                    gate('X', 0),
+                    gate('X', 1),
+                    measurement(0, 0),
+                    measurement(1, 1),
+                    measurement(2, 2),
+                    measurement(3, 3),
+                ],
                 4,
             );
 
-            const result = CircuitTranslator.translateAndRun(circuit, {
+            const result = QulacsMapper.translateAndRun(circuit, {
                 sampleCount: 8,
                 mode: 'simulation',
             });
@@ -299,11 +306,11 @@ describe('CircuitTranslator', () => {
             const highBitCircuit = createCircuit(4, [gate('X', 3), measurement(3, 3)], 4);
             const lowBitCircuit = createCircuit(4, [gate('X', 3), measurement(3, 0)], 4);
 
-            const highBitResult = CircuitTranslator.translateAndRun(highBitCircuit, {
+            const highBitResult = QulacsMapper.translateAndRun(highBitCircuit, {
                 sampleCount: 8,
                 mode: 'simulation',
             });
-            const lowBitResult = CircuitTranslator.translateAndRun(lowBitCircuit, {
+            const lowBitResult = QulacsMapper.translateAndRun(lowBitCircuit, {
                 sampleCount: 8,
                 mode: 'simulation',
             });
@@ -343,7 +350,7 @@ describe('CircuitTranslator', () => {
                 ],
             );
 
-            const result = CircuitTranslator.translateAndRun(circuit, {
+            const result = QulacsMapper.translateAndRun(circuit, {
                 sampleCount: 4,
                 mode: 'simulation',
             });
@@ -371,7 +378,7 @@ describe('CircuitTranslator', () => {
                 2,
             );
 
-            const result = CircuitTranslator.translateAndRun(circuit, {
+            const result = QulacsMapper.translateAndRun(circuit, {
                 sampleCount: 4096,
                 mode: 'simulation',
             });
@@ -384,9 +391,13 @@ describe('CircuitTranslator', () => {
         });
 
         it('should repeat the same result after measuring a collapsed qubit again', () => {
-            const circuit = createCircuit(1, [gate('H'), measurement(0, 0, 'm-first'), measurement(0, 1, 'm-second')], 2);
+            const circuit = createCircuit(
+                1,
+                [gate('H'), measurement(0, 0, 'm-first'), measurement(0, 1, 'm-second')],
+                2,
+            );
 
-            const result = CircuitTranslator.translateAndRun(circuit, {
+            const result = QulacsMapper.translateAndRun(circuit, {
                 sampleCount: 512,
                 mode: 'simulation',
             });
@@ -404,7 +415,7 @@ describe('CircuitTranslator', () => {
                 2,
             );
 
-            const result = CircuitTranslator.translateAndRun(circuit, {
+            const result = QulacsMapper.translateAndRun(circuit, {
                 sampleCount: 512,
                 mode: 'simulation',
             });
@@ -421,7 +432,7 @@ describe('CircuitTranslator', () => {
                 1,
             );
 
-            const result = CircuitTranslator.translateAndRun(circuit, {
+            const result = QulacsMapper.translateAndRun(circuit, {
                 sampleCount: 8,
                 mode: 'simulation',
             });
@@ -433,7 +444,7 @@ describe('CircuitTranslator', () => {
             const circuit = createCircuit(1, [measurement()], 0);
 
             expect(() =>
-                CircuitTranslator.translateAndRun(circuit, {
+                QulacsMapper.translateAndRun(circuit, {
                     sampleCount: 8,
                     mode: 'simulation',
                 }),
@@ -464,7 +475,7 @@ describe('CircuitTranslator', () => {
             );
 
             expect(() =>
-                CircuitTranslator.translateAndRun(circuit, {
+                QulacsMapper.translateAndRun(circuit, {
                     sampleCount: 8,
                     mode: 'simulation',
                 }),
@@ -474,7 +485,7 @@ describe('CircuitTranslator', () => {
         it('should collapse the state before applying later gates', () => {
             const circuit = createCircuit(1, [gate('X'), measurement(), gate('X')], 1);
 
-            const result = CircuitTranslator.translateAndRun(circuit);
+            const result = QulacsMapper.translateAndRun(circuit);
 
             expect(result.measurementResults[0].outcome).toBe(1);
             expect(result.stateVector[0].state).toBe('|0>');
@@ -485,7 +496,7 @@ describe('CircuitTranslator', () => {
         it('should normalize the state after a probabilistic measurement', () => {
             const circuit = createCircuit(1, [gate('H'), measurement()], 1);
 
-            const result = CircuitTranslator.translateAndRun(circuit);
+            const result = QulacsMapper.translateAndRun(circuit);
             const totalProbability = result.stateVector.reduce((sum, entry) => sum + entry.prob, 0);
 
             expect(totalProbability).toBeCloseTo(1);
@@ -495,7 +506,7 @@ describe('CircuitTranslator', () => {
         it('should handle multiple measurements in sequence', () => {
             const circuit = createCircuit(2, [gate('X', 0), measurement(0, 0), gate('X', 1), measurement(1, 1)], 2);
 
-            const result = CircuitTranslator.translateAndRun(circuit);
+            const result = QulacsMapper.translateAndRun(circuit);
 
             expect(result.measurementResults).toHaveLength(2);
             expect(result.measurementResults[0].outcome).toBe(1);
@@ -508,7 +519,7 @@ describe('CircuitTranslator', () => {
         it('should measure all remaining qubits at the end when final sweep is enabled', () => {
             const circuit = createCircuit(2, [gate('X', 1)], 0);
 
-            const result = CircuitTranslator.translateAndRun(circuit, {
+            const result = QulacsMapper.translateAndRun(circuit, {
                 measurementMode: 'measurement-gates-plus-final',
             });
 
@@ -524,7 +535,7 @@ describe('CircuitTranslator', () => {
         it('should keep the exact state view unchanged before automatic final measurements', () => {
             const circuit = createCircuit(1, [gate('H')], 0);
 
-            const result = CircuitTranslator.translateAndRun(circuit, {
+            const result = QulacsMapper.translateAndRun(circuit, {
                 measurementMode: 'measurement-gates-plus-final',
                 mode: 'exact',
             });
@@ -537,7 +548,7 @@ describe('CircuitTranslator', () => {
         it('should run automatic final measurements shot-by-shot in simulation mode', () => {
             const circuit = createCircuit(1, [gate('X')], 0);
 
-            const result = CircuitTranslator.translateAndRun(circuit, {
+            const result = QulacsMapper.translateAndRun(circuit, {
                 measurementMode: 'measurement-gates-plus-final',
                 mode: 'simulation',
                 sampleCount: 4,
@@ -548,7 +559,7 @@ describe('CircuitTranslator', () => {
         });
     });
 
-    describe('CircuitTranslator - Gate Mapping Tests', () => {
+    describe('QulacsMapper - Gate Mapping Tests', () => {
         const findState = (result: SimulationResult, stateStr: string) => {
             const state = result.stateVector.find((s) => s.state === stateStr);
             if (!state) throw new Error(`State ${stateStr} not found in state vector`);
@@ -557,22 +568,22 @@ describe('CircuitTranslator', () => {
 
         it('validates X gate (Pauli-X)', () => {
             let circuit = createCircuit(1, [gate('X', 0)]);
-            expect(findState(CircuitTranslator.translateAndRun(circuit), '|1>').prob).toBeCloseTo(1);
+            expect(findState(QulacsMapper.translateAndRun(circuit), '|1>').prob).toBeCloseTo(1);
 
             circuit = createCircuit(1, [gate('X', 0), gate('X', 0)]);
-            expect(findState(CircuitTranslator.translateAndRun(circuit), '|0>').prob).toBeCloseTo(1);
+            expect(findState(QulacsMapper.translateAndRun(circuit), '|0>').prob).toBeCloseTo(1);
         });
 
         it('validates H gate (Hadamard)', () => {
             const circuit = createCircuit(1, [gate('H', 0)]);
-            const result = CircuitTranslator.translateAndRun(circuit);
+            const result = QulacsMapper.translateAndRun(circuit);
             expect(findState(result, '|0>').prob).toBeCloseTo(0.5);
             expect(findState(result, '|1>').prob).toBeCloseTo(0.5);
         });
 
         it('validates Y gate (Pauli-Y)', () => {
             const circuit = createCircuit(1, [gate('Y', 0)]);
-            const result = CircuitTranslator.translateAndRun(circuit);
+            const result = QulacsMapper.translateAndRun(circuit);
             const state1 = findState(result, '|1>');
             expect(state1.prob).toBeCloseTo(1);
             expect(state1.phase).toBeCloseTo(Math.PI / 2);
@@ -580,7 +591,7 @@ describe('CircuitTranslator', () => {
 
         it('validates Z gate (Pauli-Z)', () => {
             const circuit = createCircuit(1, [gate('H', 0), gate('Z', 0)]);
-            const result = CircuitTranslator.translateAndRun(circuit);
+            const result = QulacsMapper.translateAndRun(circuit);
             const state1 = findState(result, '|1>');
             expect(state1.prob).toBeCloseTo(0.5);
             expect(Math.abs(state1.phase)).toBeCloseTo(Math.PI);
@@ -588,7 +599,7 @@ describe('CircuitTranslator', () => {
 
         it('validates S gate', () => {
             const circuit = createCircuit(1, [gate('H', 0), gate('S', 0)]);
-            const result = CircuitTranslator.translateAndRun(circuit);
+            const result = QulacsMapper.translateAndRun(circuit);
             const state1 = findState(result, '|1>');
             expect(state1.prob).toBeCloseTo(0.5);
             expect(state1.phase).toBeCloseTo(Math.PI / 2);
@@ -596,7 +607,7 @@ describe('CircuitTranslator', () => {
 
         it('validates T gate', () => {
             const circuit = createCircuit(1, [gate('H', 0), gate('T', 0)]);
-            const result = CircuitTranslator.translateAndRun(circuit);
+            const result = QulacsMapper.translateAndRun(circuit);
             const state1 = findState(result, '|1>');
             expect(state1.prob).toBeCloseTo(0.5);
             expect(state1.phase).toBeCloseTo(Math.PI / 4);
@@ -604,7 +615,7 @@ describe('CircuitTranslator', () => {
 
         it('validates RX gate with angle override check', () => {
             const circuit = createCircuit(1, [gate('RX', 0, Math.PI / 2)]);
-            const result = CircuitTranslator.translateAndRun(circuit);
+            const result = QulacsMapper.translateAndRun(circuit);
 
             const state1 = findState(result, '|1>');
             expect(state1.prob).toBeCloseTo(0.5);
@@ -613,7 +624,7 @@ describe('CircuitTranslator', () => {
 
         it('validates RY gate with angle override check', () => {
             const circuit = createCircuit(1, [gate('RY', 0, Math.PI / 2)]);
-            const result = CircuitTranslator.translateAndRun(circuit);
+            const result = QulacsMapper.translateAndRun(circuit);
 
             const state1 = findState(result, '|1>');
             expect(state1.prob).toBeCloseTo(0.5);
@@ -622,7 +633,7 @@ describe('CircuitTranslator', () => {
 
         it('validates RZ gate with angle override check', () => {
             const circuit = createCircuit(1, [gate('H', 0), gate('RZ', 0, Math.PI / 2)]);
-            const result = CircuitTranslator.translateAndRun(circuit);
+            const result = QulacsMapper.translateAndRun(circuit);
 
             const state1 = findState(result, '|1>');
             expect(state1.prob).toBeCloseTo(0.5);
@@ -631,15 +642,15 @@ describe('CircuitTranslator', () => {
 
         it('validates CX (CNOT) gate exhaustively', () => {
             let circuit = createCircuit(2, [multiGate('CX', [0], [1])]);
-            expect(findState(CircuitTranslator.translateAndRun(circuit), '|00>').prob).toBeCloseTo(1);
+            expect(findState(QulacsMapper.translateAndRun(circuit), '|00>').prob).toBeCloseTo(1);
 
             circuit = createCircuit(2, [gate('X', 0), multiGate('CX', [0], [1])]);
-            expect(findState(CircuitTranslator.translateAndRun(circuit), '|11>').prob).toBeCloseTo(1);
+            expect(findState(QulacsMapper.translateAndRun(circuit), '|11>').prob).toBeCloseTo(1);
         });
 
         it('validates CZ gate exhaustively', () => {
             const circuit = createCircuit(2, [gate('H', 0), gate('H', 1), multiGate('CZ', [0], [1])]);
-            const result = CircuitTranslator.translateAndRun(circuit);
+            const result = QulacsMapper.translateAndRun(circuit);
 
             expect(Math.abs(findState(result, '|00>').phase)).toBeCloseTo(0);
             expect(Math.abs(findState(result, '|01>').phase)).toBeCloseTo(0);
@@ -649,30 +660,30 @@ describe('CircuitTranslator', () => {
 
         it('validates SWAP gate exhaustively', () => {
             let circuit = createCircuit(2, [gate('X', 0), multiGate('SWAP', [], [0, 1])]);
-            expect(findState(CircuitTranslator.translateAndRun(circuit), '|10>').prob).toBeCloseTo(1);
+            expect(findState(QulacsMapper.translateAndRun(circuit), '|10>').prob).toBeCloseTo(1);
 
             circuit = createCircuit(2, [gate('X', 1), multiGate('SWAP', [], [0, 1])]);
-            expect(findState(CircuitTranslator.translateAndRun(circuit), '|01>').prob).toBeCloseTo(1);
+            expect(findState(QulacsMapper.translateAndRun(circuit), '|01>').prob).toBeCloseTo(1);
 
             circuit = createCircuit(2, [gate('X', 0), gate('X', 1), multiGate('SWAP', [], [0, 1])]);
-            expect(findState(CircuitTranslator.translateAndRun(circuit), '|11>').prob).toBeCloseTo(1);
+            expect(findState(QulacsMapper.translateAndRun(circuit), '|11>').prob).toBeCloseTo(1);
         });
 
         it('validates CCX (Toffoli) gate exhaustively', () => {
             let circuit = createCircuit(3, [multiGate('CCX', [0, 1], [2])]);
-            expect(findState(CircuitTranslator.translateAndRun(circuit), '|000>').prob).toBeCloseTo(1);
+            expect(findState(QulacsMapper.translateAndRun(circuit), '|000>').prob).toBeCloseTo(1);
 
             circuit = createCircuit(3, [gate('X', 0), multiGate('CCX', [0, 1], [2])]);
-            expect(findState(CircuitTranslator.translateAndRun(circuit), '|001>').prob).toBeCloseTo(1);
+            expect(findState(QulacsMapper.translateAndRun(circuit), '|001>').prob).toBeCloseTo(1);
 
             circuit = createCircuit(3, [gate('X', 1), multiGate('CCX', [0, 1], [2])]);
-            expect(findState(CircuitTranslator.translateAndRun(circuit), '|010>').prob).toBeCloseTo(1);
+            expect(findState(QulacsMapper.translateAndRun(circuit), '|010>').prob).toBeCloseTo(1);
 
             circuit = createCircuit(3, [gate('X', 0), gate('X', 1), multiGate('CCX', [0, 1], [2])]);
-            expect(findState(CircuitTranslator.translateAndRun(circuit), '|111>').prob).toBeCloseTo(1);
+            expect(findState(QulacsMapper.translateAndRun(circuit), '|111>').prob).toBeCloseTo(1);
 
             circuit = createCircuit(3, [gate('X', 0), gate('X', 1), gate('X', 2), multiGate('CCX', [0, 1], [2])]);
-            expect(findState(CircuitTranslator.translateAndRun(circuit), '|011>').prob).toBeCloseTo(1);
+            expect(findState(QulacsMapper.translateAndRun(circuit), '|011>').prob).toBeCloseTo(1);
         });
     });
 });

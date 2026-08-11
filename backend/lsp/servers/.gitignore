@@ -1,0 +1,12 @@
+python/venv/
+python/.venv/
+python/__pycache__/
+python/*.pyc
+
+qasm/go/bin/
+qasm/go/pkg/
+
+venv/
+.venv/
+__pycache__/
+*.pyc

@@ -24,19 +24,29 @@ public class QuantumCircuit extends ElementWithId {
     @Getter
     private final String projectId;
 
+    /**
+     * Link to the file this circuit belongs to. Persisted circuits are always file-linked;
+     * only transient circuits (e.g. built for code generation) may have none.
+     */
+    @Getter
+    private final String fileId;
+
     private final List<Register> registers = new ArrayList<>();
     private final List<Layer> layers = new ArrayList<>();
 
-    public QuantumCircuit(String projectId) {
+    public QuantumCircuit(String projectId, String fileId) {
         super();
         this.projectId = projectId;
+        this.fileId = fileId;
+        registers.add(new QuantumRegister("q", 4));
     }
 
     @Builder
-    public QuantumCircuit(String id, String projectId, List<Register> registers, List<Layer> layers) {
+    public QuantumCircuit(String id, String projectId, String fileId, List<Register> registers, List<Layer> layers) {
         super();
         this.id = id;
         this.projectId = projectId;
+        this.fileId = fileId;
         this.registers.addAll(registers);
         this.layers.addAll(layers);
     }
@@ -45,8 +55,26 @@ public class QuantumCircuit extends ElementWithId {
         return Collections.unmodifiableList(registers);
     }
 
+    /** Adds a register to the circuit, e.g. when materializing a register declaration parsed from code. */
+    public void addRegister(@NonNull Register register) {
+        registers.add(register);
+    }
+
     public List<Layer> getLayers() {
         return Collections.unmodifiableList(layers);
+    }
+
+    /**
+     * Sucht ein Register anhand seines Namens.
+     *
+     * @param registerName Der Name des gesuchten Registers (z.B. "q" oder "alice").
+     * @return Ein Optional, das das Register enthält, oder ein leeres Optional, wenn keines gefunden wurde.
+     */
+    public Optional<Register> getRegisterByName(@NonNull String registerName) {
+        return registers
+            .stream()
+            .filter(register -> registerName.equals(register.getName()))
+            .findFirst();
     }
 
     public void addQubit(@NonNull String registerId) {
@@ -88,15 +116,6 @@ public class QuantumCircuit extends ElementWithId {
         }
 
         flushLayers();
-    }
-
-    /**
-     * Adds a new register to the circuit.
-     *
-     * @param register the register to add (QuantumRegister or ClassicRegister)
-     */
-    public void addRegister(@NonNull Register register) {
-        registers.add(register);
     }
 
     /**
@@ -261,15 +280,26 @@ public class QuantumCircuit extends ElementWithId {
     }
 
     /**
+     * Re-runs the ASAP layer scheduling. Exposed for code generation, which builds a transient
+     * circuit from request content and must canonicalize the layering so the emitted {@code
+     * // Layer N} blocks line up with the rendered columns.
+     */
+    public void reschedule() {
+        rescheduleOperations();
+    }
+
+    /**
      * Re-calculates the position of all operations to ensure they are positioned as far left
      * as possible (ASAP scheduling) while respecting qubit collisions and preserving
      * logical dependency barriers.
      */
     private void rescheduleOperations() {
-        // 1. Extract all operations in their original relative order
+        // 1. Extract all operations in canonical order: original layer first, then by topmost
+        // involved qubit. This mirrors the order the frontend renders with, so the stored layers
+        // (and the generated code) line up with the rendered circuit columns.
         List<QuantumOperation> allOps = layers
             .stream()
-            .flatMap(l -> l.getQuantumOperations().stream())
+            .flatMap(layer -> layer.getQuantumOperations().stream().sorted(Comparator.comparingInt(op -> operationSpan(op)[0])))
             .toList();
 
         // 2. Clear current layers
@@ -302,7 +332,6 @@ public class QuantumCircuit extends ElementWithId {
                 layers.add(new Layer(new ArrayList<>()));
             }
 
-            op.generateNewId(); // Generate new ID because of problems with Hibernate.
             layers.get(layerIdx).addQuantumOperation(op); // Add operation to target layer
 
             // Update the last occupied layer index for all involved qubits
@@ -319,19 +348,17 @@ public class QuantumCircuit extends ElementWithId {
      *
      * @param op The quantum operation to check for potential collisions.
      * @param layerIdx The index of the layer to inspect.
-     * @return {@code true} if a qubit overlap is detected.
+     * @return {@code true} if the operation's span overlaps an existing operation's span.
      */
     private boolean isQubitCollisionInLayer(QuantumOperation op, int layerIdx) {
         if (layerIdx >= layers.size()) return false;
 
-        Set<ElementSelector> requiredQubits = getTargetAndControlQubits(op);
-
+        int[] span = operationSpan(op);
         return layers
             .get(layerIdx)
             .getQuantumOperations()
             .stream()
-            .map(this::getTargetAndControlQubits)
-            .anyMatch(existingQubits -> !Collections.disjoint(requiredQubits, existingQubits));
+            .anyMatch(existing -> spansOverlap(span, operationSpan(existing)));
     }
 
     private Set<ElementSelector> getTargetAndControlQubits(QuantumOperation op) {
@@ -391,11 +418,49 @@ public class QuantumCircuit extends ElementWithId {
         selectors.forEach(selector -> findClassicRegisterById(selector.getRegisterId()));
     }
 
+    /**
+     * Span of the global qubit indices an operation reaches, from its topmost to its bottommost
+     * involved qubit (targets and controls).
+     */
+    private int[] operationSpan(QuantumOperation op) {
+        int min = Integer.MAX_VALUE;
+        int max = Integer.MIN_VALUE;
+        for (ElementSelector selector : getTargetAndControlQubits(op)) {
+            int index = globalQubitIndex(selector);
+            min = Math.min(min, index);
+            max = Math.max(max, index);
+        }
+        return new int[] { min, max };
+    }
+
+    /**
+     * Two operations may share a layer only if their spans do not overlap. An actual qubit
+     * conflict is covered by this (the shared qubit lies in both spans); additionally, two
+     * multi-qubit gates with crossing vertical reach are kept apart, matching how the circuit is
+     * rendered (and therefore how the generated code is layered).
+     */
+    private static boolean spansOverlap(int[] spanA, int[] spanB) {
+        return spanA[0] <= spanB[1] && spanB[0] <= spanA[1];
+    }
+
+    /** Absolute qubit index across all registers, matching the frontend's wire ordering. */
+    private int globalQubitIndex(ElementSelector selector) {
+        int offset = 0;
+        for (Register register : registers) {
+            if (register.getId().equals(selector.getRegisterId())) {
+                return offset + selector.getIndex();
+            }
+            offset += register.asQuantum().map(QuantumRegister::getNumberOfQubits).orElse(0);
+        }
+        return offset + selector.getIndex();
+    }
+
     private void flushLayers() {
         // Remove all layers that no longer contain any quantum operations.
         layers.removeIf(layer -> layer.getQuantumOperations().isEmpty());
     }
 
+    // TODO HashMap statt ArrayList?
     private QuantumRegister findQuantumRegisterById(String quantumRegisterId) {
         for (Register register : registers) {
             if (register.getId().equals(quantumRegisterId)) {
@@ -429,6 +494,11 @@ public class QuantumCircuit extends ElementWithId {
             }
         }
         throw new RegisterNotFoundException(registerId);
+    }
+
+    public String getQuantumRegisterNameById(String quantumRegisterId) {
+        QuantumRegister quantumRegister = findQuantumRegisterById(quantumRegisterId);
+        return quantumRegister.getName();
     }
 
     @Override

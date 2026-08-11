@@ -11,6 +11,7 @@ interface QubitWiresProps {
     circuit: CircuitResponse | undefined;
     setCircuit: (circuit: CircuitResponse) => void;
     flatQubits: FlatQubit[];
+    circuitWidth: number;
     onToggleClassicRegister: (registerId: string) => void;
 }
 
@@ -20,7 +21,13 @@ type RegisterGroup = {
     qubits: FlatQubit[];
 };
 
-export function QubitWires({ circuit, setCircuit, flatQubits, onToggleClassicRegister }: Readonly<QubitWiresProps>) {
+export function QubitWires({
+    circuit,
+    setCircuit,
+    flatQubits,
+    circuitWidth,
+    onToggleClassicRegister,
+}: Readonly<QubitWiresProps>) {
     const registerGroups = useMemo(() => {
         const groups: RegisterGroup[] = [];
         for (const q of flatQubits) {
@@ -47,9 +54,14 @@ export function QubitWires({ circuit, setCircuit, flatQubits, onToggleClassicReg
                 return (
                     <div key={`reg-group-${first.regId}`}>
                         {isCollapsedClassic ? (
-                            <CollapsedClassicRegister qubit={first} onToggleClassicRegister={onToggleClassicRegister} />
+                            <CollapsedClassicRegister
+                                circuitWidth={circuitWidth}
+                                qubit={first}
+                                onToggleClassicRegister={onToggleClassicRegister}
+                            />
                         ) : (
                             <RegisterHeader
+                                circuitWidth={circuitWidth}
                                 group={group}
                                 isClassic={isClassic}
                                 onToggleClassicRegister={onToggleClassicRegister}
@@ -60,12 +72,12 @@ export function QubitWires({ circuit, setCircuit, flatQubits, onToggleClassicReg
                             group.qubits.map((q) => (
                                 <div
                                     key={`wire-${q.regId}-${q.relQubitIdx}`}
-                                    className="absolute left-0 right-0"
-                                    style={{ top: q.visualY, height: QUBIT_HEIGHT }}
+                                    className="absolute left-0"
+                                    style={{ top: q.visualY, height: QUBIT_HEIGHT, width: circuitWidth }}
                                 >
                                     <QubitLabel circuit={circuit} setCircuit={setCircuit} qubit={q} />
 
-                                    <WireLine isClassic={isClassic} />
+                                    <WireLine circuitWidth={circuitWidth} isClassic={isClassic} />
                                 </div>
                             ))}
                     </div>
@@ -76,10 +88,12 @@ export function QubitWires({ circuit, setCircuit, flatQubits, onToggleClassicReg
 }
 
 function RegisterHeader({
+    circuitWidth,
     group,
     isClassic,
     onToggleClassicRegister,
 }: Readonly<{
+    circuitWidth: number;
     group: RegisterGroup;
     isClassic: boolean;
     onToggleClassicRegister: (registerId: string) => void;
@@ -88,8 +102,8 @@ function RegisterHeader({
 
     return (
         <div
-            className="absolute left-0 right-0 z-40 flex items-center gap-2 border-b border-border bg-bg-subtle px-2"
-            style={{ top: group.headerY, height: REGISTER_HEADER_HEIGHT }}
+            className="absolute left-0 z-40 flex items-center gap-2 border-b border-border bg-bg-subtle px-2"
+            style={{ top: group.headerY, height: REGISTER_HEADER_HEIGHT, width: circuitWidth }}
         >
             {isClassic && (
                 <Button
@@ -113,14 +127,16 @@ function RegisterHeader({
 }
 
 function CollapsedClassicRegister({
+    circuitWidth,
     qubit,
     onToggleClassicRegister,
 }: Readonly<{
+    circuitWidth: number;
     qubit: FlatQubit;
     onToggleClassicRegister: (registerId: string) => void;
 }>) {
     return (
-        <div className="absolute left-0 right-0" style={{ top: qubit.visualY, height: QUBIT_HEIGHT }}>
+        <div className="absolute left-0" style={{ top: qubit.visualY, height: QUBIT_HEIGHT, width: circuitWidth }}>
             <div
                 className="absolute z-40 flex items-center gap-1 bg-bg-subtle px-1"
                 style={{ height: QUBIT_HEIGHT, width: LABEL_WIDTH }}
@@ -142,12 +158,14 @@ function CollapsedClassicRegister({
                 </span>
             </div>
 
-            <WireLine isClassic />
+            <WireLine circuitWidth={circuitWidth} isClassic />
         </div>
     );
 }
 
-function WireLine({ isClassic }: Readonly<{ isClassic: boolean }>) {
+function WireLine({ circuitWidth, isClassic }: Readonly<{ circuitWidth: number; isClassic: boolean }>) {
+    const wireWidth = Math.max(circuitWidth - LABEL_WIDTH, 0);
+
     if (isClassic) {
         return (
             <>
@@ -156,7 +174,7 @@ function WireLine({ isClassic }: Readonly<{ isClassic: boolean }>) {
                     style={{
                         top: QUBIT_HEIGHT / 2 - 2,
                         left: LABEL_WIDTH,
-                        right: 0,
+                        width: wireWidth,
                         height: '1px',
                     }}
                 />
@@ -165,7 +183,7 @@ function WireLine({ isClassic }: Readonly<{ isClassic: boolean }>) {
                     style={{
                         top: QUBIT_HEIGHT / 2 + 2,
                         left: LABEL_WIDTH,
-                        right: 0,
+                        width: wireWidth,
                         height: '1px',
                     }}
                 />
@@ -179,7 +197,7 @@ function WireLine({ isClassic }: Readonly<{ isClassic: boolean }>) {
             style={{
                 top: QUBIT_HEIGHT / 2,
                 left: LABEL_WIDTH,
-                right: 0,
+                width: wireWidth,
                 height: '1px',
             }}
         />

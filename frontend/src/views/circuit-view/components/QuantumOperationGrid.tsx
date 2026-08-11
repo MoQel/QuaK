@@ -1,4 +1,4 @@
-import type { RegisterResponse } from '@/api/dto/circuit.ts';
+import { QuantumOperationDto, RegisterResponse } from '@/api/dto/circuit.ts';
 import { ElementaryQuantumGate } from '@/views/circuit-view/components/ElementaryQuantumGate.tsx';
 import { FlatQubit, UiLayer } from '@/views/circuit-view/util/types.ts';
 import { useDispatch } from 'react-redux';
@@ -13,6 +13,7 @@ interface QuantumOperationGridProps {
     removeQuantumOperation: (operationId: string) => void;
     setDraggingOperationId: (id: string | null) => void;
     setHoverPos: (pos: null) => void;
+    draggingOperation: { op: QuantumOperationDto; layerIdx: number } | null;
 }
 
 type MeasurementRoute = {
@@ -37,6 +38,7 @@ export function QuantumOperationGrid({
     removeQuantumOperation,
     setDraggingOperationId,
     setHoverPos,
+    draggingOperation,
 }: Readonly<QuantumOperationGridProps>) {
     const dispatch = useDispatch();
 
@@ -51,34 +53,48 @@ export function QuantumOperationGrid({
         setDraggingOperationId(null);
     };
 
+    const renderedOperations: {
+        op: QuantumOperationDto;
+        layerIdx: number;
+        isGhost: boolean;
+        measurementColor?: string;
+    }[] = [
+        ...(draggingOperation ? [{ ...draggingOperation, isGhost: true }] : []),
+        ...uiLayers.flatMap((layer, layerIdx) => {
+            const measurementOperations = layer.quantumOperations.filter((op) => op.type === 'MEASUREMENT');
+            return layer.quantumOperations
+                .filter((op) => op.type !== 'DUMMY' && op.id !== draggingOperation?.op.id)
+                .map((op) => {
+                    const measurementIndex = op.type === 'MEASUREMENT' ? measurementOperations.indexOf(op) : -1;
+                    return {
+                        op,
+                        layerIdx,
+                        isGhost: false,
+                        measurementColor:
+                            measurementIndex >= 0 ? getMeasurementRouteColor(measurementIndex) : undefined,
+                    };
+                });
+        }),
+    ];
+
     return (
         <div className={`absolute inset-0 z-20 ${isOperationDragging ? 'pointer-events-none' : ''}`}>
             <MeasurementConnectorLayer uiLayers={uiLayers} registers={registers} flatQubits={flatQubits} />
 
-            {uiLayers.map((layer, layerIdx) => {
-                const measurementOperations = layer.quantumOperations.filter((op) => op.type === 'MEASUREMENT');
-
-                return layer.quantumOperations.map((op) => {
-                    if (op.type === 'DUMMY') return null;
-                    const measurementIndex = op.type === 'MEASUREMENT' ? measurementOperations.indexOf(op) : -1;
-
-                    return (
-                        <ElementaryQuantumGate
-                            key={op.id}
-                            operation={op}
-                            registers={registers}
-                            flatQubits={flatQubits}
-                            layerIdx={layerIdx}
-                            measurementColor={
-                                measurementIndex >= 0 ? getMeasurementRouteColor(measurementIndex) : undefined
-                            }
-                            onDragStart={(operationSize) => handleOperationDragStart(op.id!, operationSize)}
-                            onDragEnd={handleOperationDragEnd}
-                            onDelete={() => removeQuantumOperation(op.id!)}
-                        />
-                    );
-                });
-            })}
+            {renderedOperations.map(({ op, layerIdx, isGhost, measurementColor }) => (
+                <ElementaryQuantumGate
+                    key={op.id}
+                    operation={op}
+                    registers={registers}
+                    flatQubits={flatQubits}
+                    layerIdx={layerIdx}
+                    isGhost={isGhost}
+                    measurementColor={measurementColor}
+                    onDragStart={(operationSize) => handleOperationDragStart(op.id!, operationSize)}
+                    onDragEnd={handleOperationDragEnd}
+                    onDelete={() => removeQuantumOperation(op.id!)}
+                />
+            ))}
         </div>
     );
 }

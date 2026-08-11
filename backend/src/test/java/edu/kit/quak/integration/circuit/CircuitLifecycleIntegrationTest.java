@@ -47,7 +47,7 @@ class CircuitLifecycleIntegrationTest {
         // 0. Ensure user exists
         syncService.syncUser("test", new OidcUserInfo("test-sub", "test@example.com", true, "Test User", null, null, null));
 
-        // 1. Create Project (automatically initializes circuit)
+        // 1. Create Project
         String projectName = "Test Project";
         String projectRequest = """
             { "name": "%s" }
@@ -64,9 +64,10 @@ class CircuitLifecycleIntegrationTest {
         JsonNode projectNode = objectMapper.readTree(projectResult.getResponse().getContentAsString());
         String projectId = projectNode.get("id").asText();
 
-        // 2. Get the initialized circuit (by projectId)
+        // 2. Create a file and get its circuit (created on first access)
+        String fileId = createFile(projectId);
         MvcResult circuitResult = mockMvc
-            .perform(get("/api/circuit/" + projectId).with(authenticatedUser()))
+            .perform(get("/api/circuit/file/" + fileId).with(authenticatedUser()))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.projectId").value(projectId))
             .andReturn();
@@ -114,7 +115,9 @@ class CircuitLifecycleIntegrationTest {
             .andReturn();
 
         JsonNode cxGateNode = objectMapper.readTree(addCxGateResult.getResponse().getContentAsString());
-        String cxGateId = cxGateNode.at("/layers/0/quantumOperations/1/id").asText();
+        // Locate the CX by identifier rather than a fixed index: the intra-layer order is an
+        // implementation detail (the scheduler prepends, toCode/rendering re-sort by qubit).
+        String cxGateId = findOperationId(cxGateNode, "CX");
 
         // 6. Move CX-Gate to target Qubit 0.
         // Causes collision with H-Gate, forcing CX into Layer 1.
@@ -129,9 +132,9 @@ class CircuitLifecycleIntegrationTest {
             )
             .andExpect(status().isOk());
 
-        // 7. Verify circuit state via GET (still by projectId)
+        // 7. Verify circuit state via GET (by fileId)
         mockMvc
-            .perform(get("/api/circuit/" + projectId).with(authenticatedUser()))
+            .perform(get("/api/circuit/file/" + fileId).with(authenticatedUser()))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.layers.length()").value(2))
             .andExpect(jsonPath("$.layers[0].quantumOperations[0].identifier").value("H"))
@@ -150,7 +153,7 @@ class CircuitLifecycleIntegrationTest {
     @Test
     @DisplayName("E2E: Direct Circuit Deletion by circuitId")
     void testDeleteCircuitDirectly() throws Exception {
-        // 1. Create Project (automatically initializes circuit)
+        // 1. Create Project
         syncService.syncUser("test", new OidcUserInfo("test-sub", "test@example.com", true, "Test User", null, null, null));
         String projectRequest = """
             { "name": "Direct Delete Project" }
@@ -165,9 +168,10 @@ class CircuitLifecycleIntegrationTest {
         JsonNode projectNode = objectMapper.readTree(projectResult.getResponse().getContentAsString());
         String projectId = projectNode.get("id").asText();
 
-        // 2. Get the circuit to find its ID
+        // 2. Create a file and get its circuit to find the circuit ID
+        String fileId = createFile(projectId);
         MvcResult circuitResult = mockMvc
-            .perform(get("/api/circuit/" + projectId).with(authenticatedUser()))
+            .perform(get("/api/circuit/file/" + fileId).with(authenticatedUser()))
             .andExpect(status().isOk())
             .andReturn();
         JsonNode circuitNode = objectMapper.readTree(circuitResult.getResponse().getContentAsString());
@@ -176,11 +180,151 @@ class CircuitLifecycleIntegrationTest {
         // 3. Delete the circuit directly by its ID
         mockMvc.perform(delete("/api/circuit/" + circuitId).with(authenticatedUser()).with(csrf())).andExpect(status().isNoContent());
 
-        // 4. Verify circuit is gone for the project
-        mockMvc.perform(get("/api/circuit/" + projectId).with(authenticatedUser())).andExpect(status().isNotFound());
+        // 4. Verify the old circuit is gone: fetching by fileId creates a fresh one with a new ID
+        mockMvc
+            .perform(get("/api/circuit/file/" + fileId).with(authenticatedUser()))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(org.hamcrest.Matchers.not(circuitId)));
+    }
+
+    @Test
+    @DisplayName("E2E: Operation ids stay stable across full-replace saves; foreign ids are rejected")
+    void testOperationIdStabilityOnReplace() throws Exception {
+        syncService.syncUser("test", new OidcUserInfo("test-sub", "test@example.com", true, "Test User", null, null, null));
+        MvcResult projectResult = mockMvc
+            .perform(
+                post("/api/project")
+                    .with(authenticatedUser())
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        """
+                        { "name": "Stable Ids Project" }
+                        """
+                    )
+            )
+            .andExpect(status().isCreated())
+            .andReturn();
+        String projectId = objectMapper.readTree(projectResult.getResponse().getContentAsString()).get("id").asText();
+
+        // Circuit 1: PUT content with a client-chosen operation id — it must be persisted as-is.
+        String fileId = createFile(projectId);
+        JsonNode circuit = getCircuitByFile(fileId);
+        String circuitId = circuit.get("id").asText();
+        String registerId = circuit.at("/registers/0/id").asText();
+        String clientOpId = "11111111-2222-3333-4444-555555555555";
+
+        mockMvc
+            .perform(
+                put("/api/circuit/" + circuitId)
+                    .with(authenticatedUser())
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(replaceContentJson(registerId, clientOpId))
+            )
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.layers[0].quantumOperations[0].id").value(clientOpId));
+
+        // Saving the same content again keeps the id (stable identity, no delete/insert churn).
+        mockMvc
+            .perform(
+                put("/api/circuit/" + circuitId)
+                    .with(authenticatedUser())
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(replaceContentJson(registerId, clientOpId))
+            )
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.layers[0].quantumOperations[0].id").value(clientOpId));
+
+        // Circuit 2 (different file): reusing circuit 1's operation id must be rejected.
+        String otherFileId = createFile(projectId, "other.qasm");
+        JsonNode otherCircuit = getCircuitByFile(otherFileId);
+        String otherCircuitId = otherCircuit.get("id").asText();
+        String otherRegisterId = otherCircuit.at("/registers/0/id").asText();
+
+        mockMvc
+            .perform(
+                put("/api/circuit/" + otherCircuitId)
+                    .with(authenticatedUser())
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(replaceContentJson(otherRegisterId, clientOpId))
+            )
+            .andExpect(status().isUnprocessableEntity());
     }
 
     // --- Helper Methods ---
+
+    private JsonNode getCircuitByFile(String fileId) throws Exception {
+        MvcResult result = mockMvc
+            .perform(get("/api/circuit/file/" + fileId).with(authenticatedUser()))
+            .andExpect(status().isOk())
+            .andReturn();
+        return objectMapper.readTree(result.getResponse().getContentAsString());
+    }
+
+    /** Full-replace payload: one H gate on qubit 0 with an explicit operation id. */
+    private String replaceContentJson(String registerId, String operationId) {
+        return """
+        {
+          "registers": [
+            { "type": "Quantum_Register", "id": "%s", "name": "q", "numberOfQubits": 4 }
+          ],
+          "layers": [
+            {
+              "quantumOperations": [
+                {
+                  "type": "ELEMENTARY_QUANTUM_GATE",
+                  "id": "%s",
+                  "identifier": "H",
+                  "inverseForm": false,
+                  "targetQubits": [ { "registerId": "%s", "index": 0 } ],
+                  "controlQubits": [],
+                  "rotationAngle": 0.0
+                }
+              ]
+            }
+          ]
+        }
+        """.formatted(registerId, operationId, registerId);
+    }
+
+    /** Creates a file directly under the project root and returns its id. */
+    private String createFile(String projectId) throws Exception {
+        return createFile(projectId, "main.qasm");
+    }
+
+    private String createFile(String projectId, String fileName) throws Exception {
+        MvcResult fileResult = mockMvc
+            .perform(
+                post("/api/file/")
+                    .with(authenticatedUser())
+                    .with(csrf())
+                    .header("parent-id", projectId)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        """
+                        { "name": "%s" }
+                        """.formatted(fileName)
+                    )
+            )
+            .andExpect(status().isCreated())
+            .andReturn();
+        return objectMapper.readTree(fileResult.getResponse().getContentAsString()).get("id").asText();
+    }
+
+    /** Returns the id of the first operation with the given identifier, regardless of layer/position. */
+    private String findOperationId(JsonNode circuit, String identifier) {
+        for (JsonNode layer : circuit.at("/layers")) {
+            for (JsonNode operation : layer.at("/quantumOperations")) {
+                if (identifier.equals(operation.at("/identifier").asText())) {
+                    return operation.at("/id").asText();
+                }
+            }
+        }
+        throw new AssertionError("No operation with identifier '" + identifier + "' found in circuit");
+    }
 
     /**
      * Builds JSON for creating a register.
