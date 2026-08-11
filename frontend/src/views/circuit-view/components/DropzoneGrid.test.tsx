@@ -33,6 +33,7 @@ const renderGrid = (setHoverPos: ReturnType<typeof vi.fn>, grabOffset = 0, size 
                 setCircuit={setCircuit}
                 flatQubits={flatQubits}
                 uiLayers={uiLayers}
+                loopFrames={[]}
                 activeDropZones={activeDropZones}
                 draggingOperationSize={size}
                 draggingGrabOffset={grabOffset}
