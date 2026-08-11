@@ -1,6 +1,8 @@
-import React, { useMemo, useRef } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { CompositeQuantumGateDto, RegisterResponse } from '@/api/dto/circuit.ts';
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu.tsx';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip.tsx';
+import { CompositeGatePreview } from '@/views/circuit-view/components/CompositeGatePreview.tsx';
 import { CELL_WIDTH, LOOP_GATE_SCALE, QUBIT_HEIGHT } from '@/views/circuit-view/util/layout.ts';
 import { toGlobalQubitIndex } from '@/views/circuit-view/util/spans.ts';
 import { DragData } from '../util/types';
@@ -19,6 +21,15 @@ const BOX_INSET_X = 8;
  * stops the name from hiding which qubit a parameter is bound to.
  */
 const PORT_GUTTER = 11;
+
+/**
+ * How long the pointer has to rest on the box before its body is shown.
+ *
+ * Short enough to feel like part of pointing at the gate, long enough that dragging another gate
+ * across a row of composites does not leave a trail of panels. Closing has no delay at all: the
+ * panel is gone the moment the pointer leaves the box.
+ */
+const PREVIEW_DELAY = 400;
 
 interface CompositeQuantumGateProps {
     operation: CompositeQuantumGateDto;
@@ -61,6 +72,10 @@ export function CompositeQuantumGate({
     const isDraggingRef = useRef(false);
     const interactivity = isGhost ? 'pointer-events-none' : 'pointer-events-auto';
 
+    // The preview is controlled so a drag can veto it: the pointer sits on the box while the drag
+    // starts, so an uncontrolled tooltip would open over the circuit the user is dropping into.
+    const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+
     // Vertically only, and by inset rather than transform. A transform would pull the ports off the
     // wires they are bound to, and the width is already spoken for: the port gutter plus the gate
     // name have to fit into 48px, so there is nothing there to give away.
@@ -92,6 +107,7 @@ export function CompositeQuantumGate({
 
     const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
         isDraggingRef.current = true;
+        setIsPreviewOpen(false);
 
         const data: DragData = {
             origin: 'circuit',
@@ -124,87 +140,109 @@ export function CompositeQuantumGate({
         if (!isDraggingRef.current) onDelete?.();
     };
 
-    const contents = operation.body?.map((part) => part.identifier).join(', ');
+    const handlePreviewOpenChange = (open: boolean) => {
+        // The pointer is still over the box right after a drop, so without this the panel would
+        // reappear on top of the gate the user just placed.
+        if (open && isDraggingRef.current) return;
+        setIsPreviewOpen(open);
+    };
 
     /** A box covering more than one wire has more height than width, so the name reads better turned. */
     const isTall = spanHeight > 0;
 
     return (
-        <ContextMenu>
-            {/* `asChild` keeps the box itself the trigger: it is the HTML5 drag source and must stay
-                the very same DOM node across a drag, so it must not be wrapped in another element. */}
-            <ContextMenuTrigger asChild disabled={isGhost}>
-                <div
-                    data-gate
-                    draggable
-                    onDragStart={handleDragStart}
-                    onDragEnd={handleDragEnd}
-                    onClick={handleClick}
-                    className={`absolute z-30 group pointer-events-none ${isGhost ? 'opacity-50' : ''}`}
-                    style={{
-                        top: minY * QUBIT_HEIGHT,
-                        left: layerIdx * CELL_WIDTH,
-                        width: CELL_WIDTH,
-                        height: spanHeight + QUBIT_HEIGHT,
-                    }}
-                >
-                    <div
-                        title={contents ? `${operation.identifier} (${contents})` : operation.identifier}
-                        className={`
+        // The preview lives outside the context menu but shares its trigger element: nesting the
+        // two `asChild` triggers merges both onto the very same box, which is what keeps the HTML5
+        // drag source one unchanging DOM node.
+        <Tooltip
+            open={isPreviewOpen && !isGhost}
+            onOpenChange={handlePreviewOpenChange}
+            delayDuration={PREVIEW_DELAY}
+            disableHoverableContent
+        >
+            <ContextMenu>
+                <ContextMenuTrigger asChild disabled={isGhost}>
+                    <TooltipTrigger asChild>
+                        <div
+                            data-gate
+                            draggable
+                            onDragStart={handleDragStart}
+                            onDragEnd={handleDragEnd}
+                            onClick={handleClick}
+                            className={`absolute z-30 group pointer-events-none ${isGhost ? 'opacity-50' : ''}`}
+                            style={{
+                                top: minY * QUBIT_HEIGHT,
+                                left: layerIdx * CELL_WIDTH,
+                                width: CELL_WIDTH,
+                                height: spanHeight + QUBIT_HEIGHT,
+                            }}
+                        >
+                            <div
+                                className={`
                             absolute rounded-none flex items-center justify-center select-none
                             ${interactivity} cursor-grab active:cursor-grabbing
                             group-hover:brightness-90 dark:group-hover:brightness-125 transition-colors`}
-                        style={{
-                            top: insetY,
-                            left: BOX_INSET_X,
-                            width: CELL_WIDTH - 2 * BOX_INSET_X,
-                            height: spanHeight + QUBIT_HEIGHT - 2 * insetY,
-                            backgroundColor: 'var(--composite)',
-                            color: 'var(--bg-dark)',
-                        }}
-                    >
-                        {/*
-                         * Set sideways once the box covers more than one wire. A box is only 48px
-                         * wide but as tall as its wires, so upright the name is cut to three or
-                         * four letters while metres of room go unused next to it; turned, a gate
-                         * like `majority` fits whole. Either way it starts right of the port
-                         * gutter, so it can never sit on a port label.
-                         */}
-                        <span
-                            className="truncate text-[13px] font-semibold leading-none"
-                            style={{
-                                marginLeft: PORT_GUTTER,
-                                ...(isTall
-                                    ? { writingMode: 'vertical-rl', maxHeight: '100%', paddingBlock: 4 }
-                                    : { paddingInline: 4 }),
-                            }}
-                        >
-                            {operation.identifier}
-                        </span>
-
-                        {/* Port markers, positioned on the wire each parameter is bound to. */}
-                        {ports.map((port) => (
-                            <span
-                                key={port.position}
-                                className="absolute left-[3px] font-mono leading-none opacity-80 text-[9px]"
-                                style={{ top: (port.wire - minY) * QUBIT_HEIGHT + QUBIT_HEIGHT / 2 - insetY - 4 }}
+                                style={{
+                                    top: insetY,
+                                    left: BOX_INSET_X,
+                                    width: CELL_WIDTH - 2 * BOX_INSET_X,
+                                    height: spanHeight + QUBIT_HEIGHT - 2 * insetY,
+                                    backgroundColor: 'var(--composite)',
+                                    color: 'var(--bg-dark)',
+                                }}
                             >
-                                {port.label}
-                            </span>
-                        ))}
-                    </div>
-                </div>
-            </ContextMenuTrigger>
+                                {/*
+                                 * Set sideways once the box covers more than one wire. A box is only
+                                 * 48px wide but as tall as its wires, so upright the name is cut to
+                                 * three or four letters while metres of room go unused next to it;
+                                 * turned, a gate like `majority` fits whole. Either way it starts
+                                 * right of the port gutter, so it can never sit on a port label.
+                                 */}
+                                <span
+                                    className="truncate text-[13px] font-semibold leading-none"
+                                    style={{
+                                        marginLeft: PORT_GUTTER,
+                                        ...(isTall
+                                            ? { writingMode: 'vertical-rl', maxHeight: '100%', paddingBlock: 4 }
+                                            : { paddingInline: 4 }),
+                                    }}
+                                >
+                                    {operation.identifier}
+                                </span>
 
-            <ContextMenuContent>
-                <ContextMenuItem onSelect={onUngroup}>Ungroup</ContextMenuItem>
-                {onRemoveLoop && (
-                    <ContextMenuItem onSelect={onRemoveLoop}>Remove loop ×{loopRepeatCount}</ContextMenuItem>
-                )}
-                <ContextMenuItem variant="destructive" onSelect={onDelete}>
-                    Delete
-                </ContextMenuItem>
-            </ContextMenuContent>
-        </ContextMenu>
+                                {/* Port markers, positioned on the wire each parameter is bound to. */}
+                                {ports.map((port) => (
+                                    <span
+                                        key={port.position}
+                                        className="absolute left-[3px] font-mono leading-none opacity-80 text-[9px]"
+                                        style={{
+                                            top: (port.wire - minY) * QUBIT_HEIGHT + QUBIT_HEIGHT / 2 - insetY - 4,
+                                        }}
+                                    >
+                                        {port.label}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    </TooltipTrigger>
+                </ContextMenuTrigger>
+
+                <ContextMenuContent>
+                    <ContextMenuItem onSelect={onUngroup}>Ungroup</ContextMenuItem>
+                    {onRemoveLoop && (
+                        <ContextMenuItem onSelect={onRemoveLoop}>Remove loop ×{loopRepeatCount}</ContextMenuItem>
+                    )}
+                    <ContextMenuItem variant="destructive" onSelect={onDelete}>
+                        Delete
+                    </ContextMenuItem>
+                </ContextMenuContent>
+            </ContextMenu>
+
+            {/* Sideways, so the panel never covers the columns right of the gate the user is
+                reading — and never the gate itself, which would make it flicker. */}
+            <TooltipContent side="right" className="bg-bg-light text-text border shadow-xl p-3 z-[9999]">
+                <CompositeGatePreview gate={operation} />
+            </TooltipContent>
+        </Tooltip>
     );
 }
