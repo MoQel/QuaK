@@ -35,7 +35,14 @@ import type { OperationIdentifier } from '@/lib/operations.ts';
 import { useCircuitTabs } from '@/contexts/CircuitTabsContext.tsx';
 
 export function CircuitView() {
-    const { activeCircuit: circuit, setActiveCircuit: setCircuit, activeCircuitTabId } = useCircuitTabs();
+    const {
+        activeCircuit: circuit,
+        activeCircuitError,
+        activeCircuitLoading,
+        reloadActiveCircuit,
+        setActiveCircuit: setCircuit,
+        activeCircuitTabId,
+    } = useCircuitTabs();
     const { removeQuantumOperation, addQuantumOperation } = createCircuitService(circuit, setCircuit);
 
     const { isOperationDragging, draggingOperationSize } = useSelector((state: RootState) => state.dragOperation);
@@ -137,6 +144,34 @@ export function CircuitView() {
             <Card className="h-full overflow-hidden border-none rounded-none bg-bg-subtle p-0 gap-0">
                 <CardContent className="flex h-full items-center justify-center p-0 text-gray-500">
                     No file open
+                </CardContent>
+            </Card>
+        );
+    }
+
+    if (!circuit) {
+        return (
+            <Card className="h-full overflow-hidden border-none rounded-none bg-bg-subtle p-0 gap-0">
+                <CardContent className="flex flex-col h-full p-0">
+                    <CircuitTabBar />
+                    <div className="flex flex-1 items-center justify-center p-6 text-center">
+                        <div className="max-w-sm rounded-xl border border-dashed border-border bg-background/80 p-6 shadow-sm">
+                            <div className="text-sm font-semibold text-text">
+                                {activeCircuitError ? 'Circuit could not be loaded' : 'Loading circuit'}
+                            </div>
+                            <p className="mt-2 text-sm text-muted-foreground">
+                                {activeCircuitError ??
+                                    (activeCircuitLoading
+                                        ? 'The circuit for this file is being prepared.'
+                                        : 'The circuit is not available yet.')}
+                            </p>
+                            {activeCircuitError && (
+                                <Button className="mt-4" size="sm" onClick={reloadActiveCircuit}>
+                                    Retry
+                                </Button>
+                            )}
+                        </div>
+                    </div>
                 </CardContent>
             </Card>
         );
