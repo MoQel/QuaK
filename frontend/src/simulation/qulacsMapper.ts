@@ -32,7 +32,7 @@ import {
 interface MeasurementAccumulator {
     operationId?: string;
     targetQubit: MeasurementResult['targetQubit'];
-    classicBit?: MeasurementResult['classicBit'];
+    classicBit: MeasurementResult['classicBit'];
     probabilityZeroTotal: number;
     probabilityOneTotal: number;
     zeroCount: number;

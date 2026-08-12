@@ -31,8 +31,8 @@ export function QubitWires({
     const registerGroups = useMemo(() => {
         const groups: RegisterGroup[] = [];
         for (const q of flatQubits) {
-            const last = groups[groups.length - 1];
-            if (last && last.regIdx === q.regIdx) {
+            const last = groups.at(-1);
+            if (last?.regIdx === q.regIdx) {
                 last.qubits.push(q);
             } else {
                 groups.push({ regIdx: q.regIdx, headerY: q.headerY, qubits: [q] });

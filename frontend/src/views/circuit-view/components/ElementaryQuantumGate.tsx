@@ -1,6 +1,6 @@
 import React, { useMemo, useRef } from 'react';
 import styles from '@/App.module.css';
-import { QuantumOperationDto, RegisterResponse } from '@/api/dto/circuit.ts';
+import { getSelectorKey, QuantumOperationDto, RegisterResponse } from '@/api/dto/circuit.ts';
 import { getOperationDefinition, OperationDefinition } from '@/lib/operations.ts';
 import { CELL_WIDTH, getSelectorVisualY, isSelectorCollapsed, QUBIT_HEIGHT } from '@/views/circuit-view/util/layout.ts';
 import { TextIcon } from '@/components/ui/text-icon.tsx';
@@ -60,6 +60,7 @@ export function ElementaryQuantumGate({
         const clPoints =
             operation.type === 'MEASUREMENT'
                 ? operation.classicBits.map((classicBit) => ({
+                      selector: classicBit,
                       y: getSelectorVisualY(flatQubits, classicBit),
                       collapsed: isSelectorCollapsed(flatQubits, classicBit),
                   }))
@@ -140,7 +141,7 @@ export function ElementaryQuantumGate({
 
             {controlYs.map((y, idx) => (
                 <ControlPoint
-                    key={`control-${idx}`}
+                    key={`control-${getSelectorKey(operation.controlQubits[idx])}`}
                     relativeY={y - visualTop}
                     definition={definition}
                     interactivity={interactivity}
@@ -149,7 +150,7 @@ export function ElementaryQuantumGate({
 
             {targetYs.map((y, idx) => (
                 <TargetPoint
-                    key={`target-${idx}`}
+                    key={`target-${getSelectorKey(operation.targetQubits[idx])}`}
                     relativeY={y - visualTop}
                     definition={definition}
                     isSWAP={operation.identifier === 'SWAP'}
@@ -164,7 +165,7 @@ export function ElementaryQuantumGate({
                 classicPoints.map((point, idx) =>
                     point.collapsed ? null : (
                         <ClassicBitTargetPoint
-                            key={`classic-${idx}`}
+                            key={`classic-${getSelectorKey(point.selector)}`}
                             relativeY={point.y - visualTop}
                             title={measurementHints[idx] ?? measurementHint}
                             color={measurementColor}

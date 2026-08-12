@@ -40,6 +40,10 @@ export function SimulationToolbar({
 
     const isExactMode = options.mode === 'exact' && !forceHistogramMode;
     const finalReadoutEnabled = options.measurementMode === 'measurement-gates-plus-final';
+    const exactModeLabel = hasConditionalState ? 'Conditional State' : 'Exact State';
+    const shotsDescription = forceHistogramMode
+        ? 'Readout histograms are always shot-based.'
+        : `${exactModeLabel} does not need shots.`;
 
     return (
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
@@ -53,7 +57,7 @@ export function SimulationToolbar({
                 </SelectTrigger>
                 <SelectContent className="bg-bg border-border text-text">
                     <SelectItem value="exact" className="rounded cursor-pointer focus:bg-bg-light focus:text-text">
-                        {hasConditionalState ? 'Conditional State' : 'Exact State'}
+                        {exactModeLabel}
                     </SelectItem>
                     <SelectItem value="simulation" className="rounded cursor-pointer focus:bg-bg-light focus:text-text">
                         {forceHistogramMode ? 'Measurement Results' : 'Simulation'}
@@ -150,10 +154,7 @@ export function SimulationToolbar({
                                             Shots
                                         </Label>
                                         <p className="text-xs text-text-muted">
-                                            Used for sampled simulation runs.{' '}
-                                            {forceHistogramMode
-                                                ? 'Readout histograms are always shot-based.'
-                                                : `${hasConditionalState ? 'Conditional State' : 'Exact State'} does not need shots.`}
+                                            Used for sampled simulation runs. {shotsDescription}
                                         </p>
                                     </div>
                                     <SmartInput

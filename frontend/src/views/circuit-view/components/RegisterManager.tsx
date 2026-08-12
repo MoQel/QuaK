@@ -18,6 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import {
     CircuitResponse,
     isQuantumRegister,
+    RegisterResponse,
     RegisterType,
     RegisterRequest,
     REGISTER_TYPE_QUANTUM,
@@ -28,6 +29,13 @@ import { createCircuitService } from '@/views/circuit-view/util/circuitService';
 interface RegisterManagerProps {
     circuit: CircuitResponse | undefined;
     setCircuit: (circuit: CircuitResponse) => void;
+}
+
+function getRegisterSizeLabel(reg: RegisterResponse): string {
+    if (isQuantumRegister(reg)) {
+        return `${reg.numberOfQubits} qubit${reg.numberOfQubits === 1 ? '' : 's'}`;
+    }
+    return `${reg.numberOfBits} bit${reg.numberOfBits === 1 ? '' : 's'}`;
 }
 
 export function RegisterManager({ circuit, setCircuit }: Readonly<RegisterManagerProps>) {
@@ -95,9 +103,7 @@ export function RegisterManager({ circuit, setCircuit }: Readonly<RegisterManage
                                 </Badge>
                                 <span className="font-mono text-sm font-medium truncate">{reg.name}</span>
                                 <span className="text-xs text-muted-foreground whitespace-nowrap">
-                                    {isQuantumRegister(reg)
-                                        ? `${reg.numberOfQubits} qubit${reg.numberOfQubits !== 1 ? 's' : ''}`
-                                        : `${reg.numberOfBits} bit${reg.numberOfBits !== 1 ? 's' : ''}`}
+                                    {getRegisterSizeLabel(reg)}
                                 </span>
                             </div>
                             <div className="flex items-center gap-1 shrink-0">
