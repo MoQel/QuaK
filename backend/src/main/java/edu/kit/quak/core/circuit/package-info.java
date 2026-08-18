@@ -7,7 +7,7 @@
  *
  * <p><b>Not included (planned for future features):</b>
  * <ul>
- *   <li>All composite- and loop-related classes</li>
+ *   <li>Loop-related classes (composite operations are implemented via {@code CompositeQuantumOperation})</li>
  *   <li>All concepts related to QUBOs</li>
  *   <li>{@code StatePreparation}, {@code ClassicControl}, and {@code OperationRealization}</li>
  *   <li>The {@code reverse} attribute of {@code QuantumOperationDefinition}</li>
