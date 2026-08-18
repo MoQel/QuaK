@@ -1,11 +1,19 @@
 import { Button } from '@/components/ui/button.tsx';
-import { Minus, Plus, RefreshCw, Trash2 } from 'lucide-react';
+import { Boxes, Minus, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import { apiRequest } from '@/api/api.ts';
-import { CircuitResponse, isQuantumRegister, QuantumOperationDto, RegisterResponse } from '@/api/dto/circuit.ts';
+import {
+    CircuitResponse,
+    CompositeQuantumOperationDto,
+    isQuantumRegister,
+    QuantumOperationDto,
+    RegisterResponse,
+} from '@/api/dto/circuit.ts';
 import { createCircuitService } from '@/views/circuit-view/util/circuitService.ts';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover.tsx';
 import { useState } from 'react';
 import { useActiveCode } from '@/hooks/editor/useActiveCode.ts';
+import { useProject } from '@/contexts/ProjectContext.tsx';
+import { AddCompositionDialog } from '@/views/circuit-view/components/AddCompositionDialog.tsx';
 import { toast } from 'sonner';
 
 interface CircuitToolbarProps {
@@ -16,8 +24,27 @@ interface CircuitToolbarProps {
 export function CircuitToolbar({ circuit, setCircuit }: Readonly<CircuitToolbarProps>) {
     const { addQubit, deleteLastQubit, resetCircuit } = createCircuitService(circuit, setCircuit);
     const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+    const [isCompositionOpen, setIsCompositionOpen] = useState(false);
     const [isParsing, setIsParsing] = useState(false);
     const { getActiveCode } = useActiveCode();
+    const { projectId } = useProject();
+
+    const handleAddComposition = (op: CompositeQuantumOperationDto, layerIdx: number) => {
+        setCircuit((prev) => {
+            if (!prev) return prev;
+            const layers = prev.layers.map((layer) => ({
+                quantumOperations: [...layer.quantumOperations],
+            }));
+            while (layers.length <= layerIdx) {
+                layers.push({ quantumOperations: [] });
+            }
+            layers[layerIdx].quantumOperations.push(op);
+            return {
+                ...prev,
+                layers,
+            };
+        });
+    };
 
     const parseActiveEditor = async () => {
         const code = getActiveCode();
@@ -70,6 +97,16 @@ export function CircuitToolbar({ circuit, setCircuit }: Readonly<CircuitToolbarP
             >
                 <Minus />
             </Button>
+            <Button
+                onClick={() => setIsCompositionOpen(true)}
+                size="sm"
+                className="h-8 gap-1.5 px-2.5 text-xs font-medium"
+                variant="secondary"
+                title="Add Composition (Sub-Circuit)"
+            >
+                <Boxes className="size-4 text-quantum" />
+                <span>+ Composition</span>
+            </Button>
             <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
                 <PopoverTrigger asChild>
                     <Button size="icon" className="size-8" variant="destructive" title="Reset Circuit">
@@ -101,6 +138,14 @@ export function CircuitToolbar({ circuit, setCircuit }: Readonly<CircuitToolbarP
                     </div>
                 </PopoverContent>
             </Popover>
+
+            <AddCompositionDialog
+                open={isCompositionOpen}
+                onOpenChange={setIsCompositionOpen}
+                circuit={circuit}
+                projectId={projectId}
+                onAddOperation={handleAddComposition}
+            />
         </div>
     );
 }

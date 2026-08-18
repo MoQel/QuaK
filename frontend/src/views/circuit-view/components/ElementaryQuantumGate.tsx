@@ -130,13 +130,19 @@ export function ElementaryQuantumGate({
             ))}
 
             {/* Render Targets */}
-            {targetIndices.map((idx) => (
+            {targetIndices.map((idx, portIdx) => (
                 <TargetPoint
                     key={`target-${idx}`}
                     relativeIdx={idx - minY}
                     definition={definition}
                     isSWAP={operation.identifier === 'SWAP'}
                     angleLabel={angleLabel}
+                    compositeLabel={operation.type === 'COMPOSITE_OPERATION' ? `CMP:${portIdx}` : undefined}
+                    title={
+                        operation.type === 'COMPOSITE_OPERATION'
+                            ? `Composition: ${operation.definitionCircuitId} (Wire ${portIdx})`
+                            : undefined
+                    }
                 />
             ))}
         </div>
@@ -167,15 +173,21 @@ function TargetPoint({
     definition,
     isSWAP,
     angleLabel,
+    compositeLabel,
+    title,
 }: Readonly<{
     relativeIdx: number;
     definition: OperationDefinition;
     isSWAP: boolean;
     angleLabel?: string | null;
+    compositeLabel?: string;
+    title?: string;
 }>) {
     let content: React.ReactNode;
 
-    if (definition.icon.type === 'component') {
+    if (compositeLabel) {
+        content = <span className="font-bold text-[10px] tracking-tight">{compositeLabel}</span>;
+    } else if (definition.icon.type === 'component') {
         const ComponentIcon = definition.icon.component;
         content = <ComponentIcon className="size-4 stroke-4" />;
     } else if (angleLabel) {
@@ -197,6 +209,7 @@ function TargetPoint({
         <div
             className="absolute inset-x-0 flex items-center justify-center pointer-events-none"
             style={{ top: relativeIdx * QUBIT_HEIGHT, height: QUBIT_HEIGHT }}
+            title={title}
         >
             {/* Similar to badge.tsx but supporting group-hover */}
             <div

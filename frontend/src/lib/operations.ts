@@ -1,4 +1,4 @@
-import { Gauge, Plus, X as LucideX } from 'lucide-react';
+import { Boxes, Gauge, Plus, X as LucideX } from 'lucide-react';
 import { ComponentType } from 'react';
 import { QuantumOperationType } from '@/api/dto/circuit.ts';
 
@@ -17,6 +17,7 @@ export type OperationIdentifier =
     | 'RY'
     | 'RZ'
     | 'MEASURE'
+    | 'COMPOSITION'
     | 'DUMMY';
 
 const isOperationIdentifier = (identifier: string): identifier is OperationIdentifier => {
@@ -192,6 +193,17 @@ const MEASURE: OperationDefinition = {
     color: 'var(--non-unitary-and-modifiers)',
 };
 
+const COMPOSITION: OperationDefinition = {
+    type: 'COMPOSITE_OPERATION',
+    targetSize: 2,
+    controlSize: 0,
+    totalSize: 2,
+    icon: { type: 'component', component: Boxes },
+    label: 'CMP',
+    formClass: 'rounded-none',
+    color: 'var(--quantum)',
+};
+
 const DUMMY: OperationDefinition = {
     type: 'DUMMY',
     targetSize: 1,
@@ -217,6 +229,7 @@ const OPERATION_DEFINITIONS: Record<OperationIdentifier, OperationDefinition> = 
     RY,
     RZ,
     MEASURE,
+    COMPOSITION,
     DUMMY,
 };
 
