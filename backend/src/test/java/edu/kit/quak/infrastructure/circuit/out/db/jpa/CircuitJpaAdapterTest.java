@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.core.circuit.model.layer.Layer;
+import edu.kit.quak.core.circuit.model.layer.operation.CompositeQuantumOperation;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementaryQuantumGate;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
@@ -118,5 +119,63 @@ class CircuitJpaAdapterTest {
         // Assert
         assertThat(found).isPresent();
         assertThat(notFound).isNotPresent();
+    }
+
+    @Test
+    void saveAndFindCircuit_withCompositeQuantumOperation_ShouldPersistData() {
+        // Arrange
+        String circuitId = "comp-circuit-id";
+        String projectId = "comp-project-id";
+        String layerId = "comp-layer-id";
+        String registerId = "comp-register-id";
+        String definitionCircuitId = "referenced-subcircuit-id";
+
+        ElementSelector target0 = new ElementSelector(registerId, 0);
+        ElementSelector target1 = new ElementSelector(registerId, 1);
+        ElementSelector control0 = new ElementSelector(registerId, 2);
+
+        CompositeQuantumOperation compositeOp = new CompositeQuantumOperation(
+            true,
+            List.of(target0, target1),
+            List.of(control0),
+            definitionCircuitId
+        );
+        compositeOp.setId("comp-op-id");
+
+        Layer layer = new Layer(List.of(compositeOp));
+        layer.setId(layerId);
+
+        QuantumRegister register = new QuantumRegister("q", 4);
+        register.setId(registerId);
+
+        QuantumCircuit domainCircuit = QuantumCircuit.builder()
+            .id(circuitId)
+            .projectId(projectId)
+            .registers(List.of(register))
+            .layers(List.of(layer))
+            .build();
+
+        // Act
+        jpaAdapter.save(domainCircuit);
+        Optional<QuantumCircuit> found = jpaAdapter.findById(circuitId);
+
+        // Assert
+        assertThat(found).isPresent();
+        QuantumCircuit foundCircuit = found.get();
+        assertThat(foundCircuit.getId()).isEqualTo(circuitId);
+        assertThat(foundCircuit.getLayers()).hasSize(1);
+
+        QuantumOperation foundOp = foundCircuit.getLayers().getFirst().getQuantumOperations().getFirst();
+        assertThat(foundOp).isInstanceOf(CompositeQuantumOperation.class);
+
+        CompositeQuantumOperation foundComposite = (CompositeQuantumOperation) foundOp;
+        assertThat(foundComposite.getId()).isEqualTo("comp-op-id");
+        assertThat(foundComposite.isInverseForm()).isTrue();
+        assertThat(foundComposite.getDefinitionCircuitId()).isEqualTo(definitionCircuitId);
+        assertThat(foundComposite.getTargetQubits()).hasSize(2);
+        assertThat(foundComposite.getTargetQubits().get(0).getIndex()).isEqualTo(0);
+        assertThat(foundComposite.getTargetQubits().get(1).getIndex()).isEqualTo(1);
+        assertThat(foundComposite.getControlQubits()).hasSize(1);
+        assertThat(foundComposite.getControlQubits().getFirst().getIndex()).isEqualTo(2);
     }
 }
