@@ -27,6 +27,16 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
     }
 
     @Override
+    public Void visitAnnotation(OpenQASM3Parser.AnnotationContext ctx) {
+        String keyword = ctx.AnnotationKeyword() != null ? ctx.AnnotationKeyword().getText() : "";
+        String remaining = ctx.RemainingLineContent() != null ? ctx.RemainingLineContent().getText().trim() : "";
+
+        System.out.println("Annotation parsed: " + keyword + (remaining.isEmpty() ? "" : " " + remaining));
+
+        return super.visitAnnotation(ctx);
+    }
+
+    @Override
     public Void visitQuantumDeclarationStatement(OpenQASM3Parser.QuantumDeclarationStatementContext ctx) {
         String registerName = ctx.Identifier().getText();
         OpenQASM3Parser.DesignatorContext designator = ctx.qubitType().designator();

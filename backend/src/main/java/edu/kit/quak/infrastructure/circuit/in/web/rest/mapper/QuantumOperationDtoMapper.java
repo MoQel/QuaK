@@ -11,13 +11,26 @@ public interface QuantumOperationDtoMapper {
     @BeanMapping(subclassExhaustiveStrategy = SubclassExhaustiveStrategy.RUNTIME_EXCEPTION)
     @SubclassMapping(source = ElementaryQuantumGate.class, target = ElementaryQuantumGateDto.class)
     @SubclassMapping(source = Measurement.class, target = MeasurementDto.class)
-    @Mapping(target = "identifier", source = "operationDefinition")
+    @Mapping(target = "identifier", ignore = true)
     QuantumOperationDto toResponse(QuantumOperation domain);
+
+    @Mapping(target = "identifier", source = "operationDefinition")
+    ElementaryQuantumGateDto toResponse(ElementaryQuantumGate domain);
+
+    @Mapping(target = "identifier", source = "operationDefinition")
+    MeasurementDto toResponse(Measurement domain);
 
     @BeanMapping(subclassExhaustiveStrategy = SubclassExhaustiveStrategy.RUNTIME_EXCEPTION)
     @SubclassMapping(source = ElementaryQuantumGateDto.class, target = ElementaryQuantumGate.class)
     @SubclassMapping(source = MeasurementDto.class, target = Measurement.class)
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "operationDefinition", source = "identifier")
     QuantumOperation toDomain(QuantumOperationDto request);
+
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "operationDefinition", source = "identifier")
+    ElementaryQuantumGate toDomain(ElementaryQuantumGateDto request);
+
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "operationDefinition", source = "identifier")
+    Measurement toDomain(MeasurementDto request);
 }

@@ -85,6 +85,29 @@ class QasmTest {
             gphase(pi) r; // GPHASE auf r
             """;
 
+        String qasmCode4 = """
+            OPENQASM 3.0;
+            include "stdgates.inc";
+
+            qubit[2] q;
+            bit[2] c;
+
+            @composition
+            gate test a, b, c {
+            }
+
+            // Put the first qubit in superposition
+            h q[0];
+
+            // Entangle the first qubit with the second using CNOT
+            cx q[0], q[1];
+
+            // Measure both qubits
+            c[0] = measure q[0];
+            c[1] = measure q[1];
+
+            """;
+
         String qasmCode3 = """
             OPENQASM 3.0;
             include "stdgates.inc";
@@ -104,14 +127,14 @@ class QasmTest {
 
             """;
 
-        CharStream input = CharStreams.fromString(qasmCode3);
+        CharStream input = CharStreams.fromString(qasmCode4);
         OpenQASM3Lexer lexer = new OpenQASM3Lexer(input);
         CommonTokenStream tokens = new CommonTokenStream(lexer);
         OpenQASM3Parser parser = new OpenQASM3Parser(tokens);
 
         ParseTree tree = parser.program();
         System.out.println("Tree");
-        System.out.println(tree.toStringTree());
+        System.out.println(tree.toStringTree(parser));
 
         QasmCircuitVisitor visitor = new QasmCircuitVisitor();
         visitor.visit(tree);

@@ -11,6 +11,7 @@ import lombok.Setter;
 @Setter
 public class ElementaryQuantumGate extends QuantumOperation {
 
+    private QuantumOperationLibrary operationDefinition;
     private double rotationAngle;
 
     public ElementaryQuantumGate(
@@ -20,7 +21,8 @@ public class ElementaryQuantumGate extends QuantumOperation {
         List<ElementSelector> controlQubits,
         double rotationAngle
     ) {
-        super(operationDefinition, inverseForm, targetQubits, controlQubits);
+        super(inverseForm, targetQubits, controlQubits);
+        this.operationDefinition = operationDefinition;
         this.rotationAngle = rotationAngle;
         if (operationDefinition.getDefinition().getType() != getClass()) {
             throw new InvalidOperationConfigurationException(

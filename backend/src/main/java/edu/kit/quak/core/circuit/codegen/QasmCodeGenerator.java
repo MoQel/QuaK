@@ -4,6 +4,7 @@ import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.core.circuit.model.layer.Layer;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementaryQuantumGate;
+import edu.kit.quak.core.circuit.model.layer.operation.Measurement;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
 import edu.kit.quak.core.circuit.model.layer.operation.library.ConcreteQuantumOperation;
 import edu.kit.quak.core.circuit.model.layer.operation.library.QuantumOperationLibrary;
@@ -108,19 +109,22 @@ public class QasmCodeGenerator {
     }
 
     private static String operatorToCode(QuantumOperation quantumOperation) {
-        QuantumOperationLibrary operationDefinition = quantumOperation.getOperationDefinition();
-        String operatorCode = toCode(operationDefinition);
         if (quantumOperation instanceof ElementaryQuantumGate elementaryQuantumGate) {
+            QuantumOperationLibrary operationDefinition = elementaryQuantumGate.getOperationDefinition();
+            String operatorCode = toCode(operationDefinition);
             if (operationDefinition.getDefinition() instanceof ConcreteQuantumOperation<?> definition && definition.isHasRotationAngle()) {
                 return operatorCode + "(" + formatAngle(elementaryQuantumGate.getRotationAngle()) + ")";
             }
             return operatorCode;
         }
 
-        // TODO CompositeOperations
-        // TODO Meassurement
+        if (quantumOperation instanceof Measurement measurement) {
+            return toCode(measurement.getOperationDefinition());
+        }
 
-        return operatorCode;
+        // TODO CompositeOperations
+
+        return "";
     }
 
     /** Named constants the QASM parser understands, with a small tolerance for round-trip matching. */

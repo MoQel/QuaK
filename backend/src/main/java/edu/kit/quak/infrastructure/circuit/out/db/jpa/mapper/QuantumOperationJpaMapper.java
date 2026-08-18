@@ -18,7 +18,14 @@ public interface QuantumOperationJpaMapper {
     @SubclassMapping(source = Measurement.class, target = JpaMeasurement.class)
     @Mapping(target = "id", source = "id")
     @Mapping(target = "layer", ignore = true)
+    @Mapping(target = "operationDefinition", ignore = true)
     JpaQuantumOperation toEntity(QuantumOperation domain);
+
+    @Mapping(target = "layer", ignore = true)
+    JpaElementaryQuantumGate toEntity(ElementaryQuantumGate domain);
+
+    @Mapping(target = "layer", ignore = true)
+    JpaMeasurement toEntity(Measurement domain);
 
     List<JpaElementSelector> toEntity(List<ElementSelector> value);
 
@@ -27,6 +34,10 @@ public interface QuantumOperationJpaMapper {
     @SubclassMapping(source = JpaMeasurement.class, target = Measurement.class)
     @Mapping(target = "id", source = "id")
     QuantumOperation toDomain(JpaQuantumOperation entity);
+
+    ElementaryQuantumGate toDomain(JpaElementaryQuantumGate entity);
+
+    Measurement toDomain(JpaMeasurement entity);
 
     List<ElementSelector> toDomain(List<JpaElementSelector> value);
 }
