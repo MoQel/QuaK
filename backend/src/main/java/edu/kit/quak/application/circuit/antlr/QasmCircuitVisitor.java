@@ -2,6 +2,7 @@ package edu.kit.quak.application.circuit.antlr;
 
 import edu.kit.quak.application.circuit.exceptions.QasmParseException;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
+import edu.kit.quak.core.circuit.model.layer.operation.CompositeQuantumOperation;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementaryQuantumGate;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
@@ -9,7 +10,9 @@ import edu.kit.quak.core.circuit.model.layer.operation.library.QuantumOperationL
 import edu.kit.quak.core.circuit.model.register.QuantumRegister;
 import edu.kit.quak.core.circuit.model.register.Register;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
@@ -22,18 +25,65 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
         .layers(new ArrayList<>())
         .build();
 
+    private final Map<String, String> compositeGates = new HashMap<>();
+    private String lastCompositionCircuitId = null;
+
     public QuantumCircuit getCircuit() {
         return circuit;
     }
 
     @Override
+    public Void visitStatement(OpenQASM3Parser.StatementContext ctx) {
+        if (ctx.gateStatement() != null) {
+            String gateName = ctx.gateStatement().Identifier().getText();
+            String circuitId = null;
+            if (ctx.annotation() != null) {
+                for (var ann : ctx.annotation()) {
+                    String kw = ann.AnnotationKeyword() != null ? ann.AnnotationKeyword().getText() : "";
+                    if (kw.equalsIgnoreCase("@composition")) {
+                        String rem = ann.RemainingLineContent() != null ? ann.RemainingLineContent().getText().trim() : "";
+                        circuitId = parseCircuitIdFromAnnotation(rem);
+                        break;
+                    }
+                }
+            }
+            if (circuitId == null && lastCompositionCircuitId != null) {
+                circuitId = lastCompositionCircuitId;
+                lastCompositionCircuitId = null;
+            }
+            if (circuitId != null) {
+                compositeGates.put(gateName, circuitId);
+                return null; // Skip statement body of pseudo composite gate
+            }
+        }
+        return super.visitStatement(ctx);
+    }
+
+    @Override
     public Void visitAnnotation(OpenQASM3Parser.AnnotationContext ctx) {
         String keyword = ctx.AnnotationKeyword() != null ? ctx.AnnotationKeyword().getText() : "";
-        String remaining = ctx.RemainingLineContent() != null ? ctx.RemainingLineContent().getText().trim() : "";
-
-        System.out.println("Annotation parsed: " + keyword + (remaining.isEmpty() ? "" : " " + remaining));
-
+        if (keyword.equalsIgnoreCase("@composition")) {
+            String remaining = ctx.RemainingLineContent() != null ? ctx.RemainingLineContent().getText().trim() : "";
+            lastCompositionCircuitId = parseCircuitIdFromAnnotation(remaining);
+        }
         return super.visitAnnotation(ctx);
+    }
+
+    private String parseCircuitIdFromAnnotation(String text) {
+        if (text == null || text.isBlank()) {
+            return UUID.randomUUID().toString();
+        }
+        String trimmed = text.trim();
+        int lastQuoteIndex = trimmed.lastIndexOf('"');
+        if (lastQuoteIndex >= 0 && lastQuoteIndex + 1 < trimmed.length()) {
+            String afterQuote = trimmed.substring(lastQuoteIndex + 1).trim();
+            if (!afterQuote.isEmpty()) {
+                return afterQuote;
+            }
+        }
+        String[] parts = trimmed.split("\\s+");
+        String candidate = parts[parts.length - 1].replace("\"", "").trim();
+        return candidate.isEmpty() ? UUID.randomUUID().toString() : candidate;
     }
 
     @Override
@@ -65,12 +115,20 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
         }
 
         String gateName = ctx.Identifier().getText();
-        QuantumOperationLibrary operationType = resolveGate(gateName);
 
         List<ElementSelector> operands = new ArrayList<>();
         for (OpenQASM3Parser.GateOperandContext operand : ctx.gateOperandList().gateOperand()) {
             operands.add(parseOperand(operand));
         }
+
+        if (compositeGates.containsKey(gateName)) {
+            String definitionCircuitId = compositeGates.get(gateName);
+            QuantumOperation operation = new CompositeQuantumOperation(false, operands, null, definitionCircuitId);
+            circuit.addQuantumOperation(operation, circuit.getLayers().size());
+            return null;
+        }
+
+        QuantumOperationLibrary operationType = resolveGate(gateName);
 
         // Split operands into controls and targets via the gate definition (QASM lists controls first).
         int controlCount = operationType.getDefinition().getControlQubits();

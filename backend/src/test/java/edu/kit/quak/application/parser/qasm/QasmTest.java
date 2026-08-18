@@ -11,7 +11,9 @@ import edu.kit.quak.application.circuit.antlr.QasmService;
 import edu.kit.quak.application.circuit.exceptions.QasmParseException;
 import edu.kit.quak.core.circuit.codegen.QasmCodeGenerator;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
+import edu.kit.quak.core.circuit.model.layer.operation.CompositeQuantumOperation;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementaryQuantumGate;
+import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
 import edu.kit.quak.core.circuit.model.register.QuantumRegister;
 import edu.kit.quak.core.circuit.model.register.Register;
 import java.util.ArrayList;
@@ -254,5 +256,65 @@ class QasmTest {
         assertThrows(QasmParseException.class, () -> qasmService.parse("qubit[2] q;\ncx q[i], q[i + 1];\n"));
         // Syntax error.
         assertThrows(QasmParseException.class, () -> qasmService.parse("qubit[1] q\nx q[0]\n"));
+    }
+
+    @Test
+    void compositionGateParsedFromAnnotationAndGateDeclaration() {
+        QasmService qasmService = new QasmService();
+        String qasmCode = """
+            OPENQASM 3.0;
+
+            @composition "subcircuit.qasm" 550e8400-e29b-41d4-a716-446655440000
+            gate my_sub_circuit q0, q1 {
+            }
+
+            qubit[3] q;
+
+            // Call composite gate
+            my_sub_circuit q[2], q[0];
+            """;
+
+        QuantumCircuit circuit = qasmService.parse(qasmCode);
+
+        assertEquals(1, circuit.getLayers().size());
+        QuantumOperation op = circuit.getLayers().getFirst().getQuantumOperations().getFirst();
+        assertTrue(op instanceof CompositeQuantumOperation, "Expected CompositeQuantumOperation");
+
+        CompositeQuantumOperation composite = (CompositeQuantumOperation) op;
+        assertEquals("550e8400-e29b-41d4-a716-446655440000", composite.getDefinitionCircuitId());
+        assertEquals(2, composite.getTargetQubits().size());
+        assertEquals(2, composite.getTargetQubits().get(0).getIndex());
+        assertEquals(0, composite.getTargetQubits().get(1).getIndex());
+    }
+
+    @Test
+    void compositionGateCodeGenerationAndRoundTrip() {
+        QasmService qasmService = new QasmService();
+        String qasmCode = """
+            @composition "sub.qasm" my_circuit_id_123
+            gate comp_my_circuit_id_123 q0, q1 {
+            }
+
+            qubit[2] q;
+
+            comp_my_circuit_id_123 q[1], q[0];
+            """;
+
+        QuantumCircuit circuit = qasmService.parse(qasmCode);
+        String generatedQasm = QasmCodeGenerator.toCode(circuit);
+
+        assertTrue(generatedQasm.contains("@composition \"circuit\" my_circuit_id_123"), "Should contain @composition: " + generatedQasm);
+        assertTrue(generatedQasm.contains("gate comp_my_circuit_id_123 q0, q1"), "Should contain gate declaration: " + generatedQasm);
+        assertTrue(generatedQasm.contains("comp_my_circuit_id_123 q[1], q[0];"), "Should call composite gate: " + generatedQasm);
+
+        // Reparse generated code
+        QuantumCircuit reparsed = qasmService.parse(generatedQasm);
+        assertEquals(1, reparsed.getLayers().size());
+        QuantumOperation op = reparsed.getLayers().getFirst().getQuantumOperations().getFirst();
+        assertTrue(op instanceof CompositeQuantumOperation);
+        CompositeQuantumOperation composite = (CompositeQuantumOperation) op;
+        assertEquals("my_circuit_id_123", composite.getDefinitionCircuitId());
+        assertEquals(1, composite.getTargetQubits().get(0).getIndex());
+        assertEquals(0, composite.getTargetQubits().get(1).getIndex());
     }
 }

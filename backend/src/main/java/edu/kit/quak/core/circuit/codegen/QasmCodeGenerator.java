@@ -2,6 +2,7 @@ package edu.kit.quak.core.circuit.codegen;
 
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.core.circuit.model.layer.Layer;
+import edu.kit.quak.core.circuit.model.layer.operation.CompositeQuantumOperation;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementaryQuantumGate;
 import edu.kit.quak.core.circuit.model.layer.operation.Measurement;
@@ -10,14 +11,46 @@ import edu.kit.quak.core.circuit.model.layer.operation.library.ConcreteQuantumOp
 import edu.kit.quak.core.circuit.model.layer.operation.library.QuantumOperationLibrary;
 import edu.kit.quak.core.circuit.model.register.QuantumRegister;
 import edu.kit.quak.core.circuit.model.register.Register;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 public class QasmCodeGenerator {
 
     public static String toCode(QuantumCircuit quantumCircuit) {
         StringBuilder codeStringBuilder = new StringBuilder();
 
+        // 1. Generate pseudo gate definitions for all composite operations at the top
+        List<CompositeQuantumOperation> compositeOps = quantumCircuit
+            .getLayers()
+            .stream()
+            .flatMap(l -> l.getQuantumOperations().stream())
+            .filter(op -> op instanceof CompositeQuantumOperation)
+            .map(op -> (CompositeQuantumOperation) op)
+            .toList();
+
+        Map<String, Integer> distinctComposites = new LinkedHashMap<>();
+        for (CompositeQuantumOperation op : compositeOps) {
+            distinctComposites.putIfAbsent(op.getDefinitionCircuitId(), op.getTargetQubits().size());
+        }
+
+        if (!distinctComposites.isEmpty()) {
+            for (Map.Entry<String, Integer> entry : distinctComposites.entrySet()) {
+                String defId = entry.getKey();
+                int qubitCount = entry.getValue();
+                String gateName = getCompositeGateName(defId);
+                List<String> paramNames = new ArrayList<>();
+                for (int i = 0; i < qubitCount; i++) {
+                    paramNames.add("q" + i);
+                }
+                codeStringBuilder.append("@composition \"circuit\" ").append(defId).append("\n");
+                codeStringBuilder.append("gate ").append(gateName).append(" ").append(String.join(", ", paramNames)).append(" {\n}\n\n");
+            }
+        }
+
+        // 2. Register declarations
         List<Register> registers = quantumCircuit.getRegisters();
         for (Register register : registers) {
             if (register instanceof QuantumRegister quantumRegister) {
@@ -34,6 +67,7 @@ public class QasmCodeGenerator {
 
         codeStringBuilder.append("\n");
 
+        // 3. Layers and operations
         List<Layer> layers = quantumCircuit.getLayers();
         for (int layerIdx = 0; layerIdx < layers.size(); layerIdx++) {
             Layer layer = layers.get(layerIdx);
@@ -42,6 +76,17 @@ public class QasmCodeGenerator {
         }
 
         return codeStringBuilder.toString();
+    }
+
+    public static String getCompositeGateName(String definitionCircuitId) {
+        if (definitionCircuitId == null || definitionCircuitId.isBlank()) {
+            return "comp_gate";
+        }
+        String sanitized = definitionCircuitId.replaceAll("[^a-zA-Z0-9_]", "_");
+        if (sanitized.startsWith("comp_")) {
+            return sanitized;
+        }
+        return "comp_" + sanitized;
     }
 
     private static String toCode(QuantumCircuit quantumCircuit, Layer layer) {
@@ -122,7 +167,9 @@ public class QasmCodeGenerator {
             return toCode(measurement.getOperationDefinition());
         }
 
-        // TODO CompositeOperations
+        if (quantumOperation instanceof CompositeQuantumOperation compositeQuantumOperation) {
+            return getCompositeGateName(compositeQuantumOperation.getDefinitionCircuitId());
+        }
 
         return "";
     }
