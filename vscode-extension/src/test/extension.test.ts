@@ -14,6 +14,7 @@ import * as vscode from 'vscode';
 const EXTENSION_ID = 'quak.quak-vscode';
 const VIEW_TYPE = 'quak.circuitEditor';
 const SOURCE = 'QuaK';
+const DIAGNOSTICS_ENABLED = 'quak.diagnostics.enable';
 const SAMPLE = 'OPENQASM 3.0;\ninclude "stdgates.inc";\n\nqubit[2] q;\n\nh q[0];\ncx q[0], q[1];\n';
 
 let tempDir: string | undefined;
@@ -41,6 +42,26 @@ function changeTo(document: vscode.TextDocument, text: string): Promise<void> {
     });
 }
 
+const openTabs = (): number => vscode.window.tabGroups.all.reduce((count, group) => count + group.tabs.length, 0);
+
+/**
+ * Same trap as `undo` below: the command resolves once dispatched, not once the tabs
+ * are gone. Leaving a webview tab behind costs the next test the focus it assumes.
+ */
+async function closeAllEditors(): Promise<void> {
+    await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+    if (openTabs() === 0) return;
+
+    await new Promise<void>((resolve) => {
+        const sub = vscode.window.tabGroups.onDidChangeTabs(() => {
+            if (openTabs() > 0) return;
+
+            sub.dispose();
+            resolve();
+        });
+    });
+}
+
 function customTabsFor(uri: vscode.Uri): vscode.Tab[] {
     return vscode.window.tabGroups.all
         .flatMap((group) => group.tabs)
@@ -53,9 +74,7 @@ function customTabsFor(uri: vscode.Uri): vscode.Tab[] {
 }
 
 suite('QuaK circuit editor', () => {
-    teardown(async () => {
-        await vscode.commands.executeCommand('workbench.action.closeAllEditors');
-    });
+    teardown(closeAllEditors);
 
     test('activates', async () => {
         const extension = vscode.extensions.getExtension(EXTENSION_ID);
@@ -89,6 +108,59 @@ suite('QuaK circuit editor', () => {
         const document = await vscode.workspace.openTextDocument(uri);
 
         assert.equal(document.languageId, 'openqasm');
+    });
+
+    test('opens the circuit beside the text, which is the whole point of the command', async () => {
+        const uri = writeQasm('side.qasm');
+        const document = await vscode.workspace.openTextDocument(uri);
+        await vscode.window.showTextDocument(document, vscode.ViewColumn.One);
+
+        await vscode.commands.executeCommand('quak.openCircuitEditorToSide', uri);
+
+        const [tab] = customTabsFor(uri);
+        assert.ok(tab, 'expected a circuit editor tab');
+        assert.notEqual(tab.group.viewColumn, vscode.ViewColumn.One);
+        // The text editor has to survive it; the circuit is a second view, not a swap.
+        assert.equal(
+            vscode.window.visibleTextEditors.some((editor) => editor.document.uri.toString() === uri.toString()),
+            true,
+        );
+    });
+
+    test('takes the file from the active editor when the palette passes nothing', async () => {
+        const uri = writeQasm('palette.qasm');
+        const document = await vscode.workspace.openTextDocument(uri);
+        await vscode.window.showTextDocument(document);
+
+        await vscode.commands.executeCommand('quak.openCircuitEditorToSide');
+
+        assert.equal(customTabsFor(uri).length, 1);
+    });
+
+    test('gets back to the text from the circuit, which the circuit editor has no way to do itself', async () => {
+        const uri = writeQasm('source.qasm');
+        await vscode.commands.executeCommand('vscode.openWith', uri, VIEW_TYPE);
+
+        await vscode.commands.executeCommand('quak.showSource', uri);
+
+        assert.equal(vscode.window.activeTextEditor?.document.uri.toString(), uri.toString());
+        // The circuit stays open; this is a way back, not a way out.
+        assert.equal(customTabsFor(uri).length, 1);
+    });
+
+    test('reuses the text editor already showing the file instead of opening a second one', async () => {
+        const uri = writeQasm('source-reuse.qasm');
+        const document = await vscode.workspace.openTextDocument(uri);
+        await vscode.window.showTextDocument(document, vscode.ViewColumn.One);
+        await vscode.commands.executeCommand('vscode.openWith', uri, VIEW_TYPE, vscode.ViewColumn.Two);
+
+        await vscode.commands.executeCommand('quak.showSource', uri);
+
+        const textTabs = vscode.window.tabGroups.all
+            .flatMap((group) => group.tabs)
+            .filter((tab) => tab.input instanceof vscode.TabInputText && tab.input.uri.toString() === uri.toString());
+        assert.equal(textTabs.length, 1);
+        assert.equal(vscode.window.activeTextEditor?.viewColumn, vscode.ViewColumn.One);
     });
 
     test('supports several circuit editors on one document', async () => {
@@ -176,7 +248,13 @@ suite('QuaK diagnostics', () => {
     });
 
     teardown(async () => {
-        await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+        await closeAllEditors();
+        // Here rather than in the test that changes it: a test that times out never
+        // reaches its own cleanup, and this setting is written to the test instance's
+        // user data, where it would silently disable diagnostics for every later run.
+        await vscode.workspace
+            .getConfiguration()
+            .update(DIAGNOSTICS_ENABLED, undefined, vscode.ConfigurationTarget.Global);
     });
 
     test('reports an unsupported construct on the line it sits on', async () => {
@@ -202,6 +280,17 @@ suite('QuaK diagnostics', () => {
         assert.equal(diagnostic.range.start.line, 2);
         // A range that starts where the token is missing would be empty, and invisible.
         assert.ok(!diagnostic.range.isEmpty, 'expected a range wide enough to show');
+    });
+
+    test('says nothing while the setting is off, and takes back what it already said', async () => {
+        const uri = writeQasm('disabled.qasm', UNSUPPORTED);
+        await vscode.workspace.openTextDocument(uri);
+        await waitForDiagnostics(uri, (found) => found.length > 0);
+
+        await vscode.workspace.getConfiguration().update(DIAGNOSTICS_ENABLED, false, vscode.ConfigurationTarget.Global);
+
+        // Resolving at all is the assertion; teardown puts the setting back.
+        await waitForDiagnostics(uri, (found) => found.length === 0);
     });
 
     test('takes the finding back once the document is fixed', async () => {

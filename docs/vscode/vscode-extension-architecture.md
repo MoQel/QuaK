@@ -10,11 +10,20 @@ text is `vscode-extension/README.md`.
 
 ## What it is
 
-A user opens a `.qasm` file in VSCode and gets the normal text editor. Via
-**Open With… → QuaK Circuit Editor** they can additionally open the same file as a
-circuit, with the gate library attached, and edit it visually. Both views stay in sync,
-and the file remains an ordinary text document — save, undo, git and split view keep
-working.
+A user opens a `.qasm` file in VSCode and gets the normal text editor. One click on the
+circuit icon in the editor title bar opens the same file as a circuit **beside** the
+text, with the gate library attached, and it can be edited visually there. Both views
+stay in sync, and the file remains an ordinary text document — save, undo, git and split
+view keep working.
+
+Opening beside rather than in place is the default on purpose: the circuit is a second
+view of the file, and the pairing is what the editor is for. `Open With…` still works and
+still replaces the text editor, for anyone who wants that.
+
+The title bar carries one icon per direction, and the `when` clauses make them exclusive:
+the circuit icon while a text editor is active, the source icon while the circuit editor
+is. A custom editor has no text of its own to fall back on, so without the second one a
+user who opened the circuit in place has no way back.
 
 It is not a second QuaK. There are no projects, no accounts and no database in VSCode.
 The circuit editor from the web IDE is repackaged; nothing more. Local simulation

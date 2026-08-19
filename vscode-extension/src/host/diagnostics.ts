@@ -10,6 +10,7 @@ import {
 } from './documentModel.ts';
 
 const SOURCE = 'QuaK';
+const ENABLED = 'quak.diagnostics.enable';
 
 const SEVERITY: Record<DiagnosticSeverity, vscode.DiagnosticSeverity> = {
     error: vscode.DiagnosticSeverity.Error,
@@ -21,27 +22,40 @@ const SEVERITY: Record<DiagnosticSeverity, vscode.DiagnosticSeverity> = {
 export function registerDiagnostics(documents: ClassificationCache): vscode.Disposable[] {
     const collection = vscode.languages.createDiagnosticCollection('quak');
 
+    // Read per refresh rather than cached: the setting can be changed per workspace.
+    const isEnabled = (): boolean => vscode.workspace.getConfiguration().get<boolean>(ENABLED, true);
+
     const refresh = (document: vscode.TextDocument): void => {
         if (!isQasmDocument(document)) return;
 
+        // Setting an empty list rather than skipping: turning the setting off has to take
+        // the existing findings with it.
+        collection.set(document.uri, isEnabled() ? findingsIn(document) : []);
+    };
+
+    const findingsIn = (document: vscode.TextDocument): vscode.Diagnostic[] => {
         // Nothing to report about a document that could not be analysed; the reason is
         // in the log, and stale squiggles would be worse than none.
         const classified = documents.of(document);
         const findings = classified ? diagnosticsFor(classified.classification) : [];
 
-        collection.set(
-            document.uri,
-            findings.map((entry) => toVscodeDiagnostic(entry, document)),
-        );
+        return findings.map((entry) => toVscodeDiagnostic(entry, document));
+    };
+
+    const refreshAll = (): void => {
+        for (const document of vscode.workspace.textDocuments) refresh(document);
     };
 
     // Documents opened before this extension activated get no open event of their own.
-    for (const document of vscode.workspace.textDocuments) refresh(document);
+    refreshAll();
 
     return [
         collection,
         vscode.workspace.onDidOpenTextDocument(refresh),
         vscode.workspace.onDidChangeTextDocument((event) => refresh(event.document)),
+        vscode.workspace.onDidChangeConfiguration((event) => {
+            if (event.affectsConfiguration(ENABLED)) refreshAll();
+        }),
         // Without this the findings outlive the file in the Problems panel.
         vscode.workspace.onDidCloseTextDocument((document) => collection.delete(document.uri)),
     ];

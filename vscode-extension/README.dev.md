@@ -24,6 +24,7 @@ src/
   host/
     extension.ts              VSCode activation entry point
     circuitEditorProvider.ts  Custom editor host controller
+    commands.ts               Command handlers contributed in package.json
     arbitration.ts            Pure edit arbitration and panel tracking helpers
     documentModel.ts          Classification of a parsed document, and its cache
     diagnostics.ts            Publishes the classification into the Problems panel

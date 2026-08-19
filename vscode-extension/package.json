@@ -72,7 +72,92 @@
                 ],
                 "priority": "option"
             }
-        ]
+        ],
+        "commands": [
+            {
+                "command": "quak.openCircuitEditorToSide",
+                "title": "Open Circuit Editor to the Side",
+                "category": "QuaK",
+                "icon": "$(circuit-board)"
+            },
+            {
+                "command": "quak.openCircuitEditor",
+                "title": "Open Circuit Editor",
+                "category": "QuaK",
+                "icon": "$(circuit-board)"
+            },
+            {
+                "command": "quak.showSource",
+                "title": "Show Source",
+                "category": "QuaK",
+                "icon": "$(file-code)"
+            },
+            {
+                "command": "quak.showLog",
+                "title": "Show Log",
+                "category": "QuaK"
+            }
+        ],
+        "menus": {
+            "editor/title": [
+                {
+                    "command": "quak.openCircuitEditorToSide",
+                    "alt": "quak.openCircuitEditor",
+                    "when": "resourceExtname == .qasm && activeCustomEditorId != 'quak.circuitEditor'",
+                    "group": "navigation"
+                },
+                {
+                    "command": "quak.showSource",
+                    "when": "activeCustomEditorId == 'quak.circuitEditor'",
+                    "group": "navigation"
+                }
+            ],
+            "explorer/context": [
+                {
+                    "command": "quak.openCircuitEditor",
+                    "when": "resourceExtname == .qasm",
+                    "group": "navigation"
+                }
+            ],
+            "commandPalette": [
+                {
+                    "command": "quak.openCircuitEditorToSide",
+                    "when": "resourceExtname == .qasm"
+                },
+                {
+                    "command": "quak.openCircuitEditor",
+                    "when": "resourceExtname == .qasm"
+                },
+                {
+                    "command": "quak.showSource",
+                    "when": "activeCustomEditorId == 'quak.circuitEditor'"
+                }
+            ]
+        },
+        "keybindings": [
+            {
+                "command": "quak.openCircuitEditorToSide",
+                "key": "ctrl+k q",
+                "mac": "cmd+k q",
+                "when": "editorFocus && editorLangId == openqasm && !notebookEditorFocused"
+            },
+            {
+                "command": "quak.showSource",
+                "key": "ctrl+k q",
+                "mac": "cmd+k q",
+                "when": "activeCustomEditorId == 'quak.circuitEditor'"
+            }
+        ],
+        "configuration": {
+            "title": "QuaK",
+            "properties": {
+                "quak.diagnostics.enable": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Report OpenQASM constructs the circuit editor cannot write back in the Problems panel. Turn this off if another OpenQASM extension already reports what you need."
+                }
+            }
+        }
     },
     "scripts": {
         "build": "node esbuild.mjs && vite build --config vite.webview.config.ts",

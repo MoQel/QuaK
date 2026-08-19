@@ -1,6 +1,7 @@
 // Entry point loaded by VSCode. Registers the QuaK custom editor for .qasm files.
 import * as vscode from 'vscode';
 import { CircuitEditorProvider } from './circuitEditorProvider.ts';
+import { registerCommands } from './commands.ts';
 import { registerDiagnostics } from './diagnostics.ts';
 import { ClassificationCache } from './documentModel.ts';
 
@@ -16,6 +17,7 @@ export function activate(context: vscode.ExtensionContext): void {
     context.subscriptions.push(
         output,
         vscode.workspace.onDidCloseTextDocument((document) => documents.forget(document)),
+        ...registerCommands(output),
         ...CircuitEditorProvider.register(context, documents, report),
         ...registerDiagnostics(documents),
     );
