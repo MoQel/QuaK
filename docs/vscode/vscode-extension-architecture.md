@@ -111,7 +111,9 @@ distinguish them.
 
 `editableByChoice` exists so that losslessness does not become a dead end. The opt-in is an
 action the user takes, never a side effect of a gate drop. It is currently a button in
-the webview notice and is remembered per document for the session.
+the webview notice and is remembered per document for as long as that document stays
+open — closing it ends the opt-in, so the notice is shown again rather than silently
+skipped.
 
 ---
 

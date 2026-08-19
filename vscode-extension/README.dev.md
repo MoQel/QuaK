@@ -68,8 +68,10 @@ the editor just stops updating. So nothing is left to throw:
   rejection would be invisible.
 - `ErrorBoundary` catches a render crash, puts a message in place of the editor and
   posts `webviewError` to the host.
+- `reportUncaughtErrors` catches what a boundary never sees — a failing event handler,
+  timer or promise — and posts the same message.
 
-All three report through the `QuaK` output channel created in `extension.ts` — a log,
+All of them report through the `QuaK` output channel created in `extension.ts` — a log,
 not a notification, because one broken document would otherwise raise a dialog per
 keystroke. Nothing is written to the document on any of these paths.
 

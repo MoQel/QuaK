@@ -16,7 +16,7 @@ export class CircuitEditorProvider implements vscode.CustomTextEditorProvider {
     public static readonly viewType = 'quak.circuitEditor';
 
     private readonly panels = new PanelRegistry<vscode.WebviewPanel>();
-    // Per-session opt-in for lossy editing of this document.
+    // Opt-in to lossy editing, per document and only while it stays open.
     private readonly editingEnabled = new Set<string>();
 
     private constructor(
@@ -38,6 +38,11 @@ export class CircuitEditorProvider implements vscode.CustomTextEditorProvider {
                 supportsMultipleEditorsPerDocument: true,
             }),
             vscode.workspace.onDidChangeTextDocument((event) => provider.broadcast(event.document)),
+            // Closing the file ends the opt-in: the user agreed to lose the comments in
+            // that document, once. Keeping it would silently skip the notice next time.
+            vscode.workspace.onDidCloseTextDocument((document) =>
+                provider.editingEnabled.delete(document.uri.toString()),
+            ),
         ];
     }
 
