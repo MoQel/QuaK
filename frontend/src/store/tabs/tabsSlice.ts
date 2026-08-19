@@ -236,9 +236,10 @@ export const tabsSlice = createSlice({
             const group = state.groups.find((g) => g.id === targetGroupId);
             if (!group) return;
 
+            const tab = action.payload.tab;
             const newTab: Tab = {
-                ...action.payload.tab,
-                language: getLanguageByExtension(action.payload.tab.title),
+                ...tab,
+                language: getLanguageByExtension(tab.title),
             };
 
             const exists = group.openTabs.find((t) => t.id === action.payload.tab.id);
