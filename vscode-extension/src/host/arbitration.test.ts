@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { DocumentClassification } from '@quak/qasm-transform';
+import type { DocumentClassification, QasmRejection } from '@quak/qasm-transform';
 import { applyOptIn, decideEdit, PanelRegistry } from './arbitration.ts';
 
 describe('decideEdit', () => {
@@ -64,7 +64,9 @@ describe('decideEdit', () => {
 });
 
 describe('applyOptIn', () => {
-    const comments = [{ line: 3, column: 0, construct: 'comment', message: 'would be lost' }];
+    const comments: QasmRejection[] = [
+        { line: 3, column: 0, construct: 'comment', message: 'would be lost', kind: 'unsupported' },
+    ];
 
     it('needs no opt-in for a document that regenerates losslessly', () => {
         expect(applyOptIn({ classification: { kind: 'editable' }, hasOptedIn: false })).toBe('editable');
@@ -82,7 +84,13 @@ describe('applyOptIn', () => {
 
     it.each<[string, DocumentClassification]>([
         ['an unsupported construct', { kind: 'unsupported', constructs: comments }],
-        ['a syntax error', { kind: 'invalid', syntaxErrors: [{ line: 1, column: 0, message: 'boom' }] }],
+        [
+            'a syntax error',
+            {
+                kind: 'invalid',
+                problems: [{ line: 1, column: 0, construct: 'syntax', message: 'boom', kind: 'invalid' }],
+            },
+        ],
         ['an OpenQASM 2 header', { kind: 'unsupportedVersion', version: '2.0' }],
         ['no register', { kind: 'noRegister' }],
         ['nothing at all', { kind: 'empty' }],

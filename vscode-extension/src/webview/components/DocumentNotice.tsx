@@ -63,9 +63,11 @@ const COPY: {
         offersOptIn: true,
     }),
 
-    invalid: ({ syntaxErrors }) => ({
-        headline: 'This file has syntax errors, so it cannot be shown as a circuit.',
-        detail: <Findings entries={syntaxErrors} />,
+    // Not only syntax: an undefined gate or register lands here too, and both mean the
+    // file is wrong rather than merely beyond this editor.
+    invalid: ({ problems }) => ({
+        headline: 'This file has errors, so it cannot be shown as a circuit.',
+        detail: <Findings entries={problems} />,
     }),
 };
 

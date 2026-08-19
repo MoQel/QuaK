@@ -12,7 +12,8 @@ export {
     toCircuit,
     type DocumentClassification,
     type QasmPreamble,
-    type QasmUnsupportedConstruct,
+    type QasmRejection,
+    type RejectionKind,
     type ToCircuitResult,
 } from './toCircuit.ts';
 export { formatAngle, toQasm } from './toQasm.ts';

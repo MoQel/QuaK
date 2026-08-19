@@ -44,13 +44,26 @@ describe('the visitor rejects what the matrix says it rejects', () => {
         expect(rejection?.message).toContain(unsupportedStatementRules().forStatement);
     });
 
-    it('rejects a gate the matrix omits, even when GATE_ARITY knows its shape', () => {
-        // Support is the matrix's call; arity alone is not enough.
+    it('keeps support a matrix decision, not an arity one', () => {
+        // DUMMY has a shape and is still not supported. It is also not OpenQASM, so this
+        // rule can only be stated here — no document can reach it through a gate call.
         expect(GATE_ARITY.DUMMY).toBeDefined();
+        expect(isGateSupported('DUMMY')).toBe(false);
+    });
 
-        const rejection = toCircuit('OPENQASM 3.0;\nqubit[1] q;\ndummy q[0];\n').unsupported;
-        expect(rejection).toHaveLength(1);
-        expect(rejection[0]).toMatchObject({ construct: 'DUMMY', message: "Unsupported gate 'dummy'." });
+    it('calls a real gate it cannot draw unsupported', () => {
+        // sdg is in stdgates.inc; that this editor has no shape for it is our limit.
+        const [rejection, ...rest] = toCircuit('OPENQASM 3.0;\nqubit[1] q;\nsdg q[0];\n').unsupported;
+
+        expect(rest).toEqual([]);
+        expect(rejection).toMatchObject({ kind: 'unsupported', message: "Unsupported gate 'sdg'." });
+    });
+
+    it('calls a name OpenQASM never declares invalid, which is a different thing to say', () => {
+        const [rejection, ...rest] = toCircuit('OPENQASM 3.0;\nqubit[1] q;\nfoo q[0];\n').unsupported;
+
+        expect(rest).toEqual([]);
+        expect(rejection).toMatchObject({ kind: 'invalid', message: "Unknown gate 'foo'." });
     });
 });
 

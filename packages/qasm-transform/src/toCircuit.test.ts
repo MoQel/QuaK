@@ -246,7 +246,7 @@ describe('classify — the reason a document cannot be edited', () => {
 
         expect(classification.kind).toBe('invalid');
         if (classification.kind !== 'invalid') throw new Error('unreachable');
-        expect(classification.syntaxErrors.length).toBeGreaterThan(0);
+        expect(classification.problems.length).toBeGreaterThan(0);
     });
 
     it('names the version instead of every rejection it causes', () => {

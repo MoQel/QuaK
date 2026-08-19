@@ -4,7 +4,7 @@ import {
     toCircuit,
     type DocumentClassification,
     type QasmPreamble,
-    type QasmUnsupportedConstruct,
+    type QasmRejection,
 } from '@quak/qasm-transform';
 import type { DocumentState } from '../shared/protocol.ts';
 
@@ -112,16 +112,10 @@ export class ClassificationCache {
  */
 export function diagnosticsFor(classification: DocumentClassification): DocumentDiagnostic[] {
     switch (classification.kind) {
-        // Nobody else reports these: the bundled language server lints a lenient parse
-        // and stays silent on a missing bracket. Measured, not assumed.
+        // The document is wrong: a syntax error, or something no OpenQASM tool would
+        // accept. Errors, because that is what they are.
         case 'invalid':
-            return classification.syntaxErrors.map((error) => ({
-                line: error.line,
-                column: error.column,
-                construct: 'syntax',
-                message: error.message,
-                severity: 'error',
-            }));
+            return classification.problems.map((entry) => toDiagnostic(entry, 'error'));
 
         // Valid OpenQASM this editor cannot write back — informational, not a defect.
         case 'unsupported':
@@ -146,7 +140,7 @@ export const positionOf = (entry: DocumentDiagnostic): { line: number; column: n
     column: Math.max(0, entry.column),
 });
 
-const toDiagnostic = (entry: QasmUnsupportedConstruct, severity: DiagnosticSeverity): DocumentDiagnostic => ({
+const toDiagnostic = (entry: QasmRejection, severity: DiagnosticSeverity): DocumentDiagnostic => ({
     line: entry.line,
     column: entry.column,
     construct: entry.construct,

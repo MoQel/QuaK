@@ -1,6 +1,7 @@
 import {
     GATE_ARITY,
     isGateSupported,
+    isStandardGate,
     toOperationIdentifier,
     unsupportedStatementRules,
     type CircuitContent,
@@ -22,12 +23,22 @@ import {
     GateOperandListContext,
 } from './generated/OpenQASM3Parser.js';
 
-export interface QasmUnsupportedConstruct {
+/**
+ * Why the transform refused something — two different things to tell a user.
+ *
+ * `invalid` means the document is wrong and no OpenQASM tool would accept it.
+ * `unsupported` means the document is fine and this editor cannot write it back.
+ * Reporting the first as the second is what made a typo read as a missing feature.
+ */
+export type RejectionKind = 'invalid' | 'unsupported';
+
+export interface QasmRejection {
     line: number;
     column: number;
     /** Grammar rule or gate name, for the support matrix. */
     construct: string;
     message: string;
+    kind: RejectionKind;
 }
 
 /**
@@ -53,16 +64,16 @@ export interface ToCircuitResult {
     content: CircuitContent | null;
     preamble: QasmPreamble;
     syntaxErrors: QasmSyntaxError[];
-    unsupported: QasmUnsupportedConstruct[];
+    unsupported: QasmRejection[];
 }
 
 /** Why a document is, or is not, editable through the circuit view. */
 export type DocumentClassification =
     | { kind: 'editable' }
-    | { kind: 'invalid'; syntaxErrors: QasmSyntaxError[] }
+    | { kind: 'invalid'; problems: QasmRejection[] }
     | { kind: 'unsupportedVersion'; version: string }
-    | { kind: 'unsupported'; constructs: QasmUnsupportedConstruct[] }
-    | { kind: 'commentsOnly'; comments: QasmUnsupportedConstruct[] }
+    | { kind: 'unsupported'; constructs: QasmRejection[] }
+    | { kind: 'commentsOnly'; comments: QasmRejection[] }
     | { kind: 'empty' }
     | { kind: 'noRegister' };
 
@@ -72,7 +83,10 @@ const SUPPORTED_MAJOR_VERSION = '3';
 const majorVersion = (version: string): string => version.split('.')[0];
 
 /** Comments are the one rejection a user can knowingly accept, so they stand apart. */
-const isComment = (entry: QasmUnsupportedConstruct): boolean => entry.construct === 'comment';
+const isComment = (entry: QasmRejection): boolean => entry.construct === 'comment';
+
+/** A syntax error is a rejection too; carrying one shape keeps the notice and the diagnostics simple. */
+const asRejection = (error: QasmSyntaxError): QasmRejection => ({ ...error, construct: 'syntax', kind: 'invalid' });
 
 /**
  * Names the single most useful reason a document cannot be edited visually.
@@ -82,7 +96,9 @@ const isComment = (entry: QasmUnsupportedConstruct): boolean => entry.construct 
  */
 export function classify(result: ToCircuitResult): DocumentClassification {
     if (result.syntaxErrors.length > 0) {
-        return { kind: 'invalid', syntaxErrors: result.syntaxErrors };
+        // On their own: the visitor walks past a broken parse tree and rejects fragments
+        // that were never real statements, which next to the actual error is noise.
+        return { kind: 'invalid', problems: result.syntaxErrors.map(asRejection) };
     }
 
     const { version, includes, headerComments } = result.preamble;
@@ -91,9 +107,16 @@ export function classify(result: ToCircuitResult): DocumentClassification {
     }
 
     // Ahead of the register checks: `qreg q[2];` does declare one, just not readably.
-    const constructs = result.unsupported.filter((entry) => !isComment(entry));
+    // Also ahead of the errors below, because a statement we walked past is exactly what
+    // makes a later reference to it look undefined.
+    const constructs = result.unsupported.filter((entry) => entry.kind === 'unsupported' && !isComment(entry));
     if (constructs.length > 0) {
         return { kind: 'unsupported', constructs };
+    }
+
+    const problems = result.unsupported.filter((entry) => entry.kind === 'invalid');
+    if (problems.length > 0) {
+        return { kind: 'invalid', problems };
     }
 
     if (result.content === null) {
@@ -115,23 +138,36 @@ export const isEditable = (result: ToCircuitResult): boolean => classify(result)
 
 const UNSUPPORTED_STATEMENTS = unsupportedStatementRules();
 
+type SourcePosition = { start: { line: number; column: number } | null };
+
 class CircuitBuilder {
     // Classical registers are rejected because CircuitContent carries only qubits.
     readonly registers: QuantumRegisterResponse[] = [];
     readonly layers: LayerResponse[] = [];
-    readonly unsupported: QasmUnsupportedConstruct[] = [];
+    readonly unsupported: QasmRejection[] = [];
     readonly includes: string[] = [];
 
     registerByName(name: string): QuantumRegisterResponse | undefined {
         return this.registers.find((register) => register.name === name);
     }
 
-    reject(ctx: { start: { line: number; column: number } | null }, construct: string, message: string): void {
+    /** Valid OpenQASM this editor cannot write back. */
+    reject(ctx: SourcePosition, construct: string, message: string): void {
+        this.push(ctx, construct, message, 'unsupported');
+    }
+
+    /** OpenQASM that is wrong, whatever tool reads it. */
+    invalid(ctx: SourcePosition, construct: string, message: string): void {
+        this.push(ctx, construct, message, 'invalid');
+    }
+
+    private push(ctx: SourcePosition, construct: string, message: string, kind: RejectionKind): void {
         this.unsupported.push({
             line: ctx.start?.line ?? 0,
             column: ctx.start?.column ?? 0,
             construct,
             message,
+            kind,
         });
     }
 }
@@ -163,12 +199,11 @@ export function toCircuit(source: string): ToCircuitResult {
             continue;
         }
 
-        builder.unsupported.push({
-            line: comment.line,
-            column: comment.column,
-            construct: 'comment',
-            message: 'Comments below the header would be lost when the circuit is written back.',
-        });
+        builder.reject(
+            { start: { line: comment.line, column: comment.column } },
+            'comment',
+            'Comments below the header would be lost when the circuit is written back.',
+        );
     }
 
     for (const statementOrScope of tree.statementOrScope()) {
@@ -238,7 +273,7 @@ function visitQuantumDeclaration(ctx: QuantumDeclarationStatementContext, builde
 
     // Duplicate declarations would make earlier gate indices ambiguous.
     if (builder.registerByName(name)) {
-        builder.reject(ctx, 'quantumDeclarationStatement', `Qubit register '${name}' is declared more than once.`);
+        builder.invalid(ctx, 'quantumDeclarationStatement', `Qubit register '${name}' is declared more than once.`);
         return;
     }
 
@@ -270,7 +305,7 @@ function visitGateCall(ctx: GateCallStatementContext, builder: CircuitBuilder): 
 
     const { controlSize, targetSize, type, hasRotationAngle } = GATE_ARITY[identifier];
     if (operands.length !== controlSize + targetSize) {
-        builder.reject(
+        builder.invalid(
             ctx,
             identifier,
             `Gate '${gateName}' expects ${controlSize + targetSize} qubit(s) but got ${operands.length}.`,
@@ -286,12 +321,12 @@ function visitGateCall(ctx: GateCallStatementContext, builder: CircuitBuilder): 
     const angleExpressions = ctx.expressionList()?.expression() ?? [];
     if (angleExpressions.length > 0) {
         if (!hasRotationAngle) {
-            builder.reject(ctx, identifier, `Gate '${gateName}' does not take a parameter.`);
+            builder.invalid(ctx, identifier, `Gate '${gateName}' does not take a parameter.`);
             return;
         }
         // Reading only the first parameter would lose the rest on write.
         if (angleExpressions.length > 1) {
-            builder.reject(
+            builder.invalid(
                 ctx,
                 identifier,
                 `Gate '${gateName}' takes one parameter but got ${angleExpressions.length}.`,
@@ -340,6 +375,14 @@ function resolveSupportedGate(
     ctx: GateCallStatementContext,
     builder: CircuitBuilder,
 ): OperationIdentifier | undefined {
+    // A name OpenQASM never declares is a defect in the document, not a gap in this
+    // editor — and gate definitions of their own already make a document unsupported,
+    // so nothing else could have introduced it.
+    if (!isStandardGate(gateName)) {
+        builder.invalid(ctx, 'gateCallStatement', `Unknown gate '${gateName}'.`);
+        return undefined;
+    }
+
     const identifier = toOperationIdentifier(gateName);
     // Support is explicit. Arity alone does not make a gate call round-trippable.
     if (!identifier || !isGateSupported(identifier)) {
@@ -376,7 +419,7 @@ function parseOperand(operand: GateOperandContext, builder: CircuitBuilder): Ele
     const registerName = indexed.Identifier().getText();
     const register = builder.registerByName(registerName);
     if (!register) {
-        builder.reject(operand, 'gateOperand', `Gate references unknown qubit register '${registerName}'.`);
+        builder.invalid(operand, 'gateOperand', `Gate references unknown qubit register '${registerName}'.`);
         return null;
     }
     const size = register.numberOfQubits;
@@ -416,7 +459,7 @@ function parseOperand(operand: GateOperandContext, builder: CircuitBuilder): Ele
 
     // Out-of-range gates would be invisible in the editor.
     if (index < 0 || index >= size) {
-        builder.reject(
+        builder.invalid(
             operand,
             'indexOperator',
             `Qubit index ${index} is outside register '${registerName}' (size ${size}).`,

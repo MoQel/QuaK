@@ -38,6 +38,58 @@ const SUPPORTED_GATES: readonly OperationIdentifier[] = [
     'RZ',
 ];
 
+/**
+ * Every gate `stdgates.inc` defines, plus the two language builtins.
+ *
+ * Not a list of what we support — that is SUPPORTED_GATES. This one separates "a real
+ * gate this editor cannot draw" from "a name that exists nowhere", which are different
+ * things to tell a user. It is sound because gate definitions of their own make a
+ * document unsupported anyway, so in a file we would otherwise accept, every gate call
+ * has to resolve to one of these.
+ */
+const STANDARD_GATE_NAMES: ReadonlySet<string> = new Set([
+    // stdgates.inc
+    'p',
+    'x',
+    'y',
+    'z',
+    'h',
+    's',
+    'sdg',
+    't',
+    'tdg',
+    'sx',
+    'rx',
+    'ry',
+    'rz',
+    'cx',
+    'cy',
+    'cz',
+    'cp',
+    'crx',
+    'cry',
+    'crz',
+    'ch',
+    'swap',
+    'ccx',
+    'cswap',
+    'cu',
+    // OpenQASM 2 compatibility, also declared by stdgates.inc
+    'CX',
+    'phase',
+    'cphase',
+    'id',
+    'u1',
+    'u2',
+    'u3',
+    // Language builtins, available without an include
+    'U',
+    'gphase',
+]);
+
+/** Whether OpenQASM defines this gate at all. */
+export const isStandardGate = (name: string): boolean => STANDARD_GATE_NAMES.has(name);
+
 // Statement rules the circuit model cannot represent. Values are user-facing reasons.
 const UNSUPPORTED_STATEMENT_RULES: Readonly<Record<string, string>> = {
     aliasDeclarationStatement: 'aliases',
