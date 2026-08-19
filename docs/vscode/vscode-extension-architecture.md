@@ -175,16 +175,10 @@ the vsix.
 
 ## Language features
 
-QuaK contributes the circuit editor and nothing else. Syntax highlighting, formatting
-and diagnostics come from a separate OpenQASM extension: `orangekame3.vscode-qasm` is
-listed in `extensionPack`, so it is installed alongside QuaK but managed independently —
-activation does not depend on it, and users who prefer another extension can uninstall
-it.
-
-This was chosen over bundling our own language server (a per-platform binary matrix for
-v1) and over a hard `extensionDependencies` (no sufficiently mature target). It is
-reversible, and it is under review: the bundled server in the current release crashes on
-any deletion, and the transform already knows more about the document than it surfaces.
+QuaK contributes a TextMate grammar and a language configuration, which covers
+highlighting, comment toggling and bracket matching for `.qasm` files. On top of
+that it publishes its own diagnostics — what the circuit editor cannot write back —
+so a file explains itself in the Problems panel without the circuit view being open.
 
 ---
 

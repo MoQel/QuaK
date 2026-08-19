@@ -45,13 +45,13 @@ export function registerDiagnostics(): vscode.Disposable[] {
 
 /**
  * Change events arrive for git diffs, output channels and settings too. Matches what
- * the custom editor claims; `languageId` alone would not, since a .qasm file is plain
- * text without a QASM language extension installed.
+ * the custom editor claims; `languageId` alone would not, since another extension
+ * claiming .qasm takes the association and leaves ours unused.
  */
 function isQasmDocument(document: vscode.TextDocument): boolean {
     if (document.uri.scheme !== 'file' && document.uri.scheme !== 'untitled') return false;
 
-    return document.uri.path.endsWith('.qasm') || document.languageId === 'qasm';
+    return document.uri.path.endsWith('.qasm') || document.languageId === 'openqasm';
 }
 
 function toVscodeDiagnostic(entry: DocumentDiagnostic, document: vscode.TextDocument): vscode.Diagnostic {

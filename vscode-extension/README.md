@@ -14,8 +14,7 @@ source control and side-by-side text editing continue to work through VS Code.
   **Open With...**.
 - Multiple circuit editor panels can be opened for the same document.
 - Circuit editor webview follows the active VS Code light or dark theme.
-- Ships as an extension pack with an OpenQASM language extension for syntax and
-  language features.
+- Syntax highlighting, comment toggling and bracket matching for `.qasm` files.
 
 ## Current Preview State
 
@@ -26,15 +25,10 @@ read-only with an explanation.
 
 ## Language Support
 
-QuaK contributes the circuit editor only. OpenQASM language features such as
-syntax highlighting, formatting and diagnostics come from a separate OpenQASM
-language extension.
-
-QuaK includes
-[`orangekame3.vscode-qasm`](https://marketplace.visualstudio.com/items?itemName=orangekame3.vscode-qasm)
-as an extension pack entry. It is installed alongside QuaK, but it is managed
-independently and can be uninstalled without affecting the circuit editor. If you
-prefer another OpenQASM extension, you can keep using that instead.
+QuaK registers `.qasm` as the `openqasm` language and brings syntax highlighting,
+comment toggling and bracket matching with it. It also reports what the circuit
+editor cannot write back, so a file explains itself in the Problems panel without
+the circuit view being open.
 
 ## Usage
 

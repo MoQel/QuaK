@@ -83,6 +83,14 @@ suite('QuaK circuit editor', () => {
         assert.equal(vscode.window.activeTextEditor?.document.uri.toString(), uri.toString());
     });
 
+    test('claims .qasm as OpenQASM, so highlighting needs no second extension', async () => {
+        const uri = writeQasm('language.qasm');
+
+        const document = await vscode.workspace.openTextDocument(uri);
+
+        assert.equal(document.languageId, 'openqasm');
+    });
+
     test('supports several circuit editors on one document', async () => {
         const uri = writeQasm('multi.qasm');
 

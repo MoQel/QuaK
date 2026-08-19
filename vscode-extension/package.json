@@ -29,11 +29,8 @@
     "extensionKind": [
         "workspace"
     ],
-    "extensionPack": [
-        "orangekame3.vscode-qasm"
-    ],
     "activationEvents": [
-        "onLanguage:qasm",
+        "onLanguage:openqasm",
         "workspaceContains:**/*.qasm"
     ],
     "main": "./dist/extension.cjs",
@@ -43,6 +40,27 @@
         }
     },
     "contributes": {
+        "languages": [
+            {
+                "id": "openqasm",
+                "aliases": [
+                    "OpenQASM",
+                    "openqasm",
+                    "QASM"
+                ],
+                "extensions": [
+                    ".qasm"
+                ],
+                "configuration": "./language-configuration.json"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "openqasm",
+                "scopeName": "source.openqasm",
+                "path": "./syntaxes/openqasm.tmLanguage.json"
+            }
+        ],
         "customEditors": [
             {
                 "viewType": "quak.circuitEditor",

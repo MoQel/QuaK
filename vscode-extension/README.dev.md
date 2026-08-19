@@ -41,6 +41,11 @@ src/
 Keep host-only code out of `webview/`: it must not import `vscode`. Keep React
 and DOM code inside `webview/`.
 
+`syntaxes/openqasm.tmLanguage.json` and `language-configuration.json` are vendored
+from microsoft/qsharp under MIT, recorded in `THIRD-PARTY-NOTICES.txt`. Keep the
+grammar byte-identical to upstream apart from its attribution block, so refreshing
+it stays a plain diff.
+
 ## Edit Flow
 
 1. VSCode opens a `.qasm` file with `CircuitEditorProvider`.
