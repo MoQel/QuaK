@@ -44,6 +44,13 @@ describe('wordAt — which word', () => {
     it('reads on again after a block comment ends', () => {
         expect(at('/* off */ |h q[0];')?.role).toBe('gate');
     });
+
+    it.each([
+        ['a half-typed include', 'OPENQASM 3.0;\ninclude "stdgates.inc;\nqubit[2] q;\n|h q[0];'],
+        ['a stray apostrophe', "qubit[2] q;\nx' ;\n|h q[0];"],
+    ])('reads on past %s, because a quote with no partner on its line opens nothing', (_case, source) => {
+        expect(at(source)?.role).toBe('gate');
+    });
 });
 
 describe('wordAt — which role', () => {
@@ -70,8 +77,6 @@ describe('wordAt — which role', () => {
     });
 
     it('does not let a comment between statements pass for the statement itself', () => {
-        // Without skipping the comment, "draw" would be the first identifier and `h`
-        // would read as an operand.
         expect(at('qubit[2] q;\n// draw a hadamard\n|h q[0];')?.role).toBe('gate');
     });
 });

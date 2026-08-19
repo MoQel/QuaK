@@ -22,7 +22,11 @@ describe('hoverFor — gates', () => {
     });
 
     it('says which operands a controlled gate takes, because OpenQASM writes controls first', () => {
-        expect(hover('cx', 'gate')).toContain('2 qubits: 1 control');
+        expect(hover('cx', 'gate')).toContain('2 qubits: 1 control and 1 target');
+    });
+
+    it('separates the blocks by a blank line, or Markdown runs them into one', () => {
+        expect(hover('h', 'gate')).toMatch(/^\*\*Hadamard\*\* — `h`\n\nCreates/);
     });
 
     it('names the angle a rotation gate carries', () => {
@@ -37,9 +41,7 @@ describe('hoverFor — gates', () => {
     });
 
     it('separates a gate this editor cannot draw from one that does not exist', () => {
-        // Same order resolveSupportedGate decides in, so the hover cannot contradict
-        // the diagnostic on the same line.
-        expect(hover('sdg', 'gate')).toContain('stays read-only');
+        expect(hover('sdg', 'gate')).toContain('read-only');
         expect(hover('foo', 'gate')).toBeNull();
     });
 
@@ -64,8 +66,6 @@ describe('hoverFor — registers', () => {
     });
 
     it('says nothing about a name no declaration introduced', () => {
-        // Undefined registers already carry a diagnostic; a second guess next to it
-        // would only contradict it.
         expect(hover('nope', 'register')).toBeNull();
     });
 

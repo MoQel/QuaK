@@ -14,7 +14,14 @@ import * as vscode from 'vscode';
 const EXTENSION_ID = 'quak.quak-vscode';
 const VIEW_TYPE = 'quak.circuitEditor';
 const SOURCE = 'QuaK';
-const DIAGNOSTICS_ENABLED = 'quak.diagnostics.enable';
+const DIAGNOSTICS_ERRORS = 'quak.diagnostics.errors';
+const DIAGNOSTICS_SYNC_SUPPORT = 'quak.diagnostics.syncSupport';
+
+async function resetDiagnosticSettings(): Promise<void> {
+    for (const setting of [DIAGNOSTICS_ERRORS, DIAGNOSTICS_SYNC_SUPPORT]) {
+        await vscode.workspace.getConfiguration().update(setting, undefined, vscode.ConfigurationTarget.Global);
+    }
+}
 const SAMPLE = 'OPENQASM 3.0;\ninclude "stdgates.inc";\n\nqubit[2] q;\n\nh q[0];\ncx q[0], q[1];\n';
 
 let tempDir: string | undefined;
@@ -41,6 +48,11 @@ function changeTo(document: vscode.TextDocument, text: string): Promise<void> {
         });
     });
 }
+
+// Without this every run leaves a quak-test-* directory behind in the OS temp directory.
+suiteTeardown(() => {
+    if (tempDir) fs.rmSync(tempDir, { recursive: true, force: true });
+});
 
 const openTabs = (): number => vscode.window.tabGroups.all.reduce((count, group) => count + group.tabs.length, 0);
 
@@ -245,16 +257,16 @@ suite('QuaK diagnostics', () => {
     suiteSetup(async () => {
         // Publishing starts at activation, so do not rely on another suite for it.
         await vscode.extensions.getExtension(EXTENSION_ID)?.activate();
+        // A run that never reached its teardown leaves the settings in the test
+        // instance's user data, so start from a known state.
+        await resetDiagnosticSettings();
     });
 
     teardown(async () => {
         await closeAllEditors();
-        // Here rather than in the test that changes it: a test that times out never
-        // reaches its own cleanup, and this setting is written to the test instance's
-        // user data, where it would silently disable diagnostics for every later run.
-        await vscode.workspace
-            .getConfiguration()
-            .update(DIAGNOSTICS_ENABLED, undefined, vscode.ConfigurationTarget.Global);
+        // Here rather than in the test that changes it: a timeout skips a test's own
+        // cleanup.
+        await resetDiagnosticSettings();
     });
 
     test('reports an unsupported construct on the line it sits on', async () => {
@@ -282,15 +294,36 @@ suite('QuaK diagnostics', () => {
         assert.ok(!diagnostic.range.isEmpty, 'expected a range wide enough to show');
     });
 
-    test('says nothing while the setting is off, and takes back what it already said', async () => {
-        const uri = writeQasm('disabled.qasm', UNSUPPORTED);
+    const CATEGORIES = [
+        { name: 'sync-support', setting: DIAGNOSTICS_SYNC_SUPPORT, source: UNSUPPORTED },
+        { name: 'error', setting: DIAGNOSTICS_ERRORS, source: MISSING_SEMICOLON },
+    ];
+
+    for (const { name, setting, source } of CATEGORIES) {
+        test(`takes back what it said once ${name} reporting is off`, async () => {
+            const uri = writeQasm(`disabled-${name}.qasm`, source);
+            await vscode.workspace.openTextDocument(uri);
+            await waitForDiagnostics(uri, (found) => found.length > 0);
+
+            await vscode.workspace.getConfiguration().update(setting, false, vscode.ConfigurationTarget.Global);
+
+            // Resolving at all is the assertion; teardown puts the settings back.
+            await waitForDiagnostics(uri, (found) => found.length === 0);
+        });
+    }
+
+    test('still reports an error while sync-support reporting is off', async () => {
+        // Switched off before the file is opened, so the findings appearing is the event
+        // waited for rather than a state that was already there.
+        await vscode.workspace
+            .getConfiguration()
+            .update(DIAGNOSTICS_SYNC_SUPPORT, false, vscode.ConfigurationTarget.Global);
+        const uri = writeQasm('errors-only.qasm', MISSING_SEMICOLON);
+
         await vscode.workspace.openTextDocument(uri);
-        await waitForDiagnostics(uri, (found) => found.length > 0);
 
-        await vscode.workspace.getConfiguration().update(DIAGNOSTICS_ENABLED, false, vscode.ConfigurationTarget.Global);
-
-        // Resolving at all is the assertion; teardown puts the setting back.
-        await waitForDiagnostics(uri, (found) => found.length === 0);
+        const [diagnostic] = await waitForDiagnostics(uri, (found) => found.length > 0);
+        assert.equal(diagnostic.severity, vscode.DiagnosticSeverity.Error);
     });
 
     test('takes the finding back once the document is fixed', async () => {
@@ -310,10 +343,12 @@ suite('QuaK diagnostics', () => {
     // that waits on a timer nobody controls — it timed out at 20s when tried.
 });
 
-// Hover is registered on the language, which no unit test can reach: whether the
-// provider is wired up at all, and whether it answers for the word under the cursor.
-// What it says is asserted in hoverModel.test.ts instead.
-const LANGUAGE_FEATURES_ENABLED = 'quak.languageFeatures.enable';
+// Only what a unit test cannot reach: that the provider is registered and answers for
+// the word under the cursor. What it says is asserted in hoverModel.test.ts.
+const HOVER_ENABLED = 'quak.hover.enabled';
+
+const resetHoverSetting = (): Thenable<void> =>
+    vscode.workspace.getConfiguration().update(HOVER_ENABLED, undefined, vscode.ConfigurationTarget.Global);
 
 /** SAMPLE line 5 is `h q[0];` — column 0 is the gate, column 2 the register. */
 async function hoverAt(uri: vscode.Uri, line: number, character: number): Promise<string[]> {
@@ -329,15 +364,13 @@ async function hoverAt(uri: vscode.Uri, line: number, character: number): Promis
 suite('QuaK hover', () => {
     suiteSetup(async () => {
         await vscode.extensions.getExtension(EXTENSION_ID)?.activate();
+        // Same reason as the diagnostics suite.
+        await resetHoverSetting();
     });
 
     teardown(async () => {
         await closeAllEditors();
-        // In teardown, not in the test that changes it: a timeout skips a test's own
-        // cleanup and the setting persists into the whole rest of the run.
-        await vscode.workspace
-            .getConfiguration()
-            .update(LANGUAGE_FEATURES_ENABLED, undefined, vscode.ConfigurationTarget.Global);
+        await resetHoverSetting();
     });
 
     test('explains the gate under the cursor', async () => {
@@ -374,9 +407,7 @@ suite('QuaK hover', () => {
     test('says nothing while the setting is off', async () => {
         const uri = writeQasm('hover-disabled.qasm');
         await vscode.workspace.openTextDocument(uri);
-        await vscode.workspace
-            .getConfiguration()
-            .update(LANGUAGE_FEATURES_ENABLED, false, vscode.ConfigurationTarget.Global);
+        await vscode.workspace.getConfiguration().update(HOVER_ENABLED, false, vscode.ConfigurationTarget.Global);
 
         assert.deepEqual(await hoverAt(uri, 5, 0), []);
     });

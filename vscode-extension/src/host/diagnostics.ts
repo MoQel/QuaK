@@ -4,13 +4,16 @@ import * as vscode from 'vscode';
 import {
     diagnosticsFor,
     positionOf,
+    reportsAnything,
     type ClassificationCache,
+    type DiagnosticCategories,
     type DiagnosticSeverity,
     type DocumentDiagnostic,
 } from './documentModel.ts';
+import { isQasmDocument } from './qasmDocument.ts';
 
 const SOURCE = 'QuaK';
-const ENABLED = 'quak.diagnostics.enable';
+const SECTION = 'quak.diagnostics';
 
 const SEVERITY: Record<DiagnosticSeverity, vscode.DiagnosticSeverity> = {
     error: vscode.DiagnosticSeverity.Error,
@@ -22,22 +25,31 @@ const SEVERITY: Record<DiagnosticSeverity, vscode.DiagnosticSeverity> = {
 export function registerDiagnostics(documents: ClassificationCache): vscode.Disposable[] {
     const collection = vscode.languages.createDiagnosticCollection('quak');
 
-    // Read per refresh rather than cached: the setting can be changed per workspace.
-    const isEnabled = (): boolean => vscode.workspace.getConfiguration().get<boolean>(ENABLED, true);
+    // Read per refresh rather than cached: the settings can be changed per workspace.
+    const categories = (): DiagnosticCategories => {
+        const settings = vscode.workspace.getConfiguration(SECTION);
+
+        return { errors: settings.get('errors', true), syncSupport: settings.get('syncSupport', true) };
+    };
 
     const refresh = (document: vscode.TextDocument): void => {
+        // Change events arrive for git diffs, output channels and settings too.
         if (!isQasmDocument(document)) return;
 
-        // Setting an empty list rather than skipping: turning the setting off has to take
-        // the existing findings with it.
-        collection.set(document.uri, isEnabled() ? findingsIn(document) : []);
+        // Setting the result rather than skipping: a category switched off has to take
+        // its existing findings with it.
+        collection.set(document.uri, findingsIn(document));
     };
 
     const findingsIn = (document: vscode.TextDocument): vscode.Diagnostic[] => {
+        const wanted = categories();
+        // Ahead of the parse, so nothing is parsed only to be discarded.
+        if (!reportsAnything(wanted)) return [];
+
         // Nothing to report about a document that could not be analysed; the reason is
         // in the log, and stale squiggles would be worse than none.
         const classified = documents.of(document);
-        const findings = classified ? diagnosticsFor(classified.classification) : [];
+        const findings = classified ? diagnosticsFor(classified.classification, wanted) : [];
 
         return findings.map((entry) => toVscodeDiagnostic(entry, document));
     };
@@ -54,22 +66,11 @@ export function registerDiagnostics(documents: ClassificationCache): vscode.Disp
         vscode.workspace.onDidOpenTextDocument(refresh),
         vscode.workspace.onDidChangeTextDocument((event) => refresh(event.document)),
         vscode.workspace.onDidChangeConfiguration((event) => {
-            if (event.affectsConfiguration(ENABLED)) refreshAll();
+            if (event.affectsConfiguration(SECTION)) refreshAll();
         }),
         // Without this the findings outlive the file in the Problems panel.
         vscode.workspace.onDidCloseTextDocument((document) => collection.delete(document.uri)),
     ];
-}
-
-/**
- * Change events arrive for git diffs, output channels and settings too. Matches what
- * the custom editor claims; `languageId` alone would not, since another extension
- * claiming .qasm takes the association and leaves ours unused.
- */
-function isQasmDocument(document: vscode.TextDocument): boolean {
-    if (document.uri.scheme !== 'file' && document.uri.scheme !== 'untitled') return false;
-
-    return document.uri.path.endsWith('.qasm') || document.languageId === 'openqasm';
 }
 
 function toVscodeDiagnostic(entry: DocumentDiagnostic, document: vscode.TextDocument): vscode.Diagnostic {

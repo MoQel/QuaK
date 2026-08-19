@@ -105,25 +105,35 @@ export class ClassificationCache {
     }
 }
 
+export interface DiagnosticCategories {
+    errors: boolean;
+    syncSupport: boolean;
+}
+
+/** Nothing switched on means nothing to parse for. */
+export const reportsAnything = (categories: DiagnosticCategories): boolean =>
+    categories.errors || categories.syncSupport;
+
 /**
  * The lines worth marking — never simply everything the transform rejected. A cause
  * such as the file's version already accounts for the rejections under it, and next
  * to the real finding they bury it.
  */
-export function diagnosticsFor(classification: DocumentClassification): DocumentDiagnostic[] {
+export function diagnosticsFor(
+    classification: DocumentClassification,
+    categories: DiagnosticCategories,
+): DocumentDiagnostic[] {
     switch (classification.kind) {
-        // The document is wrong: a syntax error, or something no OpenQASM tool would
-        // accept. Errors, because that is what they are.
         case 'invalid':
-            return classification.problems.map((entry) => toDiagnostic(entry, 'error'));
+            return categories.errors ? classification.problems.map((entry) => toDiagnostic(entry, 'error')) : [];
 
         // Valid OpenQASM this editor cannot write back — informational, not a defect.
         case 'unsupported':
-            return classification.constructs.map((entry) => toDiagnostic(entry, 'info'));
+            return categories.syncSupport ? classification.constructs.map((entry) => toDiagnostic(entry, 'info')) : [];
 
         // Which comments block visual editing, so the opt-in is an informed choice.
         case 'commentsOnly':
-            return classification.comments.map((entry) => toDiagnostic(entry, 'hint'));
+            return categories.syncSupport ? classification.comments.map((entry) => toDiagnostic(entry, 'hint')) : [];
 
         // Facts about the whole document; the notice states them, no line to underline.
         case 'unsupportedVersion':

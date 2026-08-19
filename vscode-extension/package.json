@@ -131,6 +131,10 @@
                 {
                     "command": "quak.showSource",
                     "when": "activeCustomEditorId == 'quak.circuitEditor'"
+                },
+                {
+                    "command": "quak.showLog",
+                    "when": "resourceExtname == .qasm"
                 }
             ]
         },
@@ -151,15 +155,20 @@
         "configuration": {
             "title": "QuaK",
             "properties": {
-                "quak.diagnostics.enable": {
+                "quak.diagnostics.errors": {
                     "type": "boolean",
                     "default": true,
-                    "description": "Report OpenQASM constructs the circuit editor cannot write back in the Problems panel. Turn this off if another OpenQASM extension already reports what you need."
+                    "description": "Show diagnostics for errors in OpenQASM code."
                 },
-                "quak.languageFeatures.enable": {
+                "quak.diagnostics.syncSupport": {
                     "type": "boolean",
                     "default": true,
-                    "description": "Explain gates and qubit registers on hover, from the same gate library the circuit editor draws from."
+                    "description": "Show diagnostics for code that cannot be synced with the circuit editor."
+                },
+                "quak.hover.enabled": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Show information about gates and qubit registers on hover."
                 }
             }
         }

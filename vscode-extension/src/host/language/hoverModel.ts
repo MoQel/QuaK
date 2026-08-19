@@ -23,63 +23,54 @@ export function hoverFor(word: QasmWord, registers: readonly RegisterResponse[])
     }
 }
 
-/**
- * Decides in the order `resolveSupportedGate` does: unknown name, gate this editor
- * cannot draw, supported gate. Keeps the hover from contradicting the diagnostic on
- * the same line.
- */
+/** Decides in the order `resolveSupportedGate` does, so a hover cannot contradict the diagnostic below it. */
 function gateHover(name: string): string | null {
     if (!isStandardGate(name)) return null;
 
     const identifier = toOperationIdentifier(name);
     const definition = operationById(name.toLowerCase());
     if (!identifier || !isGateSupported(identifier)) {
-        return [
+        return paragraphs(
             definition ? `\`${name}\` — ${definition.name}` : `\`${name}\``,
-            '',
             definition?.description ?? 'A gate the OpenQASM standard library defines.',
-            '',
-            'The circuit editor cannot draw it, so a file using it stays read-only.',
-        ].join('\n');
+            'QuaK cannot draw this gate, so a file using it opens read-only in the circuit view.',
+        );
     }
 
     const arity = GATE_ARITY[identifier];
     const angle = definition?.parameters?.length ? `(${definition.parameters.join(', ')})` : '';
 
-    return [
+    return paragraphs(
         `**${definition?.name ?? name}** — \`${name}${angle}\``,
-        '',
-        definition?.description ?? '',
-        '',
-        operandLine(arity.totalSize, arity.controlSize),
+        definition?.description,
+        operandLine(arity.controlSize, arity.targetSize),
         matrixBlock(definition?.inspectorInfo.matrix),
-    ]
-        .filter((part) => part !== '')
-        .join('\n');
+    );
 }
 
-/** OpenQASM writes controls first, so their number is what makes an operand list readable. */
-function operandLine(total: number, controls: number): string {
-    const qubits = `${total} ${total === 1 ? 'qubit' : 'qubits'}`;
-    if (controls === 0) return `Acts on ${qubits}.`;
+/** A blank line between blocks; without it Markdown runs them into one line. */
+const paragraphs = (...blocks: (string | undefined)[]): string => blocks.filter(Boolean).join('\n\n');
 
-    return `Acts on ${qubits}: ${controls} control${controls === 1 ? '' : 's'}, then the target.`;
+/** OpenQASM writes controls before targets. */
+function operandLine(controls: number, targets: number): string {
+    const total = plural(controls + targets, 'qubit');
+    if (controls === 0) return `Acts on ${total}.`;
+
+    return `Acts on ${total}: ${plural(controls, 'control')} and ${plural(targets, 'target')}, in that order.`;
 }
 
-/**
- * A plain grid, up to 4×4. VSCode renders no LaTeX in a hover, and of the operations
- * shipped only the Toffoli is larger — 8×8 squeezed into a hover is read wrong more
- * easily than the description is.
- */
-function matrixBlock(matrix: MatrixInfoDto | undefined): string {
-    if (!matrix || matrix.computable.length === 0 || matrix.rows > 4 || matrix.cols > 4) return '';
+const plural = (amount: number, noun: string): string => `${amount} ${noun}${amount === 1 ? '' : 's'}`;
+
+/** A plain grid up to 4×4: a hover renders no LaTeX, and anything larger is read wrong more easily than the description. */
+function matrixBlock(matrix: MatrixInfoDto | undefined): string | undefined {
+    if (!matrix || matrix.computable.length === 0 || matrix.rows > 4 || matrix.cols > 4) return undefined;
 
     const widths = matrix.computable[0].map((_, column) =>
         Math.max(...matrix.computable.map((row) => row[column].length)),
     );
     const rows = matrix.computable.map((row) => row.map((cell, column) => cell.padStart(widths[column])).join('  '));
 
-    return ['', '```text', ...rows, '```'].join('\n');
+    return ['```text', ...rows, '```'].join('\n');
 }
 
 function registerHover(name: string, registers: readonly RegisterResponse[]): string | null {
@@ -89,10 +80,9 @@ function registerHover(name: string, registers: readonly RegisterResponse[]): st
     const size = getRegisterSize(register);
     const kind = isQuantumRegister(register) ? 'qubit register' : 'classical register';
 
-    return [`**${name}** — ${kind}`, '', `${size} ${size === 1 ? 'wire' : 'wires'}: ${wires(name, size)}`].join('\n');
+    return paragraphs(`**${name}** — ${kind}`, `${plural(size, 'wire')}: ${wires(name, size)}`);
 }
 
-/** Long registers are named by their ends. */
 function wires(name: string, size: number): string {
     const label = (index: number): string => `\`${name}[${index}]\``;
     if (size <= 4) return Array.from({ length: size }, (_, index) => label(index)).join(', ');
@@ -100,17 +90,14 @@ function wires(name: string, size: number): string {
     return `${label(0)} … ${label(size - 1)}`;
 }
 
-/** Only where this editor has something of its own to say. */
 const KEYWORD_HOVERS: Readonly<Record<string, string>> = {
-    qubit: ['**qubit** — declares a qubit register.', '', 'The circuit editor draws one wire per qubit.'].join('\n'),
-    bit: [
+    qubit: paragraphs('**qubit** — declares a qubit register.', 'QuaK draws one wire per qubit.'),
+    bit: paragraphs(
         '**bit** — declares a classical register.',
-        '',
-        'The circuit model carries qubits only, so a file declaring one stays read-only.',
-    ].join('\n'),
-    measure: [
+        'The circuit view shows qubits only, so a file declaring one opens read-only.',
+    ),
+    measure: paragraphs(
         `**measure** — ${operationById('measure')?.description ?? 'measures a qubit.'}`,
-        '',
-        'The circuit editor cannot write measurement back, so a file using it stays read-only.',
-    ].join('\n'),
+        'Measurement cannot be edited in the circuit view yet, so a file using it opens read-only.',
+    ),
 };

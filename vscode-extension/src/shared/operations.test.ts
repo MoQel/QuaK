@@ -29,4 +29,16 @@ describe('the bundled gate library', () => {
             expect(operation.inspectorInfo?.matrix?.display, `matrix of ${operation.symbol}`).toBeTruthy();
         }
     });
+
+    // The hover lays the entries out as a grid, taking the column count from the first row.
+    it('carries matrices that are rectangular and the size they claim', () => {
+        for (const { symbol, inspectorInfo } of OPERATIONS) {
+            const { rows, cols, computable } = inspectorInfo.matrix;
+
+            expect(computable, `row count of ${symbol}`).toHaveLength(rows);
+            for (const [index, row] of computable.entries()) {
+                expect(row, `row ${index} of ${symbol}`).toHaveLength(cols);
+            }
+        }
+    });
 });

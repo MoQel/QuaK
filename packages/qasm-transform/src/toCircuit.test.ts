@@ -78,7 +78,7 @@ describe('toCircuit — gates', () => {
 
     it('rejects a gate whose operand count does not match its arity', () => {
         const result = toCircuit(`${HEADER}qubit[3] q;\ncx q[0], q[1], q[2];\n`);
-        expect(result.unsupported[0].message).toMatch(/expects 2 qubit\(s\) but got 3/);
+        expect(result.unsupported[0].message).toMatch(/takes 2 qubits, not 3/);
     });
 
     it('rejects a gate the editor has no representation for', () => {

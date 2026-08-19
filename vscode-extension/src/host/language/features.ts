@@ -1,17 +1,13 @@
-// Hover for .qasm files. Measured against QDK 1.31.0: it registers no hover for
-// openqasm, so ours is the only one on the language.
 import * as vscode from 'vscode';
 import type { ClassificationCache } from '../documentModel.ts';
+import { QASM_SELECTOR } from '../qasmDocument.ts';
 import { hoverFor } from './hoverModel.ts';
 import { wordAt } from './qasmContext.ts';
 
-const ENABLED = 'quak.languageFeatures.enable';
-
-/** By pattern as well: another extension claiming .qasm takes the language association. */
-const SELECTOR: vscode.DocumentSelector = [{ language: 'openqasm' }, { pattern: '**/*.qasm' }];
+const ENABLED = 'quak.hover.enabled';
 
 export function registerLanguageFeatures(documents: ClassificationCache): vscode.Disposable[] {
-    return [vscode.languages.registerHoverProvider(SELECTOR, hoverProvider(documents))];
+    return [vscode.languages.registerHoverProvider(QASM_SELECTOR, hoverProvider(documents))];
 }
 
 function hoverProvider(documents: ClassificationCache): vscode.HoverProvider {
@@ -23,8 +19,7 @@ function hoverProvider(documents: ClassificationCache): vscode.HoverProvider {
             const word = wordAt(document.getText(), document.offsetAt(position));
             if (!word) return null;
 
-            // The parse this version already has; a document without registers still
-            // has gates and keywords worth explaining.
+            // Gates and keywords are still worth explaining without a parsed register.
             const registers = documents.of(document)?.circuit?.registers ?? [];
             const text = hoverFor(word, registers);
             if (!text) return null;

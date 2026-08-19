@@ -4,8 +4,12 @@ import {
     classifyText,
     diagnosticsFor,
     positionOf,
+    reportsAnything,
+    type DiagnosticCategories,
     type DocumentDiagnostic,
 } from './documentModel.ts';
+
+const ALL: DiagnosticCategories = { errors: true, syncSupport: true };
 
 const HEADER = 'OPENQASM 3.0;\ninclude "stdgates.inc";\n';
 const EDITABLE = `${HEADER}qubit[2] q;\nh q[0];\n`;
@@ -188,8 +192,10 @@ describe('ClassificationCache', () => {
 
 // Only what the user can act on. A cause explains its own consequences.
 describe('diagnosticsFor', () => {
-    const diagnosticsIn = (source: string) => diagnosticsFor(classifyText(source).classification);
-    const constructsIn = (source: string) => diagnosticsIn(source).map((entry) => entry.construct);
+    const diagnosticsIn = (source: string, categories: DiagnosticCategories = ALL) =>
+        diagnosticsFor(classifyText(source).classification, categories);
+    const constructsIn = (source: string, categories: DiagnosticCategories = ALL) =>
+        diagnosticsIn(source, categories).map((entry) => entry.construct);
 
     it('reports syntax errors and nothing the recovered parse tree invented', () => {
         // The visitor walks on after a syntax error and rejects fragments that are not
@@ -239,6 +245,28 @@ describe('diagnosticsFor', () => {
         expect(diagnostic.severity).toBe('hint');
     });
 
+    it('reports the error alone when only error reporting is switched on', () => {
+        expect(constructsIn(`${HEADER}qubit[2 q;\n`, { errors: true, syncSupport: false })).toEqual(['syntax']);
+    });
+
+    it.each([
+        ['an unsupported construct', `${HEADER}qubit[2] q;\nbarrier q;\n`],
+        ['a comment below the header', `${HEADER}qubit[2] q;\n// unten\nh q[0];\n`],
+    ])('says nothing about %s while support is switched off', (_case, source) => {
+        expect(diagnosticsIn(source, { errors: true, syncSupport: false })).toEqual([]);
+    });
+
+    it('keeps the sync support findings while error reporting is switched off', () => {
+        // The two are independent: nobody else reports what this editor cannot write back.
+        expect(constructsIn(`${HEADER}qubit[2] q;\nbarrier q;\n`, { errors: false, syncSupport: true })).toEqual([
+            'barrierStatement',
+        ]);
+    });
+
+    it('says nothing about a broken document while error reporting is switched off', () => {
+        expect(diagnosticsIn(`${HEADER}qubit[2 q;\n`, { errors: false, syncSupport: true })).toEqual([]);
+    });
+
     it('keeps quiet about comments while a construct blocks editing anyway', () => {
         // Accepting the comment loss would not unlock anything here.
         expect(constructsIn(`${HEADER}qubit[2] q;\n// unten\nbarrier q;\n`)).toEqual(['barrierStatement']);
@@ -260,11 +288,23 @@ describe('diagnosticsFor', () => {
 describe('diagnosticsFor — findings that sit at the end of a line', () => {
     it('places a missing token past the last character of its line', () => {
         const source = 'OPENQASM 3.0;\n\n// Register q\nqubit[2] q\n\n// Layer 1\nh q[0];\n';
-        const [diagnostic] = diagnosticsFor(classifyText(source).classification);
+        const [diagnostic] = diagnosticsFor(classifyText(source).classification, ALL);
         const line = source.split('\n')[diagnostic.line - 1];
 
         expect(diagnostic.line).toBe(4);
         expect(diagnostic.column).toBe(line.length);
+    });
+});
+
+// What lets the diagnostics skip the parse entirely rather than parse and discard.
+describe('reportsAnything', () => {
+    it.each([
+        [{ errors: true, syncSupport: true }, true],
+        [{ errors: true, syncSupport: false }, true],
+        [{ errors: false, syncSupport: true }, true],
+        [{ errors: false, syncSupport: false }, false],
+    ])('%o -> %s', (categories, expected) => {
+        expect(reportsAnything(categories)).toBe(expected);
     });
 });
 

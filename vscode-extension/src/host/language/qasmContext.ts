@@ -1,10 +1,5 @@
-/**
- * What the cursor points at, from the text alone.
- *
- * Whether a word names a gate or a register follows from the statement around it, so
- * it is scanned rather than parsed. `ClassificationCache` holds the parse and answers
- * the other half: which registers exist.
- */
+// What the cursor points at, from the text alone. The other half — which registers
+// exist — comes from `ClassificationCache`.
 
 export type WordRole = 'gate' | 'register' | 'keyword';
 
@@ -114,12 +109,7 @@ interface Context {
     before: string[];
 }
 
-/**
- * Walks the text once up to `offset`.
- *
- * Reading the cursor's line alone would be wrong twice over: a gate call may span
- * several lines, and a comment line between statements would pass for the statement.
- */
+/** Walks the text once up to `offset`; a gate call may span lines, so the line alone will not do. */
 function contextAt(text: string, offset: number): Context {
     let before: string[] = [];
     let index = 0;
@@ -149,16 +139,28 @@ function contextAt(text: string, offset: number): Context {
 function skipNonCode(text: string, index: number): number | null {
     if (text.startsWith('//', index)) return endOf(text, '\n', index, 1);
     if (text.startsWith('/*', index)) return endOf(text, '*/', index + 2, 2);
-    if (text[index] === '"' || text[index] === "'") return endOf(text, text[index], index + 1, 1);
+    if (text[index] === '"' || text[index] === "'") return stringEnd(text, index);
 
     return null;
 }
 
-/** An unterminated construct runs to the end of the text. */
+/** An unterminated comment runs to the end of the text. */
 function endOf(text: string, terminator: string, from: number, length: number): number {
     const found = text.indexOf(terminator, from);
 
     return found === -1 ? text.length : found + length;
+}
+
+/**
+ * Strings do not span lines (`'"' ~["\r\t\n]+? '"'`), so a quote with no partner on its
+ * line opens nothing and only the character itself is stepped over.
+ */
+function stringEnd(text: string, index: number): number {
+    const closing = text.indexOf(text[index], index + 1);
+    const lineEnd = text.indexOf('\n', index + 1);
+    if (closing === -1 || (lineEnd !== -1 && lineEnd < closing)) return index + 1;
+
+    return closing + 1;
 }
 
 function identifierEnd(text: string, index: number): number {

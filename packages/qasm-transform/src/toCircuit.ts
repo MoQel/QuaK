@@ -304,12 +304,10 @@ function visitGateCall(ctx: GateCallStatementContext, builder: CircuitBuilder): 
     if (!operands) return;
 
     const { controlSize, targetSize, type, hasRotationAngle } = GATE_ARITY[identifier];
-    if (operands.length !== controlSize + targetSize) {
-        builder.invalid(
-            ctx,
-            identifier,
-            `Gate '${gateName}' expects ${controlSize + targetSize} qubit(s) but got ${operands.length}.`,
-        );
+    const expected = controlSize + targetSize;
+    if (operands.length !== expected) {
+        const qubits = expected === 1 ? 'qubit' : 'qubits';
+        builder.invalid(ctx, identifier, `Gate '${gateName}' takes ${expected} ${qubits}, not ${operands.length}.`);
         return;
     }
 
