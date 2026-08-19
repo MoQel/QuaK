@@ -195,6 +195,9 @@ highlighting, comment toggling and bracket matching for `.qasm` files. On top of
 that it publishes its own diagnostics — what the circuit editor cannot write back —
 so a file explains itself in the Problems panel without the circuit view being open.
 
+Hover shows information about the gate or qubit register under the cursor, using the 
+same operation definitions and support data as the circuit editor and diagnostics.
+
 ---
 
 ## Building and shipping

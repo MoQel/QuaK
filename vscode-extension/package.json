@@ -155,6 +155,11 @@
                     "type": "boolean",
                     "default": true,
                     "description": "Report OpenQASM constructs the circuit editor cannot write back in the Problems panel. Turn this off if another OpenQASM extension already reports what you need."
+                },
+                "quak.languageFeatures.enable": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Explain gates and qubit registers on hover, from the same gate library the circuit editor draws from."
                 }
             }
         }

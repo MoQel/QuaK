@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { OPERATIONS } from './library.ts';
+import { OPERATIONS } from './operations.ts';
 
 // Guards the cast in library.ts: the backend owns this data, we only bundle it.
 

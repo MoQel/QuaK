@@ -28,14 +28,18 @@ src/
     arbitration.ts            Pure edit arbitration and panel tracking helpers
     documentModel.ts          Classification of a parsed document, and its cache
     diagnostics.ts            Publishes the classification into the Problems panel
+    language/
+      features.ts             Registers the language providers with VSCode
+      qasmContext.ts          What the cursor points at, from the text alone
+      hoverModel.ts           What a hover says about it
   shared/
     protocol.ts               Shared host/webview message types
+    operations.ts             The bundled gate library, read by host and webview
   test/                     VSCode integration tests
   webview/
     main.tsx                React entry point
     App.tsx                 Webview composition
     components/             Webview-only React components
-    data/                   Bundled webview data
     hooks/                  Webview React hooks
     lib/                    Webview-only helpers
     vscodeApi.ts            Single acquireVsCodeApi wrapper
@@ -55,6 +59,19 @@ Every host feature reads the document through `ClassificationCache`. A change ev
 reaches the diagnostics, the panel broadcast and, on a visual edit, arbitration —
 `ClassificationCache.of` makes that one ANTLR parse per document version instead of
 one per caller. `extension.ts` owns the cache and drops a document when it closes.
+
+## Language features
+
+`language/features.ts` registers the providers; what they say is decided by two modules
+that never import `vscode`, so they are unit-tested without one. `qasmContext.ts`
+answers whether a word is a gate, a register or a keyword by scanning the surrounding statement, 
+and `hoverModel.ts` turns that into Markdown from the bundled gate library
+and the support matrix. Neither parses — the semantics come from `ClassificationCache`,
+so a hover costs no parse the diagnostics have not already made.
+
+`hoverModel.ts` decides in the same order as `resolveSupportedGate`: unknown name, then
+gate this editor cannot draw, then supported. That is what keeps a hover from
+contradicting the squiggle on the line under it.
 
 ## Failures
 

@@ -8,7 +8,7 @@ import {
     QuantikzExportButton,
 } from '@quak/circuit-editor';
 import { DocumentNotice } from './components/DocumentNotice.tsx';
-import { OPERATIONS } from './data/library.ts';
+import { OPERATIONS } from '../shared/operations.ts';
 import { useCircuitDocument } from './hooks/useCircuitDocument.ts';
 import { vscodeApi } from './vscodeApi.ts';
 

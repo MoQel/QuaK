@@ -4,6 +4,7 @@ import { CircuitEditorProvider } from './circuitEditorProvider.ts';
 import { registerCommands } from './commands.ts';
 import { registerDiagnostics } from './diagnostics.ts';
 import { ClassificationCache } from './documentModel.ts';
+import { registerLanguageFeatures } from './language/features.ts';
 
 export function activate(context: vscode.ExtensionContext): void {
     // A log channel rather than a notification: these are our own defects, and one
@@ -20,6 +21,7 @@ export function activate(context: vscode.ExtensionContext): void {
         ...registerCommands(output),
         ...CircuitEditorProvider.register(context, documents, report),
         ...registerDiagnostics(documents),
+        ...registerLanguageFeatures(documents),
     );
 }
 

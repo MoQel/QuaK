@@ -309,3 +309,75 @@ suite('QuaK diagnostics', () => {
     // TextDocument some time after its last editor closes, not with it, so a test for
     // that waits on a timer nobody controls — it timed out at 20s when tried.
 });
+
+// Hover is registered on the language, which no unit test can reach: whether the
+// provider is wired up at all, and whether it answers for the word under the cursor.
+// What it says is asserted in hoverModel.test.ts instead.
+const LANGUAGE_FEATURES_ENABLED = 'quak.languageFeatures.enable';
+
+/** SAMPLE line 5 is `h q[0];` — column 0 is the gate, column 2 the register. */
+async function hoverAt(uri: vscode.Uri, line: number, character: number): Promise<string[]> {
+    const hovers = await vscode.commands.executeCommand<vscode.Hover[]>(
+        'vscode.executeHoverProvider',
+        uri,
+        new vscode.Position(line, character),
+    );
+
+    return hovers.flatMap((hover) => hover.contents.map((content) => (content as vscode.MarkdownString).value));
+}
+
+suite('QuaK hover', () => {
+    suiteSetup(async () => {
+        await vscode.extensions.getExtension(EXTENSION_ID)?.activate();
+    });
+
+    teardown(async () => {
+        await closeAllEditors();
+        // In teardown, not in the test that changes it: a timeout skips a test's own
+        // cleanup and the setting persists into the whole rest of the run.
+        await vscode.workspace
+            .getConfiguration()
+            .update(LANGUAGE_FEATURES_ENABLED, undefined, vscode.ConfigurationTarget.Global);
+    });
+
+    test('explains the gate under the cursor', async () => {
+        const uri = writeQasm('hover-gate.qasm');
+        await vscode.workspace.openTextDocument(uri);
+
+        const contents = await hoverAt(uri, 5, 0);
+
+        assert.ok(
+            contents.some((value) => value.includes('Hadamard')),
+            `expected a gate hover, got ${JSON.stringify(contents)}`,
+        );
+    });
+
+    test('explains the register under the cursor, which only the parse knows the size of', async () => {
+        const uri = writeQasm('hover-register.qasm');
+        await vscode.workspace.openTextDocument(uri);
+
+        const contents = await hoverAt(uri, 5, 2);
+
+        assert.ok(
+            contents.some((value) => value.includes('qubit register') && value.includes('2 wires')),
+            `expected a register hover, got ${JSON.stringify(contents)}`,
+        );
+    });
+
+    test('says nothing where there is no word', async () => {
+        const uri = writeQasm('hover-blank.qasm');
+        await vscode.workspace.openTextDocument(uri);
+
+        assert.deepEqual(await hoverAt(uri, 4, 0), []);
+    });
+
+    test('says nothing while the setting is off', async () => {
+        const uri = writeQasm('hover-disabled.qasm');
+        await vscode.workspace.openTextDocument(uri);
+        await vscode.workspace
+            .getConfiguration()
+            .update(LANGUAGE_FEATURES_ENABLED, false, vscode.ConfigurationTarget.Global);
+
+        assert.deepEqual(await hoverAt(uri, 5, 0), []);
+    });
+});
