@@ -25,6 +25,8 @@ src/
     extension.ts              VSCode activation entry point
     circuitEditorProvider.ts  Custom editor host controller
     arbitration.ts            Pure edit arbitration and panel tracking helpers
+    documentModel.ts          Classification of a parsed document, and its cache
+    diagnostics.ts            Publishes the classification into the Problems panel
   shared/
     protocol.ts               Shared host/webview message types
   test/                     VSCode integration tests
@@ -45,6 +47,13 @@ and DOM code inside `webview/`.
 from microsoft/qsharp under MIT, recorded in `THIRD-PARTY-NOTICES.txt`. Keep the
 grammar byte-identical to upstream apart from its attribution block, so refreshing
 it stays a plain diff.
+
+## Parsing
+
+Every host feature reads the document through `ClassificationCache`. A change event
+reaches the diagnostics, the panel broadcast and, on a visual edit, arbitration —
+`ClassificationCache.of` makes that one ANTLR parse per document version instead of
+one per caller. `extension.ts` owns the cache and drops a document when it closes.
 
 ## Edit Flow
 

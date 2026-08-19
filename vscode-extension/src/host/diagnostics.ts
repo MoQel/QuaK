@@ -2,9 +2,9 @@
 // itself without the circuit editor being open.
 import * as vscode from 'vscode';
 import {
-    classifyText,
     diagnosticsFor,
     positionOf,
+    type ClassificationCache,
     type DiagnosticSeverity,
     type DocumentDiagnostic,
 } from './documentModel.ts';
@@ -18,13 +18,13 @@ const SEVERITY: Record<DiagnosticSeverity, vscode.DiagnosticSeverity> = {
 };
 
 /** Keeps a diagnostic collection in step with every open .qasm document, whether a circuit editor is showing it — the findings are about the file. */
-export function registerDiagnostics(): vscode.Disposable[] {
+export function registerDiagnostics(documents: ClassificationCache): vscode.Disposable[] {
     const collection = vscode.languages.createDiagnosticCollection('quak');
 
     const refresh = (document: vscode.TextDocument): void => {
         if (!isQasmDocument(document)) return;
 
-        const { classification } = classifyText(document.getText());
+        const { classification } = documents.of(document);
         collection.set(
             document.uri,
             diagnosticsFor(classification).map((entry) => toVscodeDiagnostic(entry, document)),

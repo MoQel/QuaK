@@ -23,13 +23,16 @@ export interface DocumentDiagnostic {
     severity: DiagnosticSeverity;
 }
 
-/** Parses QASM text and reports whether visual edits can be applied without data loss. */
-export function classifyText(text: string): {
+/** Everything the host learns from one parse of a document. */
+export interface ClassifiedDocument {
     state: Exclude<DocumentState, 'editableByChoice'>;
     circuit: CircuitResponse | null;
     preamble: QasmPreamble;
     classification: DocumentClassification;
-} {
+}
+
+/** Parses QASM text and reports whether visual edits can be applied without data loss. */
+export function classifyText(text: string): ClassifiedDocument {
     const result = toCircuit(text);
     const classification = classify(result);
     const circuit = result.content
@@ -42,6 +45,46 @@ export function classifyText(text: string): {
         preamble: result.preamble,
         classification,
     };
+}
+
+/** What the cache needs of a `vscode.TextDocument`, structural so this module stays testable without VSCode. */
+export interface SourceDocument {
+    uri: { toString(): string };
+    version: number;
+    getText(): string;
+}
+
+/**
+ * One parse per document version.
+ *
+ * A single keystroke reaches the diagnostics, the panel broadcast and, on a visual
+ * edit, arbitration as well — all of them asking the same question about the same
+ * text. Without this they each run the ANTLR parser again.
+ */
+export class ClassificationCache {
+    private readonly byUri = new Map<string, { version: number; classified: ClassifiedDocument }>();
+
+    public of(document: SourceDocument): ClassifiedDocument {
+        const key = document.uri.toString();
+        const cached = this.byUri.get(key);
+        if (cached?.version === document.version) {
+            return cached.classified;
+        }
+
+        const classified = classifyText(document.getText());
+        this.byUri.set(key, { version: document.version, classified });
+
+        return classified;
+    }
+
+    /** Closing a document is what bounds this cache; a reopened one starts over at version 1. */
+    public forget(document: SourceDocument): void {
+        this.byUri.delete(document.uri.toString());
+    }
+
+    public get size(): number {
+        return this.byUri.size;
+    }
 }
 
 /**

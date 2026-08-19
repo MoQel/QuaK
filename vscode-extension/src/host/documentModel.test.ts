@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { classifyText, diagnosticsFor, positionOf, type DocumentDiagnostic } from './documentModel.ts';
+import {
+    ClassificationCache,
+    classifyText,
+    diagnosticsFor,
+    positionOf,
+    type DocumentDiagnostic,
+} from './documentModel.ts';
 
 const HEADER = 'OPENQASM 3.0;\ninclude "stdgates.inc";\n';
+const EDITABLE = `${HEADER}qubit[2] q;\nh q[0];\n`;
 
 describe('classifyText — document state', () => {
     it('accepts a document the transform can regenerate', () => {
@@ -35,6 +42,87 @@ describe('classifyText — document state', () => {
 
         expect(preamble.version).toBe('3.0');
         expect(preamble.includes).toEqual(['"stdgates.inc"']);
+    });
+});
+
+// Counting reads is the point: what the cache saves is a full ANTLR parse per keystroke.
+describe('ClassificationCache', () => {
+    function fakeDocument(uri: string, text: string) {
+        let reads = 0;
+        const document = {
+            uri: { toString: () => uri },
+            version: 1,
+            getText: () => {
+                reads += 1;
+                return text;
+            },
+        };
+
+        return {
+            document,
+            get reads() {
+                return reads;
+            },
+            edit(next: string) {
+                text = next;
+                document.version += 1;
+            },
+            reopen(next: string) {
+                text = next;
+                document.version = 1;
+            },
+        };
+    }
+
+    it('parses a document version once, however often it is asked', () => {
+        const cache = new ClassificationCache();
+        const file = fakeDocument('file:///a.qasm', EDITABLE);
+
+        expect(cache.of(file.document)).toBe(cache.of(file.document));
+        expect(file.reads).toBe(1);
+    });
+
+    it('parses again once the document has changed', () => {
+        const cache = new ClassificationCache();
+        const file = fakeDocument('file:///a.qasm', EDITABLE);
+
+        expect(cache.of(file.document).state).toBe('editable');
+        file.edit(`${HEADER}qubit[2] q;\nbarrier q;\n`);
+
+        expect(cache.of(file.document).state).toBe('readOnly');
+        expect(file.reads).toBe(2);
+    });
+
+    it('keeps documents apart, because a version only means something within one of them', () => {
+        const cache = new ClassificationCache();
+        const editable = fakeDocument('file:///a.qasm', EDITABLE);
+        const other = fakeDocument('file:///b.qasm', `${HEADER}qubit[2] q;\nbarrier q;\n`);
+
+        expect(cache.of(editable.document).state).toBe('editable');
+        expect(cache.of(other.document).state).toBe('readOnly');
+    });
+
+    it('parses a reopened document again, which is what forgetting a closed one is for', () => {
+        // Reopening restarts at version 1, and the file may have changed meanwhile.
+        const cache = new ClassificationCache();
+        const file = fakeDocument('file:///a.qasm', EDITABLE);
+
+        expect(cache.of(file.document).state).toBe('editable');
+        cache.forget(file.document);
+        file.reopen(`${HEADER}qubit[2] q;\nbarrier q;\n`);
+
+        expect(cache.of(file.document).state).toBe('readOnly');
+    });
+
+    it('holds nothing for a document that was closed', () => {
+        const cache = new ClassificationCache();
+        const file = fakeDocument('file:///a.qasm', EDITABLE);
+
+        cache.of(file.document);
+        expect(cache.size).toBe(1);
+
+        cache.forget(file.document);
+        expect(cache.size).toBe(0);
     });
 });
 

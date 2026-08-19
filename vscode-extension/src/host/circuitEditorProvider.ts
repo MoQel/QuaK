@@ -10,7 +10,7 @@ import type {
     HostMessage,
     WebviewMessage,
 } from '../shared/protocol.ts';
-import { classifyText } from './documentModel.ts';
+import type { ClassificationCache } from './documentModel.ts';
 
 export class CircuitEditorProvider implements vscode.CustomTextEditorProvider {
     public static readonly viewType = 'quak.circuitEditor';
@@ -19,10 +19,13 @@ export class CircuitEditorProvider implements vscode.CustomTextEditorProvider {
     // Per-session opt-in for lossy editing of this document.
     private readonly editingEnabled = new Set<string>();
 
-    private constructor(private readonly context: vscode.ExtensionContext) {}
+    private constructor(
+        private readonly context: vscode.ExtensionContext,
+        private readonly documents: ClassificationCache,
+    ) {}
 
-    public static register(context: vscode.ExtensionContext): vscode.Disposable[] {
-        const provider = new CircuitEditorProvider(context);
+    public static register(context: vscode.ExtensionContext, documents: ClassificationCache): vscode.Disposable[] {
+        const provider = new CircuitEditorProvider(context, documents);
 
         return [
             vscode.window.registerCustomEditorProvider(CircuitEditorProvider.viewType, provider, {
@@ -74,7 +77,7 @@ export class CircuitEditorProvider implements vscode.CustomTextEditorProvider {
         document: vscode.TextDocument,
         message: ApplyEditMessage,
     ): Promise<void> {
-        const current = classifyText(document.getText());
+        const current = this.documents.of(document);
         const decision = decideEdit({
             documentVersion: document.version,
             documentState: this.documentState(document, current.classification),
@@ -130,8 +133,7 @@ export class CircuitEditorProvider implements vscode.CustomTextEditorProvider {
     }
 
     private documentChanged(document: vscode.TextDocument): HostMessage {
-        const text = document.getText();
-        const { circuit, classification } = classifyText(text);
+        const { circuit, classification } = this.documents.of(document);
         return {
             type: 'documentChanged',
             circuit,
