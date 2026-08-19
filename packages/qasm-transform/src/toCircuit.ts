@@ -12,7 +12,7 @@ import {
 } from '@quak/circuit-core';
 import { evaluateAngle, QasmUnsupportedError } from './angleExpression.ts';
 import { layerMarker, registerMarker } from './structuralComments.ts';
-import { parseQasm, type QasmSyntaxError } from './parse.ts';
+import { parseQasm, type QasmComment, type QasmSyntaxError } from './parse.ts';
 import {
     GateCallStatementContext,
     GateOperandContext,
@@ -152,7 +152,7 @@ export function toCircuit(source: string): ToCircuitResult {
     const builder = new CircuitBuilder();
 
     const firstStatementLine = startOfFirstStatement(tree);
-    const generatedMarkerKeys = generatedStructuralMarkerKeys(tree);
+    const generatedMarkerKeys = generatedStructuralMarkerKeys(tree, comments);
     const headerComments: string[] = [];
 
     for (const comment of comments) {
@@ -446,9 +446,27 @@ function startOfFirstStatement(tree: ProgramContext): number {
     return Math.min(versionLine ?? Number.POSITIVE_INFINITY, firstStatementLine ?? Number.POSITIVE_INFINITY);
 }
 
-function generatedStructuralMarkerKeys(tree: ProgramContext): Set<string> {
+/**
+ * The comments in this document that `toQasm` would have written itself.
+ *
+ * A layer marker sits above the *first* operation of its layer, so counting gate calls
+ * is wrong the moment a layer holds two — every marker below it then looks like a
+ * stranger's comment, and a file QuaK wrote comes back read-only. Layers are counted
+ * the way they are written instead: a gate call opens a new one only when a comment
+ * stands directly above it.
+ *
+ * The sequence has to read 1, 2, 3 … in order. At the first comment that breaks it the
+ * matching stops, because from there this is no longer a document we produced — and an
+ * unrecognised comment is kept, never dropped.
+ */
+function generatedStructuralMarkerKeys(tree: ProgramContext, comments: readonly QasmComment[]): Set<string> {
+    const commentByLine = new Map<number, string>();
+    for (const comment of comments) {
+        if (!commentByLine.has(comment.line)) commentByLine.set(comment.line, comment.text.trim());
+    }
+
     const keys = new Set<string>();
-    let layerNumber = 1;
+    let expectedLayer = 1;
 
     for (const statementOrScope of tree.statementOrScope()) {
         const statement = statementOrScope.statement();
@@ -460,11 +478,16 @@ function generatedStructuralMarkerKeys(tree: ProgramContext): Set<string> {
             continue;
         }
 
-        const gateCall = statement.gateCallStatement();
-        if (gateCall) {
-            addMarkerBefore(keys, gateCall, layerMarker(layerNumber));
-            layerNumber += 1;
-        }
+        const line = statement.gateCallStatement()?.start?.line;
+        if (!line || line <= 1) continue;
+
+        const above = commentByLine.get(line - 1);
+        // No comment above: the operation continues the layer that was opened earlier.
+        if (above === undefined) continue;
+        if (above !== layerMarker(expectedLayer)) break;
+
+        keys.add(commentKey(line - 1, layerMarker(expectedLayer)));
+        expectedLayer += 1;
     }
 
     return keys;

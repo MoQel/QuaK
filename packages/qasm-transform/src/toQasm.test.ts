@@ -84,6 +84,21 @@ describe('toQasm — emission', () => {
 });
 
 // Editor-created DTOs may carry default angles on gates that are not parametric.
+describe('what toQasm writes, toCircuit has to accept again', () => {
+    it('round trips a circuit whose layers hold more than one operation', () => {
+        // The editor packs independent operations into one layer, so this is the normal
+        // shape of a saved circuit — not an edge case.
+        const source =
+            'OPENQASM 3.0;\ninclude "stdgates.inc";\n\n// Register q\nqubit[3] q;\n\n' +
+            '// Layer 1\nh q[0];\nx q[1];\n\n// Layer 2\ncx q[0], q[1];\n';
+        const written = roundTrip(source);
+        const reread = toCircuit(written);
+
+        expect(reread.unsupported, 'QuaK flagged its own output').toEqual([]);
+        expect(isEditable(reread)).toBe(true);
+    });
+});
+
 describe('circuits built by the editor, not by the parser', () => {
     const gateDroppedByEditor = (identifier: OperationIdentifier, rotationAngle: number): CircuitContent => ({
         registers: [{ id: 'r', name: 'q', type: 'Quantum_Register' as const, numberOfQubits: 1 }],

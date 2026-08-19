@@ -102,6 +102,26 @@ describe('comments are detected, not silently dropped', () => {
         expect(result.preamble.headerComments).toEqual(['// Register q']);
     });
 
+    it('keeps recognising markers after a layer that holds more than one operation', () => {
+        // A marker sits above the *first* operation of its layer. Counting gate calls
+        // instead of layers made every marker below a multi-operation layer look like a
+        // stranger's comment, so a document QuaK had written came back read-only.
+        const result = toCircuit(
+            'OPENQASM 3.0;\n// Register q\nqubit[3] q;\n\n// Layer 1\nh q[0];\nx q[1];\n\n// Layer 2\ncx q[0], q[1];\n',
+        );
+
+        expect(result.unsupported).toEqual([]);
+        expect(isEditable(result)).toBe(true);
+    });
+
+    it('stops recognising markers once the sequence breaks, and keeps the rest as comments', () => {
+        const result = toCircuit(
+            'OPENQASM 3.0;\n// Register q\nqubit[2] q;\n\n// Layer 1\nh q[0];\n\n// Layer 7\nx q[1];\n',
+        );
+
+        expect(result.unsupported).toEqual([expect.objectContaining({ line: 8, construct: 'comment' })]);
+    });
+
     it('detects layer markers with the wrong generated number', () => {
         const result = toCircuit('OPENQASM 3.0;\nqubit[1] q;\n// Layer 99\nh q[0];\n');
 
