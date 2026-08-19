@@ -1,6 +1,6 @@
 // Pure helpers for edit arbitration and multi-panel tracking in the VSCode extension.
 import type { DocumentClassification } from '@quak/qasm-transform';
-import type { DocumentState, EditRejectedReason } from '../shared/protocol.ts';
+import { isWritable, type DocumentState, type EditRejectedReason } from '../shared/protocol.ts';
 
 export type EditDecision = { kind: 'apply' } | { kind: 'reject'; reason: EditRejectedReason };
 
@@ -33,7 +33,9 @@ export function decideEdit(input: {
         return { kind: 'reject', reason: 'stale' };
     }
 
-    if (input.documentState === 'readOnly') {
+    // Asking what may be written, rather than listing what may not: a state added
+    // later is refused until someone says otherwise.
+    if (!isWritable(input.documentState)) {
         return { kind: 'reject', reason: 'readOnly' };
     }
 

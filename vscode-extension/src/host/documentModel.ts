@@ -62,19 +62,37 @@ export interface SourceDocument {
  * text. Without this they each run the ANTLR parser again.
  */
 export class ClassificationCache {
-    private readonly byUri = new Map<string, { version: number; classified: ClassifiedDocument }>();
+    private readonly byUri = new Map<string, { version: number; classified: ClassifiedDocument | null }>();
 
-    public of(document: SourceDocument): ClassifiedDocument {
+    /** `onFailure` reports a defect in the transform; it runs once per version, not once per caller. */
+    public constructor(private readonly onFailure: (error: unknown, context: string) => void) {}
+
+    /** Null when the document could not be analysed at all. */
+    public of(document: SourceDocument): ClassifiedDocument | null {
         const key = document.uri.toString();
         const cached = this.byUri.get(key);
         if (cached?.version === document.version) {
             return cached.classified;
         }
 
-        const classified = classifyText(document.getText());
+        const classified = this.classify(document, key);
         this.byUri.set(key, { version: document.version, classified });
 
         return classified;
+    }
+
+    /**
+     * A defect in the transform must not take the extension host with it. Every caller
+     * sits in a VSCode event handler, where a throw is swallowed and the editor simply
+     * stops updating — so the failure is caught, cached and reported instead.
+     */
+    private classify(document: SourceDocument, key: string): ClassifiedDocument | null {
+        try {
+            return classifyText(document.getText());
+        } catch (error) {
+            this.onFailure(error, key);
+            return null;
+        }
     }
 
     /** Closing a document is what bounds this cache; a reopened one starts over at version 1. */

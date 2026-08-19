@@ -1,6 +1,7 @@
 // Connects the VSCode document snapshot to the shared circuit editor model.
 import { useCallback, useState, type Dispatch, type SetStateAction } from 'react';
 import { toCircuitContent, type CircuitResponse } from '@quak/circuit-core';
+import { isWritable } from '../../shared/protocol.ts';
 import { useDocument } from './useDocument.ts';
 import { showsPendingEdit, type PendingEdit } from '../lib/pendingEdit.ts';
 
@@ -14,7 +15,7 @@ export function useCircuitDocument() {
     const showPending = showsPendingEdit({ pending, documentVersion: snapshot?.version, rejectedRequestId });
     const circuit = showPending && pending ? pending.circuit : (snapshot?.circuit ?? undefined);
 
-    const readOnly = snapshot?.state === 'readOnly';
+    const readOnly = snapshot !== undefined && !isWritable(snapshot.state);
 
     const setCircuit: Dispatch<SetStateAction<CircuitResponse | undefined>> = useCallback(
         (update) => {

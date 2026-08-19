@@ -49,11 +49,13 @@ describe('classifyText — document state', () => {
 describe('ClassificationCache', () => {
     function fakeDocument(uri: string, text: string) {
         let reads = 0;
+        let failure: Error | undefined;
         const document = {
             uri: { toString: () => uri },
             version: 1,
             getText: () => {
                 reads += 1;
+                if (failure) throw failure;
                 return text;
             },
         };
@@ -65,17 +67,29 @@ describe('ClassificationCache', () => {
             },
             edit(next: string) {
                 text = next;
+                failure = undefined;
                 document.version += 1;
             },
             reopen(next: string) {
                 text = next;
                 document.version = 1;
             },
+            /** Stands in for a defect in the transform, which is the case worth covering. */
+            breakWith(error: Error) {
+                failure = error;
+                document.version += 1;
+            },
         };
     }
 
+    // Rethrown rather than ignored: a test on this path is not meant to be passing
+    // because the cache quietly caught something.
+    const unexpectedFailure = (error: unknown): never => {
+        throw error;
+    };
+
     it('parses a document version once, however often it is asked', () => {
-        const cache = new ClassificationCache();
+        const cache = new ClassificationCache(unexpectedFailure);
         const file = fakeDocument('file:///a.qasm', EDITABLE);
 
         expect(cache.of(file.document)).toBe(cache.of(file.document));
@@ -83,39 +97,85 @@ describe('ClassificationCache', () => {
     });
 
     it('parses again once the document has changed', () => {
-        const cache = new ClassificationCache();
+        const cache = new ClassificationCache(unexpectedFailure);
         const file = fakeDocument('file:///a.qasm', EDITABLE);
 
-        expect(cache.of(file.document).state).toBe('editable');
+        expect(cache.of(file.document)?.state).toBe('editable');
         file.edit(`${HEADER}qubit[2] q;\nbarrier q;\n`);
 
-        expect(cache.of(file.document).state).toBe('readOnly');
+        expect(cache.of(file.document)?.state).toBe('readOnly');
         expect(file.reads).toBe(2);
     });
 
     it('keeps documents apart, because a version only means something within one of them', () => {
-        const cache = new ClassificationCache();
+        const cache = new ClassificationCache(unexpectedFailure);
         const editable = fakeDocument('file:///a.qasm', EDITABLE);
         const other = fakeDocument('file:///b.qasm', `${HEADER}qubit[2] q;\nbarrier q;\n`);
 
-        expect(cache.of(editable.document).state).toBe('editable');
-        expect(cache.of(other.document).state).toBe('readOnly');
+        expect(cache.of(editable.document)?.state).toBe('editable');
+        expect(cache.of(other.document)?.state).toBe('readOnly');
     });
 
     it('parses a reopened document again, which is what forgetting a closed one is for', () => {
         // Reopening restarts at version 1, and the file may have changed meanwhile.
-        const cache = new ClassificationCache();
+        const cache = new ClassificationCache(unexpectedFailure);
         const file = fakeDocument('file:///a.qasm', EDITABLE);
 
-        expect(cache.of(file.document).state).toBe('editable');
+        expect(cache.of(file.document)?.state).toBe('editable');
         cache.forget(file.document);
         file.reopen(`${HEADER}qubit[2] q;\nbarrier q;\n`);
 
-        expect(cache.of(file.document).state).toBe('readOnly');
+        expect(cache.of(file.document)?.state).toBe('readOnly');
+    });
+
+    it('reports a failure instead of letting it escape into the event handler', () => {
+        const failures: unknown[] = [];
+        const cache = new ClassificationCache((error) => failures.push(error));
+        const file = fakeDocument('file:///a.qasm', EDITABLE);
+        const defect = new Error('transform defect');
+        file.breakWith(defect);
+
+        expect(cache.of(file.document)).toBeNull();
+        expect(failures).toEqual([defect]);
+    });
+
+    it('reports a failure once per version, however many features ask', () => {
+        const failures: unknown[] = [];
+        const cache = new ClassificationCache((error) => failures.push(error));
+        const file = fakeDocument('file:///a.qasm', EDITABLE);
+        file.breakWith(new Error('transform defect'));
+
+        cache.of(file.document);
+        cache.of(file.document);
+        cache.of(file.document);
+
+        expect(failures).toHaveLength(1);
+    });
+
+    it('names the document it could not analyse', () => {
+        const contexts: string[] = [];
+        const cache = new ClassificationCache((_error, context) => contexts.push(context));
+        const file = fakeDocument('file:///broken.qasm', EDITABLE);
+        file.breakWith(new Error('transform defect'));
+
+        cache.of(file.document);
+
+        expect(contexts).toEqual(['file:///broken.qasm']);
+    });
+
+    it('recovers once the document changes again, so a failure is not a dead end', () => {
+        const cache = new ClassificationCache(() => {});
+        const file = fakeDocument('file:///a.qasm', EDITABLE);
+        file.breakWith(new Error('transform defect'));
+
+        expect(cache.of(file.document)).toBeNull();
+        file.edit(EDITABLE);
+
+        expect(cache.of(file.document)?.state).toBe('editable');
     });
 
     it('holds nothing for a document that was closed', () => {
-        const cache = new ClassificationCache();
+        const cache = new ClassificationCache(unexpectedFailure);
         const file = fakeDocument('file:///a.qasm', EDITABLE);
 
         cache.of(file.document);

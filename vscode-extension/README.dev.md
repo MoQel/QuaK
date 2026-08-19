@@ -55,6 +55,23 @@ reaches the diagnostics, the panel broadcast and, on a visual edit, arbitration 
 `ClassificationCache.of` makes that one ANTLR parse per document version instead of
 one per caller. `extension.ts` owns the cache and drops a document when it closes.
 
+## Failures
+
+Every host caller sits in a VSCode event handler, where a thrown error is swallowed and
+the editor just stops updating. So nothing is left to throw:
+
+- `ClassificationCache` catches a transform defect, caches it like any other result and
+  reports it once per document version. `of` returns null and the document reads as
+  `failed`.
+- The webview edit handler catches, since nothing awaits `applyEdit` and an unhandled
+  rejection would be invisible.
+- `ErrorBoundary` catches a render crash, puts a message in place of the editor and
+  posts `webviewError` to the host.
+
+All three report through the `QuaK` output channel created in `extension.ts` — a log,
+not a notification, because one broken document would otherwise raise a dialog per
+keystroke. Nothing is written to the document on any of these paths.
+
 ## Edit Flow
 
 1. VSCode opens a `.qasm` file with `CircuitEditorProvider`.

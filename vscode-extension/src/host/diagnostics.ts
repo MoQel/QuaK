@@ -24,10 +24,14 @@ export function registerDiagnostics(documents: ClassificationCache): vscode.Disp
     const refresh = (document: vscode.TextDocument): void => {
         if (!isQasmDocument(document)) return;
 
-        const { classification } = documents.of(document);
+        // Nothing to report about a document that could not be analysed; the reason is
+        // in the log, and stale squiggles would be worse than none.
+        const classified = documents.of(document);
+        const findings = classified ? diagnosticsFor(classified.classification) : [];
+
         collection.set(
             document.uri,
-            diagnosticsFor(classification).map((entry) => toVscodeDiagnostic(entry, document)),
+            findings.map((entry) => toVscodeDiagnostic(entry, document)),
         );
     };
 

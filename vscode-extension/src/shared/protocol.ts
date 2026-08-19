@@ -21,19 +21,33 @@ export interface EnableEditingMessage {
     type: 'enableEditing';
 }
 
-/** Webview -> host. */
-export type WebviewMessage = ReadyMessage | ApplyEditMessage | EnableEditingMessage;
+/** A crash in the webview, so it reaches the log instead of only blanking the panel. */
+export interface WebviewErrorMessage {
+    type: 'webviewError';
+    message: string;
+    stack?: string;
+}
 
-/** Whether the document may be edited through the circuit view. */
-export type DocumentState = 'editable' | 'readOnly' | 'editableByChoice';
+/** Webview -> host. */
+export type WebviewMessage = ReadyMessage | ApplyEditMessage | EnableEditingMessage | WebviewErrorMessage;
+
+/**
+ * Whether the document may be edited through the circuit view. `failed` is ours, not
+ * the document's: the transform threw, so nothing about the file is known.
+ */
+export type DocumentState = 'editable' | 'readOnly' | 'editableByChoice' | 'failed';
+
+/** Single definition, so the host and the webview cannot disagree on who may write. */
+export const isWritable = (state: DocumentState | undefined): boolean =>
+    state === 'editable' || state === 'editableByChoice';
 
 export interface DocumentChangedMessage {
     type: 'documentChanged';
     circuit: CircuitResponse | null;
     version: number;
     state: DocumentState;
-    /** Why the document is in that state, decided once by the transform. */
-    classification: DocumentClassification;
+    /** Why the document is in that state, decided once by the transform. Null when it threw. */
+    classification: DocumentClassification | null;
 }
 
 export interface EditAppliedMessage {

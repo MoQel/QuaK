@@ -22,10 +22,15 @@ export class CircuitEditorProvider implements vscode.CustomTextEditorProvider {
     private constructor(
         private readonly context: vscode.ExtensionContext,
         private readonly documents: ClassificationCache,
+        private readonly onFailure: (error: unknown, context: string) => void,
     ) {}
 
-    public static register(context: vscode.ExtensionContext, documents: ClassificationCache): vscode.Disposable[] {
-        const provider = new CircuitEditorProvider(context, documents);
+    public static register(
+        context: vscode.ExtensionContext,
+        documents: ClassificationCache,
+        onFailure: (error: unknown, context: string) => void,
+    ): vscode.Disposable[] {
+        const provider = new CircuitEditorProvider(context, documents, onFailure);
 
         return [
             vscode.window.registerCustomEditorProvider(CircuitEditorProvider.viewType, provider, {
@@ -56,11 +61,18 @@ export class CircuitEditorProvider implements vscode.CustomTextEditorProvider {
                     this.post(webviewPanel, document);
                     break;
                 case 'applyEdit':
-                    void this.applyEdit(webviewPanel, document, message);
+                    // Nothing awaits this, so an unhandled rejection would be invisible.
+                    void this.applyEdit(webviewPanel, document, message).catch((error: unknown) => {
+                        this.onFailure(error, `Writing a circuit edit to ${key}`);
+                        this.reject(webviewPanel, message.requestId, 'applyFailed', document.version);
+                    });
                     break;
                 case 'enableEditing':
                     this.editingEnabled.add(key);
                     this.broadcast(document);
+                    break;
+                case 'webviewError':
+                    this.onFailure(message.stack ?? message.message, `Circuit editor for ${key}`);
                     break;
             }
         });
@@ -78,6 +90,12 @@ export class CircuitEditorProvider implements vscode.CustomTextEditorProvider {
         message: ApplyEditMessage,
     ): Promise<void> {
         const current = this.documents.of(document);
+        if (!current) {
+            // Nothing is known about the file, so nothing may be written over it.
+            this.reject(panel, message.requestId, 'readOnly', document.version);
+            return;
+        }
+
         const decision = decideEdit({
             documentVersion: document.version,
             documentState: this.documentState(document, current.classification),
@@ -133,13 +151,13 @@ export class CircuitEditorProvider implements vscode.CustomTextEditorProvider {
     }
 
     private documentChanged(document: vscode.TextDocument): HostMessage {
-        const { circuit, classification } = this.documents.of(document);
+        const classified = this.documents.of(document);
         return {
             type: 'documentChanged',
-            circuit,
+            circuit: classified?.circuit ?? null,
             version: document.version,
-            state: this.documentState(document, classification),
-            classification,
+            state: classified ? this.documentState(document, classified.classification) : 'failed',
+            classification: classified?.classification ?? null,
         };
     }
 

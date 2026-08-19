@@ -90,7 +90,7 @@ Codespaces are untested rather than unsupported — the extension declares
 
 ## Document states
 
-Every parse of the document yields one of three states, and the circuit view has to
+Every parse of the document yields one of four states, and the circuit view has to
 distinguish them.
 
 | State | Meaning | Behaviour |
@@ -98,8 +98,9 @@ distinguish them.
 | `editable` | Parses, every construct within the support matrix, no comments below the header | Circuit editing enabled, both directions in sync |
 | `readOnly` | Syntax errors, unsupported constructs, or comments that regeneration would drop | Circuit renders where possible; writing is refused at the protocol level. A notice names the reason |
 | `editableByChoice` | Only comments stood in the way and the user explicitly opted in | Editing enabled; the comments below the header are dropped on the next write |
+| `failed` | The transform threw — a defect of ours, not a property of the file | Read-only, with a notice saying so. The stack goes to the QuaK output channel |
 
-The third state exists so that losslessness does not become a dead end. The opt-in is an
+`editableByChoice` exists so that losslessness does not become a dead end. The opt-in is an
 action the user takes, never a side effect of a gate drop. It is currently a button in
 the webview notice and is remembered per document for the session.
 
@@ -114,12 +115,15 @@ Defined in `vscode-extension/src/shared/protocol.ts`. Small on purpose.
 | webview → host | `ready` | Webview mounted; the host answers with `documentChanged` |
 | webview → host | `applyEdit { requestId, content, baseVersion }` | Please write this circuit, assuming the document is still at `baseVersion` |
 | webview → host | `enableEditing` | Opt in to lossy editing for this document |
-| host → webview | `documentChanged { circuit, version, state, diagnostics }` | Authoritative state, broadcast to every panel of the URI |
+| webview → host | `webviewError { message, stack }` | The circuit editor crashed while rendering |
+| host → webview | `documentChanged { circuit, version, state, classification }` | Authoritative state, broadcast to every panel of the URI |
 | host → webview | `editApplied { requestId, version }` | The edit landed |
 | host → webview | `editRejected { requestId, reason, currentVersion }` | `stale`, `readOnly` or `applyFailed` |
 
 Arbitration is a pure function (`arbitration.ts`) so it can be tested without VSCode:
 the edit must match the current document version and the document must be writable.
+Which states are writable is defined once, in `protocol.ts`, and asked as a question —
+so a state added later is refused until someone decides otherwise.
 Rejected edits are not merged — the webview rebases on the next `documentChanged`. At
 human interaction speed that is rare, and rejecting is always safe while merging is not.
 

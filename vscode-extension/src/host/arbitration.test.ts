@@ -38,6 +38,14 @@ describe('decideEdit', () => {
         });
     });
 
+    it('refuses a document that could not be analysed at all', () => {
+        // Nothing is known about the file, so regenerating it would be a guess.
+        expect(decideEdit({ documentVersion: 7, documentState: 'failed', baseVersion: 7 })).toEqual({
+            kind: 'reject',
+            reason: 'readOnly',
+        });
+    });
+
     it('writes to a document the user opted into editing', () => {
         // The one way past the read-only rule, and it takes a deliberate act:
         // the user was shown what would be lost and asked for it anyway.

@@ -9,7 +9,8 @@ export interface DocumentSnapshot {
     circuit: CircuitResponse | null;
     version: number;
     state: DocumentState;
-    classification: DocumentClassification;
+    /** Null when the host could not analyse the document at all. */
+    classification: DocumentClassification | null;
 }
 
 export interface RequestedEdit {

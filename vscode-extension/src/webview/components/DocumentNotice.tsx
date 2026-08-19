@@ -4,7 +4,7 @@ import type { DocumentState } from '../../shared/protocol.ts';
 
 interface DocumentNoticeProps {
     state: DocumentState | undefined;
-    classification: DocumentClassification | undefined;
+    classification: DocumentClassification | null | undefined;
     onEditAnyway: () => void;
 }
 
@@ -69,6 +69,12 @@ const COPY: {
     }),
 };
 
+/** Ours, not the document's — so it does not read as the user having written a bad file. */
+const ANALYSIS_FAILED: NoticeCopy = {
+    headline: 'QuaK could not read this file.',
+    detail: 'Something went wrong inside the circuit editor, so the file stays read-only here. The details are in the QuaK output channel. Text editing is unaffected.',
+};
+
 /** The user has been told what happens to the comments and asked for it anyway. */
 const EDITING_BY_CHOICE: NoticeCopy = {
     headline: 'Editing this file.',
@@ -103,8 +109,11 @@ export function DocumentNotice({ state, classification, onEditAnyway }: Readonly
 
 function noticeFor(
     state: DocumentState | undefined,
-    classification: DocumentClassification | undefined,
+    classification: DocumentClassification | null | undefined,
 ): NoticeCopy | null {
+    // Before everything else: with no classification there is nothing to explain.
+    if (state === 'failed') return ANALYSIS_FAILED;
+
     // Outranks the classification: the comments are still there, but the user has
     // already seen this notice and accepted what happens to them.
     if (state === 'editableByChoice') return EDITING_BY_CHOICE;
