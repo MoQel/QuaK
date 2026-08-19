@@ -7,16 +7,15 @@ import {
     QuantumOperationDto,
     RegisterResponse,
 } from '@/api/dto/circuit.ts';
-import { buildWireIndex, WireIndex } from '@/lib/circuitIndex.ts';
+import { buildWireIndex, resolveWireIndices, WireIndex } from '@/lib/circuitIndex.ts';
+import { angleToLatex, resolveAngle } from '@/lib/quantumAngle.ts';
+import { escapeLatexText } from '@/notation/latex/escape.ts';
 
 const ROTATION_GATES = new Set(['RX', 'RY', 'RZ']);
-const PI_FRACTION_DENOMINATORS = [1, 2, 3, 4, 6, 8, 12, 16];
-const ANGLE_TOLERANCE = 1e-8;
 const TRAILING_COLUMNS = 1; // Keep trailing wire column so the rendered circuit does not end directly at the last gate.
 
 /**
- * Exports circuits using Quantikz2 syntax
- * (quantikz package v1.0+, loaded via \usetikzlibrary{quantikz2}).
+ * Exports a circuit using Quantikz2 syntax.
  */
 export function toQuantikz(circuit: CircuitResponse): string {
     const wireIndex = buildWireIndex(circuit.registers);
@@ -48,6 +47,9 @@ export function toStandaloneQuantikzDocument(circuit: CircuitResponse): string {
     return toStandaloneDocument(toQuantikz(circuit));
 }
 
+/**
+ * Wraps Quantikz code in a minimal standalone LaTeX document.
+ */
 export function toStandaloneDocument(latexCode: string): string {
     return [
         String.raw`\documentclass[tikz,border=2pt]{standalone}`,
@@ -133,9 +135,9 @@ function applyElementaryGate(
     layerIdx: number,
 ): void {
     const identifier = gate.identifier.toUpperCase();
-    const targetWires = getTargetWires(wireIndex, gate);
+    const targetWires = resolveWireIndices(wireIndex, gate.targetQubits);
 
-    // Do not allow multitarget gates
+    // Only SWAP supports multiple targets.
     if (identifier !== 'SWAP' && targetWires.length !== 1) {
         return;
     }
@@ -160,7 +162,7 @@ function applySwapGate(grid: string[][], targetWires: number[], layerIdx: number
 
     const [topWire, bottomWire] = [...targetWires].sort((a, b) => a - b);
 
-    // Quantikz draws SWAP as a swap marker plus a target-X marker on the connected wire.
+    // Quantikz draws SWAP with one swap marker and one target-X marker.
     grid[topWire][layerIdx] = String.raw`\swap{${bottomWire - topWire}}`;
     grid[bottomWire][layerIdx] = String.raw`\targX{}`;
 }
@@ -212,19 +214,13 @@ function applyControls(
     }
 }
 
-function getTargetWires(wireIndex: WireIndex, gate: ElementaryQuantumGateDto): number[] {
-    return gate.targetQubits
-        .map((target) => wireIndex.getWireIndex(target))
-        .filter((wireIdx): wireIdx is number => wireIdx !== undefined);
-}
-
 function gateLabel(gate: ElementaryQuantumGateDto): string {
     const identifier = gate.identifier.toUpperCase();
 
     if (ROTATION_GATES.has(identifier)) {
         const axis = identifier[1];
-        // \ensuremath works with both quantikz versions where gate labels may be handled in text or math mode.
-        return String.raw`\ensuremath{R_${axis}(${formatAngle(gate.rotationAngle)})}`;
+        // Works when gate labels are handled in text or math mode.
+        return String.raw`\ensuremath{R_${axis}(${angleToLatex(resolveAngle(gate.rotationAngle))})}`;
     }
 
     if (identifier === 'CZ') {
@@ -236,72 +232,4 @@ function gateLabel(gate: ElementaryQuantumGateDto): string {
 
 function isControlledXGate(identifier: string, gate: ElementaryQuantumGateDto): boolean {
     return ['X', 'CX', 'CCX'].includes(identifier) && Boolean(gate.controlQubits?.length);
-}
-
-// Prefer symbolic π fractions for common rotation angles; fall back to a compact decimal.
-function formatAngle(angle: number | null | undefined): string {
-    if (angle === null || angle === undefined) {
-        return '?';
-    }
-
-    if (Math.abs(angle) < ANGLE_TOLERANCE) {
-        return '0';
-    }
-
-    const piRatio = angle / Math.PI;
-
-    for (const denominator of PI_FRACTION_DENOMINATORS) {
-        const numerator = Math.round(piRatio * denominator);
-
-        if (numerator === 0) continue;
-
-        if (Math.abs(piRatio - numerator / denominator) < ANGLE_TOLERANCE) {
-            return formatPiFraction(numerator, denominator);
-        }
-    }
-
-    return Number(angle.toFixed(2)).toString();
-}
-
-function formatPiFraction(numerator: number, denominator: number): string {
-    const divisor = gcd(Math.abs(numerator), denominator);
-    const reducedNumerator = numerator / divisor;
-    const reducedDenominator = denominator / divisor;
-    const sign = reducedNumerator < 0 ? '-' : '';
-    const absNumerator = Math.abs(reducedNumerator);
-
-    if (reducedDenominator === 1) {
-        return absNumerator === 1 ? String.raw`${sign}\pi` : String.raw`${sign}${absNumerator}\pi`;
-    }
-
-    if (absNumerator === 1) {
-        return String.raw`${sign}\frac{\pi}{${reducedDenominator}}`;
-    }
-
-    return String.raw`${sign}\frac{${absNumerator}\pi}{${reducedDenominator}}`;
-}
-
-function gcd(a: number, b: number): number {
-    let x = a;
-    let y = b;
-
-    while (y !== 0) {
-        [x, y] = [y, x % y];
-    }
-
-    return x || 1;
-}
-
-function escapeLatexText(value: string): string {
-    return value
-        .replaceAll('\\', String.raw`\textbackslash{}`)
-        .replaceAll('&', String.raw`\&`)
-        .replaceAll('%', String.raw`\%`)
-        .replaceAll('$', String.raw`\$`)
-        .replaceAll('#', String.raw`\#`)
-        .replaceAll('_', String.raw`\_`)
-        .replaceAll('{', String.raw`\{`)
-        .replaceAll('}', String.raw`\}`)
-        .replaceAll('~', String.raw`\textasciitilde{}`)
-        .replaceAll('^', String.raw`\textasciicircum{}`);
 }
