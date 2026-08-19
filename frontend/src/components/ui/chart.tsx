@@ -105,7 +105,7 @@ function ChartTooltipContent({
     color,
     nameKey,
     labelKey,
-}: RechartsPrimitive.TooltipProps<string | number | Array<string | number>, string | number> &
+}: RechartsPrimitive.TooltipContentProps &
     React.ComponentProps<'div'> & {
         hideLabel?: boolean;
         hideIndicator?: boolean;
