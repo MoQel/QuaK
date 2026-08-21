@@ -275,7 +275,9 @@ export function DropzoneGrid({
                 // would otherwise be truncated to the single-qubit fallback and lose qubits.
                 const dragged =
                     data.origin === 'circuit' && data.id ? findOperation(circuit?.layers ?? [], data.id) : undefined;
-                const { controlSize, targetSize } = qubitCountsOf(dragged ?? data.composite, data.operationIdentifier);
+                const { controlSize, targetSize } = data.subcircuit
+                    ? { controlSize: 0, targetSize: Math.max(data.subcircuit.qubitCount, 1) }
+                    : qubitCountsOf(dragged ?? data.composite, data.operationIdentifier);
 
                 const controlQubits: ElementSelectorDto[] = Array.from({ length: controlSize }, (_, i) => ({
                     registerId: regId,
@@ -301,6 +303,24 @@ export function DropzoneGrid({
                             break;
                         }
 
+                        if (data.subcircuit) {
+                            // Nothing to re-bind: a subcircuit stores only the id of the circuit it
+                            // points at, and its body stays where it is. The name rides along so the
+                            // box is labelled before the next read fills it in again.
+                            const operation: SubcircuitOperationDto = {
+                                id: crypto.randomUUID(),
+                                type: 'SUBCIRCUIT_OPERATION',
+                                identifier: data.subcircuit.name,
+                                inverseForm: false,
+                                definitionCircuitId: data.subcircuit.circuitId,
+                                definitionName: data.subcircuit.name,
+                                targetQubits,
+                                controlQubits,
+                            };
+                            addQuantumOperationLocally(operation, layerIdx);
+                            break;
+                        }
+
                         const operationDefinition = getOperationDefinition(data.operationIdentifier);
                         if (operationDefinition.type === 'ELEMENTARY_QUANTUM_GATE') {
                             const operation: ElementaryQuantumGateDto = {
@@ -320,16 +340,6 @@ export function DropzoneGrid({
                                 targetQubits,
                                 controlQubits,
                                 classicBits: [],
-                            };
-                            addQuantumOperationLocally(operation, layerIdx);
-                        } else if (operationDefinition.type === 'SUBCIRCUIT_OPERATION') {
-                            const operation: SubcircuitOperationDto = {
-                                type: 'SUBCIRCUIT_OPERATION',
-                                identifier: data.operationIdentifier,
-                                inverseForm: false,
-                                targetQubits,
-                                controlQubits,
-                                definitionCircuitId: 'subcircuit-ref',
                             };
                             addQuantumOperationLocally(operation, layerIdx);
                         }

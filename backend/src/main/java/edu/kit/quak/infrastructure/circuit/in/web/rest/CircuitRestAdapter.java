@@ -2,7 +2,7 @@ package edu.kit.quak.infrastructure.circuit.in.web.rest;
 
 import edu.kit.quak.application.circuit.antlr.QasmService;
 import edu.kit.quak.application.circuit.ports.in.CircuitServicePort;
-import edu.kit.quak.application.circuit.ports.in.SubcircuitNameServicePort;
+import edu.kit.quak.application.circuit.ports.in.SubcircuitServicePort;
 import edu.kit.quak.application.circuit.services.ProjectQasmIncludeResolver;
 import edu.kit.quak.application.user.ports.in.UserServicePort;
 import edu.kit.quak.core.circuit.codegen.QasmCodeGenerator;
@@ -18,6 +18,7 @@ import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.CircuitResponse;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.GeneratedCodeResponse;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.MoveQuantumOperationRequest;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.SubcircuitOperationDto;
+import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.SubcircuitOptionResponse;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.UpdateCircuitRequest;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.CircuitDtoMapper;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.ElementSelectorDtoMapper;
@@ -41,7 +42,7 @@ import org.springframework.web.bind.annotation.*;
 public class CircuitRestAdapter {
 
     private final CircuitServicePort service;
-    private final SubcircuitNameServicePort subcircuitNames;
+    private final SubcircuitServicePort subcircuitNames;
     private final QasmService qasmService;
     private final ProjectQasmIncludeResolver includeResolver;
     private final UserServicePort userService;
@@ -54,7 +55,7 @@ public class CircuitRestAdapter {
 
     public CircuitRestAdapter(
         CircuitServicePort service,
-        SubcircuitNameServicePort subcircuitNames,
+        SubcircuitServicePort subcircuitNames,
         QasmService qasmService,
         ProjectQasmIncludeResolver includeResolver,
         UserServicePort userService,
@@ -106,6 +107,31 @@ public class CircuitRestAdapter {
         );
         subcircuits.forEach(subcircuit -> subcircuit.setDefinitionName(names.get(subcircuit.getDefinitionCircuitId())));
         return response;
+    }
+
+    /**
+     * Lists the circuits of the project that can be dropped in as a subcircuit.
+     *
+     * <p>Reads only: unlike {@code GET /file/{fileId}} this creates no circuit, so opening the
+     * library does not give every file in the project one. A circuit the user may not read is
+     * absent rather than an error.
+     *
+     * @param excludeCircuitId the circuit being edited, so it is not offered inside itself
+     */
+    @GetMapping("/project/{projectId}/subcircuits")
+    @PreAuthorize("isAuthenticated()")
+    public List<SubcircuitOptionResponse> listSubcircuits(
+        @PathVariable String projectId,
+        @RequestParam(required = false) String excludeCircuitId,
+        Authentication authentication
+    ) {
+        log.debug("REST request to list subcircuits of project: {}", projectId);
+        User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
+        return subcircuitNames
+            .listAvailable(projectId, excludeCircuitId, user)
+            .stream()
+            .map(option -> new SubcircuitOptionResponse(option.circuitId(), option.name(), option.qubitCount()))
+            .toList();
     }
 
     /**

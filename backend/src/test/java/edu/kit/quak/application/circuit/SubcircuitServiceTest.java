@@ -5,9 +5,11 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import edu.kit.quak.application.circuit.ports.out.CircuitRepositoryPort;
-import edu.kit.quak.application.circuit.services.SubcircuitNameService;
+import edu.kit.quak.application.circuit.services.SubcircuitService;
 import edu.kit.quak.application.filesystem.ports.in.FileServicePort;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
+import edu.kit.quak.core.circuit.model.SubcircuitOption;
+import edu.kit.quak.core.circuit.model.register.QuantumRegister;
 import edu.kit.quak.core.filesystem.model.File;
 import edu.kit.quak.core.user.model.User;
 import edu.kit.quak.shared.tags.UnitTest;
@@ -22,7 +24,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @UnitTest
 @ExtendWith(MockitoExtension.class)
-class SubcircuitNameServiceTest {
+class SubcircuitServiceTest {
 
     private static final String PROJECT = "p-1";
 
@@ -33,7 +35,7 @@ class SubcircuitNameServiceTest {
     private FileServicePort fileService;
 
     @InjectMocks
-    private SubcircuitNameService service;
+    private SubcircuitService service;
 
     private final User user = new User();
 
@@ -91,5 +93,35 @@ class SubcircuitNameServiceTest {
         service.resolveNames(List.of("c-1", "c-1", "c-1"), PROJECT, user);
 
         verify(circuitRepository, times(1)).findById("c-1");
+    }
+
+    @Test
+    void listsTheProjectsOtherCircuitsWithTheirWireCount() {
+        QuantumCircuit other = circuitOf(PROJECT, "f-1");
+        other.addRegister(new QuantumRegister("q", 3));
+        when(circuitRepository.findAllByProjectId(PROJECT)).thenReturn(List.of(other));
+        when(circuitRepository.findById("c-1")).thenReturn(Optional.of(other));
+        when(fileService.retrieveFile("f-1", user)).thenReturn(new File("bell.qasm", "d-1"));
+
+        assertEquals(List.of(new SubcircuitOption("c-1", "bell.qasm", 3)), service.listAvailable(PROJECT, null, user));
+    }
+
+    @Test
+    void doesNotOfferTheCircuitBeingEdited() {
+        // A circuit containing itself would be endless; the editor must not even offer it.
+        when(circuitRepository.findAllByProjectId(PROJECT)).thenReturn(List.of(circuitOf(PROJECT, "f-1")));
+
+        assertTrue(service.listAvailable(PROJECT, "c-1", user).isEmpty());
+        verify(fileService, never()).retrieveFile(any(), any());
+    }
+
+    @Test
+    void doesNotOfferACircuitWhoseFileTheUserCannotRead() {
+        QuantumCircuit other = circuitOf(PROJECT, "f-1");
+        when(circuitRepository.findAllByProjectId(PROJECT)).thenReturn(List.of(other));
+        when(circuitRepository.findById("c-1")).thenReturn(Optional.of(other));
+        when(fileService.retrieveFile("f-1", user)).thenThrow(new RuntimeException("denied"));
+
+        assertTrue(service.listAvailable(PROJECT, null, user).isEmpty());
     }
 }

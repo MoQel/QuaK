@@ -10,6 +10,9 @@ public interface CircuitRepositoryPort {
 
     Optional<QuantumCircuit> findByFileId(String fileId);
 
+    /** Every circuit of the project, used to offer them as subcircuits. Creates nothing. */
+    List<QuantumCircuit> findAllByProjectId(String projectId);
+
     /** Returns which of the given operation ids are already persisted (in any circuit). */
     List<String> findExistingOperationIds(Collection<String> operationIds);
 
