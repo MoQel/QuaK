@@ -5,6 +5,18 @@ type Layers = CircuitResponse['layers'];
 
 const copyLayer = (layer: Layers[number]): Layers[number] => ({ quantumOperations: [...layer.quantumOperations] });
 
+/** The composite with the given id together with its layer, or null if the id names something else. */
+const findComposite = (
+    layers: Layers,
+    operationId: string,
+): { layerIdx: number; gate: CompositeQuantumGateDto } | null => {
+    for (const [layerIdx, layer] of layers.entries()) {
+        const operation = layer.quantumOperations.find((candidate) => candidate.id === operationId);
+        if (operation) return isCompositeGate(operation) ? { layerIdx, gate: operation } : null;
+    }
+    return null;
+};
+
 /**
  * Replaces a composite gate by the operations it is made of — the editor's "Ungroup".
  *
