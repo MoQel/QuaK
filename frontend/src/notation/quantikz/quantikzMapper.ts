@@ -129,7 +129,7 @@ function applyOperation(
             grid,
             wireIndex,
             operation,
-            operation.definitionName ?? operation.definitionCircuitId.slice(0, 8),
+            operation.definitionName ?? operation.definitionCircuitId?.slice(0, 8) ?? 'subcircuit',
             layerIdx,
         );
         return;

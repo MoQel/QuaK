@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -36,31 +37,36 @@ public class QasmCodeGenerator {
      * taken from the definition because two definitions can carry the same name (see
      * {@link #assignGateNames}).
      */
-    private record Emission(Function<ElementSelector, String> qubitName, Map<String, String> gateNames) {}
+    private record Emission(
+        Function<ElementSelector, String> qubitName,
+        Map<String, String> gateNames,
+        Map<String, String> subcircuitNames
+    ) {}
 
     public static String toCode(QuantumCircuit quantumCircuit) {
         StringBuilder codeStringBuilder = new StringBuilder();
 
         // Subcircuits are declared first, as an empty gate carrying the @composition annotation the
         // parser reads them back from.
-        Map<String, Integer> subcircuits = new LinkedHashMap<>();
+        Map<String, SubcircuitOperation> subcircuits = new LinkedHashMap<>();
         quantumCircuit
             .getLayers()
             .stream()
             .flatMap(layer -> layer.getQuantumOperations().stream())
             .filter(SubcircuitOperation.class::isInstance)
             .map(SubcircuitOperation.class::cast)
-            .forEach(call -> subcircuits.putIfAbsent(call.getDefinitionCircuitId(), call.getTargetQubits().size()));
+            .forEach(call -> subcircuits.putIfAbsent(call.getDefinitionCircuitId(), call));
 
-        for (Map.Entry<String, Integer> entry : subcircuits.entrySet()) {
+        Map<String, String> subcircuitNames = assignSubcircuitNames(subcircuits);
+        for (Map.Entry<String, SubcircuitOperation> entry : subcircuits.entrySet()) {
             List<String> paramNames = new ArrayList<>();
-            for (int i = 0; i < entry.getValue(); i++) {
+            for (int i = 0; i < entry.getValue().getTargetQubits().size(); i++) {
                 paramNames.add("q" + i);
             }
             codeStringBuilder.append("@composition \"circuit\" ").append(entry.getKey()).append("\n");
             codeStringBuilder
                 .append("gate ")
-                .append(subcircuitGateName(entry.getKey()))
+                .append(subcircuitNames.get(entry.getKey()))
                 .append(" ")
                 .append(String.join(", ", paramNames))
                 .append(" {\n}\n\n");
@@ -91,7 +97,7 @@ public class QasmCodeGenerator {
             codeStringBuilder.append(declaration).append("\n");
         }
 
-        Emission emission = new Emission(selector -> toCode(quantumCircuit, selector), gateNames);
+        Emission emission = new Emission(selector -> toCode(quantumCircuit, selector), gateNames, subcircuitNames);
         // A frame's members are written out as one `for`, at the position of its first member; the
         // rest are skipped when their layer comes round, which is what `written` keeps track of.
         Frames frames = new Frames(quantumCircuit.getLoopBlocks(), operationsById(quantumCircuit), new HashSet<>());
@@ -291,7 +297,7 @@ public class QasmCodeGenerator {
      * would change what the gate does.
      */
     private static String declarationBody(GateDefinition definition, Map<String, String> gateNames) {
-        Emission emission = new Emission(selector -> definition.getParameterName(selector.getIndex()), gateNames);
+        Emission emission = new Emission(selector -> definition.getParameterName(selector.getIndex()), gateNames, Map.of());
         StringBuilder body = new StringBuilder();
         for (QuantumOperation operation : definition.getBody()) {
             body.append("    ").append(toCode(operation, emission)).append("\n");
@@ -363,7 +369,50 @@ public class QasmCodeGenerator {
         return codeStringBuilder.toString();
     }
 
-    /** The gate name a subcircuit call is written under; sanitized so it is a valid identifier. */
+    /**
+     * Names the gate a subcircuit is written as, preferring the file it points at.
+     *
+     * <p>The name is cosmetic - the {@code @composition} annotation carries the id, which is what
+     * identifies the circuit on the way back. But a name built from a UUID
+     * ({@code comp_04dbd79b_a679_...}) is unreadable, so the file name is used where one is known.
+     * Names have to stay unique within the file: two circuits called the same would produce a gate
+     * declared twice, which the parser rejects. Hence the numeric suffix.
+     */
+    private static Map<String, String> assignSubcircuitNames(Map<String, SubcircuitOperation> byCircuitId) {
+        Map<String, String> names = new LinkedHashMap<>();
+        Set<String> taken = new HashSet<>();
+        for (Map.Entry<String, SubcircuitOperation> entry : byCircuitId.entrySet()) {
+            String base = sanitizeGateName(entry.getValue().getDefinitionName(), entry.getKey());
+            String candidate = base;
+            for (int suffix = 2; !taken.add(candidate); suffix++) {
+                candidate = base + "_" + suffix;
+            }
+            names.put(entry.getKey(), candidate);
+        }
+        return names;
+    }
+
+    /** A readable identifier from the file name, or the id when there is no name to use. */
+    private static String sanitizeGateName(String definitionName, String definitionCircuitId) {
+        String source = definitionName == null || definitionName.isBlank() ? null : stripExtension(definitionName);
+        if (source == null) {
+            return subcircuitGateName(definitionCircuitId);
+        }
+        String sanitized = source.replaceAll("[^a-zA-Z0-9_]", "_").replaceAll("_+", "_").toLowerCase(Locale.ROOT);
+        sanitized = sanitized.replaceAll("^_+|_+$", "");
+        // A leading digit is not an identifier, and an empty name is none either.
+        if (sanitized.isEmpty() || Character.isDigit(sanitized.charAt(0))) {
+            sanitized = "sub_" + sanitized;
+        }
+        return sanitized;
+    }
+
+    private static String stripExtension(String fileName) {
+        int dot = fileName.lastIndexOf('.');
+        return dot > 0 ? fileName.substring(0, dot) : fileName;
+    }
+
+    /** Fallback name when the referenced circuit's file is unknown; sanitized from the id. */
     public static String subcircuitGateName(String definitionCircuitId) {
         if (definitionCircuitId == null || definitionCircuitId.isBlank()) {
             return "comp_gate";
@@ -381,7 +430,8 @@ public class QasmCodeGenerator {
 
         // A subcircuit is named after the circuit it points at, declared as an empty gate above.
         if (quantumOperation instanceof SubcircuitOperation subcircuitOperation) {
-            return subcircuitGateName(subcircuitOperation.getDefinitionCircuitId());
+            String circuitId = subcircuitOperation.getDefinitionCircuitId();
+            return emission.subcircuitNames().getOrDefault(circuitId, subcircuitGateName(circuitId));
         }
 
         // operationDefinition lives on the subclasses that have one, so each is asked in turn.

@@ -4,6 +4,7 @@ import { apiRequest } from '@/api/api.ts';
 import {
     CircuitResponse,
     CompositeQuantumGateDto,
+    SubcircuitOperationDto,
     isQuantumRegister,
     LoopBlockDto,
     QuantumOperationDto,
@@ -159,7 +160,11 @@ const extractIdentifier = (operation: ParserOperation): string => {
     return 'DUMMY';
 };
 
-const normalizeParsedCircuit = (rawCircuit: unknown, currentCircuit: CircuitResponse | undefined): CircuitResponse => {
+/** Exported for tests: this is the one path everything the parser produces has to survive. */
+export const normalizeParsedCircuit = (
+    rawCircuit: unknown,
+    currentCircuit: CircuitResponse | undefined,
+): CircuitResponse => {
     const parsed = rawCircuit as ParserCircuit;
     const currentQuantumRegisters = currentCircuit?.registers.filter(isQuantumRegister) ?? [];
     const registerIdMap = new Map<string, string>();
@@ -217,6 +222,19 @@ const normalizeParsedCircuit = (rawCircuit: unknown, currentCircuit: CircuitResp
                 usedQubitPositions: composite.usedQubitPositions ?? [],
                 body: (composite.body ?? []).map((part) => normalizeOperation(part as ParserOperation)),
             };
+        }
+
+        if (operation.type === 'SUBCIRCUIT_OPERATION') {
+            // The reference is the whole operation: without definitionCircuitId a subcircuit keeps
+            // its type but points nowhere, which every consumer that reads the id then trips over.
+            const subcircuit = operation as Partial<SubcircuitOperationDto>;
+            return {
+                ...base,
+                type: 'SUBCIRCUIT_OPERATION',
+                identifier: subcircuit.identifier,
+                definitionCircuitId: subcircuit.definitionCircuitId ?? '',
+                definitionName: subcircuit.definitionName,
+            } as QuantumOperationDto;
         }
 
         return {

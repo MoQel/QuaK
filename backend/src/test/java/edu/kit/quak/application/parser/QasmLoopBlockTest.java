@@ -394,4 +394,78 @@ class QasmLoopBlockTest {
         assertEquals(1, second.getOperationIds().size());
         assertFalse(first.getOperationIds().stream().anyMatch(second::covers), "The frames must not share operations.");
     }
+
+    @Test
+    void subcircuitCallInALoopIsFramedLikeAnyOtherOperation() {
+        // The subcircuit branch used to write straight into the circuit instead of going through
+        // addOperation, so the loop capture never saw the call: the loop came out unrolled and
+        // unframed, and a code -> circuit -> code round trip lost the `for` entirely.
+        QuantumCircuit circuit = new QasmService().parse(
+            """
+            @composition "circuit" c-1
+            gate sub q0, q1 {
+            }
+
+            qubit[2] q;
+            for uint i in [0:2] { sub q[0], q[1]; }
+            """
+        );
+
+        assertEquals(1, operations(circuit).size(), "the three passes collapse into one call");
+        assertEquals(1, circuit.getLoopBlocks().size());
+        assertEquals(3, circuit.getLoopBlocks().getFirst().getRepeatCount());
+    }
+
+    @Test
+    void subcircuitCallInsideAGateBodyStaysInThatBody() {
+        // Same cause, other symptom: writing to the circuit directly ignored the definition under
+        // construction, so a subcircuit called from a gate escaped into the circuit next to the box.
+        QuantumCircuit circuit = new QasmService().parse(
+            """
+            @composition "circuit" c-1
+            gate sub q0, q1 {
+            }
+
+            gate wrapper a, b {
+              h a;
+              sub a, b;
+            }
+
+            qubit[2] q;
+            wrapper q[0], q[1];
+            """
+        );
+
+        List<QuantumOperation> top = operations(circuit);
+        assertEquals(1, top.size(), "only the wrapper call belongs in the circuit");
+        CompositeQuantumGate wrapper = (CompositeQuantumGate) top.getFirst();
+        assertEquals(2, wrapper.expand().size(), "the subcircuit call stayed in the gate body");
+    }
+
+    @Test
+    void callsOfDifferentSubcircuitsDoNotCollapse() {
+        // Structural equality has to compare the referenced circuit, or a loop body calling two
+        // different subcircuits would fold into one frame running the wrong one.
+        QuantumCircuit circuit = new QasmService().parse(
+            """
+            @composition "circuit" c-1
+            gate sub_a q0 {
+            }
+
+            @composition "circuit" c-2
+            gate sub_b q0 {
+            }
+
+            qubit[1] q;
+            sub_a q[0];
+            sub_b q[0];
+            """
+        );
+
+        assertEquals(2, operations(circuit).size());
+        assertFalse(
+            operations(circuit).getFirst().isStructurallyEqualTo(operations(circuit).get(1)),
+            "calls pointing at different circuits are not alike"
+        );
+    }
 }

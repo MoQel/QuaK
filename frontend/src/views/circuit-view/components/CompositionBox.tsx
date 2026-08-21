@@ -172,7 +172,7 @@ export function CompositionBox({
     // resolves — a deleted file, or one moved out of this project.
     const label = isCompositeGate(operation)
         ? operation.identifier
-        : (operation.definitionName ?? operation.definitionCircuitId.slice(0, 8));
+        : (operation.definitionName ?? operation.definitionCircuitId?.slice(0, 8) ?? 'subcircuit');
 
     return (
         // The preview lives outside the context menu but shares its trigger element: nesting the
@@ -271,7 +271,8 @@ export function CompositionBox({
                     // A subcircuit's body lives in another circuit and is not loaded here, so there
                     // is nothing to draw; naming what it points at is all this panel can honestly say.
                     <span className="text-xs">
-                        Subcircuit: {operation.definitionName ?? operation.definitionCircuitId}
+                        Subcircuit:{' '}
+                        {operation.definitionName ?? operation.definitionCircuitId ?? 'unresolved reference'}
                     </span>
                 )}
             </TooltipContent>

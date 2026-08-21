@@ -335,9 +335,11 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
         // in gateDefinitions. The annotation is the more specific statement and therefore wins: only
         // it names another circuit, while the declaration itself is deliberately empty.
         if (subcircuitsByGateName.containsKey(gateName)) {
-            String definitionCircuitId = subcircuitsByGateName.get(gateName);
-            QuantumOperation operation = new SubcircuitOperation(false, operands, null, definitionCircuitId);
-            circuit.addQuantumOperation(operation, circuit.getLayers().size());
+            // Through addOperation like every other operation: writing to the circuit directly
+            // bypassed the loop capture (a subcircuit in a `for` was unrolled instead of framed),
+            // the definition under construction (one inside a `gate` body escaped into the circuit)
+            // and the expansion budget.
+            addOperation(new SubcircuitOperation(false, operands, null, subcircuitsByGateName.get(gateName)));
             return null;
         }
 
