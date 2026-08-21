@@ -46,6 +46,11 @@ export interface MeasurementDto extends AbstractQuantumOperationDto {
 export interface SubcircuitOperationDto extends AbstractQuantumOperationDto {
     type: 'SUBCIRCUIT_OPERATION';
     definitionCircuitId: string;
+    /**
+     * Name of the referenced circuit's file, filled in by the backend on read. Absent when the
+     * reference cannot be resolved — the box then falls back to a short form of the id.
+     */
+    definitionName?: string;
 }
 
 /**

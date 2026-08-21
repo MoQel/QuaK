@@ -96,9 +96,15 @@ function applyOperation(
     }
 
     if (operation.type === 'SUBCIRCUIT_OPERATION') {
-        // The referenced circuit is not loaded here, so the box is labelled the way the editor
-        // labels it: by a short form of the id it points at.
-        applyCompositionBox(grid, wireIndex, operation, operation.definitionCircuitId.slice(0, 8), layerIdx);
+        // Labelled the way the editor labels it: the referenced circuit's file name, or a short
+        // form of the id when that reference no longer resolves.
+        applyCompositionBox(
+            grid,
+            wireIndex,
+            operation,
+            operation.definitionName ?? operation.definitionCircuitId.slice(0, 8),
+            layerIdx,
+        );
         return;
     }
 

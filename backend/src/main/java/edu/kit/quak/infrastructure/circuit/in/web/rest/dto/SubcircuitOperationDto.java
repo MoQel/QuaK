@@ -10,6 +10,14 @@ public class SubcircuitOperationDto extends QuantumOperationDto {
 
     private String definitionCircuitId;
 
+    /**
+     * Name of the referenced circuit's file, for display only.
+     *
+     * <p>Derived on every read instead of stored, so renaming the file cannot leave a stale name
+     * behind. Null when the reference cannot be resolved - the editor then falls back to the id.
+     */
+    private String definitionName;
+
     public SubcircuitOperationDto(
         String id,
         String identifier,

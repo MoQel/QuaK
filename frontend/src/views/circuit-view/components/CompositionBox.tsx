@@ -151,11 +151,12 @@ export function CompositionBox({
     /** A box covering more than one wire has more height than width, so the name reads better turned. */
     const isTall = spanHeight > 0;
 
-    // A composite gate is named by its declaration. A subcircuit only knows the id of the circuit it
-    // points at, so it shows a short form of it until the referenced circuit's name is resolved.
-    // TODO: carry the referenced circuit's file name on the DTO — deriving it on read keeps it from
-    // going stale when the file is renamed, which storing it here would not.
-    const label = isCompositeGate(operation) ? operation.identifier : operation.definitionCircuitId.slice(0, 8);
+    // A composite gate is named by its declaration; a subcircuit by the file it points at, which the
+    // backend resolves on every read. The id is only the fallback for a reference that no longer
+    // resolves — a deleted file, or one moved out of this project.
+    const label = isCompositeGate(operation)
+        ? operation.identifier
+        : (operation.definitionName ?? operation.definitionCircuitId.slice(0, 8));
 
     return (
         // The preview lives outside the context menu but shares its trigger element: nesting the
@@ -250,7 +251,9 @@ export function CompositionBox({
                 ) : (
                     // A subcircuit's body lives in another circuit and is not loaded here, so there
                     // is nothing to draw; naming what it points at is all this panel can honestly say.
-                    <span className="text-xs">Subcircuit: {operation.definitionCircuitId}</span>
+                    <span className="text-xs">
+                        Subcircuit: {operation.definitionName ?? operation.definitionCircuitId}
+                    </span>
                 )}
             </TooltipContent>
         </Tooltip>

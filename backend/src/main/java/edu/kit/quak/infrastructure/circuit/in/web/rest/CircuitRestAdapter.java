@@ -2,6 +2,7 @@ package edu.kit.quak.infrastructure.circuit.in.web.rest;
 
 import edu.kit.quak.application.circuit.antlr.QasmService;
 import edu.kit.quak.application.circuit.ports.in.CircuitServicePort;
+import edu.kit.quak.application.circuit.ports.in.SubcircuitNameServicePort;
 import edu.kit.quak.application.circuit.services.ProjectQasmIncludeResolver;
 import edu.kit.quak.application.user.ports.in.UserServicePort;
 import edu.kit.quak.core.circuit.codegen.QasmCodeGenerator;
@@ -16,6 +17,7 @@ import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.CircuitContentRespons
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.CircuitResponse;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.GeneratedCodeResponse;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.MoveQuantumOperationRequest;
+import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.SubcircuitOperationDto;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.UpdateCircuitRequest;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.CircuitDtoMapper;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.ElementSelectorDtoMapper;
@@ -24,6 +26,7 @@ import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.QuantumOperationDt
 import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.RegisterDtoMapper;
 import edu.kit.quak.infrastructure.user.in.web.rest.mapper.AuthenticationMapper;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -38,6 +41,7 @@ import org.springframework.web.bind.annotation.*;
 public class CircuitRestAdapter {
 
     private final CircuitServicePort service;
+    private final SubcircuitNameServicePort subcircuitNames;
     private final QasmService qasmService;
     private final ProjectQasmIncludeResolver includeResolver;
     private final UserServicePort userService;
@@ -50,6 +54,7 @@ public class CircuitRestAdapter {
 
     public CircuitRestAdapter(
         CircuitServicePort service,
+        SubcircuitNameServicePort subcircuitNames,
         QasmService qasmService,
         ProjectQasmIncludeResolver includeResolver,
         UserServicePort userService,
@@ -61,6 +66,7 @@ public class CircuitRestAdapter {
         AuthenticationMapper authMapper
     ) {
         this.service = service;
+        this.subcircuitNames = subcircuitNames;
         this.qasmService = qasmService;
         this.includeResolver = includeResolver;
         this.userService = userService;
@@ -73,6 +79,36 @@ public class CircuitRestAdapter {
     }
 
     /**
+     * Maps a circuit and fills in the display name of every subcircuit it references.
+     *
+     * <p>The name is not part of the stored operation - it is the file the referenced circuit
+     * belongs to, looked up per response. Storing it would go stale the moment that file is renamed.
+     * A reference that cannot be resolved simply keeps a null name, and the editor falls back to
+     * showing the id.
+     */
+    private CircuitResponse toResponse(QuantumCircuit circuit, User user) {
+        CircuitResponse response = mapper.toResponse(circuit);
+        List<SubcircuitOperationDto> subcircuits = response
+            .layers()
+            .stream()
+            .flatMap(layer -> layer.quantumOperations().stream())
+            .filter(SubcircuitOperationDto.class::isInstance)
+            .map(SubcircuitOperationDto.class::cast)
+            .toList();
+        if (subcircuits.isEmpty()) {
+            return response;
+        }
+
+        Map<String, String> names = subcircuitNames.resolveNames(
+            subcircuits.stream().map(SubcircuitOperationDto::getDefinitionCircuitId).toList(),
+            circuit.getProjectId(),
+            user
+        );
+        subcircuits.forEach(subcircuit -> subcircuit.setDefinitionName(names.get(subcircuit.getDefinitionCircuitId())));
+        return response;
+    }
+
+    /**
      * Returns the circuit linked to the given file, creating it if it does not
      * exist yet. Ownership is verified via the file's project.
      */
@@ -82,7 +118,7 @@ public class CircuitRestAdapter {
         log.debug("REST request to get circuit by fileId: {}", fileId);
         User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
         QuantumCircuit circuit = service.getOrCreateByFileId(fileId, user);
-        return mapper.toResponse(circuit);
+        return toResponse(circuit, user);
     }
 
     /**
@@ -101,7 +137,7 @@ public class CircuitRestAdapter {
         User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
 
         QuantumCircuit circuit = service.replaceContent(circuitId, toRegisters(request), toLayers(request), user);
-        return mapper.toResponse(circuit);
+        return toResponse(circuit, user);
     }
 
     /**
@@ -165,7 +201,7 @@ public class CircuitRestAdapter {
         log.info("REST request to reset a specific circuit");
         User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
         QuantumCircuit circuit = service.resetCircuit(circuitId, user);
-        return mapper.toResponse(circuit);
+        return toResponse(circuit, user);
     }
 
     /**
@@ -192,7 +228,7 @@ public class CircuitRestAdapter {
         log.info("REST request to add qubit to register '{}' in circuit '{}'", registerId, circuitId);
         User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
         QuantumCircuit circuit = service.addQubit(circuitId, registerId, user);
-        return mapper.toResponse(circuit);
+        return toResponse(circuit, user);
     }
 
     /**
@@ -211,7 +247,7 @@ public class CircuitRestAdapter {
         User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
 
         QuantumCircuit circuit = service.removeQubit(circuitId, registerId, qubitIdx, user);
-        return mapper.toResponse(circuit);
+        return toResponse(circuit, user);
     }
 
     /**
@@ -231,7 +267,7 @@ public class CircuitRestAdapter {
 
         QuantumOperation operation = quantumOperationDtoMapper.toDomain(request.quantumOperation());
         QuantumCircuit circuit = service.addQuantumOperation(circuitId, operation, request.layerIdx(), user);
-        return mapper.toResponse(circuit);
+        return toResponse(circuit, user);
     }
 
     /**
@@ -264,7 +300,7 @@ public class CircuitRestAdapter {
             controlQubits,
             user
         );
-        return mapper.toResponse(circuit);
+        return toResponse(circuit, user);
     }
 
     /**
@@ -283,6 +319,6 @@ public class CircuitRestAdapter {
         User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
 
         QuantumCircuit circuit = service.removeQuantumOperation(circuitId, operationId, user);
-        return mapper.toResponse(circuit);
+        return toResponse(circuit, user);
     }
 }

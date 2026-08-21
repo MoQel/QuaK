@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import edu.kit.quak.application.circuit.antlr.QasmService;
 import edu.kit.quak.application.circuit.ports.in.CircuitServicePort;
+import edu.kit.quak.application.circuit.ports.in.SubcircuitNameServicePort;
 import edu.kit.quak.application.circuit.ports.out.QasmSource;
 import edu.kit.quak.application.circuit.services.ProjectQasmIncludeResolver;
 import edu.kit.quak.application.filesystem.ports.in.ProjectServicePort;
@@ -54,6 +55,9 @@ class CircuitRestAdapterTest {
 
     @MockitoBean
     private CircuitServicePort circuitServicePort;
+
+    @MockitoBean
+    private SubcircuitNameServicePort subcircuitNameServicePort;
 
     @MockitoBean
     private ProjectQasmIncludeResolver includeResolver;
