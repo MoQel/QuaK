@@ -1,5 +1,5 @@
 import React, { useMemo, useRef } from 'react';
-import { CompositeQuantumGateDto, RegisterResponse } from '@/api/dto/circuit.ts';
+import { CompositeQuantumGateDto, isCompositeGate, RegisterResponse, SubcircuitOperationDto } from '@/api/dto/circuit.ts';
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu.tsx';
 import { CELL_WIDTH, QUBIT_HEIGHT } from '@/views/circuit-view/util/layout.ts';
 import { toGlobalQubitIndex } from '@/views/circuit-view/util/spans.ts';
@@ -11,8 +11,12 @@ const BOX_INSET_Y = 4;
 /** Horizontal gutter left and right of the box, so adjacent columns stay visually separate. */
 const BOX_INSET_X = 8;
 
-interface CompositeQuantumGateProps {
-    operation: CompositeQuantumGateDto;
+interface CompositionBoxProps {
+    /**
+     * Either way of composing a circuit. Both are drawn as one box over their wires; they differ
+     * only in where the contents live — inline in a gate declaration, or in another circuit.
+     */
+    operation: CompositeQuantumGateDto | SubcircuitOperationDto;
     registers: RegisterResponse[];
     layerIdx: number;
     /** Semi-transparent and non-interactive while dragged; see ElementaryQuantumGate. */
@@ -20,17 +24,25 @@ interface CompositeQuantumGateProps {
     onDragStart: (operationSize: number, grabOffset: number) => void;
     onDragEnd: () => void;
     onDelete: () => void;
-    /** Dissolves the box into the gates it is made of; offered on right-click. */
-    onUngroup: () => void;
+    /**
+     * Dissolves the box into the gates it is made of; offered on right-click. Absent for a
+     * subcircuit: its body is not in this circuit, so there is nothing here to dissolve into.
+     */
+    onUngroup?: () => void;
 }
 
 /**
- * A user-defined gate as one labelled box spanning the wires it was called on.
+ * A composed operation as one labelled box spanning the wires it was called on.
+ *
+ * Both ways of composing a circuit are drawn the same way, because from the circuit's side they are
+ * the same thing: one operation standing for several. They differ in where the contents live — a
+ * composite gate carries the body of a QASM `gate` declaration, a subcircuit points at another
+ * circuit of the project — which is why only the former can be ungrouped.
  *
  * Every declared parameter is drawn as a port, in the gate's parameter order, so the box shows the
  * full signature of the gate as written rather than only the qubits its body happens to touch.
  */
-export function CompositeQuantumGate({
+export function CompositionBox({
     operation,
     registers,
     layerIdx,
@@ -39,7 +51,7 @@ export function CompositeQuantumGate({
     onDragEnd,
     onDelete,
     onUngroup,
-}: Readonly<CompositeQuantumGateProps>) {
+}: Readonly<CompositionBoxProps>) {
     const isDraggingRef = useRef(false);
     const interactivity = isGhost ? 'pointer-events-none' : 'pointer-events-auto';
 
@@ -60,7 +72,7 @@ export function CompositeQuantumGate({
             ports: wireOfPosition.map((wire, position) => ({
                 position,
                 wire,
-                label: operation.portLabels?.[position] ?? '',
+                label: isCompositeGate(operation) ? (operation.portLabels?.[position] ?? '') : `q${position}`,
             })),
         };
     }, [operation, registers]);
@@ -99,7 +111,15 @@ export function CompositeQuantumGate({
         if (!isDraggingRef.current) onDelete?.();
     };
 
-    const contents = operation.body?.map((part) => part.identifier).join(', ');
+    // A composite gate carries its body, so the tooltip can list it. A subcircuit only knows the id
+    // of the circuit it points at; the box shows a short form of it and the tooltip the whole id.
+    // TODO: show the referenced circuit's file name instead — the backend would have to resolve it
+    // on read, since storing the name here would go stale when the file is renamed.
+    const label = isCompositeGate(operation) ? operation.identifier : operation.definitionCircuitId.slice(0, 8);
+    const contents = isCompositeGate(operation) ? operation.body?.map((part) => part.identifier).join(', ') : undefined;
+    const tooltip = isCompositeGate(operation)
+        ? (contents ? `${operation.identifier} (${contents})` : String(operation.identifier))
+        : `Subcircuit: ${operation.definitionCircuitId}`;
 
     return (
         <ContextMenu>
@@ -120,7 +140,7 @@ export function CompositeQuantumGate({
                     }}
                 >
                     <div
-                        title={contents ? `${operation.identifier} (${contents})` : operation.identifier}
+                        title={tooltip}
                         className={`
                             absolute rounded-none flex items-center justify-center select-none
                             ${interactivity} cursor-grab active:cursor-grabbing
@@ -134,9 +154,7 @@ export function CompositeQuantumGate({
                             color: 'var(--bg-dark)',
                         }}
                     >
-                        <span className="px-1 truncate text-[13px] font-semibold leading-none">
-                            {operation.identifier}
-                        </span>
+                        <span className="px-1 truncate text-[13px] font-semibold leading-none">{label}</span>
 
                         {/* Port markers, positioned on the wire each parameter is bound to. */}
                         {ports.map((port) => (
@@ -153,7 +171,7 @@ export function CompositeQuantumGate({
             </ContextMenuTrigger>
 
             <ContextMenuContent>
-                <ContextMenuItem onSelect={onUngroup}>Ungroup</ContextMenuItem>
+                {onUngroup && <ContextMenuItem onSelect={onUngroup}>Ungroup</ContextMenuItem>}
                 <ContextMenuItem variant="destructive" onSelect={onDelete}>
                     Delete
                 </ContextMenuItem>

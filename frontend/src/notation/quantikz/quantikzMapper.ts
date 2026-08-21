@@ -1,6 +1,7 @@
 import {
     CircuitResponse,
     CompositeQuantumGateDto,
+    SubcircuitOperationDto,
     ElementaryQuantumGateDto,
     getRegisterSize,
     isQuantumRegister,
@@ -90,7 +91,14 @@ function applyOperation(
     }
 
     if (operation.type === 'COMPOSITE_QUANTUM_GATE') {
-        applyCompositeGate(grid, wireIndex, operation, layerIdx);
+        applyCompositionBox(grid, wireIndex, operation, operation.identifier, layerIdx);
+        return;
+    }
+
+    if (operation.type === 'SUBCIRCUIT_OPERATION') {
+        // The referenced circuit is not loaded here, so the box is labelled the way the editor
+        // labels it: by a short form of the id it points at.
+        applyCompositionBox(grid, wireIndex, operation, operation.definitionCircuitId.slice(0, 8), layerIdx);
         return;
     }
 
@@ -107,10 +115,11 @@ function applyOperation(
  * lost. `\gate[n]{...}` is placed on the topmost wire and quantikz draws it across the following
  * n-1 wires, which is why the spanned cells are left empty.
  */
-function applyCompositeGate(
+function applyCompositionBox(
     grid: string[][],
     wireIndex: WireIndex,
-    gate: CompositeQuantumGateDto,
+    gate: CompositeQuantumGateDto | SubcircuitOperationDto,
+    name: string | undefined,
     layerIdx: number,
 ): void {
     const wires = gate.targetQubits
@@ -122,7 +131,7 @@ function applyCompositeGate(
     const topWire = Math.min(...wires);
     const span = Math.max(...wires) - topWire + 1;
     // Gate names are user-chosen, so they need the same escaping as the register labels.
-    const label = escapeLatexText(gate.identifier);
+    const label = escapeLatexText(name ?? '');
 
     grid[topWire][layerIdx] = span > 1 ? String.raw`\gate[${span}]{${label}}` : String.raw`\gate{${label}}`;
 }

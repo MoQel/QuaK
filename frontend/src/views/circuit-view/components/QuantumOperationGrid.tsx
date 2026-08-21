@@ -1,5 +1,5 @@
-import { isCompositeGate, QuantumOperationDto, RegisterResponse } from '@/api/dto/circuit.ts';
-import { CompositeQuantumGate } from '@/views/circuit-view/components/CompositeQuantumGate.tsx';
+import { isComposedOperation, isCompositeGate, QuantumOperationDto, RegisterResponse } from '@/api/dto/circuit.ts';
+import { CompositionBox } from '@/views/circuit-view/components/CompositionBox.tsx';
 import { ElementaryQuantumGate } from '@/views/circuit-view/components/ElementaryQuantumGate.tsx';
 import { UiLayer } from '@/views/circuit-view/util/types.ts';
 import { useDispatch } from 'react-redux';
@@ -58,9 +58,9 @@ export function QuantumOperationGrid({
     return (
         <div className={`absolute inset-0 z-20 ${isOperationDragging ? 'pointer-events-none' : ''}`}>
             {renderedOperations.map(({ op, layerIdx, isGhost }) =>
-                // A user-defined gate is one box rather than a set of target/control markers.
-                isCompositeGate(op) ? (
-                    <CompositeQuantumGate
+                // A composed operation is one box rather than a set of target/control markers.
+                isComposedOperation(op) ? (
+                    <CompositionBox
                         key={op.id}
                         operation={op}
                         registers={registers}
@@ -71,7 +71,8 @@ export function QuantumOperationGrid({
                         }
                         onDragEnd={handleOperationDragEnd}
                         onDelete={() => removeQuantumOperation(op.id!)}
-                        onUngroup={() => ungroupQuantumOperation(op.id!)}
+                        // Only a composite gate has a body in this circuit to dissolve into.
+                        onUngroup={isCompositeGate(op) ? () => ungroupQuantumOperation(op.id!) : undefined}
                     />
                 ) : (
                     <ElementaryQuantumGate

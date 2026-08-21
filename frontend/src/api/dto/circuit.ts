@@ -83,6 +83,12 @@ export type QuantumOperationDto =
 export const isCompositeGate = (op: QuantumOperationDto): op is CompositeQuantumGateDto =>
     op.type === 'COMPOSITE_QUANTUM_GATE';
 
+export const isSubcircuit = (op: QuantumOperationDto): op is SubcircuitOperationDto => op.type === 'SUBCIRCUIT_OPERATION';
+
+/** Either way of composing a circuit; both are drawn as one box rather than as target/control markers. */
+export const isComposedOperation = (op: QuantumOperationDto): op is CompositeQuantumGateDto | SubcircuitOperationDto =>
+    isCompositeGate(op) || isSubcircuit(op);
+
 export const getInvolvedSelectors = (op: QuantumOperationDto): ElementSelectorDto[] => {
     const selectors = [...op.targetQubits];
     if (op.controlQubits) {
