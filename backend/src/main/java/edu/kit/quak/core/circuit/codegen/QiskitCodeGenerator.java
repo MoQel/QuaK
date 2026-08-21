@@ -248,8 +248,6 @@ public class QiskitCodeGenerator {
             case RY -> "ry";
             case RZ -> "rz";
             case MEASURE -> "measure";
-            // User-defined gates have no Qiskit equivalent here; expand them before generating.
-            case COMPOSITE -> throw new IllegalStateException("Composite gates are not supported by the Qiskit generator yet.");
         };
     }
 

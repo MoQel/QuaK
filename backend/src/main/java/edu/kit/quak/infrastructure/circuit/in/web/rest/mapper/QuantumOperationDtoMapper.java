@@ -42,7 +42,7 @@ public interface QuantumOperationDtoMapper {
 
     /**
      * Hand-written because a composite does not follow the shape the generated mapping assumes: its
-     * {@code identifier} is the gate's own name rather than the {@code COMPOSITE} library constant,
+     * {@code identifier} is the gate's own name rather than a library constant,
      * and the port labels, used positions and body are derived from the definition instead of being
      * plain properties. The body is expanded one level, so a nested gate stays a nested composite.
      */

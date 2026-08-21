@@ -284,8 +284,6 @@ public class QasmCodeGenerator {
             case RY -> "ry";
             case RZ -> "rz";
             case MEASURE -> "measure";
-            // Unreachable: operatorToCode resolves composites from their definition beforehand.
-            case COMPOSITE -> throw new IllegalStateException("A composite gate must be named by its definition, not by the library.");
         };
     }
 

@@ -686,7 +686,7 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
 
     private boolean isBuiltInGate(String gateName) {
         for (QuantumOperationLibrary operation : QuantumOperationLibrary.values()) {
-            if (operation != QuantumOperationLibrary.COMPOSITE && operation.name().equalsIgnoreCase(gateName)) {
+            if (operation.name().equalsIgnoreCase(gateName)) {
                 return true;
             }
         }
@@ -694,8 +694,6 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
     }
 
     private QuantumOperationLibrary resolveGate(String gateName) {
-        // COMPOSITE is the marker for user-defined gates, not a callable gate itself, so a literal
-        // `composite q[0];` must fail like any other unknown name instead of resolving to it.
         if (!isBuiltInGate(gateName)) {
             throw new QasmParseException("Unsupported gate '" + gateName + "'.");
         }
