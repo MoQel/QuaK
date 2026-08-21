@@ -18,6 +18,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.context.annotation.Import;
 
 @DataJpaTest
@@ -38,6 +39,9 @@ class CircuitJpaAdapterTest {
 
     @Autowired
     private SpringDataJpaCircuitRepository springRepository;
+
+    @Autowired
+    private TestEntityManager entityManager;
 
     public static final int INIT_QUBITS = 4;
 
@@ -153,6 +157,11 @@ class CircuitJpaAdapterTest {
 
         // Act
         jpaAdapter.save(domainCircuit);
+        // Without flush+clear the first-level cache hands back the graph that was just saved, so a
+        // subcircuit that never reached a table would still look intact. It carries no
+        // operationDefinition, which is exactly what this has to prove is storable.
+        entityManager.flush();
+        entityManager.clear();
         Optional<QuantumCircuit> found = jpaAdapter.findById(circuitId);
 
         // Assert
