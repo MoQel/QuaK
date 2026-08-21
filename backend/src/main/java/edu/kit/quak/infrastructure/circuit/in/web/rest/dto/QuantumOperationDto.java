@@ -1,6 +1,5 @@
 package edu.kit.quak.infrastructure.circuit.in.web.rest.dto;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import java.util.List;
@@ -19,8 +18,9 @@ import lombok.Setter;
 @Setter
 public abstract class QuantumOperationDto {
 
-    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
-    protected String id; // Is only returned within response, not expected within request.
+    // Accepted in requests so operations keep a stable identity across full-replace
+    // saves; ids colliding with another circuit are rejected in CircuitService.
+    protected String id;
 
     protected String identifier;
     protected boolean inverseForm;

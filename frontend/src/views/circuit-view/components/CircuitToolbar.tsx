@@ -15,6 +15,7 @@ import { useActiveCode } from '@/hooks/editor/useActiveCode.ts';
 import { useProject } from '@/contexts/ProjectContext.tsx';
 import { AddCompositionDialog } from '@/views/circuit-view/components/AddCompositionDialog.tsx';
 import { toast } from 'sonner';
+import { QuantikzExportButton } from '@/views/circuit-view/components/QuantikzExportButton.tsx';
 
 interface CircuitToolbarProps {
     circuit: CircuitResponse | undefined;
@@ -29,21 +30,18 @@ export function CircuitToolbar({ circuit, setCircuit }: Readonly<CircuitToolbarP
     const { getActiveCode } = useActiveCode();
     const { projectId } = useProject();
 
+    // setCircuit nimmt den fertigen Circuit, keine Updater-Funktion: der aktive Circuit liegt in
+    // CircuitTabsContext und wird als Ganzes ersetzt (debounced full-replace PUT).
     const handleAddComposition = (op: CompositeQuantumOperationDto, layerIdx: number) => {
-        setCircuit((prev) => {
-            if (!prev) return prev;
-            const layers = prev.layers.map((layer) => ({
-                quantumOperations: [...layer.quantumOperations],
-            }));
-            while (layers.length <= layerIdx) {
-                layers.push({ quantumOperations: [] });
-            }
-            layers[layerIdx].quantumOperations.push(op);
-            return {
-                ...prev,
-                layers,
-            };
-        });
+        if (!circuit) return;
+        const layers = circuit.layers.map((layer) => ({
+            quantumOperations: [...layer.quantumOperations],
+        }));
+        while (layers.length <= layerIdx) {
+            layers.push({ quantumOperations: [] });
+        }
+        layers[layerIdx].quantumOperations.push(op);
+        setCircuit({ ...circuit, layers });
     };
 
     const parseActiveEditor = async () => {
@@ -55,7 +53,7 @@ export function CircuitToolbar({ circuit, setCircuit }: Readonly<CircuitToolbarP
 
         setIsParsing(true);
         try {
-            const parsedCircuit = await apiRequest<unknown>('/qasm/parse', {
+            const parsedCircuit = await apiRequest<unknown>('/api/circuit/parse', {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain' },
                 body: code,
@@ -75,70 +73,72 @@ export function CircuitToolbar({ circuit, setCircuit }: Readonly<CircuitToolbarP
 
     return (
         <div className="flex items-center justify-start gap-2">
-            <Button
-                onClick={parseActiveEditor}
-                size="icon"
-                className="size-8"
-                variant="secondary"
-                title="Parse active editor"
-                disabled={isParsing}
-            >
-                <RefreshCw className={isParsing ? 'animate-spin' : undefined} />
-            </Button>
-            <Button onClick={addQubit} size="icon" className="size-8" variant="secondary" title="Add Qubit">
-                <Plus />
-            </Button>
-            <Button
-                onClick={deleteLastQubit}
-                size="icon"
-                className="size-8"
-                variant="destructive"
-                title="Delete Last Qubit"
-            >
-                <Minus />
-            </Button>
-            <Button
-                onClick={() => setIsCompositionOpen(true)}
-                size="sm"
-                className="h-8 gap-1.5 px-2.5 text-xs font-medium"
-                variant="secondary"
-                title="Add Composition (Sub-Circuit)"
-            >
-                <Boxes className="size-4 text-quantum" />
-                <span>+ Composition</span>
-            </Button>
-            <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
-                <PopoverTrigger asChild>
-                    <Button size="icon" className="size-8" variant="destructive" title="Reset Circuit">
-                        <Trash2 />
-                    </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-64 p-4">
-                    <div className="flex flex-col space-y-3 text-center">
-                        <p className="text-sm font-medium leading-none">Reset Circuit?</p>
-                        <p className="text-xs text-muted-foreground">
-                            You are about to delete the entire circuit. This action cannot be undone.
-                        </p>
-                        <div className="flex flex-col gap-2">
-                            <Button
-                                onClick={() => {
-                                    resetCircuit();
-                                    setIsPopoverOpen(false);
-                                }}
-                                variant="destructive"
-                                size="sm"
-                                className="w-full font-bold"
-                            >
-                                Yes, reset circuit
-                            </Button>
-                            <Button variant="secondary" size="sm" onClick={() => setIsPopoverOpen(false)}>
-                                Cancel
-                            </Button>
+            <QuantikzExportButton circuit={circuit ?? null} />
+            <div className="flex space-x-3">
+                <Button
+                    onClick={parseActiveEditor}
+                    size="icon"
+                    className="size-8"
+                    variant="secondary"
+                    title="Parse active editor"
+                    disabled={isParsing}
+                >
+                    <RefreshCw className={isParsing ? 'animate-spin' : undefined} />
+                </Button>
+                <Button onClick={addQubit} size="icon" className="size-8" variant="secondary" title="Add Qubit">
+                    <Plus />
+                </Button>
+                <Button
+                    onClick={deleteLastQubit}
+                    size="icon"
+                    className="size-8"
+                    variant="destructive"
+                    title="Delete Last Qubit"
+                >
+                    <Minus />
+                </Button>
+                <Button
+                    onClick={() => setIsCompositionOpen(true)}
+                    size="sm"
+                    className="h-8 gap-1.5 px-2.5 text-xs font-medium"
+                    variant="secondary"
+                    title="Add Composition (Sub-Circuit)"
+                >
+                    <Boxes className="size-4 text-quantum" />
+                    <span>+ Composition</span>
+                </Button>
+                <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+                    <PopoverTrigger asChild>
+                        <Button size="icon" className="size-8" variant="destructive" title="Reset Circuit">
+                            <Trash2 />
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-64 p-4">
+                        <div className="flex flex-col space-y-3 text-center">
+                            <p className="text-sm font-medium leading-none">Reset Circuit?</p>
+                            <p className="text-xs text-muted-foreground">
+                                You are about to delete the entire circuit. This action cannot be undone.
+                            </p>
+                            <div className="flex flex-col gap-2">
+                                <Button
+                                    onClick={() => {
+                                        resetCircuit();
+                                        setIsPopoverOpen(false);
+                                    }}
+                                    variant="destructive"
+                                    size="sm"
+                                    className="w-full font-bold"
+                                >
+                                    Yes, reset circuit
+                                </Button>
+                                <Button variant="secondary" size="sm" onClick={() => setIsPopoverOpen(false)}>
+                                    Cancel
+                                </Button>
+                            </div>
                         </div>
-                    </div>
-                </PopoverContent>
-            </Popover>
-
+                    </PopoverContent>
+                </Popover>
+            </div>
             <AddCompositionDialog
                 open={isCompositionOpen}
                 onOpenChange={setIsCompositionOpen}
@@ -165,9 +165,9 @@ type ParserLayer = {
     quantumOperations?: ParserOperation[];
 };
 
+// Content-only parse result: the backend returns registers and layers without any
+// circuit identity; ids are re-mapped onto the active circuit during normalization.
 type ParserCircuit = {
-    id?: string;
-    projectId?: string;
     registers?: ParserRegister[];
     layers?: ParserLayer[];
 };
@@ -221,7 +221,7 @@ const normalizeParsedCircuit = (rawCircuit: unknown, currentCircuit: CircuitResp
     });
 
     return {
-        id: currentCircuit?.id ?? parsed.id ?? crypto.randomUUID(),
+        id: currentCircuit?.id ?? crypto.randomUUID(),
         registers,
         layers: (parsed.layers ?? []).map((layer) => ({
             quantumOperations: (layer.quantumOperations ?? []).map((operation) => ({

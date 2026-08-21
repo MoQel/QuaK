@@ -52,7 +52,6 @@ public class ProjectService implements ProjectServicePort {
         roleRepository.save(ownerRole);
         log.info("Assigned OWNER role to user '{}' for project '{}'", user.getId(), savedProject.getId());
 
-        circuitService.init(savedProject.getId());
         return savedProject;
     }
 
@@ -75,7 +74,7 @@ public class ProjectService implements ProjectServicePort {
 
         verifyOwnerAccess(project, user);
 
-        // Removes the project circuit and all file-linked circuits
+        // Removes all circuits linked to the project's files
         circuitService.deleteAllByProjectId(pId);
         // Clean up all role assignments for this project
         roleRepository.deleteAllByProjectId(pId);

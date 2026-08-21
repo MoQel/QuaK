@@ -15,9 +15,6 @@ import { useProject } from '@/contexts/ProjectContext.tsx';
 import { saveCircuitContent } from '@/views/circuit-view/util/circuitPersistence.ts';
 import { store } from '@/store/store.ts';
 
-/** Dirty-tracking key for the project-level circuit (no file tab). */
-const PROJECT_CIRCUIT_KEY = '__project__';
-
 interface CircuitTabsContextType {
     activeCircuit: CircuitResponse | undefined;
     activeCircuitTabId: string | null;
@@ -33,7 +30,7 @@ const CircuitTabsContext = createContext<CircuitTabsContextType>({
 export const useCircuitTabs = () => useContext(CircuitTabsContext);
 
 export const CircuitTabsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const { circuit, setCircuit, projectId } = useProject();
+    const { projectId } = useProject();
     const activeCircuitTabId = useAppSelector((state) => {
         const activeGroup = state.tabs.groups.find((group) => group.id === state.tabs.activeGroupId);
         const activeTabId = activeGroup?.activeTabId ?? null;
@@ -48,8 +45,8 @@ export const CircuitTabsProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const [circuitsByTabId, setCircuitsByTabId] = useState<Record<string, CircuitResponse | undefined>>({});
 
     // Each file tab shows the circuit stored for that file in the database
-    // (single source of truth); without a tab the project circuit is shown.
-    const activeCircuit = activeCircuitTabId ? circuitsByTabId[activeCircuitTabId] : circuit;
+    // (single source of truth); without a tab there is no circuit to show.
+    const activeCircuit = activeCircuitTabId ? circuitsByTabId[activeCircuitTabId] : undefined;
 
     // Circuits whose local edits have not been written to the backend yet.
     const dirtyCircuitKeysRef = useRef<Set<string>>(new Set());
@@ -58,8 +55,6 @@ export const CircuitTabsProvider: React.FC<{ children: React.ReactNode }> = ({ c
     // pending edits even though their state has already been reset.
     const latestCircuitsRef = useRef(circuitsByTabId);
     latestCircuitsRef.current = circuitsByTabId;
-    const latestProjectCircuitRef = useRef(circuit);
-    latestProjectCircuitRef.current = circuit;
 
     // Immediately persist the given dirty circuits (or all dirty ones) and clear their dirty flag.
     const flushDirtyCircuits = useCallback((keys?: string[]) => {
@@ -68,8 +63,7 @@ export const CircuitTabsProvider: React.FC<{ children: React.ReactNode }> = ({ c
             if (!dirtyKeys.has(key)) continue;
             dirtyKeys.delete(key);
 
-            const target =
-                key === PROJECT_CIRCUIT_KEY ? latestProjectCircuitRef.current : latestCircuitsRef.current[key];
+            const target = latestCircuitsRef.current[key];
             if (target) {
                 saveCircuitContent(target).catch((error) => console.error('Failed to save circuit', error));
             }
@@ -78,12 +72,9 @@ export const CircuitTabsProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
     const setActiveCircuit = useCallback(
         (nextCircuit: SetStateAction<CircuitResponse | undefined>) => {
-            dirtyCircuitKeysRef.current.add(activeCircuitTabId ?? PROJECT_CIRCUIT_KEY);
-
-            if (!activeCircuitTabId) {
-                setCircuit(nextCircuit);
-                return;
-            }
+            // Circuit edits are only possible while a file tab is active.
+            if (!activeCircuitTabId) return;
+            dirtyCircuitKeysRef.current.add(activeCircuitTabId);
 
             setCircuitsByTabId((prev) => {
                 const previousCircuit = prev[activeCircuitTabId];
@@ -100,7 +91,7 @@ export const CircuitTabsProvider: React.FC<{ children: React.ReactNode }> = ({ c
                 };
             });
         },
-        [activeCircuitTabId, setCircuit],
+        [activeCircuitTabId],
     );
 
     // Load the circuit linked to the active file tab from the backend (get-or-create).
@@ -127,7 +118,7 @@ export const CircuitTabsProvider: React.FC<{ children: React.ReactNode }> = ({ c
     useEffect(() => {
         const timer = setTimeout(() => flushDirtyCircuits(), 800);
         return () => clearTimeout(timer);
-    }, [circuitsByTabId, circuit, flushDirtyCircuits]);
+    }, [circuitsByTabId, flushDirtyCircuits]);
 
     // When a tab is closed, immediately persist its unsaved edits (save on close).
     // The cached circuit is intentionally KEPT: reopening the tab then shows it
@@ -136,9 +127,7 @@ export const CircuitTabsProvider: React.FC<{ children: React.ReactNode }> = ({ c
     // The whole cache is cleared on project switch (see the reset effect below).
     useEffect(() => {
         const openIds = new Set(store.getState().tabs.groups.flatMap((group) => group.openTabs.map((tab) => tab.id)));
-        const closingDirtyKeys = Array.from(dirtyCircuitKeysRef.current).filter(
-            (key) => key !== PROJECT_CIRCUIT_KEY && !openIds.has(key),
-        );
+        const closingDirtyKeys = Array.from(dirtyCircuitKeysRef.current).filter((key) => !openIds.has(key));
         flushDirtyCircuits(closingDirtyKeys);
     }, [openTabIdsKey, flushDirtyCircuits]);
 

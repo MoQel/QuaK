@@ -40,7 +40,8 @@ dependencies {
 
 	implementation "org.antlr:antlr4-runtime:4.13.1"
 	antlr "org.antlr:antlr4:4.13.1"
-	
+	implementation 'org.springframework.boot:spring-boot-starter-websocket'
+
 	// Lombok - must be declared before MapStruct for proper annotation processor ordering
 	compileOnly 'org.projectlombok:lombok:1.18.30'
 	annotationProcessor 'org.projectlombok:lombok:1.18.30'
@@ -106,7 +107,7 @@ tasks.register('prepareDevStatic') {
 	doLast {
 		def staticDir = file("src/main/resources/static")
 		if (!staticDir.exists()) staticDir.mkdirs()
-		
+
 		// Delete stale files
 		staticDir.listFiles().each { f ->
 			if (f.name != ".gitkeep") {

@@ -1,4 +1,25 @@
-import { CircuitResponse, getInvolvedSelectors, isQuantumRegister, RegisterResponse } from '@/api/dto/circuit.ts';
+import {
+    CircuitResponse,
+    ElementSelectorDto,
+    getInvolvedSelectors,
+    isQuantumRegister,
+    QuantumOperationDto,
+    RegisterResponse,
+} from '@/api/dto/circuit.ts';
+
+/** True if the operation acts on the given qubit (target or control). */
+const operationTouchesQubit = (op: QuantumOperationDto, registerId: string, qubitIdx: number): boolean =>
+    getInvolvedSelectors(op).some((sel) => sel.registerId === registerId && sel.index === qubitIdx);
+
+/** Shifts selectors above the removed qubit down by one to mirror the backend's re-indexing. */
+const shiftSelectorsAfterRemoval = (
+    selectors: ElementSelectorDto[],
+    registerId: string,
+    qubitIdx: number,
+): ElementSelectorDto[] =>
+    selectors.map((sel) =>
+        sel.registerId === registerId && sel.index > qubitIdx ? { ...sel, index: sel.index - 1 } : sel,
+    );
 
 /**
  * Local mutations on the active circuit. All changes go through setCircuit and
@@ -44,24 +65,11 @@ export function createCircuitService(
         const layers = circuit.layers
             .map((layer) => ({
                 quantumOperations: layer.quantumOperations
-                    .filter(
-                        (op) =>
-                            !getInvolvedSelectors(op).some(
-                                (sel) => sel.registerId === registerId && sel.index === qubitIdx,
-                            ),
-                    )
+                    .filter((op) => !operationTouchesQubit(op, registerId, qubitIdx))
                     .map((op) => ({
                         ...op,
-                        targetQubits: op.targetQubits.map((sel) =>
-                            sel.registerId === registerId && sel.index > qubitIdx
-                                ? { ...sel, index: sel.index - 1 }
-                                : sel,
-                        ),
-                        controlQubits: op.controlQubits.map((sel) =>
-                            sel.registerId === registerId && sel.index > qubitIdx
-                                ? { ...sel, index: sel.index - 1 }
-                                : sel,
-                        ),
+                        targetQubits: shiftSelectorsAfterRemoval(op.targetQubits, registerId, qubitIdx),
+                        controlQubits: shiftSelectorsAfterRemoval(op.controlQubits, registerId, qubitIdx),
                     })),
             }))
             .filter((layer) => layer.quantumOperations.length > 0);

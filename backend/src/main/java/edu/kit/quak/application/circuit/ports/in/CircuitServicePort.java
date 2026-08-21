@@ -9,18 +9,6 @@ import edu.kit.quak.core.user.model.User;
 import java.util.List;
 
 public interface CircuitServicePort {
-    /**
-     * Creates a new circuit for the given project. Called automatically on project
-     * creation.
-     */
-    QuantumCircuit init(String projectId);
-
-    /**
-     * Returns the circuit for the given project. Assumes 1:1 for now; will evolve
-     * to listByProjectId.
-     */
-    QuantumCircuit getByProjectId(String projectId, User user);
-
     /** Returns a specific circuit by its unique ID. */
     QuantumCircuit getById(String circuitId);
 
@@ -43,9 +31,7 @@ public interface CircuitServicePort {
 
     /**
      * Resets a specific circuit: deletes it and creates a fresh one with the same
-     * projectId.
-     * Designed around circuitId so it remains correct when multiple circuits per
-     * project are supported.
+     * projectId and fileId.
      */
     QuantumCircuit resetCircuit(String circuitId, User user);
 
@@ -73,7 +59,7 @@ public interface CircuitServicePort {
     void deleteByFileId(String fileId);
 
     /**
-     * Deletes all circuits of a project (project circuit and file circuits).
+     * Deletes all circuits belonging to a project's files.
      * Internal cleanup hook for project deletion; access must be verified by the
      * caller.
      */

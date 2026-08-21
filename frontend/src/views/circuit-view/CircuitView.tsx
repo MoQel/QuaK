@@ -1,6 +1,12 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { useMemo, useState } from 'react';
-import { ElementSelectorDto, getInvolvedSelectors, getRegisterSize, getSelectorKey } from '@/api/dto/circuit';
+import {
+    CircuitResponse,
+    ElementSelectorDto,
+    getInvolvedSelectors,
+    getRegisterSize,
+    getSelectorKey,
+} from '@/api/dto/circuit';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store.ts';
 import { CircuitTabBar } from '@/views/circuit-view/components/CircuitTabBar.tsx';
@@ -13,27 +19,39 @@ import { HoverPos, UiLayer, UiQuantumOperation } from './util/types.ts';
 import { CELL_WIDTH, LABEL_WIDTH, QUBIT_HEIGHT } from '@/views/circuit-view/util/layout.ts';
 import { useCircuitTabs } from '@/contexts/CircuitTabsContext.tsx';
 
+/** Removes the operation with the given id from all layers and drops any layer left empty. */
+const dropOperationFromLayers = (layers: CircuitResponse['layers'], operationId: string): CircuitResponse['layers'] =>
+    layers
+        .map((layer) => ({ quantumOperations: layer.quantumOperations.filter((op) => op.id !== operationId) }))
+        .filter((layer) => layer.quantumOperations.length > 0);
+
 export function CircuitView() {
     const { activeCircuit, setActiveCircuit, activeCircuitTabId } = useCircuitTabs();
     const removeQuantumOperation = (operationId: string) => {
-        setActiveCircuit((prev) => {
-            if (!prev) return prev;
-
-            return {
-                ...prev,
-                layers: prev.layers
-                    .map((layer) => ({
-                        quantumOperations: layer.quantumOperations.filter((operation) => operation.id !== operationId),
-                    }))
-                    .filter((layer) => layer.quantumOperations.length > 0),
-            };
-        });
+        setActiveCircuit((prev) =>
+            prev ? { ...prev, layers: dropOperationFromLayers(prev.layers, operationId) } : prev,
+        );
     };
 
     const { isOperationDragging, draggingOperationSize } = useSelector((state: RootState) => state.dragOperation);
 
     const [hoverPos, setHoverPos] = useState<HoverPos | null>(null);
     const [draggingOperationId, setDraggingOperationId] = useState<string | null>(null);
+
+    /**
+     * The operation currently being dragged, with its original layer position.
+     * Rendered as a ghost so its DOM element (the drag source) stays mounted —
+     * otherwise the browser may never fire dragend and the drag state gets stuck
+     * when dropping outside a valid drop zone.
+     */
+    const draggingOperation = useMemo(() => {
+        if (!draggingOperationId || !activeCircuit) return null;
+        for (const [layerIdx, layer] of activeCircuit.layers.entries()) {
+            const op = layer.quantumOperations.find((operation) => operation.id === draggingOperationId);
+            if (op) return { op, layerIdx };
+        }
+        return null;
+    }, [draggingOperationId, activeCircuit]);
 
     /**
      * Flattens the nested register structure into a single array of qubits
@@ -184,14 +202,19 @@ export function CircuitView() {
                     continue;
                 }
 
-                // Only allow placement adjacent to an existing operation on an overlapping qubit.
+                // Only allow placement adjacent to an existing operation whose SPAN overlaps
+                // the dropped span — the same span-overlap rule the collision check and the
+                // scheduler use. Checking only target/control selectors is too narrow: e.g.
+                // an H on q1 next to a ccx q[0],q[2],q[3] is a stable position (the CCX span
+                // blocks column 0) although q1 carries no selector of the CCX; the parser can
+                // produce such layouts, so dragging must be able to reach them too.
+                const dropSpanMax = qubitIdx + draggingOperationSize - 1;
                 const hasOperationAtLeft = layersWithoutDragOp[layerIdx - 1]?.quantumOperations
                     .filter((op) => op.type !== 'DUMMY')
-                    .some((op) =>
-                        [...op.targetQubits, ...op.controlQubits].some(
-                            (sel) => qubitIdx <= sel.index && sel.index < qubitIdx + draggingOperationSize,
-                        ),
-                    );
+                    .some((op) => {
+                        const span = getOperationSpan(op);
+                        return span.min <= dropSpanMax && qubitIdx <= span.max;
+                    });
 
                 if (hasOperationAtLeft) {
                     activeSet.add(`${qubitIdx}-${layerIdx}`);
@@ -250,16 +273,18 @@ export function CircuitView() {
         allOps.sort(compareCanonicalOrder);
 
         return rescheduleOperations(allOps);
-    }, [activeCircuit, hoverPos]);
+        // layersWithoutDragOp must be a dependency: it changes with draggingOperationId,
+        // and a stale list here keeps the dragged operation filtered out after dragend
+        // (gate stays invisible until some other state change).
+    }, [activeCircuit, hoverPos, layersWithoutDragOp, activeDropZones, flatQubits, draggingOperationSize]);
 
     const operationColumnCount = Math.max(uiLayers.length + 1, 1);
     const operationAreaWidth = operationColumnCount * CELL_WIDTH;
     const circuitWidth = LABEL_WIDTH + operationAreaWidth;
     const circuitHeight = Math.max(flatQubits.length * QUBIT_HEIGHT, QUBIT_HEIGHT);
 
-    // Without an active file tab the only available circuit is the project-level
-    // circuit (fileId IS NULL), which has no entry in the explorer. Mirror the Code
-    // Editor's "No file open" state instead of exposing that orphaned circuit.
+    // Circuits exist per file only, so without an active file tab there is nothing
+    // to show. Mirror the Code Editor's "No file open" state.
     if (!activeCircuitTabId) {
         return (
             <Card className="h-full overflow-hidden border-none rounded-none bg-bg-subtle p-0 gap-0">
@@ -297,6 +322,7 @@ export function CircuitView() {
                                 removeQuantumOperation={removeQuantumOperation}
                                 setDraggingOperationId={setDraggingOperationId}
                                 setHoverPos={setHoverPos}
+                                draggingOperation={draggingOperation}
                             />
 
                             <DropzoneGrid

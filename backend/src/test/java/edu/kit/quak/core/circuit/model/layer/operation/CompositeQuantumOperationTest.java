@@ -54,7 +54,7 @@ class CompositeQuantumOperationTest {
     @Test
     void integrationWithQuantumCircuit_asapSchedulingAndCollision() {
         // Arrange
-        QuantumCircuit circuit = new QuantumCircuit("proj-1");
+        QuantumCircuit circuit = new QuantumCircuit("proj-1", "file-1");
         QuantumRegister register = circuit.getRegisters().getFirst().asQuantum().orElseThrow();
         String regId = register.getId();
 

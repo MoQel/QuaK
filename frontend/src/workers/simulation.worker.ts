@@ -1,4 +1,4 @@
-import { CircuitTranslator } from '@/simulation/CircuitTranslator.ts';
+import { QulacsMapper } from '@/simulation/qulacsMapper.ts';
 import { initQulacs } from 'qulacs-wasm';
 import { WorkerRequest, WorkerResponse } from './messages.ts';
 
@@ -25,7 +25,7 @@ ctx.onmessage = async (event: MessageEvent<WorkerRequest>) => {
         if (msg.type === 'CALCULATE_CIRCUIT') {
             await ensureInitialized();
 
-            const result = CircuitTranslator.translateAndRun(msg.circuit, msg.options);
+            const result = QulacsMapper.translateAndRun(msg.circuit, msg.options);
 
             ctx.postMessage({
                 type: 'SUCCESS',

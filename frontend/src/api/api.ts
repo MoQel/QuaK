@@ -3,6 +3,8 @@
  * All requests automatically include session cookies
  */
 
+import { API_BASE_URL } from './backendUrls';
+
 /**
  * Example usage:
  *
@@ -18,8 +20,6 @@
  * // DELETE request
  * await api.delete('/api/projects/123');
  */
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 interface FetchOptions extends RequestInit {
     headers?: HeadersInit;

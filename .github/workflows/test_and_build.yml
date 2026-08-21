@@ -76,6 +76,32 @@ jobs:
       - name: Build with Gradle
         run: cd backend && ./gradlew :bootJar
 
+  production-image:
+    name: production image
+    needs: test
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Build production image
+        run: docker build --build-arg SKIP_FRONTEND=false --tag quak-production:test --file backend/Dockerfile .
+
+      - name: Smoke test production runtime
+        run: |
+          docker run --rm --entrypoint /bin/sh quak-production:test -c '
+            test "$(id -u)" = "10001"
+            test -x /opt/lsp/python/bin/pylsp
+            test -x /opt/lsp/qasm/qasmlsp
+            test -w /var/lib/quak/lsp-workspace
+            /opt/lsp/python/bin/pylsp --version
+            /opt/lsp/qasm/qasmlsp --help >/dev/null
+          '
+
   generate-openapi:
     name: generate-openapi
     needs: test

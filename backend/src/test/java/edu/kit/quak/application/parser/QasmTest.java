@@ -1,4 +1,4 @@
-package edu.kit.quak.application.parser.qasm;
+package edu.kit.quak.application.parser;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;

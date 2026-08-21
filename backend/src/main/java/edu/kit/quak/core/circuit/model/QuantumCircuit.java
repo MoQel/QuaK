@@ -22,16 +22,15 @@ public class QuantumCircuit extends ElementWithId {
     @Getter
     private final String projectId;
 
-    /** Optional link to the file this circuit belongs to; null for the project-level circuit. */
+    /**
+     * Link to the file this circuit belongs to. Persisted circuits are always file-linked;
+     * only transient circuits (e.g. built for code generation) may have none.
+     */
     @Getter
     private final String fileId;
 
     private final List<Register> registers = new ArrayList<>();
     private final List<Layer> layers = new ArrayList<>();
-
-    public QuantumCircuit(String projectId) {
-        this(projectId, (String) null);
-    }
 
     public QuantumCircuit(String projectId, String fileId) {
         super();
@@ -178,8 +177,7 @@ public class QuantumCircuit extends ElementWithId {
     /**
      * Re-runs the ASAP layer scheduling. Exposed for code generation, which builds a transient
      * circuit from request content and must canonicalize the layering so the emitted {@code
-     * // Layer N} blocks line up with the rendered columns. Regenerates operation ids as a side
-     * effect, so only call this on a transient circuit, never on a persisted one.
+     * // Layer N} blocks line up with the rendered columns.
      */
     public void reschedule() {
         rescheduleOperations();
@@ -229,7 +227,6 @@ public class QuantumCircuit extends ElementWithId {
                 layers.add(new Layer(new ArrayList<>()));
             }
 
-            op.generateNewId(); // Generate new ID because of problems with Hibernate.
             layers.get(layerIdx).addQuantumOperation(op); // Add operation to target layer
 
             // Update the last occupied layer index for all involved qubits
