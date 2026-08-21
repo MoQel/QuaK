@@ -4,10 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.core.circuit.model.layer.Layer;
-import edu.kit.quak.core.circuit.model.layer.operation.CompositeQuantumOperation;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementaryQuantumGate;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
+import edu.kit.quak.core.circuit.model.layer.operation.SubcircuitOperation;
 import edu.kit.quak.core.circuit.model.layer.operation.library.QuantumOperationLibrary;
 import edu.kit.quak.core.circuit.model.register.QuantumRegister;
 import edu.kit.quak.core.circuit.model.register.Register;
@@ -123,7 +123,7 @@ class CircuitJpaAdapterTest {
     }
 
     @Test
-    void saveAndFindCircuit_withCompositeQuantumOperation_ShouldPersistData() {
+    void saveAndFindCircuit_withSubcircuitOperation_ShouldPersistData() {
         // Arrange
         String circuitId = "comp-circuit-id";
         String projectId = "comp-project-id";
@@ -135,12 +135,7 @@ class CircuitJpaAdapterTest {
         ElementSelector target1 = new ElementSelector(registerId, 1);
         ElementSelector control0 = new ElementSelector(registerId, 2);
 
-        CompositeQuantumOperation compositeOp = new CompositeQuantumOperation(
-            true,
-            List.of(target0, target1),
-            List.of(control0),
-            definitionCircuitId
-        );
+        SubcircuitOperation compositeOp = new SubcircuitOperation(true, List.of(target0, target1), List.of(control0), definitionCircuitId);
         compositeOp.setId("comp-op-id");
 
         Layer layer = new Layer(List.of(compositeOp));
@@ -167,9 +162,9 @@ class CircuitJpaAdapterTest {
         assertThat(foundCircuit.getLayers()).hasSize(1);
 
         QuantumOperation foundOp = foundCircuit.getLayers().getFirst().getQuantumOperations().getFirst();
-        assertThat(foundOp).isInstanceOf(CompositeQuantumOperation.class);
+        assertThat(foundOp).isInstanceOf(SubcircuitOperation.class);
 
-        CompositeQuantumOperation foundComposite = (CompositeQuantumOperation) foundOp;
+        SubcircuitOperation foundComposite = (SubcircuitOperation) foundOp;
         assertThat(foundComposite.getId()).isEqualTo("comp-op-id");
         assertThat(foundComposite.isInverseForm()).isTrue();
         assertThat(foundComposite.getDefinitionCircuitId()).isEqualTo(definitionCircuitId);

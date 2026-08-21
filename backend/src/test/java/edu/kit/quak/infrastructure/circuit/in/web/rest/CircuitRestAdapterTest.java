@@ -15,10 +15,10 @@ import edu.kit.quak.application.circuit.services.ProjectQasmIncludeResolver;
 import edu.kit.quak.application.filesystem.ports.in.ProjectServicePort;
 import edu.kit.quak.application.user.ports.in.UserServicePort;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
-import edu.kit.quak.core.circuit.model.layer.operation.CompositeQuantumOperation;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementaryQuantumGate;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
+import edu.kit.quak.core.circuit.model.layer.operation.SubcircuitOperation;
 import edu.kit.quak.core.circuit.model.layer.operation.library.QuantumOperationLibrary;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.*;
 import edu.kit.quak.infrastructure.user.in.web.rest.mapper.AuthenticationMapper;
@@ -321,7 +321,7 @@ class CircuitRestAdapterTest {
     }
 
     @Test
-    void addCompositeQuantumOperation_ShouldReturnCreated() throws Exception {
+    void addSubcircuitOperation_ShouldReturnCreated() throws Exception {
         // Arrange
         String projectId = "p-id";
         String circuitId = "c-id";
@@ -331,7 +331,7 @@ class CircuitRestAdapterTest {
         circuit.addQubit(registerId);
         ElementSelector target0 = new ElementSelector(registerId, 0);
         ElementSelector target1 = new ElementSelector(registerId, 1);
-        CompositeQuantumOperation operation = new CompositeQuantumOperation(false, List.of(target0, target1), null, "subcircuit-99");
+        SubcircuitOperation operation = new SubcircuitOperation(false, List.of(target0, target1), null, "subcircuit-99");
         int layerIdx = 0;
         circuit.addQuantumOperation(operation, layerIdx);
 
@@ -341,7 +341,7 @@ class CircuitRestAdapterTest {
         String payload = """
             {
                 "quantumOperation": {
-                    "type": "COMPOSITE_OPERATION",
+                    "type": "SUBCIRCUIT_OPERATION",
                     "definitionCircuitId": "subcircuit-99",
                     "inverseForm": false,
                     "targetQubits": [
@@ -368,7 +368,7 @@ class CircuitRestAdapterTest {
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.layers").exists())
             .andExpect(jsonPath("$.layers").isArray())
-            .andExpect(jsonPath("$.layers[0].quantumOperations[0].type").value("COMPOSITE_OPERATION"))
+            .andExpect(jsonPath("$.layers[0].quantumOperations[0].type").value("SUBCIRCUIT_OPERATION"))
             .andExpect(jsonPath("$.layers[0].quantumOperations[0].definitionCircuitId").value("subcircuit-99"))
             .andExpect(jsonPath("$.layers[0].quantumOperations[0].id").value(operation.getId()));
     }

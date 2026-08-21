@@ -8,11 +8,11 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class CompositeQuantumOperation extends QuantumOperation {
+public class SubcircuitOperation extends QuantumOperation {
 
     private String definitionCircuitId;
 
-    public CompositeQuantumOperation(
+    public SubcircuitOperation(
         boolean inverseForm,
         @NonNull List<ElementSelector> targetQubits,
         List<ElementSelector> controlQubits,
@@ -30,15 +30,12 @@ public class CompositeQuantumOperation extends QuantumOperation {
      * selectors: they are mutable and must never be shared with the original.
      */
     @Override
-    public CompositeQuantumOperation copyForQubits(
-        @NonNull List<ElementSelector> targetQubits,
-        @NonNull List<ElementSelector> controlQubits
-    ) {
-        return new CompositeQuantumOperation(inverseForm, copySelectors(targetQubits), copySelectors(controlQubits), definitionCircuitId);
+    public SubcircuitOperation copyForQubits(@NonNull List<ElementSelector> targetQubits, @NonNull List<ElementSelector> controlQubits) {
+        return new SubcircuitOperation(inverseForm, copySelectors(targetQubits), copySelectors(controlQubits), definitionCircuitId);
     }
 
     @Override
     public String toString() {
-        return String.format("[CompositeQuantumOperation: definitionCircuitId=%s (quantumOperationId=%s)]", definitionCircuitId, getId());
+        return String.format("[SubcircuitOperation: definitionCircuitId=%s (quantumOperationId=%s)]", definitionCircuitId, getId());
     }
 }

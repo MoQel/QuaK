@@ -12,7 +12,7 @@ export const getSelectorKey = (sel: ElementSelectorDto): string => `${sel.regist
 export type QuantumOperationType =
     | 'ELEMENTARY_QUANTUM_GATE'
     | 'MEASUREMENT'
-    | 'COMPOSITE_OPERATION'
+    | 'SUBCIRCUIT_OPERATION'
     | 'COMPOSITE_QUANTUM_GATE'
     | 'DUMMY';
 
@@ -43,8 +43,8 @@ export interface MeasurementDto extends AbstractQuantumOperationDto {
  * A call to a subcircuit: the definition lives in another circuit of the project, referenced by id
  * rather than embedded here.
  */
-export interface CompositeQuantumOperationDto extends AbstractQuantumOperationDto {
-    type: 'COMPOSITE_OPERATION';
+export interface SubcircuitOperationDto extends AbstractQuantumOperationDto {
+    type: 'SUBCIRCUIT_OPERATION';
     definitionCircuitId: string;
 }
 
@@ -76,7 +76,7 @@ export interface DummyDto extends AbstractQuantumOperationDto {
 export type QuantumOperationDto =
     | ElementaryQuantumGateDto
     | MeasurementDto
-    | CompositeQuantumOperationDto
+    | SubcircuitOperationDto
     | CompositeQuantumGateDto
     | DummyDto;
 

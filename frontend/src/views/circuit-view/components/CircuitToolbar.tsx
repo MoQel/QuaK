@@ -3,7 +3,7 @@ import { Boxes, Minus, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import { apiRequest } from '@/api/api.ts';
 import {
     CircuitResponse,
-    CompositeQuantumOperationDto,
+    SubcircuitOperationDto,
     CompositeQuantumGateDto,
     isQuantumRegister,
     QuantumOperationDto,
@@ -14,7 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { useState } from 'react';
 import { useActiveCode } from '@/hooks/editor/useActiveCode.ts';
 import { useProject } from '@/contexts/ProjectContext.tsx';
-import { AddCompositionDialog } from '@/views/circuit-view/components/AddCompositionDialog.tsx';
+import { AddSubcircuitDialog } from '@/views/circuit-view/components/AddSubcircuitDialog.tsx';
 import { toast } from 'sonner';
 import { QuantikzExportButton } from '@/views/circuit-view/components/QuantikzExportButton.tsx';
 
@@ -33,7 +33,7 @@ export function CircuitToolbar({ circuit, setCircuit }: Readonly<CircuitToolbarP
 
     // setCircuit takes the finished circuit, not an updater: the active circuit lives in
     // CircuitTabsContext and is replaced as a whole (debounced full-replace PUT).
-    const handleAddComposition = (op: CompositeQuantumOperationDto, layerIdx: number) => {
+    const handleAddComposition = (op: SubcircuitOperationDto, layerIdx: number) => {
         if (!circuit) return;
         const layers = circuit.layers.map((layer) => ({
             quantumOperations: [...layer.quantumOperations],
@@ -145,7 +145,7 @@ export function CircuitToolbar({ circuit, setCircuit }: Readonly<CircuitToolbarP
                     </PopoverContent>
                 </Popover>
             </div>
-            <AddCompositionDialog
+            <AddSubcircuitDialog
                 open={isCompositionOpen}
                 onOpenChange={setIsCompositionOpen}
                 circuit={circuit}

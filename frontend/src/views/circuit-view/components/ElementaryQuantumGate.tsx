@@ -155,9 +155,9 @@ export function ElementaryQuantumGate({
                     definition={definition}
                     isSWAP={operation.identifier === 'SWAP'}
                     angleLabel={angleLabel}
-                    compositeLabel={operation.type === 'COMPOSITE_OPERATION' ? `CMP:${portIdx}` : undefined}
+                    compositeLabel={operation.type === 'SUBCIRCUIT_OPERATION' ? `CMP:${portIdx}` : undefined}
                     title={
-                        operation.type === 'COMPOSITE_OPERATION'
+                        operation.type === 'SUBCIRCUIT_OPERATION'
                             ? `Composition: ${operation.definitionCircuitId} (Wire ${portIdx})`
                             : undefined
                     }

@@ -6,11 +6,11 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class CompositeQuantumOperationDto extends QuantumOperationDto {
+public class SubcircuitOperationDto extends QuantumOperationDto {
 
     private String definitionCircuitId;
 
-    public CompositeQuantumOperationDto(
+    public SubcircuitOperationDto(
         String id,
         String identifier,
         boolean inverseForm,

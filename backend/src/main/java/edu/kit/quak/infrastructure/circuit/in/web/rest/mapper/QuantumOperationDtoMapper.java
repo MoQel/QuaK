@@ -1,11 +1,11 @@
 package edu.kit.quak.infrastructure.circuit.in.web.rest.mapper;
 
 import edu.kit.quak.core.circuit.model.layer.operation.CompositeQuantumGate;
-import edu.kit.quak.core.circuit.model.layer.operation.CompositeQuantumOperation;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementaryQuantumGate;
 import edu.kit.quak.core.circuit.model.layer.operation.Measurement;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
+import edu.kit.quak.core.circuit.model.layer.operation.SubcircuitOperation;
 import edu.kit.quak.core.common.exception.DomainRuleViolationException;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.*;
 import java.util.List;
@@ -26,7 +26,7 @@ public interface QuantumOperationDtoMapper {
     @BeanMapping(subclassExhaustiveStrategy = SubclassExhaustiveStrategy.RUNTIME_EXCEPTION)
     @SubclassMapping(source = ElementaryQuantumGate.class, target = ElementaryQuantumGateDto.class)
     @SubclassMapping(source = Measurement.class, target = MeasurementDto.class)
-    @SubclassMapping(source = CompositeQuantumOperation.class, target = CompositeQuantumOperationDto.class)
+    @SubclassMapping(source = SubcircuitOperation.class, target = SubcircuitOperationDto.class)
     @SubclassMapping(source = CompositeQuantumGate.class, target = CompositeQuantumGateDto.class)
     @Mapping(target = "identifier", ignore = true)
     QuantumOperationDto toResponse(QuantumOperation domain);
@@ -38,7 +38,7 @@ public interface QuantumOperationDtoMapper {
     MeasurementDto toResponse(Measurement domain);
 
     @Mapping(target = "identifier", ignore = true)
-    CompositeQuantumOperationDto toResponse(CompositeQuantumOperation domain);
+    SubcircuitOperationDto toResponse(SubcircuitOperation domain);
 
     /**
      * Hand-written because a composite does not follow the shape the generated mapping assumes: its
@@ -72,7 +72,7 @@ public interface QuantumOperationDtoMapper {
     @BeanMapping(subclassExhaustiveStrategy = SubclassExhaustiveStrategy.RUNTIME_EXCEPTION)
     @SubclassMapping(source = ElementaryQuantumGateDto.class, target = ElementaryQuantumGate.class)
     @SubclassMapping(source = MeasurementDto.class, target = Measurement.class)
-    @SubclassMapping(source = CompositeQuantumOperationDto.class, target = CompositeQuantumOperation.class)
+    @SubclassMapping(source = SubcircuitOperationDto.class, target = SubcircuitOperation.class)
     @SubclassMapping(source = CompositeQuantumGateDto.class, target = CompositeQuantumGate.class)
     QuantumOperation toDomain(QuantumOperationDto request);
 
@@ -82,7 +82,7 @@ public interface QuantumOperationDtoMapper {
     @Mapping(target = "operationDefinition", source = "identifier")
     Measurement toDomain(MeasurementDto request);
 
-    CompositeQuantumOperation toDomain(CompositeQuantumOperationDto request);
+    SubcircuitOperation toDomain(SubcircuitOperationDto request);
 
     /**
      * Hand-written for the same reason as the response direction: the gate name lives in

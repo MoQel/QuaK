@@ -9,8 +9,8 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@DiscriminatorValue("COMPOSITE_OPERATION")
-public class JpaCompositeQuantumOperation extends JpaQuantumOperation {
+@DiscriminatorValue("SUBCIRCUIT_OPERATION")
+public class JpaSubcircuitOperation extends JpaQuantumOperation {
 
     @Column(name = "definition_circuit_id")
     private String definitionCircuitId;

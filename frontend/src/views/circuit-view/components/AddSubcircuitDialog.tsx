@@ -15,18 +15,18 @@ import { api } from '@/api/api.ts';
 import { DirectoryContentsResponse, FileElementDto, ProjectContentsResponse } from '@/api/dto/filesystem.ts';
 import {
     CircuitResponse,
-    CompositeQuantumOperationDto,
+    SubcircuitOperationDto,
     ElementSelectorDto,
     isQuantumRegister,
 } from '@/api/dto/circuit.ts';
 import { toast } from 'sonner';
 
-interface AddCompositionDialogProps {
+interface AddSubcircuitDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     circuit: CircuitResponse | undefined;
     projectId: string | null;
-    onAddOperation: (op: CompositeQuantumOperationDto, layerIdx: number) => void;
+    onAddOperation: (op: SubcircuitOperationDto, layerIdx: number) => void;
 }
 
 interface CircuitOption {
@@ -55,13 +55,13 @@ async function collectProjectFiles(elements: FileElementDto[]): Promise<FileElem
     return files;
 }
 
-export function AddCompositionDialog({
+export function AddSubcircuitDialog({
     open,
     onOpenChange,
     circuit,
     projectId,
     onAddOperation,
-}: Readonly<AddCompositionDialogProps>) {
+}: Readonly<AddSubcircuitDialogProps>) {
     const [circuitOptions, setCircuitOptions] = useState<CircuitOption[]>([]);
     const [selectedCircuitId, setSelectedCircuitId] = useState<string>('');
     const [customCircuitId, setCustomCircuitId] = useState<string>('');
@@ -158,9 +158,9 @@ export function AddCompositionDialog({
             index: wireIdx,
         }));
 
-        const newOp: CompositeQuantumOperationDto = {
+        const newOp: SubcircuitOperationDto = {
             id: crypto.randomUUID(),
-            type: 'COMPOSITE_OPERATION',
+            type: 'SUBCIRCUIT_OPERATION',
             identifier: 'COMPOSITION',
             inverseForm: false,
             definitionCircuitId: finalCircuitId,

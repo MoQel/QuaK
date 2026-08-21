@@ -9,7 +9,7 @@ import edu.kit.quak.core.circuit.model.register.QuantumRegister;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-class CompositeQuantumOperationTest {
+class SubcircuitOperationTest {
 
     @Test
     void constructor_initializesFieldsCorrectly() {
@@ -20,12 +20,7 @@ class CompositeQuantumOperationTest {
         String definitionCircuitId = "subcircuit-42";
 
         // Act
-        CompositeQuantumOperation op = new CompositeQuantumOperation(
-            true,
-            List.of(target0, target1),
-            List.of(control0),
-            definitionCircuitId
-        );
+        SubcircuitOperation op = new SubcircuitOperation(true, List.of(target0, target1), List.of(control0), definitionCircuitId);
 
         // Assert
         assertNotNull(op.getId());
@@ -38,17 +33,13 @@ class CompositeQuantumOperationTest {
 
     @Test
     void constructor_throwsWhenTargetQubitsEmpty() {
-        assertThrows(InvalidOperationConfigurationException.class, () ->
-            new CompositeQuantumOperation(false, List.of(), null, "subcircuit-42")
-        );
+        assertThrows(InvalidOperationConfigurationException.class, () -> new SubcircuitOperation(false, List.of(), null, "subcircuit-42"));
     }
 
     @Test
     void constructor_throwsWhenDefinitionCircuitIdIsBlank() {
         ElementSelector target = new ElementSelector("reg-1", 0);
-        assertThrows(InvalidOperationConfigurationException.class, () ->
-            new CompositeQuantumOperation(false, List.of(target), null, "   ")
-        );
+        assertThrows(InvalidOperationConfigurationException.class, () -> new SubcircuitOperation(false, List.of(target), null, "   "));
     }
 
     @Test
@@ -65,13 +56,13 @@ class CompositeQuantumOperationTest {
         ElementSelector q3 = new ElementSelector(regId, 3);
 
         // Subcircuit spans q[0] and q[1]
-        CompositeQuantumOperation subCircuitOp1 = new CompositeQuantumOperation(false, List.of(q0, q1), null, "subcircuit-A");
+        SubcircuitOperation subCircuitOp1 = new SubcircuitOperation(false, List.of(q0, q1), null, "subcircuit-A");
 
         // Elementary gate on q[2]
         ElementaryQuantumGate hGate = new ElementaryQuantumGate(QuantumOperationLibrary.H, false, List.of(q2), null, 0.0);
 
         // Second subcircuit targeting q[0] and q[1] (collides with subCircuitOp1 on q[0], q[1])
-        CompositeQuantumOperation subCircuitOp2 = new CompositeQuantumOperation(false, List.of(q0, q1), null, "subcircuit-B");
+        SubcircuitOperation subCircuitOp2 = new SubcircuitOperation(false, List.of(q0, q1), null, "subcircuit-B");
 
         // Act
         circuit.addQuantumOperation(subCircuitOp1, 0);

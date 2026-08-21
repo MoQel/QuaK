@@ -194,7 +194,7 @@ const MEASURE: OperationDefinition = {
 };
 
 const COMPOSITION: OperationDefinition = {
-    type: 'COMPOSITE_OPERATION',
+    type: 'SUBCIRCUIT_OPERATION',
     targetSize: 2,
     controlSize: 0,
     totalSize: 2,

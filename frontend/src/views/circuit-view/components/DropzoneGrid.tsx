@@ -4,7 +4,7 @@ import { stopOperationDrag } from '@/store/circuit/dragOperationSlice.ts';
 import { CELL_WIDTH, QUBIT_HEIGHT } from '@/views/circuit-view/util/layout.ts';
 import {
     CircuitResponse,
-    CompositeQuantumOperationDto,
+    SubcircuitOperationDto,
     ElementaryQuantumGateDto,
     ElementSelectorDto,
     isCompositeGate,
@@ -292,9 +292,9 @@ export function DropzoneGrid({
                                 classicBits: [],
                             };
                             addQuantumOperationLocally(operation, layerIdx);
-                        } else if (operationDefinition.type === 'COMPOSITE_OPERATION') {
-                            const operation: CompositeQuantumOperationDto = {
-                                type: 'COMPOSITE_OPERATION',
+                        } else if (operationDefinition.type === 'SUBCIRCUIT_OPERATION') {
+                            const operation: SubcircuitOperationDto = {
+                                type: 'SUBCIRCUIT_OPERATION',
                                 identifier: data.operationIdentifier,
                                 inverseForm: false,
                                 targetQubits,

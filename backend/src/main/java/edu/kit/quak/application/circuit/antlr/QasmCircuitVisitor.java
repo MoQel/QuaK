@@ -6,10 +6,10 @@ import edu.kit.quak.application.circuit.ports.out.QasmSource;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.core.circuit.model.gate.GateDefinition;
 import edu.kit.quak.core.circuit.model.layer.operation.CompositeQuantumGate;
-import edu.kit.quak.core.circuit.model.layer.operation.CompositeQuantumOperation;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementaryQuantumGate;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
+import edu.kit.quak.core.circuit.model.layer.operation.SubcircuitOperation;
 import edu.kit.quak.core.circuit.model.layer.operation.library.QuantumOperationLibrary;
 import edu.kit.quak.core.circuit.model.register.QuantumRegister;
 import edu.kit.quak.core.circuit.model.register.Register;
@@ -54,8 +54,11 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
     // declarations found in the code.
     private final QuantumCircuit circuit = QuantumCircuit.builder().registers(new ArrayList<>()).layers(new ArrayList<>()).build();
 
-    private final Map<String, String> compositeGates = new HashMap<>();
-    private String lastCompositionCircuitId = null;
+    /** Gate names declared with a @composition annotation, mapped to the circuit they stand for. */
+    private final Map<String, String> subcircuitsByGateName = new HashMap<>();
+
+    /** Circuit id from the @composition annotation just read, consumed by the gate declaration after it. */
+    private String pendingSubcircuitId = null;
     private final QasmExpressionEvaluator evaluator = new QasmExpressionEvaluator();
 
     /** Parsed `gate` declarations by name, turned into a {@link GateDefinition} on first call. */
@@ -204,12 +207,12 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
                     }
                 }
             }
-            if (circuitId == null && lastCompositionCircuitId != null) {
-                circuitId = lastCompositionCircuitId;
-                lastCompositionCircuitId = null;
+            if (circuitId == null && pendingSubcircuitId != null) {
+                circuitId = pendingSubcircuitId;
+                pendingSubcircuitId = null;
             }
             if (circuitId != null) {
-                compositeGates.put(gateName, circuitId);
+                subcircuitsByGateName.put(gateName, circuitId);
                 return null; // Skip statement body of pseudo composite gate
             }
         }
@@ -221,7 +224,7 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
         String keyword = ctx.AnnotationKeyword() != null ? ctx.AnnotationKeyword().getText() : "";
         if (keyword.equalsIgnoreCase("@composition")) {
             String remaining = ctx.RemainingLineContent() != null ? ctx.RemainingLineContent().getText().trim() : "";
-            lastCompositionCircuitId = parseCircuitIdFromAnnotation(remaining);
+            pendingSubcircuitId = parseCircuitIdFromAnnotation(remaining);
         }
         return super.visitAnnotation(ctx);
     }
@@ -309,9 +312,9 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
         // A subcircuit is declared as a `gate` carrying a @composition annotation, so it also ends up
         // in gateDefinitions. The annotation is the more specific statement and therefore wins: only
         // it names another circuit, while the declaration itself is deliberately empty.
-        if (compositeGates.containsKey(gateName)) {
-            String definitionCircuitId = compositeGates.get(gateName);
-            QuantumOperation operation = new CompositeQuantumOperation(false, operands, null, definitionCircuitId);
+        if (subcircuitsByGateName.containsKey(gateName)) {
+            String definitionCircuitId = subcircuitsByGateName.get(gateName);
+            QuantumOperation operation = new SubcircuitOperation(false, operands, null, definitionCircuitId);
             circuit.addQuantumOperation(operation, circuit.getLayers().size());
             return null;
         }

@@ -13,9 +13,9 @@ import edu.kit.quak.application.circuit.exceptions.QasmParseException;
 import edu.kit.quak.core.circuit.codegen.QasmCodeGenerator;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.core.circuit.model.layer.operation.CompositeQuantumGate;
-import edu.kit.quak.core.circuit.model.layer.operation.CompositeQuantumOperation;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementaryQuantumGate;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
+import edu.kit.quak.core.circuit.model.layer.operation.SubcircuitOperation;
 import edu.kit.quak.core.circuit.model.register.QuantumRegister;
 import edu.kit.quak.core.circuit.model.register.Register;
 import java.util.ArrayList;
@@ -280,9 +280,9 @@ class QasmTest {
 
         assertEquals(1, circuit.getLayers().size());
         QuantumOperation op = circuit.getLayers().getFirst().getQuantumOperations().getFirst();
-        assertTrue(op instanceof CompositeQuantumOperation, "Expected CompositeQuantumOperation");
+        assertTrue(op instanceof SubcircuitOperation, "Expected SubcircuitOperation");
 
-        CompositeQuantumOperation composite = (CompositeQuantumOperation) op;
+        SubcircuitOperation composite = (SubcircuitOperation) op;
         assertEquals("550e8400-e29b-41d4-a716-446655440000", composite.getDefinitionCircuitId());
         assertEquals(2, composite.getTargetQubits().size());
         assertEquals(2, composite.getTargetQubits().get(0).getIndex());
@@ -313,8 +313,8 @@ class QasmTest {
         QuantumCircuit reparsed = qasmService.parse(generatedQasm);
         assertEquals(1, reparsed.getLayers().size());
         QuantumOperation op = reparsed.getLayers().getFirst().getQuantumOperations().getFirst();
-        assertTrue(op instanceof CompositeQuantumOperation);
-        CompositeQuantumOperation composite = (CompositeQuantumOperation) op;
+        assertTrue(op instanceof SubcircuitOperation);
+        SubcircuitOperation composite = (SubcircuitOperation) op;
         assertEquals("my_circuit_id_123", composite.getDefinitionCircuitId());
         assertEquals(1, composite.getTargetQubits().get(0).getIndex());
         assertEquals(0, composite.getTargetQubits().get(1).getIndex());
