@@ -3,6 +3,7 @@ import {
     ElementaryQuantumGateDto,
     getCircuitWidth,
     isCompositeGate,
+    isSubcircuit,
     QuantumOperationDto,
 } from '@/api/dto/circuit.ts';
 import * as qulacs from 'qulacs-wasm';
@@ -101,11 +102,20 @@ export class QulacsMapper {
      * A user-defined gate carries the gates it is made of, already bound to the qubits of its call,
      * so it is expanded here (recursively, since a body may contain further user-defined gates).
      * Skipping it instead would silently simulate a *different* circuit — the gate would simply have
-     * no effect — which is far worse than failing loudly.
+     * no effect — which is far worse than failing loudly. A subcircuit cannot be expanded here at
+     * all, because its body lives in another circuit; it therefore raises instead of being dropped.
      */
     private static toElementaryGates(op: QuantumOperationDto): ElementaryQuantumGateDto[] {
         if (isCompositeGate(op)) {
             return (op.body ?? []).flatMap((part) => this.toElementaryGates(part));
+        }
+        if (isSubcircuit(op)) {
+            // Unlike a composite gate a subcircuit does not carry its body: it only names another
+            // circuit, which is not loaded here. Skipping it would simulate a different circuit, so
+            // this fails visibly until the referenced circuit is resolved before simulation.
+            throw new Error(
+                `Cannot simulate a subcircuit yet: this circuit references ${op.definitionCircuitId}, whose contents are not loaded.`,
+            );
         }
         return op.type === 'ELEMENTARY_QUANTUM_GATE' ? [op] : [];
     }

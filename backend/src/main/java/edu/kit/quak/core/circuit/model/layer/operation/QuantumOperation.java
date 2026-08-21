@@ -4,7 +4,6 @@ import static java.util.stream.Collectors.toCollection;
 
 import edu.kit.quak.core.circuit.exceptions.InvalidOperationConfigurationException;
 import edu.kit.quak.core.circuit.model.ElementWithId;
-import edu.kit.quak.core.circuit.model.layer.operation.library.QuantumOperationLibrary;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
@@ -15,19 +14,12 @@ import lombok.Setter;
 @Setter
 public abstract class QuantumOperation extends ElementWithId {
 
-    protected QuantumOperationLibrary operationDefinition;
     protected boolean inverseForm;
     protected List<ElementSelector> targetQubits;
     protected List<ElementSelector> controlQubits;
 
-    protected QuantumOperation(
-        @NonNull QuantumOperationLibrary operationDefinition,
-        boolean inverseForm,
-        @NonNull List<ElementSelector> targetQubits,
-        List<ElementSelector> controlQubits
-    ) {
+    protected QuantumOperation(boolean inverseForm, @NonNull List<ElementSelector> targetQubits, List<ElementSelector> controlQubits) {
         super();
-        this.operationDefinition = operationDefinition;
         this.inverseForm = inverseForm;
         if (targetQubits.isEmpty()) {
             throw new InvalidOperationConfigurationException("Must provide at least one qubit to target.");
@@ -72,7 +64,6 @@ public abstract class QuantumOperation extends ElementWithId {
         return (
             other != null &&
             getClass() == other.getClass() &&
-            operationDefinition == other.operationDefinition &&
             inverseForm == other.inverseForm &&
             selectorsEqual(targetQubits, other.targetQubits) &&
             selectorsEqual(controlQubits, other.controlQubits)

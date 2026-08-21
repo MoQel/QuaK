@@ -10,6 +10,7 @@ import edu.kit.quak.core.circuit.model.layer.operation.CompositeQuantumGate;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementaryQuantumGate;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
+import edu.kit.quak.core.circuit.model.layer.operation.SubcircuitOperation;
 import edu.kit.quak.core.circuit.model.layer.operation.library.QuantumOperationLibrary;
 import edu.kit.quak.core.circuit.model.register.QuantumRegister;
 import edu.kit.quak.core.circuit.model.register.Register;
@@ -21,6 +22,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
@@ -55,6 +57,11 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
     // declarations found in the code.
     private final QuantumCircuit circuit = QuantumCircuit.builder().registers(new ArrayList<>()).layers(new ArrayList<>()).build();
 
+    /** Gate names declared with a @composition annotation, mapped to the circuit they stand for. */
+    private final Map<String, String> subcircuitsByGateName = new HashMap<>();
+
+    /** Circuit id from the @composition annotation just read, consumed by the gate declaration after it. */
+    private String pendingSubcircuitId = null;
     private final QasmExpressionEvaluator evaluator = new QasmExpressionEvaluator();
 
     /** Parsed `gate` declarations by name, turned into a {@link GateDefinition} on first call. */
@@ -208,6 +215,60 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
     }
 
     @Override
+    public Void visitStatement(OpenQASM3Parser.StatementContext ctx) {
+        if (ctx.gateStatement() != null) {
+            String gateName = ctx.gateStatement().Identifier().getText();
+            String circuitId = null;
+            if (ctx.annotation() != null) {
+                for (var ann : ctx.annotation()) {
+                    String kw = ann.AnnotationKeyword() != null ? ann.AnnotationKeyword().getText() : "";
+                    if (kw.equalsIgnoreCase("@composition")) {
+                        String rem = ann.RemainingLineContent() != null ? ann.RemainingLineContent().getText().trim() : "";
+                        circuitId = parseCircuitIdFromAnnotation(rem);
+                        break;
+                    }
+                }
+            }
+            if (circuitId == null && pendingSubcircuitId != null) {
+                circuitId = pendingSubcircuitId;
+                pendingSubcircuitId = null;
+            }
+            if (circuitId != null) {
+                subcircuitsByGateName.put(gateName, circuitId);
+                return null; // Skip statement body of pseudo composite gate
+            }
+        }
+        return super.visitStatement(ctx);
+    }
+
+    @Override
+    public Void visitAnnotation(OpenQASM3Parser.AnnotationContext ctx) {
+        String keyword = ctx.AnnotationKeyword() != null ? ctx.AnnotationKeyword().getText() : "";
+        if (keyword.equalsIgnoreCase("@composition")) {
+            String remaining = ctx.RemainingLineContent() != null ? ctx.RemainingLineContent().getText().trim() : "";
+            pendingSubcircuitId = parseCircuitIdFromAnnotation(remaining);
+        }
+        return super.visitAnnotation(ctx);
+    }
+
+    private String parseCircuitIdFromAnnotation(String text) {
+        if (text == null || text.isBlank()) {
+            return UUID.randomUUID().toString();
+        }
+        String trimmed = text.trim();
+        int lastQuoteIndex = trimmed.lastIndexOf('"');
+        if (lastQuoteIndex >= 0 && lastQuoteIndex + 1 < trimmed.length()) {
+            String afterQuote = trimmed.substring(lastQuoteIndex + 1).trim();
+            if (!afterQuote.isEmpty()) {
+                return afterQuote;
+            }
+        }
+        String[] parts = trimmed.split("\\s+");
+        String candidate = parts[parts.length - 1].replace("\"", "").trim();
+        return candidate.isEmpty() ? UUID.randomUUID().toString() : candidate;
+    }
+
+    @Override
     public Void visitQuantumDeclarationStatement(OpenQASM3Parser.QuantumDeclarationStatementContext ctx) {
         declareQuantumRegister(ctx.Identifier().getText(), ctx.qubitType().designator());
         return null;
@@ -268,6 +329,16 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
             for (OpenQASM3Parser.ExpressionContext argument : ctx.expressionList().expression()) {
                 arguments.add(evaluator.evaluate(argument));
             }
+        }
+
+        // A subcircuit is declared as a `gate` carrying a @composition annotation, so it also ends up
+        // in gateDefinitions. The annotation is the more specific statement and therefore wins: only
+        // it names another circuit, while the declaration itself is deliberately empty.
+        if (subcircuitsByGateName.containsKey(gateName)) {
+            String definitionCircuitId = subcircuitsByGateName.get(gateName);
+            QuantumOperation operation = new SubcircuitOperation(false, operands, null, definitionCircuitId);
+            circuit.addQuantumOperation(operation, circuit.getLayers().size());
+            return null;
         }
 
         OpenQASM3Parser.GateStatementContext customGate = gateDefinitions.get(gateName);
@@ -751,7 +822,7 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
 
     private boolean isBuiltInGate(String gateName) {
         for (QuantumOperationLibrary operation : QuantumOperationLibrary.values()) {
-            if (operation != QuantumOperationLibrary.COMPOSITE && operation.name().equalsIgnoreCase(gateName)) {
+            if (operation.name().equalsIgnoreCase(gateName)) {
                 return true;
             }
         }
@@ -759,8 +830,6 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
     }
 
     private QuantumOperationLibrary resolveGate(String gateName) {
-        // COMPOSITE is the marker for user-defined gates, not a callable gate itself, so a literal
-        // `composite q[0];` must fail like any other unknown name instead of resolving to it.
         if (!isBuiltInGate(gateName)) {
             throw new QasmParseException("Unsupported gate '" + gateName + "'.");
         }

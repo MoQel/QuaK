@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import edu.kit.quak.application.circuit.antlr.QasmService;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.core.circuit.model.layer.operation.CompositeQuantumGate;
+import edu.kit.quak.core.circuit.model.layer.operation.ElementaryQuantumGate;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
 import edu.kit.quak.shared.tags.UnitTest;
 import java.util.ArrayList;
@@ -47,7 +48,7 @@ class QasmGateDeclarationTest {
     private List<String> elementaryIdentifiers(QuantumCircuit circuit) {
         return elementaryOperations(circuit)
             .stream()
-            .map(operation -> operation.getOperationDefinition().name())
+            .map(operation -> ((ElementaryQuantumGate) operation).getOperationDefinition().name())
             .toList();
     }
 

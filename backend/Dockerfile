@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1
+
 # Build Python LSP in an isolated virtual environment.
 FROM eclipse-temurin:21-jre-jammy AS python-lsp-builder
 
@@ -24,14 +26,9 @@ FROM eclipse-temurin:21-jdk-jammy AS builder
 # Build argument to control frontend build (default: skip frontend for dev)
 ARG SKIP_FRONTEND=true
 
-# Install Node.js only when building frontend (prod mode)
-RUN if [ "$SKIP_FRONTEND" = "false" ]; then \
-    apt-get update && \
-    apt-get install -y curl && \
-    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
-    apt-get install -y nodejs && \
-    rm -rf /var/lib/apt/lists/*; \
-    fi
+# Node's default old-space heap cap (~2GB) is hit regardless of host RAM;
+# the frontend build (vite + swc native addon) needs more headroom.
+ENV NODE_OPTIONS="--max-old-space-size=6144"
 
 WORKDIR /app
 
@@ -69,6 +66,11 @@ WORKDIR /app
 COPY --from=builder /app/build/libs/*.jar quak.jar
 COPY --from=python-lsp-builder /opt/lsp/python /opt/lsp/python
 COPY --from=qasm-lsp-builder /go/bin/qasmlsp /opt/lsp/qasm/qasmlsp
+
+# Keep the OpenTelemetry Java agent available for opt-in instrumentation.
+# Deployments can activate it with JAVA_TOOL_OPTIONS=-javaagent:/app/opentelemetry-javaagent.jar.
+ADD https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v2.30.0/opentelemetry-javaagent.jar \
+    /app/opentelemetry-javaagent.jar
 
 RUN mkdir -p /var/lib/quak/lsp-workspace && \
     chown -R quak:quak /app /var/lib/quak

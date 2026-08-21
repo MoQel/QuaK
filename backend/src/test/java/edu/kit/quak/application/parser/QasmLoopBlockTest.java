@@ -9,6 +9,7 @@ import edu.kit.quak.core.circuit.model.LoopBlock;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.core.circuit.model.layer.operation.CompositeQuantumGate;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
+import edu.kit.quak.core.circuit.model.layer.operation.ElementaryQuantumGate;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
 import edu.kit.quak.core.circuit.model.register.QuantumRegister;
 import edu.kit.quak.core.circuit.model.register.Register;
@@ -43,7 +44,7 @@ class QasmLoopBlockTest {
     private List<String> identifiers(QuantumCircuit circuit) {
         return operations(circuit)
             .stream()
-            .map(operation -> operation.getOperationDefinition().name())
+            .map(operation -> ((ElementaryQuantumGate) operation).getOperationDefinition().name())
             .toList();
     }
 
@@ -53,7 +54,7 @@ class QasmLoopBlockTest {
             .get(columnIdx)
             .getQuantumOperations()
             .stream()
-            .map(operation -> operation.getOperationDefinition().name())
+            .map(operation -> ((ElementaryQuantumGate) operation).getOperationDefinition().name())
             .toList();
     }
 

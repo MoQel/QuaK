@@ -7,6 +7,7 @@ import edu.kit.quak.application.circuit.antlr.QasmService;
 import edu.kit.quak.core.circuit.model.LoopBlock;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.core.circuit.model.layer.operation.CompositeQuantumGate;
+import edu.kit.quak.core.circuit.model.layer.operation.ElementaryQuantumGate;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
 import edu.kit.quak.shared.tags.UnitTest;
 import java.util.ArrayList;
@@ -42,7 +43,7 @@ class QasmLoopEmissionTest {
                 identifiers.add(
                     operation instanceof CompositeQuantumGate composite
                         ? composite.getGateName()
-                        : operation.getOperationDefinition().name()
+                        : ((ElementaryQuantumGate) operation).getOperationDefinition().name()
                 );
             }
         }

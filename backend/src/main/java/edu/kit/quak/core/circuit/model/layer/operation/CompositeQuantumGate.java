@@ -2,7 +2,6 @@ package edu.kit.quak.core.circuit.model.layer.operation;
 
 import edu.kit.quak.core.circuit.exceptions.InvalidOperationConfigurationException;
 import edu.kit.quak.core.circuit.model.gate.GateDefinition;
-import edu.kit.quak.core.circuit.model.layer.operation.library.QuantumOperationLibrary;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -31,7 +30,7 @@ public class CompositeQuantumGate extends QuantumOperation {
     private final GateDefinition definition;
 
     public CompositeQuantumGate(@NonNull GateDefinition definition, boolean inverseForm, @NonNull List<ElementSelector> qubits) {
-        super(QuantumOperationLibrary.COMPOSITE, inverseForm, new ArrayList<>(qubits), new ArrayList<>());
+        super(inverseForm, new ArrayList<>(qubits), new ArrayList<>());
         if (qubits.size() != definition.getArity()) {
             throw new InvalidOperationConfigurationException(
                 "Gate '%s' expects %d qubit(s) but got %d.".formatted(definition.getName(), definition.getArity(), qubits.size())

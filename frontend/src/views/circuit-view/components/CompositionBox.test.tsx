@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
-import { CompositeQuantumGate } from './CompositeQuantumGate.tsx';
+import { CompositionBox } from './CompositionBox.tsx';
 import type { CompositeQuantumGateDto, RegisterResponse } from '@/api/dto/circuit.ts';
 import { QUBIT_HEIGHT } from '@/views/circuit-view/util/layout.ts';
 
@@ -37,7 +37,7 @@ const renderGate = (
     handlers: { onUngroup?: () => void; onDelete?: () => void } = {},
 ) =>
     render(
-        <CompositeQuantumGate
+        <CompositionBox
             operation={operation}
             registers={registers}
             layerIdx={0}
@@ -48,7 +48,7 @@ const renderGate = (
         />,
     );
 
-describe('CompositeQuantumGate', () => {
+describe('CompositionBox', () => {
     it('shows the gate name and one port label per used parameter', () => {
         renderGate(bell());
 
@@ -122,7 +122,7 @@ describe('CompositeQuantumGate', () => {
     const startDrag = (onDragStart: ReturnType<typeof vi.fn>, clientY = 0) => {
         vi.useFakeTimers();
         const { container } = render(
-            <CompositeQuantumGate
+            <CompositionBox
                 operation={bell()}
                 registers={registers}
                 layerIdx={0}

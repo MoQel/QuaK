@@ -5,6 +5,7 @@ import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementaryQuantumGate;
 import edu.kit.quak.core.circuit.model.layer.operation.Measurement;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
+import edu.kit.quak.core.circuit.model.layer.operation.SubcircuitOperation;
 import edu.kit.quak.core.common.exception.DomainRuleViolationException;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.*;
 import java.util.List;
@@ -17,16 +18,31 @@ import org.mapstruct.*;
     nullValueCheckStrategy = NullValueCheckStrategy.ALWAYS
 )
 public interface QuantumOperationDtoMapper {
+    /**
+     * The identifier is ignored on the base mapping because {@code operationDefinition} no longer
+     * lives on {@link QuantumOperation}: only the operations that actually have a library definition
+     * fill it, via the per-subclass mappings below.
+     */
     @BeanMapping(subclassExhaustiveStrategy = SubclassExhaustiveStrategy.RUNTIME_EXCEPTION)
     @SubclassMapping(source = ElementaryQuantumGate.class, target = ElementaryQuantumGateDto.class)
     @SubclassMapping(source = Measurement.class, target = MeasurementDto.class)
+    @SubclassMapping(source = SubcircuitOperation.class, target = SubcircuitOperationDto.class)
     @SubclassMapping(source = CompositeQuantumGate.class, target = CompositeQuantumGateDto.class)
-    @Mapping(target = "identifier", source = "operationDefinition")
+    @Mapping(target = "identifier", ignore = true)
     QuantumOperationDto toResponse(QuantumOperation domain);
+
+    @Mapping(target = "identifier", source = "operationDefinition")
+    ElementaryQuantumGateDto toResponse(ElementaryQuantumGate domain);
+
+    @Mapping(target = "identifier", source = "operationDefinition")
+    MeasurementDto toResponse(Measurement domain);
+
+    @Mapping(target = "identifier", ignore = true)
+    SubcircuitOperationDto toResponse(SubcircuitOperation domain);
 
     /**
      * Hand-written because a composite does not follow the shape the generated mapping assumes: its
-     * {@code identifier} is the gate's own name rather than the {@code COMPOSITE} library constant,
+     * {@code identifier} is the gate's own name rather than a library constant,
      * and the port labels, used positions and body are derived from the definition instead of being
      * plain properties. The body is expanded one level, so a nested gate stays a nested composite.
      */
@@ -56,9 +72,17 @@ public interface QuantumOperationDtoMapper {
     @BeanMapping(subclassExhaustiveStrategy = SubclassExhaustiveStrategy.RUNTIME_EXCEPTION)
     @SubclassMapping(source = ElementaryQuantumGateDto.class, target = ElementaryQuantumGate.class)
     @SubclassMapping(source = MeasurementDto.class, target = Measurement.class)
+    @SubclassMapping(source = SubcircuitOperationDto.class, target = SubcircuitOperation.class)
     @SubclassMapping(source = CompositeQuantumGateDto.class, target = CompositeQuantumGate.class)
-    @Mapping(target = "operationDefinition", source = "identifier")
     QuantumOperation toDomain(QuantumOperationDto request);
+
+    @Mapping(target = "operationDefinition", source = "identifier")
+    ElementaryQuantumGate toDomain(ElementaryQuantumGateDto request);
+
+    @Mapping(target = "operationDefinition", source = "identifier")
+    Measurement toDomain(MeasurementDto request);
+
+    SubcircuitOperation toDomain(SubcircuitOperationDto request);
 
     /**
      * Hand-written for the same reason as the response direction: the gate name lives in

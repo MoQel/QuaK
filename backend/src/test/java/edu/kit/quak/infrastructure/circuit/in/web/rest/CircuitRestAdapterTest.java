@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import edu.kit.quak.application.circuit.antlr.QasmService;
 import edu.kit.quak.application.circuit.ports.in.CircuitServicePort;
+import edu.kit.quak.application.circuit.ports.in.SubcircuitServicePort;
 import edu.kit.quak.application.circuit.ports.out.QasmSource;
 import edu.kit.quak.application.circuit.services.ProjectQasmIncludeResolver;
 import edu.kit.quak.application.filesystem.ports.in.ProjectServicePort;
@@ -18,6 +19,7 @@ import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementaryQuantumGate;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
+import edu.kit.quak.core.circuit.model.layer.operation.SubcircuitOperation;
 import edu.kit.quak.core.circuit.model.layer.operation.library.QuantumOperationLibrary;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.*;
 import edu.kit.quak.infrastructure.user.in.web.rest.mapper.AuthenticationMapper;
@@ -54,6 +56,9 @@ class CircuitRestAdapterTest {
 
     @MockitoBean
     private CircuitServicePort circuitServicePort;
+
+    @MockitoBean
+    private SubcircuitServicePort subcircuitServicePort;
 
     @MockitoBean
     private ProjectQasmIncludeResolver includeResolver;
@@ -358,6 +363,59 @@ class CircuitRestAdapterTest {
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.layers").exists())
             .andExpect(jsonPath("$.layers").isArray())
+            .andExpect(jsonPath("$.layers[0].quantumOperations[0].id").value(operation.getId()));
+    }
+
+    @Test
+    void addSubcircuitOperation_ShouldReturnCreated() throws Exception {
+        // Arrange
+        String projectId = "p-id";
+        String circuitId = "c-id";
+        QuantumCircuit circuit = new QuantumCircuit(projectId, "f-1");
+        circuit.setId(circuitId);
+        String registerId = circuit.getRegisters().getFirst().getId();
+        circuit.addQubit(registerId);
+        ElementSelector target0 = new ElementSelector(registerId, 0);
+        ElementSelector target1 = new ElementSelector(registerId, 1);
+        SubcircuitOperation operation = new SubcircuitOperation(false, List.of(target0, target1), null, "subcircuit-99");
+        int layerIdx = 0;
+        circuit.addQuantumOperation(operation, layerIdx);
+
+        given(circuitServicePort.getById(circuitId)).willReturn(circuit);
+        given(circuitServicePort.addQuantumOperation(eq(circuitId), any(QuantumOperation.class), eq(layerIdx), any())).willReturn(circuit);
+
+        String payload = """
+            {
+                "quantumOperation": {
+                    "type": "SUBCIRCUIT_OPERATION",
+                    "definitionCircuitId": "subcircuit-99",
+                    "inverseForm": false,
+                    "targetQubits": [
+                        {
+                            "registerId": "%s",
+                            "index": 0
+                        },
+                        {
+                            "registerId": "%s",
+                            "index": 1
+                        }
+                    ],
+                    "controlQubits": null
+                },
+                "layerIdx": 0
+            }
+            """.formatted(registerId, registerId);
+
+        // Act & Assert
+        mockMvc
+            .perform(
+                post("/api/circuit/{circuitId}/operation", circuitId).with(csrf()).contentType(MediaType.APPLICATION_JSON).content(payload)
+            )
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.layers").exists())
+            .andExpect(jsonPath("$.layers").isArray())
+            .andExpect(jsonPath("$.layers[0].quantumOperations[0].type").value("SUBCIRCUIT_OPERATION"))
+            .andExpect(jsonPath("$.layers[0].quantumOperations[0].definitionCircuitId").value("subcircuit-99"))
             .andExpect(jsonPath("$.layers[0].quantumOperations[0].id").value(operation.getId()));
     }
 }

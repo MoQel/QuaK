@@ -2,6 +2,7 @@ package edu.kit.quak.core.circuit.model.gate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -42,7 +43,11 @@ class CompositeQuantumGateTest {
     }
 
     private static List<QuantumOperationLibrary> kinds(List<QuantumOperation> operations) {
-        return operations.stream().map(QuantumOperation::getOperationDefinition).toList();
+        // A composite has no library definition of its own; it reports null so the position stays visible.
+        return operations
+            .stream()
+            .map(op -> op instanceof ElementaryQuantumGate gate ? gate.getOperationDefinition() : null)
+            .toList();
     }
 
     @Test
@@ -50,7 +55,6 @@ class CompositeQuantumGateTest {
         CompositeQuantumGate call = new CompositeQuantumGate(bell(), false, List.of(qubit(0), qubit(1)));
 
         assertEquals("bell", call.getGateName());
-        assertEquals(QuantumOperationLibrary.COMPOSITE, call.getOperationDefinition());
         assertEquals("a", call.getPortLabel(0));
         assertEquals("b", call.getPortLabel(1));
     }
@@ -139,7 +143,9 @@ class CompositeQuantumGateTest {
         CompositeQuantumGate call = new CompositeQuantumGate(bell3, false, List.of(qubit(0), qubit(1), qubit(2)));
         List<QuantumOperation> oneLevel = call.expand();
 
-        assertEquals(List.of(QuantumOperationLibrary.COMPOSITE, QuantumOperationLibrary.CX), kinds(oneLevel));
+        assertEquals(2, oneLevel.size());
+        assertInstanceOf(CompositeQuantumGate.class, oneLevel.getFirst());
+        assertEquals(QuantumOperationLibrary.CX, ((ElementaryQuantumGate) oneLevel.get(1)).getOperationDefinition());
         CompositeQuantumGate nested = (CompositeQuantumGate) oneLevel.getFirst();
         assertEquals("bell", nested.getGateName());
         assertEquals(List.of(qubit(0), qubit(1)), nested.getTargetQubits());

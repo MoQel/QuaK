@@ -33,14 +33,7 @@ public enum QuantumOperationLibrary {
 
     RZ(new ConcreteQuantumOperation<>(ElementaryQuantumGate.class, true, 1, 0, 0, true)),
 
-    MEASURE(new ConcreteQuantumOperation<>(Measurement.class, false, 1, 0, 1, false)),
-
-    /**
-     * Any user-defined gate. Unlike the entries above, this is not one specific operation: the name,
-     * arity and body come from the {@code GateDefinition} the individual
-     * {@link edu.kit.quak.core.circuit.model.layer.operation.CompositeQuantumGate} points at.
-     */
-    COMPOSITE(new CompositeQuantumOperation());
+    MEASURE(new ConcreteQuantumOperation<>(Measurement.class, false, 1, 0, 1, false));
 
     private final QuantumOperationDefinition<? extends QuantumOperation> definition;
 

@@ -4,6 +4,7 @@ import { stopOperationDrag } from '@/store/circuit/dragOperationSlice.ts';
 import { CELL_WIDTH, QUBIT_HEIGHT } from '@/views/circuit-view/util/layout.ts';
 import {
     CircuitResponse,
+    SubcircuitOperationDto,
     ElementaryQuantumGateDto,
     ElementSelectorDto,
     isCompositeGate,
@@ -295,7 +296,9 @@ export function DropzoneGrid({
                 // would otherwise be truncated to the single-qubit fallback and lose qubits.
                 const dragged =
                     data.origin === 'circuit' && data.id ? findOperation(circuit?.layers ?? [], data.id) : undefined;
-                const { controlSize, targetSize } = qubitCountsOf(dragged ?? data.composite, data.operationIdentifier);
+                const { controlSize, targetSize } = data.subcircuit
+                    ? { controlSize: 0, targetSize: Math.max(data.subcircuit.qubitCount, 1) }
+                    : qubitCountsOf(dragged ?? data.composite, data.operationIdentifier);
 
                 const controlQubits: ElementSelectorDto[] = Array.from({ length: controlSize }, (_, i) => ({
                     registerId: regId,
@@ -317,6 +320,24 @@ export function DropzoneGrid({
                             // copied under fresh ids, body included, since this is a new operation
                             // and not the one the template came from.
                             const operation = withFreshIds(rebindComposite(data.composite, targetQubits));
+                            addQuantumOperationLocally(operation, layerIdx);
+                            break;
+                        }
+
+                        if (data.subcircuit) {
+                            // Nothing to re-bind: a subcircuit stores only the id of the circuit it
+                            // points at, and its body stays where it is. The name rides along so the
+                            // box is labelled before the next read fills it in again.
+                            const operation: SubcircuitOperationDto = {
+                                id: crypto.randomUUID(),
+                                type: 'SUBCIRCUIT_OPERATION',
+                                identifier: data.subcircuit.name,
+                                inverseForm: false,
+                                definitionCircuitId: data.subcircuit.circuitId,
+                                definitionName: data.subcircuit.name,
+                                targetQubits,
+                                controlQubits,
+                            };
                             addQuantumOperationLocally(operation, layerIdx);
                             break;
                         }

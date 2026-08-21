@@ -109,10 +109,12 @@ class CompositeGatePersistenceTest {
         assertThat(reloaded.getTargetQubits()).containsExactly(new ElementSelector(registerId, 0), new ElementSelector(registerId, 1));
 
         // The rebuilt definition must behave like the original one.
-        assertThat(reloaded.expandToElementary().stream().map(QuantumOperation::getOperationDefinition)).containsExactly(
-            QuantumOperationLibrary.H,
-            QuantumOperationLibrary.CX
-        );
+        assertThat(
+            reloaded
+                .expandToElementary()
+                .stream()
+                .map(op -> ((ElementaryQuantumGate) op).getOperationDefinition())
+        ).containsExactly(QuantumOperationLibrary.H, QuantumOperationLibrary.CX);
         assertThat(reloaded.expandToElementary().get(1).getControlQubits()).containsExactly(new ElementSelector(registerId, 0));
     }
 
@@ -192,10 +194,12 @@ class CompositeGatePersistenceTest {
         assertThat(oneLevel).hasSize(1);
         assertThat(oneLevel.getFirst()).isInstanceOf(CompositeQuantumGate.class);
         assertThat(((CompositeQuantumGate) oneLevel.getFirst()).getGateName()).isEqualTo("bell");
-        assertThat(reloaded.expandToElementary().stream().map(QuantumOperation::getOperationDefinition)).containsExactly(
-            QuantumOperationLibrary.H,
-            QuantumOperationLibrary.CX
-        );
+        assertThat(
+            reloaded
+                .expandToElementary()
+                .stream()
+                .map(op -> ((ElementaryQuantumGate) op).getOperationDefinition())
+        ).containsExactly(QuantumOperationLibrary.H, QuantumOperationLibrary.CX);
     }
 
     /** The frontend autosaves repeatedly, so replacing a stored circuit must not trip over the body rows. */

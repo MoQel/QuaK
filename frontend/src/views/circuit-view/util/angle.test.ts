@@ -26,9 +26,9 @@ describe('formatRotationAngle', () => {
         expect(formatRotationAngle(3 * Math.PI)).toBe('3π');
     });
 
-    it('falls back to an integer or a 2-decimal number', () => {
+    it('falls back to an integer or a rounded 2-decimal number', () => {
         expect(formatRotationAngle(1)).toBe('1');
-        expect(formatRotationAngle(1.5)).toBe('1.50');
+        expect(formatRotationAngle(1.5)).toBe('1.5');
         expect(formatRotationAngle(1.5708)).toBe('1.57'); // close to π/2 but not exact
         expect(formatRotationAngle(-0.123456)).toBe('-0.12');
     });

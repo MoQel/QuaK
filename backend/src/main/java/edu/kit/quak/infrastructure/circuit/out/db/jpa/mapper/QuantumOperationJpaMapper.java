@@ -5,11 +5,13 @@ import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementaryQuantumGate;
 import edu.kit.quak.core.circuit.model.layer.operation.Measurement;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
+import edu.kit.quak.core.circuit.model.layer.operation.SubcircuitOperation;
 import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.layer.operation.JpaCompositeQuantumGate;
 import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.layer.operation.JpaElementSelector;
 import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.layer.operation.JpaElementaryQuantumGate;
 import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.layer.operation.JpaMeasurement;
 import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.layer.operation.JpaQuantumOperation;
+import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.layer.operation.JpaSubcircuitOperation;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -20,10 +22,22 @@ public interface QuantumOperationJpaMapper {
     @BeanMapping(subclassExhaustiveStrategy = SubclassExhaustiveStrategy.RUNTIME_EXCEPTION)
     @SubclassMapping(source = ElementaryQuantumGate.class, target = JpaElementaryQuantumGate.class)
     @SubclassMapping(source = Measurement.class, target = JpaMeasurement.class)
+    @SubclassMapping(source = SubcircuitOperation.class, target = JpaSubcircuitOperation.class)
     @SubclassMapping(source = CompositeQuantumGate.class, target = JpaCompositeQuantumGate.class)
     @Mapping(target = "id", source = "id")
     @Mapping(target = "layer", ignore = true)
+    @Mapping(target = "operationDefinition", ignore = true)
     JpaQuantumOperation toEntity(QuantumOperation domain);
+
+    @Mapping(target = "layer", ignore = true)
+    JpaElementaryQuantumGate toEntity(ElementaryQuantumGate domain);
+
+    @Mapping(target = "layer", ignore = true)
+    JpaMeasurement toEntity(Measurement domain);
+
+    @Mapping(target = "layer", ignore = true)
+    @Mapping(target = "operationDefinition", ignore = true)
+    JpaSubcircuitOperation toEntity(SubcircuitOperation domain);
 
     List<JpaElementSelector> toEntity(List<ElementSelector> value);
 
@@ -38,7 +52,6 @@ public interface QuantumOperationJpaMapper {
         }
         JpaCompositeQuantumGate entity = new JpaCompositeQuantumGate();
         entity.setId(domain.getId());
-        entity.setOperationDefinition(domain.getOperationDefinition());
         entity.setInverseForm(domain.isInverseForm());
         entity.setTargetQubits(toEntity(domain.getTargetQubits()));
         entity.setControlQubits(toEntity(domain.getControlQubits()));
@@ -59,9 +72,16 @@ public interface QuantumOperationJpaMapper {
     @BeanMapping(subclassExhaustiveStrategy = SubclassExhaustiveStrategy.RUNTIME_EXCEPTION)
     @SubclassMapping(source = JpaElementaryQuantumGate.class, target = ElementaryQuantumGate.class)
     @SubclassMapping(source = JpaMeasurement.class, target = Measurement.class)
+    @SubclassMapping(source = JpaSubcircuitOperation.class, target = SubcircuitOperation.class)
     @SubclassMapping(source = JpaCompositeQuantumGate.class, target = CompositeQuantumGate.class)
     @Mapping(target = "id", source = "id")
     QuantumOperation toDomain(JpaQuantumOperation entity);
+
+    ElementaryQuantumGate toDomain(JpaElementaryQuantumGate entity);
+
+    Measurement toDomain(JpaMeasurement entity);
+
+    SubcircuitOperation toDomain(JpaSubcircuitOperation entity);
 
     /** Rebuilds the definition by inverting the stored binding; see {@link CompositeQuantumGate#fromBoundBody}. */
     default CompositeQuantumGate toDomain(JpaCompositeQuantumGate entity) {

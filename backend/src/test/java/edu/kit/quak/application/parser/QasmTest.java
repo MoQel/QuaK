@@ -15,6 +15,7 @@ import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.core.circuit.model.layer.operation.CompositeQuantumGate;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementaryQuantumGate;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
+import edu.kit.quak.core.circuit.model.layer.operation.SubcircuitOperation;
 import edu.kit.quak.core.circuit.model.register.QuantumRegister;
 import edu.kit.quak.core.circuit.model.register.Register;
 import java.util.ArrayList;
@@ -88,6 +89,29 @@ class QasmTest {
             gphase(pi) r; // GPHASE auf r
             """;
 
+        String qasmCode4 = """
+            OPENQASM 3.0;
+            include "stdgates.inc";
+
+            qubit[2] q;
+            bit[2] c;
+
+            @composition
+            gate test a, b, c {
+            }
+
+            // Put the first qubit in superposition
+            h q[0];
+
+            // Entangle the first qubit with the second using CNOT
+            cx q[0], q[1];
+
+            // Measure both qubits
+            c[0] = measure q[0];
+            c[1] = measure q[1];
+
+            """;
+
         String qasmCode3 = """
             OPENQASM 3.0;
             include "stdgates.inc";
@@ -107,14 +131,14 @@ class QasmTest {
 
             """;
 
-        CharStream input = CharStreams.fromString(qasmCode3);
+        CharStream input = CharStreams.fromString(qasmCode4);
         OpenQASM3Lexer lexer = new OpenQASM3Lexer(input);
         CommonTokenStream tokens = new CommonTokenStream(lexer);
         OpenQASM3Parser parser = new OpenQASM3Parser(tokens);
 
         ParseTree tree = parser.program();
         System.out.println("Tree");
-        System.out.println(tree.toStringTree());
+        System.out.println(tree.toStringTree(parser));
 
         QasmCircuitVisitor visitor = new QasmCircuitVisitor();
         visitor.visit(tree);
@@ -234,6 +258,66 @@ class QasmTest {
         assertThrows(QasmParseException.class, () -> qasmService.parse("qubit[2] q;\ncx q[i], q[i + 1];\n"));
         // Syntax error.
         assertThrows(QasmParseException.class, () -> qasmService.parse("qubit[1] q\nx q[0]\n"));
+    }
+
+    @Test
+    void compositionGateParsedFromAnnotationAndGateDeclaration() {
+        QasmService qasmService = new QasmService();
+        String qasmCode = """
+            OPENQASM 3.0;
+
+            @composition "subcircuit.qasm" 550e8400-e29b-41d4-a716-446655440000
+            gate my_sub_circuit q0, q1 {
+            }
+
+            qubit[3] q;
+
+            // Call composite gate
+            my_sub_circuit q[2], q[0];
+            """;
+
+        QuantumCircuit circuit = qasmService.parse(qasmCode);
+
+        assertEquals(1, circuit.getLayers().size());
+        QuantumOperation op = circuit.getLayers().getFirst().getQuantumOperations().getFirst();
+        assertTrue(op instanceof SubcircuitOperation, "Expected SubcircuitOperation");
+
+        SubcircuitOperation composite = (SubcircuitOperation) op;
+        assertEquals("550e8400-e29b-41d4-a716-446655440000", composite.getDefinitionCircuitId());
+        assertEquals(2, composite.getTargetQubits().size());
+        assertEquals(2, composite.getTargetQubits().get(0).getIndex());
+        assertEquals(0, composite.getTargetQubits().get(1).getIndex());
+    }
+
+    @Test
+    void compositionGateCodeGenerationAndRoundTrip() {
+        QasmService qasmService = new QasmService();
+        String qasmCode = """
+            @composition "sub.qasm" my_circuit_id_123
+            gate comp_my_circuit_id_123 q0, q1 {
+            }
+
+            qubit[2] q;
+
+            comp_my_circuit_id_123 q[1], q[0];
+            """;
+
+        QuantumCircuit circuit = qasmService.parse(qasmCode);
+        String generatedQasm = QasmCodeGenerator.toCode(circuit);
+
+        assertTrue(generatedQasm.contains("@composition \"circuit\" my_circuit_id_123"), "Should contain @composition: " + generatedQasm);
+        assertTrue(generatedQasm.contains("gate comp_my_circuit_id_123 q0, q1"), "Should contain gate declaration: " + generatedQasm);
+        assertTrue(generatedQasm.contains("comp_my_circuit_id_123 q[1], q[0];"), "Should call composite gate: " + generatedQasm);
+
+        // Reparse generated code
+        QuantumCircuit reparsed = qasmService.parse(generatedQasm);
+        assertEquals(1, reparsed.getLayers().size());
+        QuantumOperation op = reparsed.getLayers().getFirst().getQuantumOperations().getFirst();
+        assertTrue(op instanceof SubcircuitOperation);
+        SubcircuitOperation composite = (SubcircuitOperation) op;
+        assertEquals("my_circuit_id_123", composite.getDefinitionCircuitId());
+        assertEquals(1, composite.getTargetQubits().get(0).getIndex());
+        assertEquals(0, composite.getTargetQubits().get(1).getIndex());
     }
 
     @Test
@@ -761,7 +845,8 @@ class QasmTest {
         List<String> xTargets = new ArrayList<>();
         for (var layer : circuit.getLayers()) {
             for (var operation : layer.getQuantumOperations()) {
-                if (operation.getOperationDefinition().name().equals("X")) {
+                // The adder's layers also hold composite calls, which have no library definition.
+                if (operation instanceof ElementaryQuantumGate gate && gate.getOperationDefinition().name().equals("X")) {
                     var target = operation.getTargetQubits().getFirst();
                     String register = target.getRegisterId().equals(registerA) ? "a" : target.getRegisterId().equals(registerB) ? "b" : "?";
                     xTargets.add(register + "[" + target.getIndex() + "]");
@@ -886,7 +971,7 @@ class QasmTest {
     private List<String> sortedIdentifiers(QuantumCircuit circuit) {
         List<String> identifiers = new ArrayList<>();
         for (var operation : elementaryOperations(circuit)) {
-            identifiers.add(operation.getOperationDefinition().name());
+            identifiers.add(((ElementaryQuantumGate) operation).getOperationDefinition().name());
         }
         identifiers.sort(String::compareTo);
         return identifiers;
@@ -894,7 +979,7 @@ class QasmTest {
 
     private QuantumOperation findOperation(QuantumCircuit circuit, String identifier) {
         for (var operation : elementaryOperations(circuit)) {
-            if (operation.getOperationDefinition().name().equals(identifier)) {
+            if (((ElementaryQuantumGate) operation).getOperationDefinition().name().equals(identifier)) {
                 return operation;
             }
         }

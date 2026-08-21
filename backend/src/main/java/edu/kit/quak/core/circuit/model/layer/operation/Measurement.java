@@ -11,6 +11,7 @@ import lombok.Setter;
 @Setter
 public class Measurement extends QuantumOperation {
 
+    private QuantumOperationLibrary operationDefinition;
     private List<ElementSelector> classicBits;
 
     public Measurement(
@@ -20,7 +21,8 @@ public class Measurement extends QuantumOperation {
         List<ElementSelector> controlQubits,
         @NonNull List<ElementSelector> classicBits
     ) {
-        super(operationDefinition, inverseForm, targetQubits, controlQubits);
+        super(inverseForm, targetQubits, controlQubits);
+        this.operationDefinition = operationDefinition;
         if (operationDefinition.getDefinition().getType() != getClass()) {
             throw new InvalidOperationConfigurationException(
                 "Operation type mismatch: expected %s but got %s".formatted(getClass(), operationDefinition.getDefinition().getType())
@@ -45,7 +47,12 @@ public class Measurement extends QuantumOperation {
 
     @Override
     public boolean isStructurallyEqualTo(QuantumOperation other) {
-        return super.isStructurallyEqualTo(other) && selectorsEqual(classicBits, ((Measurement) other).classicBits);
+        Measurement measurement = (Measurement) other;
+        return (
+            super.isStructurallyEqualTo(other) &&
+            operationDefinition == measurement.operationDefinition &&
+            selectorsEqual(classicBits, measurement.classicBits)
+        );
     }
 
     @Override

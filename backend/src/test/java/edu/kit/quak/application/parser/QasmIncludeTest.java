@@ -10,7 +10,7 @@ import edu.kit.quak.application.circuit.ports.out.QasmIncludeLoader;
 import edu.kit.quak.application.circuit.ports.out.QasmSource;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.core.circuit.model.layer.operation.CompositeQuantumGate;
-import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
+import edu.kit.quak.core.circuit.model.layer.operation.ElementaryQuantumGate;
 import edu.kit.quak.shared.tags.UnitTest;
 import java.util.HashMap;
 import java.util.Map;
@@ -66,7 +66,7 @@ class QasmIncludeTest {
                     ? composite.expandToElementary().stream()
                     : java.util.stream.Stream.of(operation)
             )
-            .map(QuantumOperation::getOperationDefinition)
+            .map(op -> ((ElementaryQuantumGate) op).getOperationDefinition())
             .map(Enum::name)
             .reduce((a, b) -> a + "," + b)
             .orElse("");

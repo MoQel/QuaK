@@ -1,3 +1,4 @@
+import { SubcircuitOption } from '@/views/library-view/util/subcircuits.ts';
 import { CompositeQuantumGateDto, QuantumOperationDto } from '@/api/dto/circuit.ts';
 import { OperationIdentifier } from '@/lib/operations.ts';
 
@@ -22,6 +23,13 @@ export type DragData = {
      * for anything dragged within the circuit, where the operation is already there to be found.
      */
     composite?: CompositeQuantumGateDto;
+    /**
+     * The circuit to reference, when a subcircuit is dragged in from the library.
+     *
+     * Only the id, the name and the arity travel: unlike a custom gate a subcircuit has no body to
+     * carry, because it lives in the circuit this points at.
+     */
+    subcircuit?: SubcircuitOption;
 };
 
 export type FlatQubit = {

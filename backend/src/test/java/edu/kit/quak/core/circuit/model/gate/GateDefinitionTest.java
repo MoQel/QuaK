@@ -57,12 +57,12 @@ class GateDefinitionTest {
         assertEquals(2, expanded.size());
 
         QuantumOperation h = expanded.get(0);
-        assertEquals(QuantumOperationLibrary.H, h.getOperationDefinition());
+        assertEquals(QuantumOperationLibrary.H, ((ElementaryQuantumGate) h).getOperationDefinition());
         assertEquals(List.of(qubit(0)), h.getTargetQubits());
         assertTrue(h.getControlQubits().isEmpty());
 
         QuantumOperation cx = expanded.get(1);
-        assertEquals(QuantumOperationLibrary.CX, cx.getOperationDefinition());
+        assertEquals(QuantumOperationLibrary.CX, ((ElementaryQuantumGate) cx).getOperationDefinition());
         assertEquals(List.of(qubit(1)), cx.getTargetQubits());
         assertEquals(List.of(qubit(0)), cx.getControlQubits());
     }
@@ -182,7 +182,10 @@ class GateDefinitionTest {
 
         assertEquals(
             List.of(QuantumOperationLibrary.H, QuantumOperationLibrary.CX, QuantumOperationLibrary.CX),
-            expanded.stream().map(QuantumOperation::getOperationDefinition).toList()
+            expanded
+                .stream()
+                .map(op -> ((ElementaryQuantumGate) op).getOperationDefinition())
+                .toList()
         );
         assertEquals(List.of(qubit(2)), expanded.get(2).getTargetQubits());
         assertEquals(List.of(qubit(1)), expanded.get(2).getControlQubits());

@@ -4,6 +4,7 @@ import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.core.circuit.model.layer.Layer;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementaryQuantumGate;
+import edu.kit.quak.core.circuit.model.layer.operation.Measurement;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
 import edu.kit.quak.core.circuit.model.layer.operation.library.ConcreteQuantumOperation;
 import edu.kit.quak.core.circuit.model.layer.operation.library.QuantumOperationLibrary;
@@ -90,7 +91,7 @@ public class QrispCodeGenerator {
 
         // 1. Parameter / Winkel (in Qrisp i.d.R. erstes Argument)
         if (quantumOperation instanceof ElementaryQuantumGate elementaryQuantumGate) {
-            QuantumOperationLibrary operationDefinition = quantumOperation.getOperationDefinition();
+            QuantumOperationLibrary operationDefinition = elementaryQuantumGate.getOperationDefinition();
             if (operationDefinition.getDefinition() instanceof ConcreteQuantumOperation<?> definition && definition.isHasRotationAngle()) {
                 double angle = elementaryQuantumGate.getRotationAngle();
                 if (quantumOperation.isInverseForm()) {
@@ -127,7 +128,16 @@ public class QrispCodeGenerator {
     }
 
     private static String getOperatorMethodName(QuantumOperation quantumOperation) {
-        QuantumOperationLibrary operationDefinition = quantumOperation.getOperationDefinition();
+        // operationDefinition sitzt seit der Composite-Einfuehrung pro Subklasse: nur Operationen mit
+        // Library-Definition haben eine. Ein Subcircuit hat keine und wird hier nicht abgebildet.
+        QuantumOperationLibrary operationDefinition;
+        if (quantumOperation instanceof ElementaryQuantumGate elementaryQuantumGate) {
+            operationDefinition = elementaryQuantumGate.getOperationDefinition();
+        } else if (quantumOperation instanceof Measurement measurement) {
+            operationDefinition = measurement.getOperationDefinition();
+        } else {
+            return "";
+        }
         String operatorCode = toCode(operationDefinition);
 
         if (quantumOperation.isInverseForm()) {
@@ -239,8 +249,6 @@ public class QrispCodeGenerator {
             case RY -> "ry";
             case RZ -> "rz";
             case MEASURE -> "measure";
-            // User-defined gates have no Qrisp equivalent here; expand them before generating.
-            case COMPOSITE -> throw new IllegalStateException("Composite gates are not supported by the Qrisp generator yet.");
         };
     }
 

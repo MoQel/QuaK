@@ -7,7 +7,9 @@ import edu.kit.quak.core.circuit.model.layer.Layer;
 import edu.kit.quak.core.circuit.model.layer.operation.CompositeQuantumGate;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementaryQuantumGate;
+import edu.kit.quak.core.circuit.model.layer.operation.Measurement;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
+import edu.kit.quak.core.circuit.model.layer.operation.SubcircuitOperation;
 import edu.kit.quak.core.circuit.model.layer.operation.library.ConcreteQuantumOperation;
 import edu.kit.quak.core.circuit.model.layer.operation.library.QuantumOperationLibrary;
 import edu.kit.quak.core.circuit.model.register.QuantumRegister;
@@ -17,6 +19,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -37,6 +40,31 @@ public class QasmCodeGenerator {
 
     public static String toCode(QuantumCircuit quantumCircuit) {
         StringBuilder codeStringBuilder = new StringBuilder();
+
+        // Subcircuits are declared first, as an empty gate carrying the @composition annotation the
+        // parser reads them back from.
+        Map<String, Integer> subcircuits = new LinkedHashMap<>();
+        quantumCircuit
+            .getLayers()
+            .stream()
+            .flatMap(layer -> layer.getQuantumOperations().stream())
+            .filter(SubcircuitOperation.class::isInstance)
+            .map(SubcircuitOperation.class::cast)
+            .forEach(call -> subcircuits.putIfAbsent(call.getDefinitionCircuitId(), call.getTargetQubits().size()));
+
+        for (Map.Entry<String, Integer> entry : subcircuits.entrySet()) {
+            List<String> paramNames = new ArrayList<>();
+            for (int i = 0; i < entry.getValue(); i++) {
+                paramNames.add("q" + i);
+            }
+            codeStringBuilder.append("@composition \"circuit\" ").append(entry.getKey()).append("\n");
+            codeStringBuilder
+                .append("gate ")
+                .append(subcircuitGateName(entry.getKey()))
+                .append(" ")
+                .append(String.join(", ", paramNames))
+                .append(" {\n}\n\n");
+        }
 
         List<Register> registers = quantumCircuit.getRegisters();
         for (Register register : registers) {
@@ -241,7 +269,6 @@ public class QasmCodeGenerator {
     /** Built-in gate names, so a user-defined gate can never be declared over one of them. */
     private static Set<String> builtInGateNames() {
         return Arrays.stream(QuantumOperationLibrary.values())
-            .filter(gate -> gate != QuantumOperationLibrary.COMPOSITE)
             .map(QasmCodeGenerator::toCode)
             .collect(java.util.stream.Collectors.toCollection(HashSet::new));
     }
@@ -336,6 +363,15 @@ public class QasmCodeGenerator {
         return codeStringBuilder.toString();
     }
 
+    /** The gate name a subcircuit call is written under; sanitized so it is a valid identifier. */
+    public static String subcircuitGateName(String definitionCircuitId) {
+        if (definitionCircuitId == null || definitionCircuitId.isBlank()) {
+            return "comp_gate";
+        }
+        String sanitized = definitionCircuitId.replaceAll("[^a-zA-Z0-9_]", "_");
+        return sanitized.startsWith("comp_") ? sanitized : "comp_" + sanitized;
+    }
+
     private static String operatorToCode(QuantumOperation quantumOperation, Emission emission) {
         // A composite is written under the name its definition was declared with, which is not
         // necessarily its own name -- see assignGateNames.
@@ -343,19 +379,26 @@ public class QasmCodeGenerator {
             return emission.gateNames().getOrDefault(composite.getDefinition().getId(), composite.getGateName());
         }
 
-        QuantumOperationLibrary operationDefinition = quantumOperation.getOperationDefinition();
-        String operatorCode = toCode(operationDefinition);
+        // A subcircuit is named after the circuit it points at, declared as an empty gate above.
+        if (quantumOperation instanceof SubcircuitOperation subcircuitOperation) {
+            return subcircuitGateName(subcircuitOperation.getDefinitionCircuitId());
+        }
+
+        // operationDefinition lives on the subclasses that have one, so each is asked in turn.
         if (quantumOperation instanceof ElementaryQuantumGate elementaryQuantumGate) {
+            QuantumOperationLibrary operationDefinition = elementaryQuantumGate.getOperationDefinition();
+            String operatorCode = toCode(operationDefinition);
             if (operationDefinition.getDefinition() instanceof ConcreteQuantumOperation<?> definition && definition.isHasRotationAngle()) {
                 return operatorCode + "(" + formatAngle(elementaryQuantumGate.getRotationAngle()) + ")";
             }
             return operatorCode;
         }
 
-        // TODO CompositeOperations
-        // TODO Meassurement
+        if (quantumOperation instanceof Measurement measurement) {
+            return toCode(measurement.getOperationDefinition());
+        }
 
-        return operatorCode;
+        return "";
     }
 
     /** Named constants the QASM parser understands, with a small tolerance for round-trip matching. */
@@ -462,8 +505,6 @@ public class QasmCodeGenerator {
             case RY -> "ry";
             case RZ -> "rz";
             case MEASURE -> "measure";
-            // Unreachable: operatorToCode resolves composites from their definition beforehand.
-            case COMPOSITE -> throw new IllegalStateException("A composite gate must be named by its definition, not by the library.");
         };
     }
 

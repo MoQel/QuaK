@@ -1,5 +1,5 @@
 import { Card, CardContent } from '@/components/ui/card';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { CircuitResponse, ElementSelectorDto, getRegisterSize, QuantumOperationDto } from '@/api/dto/circuit';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store.ts';
@@ -150,6 +150,28 @@ export function CircuitView() {
 
     const [hoverPos, setHoverPos] = useState<HoverPos | null>(null);
     const [draggingOperationId, setDraggingOperationId] = useState<string | null>(null);
+
+    // The placeholder is cleared on drop and on leaving a cell, but a drag can also end without
+    // either: pressing Escape, or releasing over a cell that declines the drop (which omits
+    // preventDefault and so never fires one). The dashed rectangle then stayed on the canvas until
+    // the next drag.
+    useEffect(() => {
+        if (!isOperationDragging) setHoverPos(null);
+    }, [isOperationDragging]);
+
+    // Belt and braces, because the line above depends on the drag source dispatching
+    // stopOperationDrag from its own dragend — and dragend does not fire at all when that element
+    // leaves the DOM mid-drag, which is exactly the trap the operation grid keeps its ghost mounted
+    // for. These listeners sit on the window, so they run whatever the source did or did not do.
+    useEffect(() => {
+        const clear = () => setHoverPos(null);
+        window.addEventListener('dragend', clear);
+        window.addEventListener('drop', clear);
+        return () => {
+            window.removeEventListener('dragend', clear);
+            window.removeEventListener('drop', clear);
+        };
+    }, []);
 
     /**
      * The operation currently being dragged, with its original layer position.

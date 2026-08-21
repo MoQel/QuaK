@@ -9,7 +9,12 @@ export interface ElementSelectorDto {
 
 export const getSelectorKey = (sel: ElementSelectorDto): string => `${sel.registerId}-${sel.index}`;
 
-export type QuantumOperationType = 'ELEMENTARY_QUANTUM_GATE' | 'MEASUREMENT' | 'COMPOSITE_QUANTUM_GATE' | 'DUMMY';
+export type QuantumOperationType =
+    | 'ELEMENTARY_QUANTUM_GATE'
+    | 'MEASUREMENT'
+    | 'SUBCIRCUIT_OPERATION'
+    | 'COMPOSITE_QUANTUM_GATE'
+    | 'DUMMY';
 
 export interface AbstractQuantumOperationDto {
     id?: string; // Only for response
@@ -32,6 +37,20 @@ export interface ElementaryQuantumGateDto extends AbstractQuantumOperationDto {
 export interface MeasurementDto extends AbstractQuantumOperationDto {
     type: 'MEASUREMENT';
     classicBits: ElementSelectorDto[];
+}
+
+/**
+ * A call to a subcircuit: the definition lives in another circuit of the project, referenced by id
+ * rather than embedded here.
+ */
+export interface SubcircuitOperationDto extends AbstractQuantumOperationDto {
+    type: 'SUBCIRCUIT_OPERATION';
+    definitionCircuitId: string;
+    /**
+     * Name of the referenced circuit's file, filled in by the backend on read. Absent when the
+     * reference cannot be resolved — the box then falls back to a short form of the id.
+     */
+    definitionName?: string;
 }
 
 /**
@@ -59,10 +78,22 @@ export interface DummyDto extends AbstractQuantumOperationDto {
     type: 'DUMMY';
 }
 
-export type QuantumOperationDto = ElementaryQuantumGateDto | MeasurementDto | CompositeQuantumGateDto | DummyDto;
+export type QuantumOperationDto =
+    | ElementaryQuantumGateDto
+    | MeasurementDto
+    | SubcircuitOperationDto
+    | CompositeQuantumGateDto
+    | DummyDto;
 
 export const isCompositeGate = (op: QuantumOperationDto): op is CompositeQuantumGateDto =>
     op.type === 'COMPOSITE_QUANTUM_GATE';
+
+export const isSubcircuit = (op: QuantumOperationDto): op is SubcircuitOperationDto =>
+    op.type === 'SUBCIRCUIT_OPERATION';
+
+/** Either way of composing a circuit; both are drawn as one box rather than as target/control markers. */
+export const isComposedOperation = (op: QuantumOperationDto): op is CompositeQuantumGateDto | SubcircuitOperationDto =>
+    isCompositeGate(op) || isSubcircuit(op);
 
 export const getInvolvedSelectors = (op: QuantumOperationDto): ElementSelectorDto[] => {
     const selectors = [...op.targetQubits];

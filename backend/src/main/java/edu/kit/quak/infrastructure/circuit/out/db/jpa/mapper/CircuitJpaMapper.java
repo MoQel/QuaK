@@ -22,6 +22,7 @@ public interface CircuitJpaMapper {
     List<JpaLayer> mapLayerListToEntity(List<Layer> value);
 
     @Mapping(target = "id", source = "id")
+    @Mapping(target = "offeredAsSubcircuit", expression = "java(Boolean.TRUE.equals(entity.getOfferedAsSubcircuit()))")
     QuantumCircuit toDomain(JpaQuantumCircuit entity);
 
     List<Register> mapRegisterListToDomain(List<JpaRegister> value);

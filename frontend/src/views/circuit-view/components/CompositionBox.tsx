@@ -1,5 +1,10 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { CompositeQuantumGateDto, RegisterResponse } from '@/api/dto/circuit.ts';
+import {
+    CompositeQuantumGateDto,
+    isCompositeGate,
+    RegisterResponse,
+    SubcircuitOperationDto,
+} from '@/api/dto/circuit.ts';
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu.tsx';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip.tsx';
 import { CompositeGatePreview } from '@/views/circuit-view/components/CompositeGatePreview.tsx';
@@ -31,32 +36,44 @@ const PORT_GUTTER = 11;
  */
 const PREVIEW_DELAY = 400;
 
-interface CompositeQuantumGateProps {
-    operation: CompositeQuantumGateDto;
+interface CompositionBoxProps {
+    /**
+     * Either way of composing a circuit. Both are drawn as one box over their wires; they differ
+     * only in where the contents live — inline in a gate declaration, or in another circuit.
+     */
+    operation: CompositeQuantumGateDto | SubcircuitOperationDto;
     registers: RegisterResponse[];
     layerIdx: number;
     /** Semi-transparent and non-interactive while dragged; see ElementaryQuantumGate. */
     isGhost?: boolean;
-    /** Drawn slightly narrower when the gate sits inside a repetition frame, so the box has room. */
-    isInLoop?: boolean;
     onDragStart: (operationSize: number, grabOffset: number) => void;
     onDragEnd: () => void;
     onDelete: () => void;
-    /** Dissolves the box into the gates it is made of; offered on right-click. */
-    onUngroup: () => void;
+    /**
+     * Dissolves the box into the gates it is made of; offered on right-click. Absent for a
+     * subcircuit: its body is not in this circuit, so there is nothing here to dissolve into.
+     */
+    onUngroup?: () => void;
+    /** Drawn slightly narrower when the box sits inside a repetition frame, so the frame has room. */
+    isInLoop?: boolean;
     /** How often the enclosing frame repeats, shown on the menu entry that removes it. */
     loopRepeatCount?: number;
-    /** Drops the enclosing repetition frame; absent when the gate is not in one. */
+    /** Drops the enclosing repetition frame; absent when the box is not in one. */
     onRemoveLoop?: () => void;
 }
 
 /**
- * A user-defined gate as one labelled box spanning the wires it was called on.
+ * A composed operation as one labelled box spanning the wires it was called on.
+ *
+ * Both ways of composing a circuit are drawn the same way, because from the circuit's side they are
+ * the same thing: one operation standing for several. They differ in where the contents live — a
+ * composite gate carries the body of a QASM `gate` declaration, a subcircuit points at another
+ * circuit of the project — which is why only the former can be ungrouped or previewed.
  *
  * Every declared parameter is drawn as a port, in the gate's parameter order, so the box shows the
  * full signature of the gate as written rather than only the qubits its body happens to touch.
  */
-export function CompositeQuantumGate({
+export function CompositionBox({
     operation,
     registers,
     layerIdx,
@@ -68,20 +85,13 @@ export function CompositeQuantumGate({
     onUngroup,
     loopRepeatCount,
     onRemoveLoop,
-}: Readonly<CompositeQuantumGateProps>) {
+}: Readonly<CompositionBoxProps>) {
     const isDraggingRef = useRef(false);
     const interactivity = isGhost ? 'pointer-events-none' : 'pointer-events-auto';
 
     // The preview is controlled so a drag can veto it: the pointer sits on the box while the drag
     // starts, so an uncontrolled tooltip would open over the circuit the user is dropping into.
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-
-    // Vertically only, and by inset rather than transform. A transform would pull the ports off the
-    // wires they are bound to, and the width is already spoken for: the port gutter plus the gate
-    // name have to fit into 48px, so there is nothing there to give away.
-    const insetY = isInLoop
-        ? BOX_INSET_Y + (QUBIT_HEIGHT - 2 * BOX_INSET_Y) * ((1 - LOOP_GATE_SCALE) / 2)
-        : BOX_INSET_Y;
 
     const { minY, spanHeight, ports } = useMemo(() => {
         // Parameter order, not wire order: position i belongs to portLabels[i]. A call may pass its
@@ -100,7 +110,7 @@ export function CompositeQuantumGate({
             ports: wireOfPosition.map((wire, position) => ({
                 position,
                 wire,
-                label: operation.portLabels?.[position] ?? '',
+                label: isCompositeGate(operation) ? (operation.portLabels?.[position] ?? '') : `q${position}`,
             })),
         };
     }, [operation, registers]);
@@ -147,8 +157,22 @@ export function CompositeQuantumGate({
         setIsPreviewOpen(open);
     };
 
+    // Vertically only, and by inset rather than transform. A transform would pull the ports off the
+    // wires they are bound to, and the width is already spoken for: the port gutter plus the gate
+    // name have to fit into 48px, so there is nothing there to give away.
+    const insetY = isInLoop
+        ? BOX_INSET_Y + (QUBIT_HEIGHT - 2 * BOX_INSET_Y) * ((1 - LOOP_GATE_SCALE) / 2)
+        : BOX_INSET_Y;
+
     /** A box covering more than one wire has more height than width, so the name reads better turned. */
     const isTall = spanHeight > 0;
+
+    // A composite gate is named by its declaration; a subcircuit by the file it points at, which the
+    // backend resolves on every read. The id is only the fallback for a reference that no longer
+    // resolves — a deleted file, or one moved out of this project.
+    const label = isCompositeGate(operation)
+        ? operation.identifier
+        : (operation.definitionName ?? operation.definitionCircuitId.slice(0, 8));
 
     return (
         // The preview lives outside the context menu but shares its trigger element: nesting the
@@ -207,7 +231,7 @@ export function CompositeQuantumGate({
                                             : { paddingInline: 4 }),
                                     }}
                                 >
-                                    {operation.identifier}
+                                    {label}
                                 </span>
 
                                 {/* Port markers, positioned on the wire each parameter is bound to. */}
@@ -228,7 +252,7 @@ export function CompositeQuantumGate({
                 </ContextMenuTrigger>
 
                 <ContextMenuContent>
-                    <ContextMenuItem onSelect={onUngroup}>Ungroup</ContextMenuItem>
+                    {onUngroup && <ContextMenuItem onSelect={onUngroup}>Ungroup</ContextMenuItem>}
                     {onRemoveLoop && (
                         <ContextMenuItem onSelect={onRemoveLoop}>Remove loop ×{loopRepeatCount}</ContextMenuItem>
                     )}
@@ -241,7 +265,15 @@ export function CompositeQuantumGate({
             {/* Sideways, so the panel never covers the columns right of the gate the user is
                 reading — and never the gate itself, which would make it flicker. */}
             <TooltipContent side="right" className="bg-bg-light text-text border shadow-xl p-3 z-[9999]">
-                <CompositeGatePreview gate={operation} />
+                {isCompositeGate(operation) ? (
+                    <CompositeGatePreview gate={operation} />
+                ) : (
+                    // A subcircuit's body lives in another circuit and is not loaded here, so there
+                    // is nothing to draw; naming what it points at is all this panel can honestly say.
+                    <span className="text-xs">
+                        Subcircuit: {operation.definitionName ?? operation.definitionCircuitId}
+                    </span>
+                )}
             </TooltipContent>
         </Tooltip>
     );

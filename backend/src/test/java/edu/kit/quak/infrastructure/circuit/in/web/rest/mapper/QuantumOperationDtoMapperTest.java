@@ -6,11 +6,13 @@ import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementaryQuantumGate;
 import edu.kit.quak.core.circuit.model.layer.operation.Measurement;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
+import edu.kit.quak.core.circuit.model.layer.operation.SubcircuitOperation;
 import edu.kit.quak.core.circuit.model.layer.operation.library.QuantumOperationLibrary;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.ElementSelectorDto;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.ElementaryQuantumGateDto;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.MeasurementDto;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.QuantumOperationDto;
+import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.SubcircuitOperationDto;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,10 +37,12 @@ class QuantumOperationDtoMapperTest {
 
         ElementaryQuantumGate gate = new ElementaryQuantumGate(QuantumOperationLibrary.X, false, List.of(target), null, 0d);
         Measurement measurement = new Measurement(QuantumOperationLibrary.MEASURE, false, List.of(target), null, List.of(classicBit));
+        SubcircuitOperation composite = new SubcircuitOperation(false, List.of(target), null, "target-circuit-123");
 
         // Act
         QuantumOperationDto gateResponse = mapper.toResponse(gate);
         QuantumOperationDto measurementResponse = mapper.toResponse(measurement);
+        QuantumOperationDto compositeResponse = mapper.toResponse(composite);
 
         // Assert
         assertNotNull(gateResponse);
@@ -48,6 +52,12 @@ class QuantumOperationDtoMapperTest {
         assertNotNull(measurementResponse);
         assertEquals(measurement.getId(), measurementResponse.getId());
         assertEquals(QuantumOperationLibrary.MEASURE.name(), measurementResponse.getIdentifier());
+
+        assertNotNull(compositeResponse);
+        assertInstanceOf(SubcircuitOperationDto.class, compositeResponse);
+        SubcircuitOperationDto compositeDto = (SubcircuitOperationDto) compositeResponse;
+        assertEquals(composite.getId(), compositeDto.getId());
+        assertEquals("target-circuit-123", compositeDto.getDefinitionCircuitId());
     }
 
     @Test
@@ -72,19 +82,28 @@ class QuantumOperationDtoMapperTest {
             null,
             List.of(classicBit)
         );
+        SubcircuitOperationDto compositeDto = new SubcircuitOperationDto("id", null, false, List.of(target), null, "target-circuit-123");
 
         // Act
         QuantumOperation gate = mapper.toDomain(gateDto);
         QuantumOperation measurement = mapper.toDomain(measurementDto);
+        QuantumOperation composite = mapper.toDomain(compositeDto);
 
         // Assert
         assertNotNull(gate);
+        assertInstanceOf(ElementaryQuantumGate.class, gate);
         assertEquals(gateDto.getId(), gate.getId()); // Provided ids are kept (stable identity across saves)
-        assertEquals(QuantumOperationLibrary.X, gate.getOperationDefinition());
+        assertEquals(QuantumOperationLibrary.X, ((ElementaryQuantumGate) gate).getOperationDefinition());
 
         assertNotNull(measurement);
+        assertInstanceOf(Measurement.class, measurement);
         assertEquals(measurementDto.getId(), measurement.getId());
-        assertEquals(QuantumOperationLibrary.MEASURE, measurement.getOperationDefinition());
+        assertEquals(QuantumOperationLibrary.MEASURE, ((Measurement) measurement).getOperationDefinition());
+
+        assertNotNull(composite);
+        assertInstanceOf(SubcircuitOperation.class, composite);
+        assertEquals(compositeDto.getId(), composite.getId());
+        assertEquals("target-circuit-123", ((SubcircuitOperation) composite).getDefinitionCircuitId());
     }
 
     @Test

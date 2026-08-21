@@ -1,6 +1,12 @@
-import { isCompositeGate, LoopBlockDto, QuantumOperationDto, RegisterResponse } from '@/api/dto/circuit.ts';
+import {
+    isComposedOperation,
+    isCompositeGate,
+    LoopBlockDto,
+    QuantumOperationDto,
+    RegisterResponse,
+} from '@/api/dto/circuit.ts';
 import { innermostBlockCovering } from '@/lib/loopBlocks.ts';
-import { CompositeQuantumGate } from '@/views/circuit-view/components/CompositeQuantumGate.tsx';
+import { CompositionBox } from '@/views/circuit-view/components/CompositionBox.tsx';
 import { ElementaryQuantumGate } from '@/views/circuit-view/components/ElementaryQuantumGate.tsx';
 import { UiLayer } from '@/views/circuit-view/util/types.ts';
 import { useDispatch } from 'react-redux';
@@ -73,9 +79,9 @@ export function QuantumOperationGrid({
                 const enclosingLoop = op.id ? innermostBlockCovering(loopBlocks, op.id) : undefined;
                 const onRemoveLoop = enclosingLoop ? () => removeLoopBlock(enclosingLoop.id) : undefined;
 
-                // A user-defined gate is one box rather than a set of target/control markers.
-                return isCompositeGate(op) ? (
-                    <CompositeQuantumGate
+                // A composed operation is one box rather than a set of target/control markers.
+                return isComposedOperation(op) ? (
+                    <CompositionBox
                         key={op.id}
                         operation={op}
                         registers={registers}
@@ -88,7 +94,8 @@ export function QuantumOperationGrid({
                         }
                         onDragEnd={handleOperationDragEnd}
                         onDelete={() => removeQuantumOperation(op.id!)}
-                        onUngroup={() => ungroupQuantumOperation(op.id!)}
+                        // Only a composite gate has a body in this circuit to dissolve into.
+                        onUngroup={isCompositeGate(op) ? () => ungroupQuantumOperation(op.id!) : undefined}
                         onRemoveLoop={onRemoveLoop}
                     />
                 ) : (
