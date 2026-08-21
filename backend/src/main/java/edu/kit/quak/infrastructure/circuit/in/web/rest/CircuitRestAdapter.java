@@ -130,8 +130,34 @@ public class CircuitRestAdapter {
         return subcircuitNames
             .listAvailable(projectId, excludeCircuitId, user)
             .stream()
-            .map(option -> new SubcircuitOptionResponse(option.circuitId(), option.name(), option.qubitCount()))
+            .map(option ->
+                new SubcircuitOptionResponse(
+                    option.circuitId(),
+                    option.fileId(),
+                    option.name(),
+                    option.qubitCount(),
+                    option.operationCount()
+                )
+            )
             .toList();
+    }
+
+    /**
+     * Declares the circuit of the given file to be available as a subcircuit, creating it if the
+     * file does not have one yet.
+     *
+     * <p>This is where the creating read of {@code GET /file/{fileId}} is intended: the user picked
+     * exactly this file. Listing subcircuits stays free of that side effect, and free of files
+     * nobody declared.
+     */
+    @PostMapping("/file/{fileId}/subcircuit")
+    @PreAuthorize("isAuthenticated()")
+    public CircuitResponse offerAsSubcircuit(@PathVariable String fileId, Authentication authentication) {
+        log.debug("REST request to offer the circuit of file {} as a subcircuit", fileId);
+        User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
+        QuantumCircuit circuit = service.getOrCreateByFileId(fileId, user);
+        subcircuitNames.offerAsSubcircuit(circuit.getId(), user);
+        return toResponse(service.getOrCreateByFileId(fileId, user), user);
     }
 
     /**

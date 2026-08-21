@@ -2,6 +2,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { startOperationDrag, stopOperationDrag } from '@/store/circuit/dragOperationSlice.ts';
+import { openTab } from '@/store/tabs/tabsSlice.ts';
 import { DragData } from '@/views/circuit-view/util/types.ts';
 import { SubcircuitOption } from '@/views/library-view/util/subcircuits.ts';
 
@@ -54,6 +55,17 @@ export function LibrarySubcircuitElement({ option }: Readonly<LibrarySubcircuitE
         setIsOpen(open);
     };
 
+    // Dragging places a call of the subcircuit; opening it is how its contents get edited. Without
+    // this an empty subcircuit was a dead end — offered in the library with no way to fill it.
+    const handleDoubleClick = () => {
+        setIsOpen(false);
+        dispatch(openTab({ tab: { id: option.fileId, title: option.name, language: '' } }));
+    };
+
+    // Shown, not hidden: an empty circuit is usually one the user is in the middle of building, and
+    // making it disappear until the first gate lands would be more confusing than marking it.
+    const isEmpty = option.operationCount === 0;
+
     return (
         <Tooltip delayDuration={DELAY_DURATION} open={isOpen} onOpenChange={handleOpenChange}>
             <TooltipTrigger asChild>
@@ -61,13 +73,18 @@ export function LibrarySubcircuitElement({ option }: Readonly<LibrarySubcircuitE
                     draggable
                     onDragStart={handleDragStart}
                     onDragEnd={handleDragEnd}
+                    onDoubleClick={handleDoubleClick}
                     className="
                         group cursor-grab active:cursor-grabbing
                         flex items-center justify-center
                         h-10 w-max min-w-[84px] px-3
                         font-mono font-bold select-none
                         hover:brightness-90 dark:hover:brightness-125 transition-colors"
-                    style={{ backgroundColor: 'var(--composite)', color: 'var(--bg-dark)' }}
+                    style={{
+                        backgroundColor: 'var(--composite)',
+                        color: 'var(--bg-dark)',
+                        opacity: isEmpty ? 0.55 : 1,
+                    }}
                 >
                     <span className="whitespace-nowrap text-[11px] leading-none">{option.name}</span>
                 </div>
@@ -76,8 +93,10 @@ export function LibrarySubcircuitElement({ option }: Readonly<LibrarySubcircuitE
             <TooltipContent side="right" className="bg-bg-light text-text border shadow-xl p-3 max-w-[240px] z-[9999]">
                 <div className="font-semibold text-sm mb-1">{option.name}</div>
                 <div className="text-xs text-text-muted">
-                    {option.qubitCount} qubit{option.qubitCount === 1 ? '' : 's'} · another circuit of this project
+                    {option.qubitCount} qubit{option.qubitCount === 1 ? '' : 's'} ·{' '}
+                    {isEmpty ? 'still empty — dropping it in does nothing yet' : 'another circuit of this project'}
                 </div>
+                <div className="text-xs text-text-muted mt-1">Drag to place it · double-click to edit it</div>
             </TooltipContent>
         </Tooltip>
     );

@@ -32,4 +32,13 @@ public interface SubcircuitServicePort {
      * @param excludeCircuitId the circuit being edited; a circuit cannot contain itself
      */
     List<SubcircuitOption> listAvailable(String projectId, String excludeCircuitId, User user);
+
+    /**
+     * Declares a circuit to be available as a building block elsewhere in the project.
+     *
+     * <p>Needed because a circuit exists as soon as its file is opened: without an explicit
+     * declaration the library could only guess, and would offer every file the user ever looked at.
+     * Calling it twice is harmless.
+     */
+    void offerAsSubcircuit(String circuitId, User user);
 }
