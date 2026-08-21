@@ -32,6 +32,17 @@ public class ElementaryQuantumGate extends QuantumOperation {
     }
 
     @Override
+    public ElementaryQuantumGate copyForQubits(@NonNull List<ElementSelector> targetQubits, @NonNull List<ElementSelector> controlQubits) {
+        return new ElementaryQuantumGate(
+            operationDefinition,
+            inverseForm,
+            copySelectors(targetQubits),
+            copySelectors(controlQubits),
+            rotationAngle
+        );
+    }
+
+    @Override
     public String toString() {
         return String.format("[ElementaryQuantumGate: %s (quantumOperationId=%s)]", getOperationDefinition(), getId());
     }

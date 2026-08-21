@@ -1,4 +1,5 @@
-import { QuantumOperationDto, RegisterResponse } from '@/api/dto/circuit.ts';
+import { isCompositeGate, QuantumOperationDto, RegisterResponse } from '@/api/dto/circuit.ts';
+import { CompositeQuantumGate } from '@/views/circuit-view/components/CompositeQuantumGate.tsx';
 import { ElementaryQuantumGate } from '@/views/circuit-view/components/ElementaryQuantumGate.tsx';
 import { UiLayer } from '@/views/circuit-view/util/types.ts';
 import { useDispatch } from 'react-redux';
@@ -9,6 +10,8 @@ interface QuantumOperationGridProps {
     registers: RegisterResponse[];
     isOperationDragging: boolean;
     removeQuantumOperation: (operationId: string) => void;
+    /** Replaces a composite gate by the operations it is made of. */
+    ungroupQuantumOperation: (operationId: string) => void;
     setDraggingOperationId: (id: string | null) => void;
     setHoverPos: (pos: null) => void;
     draggingOperation: { op: QuantumOperationDto; layerIdx: number } | null;
@@ -19,14 +22,15 @@ export function QuantumOperationGrid({
     registers,
     isOperationDragging,
     removeQuantumOperation,
+    ungroupQuantumOperation,
     setDraggingOperationId,
     setHoverPos,
     draggingOperation,
 }: Readonly<QuantumOperationGridProps>) {
     const dispatch = useDispatch();
 
-    const handleOperationDragStart = (operationId: string, operationSize: number) => {
-        dispatch(startOperationDrag(operationSize));
+    const handleOperationDragStart = (operationId: string, operationSize: number, grabOffset: number) => {
+        dispatch(startOperationDrag({ size: operationSize, grabOffset }));
         setDraggingOperationId(operationId);
     };
 
@@ -53,18 +57,37 @@ export function QuantumOperationGrid({
 
     return (
         <div className={`absolute inset-0 z-20 ${isOperationDragging ? 'pointer-events-none' : ''}`}>
-            {renderedOperations.map(({ op, layerIdx, isGhost }) => (
-                <ElementaryQuantumGate
-                    key={op.id}
-                    operation={op}
-                    registers={registers}
-                    layerIdx={layerIdx}
-                    isGhost={isGhost}
-                    onDragStart={(operationSize) => handleOperationDragStart(op.id!, operationSize)}
-                    onDragEnd={handleOperationDragEnd}
-                    onDelete={() => removeQuantumOperation(op.id!)}
-                />
-            ))}
+            {renderedOperations.map(({ op, layerIdx, isGhost }) =>
+                // A user-defined gate is one box rather than a set of target/control markers.
+                isCompositeGate(op) ? (
+                    <CompositeQuantumGate
+                        key={op.id}
+                        operation={op}
+                        registers={registers}
+                        layerIdx={layerIdx}
+                        isGhost={isGhost}
+                        onDragStart={(operationSize, grabOffset) =>
+                            handleOperationDragStart(op.id!, operationSize, grabOffset)
+                        }
+                        onDragEnd={handleOperationDragEnd}
+                        onDelete={() => removeQuantumOperation(op.id!)}
+                        onUngroup={() => ungroupQuantumOperation(op.id!)}
+                    />
+                ) : (
+                    <ElementaryQuantumGate
+                        key={op.id}
+                        operation={op}
+                        registers={registers}
+                        layerIdx={layerIdx}
+                        isGhost={isGhost}
+                        onDragStart={(operationSize, grabOffset) =>
+                            handleOperationDragStart(op.id!, operationSize, grabOffset)
+                        }
+                        onDragEnd={handleOperationDragEnd}
+                        onDelete={() => removeQuantumOperation(op.id!)}
+                    />
+                ),
+            )}
         </div>
     );
 }

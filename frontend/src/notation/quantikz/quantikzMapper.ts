@@ -1,5 +1,6 @@
 import {
     CircuitResponse,
+    CompositeQuantumGateDto,
     ElementaryQuantumGateDto,
     getRegisterSize,
     isQuantumRegister,
@@ -88,9 +89,42 @@ function applyOperation(
         return;
     }
 
+    if (operation.type === 'COMPOSITE_QUANTUM_GATE') {
+        applyCompositeGate(grid, wireIndex, operation, layerIdx);
+        return;
+    }
+
     if (operation.type === 'ELEMENTARY_QUANTUM_GATE') {
         applyElementaryGate(grid, wireIndex, operation, layerIdx);
     }
+}
+
+/**
+ * A user-defined gate becomes one multi-wire box, mirroring how the editor draws it.
+ *
+ * Expanding it into its elementary gates instead would not work here: the whole body sits in a
+ * single layer, so several gates would compete for the same grid cell and all but one would be
+ * lost. `\gate[n]{...}` is placed on the topmost wire and quantikz draws it across the following
+ * n-1 wires, which is why the spanned cells are left empty.
+ */
+function applyCompositeGate(
+    grid: string[][],
+    wireIndex: WireIndex,
+    gate: CompositeQuantumGateDto,
+    layerIdx: number,
+): void {
+    const wires = gate.targetQubits
+        .map((qubit) => wireIndex.getWireIndex(qubit))
+        .filter((wire): wire is number => wire !== undefined);
+
+    if (wires.length === 0) return;
+
+    const topWire = Math.min(...wires);
+    const span = Math.max(...wires) - topWire + 1;
+    // Gate names are user-chosen, so they need the same escaping as the register labels.
+    const label = escapeLatexText(gate.identifier);
+
+    grid[topWire][layerIdx] = span > 1 ? String.raw`\gate[${span}]{${label}}` : String.raw`\gate{${label}}`;
 }
 
 function buildRows(registers: RegisterResponse[], grid: string[][]): string[] {

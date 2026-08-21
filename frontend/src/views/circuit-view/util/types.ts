@@ -11,7 +11,8 @@ export type UiQuantumOperation = QuantumOperationDto & {
 
 export type DragData = {
     origin: 'library' | 'circuit';
-    operationIdentifier: OperationIdentifier;
+    /** A library gate's identifier, or a user-defined gate's own name when dragging a composite. */
+    operationIdentifier: OperationIdentifier | string;
     id?: string;
 };
 

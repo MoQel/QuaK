@@ -2,6 +2,7 @@ package edu.kit.quak.infrastructure.circuit.in.web.rest;
 
 import edu.kit.quak.application.circuit.antlr.QasmService;
 import edu.kit.quak.application.circuit.ports.in.CircuitServicePort;
+import edu.kit.quak.application.circuit.services.ProjectQasmIncludeResolver;
 import edu.kit.quak.application.user.ports.in.UserServicePort;
 import edu.kit.quak.core.circuit.codegen.QasmCodeGenerator;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
@@ -38,6 +39,7 @@ public class CircuitRestAdapter {
 
     private final CircuitServicePort service;
     private final QasmService qasmService;
+    private final ProjectQasmIncludeResolver includeResolver;
     private final UserServicePort userService;
     private final CircuitDtoMapper mapper;
     private final QuantumOperationDtoMapper quantumOperationDtoMapper;
@@ -49,6 +51,7 @@ public class CircuitRestAdapter {
     public CircuitRestAdapter(
         CircuitServicePort service,
         QasmService qasmService,
+        ProjectQasmIncludeResolver includeResolver,
         UserServicePort userService,
         CircuitDtoMapper mapper,
         QuantumOperationDtoMapper quantumOperationDtoMapper,
@@ -59,6 +62,7 @@ public class CircuitRestAdapter {
     ) {
         this.service = service;
         this.qasmService = qasmService;
+        this.includeResolver = includeResolver;
         this.userService = userService;
         this.mapper = mapper;
         this.quantumOperationDtoMapper = quantumOperationDtoMapper;
@@ -119,12 +123,21 @@ public class CircuitRestAdapter {
      * Parses OpenQASM code into circuit content (registers and layers) without
      * persisting anything. Counterpart of the /qasmCode endpoint; the client
      * merges the content into its active circuit.
+     *
+     * <p>The optional {@code fileId} names the file the code is being edited in. It is what
+     * {@code include "..."} statements resolve against; without it the request stays purely
+     * content-only and only the built-in standard libraries can be included.
      */
     @PostMapping(value = "/parse", consumes = MediaType.TEXT_PLAIN_VALUE)
     @PreAuthorize("isAuthenticated()")
-    public CircuitContentResponse parseQasmCode(@RequestBody String qasmCode) {
-        log.debug("REST request to parse code into circuit content");
-        QuantumCircuit circuit = qasmService.parse(qasmCode);
+    public CircuitContentResponse parseQasmCode(
+        @RequestBody String qasmCode,
+        @RequestParam(required = false) String fileId,
+        Authentication authentication
+    ) {
+        log.debug("REST request to parse code into circuit content. fileId={}", fileId);
+        User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
+        QuantumCircuit circuit = qasmService.parse(qasmCode, fileId, includeResolver.forUser(user));
         return new CircuitContentResponse(
             circuit.getRegisters().stream().map(registerDtoMapper::toResponse).toList(),
             circuit.getLayers().stream().map(layerDtoMapper::toResponse).toList()

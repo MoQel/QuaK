@@ -249,6 +249,8 @@ public class QrispCodeGenerator {
             case RY -> "ry";
             case RZ -> "rz";
             case MEASURE -> "measure";
+            // User-defined gates have no Qrisp equivalent here; expand them before generating.
+            case COMPOSITE -> throw new IllegalStateException("Composite gates are not supported by the Qrisp generator yet.");
         };
     }
 

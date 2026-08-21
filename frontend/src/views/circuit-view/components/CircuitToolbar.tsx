@@ -4,6 +4,7 @@ import { apiRequest } from '@/api/api.ts';
 import {
     CircuitResponse,
     CompositeQuantumOperationDto,
+    CompositeQuantumGateDto,
     isQuantumRegister,
     QuantumOperationDto,
     RegisterResponse,
@@ -27,11 +28,11 @@ export function CircuitToolbar({ circuit, setCircuit }: Readonly<CircuitToolbarP
     const [isPopoverOpen, setIsPopoverOpen] = useState(false);
     const [isCompositionOpen, setIsCompositionOpen] = useState(false);
     const [isParsing, setIsParsing] = useState(false);
-    const { getActiveCode } = useActiveCode();
+    const { activeCodeTabId, getActiveCode } = useActiveCode();
     const { projectId } = useProject();
 
-    // setCircuit nimmt den fertigen Circuit, keine Updater-Funktion: der aktive Circuit liegt in
-    // CircuitTabsContext und wird als Ganzes ersetzt (debounced full-replace PUT).
+    // setCircuit takes the finished circuit, not an updater: the active circuit lives in
+    // CircuitTabsContext and is replaced as a whole (debounced full-replace PUT).
     const handleAddComposition = (op: CompositeQuantumOperationDto, layerIdx: number) => {
         if (!circuit) return;
         const layers = circuit.layers.map((layer) => ({
@@ -53,7 +54,12 @@ export function CircuitToolbar({ circuit, setCircuit }: Readonly<CircuitToolbarP
 
         setIsParsing(true);
         try {
-            const parsedCircuit = await apiRequest<unknown>('/api/circuit/parse', {
+            // The tab id is the file id; the backend needs it to resolve `include "..."`
+            // against the project's other files. Without it only the standard libraries work.
+            const url = activeCodeTabId
+                ? `/api/circuit/parse?fileId=${encodeURIComponent(activeCodeTabId)}`
+                : '/api/circuit/parse';
+            const parsedCircuit = await apiRequest<unknown>(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain' },
                 body: code,
@@ -220,19 +226,44 @@ const normalizeParsedCircuit = (rawCircuit: unknown, currentCircuit: CircuitResp
         index: selector.index ?? 0,
     });
 
+    /**
+     * A composite keeps its own name as identifier (not upper-cased, that is the gate as written)
+     * plus the fields that make the box drawable: ports, which of them are actually used, and the
+     * body. Dropping them here would turn every user-defined gate back into an unlabelled box.
+     */
+    const normalizeOperation = (operation: ParserOperation): QuantumOperationDto => {
+        const base = {
+            id: operation.id ?? crypto.randomUUID(),
+            inverseForm: operation.inverseForm ?? false,
+            targetQubits: (operation.targetQubits ?? []).map(normalizeSelector),
+            controlQubits: (operation.controlQubits ?? []).map(normalizeSelector),
+        };
+
+        if (operation.type === 'COMPOSITE_QUANTUM_GATE') {
+            const composite = operation as Partial<CompositeQuantumGateDto>;
+            return {
+                ...base,
+                type: 'COMPOSITE_QUANTUM_GATE',
+                identifier: composite.identifier ?? '?',
+                portLabels: composite.portLabels ?? [],
+                usedQubitPositions: composite.usedQubitPositions ?? [],
+                body: (composite.body ?? []).map((part) => normalizeOperation(part as ParserOperation)),
+            };
+        }
+
+        return {
+            ...base,
+            type: operation.type ?? 'ELEMENTARY_QUANTUM_GATE',
+            identifier: extractIdentifier(operation),
+            rotationAngle: 'rotationAngle' in operation ? operation.rotationAngle : 0,
+        } as QuantumOperationDto;
+    };
+
     return {
         id: currentCircuit?.id ?? crypto.randomUUID(),
         registers,
         layers: (parsed.layers ?? []).map((layer) => ({
-            quantumOperations: (layer.quantumOperations ?? []).map((operation) => ({
-                id: operation.id ?? crypto.randomUUID(),
-                type: operation.type ?? 'ELEMENTARY_QUANTUM_GATE',
-                identifier: extractIdentifier(operation),
-                inverseForm: operation.inverseForm ?? false,
-                targetQubits: (operation.targetQubits ?? []).map(normalizeSelector),
-                controlQubits: (operation.controlQubits ?? []).map(normalizeSelector),
-                rotationAngle: 'rotationAngle' in operation ? operation.rotationAngle : 0,
-            })) as QuantumOperationDto[],
+            quantumOperations: (layer.quantumOperations ?? []).map(normalizeOperation),
         })),
     };
 };

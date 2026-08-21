@@ -12,6 +12,7 @@ import lombok.Setter;
         @JsonSubTypes.Type(value = ElementaryQuantumGateDto.class, name = "ELEMENTARY_QUANTUM_GATE"),
         @JsonSubTypes.Type(value = MeasurementDto.class, name = "MEASUREMENT"),
         @JsonSubTypes.Type(value = CompositeQuantumOperationDto.class, name = "COMPOSITE_OPERATION"),
+        @JsonSubTypes.Type(value = CompositeQuantumGateDto.class, name = "COMPOSITE_QUANTUM_GATE"),
     }
 )
 @Getter

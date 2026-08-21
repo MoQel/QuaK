@@ -25,6 +25,18 @@ public class CompositeQuantumOperation extends QuantumOperation {
         this.definitionCircuitId = definitionCircuitId;
     }
 
+    /**
+     * A subcircuit call is fully described by the circuit it points at, so the copy only needs fresh
+     * selectors: they are mutable and must never be shared with the original.
+     */
+    @Override
+    public CompositeQuantumOperation copyForQubits(
+        @NonNull List<ElementSelector> targetQubits,
+        @NonNull List<ElementSelector> controlQubits
+    ) {
+        return new CompositeQuantumOperation(inverseForm, copySelectors(targetQubits), copySelectors(controlQubits), definitionCircuitId);
+    }
+
     @Override
     public String toString() {
         return String.format("[CompositeQuantumOperation: definitionCircuitId=%s (quantumOperationId=%s)]", definitionCircuitId, getId());
