@@ -1,4 +1,4 @@
-// @quak/qasm-transform — OpenQASM 3 <-> circuit, in TypeScript.
+// @quak/qasm-transform. OpenQASM 3 <-> circuit, in TypeScript.
 //
 // Intended for the VSCode extension only. The web IDE talks to the backend over
 // REST and should not bundle this parser. Both parsers are generated from the

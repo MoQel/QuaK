@@ -58,7 +58,7 @@ export interface SourceDocument {
  * One parse per document version.
  *
  * A single keystroke reaches the diagnostics, the panel broadcast and, on a visual
- * edit, arbitration as well — all of them asking the same question about the same
+ * edit, arbitration as well, all of them asking the same question about the same
  * text. Without this they each run the ANTLR parser again.
  */
 export class ClassificationCache {
@@ -84,7 +84,7 @@ export class ClassificationCache {
     /**
      * A defect in the transform must not take the extension host with it. Every caller
      * sits in a VSCode event handler, where a throw is swallowed and the editor simply
-     * stops updating — so the failure is caught, cached and reported instead.
+     * stops updating. So the failure is caught, cached and reported instead.
      */
     private classify(document: SourceDocument, key: string): ClassifiedDocument | null {
         try {
@@ -115,7 +115,7 @@ export const reportsAnything = (categories: DiagnosticCategories): boolean =>
     categories.errors || categories.syncSupport;
 
 /**
- * The lines worth marking — never simply everything the transform rejected. A cause
+ * The lines worth marking, never simply everything the transform rejected. A cause
  * such as the file's version already accounts for the rejections under it, and next
  * to the real finding they bury it.
  */
@@ -127,7 +127,7 @@ export function diagnosticsFor(
         case 'invalid':
             return categories.errors ? classification.problems.map((entry) => toDiagnostic(entry, 'error')) : [];
 
-        // Valid OpenQASM this editor cannot write back — informational, not a defect.
+        // Valid OpenQASM this editor cannot write back: informational, not a defect.
         case 'unsupported':
             return categories.syncSupport ? classification.constructs.map((entry) => toDiagnostic(entry, 'info')) : [];
 

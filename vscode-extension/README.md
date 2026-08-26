@@ -9,7 +9,7 @@ undo, search, split view and source control keep working exactly as they always 
 ## Features
 
 - Build and change a circuit by dragging gates; the `.qasm` file updates as you go.
-- Edit the text and the circuit side by side — both views stay in sync.
+- Edit the text and the circuit side by side; both views stay in sync.
 - Open the same file in more than one circuit view at a time.
 - Hover a gate or a qubit register to see what it does.
 - Syntax highlighting, comment toggling and bracket matching for `.qasm` files.
@@ -21,8 +21,8 @@ QuaK reads a subset of OpenQASM 3. A file that fits into that subset can be edit
 the circuit view; anything else opens read-only, with a note naming what stood in the
 way. Editing the text is never restricted.
 
-Nothing is rewritten behind your back. If saving the circuit would drop something —
-a construct QuaK does not support, or one of your comments — it says so instead.
+Nothing is rewritten behind your back. If saving the circuit would drop something, be it
+a construct QuaK does not support or one of your comments, it says so instead.
 
 Measurement is not editable yet: a file containing one opens read-only.
 
@@ -31,8 +31,8 @@ Measurement is not editable yet: a file containing one opens read-only.
 QuaK claims `.qasm` files as OpenQASM and brings syntax highlighting, comment toggling
 and bracket matching with it.
 
-Hover a gate to see its name, what it does, how many qubits it acts on and — where it
-is small enough to read — its matrix. Hover a qubit register to see how wide it is.
+Hover a gate to see its name, what it does, how many qubits it acts on and, where it is
+small enough to read, its matrix. Hover a qubit register to see how wide it is.
 
 Type at the start of a statement to see the gates QuaK can draw; picking one inserts the
 full call with your registers filled in. Type `[` after a register name to see the qubits
@@ -45,7 +45,7 @@ errors in your code, and what keeps a file read-only in the circuit view.
 
 Open a `.qasm` file, then use any of:
 
-- the circuit icon in the editor title bar — hold `Alt` to open in place instead of
+- the circuit icon in the editor title bar; hold `Alt` to open in place instead of
   beside the text,
 - <kbd>Ctrl</kbd>+<kbd>K</kbd> <kbd>Q</kbd> (<kbd>Cmd</kbd>+<kbd>K</kbd> <kbd>Q</kbd>
   on macOS),

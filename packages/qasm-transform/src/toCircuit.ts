@@ -24,7 +24,7 @@ import {
 } from './generated/OpenQASM3Parser.js';
 
 /**
- * Why the transform refused something — two different things to tell a user.
+ * Why the transform refused something. Two different things to tell a user.
  *
  * `invalid` means the document is wrong and no OpenQASM tool would accept it.
  * `unsupported` means the document is fine and this editor cannot write it back.
@@ -75,7 +75,8 @@ export type DocumentClassification =
     | { kind: 'unsupported'; constructs: QasmRejection[] }
     | { kind: 'commentsOnly'; comments: QasmRejection[] }
     | { kind: 'empty' }
-    | { kind: 'noRegister' };
+    /** Nothing to draw yet; the notice names the lines that are still missing. */
+    | { kind: 'noRegister'; hasVersion: boolean; hasInclude: boolean };
 
 const SUPPORTED_MAJOR_VERSION = '3';
 
@@ -121,7 +122,9 @@ export function classify(result: ToCircuitResult): DocumentClassification {
 
     if (result.content === null) {
         const nothingWritten = version === null && includes.length === 0 && headerComments.length === 0;
-        return nothingWritten ? { kind: 'empty' } : { kind: 'noRegister' };
+        if (nothingWritten) return { kind: 'empty' };
+
+        return { kind: 'noRegister', hasVersion: version !== null, hasInclude: includes.length > 0 };
     }
 
     // Last, so the opt-in is only offered where accepting it actually unlocks editing.
@@ -178,7 +181,7 @@ class CircuitBuilder {
  * Mirrors the backend visitor for supported constructs, but is stricter: it
  * collects unsupported syntax so the extension can keep risky files read-only.
  *
- * Each operation becomes its own layer, in source order — the editor re-schedules
+ * Each operation becomes its own layer, in source order; the editor re-schedules
  * them ASAP for display, so layer packing is not this function's business.
  *
  * Ids are derived from source positions so React keys stay stable across reparses.
@@ -359,7 +362,7 @@ function checkNoModifiersOrDesignator(ctx: GateCallStatementContext, builder: Ci
         return false;
     }
 
-    // The `[4]` in `h[4] q;` — a timing designator the circuit model does not carry.
+    // The `[4]` in `h[4] q;`, a timing designator the circuit model does not carry.
     if (ctx.designator()) {
         builder.reject(ctx, 'gateCallStatement', `Gate designators are not supported: ${truncate(ctx.getText())}`);
         return false;
@@ -374,7 +377,7 @@ function resolveSupportedGate(
     builder: CircuitBuilder,
 ): OperationIdentifier | undefined {
     // A name OpenQASM never declares is a defect in the document, not a gap in this
-    // editor — and gate definitions of their own already make a document unsupported,
+    // editor, and gate definitions of their own already make a document unsupported,
     // so nothing else could have introduced it.
     if (!isStandardGate(gateName)) {
         builder.invalid(ctx, 'gateCallStatement', `Unknown gate '${gateName}'.`);
@@ -401,7 +404,7 @@ function parseOperands(operandList: GateOperandListContext, builder: CircuitBuil
 }
 
 /**
- * Resolves one gate operand — the `q[0]` in `h q[0]` — to a single qubit.
+ * Resolves one gate operand, the `q[0]` in `h q[0]`, to a single qubit.
  *
  * OpenQASM operands can name a whole register or slice. The visual circuit model
  * needs one concrete qubit, so broader operands are rejected.
@@ -491,13 +494,13 @@ function startOfFirstStatement(tree: ProgramContext): number {
  * The comments in this document that `toQasm` would have written itself.
  *
  * A layer marker sits above the *first* operation of its layer, so counting gate calls
- * is wrong the moment a layer holds two — every marker below it then looks like a
+ * is wrong the moment a layer holds two: every marker below it then looks like a
  * stranger's comment, and a file QuaK wrote comes back read-only. Layers are counted
  * the way they are written instead: a gate call opens a new one only when a comment
  * stands directly above it.
  *
  * The sequence has to read 1, 2, 3 … in order. At the first comment that breaks it the
- * matching stops, because from there this is no longer a document we produced — and an
+ * matching stops, because from there this is no longer a document we produced, and an
  * unrecognised comment is kept, never dropped.
  */
 function generatedStructuralMarkerKeys(tree: ProgramContext, comments: readonly QasmComment[]): Set<string> {

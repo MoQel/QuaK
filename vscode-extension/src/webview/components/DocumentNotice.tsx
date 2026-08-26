@@ -29,21 +29,12 @@ const COPY: {
 
     empty: () => ({
         headline: 'This file is empty.',
-        detail: (
-            <>
-                A circuit needs a version and at least one qubit register — start with <code>OPENQASM 3.0;</code> and{' '}
-                <code>qubit[4] q;</code>.
-            </>
-        ),
+        detail: <MissingLines hasVersion={false} hasInclude={false} />,
     }),
 
-    noRegister: () => ({
+    noRegister: ({ hasVersion, hasInclude }) => ({
         headline: 'This file does not declare a qubit register yet.',
-        detail: (
-            <>
-                Add one — for example <code>qubit[4] q;</code> — and the circuit appears here.
-            </>
-        ),
+        detail: <MissingLines hasVersion={hasVersion} hasInclude={hasInclude} />,
     }),
 
     unsupportedVersion: ({ version }) => ({
@@ -71,7 +62,7 @@ const COPY: {
     }),
 };
 
-/** Ours, not the document's — so it does not read as the user having written a bad file. */
+/** Ours, not the document's, so it does not read as the user having written a bad file. */
 const ANALYSIS_FAILED: NoticeCopy = {
     headline: 'QuaK could not read this file.',
     detail: 'Something went wrong inside the circuit editor, so the file stays read-only here. The details are in the QuaK output channel. Text editing is unaffected.',
@@ -124,6 +115,32 @@ function noticeFor(
     // One entry per kind, so the entry always matches this payload.
     const copy = COPY[classification.kind] as (classification: DocumentClassification) => NoticeCopy | null;
     return copy(classification);
+}
+
+/** Names only the lines the file is still missing, so the advice fits what is already there. */
+function MissingLines({ hasVersion, hasInclude }: Readonly<{ hasVersion: boolean; hasInclude: boolean }>) {
+    if (hasVersion && hasInclude) {
+        return (
+            <>
+                Add a register such as <code>qubit[4] q;</code> and the circuit appears here.
+            </>
+        );
+    }
+
+    if (hasVersion) {
+        return (
+            <>
+                Add <code>include "stdgates.inc";</code> and a register such as <code>qubit[4] q;</code>.
+            </>
+        );
+    }
+
+    return (
+        <>
+            A circuit starts with three lines: <code>OPENQASM 3.0;</code>, <code>include "stdgates.inc";</code> and{' '}
+            <code>qubit[4] q;</code>.
+        </>
+    );
 }
 
 /** Lines worth naming, from either the parser or the visitor. */

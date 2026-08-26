@@ -11,7 +11,7 @@ import {
 import type { QasmPreamble } from './toCircuit.ts';
 import { layerMarker, registerMarker } from './structuralComments.ts';
 
-/** What a file gets when it had no header of its own — valid standalone OpenQASM. */
+/** What a file gets when it had no header of its own: valid standalone OpenQASM. */
 const DEFAULT_PREAMBLE: QasmPreamble = { version: '3.0', includes: ['"stdgates.inc"'], headerComments: [] };
 
 /**

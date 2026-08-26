@@ -5,9 +5,9 @@ const HEADER = 'OPENQASM 3.0;\ninclude "stdgates.inc";\n';
 
 // Half-written files are the normal state while someone is typing, so where these
 // errors point decides whether the editor is helpful or in the way.
-describe('parseQasm — a file that stops mid-statement', () => {
+describe('parseQasm: a file that stops mid-statement', () => {
     it('points at the last line the user wrote, not behind the final newline', () => {
-        // ANTLR blames the EOF token, which sits on the empty line after the newline —
+        // ANTLR blames the EOF token, which sits on the empty line after the newline,
         // a line the reader cannot see.
         const [error, ...rest] = parseQasm(`${HEADER}qubit[2] q;\n\n// Layer 1\nh q[\n`).errors;
 
@@ -39,7 +39,7 @@ describe('parseQasm — a file that stops mid-statement', () => {
 // ANTLR reports the position of the token it is holding. For something left out that
 // is the token *after* the gap, which the hidden channel can put lines away: blank
 // lines and comments are skipped before the parser notices anything is wrong.
-describe('parseQasm — a token that was left out', () => {
+describe('parseQasm: a token that was left out', () => {
     it('points at the gap, not at the statement that happens to follow it', () => {
         // ANTLR blames the `h` three lines down, past a blank line and a comment.
         const [error, ...rest] = parseQasm(
@@ -67,7 +67,7 @@ describe('parseQasm — a token that was left out', () => {
     });
 });
 
-describe('parseQasm — errors ANTLR already places well', () => {
+describe('parseQasm: errors ANTLR already places well', () => {
     it('leaves an unwanted token where it is, because that is the problem', () => {
         const [error] = parseQasm(`${HEADER}qubit[2]] q;\n`).errors;
 
@@ -90,7 +90,7 @@ describe('parseQasm — errors ANTLR already places well', () => {
 
 // The fast first stage reports nothing and gives up on more than just broken files,
 // so everything below it has to come out of the second stage unchanged.
-describe('parseQasm — what the fast stage skips', () => {
+describe('parseQasm: what the fast stage skips', () => {
     it('reports a missing token, the one kind of error the fast stage swallows', () => {
         // `missing ';'` fails a token match rather than an alternative prediction, and
         // that path throws past the error listener when the parser is told to bail.

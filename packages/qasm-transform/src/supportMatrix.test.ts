@@ -46,7 +46,7 @@ describe('the visitor rejects what the matrix says it rejects', () => {
 
     it('keeps support a matrix decision, not an arity one', () => {
         // DUMMY has a shape and is still not supported. It is also not OpenQASM, so this
-        // rule can only be stated here — no document can reach it through a gate call.
+        // rule can only be stated here; no document can reach it through a gate call.
         expect(GATE_ARITY.DUMMY).toBeDefined();
         expect(isGateSupported('DUMMY')).toBe(false);
     });

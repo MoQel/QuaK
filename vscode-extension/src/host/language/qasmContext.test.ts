@@ -11,7 +11,7 @@ function at(source: string): ReturnType<typeof wordAt> {
     return wordAt(source.replace('|', ''), offset);
 }
 
-describe('wordAt — which word', () => {
+describe('wordAt: which word', () => {
     it('finds the word the cursor sits inside', () => {
         expect(at('h q[0];\nc|x q[0], q[1];')?.text).toBe('cx');
     });

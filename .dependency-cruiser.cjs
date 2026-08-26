@@ -2,7 +2,7 @@
  * Architecture boundary rules.
  *
  * Shared code under packages/ is reused by both the web IDE and the VSCode
- * extension, so it must never import from frontend/ — the Redux store, the REST
+ * extension, so it must never import from frontend/. The Redux store, the REST
  * layer (@/api), ProjectContext and the app shell all live there. Injecting a
  * dependency (e.g. via CircuitPort) is the way around this, not reaching back.
  *
@@ -37,11 +37,11 @@ module.exports = {
         },
         {
             name: 'no-circular',
-            comment: 'Circular dependency — break the cycle, usually by extracting the shared piece.',
+            comment: 'Circular dependency. Break the cycle, usually by extracting the shared piece.',
             severity: 'error',
             // ANTLR's output is inherently circular: the parser's context classes accept a
             // visitor, and the visitor interface is typed on those same contexts. Nobody can
-            // break that cycle, so only generated files are exempt as a *source* — a cycle
+            // break that cycle, so only generated files are exempt as a *source*: a cycle
             // that runs through hand-written code is still reported from there.
             from: { pathNot: '^packages/qasm-transform/src/generated/' },
             to: { circular: true },

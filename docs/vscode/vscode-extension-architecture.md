@@ -1,8 +1,8 @@
-# QuaK VSCode Extension — Architecture
+# QuaK VSCode Extension Architecture
 
 Orientation for developers picking up the extension. It covers what the extension is,
-how it is put together and why the load-bearing decisions were made. The mechanics —
-source layout, build commands, edit flow step by step — live in
+how it is put together and why the load-bearing decisions were made. The mechanics (source
+layout, build commands, edit flow step by step) live in
 [`vscode-extension/README.dev.md`](../../vscode-extension/README.dev.md); the Marketplace
 text is `vscode-extension/README.md`.
 
@@ -13,7 +13,7 @@ text is `vscode-extension/README.md`.
 A user opens a `.qasm` file in VSCode and gets the normal text editor. One click on the
 circuit icon in the editor title bar opens the same file as a circuit **beside** the
 text, with the gate library attached, and it can be edited visually there. Both views
-stay in sync, and the file remains an ordinary text document — save, undo, git and split
+stay in sync, and the file remains an ordinary text document: save, undo, git and split
 view keep working.
 
 Opening beside rather than in place is the default on purpose: the circuit is a second
@@ -40,7 +40,7 @@ Complex UI cannot be built from native editor widgets, so the circuit editor run
 **webview**: a sandboxed browser frame rendering our React bundle. Host and webview only
 ever exchange messages; there is no shared memory. Two things follow from that. The
 protocol between them has to be small and explicit, and **drag & drop across two
-webviews is impossible** — which is the technical reason the gate library must be part
+webviews is impossible**, which is the technical reason the gate library must be part
 of the circuit editor component rather than a separate sidebar panel.
 
 The integration point is a **CustomTextEditor**. The underlying `TextDocument` stays an
@@ -55,7 +55,7 @@ start.
 
 **The `.qasm` file is the source of truth.** In the web IDE the circuit is the primary
 artifact and the code is derived. Here it is inverted: the file is authoritative, the
-circuit is a projection. There is no second persistent state — circuit edits go straight
+circuit is a projection. There is no second persistent state; circuit edits go straight
 into the document as text changes. Anything else would raise the question which version
 wins, and would break undo and git.
 
@@ -68,7 +68,7 @@ formatting. The rule is absolute:
 > Everything else is read-only, with a notice explaining why. Text editing is never
 > restricted.
 
-This is enforced in the protocol, not only in the UI — the host rejects an edit against
+This is enforced in the protocol, not only in the UI: the host rejects an edit against
 a read-only document even if a webview asks for it. An extension that silently truncates
 user files loses trust permanently, and a read-only view of a partially supported file
 is still useful.
@@ -92,7 +92,7 @@ Marketplace listing three months later.
 
 **Desktop only.** Windows, macOS and Linux. vscode.dev is out of scope and stays out
 until there is a reason: it would need a separate web build. Remote development and
-Codespaces are untested rather than unsupported — the extension declares
+Codespaces are untested rather than unsupported; the extension declares
 `extensionKind: ["workspace"]`, which is where it would run there anyway.
 
 ---
@@ -107,12 +107,12 @@ distinguish them.
 | `editable` | Parses, every construct within the support matrix, no comments below the header | Circuit editing enabled, both directions in sync |
 | `readOnly` | Syntax errors, unsupported constructs, or comments that regeneration would drop | Circuit renders where possible; writing is refused at the protocol level. A notice names the reason |
 | `editableByChoice` | Only comments stood in the way and the user explicitly opted in | Editing enabled; the comments below the header are dropped on the next write |
-| `failed` | The transform threw — a defect of ours, not a property of the file | Read-only, with a notice saying so. The stack goes to the QuaK output channel |
+| `failed` | The transform threw. That is a defect of ours, not a property of the file | Read-only, with a notice saying so. The stack goes to the QuaK output channel |
 
 `editableByChoice` exists so that losslessness does not become a dead end. The opt-in is an
 action the user takes, never a side effect of a gate drop. It is currently a button in
 the webview notice and is remembered per document for as long as that document stays
-open — closing it ends the opt-in, so the notice is shown again rather than silently
+open; closing it ends the opt-in, so the notice is shown again rather than silently
 skipped.
 
 ---
@@ -133,9 +133,9 @@ Defined in `vscode-extension/src/shared/protocol.ts`. Small on purpose.
 
 Arbitration is a pure function (`arbitration.ts`) so it can be tested without VSCode:
 the edit must match the current document version and the document must be writable.
-Which states are writable is defined once, in `protocol.ts`, and asked as a question —
+Which states are writable is defined once, in `protocol.ts`, and asked as a question,
 so a state added later is refused until someone decides otherwise.
-Rejected edits are not merged — the webview rebases on the next `documentChanged`. At
+Rejected edits are not merged; the webview rebases on the next `documentChanged`. At
 human interaction speed that is rare, and rejecting is always safe while merging is not.
 
 Accepted edits are applied as a `WorkspaceEdit`, which is what puts them into VSCode's
@@ -147,7 +147,7 @@ undo history: Ctrl+Z in the text editor undoes a circuit edit.
 
 `packages/qasm-transform` turns OpenQASM 3 into the circuit model and back. It is a
 TypeScript port of the backend's Java visitor and code generator, and it is generated
-from **the same `.g4` grammars** in `backend/src/main/antlr/` — ANTLR has an official
+from **the same `.g4` grammars** in `backend/src/main/antlr/`. ANTLR has an official
 TypeScript target, so the grammar stays a single source. `npm run check:generated` fails
 when the generated parser falls behind the grammar it came from.
 
@@ -159,7 +159,7 @@ Two properties make the duplication and the read-only rule tractable:
 **The visitor is strict.** Unlike the backend visitor, which walks past what it does not
 understand, this one rejects it. Every construct is either handled or recorded as
 unsupported with a line number and a reason. A transformation that silently drops a
-statement is perfectly round-trip idempotent and still lossy — strictness is what closes
+statement is perfectly round-trip idempotent and still lossy; strictness is what closes
 that gap.
 
 **The support matrix is the single source.** `packages/circuit-core/src/support-matrix.ts`
@@ -192,7 +192,7 @@ the vsix.
 
 QuaK contributes a TextMate grammar and a language configuration, which covers
 highlighting, comment toggling and bracket matching for `.qasm` files. On top of
-that it publishes its own diagnostics — what the circuit editor cannot write back —
+that it publishes its own diagnostics, what the circuit editor cannot write back,
 so a file explains itself in the Problems panel without the circuit view being open.
 
 Hover shows information about the gate or qubit register under the cursor, using the 
@@ -212,7 +212,7 @@ webview is loaded through a CSP with a per-panel nonce and may only read from `d
 CI runs on every push: lint, package boundaries, typechecks, unit tests, the
 `@vscode/test-electron` integration tests under xvfb, the extension build, and packaging.
 `check:vsix` inspects the produced archive and fails if sources, tests or secrets leak
-into it — it once caught a configuration that would have shipped `.git` and `.env`.
+into it; it once caught a configuration that would have shipped `.git` and `.env`.
 
 There is no publish pipeline yet; it needs a Marketplace publisher account and a
 `VSCE_PAT` secret.
@@ -221,8 +221,8 @@ There is no publish pipeline yet; it needs a Marketplace publisher account and a
 
 ## Where to look next
 
-- `vscode-extension/README.dev.md` — source layout, edit flow, dev commands
-- `vscode-extension/src/host/circuitEditorProvider.ts` — where document, parse and
+- `vscode-extension/README.dev.md`: source layout, edit flow, dev commands
+- `vscode-extension/src/host/circuitEditorProvider.ts`: where document, parse and
   arbitration meet
-- `packages/circuit-core/src/support-matrix.ts` — what the editor claims to support
-- `backend/src/main/antlr/` — the grammars both parsers come from
+- `packages/circuit-core/src/support-matrix.ts`: what the editor claims to support
+- `backend/src/main/antlr/`: the grammars both parsers come from

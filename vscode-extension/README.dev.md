@@ -58,7 +58,7 @@ it stays a plain diff.
 ## Parsing
 
 Every host feature reads the document through `ClassificationCache`. A change event
-reaches the diagnostics, the panel broadcast and, on a visual edit, arbitration —
+reaches the diagnostics, the panel broadcast and, on a visual edit, arbitration.
 `ClassificationCache.of` makes that one ANTLR parse per document version instead of
 one per caller. `extension.ts` owns the cache and drops a document when it closes.
 
@@ -86,10 +86,10 @@ the editor just stops updating. So nothing is left to throw:
   rejection would be invisible.
 - `ErrorBoundary` catches a render crash, puts a message in place of the editor and
   posts `webviewError` to the host.
-- `reportUncaughtErrors` catches what a boundary never sees — a failing event handler,
-  timer or promise — and posts the same message.
+- `reportUncaughtErrors` catches what a boundary never sees, such as a failing event
+  handler, timer or promise, and posts the same message.
 
-All of them report through the `QuaK` output channel created in `extension.ts` — a log,
+All of them report through the `QuaK` output channel created in `extension.ts`. A log,
 not a notification, because one broken document would otherwise raise a dialog per
 keystroke. Nothing is written to the document on any of these paths.
 
@@ -115,6 +115,18 @@ npm run build:extension
 npm run package:extension
 ```
 
+`package:extension` builds a VSIX into a temporary directory, checks its contents and
+discards it. To get one you can install, build it here:
+
+```bash
+cd vscode-extension
+npm run package
+```
+
+That writes `quak-vscode-0.0.1.vsix` next to `package.json`, named after the fields there,
+so it overwrites the previous one. Install it with
+`code --install-extension quak-vscode-0.0.1.vsix --force` and reload the window.
+
 For local F5 development, build once or keep both bundles current:
 
 ```bash
@@ -129,7 +141,7 @@ Extension Development Host after changes that should be picked up by VSCode.
 For shared editor changes, also run:
 
 ```bash
-npm run typecheck:packages 
+npm run typecheck:packages
 npm run typecheck:frontend
 npm run test:frontend
 ```

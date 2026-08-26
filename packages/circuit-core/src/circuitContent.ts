@@ -10,7 +10,7 @@ export interface CircuitContent {
  * exists while a drag is in flight, and layers left empty by removing it carry
  * no meaning either.
  *
- * Anything that turns a circuit into something durable needs this first — the
+ * Anything that turns a circuit into something durable needs this first: the
  * web IDE before it saves or asks the backend for code, the extension before it
  * generates QASM for the document.
  */

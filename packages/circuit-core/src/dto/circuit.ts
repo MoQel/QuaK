@@ -28,7 +28,7 @@ export interface MeasurementDto extends AbstractQuantumOperationDto {
     classicBits: ElementSelectorDto[];
 }
 
-// Temporary placeholder only — must never appear in a finalized or submitted circuit.
+// Temporary placeholder only. It must never appear in a finalized or submitted circuit.
 export interface DummyDto extends AbstractQuantumOperationDto {
     type: 'DUMMY';
 }

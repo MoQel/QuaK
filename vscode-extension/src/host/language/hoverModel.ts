@@ -31,7 +31,7 @@ function gateHover(name: string): string | null {
     const definition = operationById(name.toLowerCase());
     if (!identifier || !isGateSupported(identifier)) {
         return paragraphs(
-            definition ? `\`${name}\` — ${definition.name}` : `\`${name}\``,
+            definition ? `\`${name}\` (${definition.name})` : `\`${name}\``,
             definition?.description ?? 'A gate the OpenQASM standard library defines.',
             'QuaK cannot draw this gate, so a file using it opens read-only in the circuit view.',
         );
@@ -41,7 +41,7 @@ function gateHover(name: string): string | null {
     const angle = definition?.parameters?.length ? `(${definition.parameters.join(', ')})` : '';
 
     return paragraphs(
-        `**${definition?.name ?? name}** — \`${name}${angle}\``,
+        `**${definition?.name ?? name}** (\`${name}${angle}\`)`,
         definition?.description,
         operandLine(arity.controlSize, arity.targetSize),
         matrixBlock(definition?.inspectorInfo.matrix),
@@ -80,7 +80,7 @@ function registerHover(name: string, registers: readonly RegisterResponse[]): st
     const size = getRegisterSize(register);
     const kind = isQuantumRegister(register) ? 'qubit register' : 'classical register';
 
-    return paragraphs(`**${name}** — ${kind}`, `${plural(size, 'wire')}: ${wires(name, size)}`);
+    return paragraphs(`**${name}** (${kind})`, `${plural(size, 'wire')}: ${wires(name, size)}`);
 }
 
 function wires(name: string, size: number): string {
@@ -91,13 +91,13 @@ function wires(name: string, size: number): string {
 }
 
 const KEYWORD_HOVERS: Readonly<Record<string, string>> = {
-    qubit: paragraphs('**qubit** — declares a qubit register.', 'QuaK draws one wire per qubit.'),
+    qubit: paragraphs('**qubit** declares a qubit register.', 'QuaK draws one wire per qubit.'),
     bit: paragraphs(
-        '**bit** — declares a classical register.',
+        '**bit** declares a classical register.',
         'The circuit view shows qubits only, so a file declaring one opens read-only.',
     ),
     measure: paragraphs(
-        `**measure** — ${operationById('measure')?.description ?? 'measures a qubit.'}`,
+        `**measure**: ${operationById('measure')?.description ?? 'measures a qubit.'}`,
         'Measurement cannot be edited in the circuit view yet, so a file using it opens read-only.',
     ),
 };

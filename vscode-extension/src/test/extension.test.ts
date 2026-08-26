@@ -223,7 +223,7 @@ suite('QuaK circuit editor', () => {
 });
 
 // The circuit editor is deliberately never opened here: the findings belong to the
-// file, and this is the part unit tests cannot reach — that they are published at
+// file, and this is the part unit tests cannot reach: that they are published at
 // all, land on the right line, and go away again.
 const HEADER = 'OPENQASM 3.0;\ninclude "stdgates.inc";\n';
 const UNSUPPORTED = `${HEADER}qubit[2] q;\nbarrier q;\n`;
@@ -340,7 +340,7 @@ suite('QuaK diagnostics', () => {
 
     // Not covered: that closing a file takes its findings with it. VSCode disposes a
     // TextDocument some time after its last editor closes, not with it, so a test for
-    // that waits on a timer nobody controls — it timed out at 20s when tried.
+    // that waits on a timer nobody controls. It timed out at 20s when tried.
 });
 
 // Only what a unit test cannot reach: that the provider is registered and answers for
@@ -352,7 +352,7 @@ const COMPLETION_ENABLED = 'quak.completion.enabled';
 const reset = (setting: string): Thenable<void> =>
     vscode.workspace.getConfiguration().update(setting, undefined, vscode.ConfigurationTarget.Global);
 
-/** SAMPLE line 5 is `h q[0];` — column 0 is the gate, column 2 the register. */
+/** SAMPLE line 5 is `h q[0];`, so column 0 is the gate and column 2 the register. */
 async function hoverAt(uri: vscode.Uri, line: number, character: number): Promise<string[]> {
     const hovers = await vscode.commands.executeCommand<vscode.Hover[]>(
         'vscode.executeHoverProvider',

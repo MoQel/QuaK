@@ -12,7 +12,7 @@ const REGISTERS: RegisterResponse[] = [
 
 const hover = (text: string, role: WordRole): string | null => hoverFor(word(text, role), REGISTERS);
 
-describe('hoverFor — gates', () => {
+describe('hoverFor: gates', () => {
     it('names a supported gate, describes it and shows its matrix', () => {
         const text = hover('h', 'gate');
 
@@ -26,7 +26,7 @@ describe('hoverFor — gates', () => {
     });
 
     it('separates the blocks by a blank line, or Markdown runs them into one', () => {
-        expect(hover('h', 'gate')).toMatch(/^\*\*Hadamard\*\* — `h`\n\nCreates/);
+        expect(hover('h', 'gate')).toMatch(/^\*\*Hadamard\*\* \(`h`\)\n\nCreates/);
     });
 
     it('names the angle a rotation gate carries', () => {
@@ -53,7 +53,7 @@ describe('hoverFor — gates', () => {
     });
 });
 
-describe('hoverFor — registers', () => {
+describe('hoverFor: registers', () => {
     it('gives the size and names the wires', () => {
         const text = hover('q', 'register');
 
@@ -74,7 +74,7 @@ describe('hoverFor — registers', () => {
     });
 });
 
-describe('hoverFor — keywords', () => {
+describe('hoverFor: keywords', () => {
     it('explains what this editor does with a declaration', () => {
         expect(hover('qubit', 'keyword')).toContain('one wire per qubit');
         expect(hover('bit', 'keyword')).toContain('read-only');

@@ -9,7 +9,7 @@ const roundTrip = (source: string) => {
     return toQasm(parsed.content!, parsed.preamble);
 };
 
-describe('toQasm — emission', () => {
+describe('toQasm: emission', () => {
     it('writes a valid standalone document, header and markers included', () => {
         const parsed = toCircuit('OPENQASM 3.0;\ninclude "stdgates.inc";\nqubit[2] q;\nh q[0];\n');
 
@@ -87,7 +87,7 @@ describe('toQasm — emission', () => {
 describe('what toQasm writes, toCircuit has to accept again', () => {
     it('round trips a circuit whose layers hold more than one operation', () => {
         // The editor packs independent operations into one layer, so this is the normal
-        // shape of a saved circuit — not an edge case.
+        // shape of a saved circuit, not an edge case.
         const source =
             'OPENQASM 3.0;\ninclude "stdgates.inc";\n\n// Register q\nqubit[3] q;\n\n' +
             '// Layer 1\nh q[0];\nx q[1];\n\n// Layer 2\ncx q[0], q[1];\n';
@@ -162,7 +162,7 @@ describe('circuits built by the editor, not by the parser', () => {
     });
 });
 
-describe('formatAngle — symbolic, so round trips do not decay', () => {
+describe('formatAngle: symbolic, so round trips do not decay', () => {
     it.each([
         [Math.PI, 'pi'],
         [Math.PI / 2, 'pi/2'],

@@ -9,8 +9,8 @@ import {
 
 /**
  * Selects which registers receive a wire index:
- * - `'all'`: every register — used for rendering, where classic wires are drawn too.
- * - `'quantum'`: only quantum registers — used for simulation, where indices must
+ * - `'all'`: every register, used for rendering, where classic wires are drawn too.
+ * - `'quantum'`: only quantum registers, used for simulation, where indices must
  *   line up with the qubit indexing of the simulator backend.
  */
 export type CircuitIndexMode = 'all' | 'quantum';

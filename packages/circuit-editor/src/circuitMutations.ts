@@ -24,7 +24,7 @@ const shiftSelectorsAfterRemoval = (
 
 /**
  * Register-level edits on the circuit. Pure: every change is a new
- * `CircuitResponse` handed to `setCircuit` — what persistence means is the host's
+ * `CircuitResponse` handed to `setCircuit`; what persistence means is the host's
  * business (the web IDE debounces a full save, the extension rewrites the .qasm).
  */
 export function createCircuitMutations(circuit: CircuitResponse | undefined, setCircuit: CircuitStore['setCircuit']) {

@@ -10,7 +10,7 @@ export interface CircuitStore {
  * The circuit the editor works on, plus the only way to change it.
  *
  * Edits are pure and local: components compute the next `CircuitResponse` and
- * hand it to `setCircuit`. What that means is the host's business — the web IDE
+ * hand it to `setCircuit`. What that means is the host's business. The web IDE
  * debounces a full-circuit save to the backend, the VSCode extension regenerates
  * QASM and writes it back to the document. Neither is visible from here.
  */

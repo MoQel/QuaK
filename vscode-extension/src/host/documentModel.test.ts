@@ -14,7 +14,7 @@ const ALL: DiagnosticCategories = { errors: true, syncSupport: true };
 const HEADER = 'OPENQASM 3.0;\ninclude "stdgates.inc";\n';
 const EDITABLE = `${HEADER}qubit[2] q;\nh q[0];\n`;
 
-describe('classifyText — document state', () => {
+describe('classifyText: document state', () => {
     it('accepts a document the transform can regenerate', () => {
         const { state, circuit } = classifyText(`${HEADER}qubit[2] q;\nh q[0];\n`);
 
@@ -199,7 +199,7 @@ describe('diagnosticsFor', () => {
 
     it('reports syntax errors and nothing the recovered parse tree invented', () => {
         // The visitor walks on after a syntax error and rejects fragments that are not
-        // real statements — reporting those next to the actual error is noise.
+        // real statements, and reporting those next to the actual error is noise.
         const constructs = constructsIn(`${HEADER}qubit[2 q;\nh q[0]\nfoo q[1];\n`);
 
         expect(constructs).not.toHaveLength(0);
@@ -285,7 +285,7 @@ describe('diagnosticsFor', () => {
 // A missing token is reported at the end of the line before it, which is where a
 // range would start empty. Whether that stays visible is decided in diagnostics.ts,
 // but the input to it is pinned here.
-describe('diagnosticsFor — findings that sit at the end of a line', () => {
+describe('diagnosticsFor: findings that sit at the end of a line', () => {
     it('places a missing token past the last character of its line', () => {
         const source = 'OPENQASM 3.0;\n\n// Register q\nqubit[2] q\n\n// Layer 1\nh q[0];\n';
         const [diagnostic] = diagnosticsFor(classifyText(source).classification, ALL);

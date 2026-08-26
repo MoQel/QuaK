@@ -8,7 +8,7 @@ const qubitsIn = (source: string): number =>
 
 const HEADER = 'OPENQASM 3.0;\ninclude "stdgates.inc";\n';
 
-describe('toCircuit — registers', () => {
+describe('toCircuit: registers', () => {
     it('reads a sized qubit declaration', () => {
         const { content } = toCircuit(`${HEADER}qubit[3] q;\n`);
         expect(content?.registers).toEqual([{ id: 'qreg:q', name: 'q', type: 'Quantum_Register', numberOfQubits: 3 }]);
@@ -40,7 +40,7 @@ describe('toCircuit — registers', () => {
     });
 });
 
-describe('toCircuit — gates', () => {
+describe('toCircuit: gates', () => {
     it('splits operands into controls then targets, as OpenQASM orders them', () => {
         const { content } = toCircuit(`${HEADER}qubit[2] q;\ncx q[0], q[1];\n`);
         const op = content!.layers[0].quantumOperations[0];
@@ -93,7 +93,7 @@ describe('toCircuit — gates', () => {
 });
 
 // Operands that name several qubits cannot be represented as one visual gate.
-describe('toCircuit — an operand must name exactly one qubit', () => {
+describe('toCircuit: an operand must name exactly one qubit', () => {
     it.each([
         ['a range', 'h q[0:1];'],
         ['a list', 'h q[0, 2];'],
@@ -123,7 +123,7 @@ describe('toCircuit — an operand must name exactly one qubit', () => {
     });
 });
 
-describe('toCircuit — rotation angles', () => {
+describe('toCircuit: rotation angles', () => {
     const angleOf = (source: string) =>
         (
             toCircuit(`${HEADER}qubit[1] q;\n${source}\n`).content!.layers[0]
@@ -169,7 +169,7 @@ describe('toCircuit — rotation angles', () => {
 });
 
 // Unsupported constructs must be detected before the extension rewrites the file.
-describe('toCircuit — strictness', () => {
+describe('toCircuit: strictness', () => {
     it.each([
         ['control flow', 'for int i in [0:2] { h q[0]; }'],
         ['conditionals', 'if (true) { h q[0]; }'],
@@ -200,7 +200,7 @@ describe('toCircuit — strictness', () => {
 });
 
 // Preamble is not circuit content, but it belongs to the user's file.
-describe('toCircuit — preamble is preserved, not dropped', () => {
+describe('toCircuit: preamble is preserved, not dropped', () => {
     it('captures the version and the includes in source order', () => {
         const result = toCircuit('OPENQASM 3.0;\ninclude "stdgates.inc";\ninclude "custom.inc";\nqubit[1] q;\n');
 
@@ -218,7 +218,7 @@ describe('toCircuit — preamble is preserved, not dropped', () => {
     });
 });
 
-describe('toCircuit — stable identity across re-parses', () => {
+describe('toCircuit: stable identity across re-parses', () => {
     it('gives the same ids for the same source', () => {
         const source = `${HEADER}qubit[2] q;\nh q[0];\ncx q[0], q[1];\n`;
         const first = toCircuit(source);
@@ -238,7 +238,7 @@ describe('toCircuit — stable identity across re-parses', () => {
 });
 
 // The reason a document is read-only is decided once, here, and only worded elsewhere.
-describe('classify — the reason a document cannot be edited', () => {
+describe('classify: the reason a document cannot be edited', () => {
     const kindOf = (source: string) => classify(toCircuit(source)).kind;
 
     it('reports syntax errors, and suppresses what the recovered tree makes up', () => {

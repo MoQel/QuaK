@@ -37,7 +37,7 @@ export function PanelHeaderActions(props: IDockviewHeaderActionsProps) {
     if (!activeCircuitTabId) return null;
 
     if (activePanelId === 'circuit') {
-        // The header sits outside the circuit panel, so it needs its own store —
+        // The header sits outside the circuit panel, so it needs its own store:
         // same two values, so both stay in sync through CircuitTabsContext.
         return (
             <div className="flex items-center h-full pl-4">

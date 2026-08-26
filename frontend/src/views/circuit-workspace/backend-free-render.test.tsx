@@ -13,7 +13,7 @@ import { CircuitResponse } from '@/api/dto/circuit.ts';
 import { OperationDefinitionResponse } from '@/api/dto/library.ts';
 
 // The point of these tests: the circuit editor and the library render from plain
-// props alone — no CircuitTabsContext, no /api mock, no backend.
+// props alone: no CircuitTabsContext, no /api mock, no backend.
 
 const circuit: CircuitResponse = {
     id: 'c1',

@@ -38,7 +38,7 @@ const parseConstantOrNumber = (text: string): number => {
 };
 
 /**
- * Evaluates a gate parameter — the `pi/2` in `rx(pi/2) q[0]` — to radians.
+ * Evaluates a gate parameter, the `pi/2` in `rx(pi/2) q[0]`, to radians.
  *
  * Mirrors the backend's `QasmCircuitVisitor.evaluateAngle`. Supports named
  * constants, numeric literals and simple arithmetic; variables and calls are

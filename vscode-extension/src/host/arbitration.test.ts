@@ -92,7 +92,7 @@ describe('applyOptIn', () => {
             },
         ],
         ['an OpenQASM 2 header', { kind: 'unsupportedVersion', version: '2.0' }],
-        ['no register', { kind: 'noRegister' }],
+        ['no register', { kind: 'noRegister', hasVersion: true, hasInclude: true }],
         ['nothing at all', { kind: 'empty' }],
     ])('does not let the opt-in carry over to %s', (_case, classification) => {
         // The document changes while it is open. Consent to losing comments is not

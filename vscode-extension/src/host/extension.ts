@@ -10,7 +10,7 @@ export function activate(context: vscode.ExtensionContext): void {
     // A log channel rather than a notification: these are our own defects, and one
     // broken document would otherwise raise a dialog on every keystroke.
     const output = vscode.window.createOutputChannel('QuaK', { log: true });
-    const report = (error: unknown, context: string): void => output.error(`${context} — ${describe(error)}`);
+    const report = (error: unknown, context: string): void => output.error(`${context}: ${describe(error)}`);
 
     // Shared, so one change event costs one parse no matter how many features react to it.
     const documents = new ClassificationCache(report);

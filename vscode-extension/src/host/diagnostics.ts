@@ -21,7 +21,7 @@ const SEVERITY: Record<DiagnosticSeverity, vscode.DiagnosticSeverity> = {
     hint: vscode.DiagnosticSeverity.Hint,
 };
 
-/** Keeps a diagnostic collection in step with every open .qasm document, whether a circuit editor is showing it — the findings are about the file. */
+/** Keeps a diagnostic collection in step with every open .qasm document, whether or not a circuit editor is showing it: the findings are about the file. */
 export function registerDiagnostics(documents: ClassificationCache): vscode.Disposable[] {
     const collection = vscode.languages.createDiagnosticCollection('quak');
 
@@ -88,7 +88,7 @@ function rangeOf(entry: DocumentDiagnostic, document: vscode.TextDocument): vsco
     const line = document.lineAt(Math.min(position.line, document.lineCount - 1));
 
     // Something missing is reported at the end of the line before it, and a range that
-    // starts there is empty — an invisible marker. Back up to cover the last character.
+    // starts there is empty, an invisible marker. Back up to cover the last character.
     const start = Math.min(position.column, Math.max(0, line.text.length - 1));
 
     return new vscode.Range(new vscode.Position(line.lineNumber, start), line.range.end);

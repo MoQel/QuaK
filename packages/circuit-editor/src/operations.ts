@@ -4,7 +4,7 @@ import { GATE_ARITY, type GateArity, type OperationIdentifier } from '@quak/circ
 
 // Domain types live in circuit-core; re-exported here for existing importers.
 // This file owns the presentation layer (icons, colors, shapes) and composes it
-// onto the shared arity — which the QASM transform reads too, so the two cannot
+// onto the shared arity, which the QASM transform reads too, so the two cannot
 // disagree about how many qubits a gate takes.
 export type { OperationIdentifier };
 

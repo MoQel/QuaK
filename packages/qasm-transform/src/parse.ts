@@ -21,7 +21,7 @@ export interface QasmSyntaxError {
 
 const UNFINISHED = 'The file ends in the middle of a statement.';
 
-/** `missing ';' at 'h'` — the expected part can be a set, so it is kept verbatim. */
+/** `missing ';' at 'h'`; the expected part can be a set, so it is kept verbatim. */
 const MISSING_TOKEN = /^missing (.+?) at /;
 
 /**
@@ -146,7 +146,7 @@ function newParser(source: string) {
 }
 
 /**
- * Null for anything the second stage has to look at again — which is not only real
+ * Null for anything the second stage has to look at again, which is not only real
  * syntax errors: SLL also bails on input full LL prediction would have accepted.
  *
  * Bailing skips the error listener, so a rejected parse has no errors to hand on.

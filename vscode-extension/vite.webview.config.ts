@@ -26,7 +26,7 @@ export default defineConfig({
         emptyOutDir: true,
         // Emit a real stylesheet instead of injecting CSS at runtime.
         cssCodeSplit: false,
-        // No data: URIs — the webview CSP allows fonts from its own source only, so an
+        // No data: URIs: the webview CSP allows fonts from its own source only, so an
         // inlined face is refused and its glyphs fall back.
         assetsInlineLimit: 0,
         rollupOptions: {

@@ -23,7 +23,7 @@ export type QuantumOperationType = 'ELEMENTARY_QUANTUM_GATE' | 'MEASUREMENT' | '
 /**
  * How many qubits an operation consumes, and in which role. Domain, not
  * presentation: the editor draws gates with it, and the QASM transform needs it
- * to split an operand list — OpenQASM writes controls first, so `cx q[0], q[1]`
+ * to split an operand list. OpenQASM writes controls first, so `cx q[0], q[1]`
  * is only unambiguous if you know CX takes one control and one target.
  *
  * Mirrors the backend's `QuantumOperationLibrary` definitions; the fixture suite

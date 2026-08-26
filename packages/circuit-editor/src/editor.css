@@ -6,7 +6,7 @@
  *
  * It brings everything that is the same in every host, so no host has to
  * rediscover it. Two things it deliberately cannot bring, because they differ per
- * host — supply them yourself:
+ * host. Supply them yourself:
  *
  * 1. The colour tokens below. The editor names them, the host decides what they
  *    are, which is what lets the web IDE use its palette and the VSCode extension
@@ -40,7 +40,7 @@
     --quantumOperationHeight: 40px;
 
     /* Which colour a Hadamard is, and that destructive means red, is the editor's
-       own meaning rather than the host's theme — no host has an equivalent to map
+       own meaning rather than the host's theme; no host has an equivalent to map
        onto, so they live here. Light values; dark ones below. */
     --hadamard: hsl(357 95% 45%);
     --classical: hsl(223 100% 31%);

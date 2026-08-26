@@ -16,7 +16,7 @@ interface ErrorBoundaryState {
  * report that: no console anyone reads, no stack in the extension log. So the crash
  * is handed to the host and something is put on screen in place of the editor.
  *
- * A class is not a style choice here — there is no hook form of this.
+ * A class is not a style choice here; there is no hook form of this.
  */
 export class ErrorBoundary extends Component<Readonly<ErrorBoundaryProps>, ErrorBoundaryState> {
     public override state: ErrorBoundaryState = { failed: false };

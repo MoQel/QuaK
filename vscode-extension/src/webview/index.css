@@ -20,8 +20,8 @@
    Theme variables are named after theme colours with '.' replaced by '-', e.g.
    editor.background -> --vscode-editor-background.
 
-   The colours VSCode has no equivalent for — the gate colours, and that
-   destructive means red — carry the editor's own meaning and come from the
+   The colours VSCode has no equivalent for, the gate colours and that
+   destructive means red, carry the editor's own meaning and come from the
    package, so a circuit reads the same in both products. */
 @theme inline {
     --color-bg: var(--bg);
@@ -42,7 +42,7 @@
 }
 
 :root {
-    /* The webview is an editor, so its surfaces are the editor's — not a panel's
+    /* The webview is an editor, so its surfaces are the editor's, not a panel's
        or the sidebar's. */
     --bg: var(--vscode-editor-background);
     --bg-dark: var(--vscode-editor-background);

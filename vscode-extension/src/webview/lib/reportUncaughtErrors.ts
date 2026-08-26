@@ -7,7 +7,7 @@ export type ErrorReport = Omit<WebviewErrorMessage, 'type'>;
  * Everything the ErrorBoundary cannot see.
  *
  * A boundary only catches what throws during render. A failing event handler, timer
- * or promise lands on the webview console instead, which nobody opens — so these are
+ * or promise lands on the webview console instead, which nobody opens, so these are
  * forwarded to the host as well.
  */
 export function reportUncaughtErrors(report: (error: ErrorReport) => void, target: EventTarget = window): void {
