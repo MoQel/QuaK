@@ -433,3 +433,26 @@ describe('toCircuit: layers are read the way the document writes them', () => {
         expect(identifiersIn(jumped)).toEqual([['H'], ['X']]);
     });
 });
+
+// OpenQASM allows a comma after the last entry of a list. `toQasm` writes the list
+// without one, so accepting it silently removed it from the file on the next save.
+describe('toCircuit: a trailing comma is not ours to drop', () => {
+    it.each([
+        ['a single operand', 'h q[0], ;'],
+        ['several operands', 'cx q[0], q[1], ;'],
+        ['a gate parameter', 'rx(pi/2,) q[0];'],
+    ])('rejects one after %s', (_case, statement) => {
+        const result = toCircuit(`${HEADER}qubit[3] q;\n${statement}\n`);
+
+        expect(result.syntaxErrors, 'a trailing comma is valid OpenQASM').toEqual([]);
+        expect(result.unsupported[0].message).toMatch(/trailing comma/);
+        expect(isEditable(result)).toBe(false);
+    });
+
+    it.each(['h q[0];', 'cx q[0], q[1];', 'ccx q[0], q[1], q[2];', 'rx(pi/2) q[0];'])(
+        'counts the separating commas of %s as separators',
+        (statement) => {
+            expect(isEditable(toCircuit(`${HEADER}qubit[3] q;\n${statement}\n`))).toBe(true);
+        },
+    );
+});

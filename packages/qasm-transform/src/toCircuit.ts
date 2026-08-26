@@ -415,6 +415,12 @@ function resolveRotationAngle(
         return null;
     }
 
+    const parameters = ctx.expressionList();
+    if (parameters && endsWithComma(parameters, expressions.length)) {
+        builder.reject(parameters, 'expressionList', trailingComma(builder.excerpt(parameters)));
+        return null;
+    }
+
     try {
         return evaluateAngle(expressions[0]);
     } catch (error) {
@@ -467,8 +473,23 @@ function parseOperands(operandList: GateOperandListContext, builder: CircuitBuil
         if (!selector) return undefined;
         operands.push(selector);
     }
+
+    if (endsWithComma(operandList, operands.length)) {
+        builder.reject(operandList, 'gateOperandList', trailingComma(builder.excerpt(operandList)));
+        return undefined;
+    }
+
     return operands;
 }
+
+/**
+ * OpenQASM allows a comma after the last entry of a list; we write the list without it,
+ * so accepting one silently would edit the file on the next save.
+ */
+const endsWithComma = (list: { COMMA(): unknown[] }, entries: number): boolean =>
+    entries > 0 && list.COMMA().length >= entries;
+
+const trailingComma = (excerpt: string): string => `A trailing comma is not supported: ${excerpt}`;
 
 /**
  * Resolves one gate operand, the `q[0]` in `h q[0]`, to a single qubit.
