@@ -25,6 +25,7 @@ describe('classifyText: document state', () => {
     it.each([
         ['a syntax error', `${HEADER}qubit[2 q;\n`],
         ['an unsupported construct', `${HEADER}qubit[2] q;\nbarrier q;\n`],
+        ['a rotation gate without its angle', `${HEADER}qubit[2] q;\nrx q[0];\n`],
         ['a comment below the header', `${HEADER}qubit[2] q;\n// unten\nh q[0];\n`],
         ['an OpenQASM 2 header', 'OPENQASM 2.0;\nqreg q[2];\nh q[0];\n'],
         ['no qubit register', 'OPENQASM 3.0;\n'],
@@ -38,6 +39,25 @@ describe('classifyText: document state', () => {
         const { state, circuit } = classifyText(`${HEADER}qubit[2] q;\nh q[0];\nbarrier q;\n`);
 
         expect(state).toBe('readOnly');
+        expect(circuit?.layers).toHaveLength(1);
+    });
+
+    it.each([
+        ['a version without a number', 'OPENQASM'],
+        ['an include without a closing quote', `${HEADER}include "x.inc;\n`],
+        ['a register declaration without a name', `${HEADER}qubit[] q;\n`],
+        ['a register declaration cut off at the size', `${HEADER}qubit[;\n`],
+    ])('reads %s as a broken document, not as a defect of ours', (_case, source) => {
+        // A throw here would reach the user as a notice about the extension, not the file.
+        expect(classifyText(source).state).toBe('readOnly');
+    });
+
+    it('keeps the circuit on screen while the next line is being typed', () => {
+        // A transform that gave up on the first syntax error would leave the pane empty.
+        const { state, circuit } = classifyText(`${HEADER}qubit[2] q;\nh q[0];\nrx(\n`);
+
+        expect(state).toBe('readOnly');
+        expect(circuit?.registers).toHaveLength(1);
         expect(circuit?.layers).toHaveLength(1);
     });
 

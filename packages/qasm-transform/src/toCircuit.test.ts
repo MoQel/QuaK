@@ -159,6 +159,14 @@ describe('toCircuit: rotation angles', () => {
         expect(result.unsupported[0].message).toMatch(/takes one parameter but got 2/);
     });
 
+    // Reading it as zero makes the file editable, and the next edit writes `rx(0)` into it.
+    it.each(['rx q[0];', 'ry q[0];', 'rz q[0];', 'rx() q[0];'])('rejects %s instead of angling it at zero', (call) => {
+        const result = toCircuit(`${HEADER}qubit[1] q;\n${call}\n`);
+
+        expect(result.unsupported[0].message).toMatch(/takes one parameter, as in/);
+        expect(isEditable(result)).toBe(false);
+    });
+
     // Prototype keys must not resolve as named constants.
     it.each(['constructor', '__proto__', 'valueOf'])('rejects the prototype key %s as an angle', (name) => {
         const result = toCircuit(`${HEADER}qubit[1] q;\nrx(${name}) q[0];\n`);
@@ -306,5 +314,54 @@ describe('classify: the reason a document cannot be edited', () => {
 
     it('accepts a register without any gates', () => {
         expect(kindOf(`${HEADER}qubit[4] q;\n`)).toBe('editable');
+    });
+});
+
+// Every prefix of a document is a document while someone types it. A throw reaches the
+// user as a defect of the extension and takes the circuit off the screen.
+describe('toCircuit: a half-written document is read, not thrown at', () => {
+    const TYPED: Record<string, string> = {
+        'a generated circuit': `${HEADER}\n// Register q\nqubit[3] q;\n\n// Layer 1\nh q[0];\ncx q[0], q[1];\nrx(pi/2) q[2];\n`,
+        'unsupported constructs': `${HEADER}qubit q;\nbit c;\nccx q[0], q[1], q[2];\nbarrier q;\n`,
+        'an OpenQASM 2 file':
+            'OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[2];\ncreg c[2];\nh q[0];\nmeasure q -> c;\n',
+        'gate definitions and blocks':
+            'qubit[2] q;\ngate my a, b { h a; cx a, b; }\nmy q[0], q[1];\nif (true) { h q[0]; }\n',
+    };
+
+    it.each(Object.entries(TYPED))('survives every prefix of %s', (_name, source) => {
+        for (let length = 0; length <= source.length; length++) {
+            expect(() => toCircuit(source.slice(0, length)), source.slice(0, length)).not.toThrow();
+        }
+    });
+
+    it.each(Object.entries(TYPED))('survives %s with any one character deleted', (_name, source) => {
+        for (let at = 0; at < source.length; at++) {
+            const typo = source.slice(0, at) + source.slice(at + 1);
+            expect(() => toCircuit(typo), typo).not.toThrow();
+        }
+    });
+
+    // Named, so a failure points at the accessor instead of at an offset.
+    it.each([
+        ['a version without a number', 'OPENQASM'],
+        ['an include without a closing quote', 'OPENQASM 3.0;\ninclude "x.inc;\n'],
+        ['a register declaration without a name', `${HEADER}qubit[] q;\n`],
+        ['a register declaration cut off at the size', `${HEADER}qubit[;\n`],
+    ])('reads %s', (_name, source) => {
+        expect(() => toCircuit(source)).not.toThrow();
+    });
+
+    // The guards keep the transform alive; the syntax error is what explains the file.
+    it('never lets a guard speak for a document that parses', () => {
+        const messages = [toCircuit('OPENQASM 3.0;\ninclude "x.inc;\n'), toCircuit(`${HEADER}qubit[] q;\n`)].map(
+            (result) => {
+                expect(result.syntaxErrors.length).toBeGreaterThan(0);
+                return result.unsupported.map((entry) => entry.message);
+            },
+        );
+
+        expect(messages[0]).toContain('This include names no file.');
+        expect(messages[1]).toContain('This qubit register has no name.');
     });
 });

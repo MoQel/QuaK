@@ -141,6 +141,12 @@ export const isEditable = (result: ToCircuitResult): boolean => classify(result)
 
 const UNSUPPORTED_STATEMENTS = unsupportedStatementRules();
 
+/**
+ * Reads a child the generated accessors type as always present: they end in
+ * `getToken(...)!`, but a tree ANTLR recovered from a syntax error has holes.
+ */
+const orNull = <T>(node: T | null | undefined): T | null => node ?? null;
+
 type SourcePosition = { start: { line: number; column: number } | null };
 
 class CircuitBuilder {
@@ -222,7 +228,7 @@ export function toCircuit(source: string): ToCircuitResult {
     return {
         content: builder.registers.length > 0 ? content : null,
         preamble: {
-            version: tree.version()?.VersionSpecifier().getText() ?? null,
+            version: orNull(tree.version()?.VersionSpecifier())?.getText() ?? null,
             includes: builder.includes,
             headerComments,
         },
@@ -247,7 +253,12 @@ function visitStatement(statement: StatementContext, builder: CircuitBuilder): v
     // Includes are file preamble, not circuit content.
     const include = statement.includeStatement();
     if (include) {
-        builder.includes.push(include.StringLiteral().getText());
+        const file = orNull(include.StringLiteral());
+        if (!file) {
+            builder.invalid(include, 'includeStatement', 'This include names no file.');
+            return;
+        }
+        builder.includes.push(file.getText());
         return;
     }
 
@@ -261,7 +272,13 @@ function visitStatement(statement: StatementContext, builder: CircuitBuilder): v
 }
 
 function visitQuantumDeclaration(ctx: QuantumDeclarationStatementContext, builder: CircuitBuilder): void {
-    const name = ctx.Identifier().getText();
+    const identifier = orNull(ctx.Identifier());
+    if (!identifier) {
+        builder.invalid(ctx, 'quantumDeclarationStatement', 'This qubit register has no name.');
+        return;
+    }
+
+    const name = identifier.getText();
     const designator = ctx.qubitType().designator();
 
     let size = 1; // `qubit q;` with no [n] is a single qubit.
@@ -306,7 +323,7 @@ function visitGateCall(ctx: GateCallStatementContext, builder: CircuitBuilder): 
     const operands = parseOperands(operandList, builder);
     if (!operands) return;
 
-    const { controlSize, targetSize, type, hasRotationAngle } = GATE_ARITY[identifier];
+    const { controlSize, targetSize, type } = GATE_ARITY[identifier];
     const expected = controlSize + targetSize;
     if (operands.length !== expected) {
         const qubits = expected === 1 ? 'qubit' : 'qubits';
@@ -318,30 +335,8 @@ function visitGateCall(ctx: GateCallStatementContext, builder: CircuitBuilder): 
     const controlQubits = operands.slice(0, controlSize);
     const targetQubits = operands.slice(controlSize);
 
-    let rotationAngle = 0;
-    const angleExpressions = ctx.expressionList()?.expression() ?? [];
-    if (angleExpressions.length > 0) {
-        if (!hasRotationAngle) {
-            builder.invalid(ctx, identifier, `Gate '${gateName}' does not take a parameter.`);
-            return;
-        }
-        // Reading only the first parameter would lose the rest on write.
-        if (angleExpressions.length > 1) {
-            builder.invalid(
-                ctx,
-                identifier,
-                `Gate '${gateName}' takes one parameter but got ${angleExpressions.length}.`,
-            );
-            return;
-        }
-        try {
-            rotationAngle = evaluateAngle(angleExpressions[0]);
-        } catch (error) {
-            const message = error instanceof QasmUnsupportedError ? error.message : String(error);
-            builder.reject(ctx, identifier, message);
-            return;
-        }
-    }
+    const rotationAngle = resolveRotationAngle(ctx, identifier, gateName, builder);
+    if (rotationAngle === null) return;
 
     const operation = {
         id: `op:${ctx.start?.line ?? 0}:${ctx.start?.column ?? 0}`,
@@ -354,6 +349,43 @@ function visitGateCall(ctx: GateCallStatementContext, builder: CircuitBuilder): 
     } as QuantumOperationDto;
 
     builder.layers.push({ quantumOperations: [operation] });
+}
+
+/** The gate's parameter in radians, or null after reporting why it has none. */
+function resolveRotationAngle(
+    ctx: GateCallStatementContext,
+    identifier: OperationIdentifier,
+    gateName: string,
+    builder: CircuitBuilder,
+): number | null {
+    const { hasRotationAngle } = GATE_ARITY[identifier];
+    const expressions = ctx.expressionList()?.expression() ?? [];
+
+    if (!hasRotationAngle) {
+        if (expressions.length === 0) return 0;
+
+        builder.invalid(ctx, identifier, `Gate '${gateName}' does not take a parameter.`);
+        return null;
+    }
+
+    // Defaulting to 0 would write the angle into the file on the next edit.
+    if (expressions.length === 0) {
+        builder.invalid(ctx, identifier, `Gate '${gateName}' takes one parameter, as in ${gateName}(pi/2).`);
+        return null;
+    }
+
+    // Reading only the first parameter would lose the rest on write.
+    if (expressions.length > 1) {
+        builder.invalid(ctx, identifier, `Gate '${gateName}' takes one parameter but got ${expressions.length}.`);
+        return null;
+    }
+
+    try {
+        return evaluateAngle(expressions[0]);
+    } catch (error) {
+        builder.reject(ctx, identifier, error instanceof QasmUnsupportedError ? error.message : String(error));
+        return null;
+    }
 }
 
 function checkNoModifiersOrDesignator(ctx: GateCallStatementContext, builder: CircuitBuilder): boolean {
@@ -504,10 +536,7 @@ function startOfFirstStatement(tree: ProgramContext): number {
  * unrecognised comment is kept, never dropped.
  */
 function generatedStructuralMarkerKeys(tree: ProgramContext, comments: readonly QasmComment[]): Set<string> {
-    const commentByLine = new Map<number, string>();
-    for (const comment of comments) {
-        if (!commentByLine.has(comment.line)) commentByLine.set(comment.line, comment.text.trim());
-    }
+    const commentByLine = firstCommentPerLine(comments);
 
     const keys = new Set<string>();
     let expectedLayer = 1;
@@ -518,7 +547,9 @@ function generatedStructuralMarkerKeys(tree: ProgramContext, comments: readonly 
 
         const declaration = statement.quantumDeclarationStatement();
         if (declaration) {
-            addMarkerBefore(keys, declaration, registerMarker(declaration.Identifier().getText()));
+            // A declaration without a name has no `// Register x` we could have written.
+            const identifier = orNull(declaration.Identifier());
+            if (identifier) addMarkerBefore(keys, declaration, registerMarker(identifier.getText()));
             continue;
         }
 
@@ -535,6 +566,15 @@ function generatedStructuralMarkerKeys(tree: ProgramContext, comments: readonly 
     }
 
     return keys;
+}
+
+/** Only the first comment on a line can sit above a statement. */
+function firstCommentPerLine(comments: readonly QasmComment[]): Map<number, string> {
+    const byLine = new Map<number, string>();
+    for (const comment of comments) {
+        if (!byLine.has(comment.line)) byLine.set(comment.line, comment.text.trim());
+    }
+    return byLine;
 }
 
 function addMarkerBefore(keys: Set<string>, ctx: { start: { line: number } | null }, marker: string): void {
