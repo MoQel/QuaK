@@ -32,6 +32,8 @@ src/
       features.ts             Registers the language providers with VSCode
       qasmContext.ts          What the cursor points at, from the text alone
       hoverModel.ts           What a hover says about it
+      completionModel.ts      What can be inserted there
+    qasmDocument.ts           Which documents this extension answers for
   shared/
     protocol.ts               Shared host/webview message types
     operations.ts             The bundled gate library, read by host and webview
@@ -62,12 +64,11 @@ one per caller. `extension.ts` owns the cache and drops a document when it close
 
 ## Language features
 
-`language/features.ts` registers the providers; what they say is decided by two modules
-that never import `vscode`, so they are unit-tested without one. `qasmContext.ts`
-answers whether a word is a gate, a register or a keyword by scanning the surrounding statement, 
-and `hoverModel.ts` turns that into Markdown from the bundled gate library
-and the support matrix. Neither parses — the semantics come from `ClassificationCache`,
-so a hover costs no parse the diagnostics have not already made.
+`language/features.ts` registers the providers. What they say is decided by modules that
+never import `vscode`. `qasmContext.ts` scans the surrounding statement and returns the
+word under the cursor and what may be inserted at it. `hoverModel.ts` and
+`completionModel.ts` turn that into text, from the bundled gate library and the support
+matrix. None of them parse; the semantics come from `ClassificationCache`.
 
 `hoverModel.ts` decides in the same order as `resolveSupportedGate`: unknown name, then
 gate this editor cannot draw, then supported. That is what keeps a hover from

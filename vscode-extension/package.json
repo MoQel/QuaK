@@ -169,6 +169,11 @@
                     "type": "boolean",
                     "default": true,
                     "description": "Show information about gates and qubit registers on hover."
+                },
+                "quak.completion.enabled": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Suggest gate calls and the qubits of a register while typing."
                 }
             }
         }

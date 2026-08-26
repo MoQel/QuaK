@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { wordAt, type WordRole } from './qasmContext.ts';
+import { completionAt, wordAt, type CompletionContext, type WordRole } from './qasmContext.ts';
 
 const HEADER = 'OPENQASM 3.0;\ninclude "stdgates.inc";\n';
 
@@ -33,6 +33,10 @@ describe('wordAt — which word', () => {
         expect(at(`${HEADER}qubit[2] q;\n// the |h below\nh q[0];`)).toBeNull();
     });
 
+    it('says nothing inside a comment that never ends', () => {
+        expect(at('qubit[2] q;\n/* |')).toBeNull();
+    });
+
     it('says nothing inside a block comment', () => {
         expect(at(`${HEADER}/* a |h */\nqubit[2] q;`)).toBeNull();
     });
@@ -53,7 +57,7 @@ describe('wordAt — which word', () => {
     });
 });
 
-describe('wordAt — which role', () => {
+describe('wordAt - which role', () => {
     it.each<[string, string, WordRole]>([
         ['the first identifier of a statement', 'qubit[2] q;\n|h q[0];', 'gate'],
         ['an operand', 'qubit[2] q;\nh |q[0];', 'register'],
@@ -78,5 +82,48 @@ describe('wordAt — which role', () => {
 
     it('does not let a comment between statements pass for the statement itself', () => {
         expect(at('qubit[2] q;\n// draw a hadamard\n|h q[0];')?.role).toBe('gate');
+    });
+});
+
+describe('completionAt - what belongs here', () => {
+    const fits = (source: string): CompletionContext | null => {
+        const offset = source.indexOf('|');
+        expect(offset, 'every case marks the cursor with |').toBeGreaterThan(-1);
+
+        return completionAt(source.replace('|', ''), offset);
+    };
+
+    const DECLARED = 'qubit[2] q;\n';
+
+    it.each([
+        ['on an empty line', `${DECLARED}|`],
+        ['while the gate name is half typed', `${DECLARED}h|`],
+        ['behind a modifier', `${DECLARED}ctrl @ |`],
+        ['after the previous statement on the same line', `${DECLARED}h q[0]; |`],
+    ])('offers a gate %s', (_case, source) => {
+        expect(fits(source)).toEqual({ kind: 'gate' });
+    });
+
+    it.each([
+        ['on the empty bracket', `${DECLARED}h q[|`],
+        ['with a digit already typed', `${DECLARED}h q[0|`],
+        ['on a later operand', `${DECLARED}cx q[0], q[|`],
+        ['across several lines', `${DECLARED}cx\n  q[0],\n  q[|`],
+    ])('offers an index %s', (_case, source) => {
+        expect(fits(source)).toEqual({ kind: 'index', register: 'q' });
+    });
+
+    it.each([
+        ['in operand position, which other providers cover', `${DECLARED}h |`],
+        ['once the bracket is closed', `${DECLARED}h q[0]|`],
+        ['in the size of a declaration', 'qubit[|2] q;'],
+        ['inside a comment', `${DECLARED}// |`],
+    ])('offers nothing %s', (_case, source) => {
+        expect(fits(source)).toBeNull();
+    });
+
+    it('forgets a bracket the previous statement left open', () => {
+        // Otherwise one missing `]` turns every later position into an index.
+        expect(fits(`${DECLARED}h q[0;\n|`)).toEqual({ kind: 'gate' });
     });
 });

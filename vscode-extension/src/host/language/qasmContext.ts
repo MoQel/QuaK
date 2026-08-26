@@ -1,17 +1,20 @@
-// What the cursor points at, from the text alone. The other half — which registers
-// exist — comes from `ClassificationCache`.
+// Works out what the cursor is pointing at from the text alone.
+// Whether a name actually refers to a declared register is decided by `ClassificationCache`.
 
 export type WordRole = 'gate' | 'register' | 'keyword';
+
+/** What can be inserted at an offset, which is not the same as what is written there. */
+export type CompletionContext = { kind: 'gate' } | { kind: 'index'; register: string };
 
 export interface QasmWord {
     text: string;
     role: WordRole;
-    /** Offsets into the text this word was found in. */
+    /** Offsets into the full text, not into `text`. */
     start: number;
     end: number;
 }
 
-/** Keywords a declared name follows. */
+// Keywords that are followed by a name being declared.
 const DECLARATION_KEYWORDS = new Set([
     'qubit',
     'bit',
@@ -34,10 +37,10 @@ const DECLARATION_KEYWORDS = new Set([
     'def',
 ]);
 
-/** Modifiers stand before the gate they modify. */
+// Gate modifiers. They come before the gate name.
 const MODIFIERS = new Set(['ctrl', 'negctrl', 'inv', 'pow']);
 
-/** Keywords that neither declare nor call anything. */
+// Everything else: keywords that neither declare a name nor call a gate.
 const KEYWORDS = new Set([
     'OPENQASM',
     'include',
@@ -72,18 +75,16 @@ const IDENTIFIER_START = /[A-Za-z_$]/;
 const IDENTIFIER_PART = /[A-Za-z0-9_$]/;
 const STATEMENT_END = /[;{}]/;
 
-/** Null unless the offset sits on an identifier in code. */
+/** Returns null unless the offset sits on an identifier outside comments and strings. */
 export function wordAt(text: string, offset: number): QasmWord | null {
     const position = Math.max(0, Math.min(offset, text.length));
-
-    let start = position;
-    while (start > 0 && IDENTIFIER_PART.test(text[start - 1])) start -= 1;
+    const start = wordStart(text, position);
     const end = identifierEnd(text, position);
 
     if (start === end) return null;
 
     const word = text.slice(start, end);
-    // A number literal shares the character class and names nothing.
+    // Numbers match IDENTIFIER_PART as well, but they are not names.
     if (!IDENTIFIER_START.test(word[0])) return null;
 
     const context = contextAt(text, start);
@@ -95,23 +96,48 @@ export function wordAt(text: string, offset: number): QasmWord | null {
 function roleOf(word: string, before: readonly string[]): WordRole {
     if (MODIFIERS.has(word) || KEYWORDS.has(word) || DECLARATION_KEYWORDS.has(word)) return 'keyword';
 
-    // Only a modifier may stand before a gate call; past the first identifier every
-    // statement names a register.
-    const named = before.filter((identifier) => !MODIFIERS.has(identifier));
+    // The first name in a statement is the gate being called, ignoring modifiers.
+    // Everything after it is an argument, so a register.
+    return namesSoFar(before).length === 0 ? 'gate' : 'register';
+}
 
-    return named.length === 0 ? 'gate' : 'register';
+/** Returns null where there is nothing useful to suggest. */
+export function completionAt(text: string, offset: number): CompletionContext | null {
+    // Classify from the start of the half typed word, not from the cursor.
+    const context = contextAt(text, wordStart(text, offset));
+    if (!context.inCode) return null;
+
+    if (context.indexing) {
+        return DECLARATION_KEYWORDS.has(context.indexing) ? null : { kind: 'index', register: context.indexing };
+    }
+
+    return namesSoFar(context.before).length === 0 ? { kind: 'gate' } : null;
+}
+
+const namesSoFar = (before: readonly string[]): readonly string[] =>
+    before.filter((identifier) => !MODIFIERS.has(identifier));
+
+function wordStart(text: string, offset: number): number {
+    let start = Math.max(0, Math.min(offset, text.length));
+    while (start > 0 && IDENTIFIER_PART.test(text[start - 1])) start -= 1;
+
+    return start;
 }
 
 interface Context {
     /** False inside a comment or a string. */
     inCode: boolean;
-    /** Identifiers of the current statement, before the offset. */
+    /** Identifiers of the current statement, up to the offset. */
     before: string[];
+    /** Set when the offset is inside `[...]`, to the register being indexed. */
+    indexing?: string;
 }
 
-/** Walks the text once up to `offset`; a gate call may span lines, so the line alone will not do. */
+/** Scans from the start of the text, since a statement can span several lines. */
 function contextAt(text: string, offset: number): Context {
     let before: string[] = [];
+    // Open `[` brackets, innermost last.
+    let indexing: string[] = [];
     let index = 0;
 
     while (index < offset) {
@@ -121,7 +147,16 @@ function contextAt(text: string, offset: number): Context {
             if (skipped > offset) return { inCode: false, before };
             index = skipped;
         } else if (STATEMENT_END.test(text[index])) {
+            // Also drops any `[` left open by broken code, which would otherwise
+            // make the rest of the file look like one long index.
             before = [];
+            indexing = [];
+            index += 1;
+        } else if (text[index] === '[') {
+            indexing.push(before.at(-1) ?? '');
+            index += 1;
+        } else if (text[index] === ']') {
+            indexing.pop();
             index += 1;
         } else if (IDENTIFIER_START.test(text[index])) {
             const end = identifierEnd(text, index);
@@ -132,7 +167,7 @@ function contextAt(text: string, offset: number): Context {
         }
     }
 
-    return { inCode: true, before };
+    return { inCode: true, before, indexing: indexing.at(-1) };
 }
 
 /** Index after the comment or string starting here, or null if none starts here. */
@@ -144,16 +179,17 @@ function skipNonCode(text: string, index: number): number | null {
     return null;
 }
 
-/** An unterminated comment runs to the end of the text. */
 function endOf(text: string, terminator: string, from: number, length: number): number {
     const found = text.indexOf(terminator, from);
 
-    return found === -1 ? text.length : found + length;
+    // One past the end, so that an unterminated comment covers every offset,
+    // including one at the very end of the text.
+    return found === -1 ? text.length + 1 : found + length;
 }
 
 /**
- * Strings do not span lines (`'"' ~["\r\t\n]+? '"'`), so a quote with no partner on its
- * line opens nothing and only the character itself is stepped over.
+ * Strings cannot span lines (`'"' ~["\r\t\n]+? '"'`), so a quote without a partner on
+ * its own line opens nothing and we only step over the quote character itself.
  */
 function stringEnd(text: string, index: number): number {
     const closing = text.indexOf(text[index], index + 1);

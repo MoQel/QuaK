@@ -347,8 +347,10 @@ suite('QuaK diagnostics', () => {
 // the word under the cursor. What it says is asserted in hoverModel.test.ts.
 const HOVER_ENABLED = 'quak.hover.enabled';
 
-const resetHoverSetting = (): Thenable<void> =>
-    vscode.workspace.getConfiguration().update(HOVER_ENABLED, undefined, vscode.ConfigurationTarget.Global);
+const COMPLETION_ENABLED = 'quak.completion.enabled';
+
+const reset = (setting: string): Thenable<void> =>
+    vscode.workspace.getConfiguration().update(setting, undefined, vscode.ConfigurationTarget.Global);
 
 /** SAMPLE line 5 is `h q[0];` — column 0 is the gate, column 2 the register. */
 async function hoverAt(uri: vscode.Uri, line: number, character: number): Promise<string[]> {
@@ -365,12 +367,12 @@ suite('QuaK hover', () => {
     suiteSetup(async () => {
         await vscode.extensions.getExtension(EXTENSION_ID)?.activate();
         // Same reason as the diagnostics suite.
-        await resetHoverSetting();
+        await reset(HOVER_ENABLED);
     });
 
     teardown(async () => {
         await closeAllEditors();
-        await resetHoverSetting();
+        await reset(HOVER_ENABLED);
     });
 
     test('explains the gate under the cursor', async () => {
@@ -410,5 +412,76 @@ suite('QuaK hover', () => {
         await vscode.workspace.getConfiguration().update(HOVER_ENABLED, false, vscode.ConfigurationTarget.Global);
 
         assert.deepEqual(await hoverAt(uri, 5, 0), []);
+    });
+});
+
+/** SAMPLE line 5 is `h q[0];`, so column 0 starts a statement and column 4 sits inside the index. */
+async function completionsAt(uri: vscode.Uri, line: number, character: number): Promise<vscode.CompletionItem[]> {
+    const list = await vscode.commands.executeCommand<vscode.CompletionList>(
+        'vscode.executeCompletionItemProvider',
+        uri,
+        new vscode.Position(line, character),
+    );
+
+    return list?.items ?? [];
+}
+
+// VSCode's own word-based suggestions come back from that command too, so the kinds
+// this extension uses are what separates ours from the words already in the file.
+const OUR_KINDS = [vscode.CompletionItemKind.Function, vscode.CompletionItemKind.Value];
+
+const ours = (items: vscode.CompletionItem[]): vscode.CompletionItem[] =>
+    items.filter((item) => item.kind !== undefined && OUR_KINDS.includes(item.kind));
+
+const labelsOf = (items: vscode.CompletionItem[]): string[] =>
+    ours(items).map((item) => (typeof item.label === 'string' ? item.label : item.label.label));
+
+suite('QuaK completion', () => {
+    suiteSetup(async () => {
+        await vscode.extensions.getExtension(EXTENSION_ID)?.activate();
+        await reset(COMPLETION_ENABLED);
+    });
+
+    teardown(async () => {
+        await closeAllEditors();
+        await reset(COMPLETION_ENABLED);
+    });
+
+    test('suggests a gate call where a statement starts', async () => {
+        const uri = writeQasm('completion-gate.qasm');
+        await vscode.workspace.openTextDocument(uri);
+
+        const items = await completionsAt(uri, 5, 0);
+        const cx = ours(items).find((item) => item.label === 'cx');
+
+        assert.ok(cx, `expected a cx suggestion, got ${JSON.stringify(labelsOf(items))}`);
+        assert.equal(cx.detail, 'CNOT');
+        // The snippet is what makes the operand order visible; two different wires.
+        assert.equal((cx.insertText as vscode.SnippetString).value, 'cx ${1:q[0]}, ${2:q[1]};');
+    });
+
+    test('suggests the wires of the register being indexed', async () => {
+        const uri = writeQasm('completion-index.qasm');
+        await vscode.workspace.openTextDocument(uri);
+
+        const items = ours(await completionsAt(uri, 5, 4));
+
+        assert.deepEqual(labelsOf(items), ['0', '1']);
+        assert.equal(items[1].detail, 'q[1]');
+    });
+
+    test('leaves operand position to the other providers', async () => {
+        const uri = writeQasm('completion-operand.qasm');
+        await vscode.workspace.openTextDocument(uri);
+
+        assert.deepEqual(labelsOf(await completionsAt(uri, 5, 2)), []);
+    });
+
+    test('says nothing while the setting is off', async () => {
+        const uri = writeQasm('completion-disabled.qasm');
+        await vscode.workspace.openTextDocument(uri);
+        await vscode.workspace.getConfiguration().update(COMPLETION_ENABLED, false, vscode.ConfigurationTarget.Global);
+
+        assert.deepEqual(labelsOf(await completionsAt(uri, 5, 0)), []);
     });
 });

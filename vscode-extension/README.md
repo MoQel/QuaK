@@ -34,6 +34,10 @@ and bracket matching with it.
 Hover a gate to see its name, what it does, how many qubits it acts on and — where it
 is small enough to read — its matrix. Hover a qubit register to see how wide it is.
 
+Type at the start of a statement to see the gates QuaK can draw; picking one inserts the
+full call with your registers filled in. Type `[` after a register name to see the qubits
+that register has.
+
 The Problems panel shows two things, each of which can be switched off on its own:
 errors in your code, and what keeps a file read-only in the circuit view.
 
@@ -59,3 +63,4 @@ From the circuit editor, the file icon in the title bar goes back to the text, o
 | `quak.diagnostics.errors`      | `true`  | Show diagnostics for errors in OpenQASM code                            |
 | `quak.diagnostics.syncSupport` | `true`  | Show diagnostics for code that cannot be synced with the circuit editor |
 | `quak.hover.enabled`           | `true`  | Show information about gates and qubit registers on hover               |
+| `quak.completion.enabled`      | `true`  | Suggest gate calls and the qubits of a register while typing            |

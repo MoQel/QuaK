@@ -198,6 +198,10 @@ so a file explains itself in the Problems panel without the circuit view being o
 Hover shows information about the gate or qubit register under the cursor, using the 
 same operation definitions and support data as the circuit editor and diagnostics.
 
+Completion suggests the gate calls the circuit editor can draw, as snippets filled with
+the qubits the document declares, and the indices a register actually has once `[` is
+typed. It offers nothing in operand position, which other providers already cover.
+
 ---
 
 ## Building and shipping
