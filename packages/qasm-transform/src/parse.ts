@@ -3,6 +3,7 @@ import {
     BaseErrorListener,
     CharStream,
     CommonTokenStream,
+    NoViableAltException,
     ParseCancellationException,
     PredictionMode,
     Token,
@@ -20,18 +21,21 @@ export interface QasmSyntaxError {
 }
 
 const UNFINISHED = 'The file ends in the middle of a statement.';
+const UNREADABLE = 'This statement cannot be read.';
 
 /** `missing ';' at 'h'`; the expected part can be a set, so it is kept verbatim. */
 const MISSING_TOKEN = /^missing (.+?) at /;
 
 /**
  * ANTLR's default listener prints to stderr; syntax errors belong in the document
- * state instead. It also moves errors ANTLR blames on the wrong token: what is
- * missing is reported at the token *after* the gap, which the hidden channel can
- * put several lines away.
+ * state instead. None of its wording survives: it names grammar rules and lists every
+ * token that could have followed. Nor do its positions, which blame the token *after*
+ * a gap that the hidden channel can put lines away.
  */
 class CollectingErrorListener extends BaseErrorListener {
     readonly errors: QasmSyntaxError[] = [];
+
+    private afterUnreadableStatement = false;
 
     constructor(
         private readonly lines: readonly string[],
@@ -46,9 +50,16 @@ class CollectingErrorListener extends BaseErrorListener {
         line: number,
         column: number,
         message: string,
-        _e: RecognitionException | null,
+        e: RecognitionException | null,
     ): void {
-        const error = this.relocate(offendingSymbol, message) ?? { line, column, message };
+        const missing = MISSING_TOKEN.exec(message)?.[1] ?? null;
+        const followsUnreadable = this.afterUnreadableStatement;
+        this.afterUnreadableStatement = e instanceof NoViableAltException;
+
+        // The separator ANTLR wanted while recovering is not a mistake the user made.
+        if (missing && followsUnreadable) return;
+
+        const error = this.locate(offendingSymbol, line, column, missing, e);
 
         // A half-written statement can fail several rules at the same spot.
         if (!this.errors.some((seen) => sameSpot(seen, error))) {
@@ -56,22 +67,43 @@ class CollectingErrorListener extends BaseErrorListener {
         }
     }
 
-    /** Null where ANTLR's own position is the honest one, which it usually is. */
-    private relocate<S extends Token>(offendingSymbol: S | null, message: string): QasmSyntaxError | null {
-        if (!offendingSymbol) return null;
+    /** Where the mistake is, and what to say about it, in our words rather than ANTLR's. */
+    private locate<S extends Token>(
+        offendingSymbol: S | null,
+        line: number,
+        column: number,
+        missing: string | null,
+        e: RecognitionException | null,
+    ): QasmSyntaxError {
+        // The lexer reports no token at all, only a position.
+        if (!offendingSymbol) {
+            return { line, column, message: `Unexpected character '${this.characterAt(line, column)}'.` };
+        }
 
-        // EOF sits behind the final newline, on a line the reader cannot see.
+        // Ahead of the rest: a file that simply stops is not an unreadable statement.
+        // EOF also sits behind the final newline, on a line the reader cannot see.
         if (offendingSymbol.type === Token.EOF) return this.endOfContent();
 
-        const expected = MISSING_TOKEN.exec(message)?.[1];
-        const previous = expected ? this.previousVisibleToken(offendingSymbol) : null;
-        if (!expected || !previous) return null;
+        // ANTLR gives up at the token that ruled everything out, which is where the
+        // *next* statement starts; the unreadable one began earlier.
+        if (e instanceof NoViableAltException && e.startToken) {
+            return { line: e.startToken.line, column: e.startToken.column, message: UNREADABLE };
+        }
 
-        return {
-            line: previous.line,
-            column: previous.column + (previous.text?.length ?? 0),
-            message: `Missing ${expected} after '${previous.text ?? ''}'.`,
-        };
+        const previous = missing ? this.previousVisibleToken(offendingSymbol) : null;
+        if (missing && previous) {
+            return {
+                line: previous.line,
+                column: previous.column + (previous.text?.length ?? 0),
+                message: `Missing ${missing} after '${previous.text ?? ''}'.`,
+            };
+        }
+
+        return { line, column, message: `Unexpected '${offendingSymbol.text ?? ''}'.` };
+    }
+
+    private characterAt(line: number, column: number): string {
+        return this.lines[line - 1]?.[column] ?? '';
     }
 
     /** The last token the user actually typed; comments and whitespace are hidden. */

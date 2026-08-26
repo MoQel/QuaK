@@ -34,6 +34,13 @@ describe('toCircuit: registers', () => {
         }
     });
 
+    it('does not name a register after the token ANTLR invents for a missing one', () => {
+        const result = toCircuit(`${HEADER}qubit ;\n`);
+
+        expect(result.content).toBeNull();
+        expect(result.unsupported[0].message).toBe('This qubit register has no name.');
+    });
+
     it('rejects a non-constant register size instead of guessing', () => {
         const result = toCircuit(`${HEADER}const int n = 4;\nqubit[n] q;\n`);
         expect(result.unsupported.map((u) => u.construct)).toContain('qubitType');
@@ -352,6 +359,20 @@ describe('toCircuit: a half-written document is read, not thrown at', () => {
         expect(() => toCircuit(source)).not.toThrow();
     });
 
+    // Whatever a broken file provokes, it is answered in words the reader can act on.
+    const PARSER_INTERNALS =
+        /no viable alternative|extraneous input|mismatched input|token recognition|expecting \{|<missing /;
+
+    it.each(Object.entries(TYPED))('answers %s without quoting the parser at itself', (_name, source) => {
+        for (let at = 0; at < source.length; at++) {
+            const result = toCircuit(source.slice(0, at) + source.slice(at + 1));
+
+            for (const { message } of [...result.syntaxErrors, ...result.unsupported]) {
+                expect(message, message).not.toMatch(PARSER_INTERNALS);
+            }
+        }
+    });
+
     // The guards keep the transform alive; the syntax error is what explains the file.
     it('never lets a guard speak for a document that parses', () => {
         const messages = [toCircuit('OPENQASM 3.0;\ninclude "x.inc;\n'), toCircuit(`${HEADER}qubit[] q;\n`)].map(
@@ -363,5 +384,27 @@ describe('toCircuit: a half-written document is read, not thrown at', () => {
 
         expect(messages[0]).toContain('This include names no file.');
         expect(messages[1]).toContain('This qubit register has no name.');
+    });
+});
+
+// A rejection quotes the line it is about, so the excerpt has to read the way the user
+// wrote it: `getText()` loses every space and picks up the tokens recovery invented.
+describe('toCircuit: what a rejection quotes back', () => {
+    it.each([
+        ['barrier q;', 'Unsupported barrier: barrier q;'],
+        ['for int i in [0:2] { h q[0]; }', 'Unsupported control flow: for int i in [0:2] { h q[0]; }'],
+        ['gate my a, b { h a; }', 'Unsupported gate definitions: gate my a, b { h a; }'],
+        ['h q[0][1];', 'Nested indexing is not supported: q[0][1]'],
+    ])('quotes %s as written', (statement, expected) => {
+        const result = toCircuit(`${HEADER}qubit[2] q;\n${statement}\n`);
+
+        expect(result.unsupported.map((entry) => entry.message)).toContain(expected);
+    });
+
+    it('drops the token error recovery invented rather than quoting it', () => {
+        // ANTLR fills the gap with a `;` of its own; the excerpt must not pick it up.
+        const result = toCircuit(`${HEADER}qubit[2] q;\nbarrier q\nh q[0];\n`);
+
+        expect(result.unsupported[0].message).toBe('Unsupported barrier: barrier q');
     });
 });

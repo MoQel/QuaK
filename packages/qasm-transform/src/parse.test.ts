@@ -73,14 +73,14 @@ describe('parseQasm: errors ANTLR already places well', () => {
 
         expect(error.line).toBe(3);
         expect(error.column).toBe(8);
-        expect(error.message).toMatch(/extraneous input/);
+        expect(error.message).toBe("Unexpected ']'.");
     });
 
-    it('keeps ANTLR wording for a lexer error, which is precise enough', () => {
+    it('quotes the character a lexer error is about, not the phrase ANTLR uses for it', () => {
         const [error] = parseQasm(`${HEADER}qubit[2] q;\nh q[0] §;\n`).errors;
 
         expect(error.line).toBe(4);
-        expect(error.message).toMatch(/token recognition error/);
+        expect(error.message).toBe("Unexpected character '§'.");
     });
 
     it('reports a clean file as clean', () => {
@@ -109,5 +109,31 @@ describe('parseQasm: what the fast stage skips', () => {
         const { comments } = parseQasm(`${HEADER}// Register q\nqubit[2] q;\n`);
 
         expect(comments.map((comment) => comment.text)).toEqual(['// Register q']);
+    });
+});
+
+// ANTLR words its errors for a grammar author, down to listing every token that could
+// have followed. None of that reaches the document.
+describe('parseQasm: a statement the parser cannot read at all', () => {
+    const MISSING_SEMICOLON = `${HEADER}qubit[2] q;\nh q[0]\nx q[1];\n`;
+
+    it('anchors it where it starts, not where the parser finally gave up', () => {
+        // ANTLR blames the `x` on the line below, the token that ruled everything out.
+        const [error] = parseQasm(MISSING_SEMICOLON).errors;
+
+        expect(error.line).toBe(4);
+        expect(error.column).toBe(0);
+        expect(error.message).toBe('This statement cannot be read.');
+    });
+
+    it('reports it once, not again for the separator recovery went on to want', () => {
+        // The second report read `Missing ';' after 'x'`, about a token that is fine.
+        expect(parseQasm(MISSING_SEMICOLON).errors).toHaveLength(1);
+    });
+
+    it('still reports a later mistake of its own', () => {
+        const { errors } = parseQasm(`${MISSING_SEMICOLON}qubit[3 r;\n`);
+
+        expect(errors.map((error) => error.line)).toEqual([4, 6]);
     });
 });

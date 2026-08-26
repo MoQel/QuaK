@@ -142,12 +142,20 @@ export const isEditable = (result: ToCircuitResult): boolean => classify(result)
 const UNSUPPORTED_STATEMENTS = unsupportedStatementRules();
 
 /**
- * Reads a child the generated accessors type as always present: they end in
- * `getToken(...)!`, but a tree ANTLR recovered from a syntax error has holes.
+ * The text of a token the tree may not really have: the generated accessors type every
+ * child as present, but error recovery both drops them and invents them, the invented
+ * ones reading `<missing Identifier>`.
  */
-const orNull = <T>(node: T | null | undefined): T | null => node ?? null;
+function tokenText(node: { symbol: { tokenIndex: number; text?: string | null } } | null | undefined): string | null {
+    if (!node || node.symbol.tokenIndex < 0) return null;
+
+    return node.symbol.text ?? null;
+}
 
 type SourcePosition = { start: { line: number; column: number } | null };
+
+/** Enough of a parse-tree node to find the text it was built from. */
+type SourceSpan = { start: { start: number } | null; stop: { stop: number } | null };
 
 class CircuitBuilder {
     // Classical registers are rejected because CircuitContent carries only qubits.
@@ -155,6 +163,20 @@ class CircuitBuilder {
     readonly layers: LayerResponse[] = [];
     readonly unsupported: QasmRejection[] = [];
     readonly includes: string[] = [];
+
+    constructor(private readonly source: string) {}
+
+    /**
+     * What the user wrote for a construct, cut from the source: `getText()` walks a
+     * node's default channel, losing every space and picking up invented tokens.
+     */
+    excerpt(ctx: SourceSpan): string {
+        const from = ctx.start?.start ?? -1;
+        const to = ctx.stop?.stop ?? -1;
+        if (from < 0 || to < from) return '';
+
+        return truncate(this.source.slice(from, to + 1).replace(/\s+/g, ' '));
+    }
 
     registerByName(name: string): QuantumRegisterResponse | undefined {
         return this.registers.find((register) => register.name === name);
@@ -194,7 +216,7 @@ class CircuitBuilder {
  */
 export function toCircuit(source: string): ToCircuitResult {
     const { tree, errors, comments } = parseQasm(source);
-    const builder = new CircuitBuilder();
+    const builder = new CircuitBuilder(source);
 
     const firstStatementLine = startOfFirstStatement(tree);
     const generatedMarkerKeys = generatedStructuralMarkerKeys(tree, comments);
@@ -228,7 +250,7 @@ export function toCircuit(source: string): ToCircuitResult {
     return {
         content: builder.registers.length > 0 ? content : null,
         preamble: {
-            version: orNull(tree.version()?.VersionSpecifier())?.getText() ?? null,
+            version: tokenText(tree.version()?.VersionSpecifier()),
             includes: builder.includes,
             headerComments,
         },
@@ -253,12 +275,12 @@ function visitStatement(statement: StatementContext, builder: CircuitBuilder): v
     // Includes are file preamble, not circuit content.
     const include = statement.includeStatement();
     if (include) {
-        const file = orNull(include.StringLiteral());
-        if (!file) {
+        const file = tokenText(include.StringLiteral());
+        if (file === null) {
             builder.invalid(include, 'includeStatement', 'This include names no file.');
             return;
         }
-        builder.includes.push(file.getText());
+        builder.includes.push(file);
         return;
     }
 
@@ -268,24 +290,27 @@ function visitStatement(statement: StatementContext, builder: CircuitBuilder): v
         return typeof accessor === 'function' && (accessor as () => unknown).call(statement) != null;
     });
     const reason = rule ? UNSUPPORTED_STATEMENTS[rule] : 'unrecognized statement';
-    builder.reject(statement, rule ?? 'statement', `Unsupported ${reason}: ${truncate(statement.getText())}`);
+    builder.reject(statement, rule ?? 'statement', `Unsupported ${reason}: ${builder.excerpt(statement)}`);
 }
 
 function visitQuantumDeclaration(ctx: QuantumDeclarationStatementContext, builder: CircuitBuilder): void {
-    const identifier = orNull(ctx.Identifier());
-    if (!identifier) {
+    const name = tokenText(ctx.Identifier());
+    if (name === null) {
         builder.invalid(ctx, 'quantumDeclarationStatement', 'This qubit register has no name.');
         return;
     }
 
-    const name = identifier.getText();
     const designator = ctx.qubitType().designator();
 
     let size = 1; // `qubit q;` with no [n] is a single qubit.
     if (designator) {
         const parsed = constantInt(designator.expression().getText());
         if (parsed === null || parsed < 1) {
-            builder.reject(ctx, 'qubitType', `Register size must be a positive constant integer: ${ctx.getText()}`);
+            builder.reject(
+                ctx,
+                'qubitType',
+                `Register size must be a positive constant integer: ${builder.excerpt(ctx)}`,
+            );
             return;
         }
         size = parsed;
@@ -310,7 +335,7 @@ function visitGateCall(ctx: GateCallStatementContext, builder: CircuitBuilder): 
     const operandList = ctx.gateOperandList();
     if (!identifierNode || !operandList) {
         // gphase and other operand-less calls have no editor representation.
-        builder.reject(ctx, 'gateCallStatement', `Unsupported gate call: ${truncate(ctx.getText())}`);
+        builder.reject(ctx, 'gateCallStatement', `Unsupported gate call: ${builder.excerpt(ctx)}`);
         return;
     }
 
@@ -390,13 +415,13 @@ function resolveRotationAngle(
 
 function checkNoModifiersOrDesignator(ctx: GateCallStatementContext, builder: CircuitBuilder): boolean {
     if (ctx.gateModifier().length > 0) {
-        builder.reject(ctx, 'gateModifier', `Gate modifiers are not supported: ${truncate(ctx.getText())}`);
+        builder.reject(ctx, 'gateModifier', `Gate modifiers are not supported: ${builder.excerpt(ctx)}`);
         return false;
     }
 
     // The `[4]` in `h[4] q;`, a timing designator the circuit model does not carry.
     if (ctx.designator()) {
-        builder.reject(ctx, 'gateCallStatement', `Gate designators are not supported: ${truncate(ctx.getText())}`);
+        builder.reject(ctx, 'gateCallStatement', `Gate designators are not supported: ${builder.excerpt(ctx)}`);
         return false;
     }
 
@@ -445,7 +470,7 @@ function parseOperand(operand: GateOperandContext, builder: CircuitBuilder): Ele
     const indexed = operand.indexedIdentifier();
     if (!indexed) {
         // e.g. a hardware qubit like `$0`, which the circuit model does not represent.
-        builder.reject(operand, 'gateOperand', `Unsupported gate operand: ${operand.getText()}`);
+        builder.reject(operand, 'gateOperand', `Unsupported gate operand: ${builder.excerpt(operand)}`);
         return null;
     }
 
@@ -464,7 +489,7 @@ function parseOperand(operand: GateOperandContext, builder: CircuitBuilder): Ele
             builder.reject(
                 operand,
                 'gateOperand',
-                `'${operand.getText()}' applies the gate to all ${size} qubits of '${registerName}'; broadcasting is not supported.`,
+                `'${builder.excerpt(operand)}' applies the gate to all ${size} qubits of '${registerName}'; broadcasting is not supported.`,
             );
             return null;
         }
@@ -472,7 +497,7 @@ function parseOperand(operand: GateOperandContext, builder: CircuitBuilder): Ele
     }
 
     if (indexOperators.length > 1) {
-        builder.reject(operand, 'indexOperator', `Nested indexing is not supported: ${operand.getText()}`);
+        builder.reject(operand, 'indexOperator', `Nested indexing is not supported: ${builder.excerpt(operand)}`);
         return null;
     }
 
@@ -480,13 +505,13 @@ function parseOperand(operand: GateOperandContext, builder: CircuitBuilder): Ele
     const expressions = indexOperator.expression();
     // Ranges, sets and lists name more than one qubit.
     if (indexOperator.setExpression() || indexOperator.rangeExpression().length > 0 || expressions.length !== 1) {
-        builder.reject(operand, 'indexOperator', `Qubit index must select a single qubit: ${operand.getText()}`);
+        builder.reject(operand, 'indexOperator', `Qubit index must select a single qubit: ${builder.excerpt(operand)}`);
         return null;
     }
 
     const index = constantInt(expressions[0].getText());
     if (index === null) {
-        builder.reject(operand, 'indexOperator', `Qubit index must be a constant integer: ${operand.getText()}`);
+        builder.reject(operand, 'indexOperator', `Qubit index must be a constant integer: ${builder.excerpt(operand)}`);
         return null;
     }
 
@@ -548,8 +573,8 @@ function generatedStructuralMarkerKeys(tree: ProgramContext, comments: readonly 
         const declaration = statement.quantumDeclarationStatement();
         if (declaration) {
             // A declaration without a name has no `// Register x` we could have written.
-            const identifier = orNull(declaration.Identifier());
-            if (identifier) addMarkerBefore(keys, declaration, registerMarker(identifier.getText()));
+            const name = tokenText(declaration.Identifier());
+            if (name !== null) addMarkerBefore(keys, declaration, registerMarker(name));
             continue;
         }
 
