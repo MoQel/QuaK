@@ -22,6 +22,7 @@ export function App() {
             <DocumentNotice
                 state={state}
                 classification={classification}
+                hasCircuit={circuit !== undefined}
                 onEditAnyway={() => vscodeApi.postMessage({ type: 'enableEditing' })}
             />
 

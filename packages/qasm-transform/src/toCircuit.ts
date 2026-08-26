@@ -164,7 +164,17 @@ class CircuitBuilder {
     readonly unsupported: QasmRejection[] = [];
     readonly includes: string[] = [];
 
-    constructor(private readonly source: string) {}
+    constructor(
+        private readonly source: string,
+        private readonly continuedLayers: ReadonlySet<number>,
+    ) {}
+
+    /** Opens a layer, unless this operation was written as part of the one before it. */
+    place(operation: QuantumOperationDto, line: number): void {
+        const open = this.layers.at(-1);
+        if (open && this.continuedLayers.has(line)) open.quantumOperations.push(operation);
+        else this.layers.push({ quantumOperations: [operation] });
+    }
 
     /**
      * What the user wrote for a construct, cut from the source: `getText()` walks a
@@ -175,7 +185,7 @@ class CircuitBuilder {
         const to = ctx.stop?.stop ?? -1;
         if (from < 0 || to < from) return '';
 
-        return truncate(this.source.slice(from, to + 1).replace(/\s+/g, ' '));
+        return truncate(this.source.slice(from, to + 1).replaceAll(/\s+/g, ' '));
     }
 
     registerByName(name: string): QuantumRegisterResponse | undefined {
@@ -209,21 +219,21 @@ class CircuitBuilder {
  * Mirrors the backend visitor for supported constructs, but is stricter: it
  * collects unsupported syntax so the extension can keep risky files read-only.
  *
- * Each operation becomes its own layer, in source order; the editor re-schedules
- * them ASAP for display, so layer packing is not this function's business.
+ * Layers are read the way the document writes them, so a file QuaK wrote comes back
+ * from a read and a write unchanged.
  *
  * Ids are derived from source positions so React keys stay stable across reparses.
  */
 export function toCircuit(source: string): ToCircuitResult {
     const { tree, errors, comments } = parseQasm(source);
-    const builder = new CircuitBuilder(source);
+    const structural = readStructuralComments(tree, comments);
+    const builder = new CircuitBuilder(source, structural.continuedLayers);
 
     const firstStatementLine = startOfFirstStatement(tree);
-    const generatedMarkerKeys = generatedStructuralMarkerKeys(tree, comments);
     const headerComments: string[] = [];
 
     for (const comment of comments) {
-        if (generatedMarkerKeys.has(commentKey(comment.line, comment.text))) continue;
+        if (structural.markerKeys.has(commentKey(comment.line, comment.text))) continue;
 
         if (comment.line < firstStatementLine) {
             headerComments.push(comment.text.trim());
@@ -373,7 +383,7 @@ function visitGateCall(ctx: GateCallStatementContext, builder: CircuitBuilder): 
         rotationAngle,
     } as QuantumOperationDto;
 
-    builder.layers.push({ quantumOperations: [operation] });
+    builder.place(operation, ctx.start?.line ?? 0);
 }
 
 /** The gate's parameter in radians, or null after reporting why it has none. */
@@ -547,23 +557,30 @@ function startOfFirstStatement(tree: ProgramContext): number {
     return Math.min(versionLine ?? Number.POSITIVE_INFINITY, firstStatementLine ?? Number.POSITIVE_INFINITY);
 }
 
+/** What this document's structural comments say. One walk answers both, so they cannot disagree. */
+interface StructuralComments {
+    /** Keys of the comments `toQasm` would have written itself, so they are not a user's. */
+    markerKeys: Set<string>;
+    /** Gate-call lines written inside the layer opened above them, rather than opening one. */
+    continuedLayers: Set<number>;
+}
+
 /**
- * The comments in this document that `toQasm` would have written itself.
+ * Reads the `// Register` and `// Layer` comments back.
  *
- * A layer marker sits above the *first* operation of its layer, so counting gate calls
- * is wrong the moment a layer holds two: every marker below it then looks like a
- * stranger's comment, and a file QuaK wrote comes back read-only. Layers are counted
- * the way they are written instead: a gate call opens a new one only when a comment
- * stands directly above it.
+ * A layer marker sits above the *first* operation of its layer: a gate call opens a new
+ * layer only where one stands directly above it, and the calls below share that layer.
  *
- * The sequence has to read 1, 2, 3 … in order. At the first comment that breaks it the
+ * The sequence has to read 1, 2, 3 in order. At the first comment that breaks it the
  * matching stops, because from there this is no longer a document we produced, and an
- * unrecognised comment is kept, never dropped.
+ * unrecognised comment is kept, never dropped. A file with no markers of ours never
+ * enters the sequence, so every gate call keeps a layer to itself.
  */
-function generatedStructuralMarkerKeys(tree: ProgramContext, comments: readonly QasmComment[]): Set<string> {
+function readStructuralComments(tree: ProgramContext, comments: readonly QasmComment[]): StructuralComments {
     const commentByLine = firstCommentPerLine(comments);
 
-    const keys = new Set<string>();
+    const markerKeys = new Set<string>();
+    const continuedLayers = new Set<number>();
     let expectedLayer = 1;
 
     for (const statementOrScope of tree.statementOrScope()) {
@@ -572,25 +589,26 @@ function generatedStructuralMarkerKeys(tree: ProgramContext, comments: readonly 
 
         const declaration = statement.quantumDeclarationStatement();
         if (declaration) {
-            // A declaration without a name has no `// Register x` we could have written.
-            const name = tokenText(declaration.Identifier());
-            if (name !== null) addMarkerBefore(keys, declaration, registerMarker(name));
+            addRegisterMarker(markerKeys, declaration);
             continue;
         }
 
-        const line = statement.gateCallStatement()?.start?.line;
-        if (!line || line <= 1) continue;
+        const line = statement.gateCallStatement()?.start?.line ?? 0;
+        if (line <= 1) continue;
 
         const above = commentByLine.get(line - 1);
-        // No comment above: the operation continues the layer that was opened earlier.
-        if (above === undefined) continue;
+        if (above === undefined) {
+            // No comment above: written as part of a layer one of our markers opened.
+            if (expectedLayer > 1) continuedLayers.add(line);
+            continue;
+        }
         if (above !== layerMarker(expectedLayer)) break;
 
-        keys.add(commentKey(line - 1, layerMarker(expectedLayer)));
+        markerKeys.add(commentKey(line - 1, layerMarker(expectedLayer)));
         expectedLayer += 1;
     }
 
-    return keys;
+    return { markerKeys, continuedLayers };
 }
 
 /** Only the first comment on a line can sit above a statement. */
@@ -602,11 +620,13 @@ function firstCommentPerLine(comments: readonly QasmComment[]): Map<number, stri
     return byLine;
 }
 
-function addMarkerBefore(keys: Set<string>, ctx: { start: { line: number } | null }, marker: string): void {
-    const statementLine = ctx.start?.line;
-    if (!statementLine || statementLine <= 1) return;
+/** A declaration with no name has no `// Register x` we could have written above it. */
+function addRegisterMarker(keys: Set<string>, declaration: QuantumDeclarationStatementContext): void {
+    const name = tokenText(declaration.Identifier());
+    const line = declaration.start?.line ?? 0;
+    if (name === null || line <= 1) return;
 
-    keys.add(commentKey(statementLine - 1, marker));
+    keys.add(commentKey(line - 1, registerMarker(name)));
 }
 
 const commentKey = (line: number, text: string): string => `${line}:${text.trim()}`;

@@ -5,6 +5,8 @@ import type { DocumentState } from '../../shared/protocol.ts';
 interface DocumentNoticeProps {
     state: DocumentState | undefined;
     classification: DocumentClassification | null | undefined;
+    /** Whether a circuit is on screen next to this notice, which changes what is true to say. */
+    hasCircuit: boolean;
     onEditAnyway: () => void;
 }
 
@@ -23,6 +25,7 @@ interface NoticeCopy {
 const COPY: {
     [K in DocumentClassification['kind']]: (
         classification: Extract<DocumentClassification, { kind: K }>,
+        hasCircuit: boolean,
     ) => NoticeCopy | null;
 } = {
     editable: () => null,
@@ -55,9 +58,12 @@ const COPY: {
     }),
 
     // Not only syntax: an undefined gate or register lands here too, and both mean the
-    // file is wrong rather than merely beyond this editor.
-    invalid: ({ problems }) => ({
-        headline: 'This file has errors, so it cannot be shown as a circuit.',
+    // file is wrong rather than merely beyond this editor. Whatever could still be read
+    // is drawn, so the headline must not deny it.
+    invalid: ({ problems }, hasCircuit) => ({
+        headline: hasCircuit
+            ? 'Read-only: this file has errors, so the circuit below is incomplete.'
+            : 'This file has errors, so there is no circuit to show.',
         detail: <Findings entries={problems} />,
     }),
 };
@@ -79,8 +85,8 @@ const EDITING_BY_CHOICE: NoticeCopy = {
  *
  * The reason is decided in the transform; this only puts it in words.
  */
-export function DocumentNotice({ state, classification, onEditAnyway }: Readonly<DocumentNoticeProps>) {
-    const copy = noticeFor(state, classification);
+export function DocumentNotice({ state, classification, hasCircuit, onEditAnyway }: Readonly<DocumentNoticeProps>) {
+    const copy = noticeFor(state, classification, hasCircuit);
     if (!copy) return null;
 
     return (
@@ -103,6 +109,7 @@ export function DocumentNotice({ state, classification, onEditAnyway }: Readonly
 function noticeFor(
     state: DocumentState | undefined,
     classification: DocumentClassification | null | undefined,
+    hasCircuit: boolean,
 ): NoticeCopy | null {
     // Before everything else: with no classification there is nothing to explain.
     if (state === 'failed') return ANALYSIS_FAILED;
@@ -113,8 +120,11 @@ function noticeFor(
     if (!classification) return null;
 
     // One entry per kind, so the entry always matches this payload.
-    const copy = COPY[classification.kind] as (classification: DocumentClassification) => NoticeCopy | null;
-    return copy(classification);
+    const copy = COPY[classification.kind] as (
+        classification: DocumentClassification,
+        hasCircuit: boolean,
+    ) => NoticeCopy | null;
+    return copy(classification, hasCircuit);
 }
 
 /** Names only the lines the file is still missing, so the advice fits what is already there. */

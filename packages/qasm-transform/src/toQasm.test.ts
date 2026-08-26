@@ -97,6 +97,15 @@ describe('what toQasm writes, toCircuit has to accept again', () => {
         expect(reread.unsupported, 'QuaK flagged its own output').toEqual([]);
         expect(isEditable(reread)).toBe(true);
     });
+
+    it('leaves a file of its own byte for byte alone', () => {
+        // Anything less rewrites the user's file on an edit that changed nothing else.
+        const source =
+            'OPENQASM 3.0;\ninclude "stdgates.inc";\n\n// Register q\nqubit[3] q;\n\n' +
+            '// Layer 1\nh q[0];\nx q[1];\n\n// Layer 2\ncx q[0], q[1];\n';
+
+        expect(roundTrip(source)).toBe(source);
+    });
 });
 
 describe('circuits built by the editor, not by the parser', () => {

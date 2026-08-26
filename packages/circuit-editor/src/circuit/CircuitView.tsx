@@ -44,7 +44,7 @@ export function CircuitView({ header }: Readonly<CircuitViewProps>) {
 
     /**
      * The operation currently being dragged, with its original layer position.
-     * Rendered as a ghost so its DOM element (the drag source) stays mounted —
+     * Rendered as a ghost so its DOM element (the drag source) stays mounted,
      * otherwise the browser may never fire dragend and the drag state gets stuck
      * when dropping outside a valid drop zone.
      */
@@ -207,7 +207,7 @@ export function CircuitView({ header }: Readonly<CircuitViewProps>) {
                 }
 
                 // Only allow placement adjacent to an existing operation whose SPAN overlaps
-                // the dropped span — the same span-overlap rule the collision check and the
+                // the dropped span, the same span-overlap rule the collision check and the
                 // scheduler use. Checking only target/control selectors is too narrow: e.g.
                 // an H on q1 next to a ccx q[0],q[2],q[3] is a stable position (the CCX span
                 // blocks column 0) although q1 carries no selector of the CCX; the parser can

@@ -408,3 +408,28 @@ describe('toCircuit: what a rejection quotes back', () => {
         expect(result.unsupported[0].message).toBe('Unsupported barrier: barrier q');
     });
 });
+
+// Reading each operation as a layer of its own re-wrote the file on the next save,
+// turning the two layers the user had written into three.
+describe('toCircuit: layers are read the way the document writes them', () => {
+    const identifiersIn = (source: string) =>
+        toCircuit(source).content!.layers.map((layer) => layer.quantumOperations.map((op) => op.identifier));
+
+    const MARKED = `${HEADER}\n// Register q\nqubit[3] q;\n\n// Layer 1\nh q[0];\nx q[1];\n\n// Layer 2\ncx q[0], q[1];\n`;
+
+    it('keeps the operations under one marker together', () => {
+        expect(identifiersIn(MARKED)).toEqual([['H', 'X'], ['CX']]);
+    });
+
+    it('gives every gate a layer of its own where no marker of ours says otherwise', () => {
+        // A hand-written file states no parallelism, so there is none to read out of it.
+        expect(identifiersIn(`${HEADER}qubit[2] q;\nh q[0];\ncx q[0], q[1];\n`)).toEqual([['H'], ['CX']]);
+    });
+
+    it('stops sharing layers where the marker sequence breaks', () => {
+        // `// Layer 7` is not what we would have written second, so nothing below it is ours.
+        const jumped = `${HEADER}\n// Register q\nqubit[2] q;\n\n// Layer 1\nh q[0];\n\n// Layer 7\nx q[1];\n`;
+
+        expect(identifiersIn(jumped)).toEqual([['H'], ['X']]);
+    });
+});
