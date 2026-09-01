@@ -1,3 +1,5 @@
+// Recognized denominators of pi: powers of two for QFT/phase gates, plus 3, 6 and 12.
+// Pass `denominators` for anything outside that set.
 const DEFAULT_PI_DENOMINATORS = [1, 2, 3, 4, 6, 8, 12, 16, 32, 64, 128];
 const FORMAT_PI_DENOMINATORS = Array.from({ length: 12 }, (_, index) => index + 1);
 const DEFAULT_TOLERANCE = 1e-9;
@@ -102,7 +104,7 @@ const DISPLAY_SYMBOLS: AngleSymbols = {
     tau: 'τ',
     euler: 'e',
     times: '',
-    plain: (angle) => (Number.isInteger(angle) ? String(angle) : angle.toFixed(2)),
+    plain: formatDisplayDecimal,
 };
 
 /** Formats a rotation angle for compact display on a gate box. */
@@ -155,7 +157,8 @@ function normalizeRadians(radians: number, mode: NonNullable<ResolveAngleOptions
     return wrapped;
 }
 
+/** Rounds a plain angle to two decimals for display, without trailing zeros; `?` for non-finite input. */
 function formatDisplayDecimal(radians: number): string {
     if (!Number.isFinite(radians)) return '?';
-    return Number.isInteger(radians) ? String(radians) : radians.toFixed(2);
+    return Number(radians.toFixed(2)).toString();
 }

@@ -20,7 +20,8 @@
         "./quantikz": "./src/quantikz.ts",
         "./notation": "./src/notation/index.ts",
         "./notation/quantikz": "./src/notation/quantikz/index.ts",
-        "./notation/latex/escape": "./src/notation/latex/escape.ts"
+        "./notation/latex/escape": "./src/notation/latex/escape.ts",
+        "./notation/dirac": "./src/notation/dirac/index.ts"
     },
     "scripts": {
         "typecheck": "tsc --noEmit"

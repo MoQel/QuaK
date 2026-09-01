@@ -1,5 +1,6 @@
 **/.idea/
 .env
+.env.prod
 .nvm
 
 # OS Junk files

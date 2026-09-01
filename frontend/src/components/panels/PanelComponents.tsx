@@ -4,8 +4,10 @@ import { TextEditorView } from '@/views/text-editor-view/TextEditorView';
 import { ProjectManagerView } from '@/views/project-manager-view/ProjectManagerView';
 import { ResultsView } from '@/views/results-view/ResultsView';
 import { InspectorView } from '@/views/inspector-view/InspectorView';
+import { DiracInspectorView } from '@/views/inspector-view/DiracInspectorView';
 import { useFileSelect } from '@/hooks/useFileSelect';
 import { useProject } from '@/contexts/ProjectContext.tsx';
+import { useCircuitTabs } from '@/contexts/CircuitTabsContext.tsx';
 import React from 'react';
 
 const PanelWrapper = ({ children }: { children: React.ReactNode }) => (
@@ -28,9 +30,19 @@ export const CodePanel = () => {
 
 export const InspectorPanel = () => {
     const { selectedOperation, setSelectedOperation } = usePanelData();
+    const { activeCircuit } = useCircuitTabs();
+
+    // A gate being inspected takes over the panel; clearing it (the X) falls back to the default Dirac notation of the active circuit.
     return (
         <PanelWrapper>
-            <InspectorView operationDefinition={selectedOperation} onClear={() => setSelectedOperation(undefined)} />
+            {selectedOperation ? (
+                <InspectorView
+                    operationDefinition={selectedOperation}
+                    onClear={() => setSelectedOperation(undefined)}
+                />
+            ) : (
+                <DiracInspectorView circuit={activeCircuit} />
+            )}
         </PanelWrapper>
     );
 };

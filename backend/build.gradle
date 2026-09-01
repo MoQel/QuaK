@@ -107,7 +107,7 @@ tasks.register('prepareDevStatic') {
 	doLast {
 		def staticDir = file("src/main/resources/static")
 		if (!staticDir.exists()) staticDir.mkdirs()
-		
+
 		// Delete stale files
 		staticDir.listFiles().each { f ->
 			if (f.name != ".gitkeep") {

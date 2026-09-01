@@ -8,6 +8,7 @@ application-local.yaml
 HELP.md
 .gradle
 build/
+*.class
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/

@@ -12,6 +12,20 @@ export default defineConfig(({ mode }) => {
     const apiUrl = env.VITE_API_URL ?? 'http://localhost:8080';
     return {
         plugins: [react(), tailwindcss(), wasm(), topLevelAwait()],
+        build: {
+            rollupOptions: {
+                output: {
+                    manualChunks(id) {
+                        if (!id.includes('node_modules')) return;
+                        if (id.includes('monaco-editor')) return 'monaco';
+                        if (id.includes('qulacs-wasm')) return 'qulacs';
+                        if (id.includes('recharts')) return 'charts';
+                        if (id.includes('dockview')) return 'dockview';
+                        if (id.includes('@chakra-ui') || id.includes('@radix-ui')) return 'ui';
+                    },
+                },
+            },
+        },
         resolve: {
             alias: {
                 '@': path.resolve(__dirname, './src'),
