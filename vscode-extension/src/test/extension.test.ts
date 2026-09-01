@@ -307,8 +307,9 @@ suite('QuaK diagnostics', () => {
 
             await vscode.workspace.getConfiguration().update(setting, false, vscode.ConfigurationTarget.Global);
 
-            // Resolving at all is the assertion; teardown puts the settings back.
-            await waitForDiagnostics(uri, (found) => found.length === 0);
+            const remaining = await waitForDiagnostics(uri, (found) => found.length === 0);
+
+            assert.deepEqual(remaining, []);
         });
     }
 

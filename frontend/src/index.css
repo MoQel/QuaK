@@ -8,18 +8,6 @@
 @import '@quak/circuit-editor/editor.css';
 @custom-variant dark (&:is(.dark *));
 
-/* Global layout. These used to live in App.module.css, where they only loaded as
-   a side effect of the circuit editor importing that file for its class names.
-   CSS modules do not scope element selectors, so they were global by accident. */
-:root {
-    margin: 0 auto;
-    text-align: center;
-    --quantumOperationSpacing: 24px;
-    --qubitWireSpacing: 8px;
-    --colorBack: #2f2e2e;
-    --colorFront: #1e1616;
-}
-
 html,
 body,
 #root {
@@ -49,6 +37,16 @@ body,
 }
 
 :root {
+    /* Global layout. These used to live in App.module.css, where they only loaded as
+       a side effect of the circuit editor importing that file for its class names.
+       CSS modules do not scope element selectors, so they were global by accident. */
+    margin: 0 auto;
+    text-align: center;
+    --quantumOperationSpacing: 24px;
+    --qubitWireSpacing: 8px;
+    --colorBack: #2f2e2e;
+    --colorFront: #1e1616;
+
     --bg-dark: hsl(0 0% 90%); /* main page background (very light gray) */
     --bg: hsl(0 0% 80%); /* secondary surfaces / panels */
     --bg-light: hsl(0 0% 70%); /* raised elements / cards / hover surfaces */

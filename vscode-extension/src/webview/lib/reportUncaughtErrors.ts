@@ -28,5 +28,16 @@ function describe(thrown: unknown, fallback: string): ErrorReport {
         return { message: thrown.message, stack: thrown.stack };
     }
 
-    return { message: fallback, stack: thrown === undefined ? undefined : String(thrown) };
+    return { message: fallback, stack: stringify(thrown) };
+}
+
+function stringify(thrown: unknown): string | undefined {
+    if (thrown === undefined) return undefined;
+    if (typeof thrown === 'string') return thrown;
+
+    try {
+        return JSON.stringify(thrown) ?? Object.prototype.toString.call(thrown);
+    } catch {
+        return Object.prototype.toString.call(thrown);
+    }
 }

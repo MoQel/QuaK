@@ -38,4 +38,12 @@ describe('reportUncaughtErrors', () => {
         expect(reported[0].message).toBe('Unhandled promise rejection');
         expect(reported[0].stack).toBe('just a string');
     });
+
+    it('keeps a thrown object readable instead of stringifying it to [object Object]', () => {
+        const { reported, target } = listen();
+
+        target.dispatchEvent(Object.assign(new Event('unhandledrejection'), { reason: { code: 42 } }));
+
+        expect(reported[0].stack).toBe('{"code":42}');
+    });
 });

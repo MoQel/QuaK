@@ -34,7 +34,7 @@ export function LibraryElement({ identifier, onClick, matrix }: Readonly<Library
         icon = <TextIconComponent />;
     }
 
-    const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
+    const handleDragStart = (e: React.DragEvent<HTMLElement>) => {
         setIsOpen(false);
         setIsDragging(true);
 
@@ -63,34 +63,29 @@ export function LibraryElement({ identifier, onClick, matrix }: Readonly<Library
         setIsOpen(open);
     };
 
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-        if (e.key !== 'Enter' && e.key !== ' ') return;
-
-        e.preventDefault();
-        onClick?.();
+    const elementProps = {
+        id: identifier.toLowerCase(),
+        draggable: identifier !== 'MEASURE', // Disable Measurement Operation, as it is currently not working.
+        onDragStart: identifier === 'MEASURE' ? undefined : handleDragStart,
+        onDragEnd: identifier === 'MEASURE' ? undefined : handleDragEnd,
+        className: `
+            group ${identifier === 'MEASURE' ? '' : 'cursor-grab active:cursor-grabbing'}
+            flex items-center justify-center
+            hover:brightness-90 dark:hover:brightness-125 transition-colors
+            ${styles.libraryElement}`,
+        style: { backgroundColor: definition.color, color: 'var(--bg-dark)' },
     };
 
     return (
         <Tooltip delayDuration={DELAY_DURATION} open={isOpen} onOpenChange={handleOpenChange}>
             <TooltipTrigger asChild>
-                <div
-                    id={identifier.toLowerCase()}
-                    onClick={onClick}
-                    onKeyDown={isClickable ? handleKeyDown : undefined}
-                    role={isClickable ? 'button' : undefined}
-                    tabIndex={isClickable ? 0 : undefined}
-                    draggable={identifier !== 'MEASURE'} // Disable Measurement Operation, as it is currently not working.
-                    onDragStart={identifier === 'MEASURE' ? undefined : handleDragStart}
-                    onDragEnd={identifier === 'MEASURE' ? undefined : handleDragEnd}
-                    className={`
-                        group ${identifier === 'MEASURE' ? '' : 'cursor-grab active:cursor-grabbing'}
-                        flex items-center justify-center
-                        hover:brightness-90 dark:hover:brightness-125 transition-colors
-                        ${styles.libraryElement}`}
-                    style={{ backgroundColor: definition.color, color: 'var(--bg-dark)' }}
-                >
-                    {icon}
-                </div>
+                {isClickable ? (
+                    <button type="button" onClick={onClick} {...elementProps}>
+                        {icon}
+                    </button>
+                ) : (
+                    <div {...elementProps}>{icon}</div>
+                )}
             </TooltipTrigger>
 
             <TooltipContent side="right" className="bg-bg-light text-text border shadow-xl p-3 min-w-[150px] z-[9999]">
