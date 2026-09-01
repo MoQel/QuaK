@@ -1,1 +1,1 @@
-export * from './notation/quantikz/quantikz.ts';
+export * from './notation/quantikz/quantikzMapper.ts';

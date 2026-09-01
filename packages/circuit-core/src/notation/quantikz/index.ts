@@ -1,1 +1,1 @@
-export * from './quantikz.ts';
+export * from './quantikzMapper.ts';
