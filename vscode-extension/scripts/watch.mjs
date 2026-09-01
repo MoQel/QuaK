@@ -1,9 +1,14 @@
 import { spawn } from 'node:child_process';
+import { createRequire } from 'node:module';
+import { dirname, join } from 'node:path';
+
+const nodeRequire = createRequire(import.meta.url);
+const vitePackagePath = nodeRequire.resolve('vite/package.json');
+const viteBin = join(dirname(vitePackagePath), nodeRequire('vite/package.json').bin.vite);
 
 const processes = [
     spawn(process.execPath, ['esbuild.mjs', '--watch'], { stdio: 'inherit' }),
-    spawn('vite', ['build', '--watch', '--config', 'vite.webview.config.ts'], {
-        shell: process.platform === 'win32',
+    spawn(process.execPath, [viteBin, 'build', '--watch', '--config', 'vite.webview.config.ts'], {
         stdio: 'inherit',
     }),
 ];
