@@ -4,6 +4,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@quak/ui/popover';
 import { useState, type ReactNode } from 'react';
 import { useCircuitStore } from '../../CircuitStoreContext.tsx';
 import { createCircuitMutations } from '../../circuitMutations.ts';
+import { RegisterManager } from './RegisterManager.tsx';
 
 interface CircuitToolbarProps {
     /**
@@ -23,8 +24,9 @@ export function CircuitToolbar({ start }: Readonly<CircuitToolbarProps>) {
     return (
         <div className="flex items-center justify-start gap-2">
             {start}
+            <RegisterManager />
             <div className="flex space-x-3">
-                <Button onClick={addQubit} size="icon" className="size-8" variant="secondary" title="Add Qubit">
+                <Button onClick={() => addQubit()} size="icon" className="size-8" variant="secondary" title="Add Qubit">
                     <Plus />
                 </Button>
                 <Button

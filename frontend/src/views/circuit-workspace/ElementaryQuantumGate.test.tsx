@@ -2,14 +2,31 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { ElementaryQuantumGate } from '@quak/circuit-editor';
 import type { QuantumOperationDto, RegisterResponse } from '@/api/dto/circuit.ts';
+import type { FlatQubit } from '@quak/circuit-editor';
 
 const registers: RegisterResponse[] = [{ id: 'r1', name: 'q', type: 'Quantum_Register', numberOfQubits: 1 }];
+const flatQubits: FlatQubit[] = [
+    {
+        regId: 'r1',
+        regName: 'q',
+        regIdx: 0,
+        relQubitIdx: 0,
+        absQubitIdx: 0,
+        regType: 'Quantum_Register',
+        section: 'quantum',
+        headerY: 0,
+        registerSize: 1,
+        isCollapsed: false,
+        visualY: 0,
+    },
+];
 
 const renderGate = (operation: QuantumOperationDto) =>
     render(
         <ElementaryQuantumGate
             operation={operation}
             registers={registers}
+            flatQubits={flatQubits}
             layerIdx={0}
             onDragStart={vi.fn()}
             onDragEnd={vi.fn()}

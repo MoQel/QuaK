@@ -4,13 +4,13 @@ import {
     CircuitResponse,
     ElementaryQuantumGateDto,
     ElementSelectorDto,
-    MeasurementDto,
     MoveQuantumOperationRequest,
     QuantumOperationDto,
+    REGISTER_TYPE_QUANTUM,
 } from '@quak/circuit-core';
 import { FlatQubit, HoverPos, UiLayer } from '../util/types.ts';
 import { useCircuitStore } from '../../CircuitStoreContext.tsx';
-import { getOperationDefinition } from '../../operations.ts';
+import { getOperationDefinition, type OperationIdentifier } from '../../operations.ts';
 import { useCircuitDrag } from '../../CircuitDragContext.tsx';
 import { DragData } from '../../types.ts';
 
@@ -27,12 +27,45 @@ const findOperation = (layers: CircuitResponse['layers'], operationId: string): 
 const stripOperation = (layers: CircuitResponse['layers'], operationId: string): CircuitResponse['layers'] =>
     layers.map((layer) => ({ quantumOperations: layer.quantumOperations.filter((op) => op.id !== operationId) }));
 
+const selectorsEqual = (left: ElementSelectorDto[] = [], right: ElementSelectorDto[] = []) =>
+    JSON.stringify(left) === JSON.stringify(right);
+
+/** Only a measurement carries classic bits; everything else compares against an empty list. */
+const getClassicBits = (operation: QuantumOperationDto | undefined): ElementSelectorDto[] =>
+    operation?.type === 'MEASUREMENT' ? operation.classicBits : [];
+
+const hasSamePosition = (
+    original: {
+        layerIdx: number;
+        targetQubits: ElementSelectorDto[];
+        controlQubits: ElementSelectorDto[];
+        classicBits?: ElementSelectorDto[];
+    },
+    layerIdx: number,
+    targetQubits: ElementSelectorDto[],
+    controlQubits: ElementSelectorDto[],
+    classicBits: ElementSelectorDto[] = [],
+) =>
+    original.layerIdx === layerIdx &&
+    selectorsEqual(original.targetQubits, targetQubits) &&
+    selectorsEqual(original.controlQubits, controlQubits) &&
+    selectorsEqual(original.classicBits ?? [], classicBits);
+
+/** What the host needs to know to ask the user which classic bit a measurement writes to. */
+export interface MeasurementTargetRequest {
+    layerIdx: number;
+    targetQubits: ElementSelectorDto[];
+    controlQubits: ElementSelectorDto[];
+    operationIdentifier: OperationIdentifier;
+}
+
 interface DropzoneGridProps {
     flatQubits: FlatQubit[];
     uiLayers: UiLayer[];
     activeDropZones: Set<string>;
     setHoverPos: React.Dispatch<React.SetStateAction<HoverPos | null>>;
     setDraggingOperationId: (id: string | null) => void;
+    onRequestMeasurementTarget?: (context: MeasurementTargetRequest) => void;
 }
 
 export function DropzoneGrid({
@@ -41,6 +74,7 @@ export function DropzoneGrid({
     activeDropZones,
     setHoverPos,
     setDraggingOperationId,
+    onRequestMeasurementTarget,
 }: Readonly<DropzoneGridProps>) {
     const { circuit, setCircuit } = useCircuitStore();
     const { stopOperationDrag } = useCircuitDrag();
@@ -101,11 +135,19 @@ export function DropzoneGrid({
 
             const original = findOperation(prev.layers, payload.quantumOperationId);
             if (!original) return prev;
-            const movedOperation: QuantumOperationDto = {
-                ...original,
-                targetQubits: payload.targetQubits,
-                controlQubits: payload.controlQubits,
-            };
+            const movedOperation: QuantumOperationDto =
+                original.type === 'MEASUREMENT'
+                    ? {
+                          ...original,
+                          targetQubits: payload.targetQubits,
+                          controlQubits: [],
+                          classicBits: payload.classicBits ?? original.classicBits,
+                      }
+                    : {
+                          ...original,
+                          targetQubits: payload.targetQubits,
+                          controlQubits: payload.controlQubits,
+                      };
 
             // The dragged operation is already excluded from the rendered preview,
             // so substituting the dummy re-inserts it exactly where the preview showed it.
@@ -156,6 +198,7 @@ export function DropzoneGrid({
                 layerIdx: number;
                 targetQubits: ElementSelectorDto[];
                 controlQubits: ElementSelectorDto[];
+                classicBits?: ElementSelectorDto[];
             }
         >();
 
@@ -167,6 +210,7 @@ export function DropzoneGrid({
                     layerIdx,
                     targetQubits: op.targetQubits,
                     controlQubits: op.controlQubits,
+                    classicBits: getClassicBits(op),
                 });
             }
         }
@@ -189,12 +233,17 @@ export function DropzoneGrid({
             const original = originalPositions.get(operationToMove.quantumOperationId);
             if (!original) return false;
 
-            const isSameLayer = original.layerIdx === operationToMove.layerIdx;
-            const isSameTarget = JSON.stringify(original.targetQubits) === JSON.stringify(operationToMove.targetQubits);
-            const isSameControl =
-                JSON.stringify(original.controlQubits) === JSON.stringify(operationToMove.controlQubits);
-
-            if (!(isSameLayer && isSameTarget && isSameControl)) return true;
+            if (
+                !hasSamePosition(
+                    original,
+                    operationToMove.layerIdx,
+                    operationToMove.targetQubits,
+                    operationToMove.controlQubits,
+                    operationToMove.classicBits,
+                )
+            ) {
+                return true;
+            }
 
             // Check if any other operation has moved (due to temporary detachment of the operation to move).
             for (let layerIdx = 0; layerIdx < uiLayers.length; layerIdx++) {
@@ -202,11 +251,9 @@ export function DropzoneGrid({
                     const original = originalPositions.get(op.id);
                     if (!original) continue;
 
-                    const isSameLayer = original.layerIdx === layerIdx;
-                    const isSameTarget = JSON.stringify(original.targetQubits) === JSON.stringify(op.targetQubits);
-                    const isSameControl = JSON.stringify(original.controlQubits) === JSON.stringify(op.controlQubits);
-
-                    if (!(isSameLayer && isSameTarget && isSameControl)) return true;
+                    if (!hasSamePosition(original, layerIdx, op.targetQubits, op.controlQubits, getClassicBits(op))) {
+                        return true;
+                    }
                 }
             }
 
@@ -252,25 +299,26 @@ export function DropzoneGrid({
                             };
                             addQuantumOperationLocally(operation, layerIdx);
                         } else if (operationDefinition.type === 'MEASUREMENT') {
-                            const operation: MeasurementDto = {
-                                id: crypto.randomUUID(),
-                                type: 'MEASUREMENT',
-                                identifier: data.operationIdentifier,
-                                inverseForm: false,
+                            onRequestMeasurementTarget?.({
+                                layerIdx,
                                 targetQubits,
-                                controlQubits,
-                                classicBits: [],
-                            };
-                            addQuantumOperationLocally(operation, layerIdx);
+                                controlQubits: [],
+                                operationIdentifier: data.operationIdentifier,
+                            });
                         }
                         break;
                     }
                     case 'circuit': {
+                        const operationToMove = circuit?.layers
+                            .flatMap((layer) => layer.quantumOperations)
+                            .find((operation) => operation.id === data.id);
+                        const isMeasurement = operationToMove?.type === 'MEASUREMENT';
                         const payload: MoveQuantumOperationRequest = {
                             quantumOperationId: data.id,
                             layerIdx,
                             targetQubits,
-                            controlQubits,
+                            controlQubits: isMeasurement ? [] : controlQubits,
+                            classicBits: isMeasurement ? getClassicBits(operationToMove) : undefined,
                         };
                         if (hasCircuitStateChanged(payload)) {
                             moveQuantumOperationLocally(payload);
@@ -291,7 +339,15 @@ export function DropzoneGrid({
         },
         // hasCircuitStateChanged carries circuit + uiLayers, so the local mutation
         // helpers below it never close over a stale preview.
-        [hasCircuitStateChanged, stopOperationDrag, setCircuit, setHoverPos, setDraggingOperationId],
+        [
+            circuit,
+            hasCircuitStateChanged,
+            stopOperationDrag,
+            setCircuit,
+            setHoverPos,
+            setDraggingOperationId,
+            onRequestMeasurementTarget,
+        ],
     );
 
     return (
@@ -300,6 +356,7 @@ export function DropzoneGrid({
                 Array.from({ length: uiLayers.length + 1 }).map((_, layerIdx) => {
                     const isZoneActive = activeDropZones.has(`${qIdx}-${layerIdx}`);
                     if (!isZoneActive) return null;
+                    if (qubit.regType !== REGISTER_TYPE_QUANTUM) return null;
 
                     return (
                         <div
@@ -307,7 +364,7 @@ export function DropzoneGrid({
                             style={{
                                 position: 'absolute',
                                 left: layerIdx * CELL_WIDTH,
-                                top: qIdx * QUBIT_HEIGHT,
+                                top: qubit.visualY,
                                 width: CELL_WIDTH,
                                 height: QUBIT_HEIGHT,
                             }}

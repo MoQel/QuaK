@@ -5,10 +5,14 @@ import { OPERATIONS } from './operations.ts';
 // Guards the cast in operations.ts: the backend owns this data, we only bundle it.
 
 describe('the bundled gate library', () => {
-    it('offers exactly the gates the editor can place: every supported gate call, plus measurement', () => {
+    // Measurement is deliberately absent: toQasm cannot write `measure`/`creg`,
+    // so offering it would drop the user's edit on the next write and leave the
+    // document read-only on the next read.
+    it('offers exactly the gates it can write back: every supported gate call, and no measurement', () => {
         const offered = OPERATIONS.map((operation) => operation.symbol).sort();
 
-        expect(offered).toEqual([...supportedGates(), 'MEASURE'].sort());
+        expect(offered).toEqual([...supportedGates()].sort());
+        expect(offered).not.toContain('MEASURE');
     });
 
     it('has everything the DTO says is required', () => {

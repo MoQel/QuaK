@@ -37,6 +37,8 @@ export function PanelHeaderActions(props: IDockviewHeaderActionsProps) {
     if (!activeCircuitTabId) return null;
 
     if (activePanelId === 'circuit') {
+        if (!activeCircuit) return null;
+
         // The header sits outside the circuit panel, so it needs its own store:
         // same two values, so both stay in sync through CircuitTabsContext.
         return (

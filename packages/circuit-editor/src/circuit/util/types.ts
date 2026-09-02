@@ -1,4 +1,6 @@
-import { QuantumOperationDto } from '@quak/circuit-core';
+import { QuantumOperationDto, RegisterType } from '@quak/circuit-core';
+
+export type RegisterSection = 'quantum' | 'classic';
 
 export type UiLayer = {
     quantumOperations: UiQuantumOperation[];
@@ -14,6 +16,12 @@ export type FlatQubit = {
     regIdx: number;
     relQubitIdx: number;
     absQubitIdx: number;
+    regType: RegisterType;
+    section: RegisterSection;
+    headerY: number;
+    registerSize: number;
+    isCollapsed: boolean;
+    visualY: number;
 };
 
 export type HoverPos = {

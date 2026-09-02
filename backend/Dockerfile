@@ -41,8 +41,11 @@ COPY backend/gradle ./gradle
 # Copy source code
 COPY backend/src ./src
 
+# Copy the npm workspace metadata so frontend installs use the checked-in lockfile.
 COPY package.json package-lock.json /workspace/
 COPY packages /workspace/packages
+
+# Copy frontend source code only for prod build
 COPY frontend /workspace/frontend
 
 # Build the application

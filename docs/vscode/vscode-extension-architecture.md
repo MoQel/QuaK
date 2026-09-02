@@ -170,6 +170,16 @@ lists which statements and gates round-trip. The visitor consults it, the tests 
 against it, and it decides which of the three document states a file lands in. It is also
 where an unsupported construct's user-facing wording comes from.
 
+**The editor offers only what the host can store.** The web IDE gained classical
+registers and measurements before `qasm-transform` learned to read or write
+`measure` and `creg`. Because the two products share one editor, the extension would
+otherwise present controls whose result it drops on the next write, leaving the
+document read-only on the next read. `CircuitCapabilitiesProvider` is how a host
+declares what it can persist: the extension passes `classicalRegisters={false}`,
+which hides the classical option in the register manager and the measurement target
+dialog, and withholds `MEASURE` from the bundled gate library. Teaching the visitor
+and the generator the two constructs is what removes the flag.
+
 ---
 
 ## Shared packages

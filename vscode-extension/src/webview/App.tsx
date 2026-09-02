@@ -1,4 +1,5 @@
 import {
+    CircuitCapabilitiesProvider,
     CircuitDragProvider,
     CircuitStoreProvider,
     CircuitToolbar,
@@ -28,26 +29,28 @@ export function App() {
 
             <div className="flex min-h-0 flex-1">
                 <CircuitStoreProvider circuit={circuit} setCircuit={setCircuit}>
-                    <CircuitDragProvider>
-                        <CircuitWorkspaceShell
-                            defaultCollapsed={initialLibraryCollapsed}
-                            onCollapsedChange={(libraryCollapsed) =>
-                                vscodeApi.setState({ ...vscodeApi.getState(), libraryCollapsed })
-                            }
-                            library={<LibraryView operations={OPERATIONS} />}
-                            editor={
-                                <CircuitView
-                                    header={
-                                        <div className="px-2 py-1">
-                                            <CircuitToolbar
-                                                start={<QuantikzExportButton circuit={circuit ?? null} />}
-                                            />
-                                        </div>
-                                    }
-                                />
-                            }
-                        />
-                    </CircuitDragProvider>
+                    <CircuitCapabilitiesProvider classicalRegisters={false}>
+                        <CircuitDragProvider>
+                            <CircuitWorkspaceShell
+                                defaultCollapsed={initialLibraryCollapsed}
+                                onCollapsedChange={(libraryCollapsed) =>
+                                    vscodeApi.setState({ ...vscodeApi.getState(), libraryCollapsed })
+                                }
+                                library={<LibraryView operations={OPERATIONS} />}
+                                editor={
+                                    <CircuitView
+                                        header={
+                                            <div className="px-2 py-1">
+                                                <CircuitToolbar
+                                                    start={<QuantikzExportButton circuit={circuit ?? null} />}
+                                                />
+                                            </div>
+                                        }
+                                    />
+                                }
+                            />
+                        </CircuitDragProvider>
+                    </CircuitCapabilitiesProvider>
                 </CircuitStoreProvider>
             </div>
         </div>

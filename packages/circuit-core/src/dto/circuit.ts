@@ -23,8 +23,10 @@ export interface ElementaryQuantumGateDto extends AbstractQuantumOperationDto {
     rotationAngle: number;
 }
 
-export interface MeasurementDto extends AbstractQuantumOperationDto {
+export interface MeasurementDto extends Omit<AbstractQuantumOperationDto, 'inverseForm' | 'controlQubits'> {
     type: 'MEASUREMENT';
+    inverseForm: false;
+    controlQubits: [];
     classicBits: ElementSelectorDto[];
 }
 
@@ -43,7 +45,10 @@ export const getInvolvedSelectors = (op: QuantumOperationDto): ElementSelectorDt
     return selectors;
 };
 
-type RegisterType = 'Quantum_Register' | 'Classic_Register';
+export type RegisterType = 'Quantum_Register' | 'Classic_Register';
+
+export const REGISTER_TYPE_QUANTUM = 'Quantum_Register' as const;
+export const REGISTER_TYPE_CLASSIC = 'Classic_Register' as const;
 
 export interface AbstractRegisterResponse {
     id: string;
@@ -70,11 +75,11 @@ export const getRegisterSize = (reg: RegisterResponse): number => {
 };
 
 export const isQuantumRegister = (reg: RegisterResponse): reg is QuantumRegisterResponse => {
-    return reg.type === 'Quantum_Register';
+    return reg.type === REGISTER_TYPE_QUANTUM;
 };
 
 export const isClassicRegister = (reg: RegisterResponse): reg is ClassicRegisterResponse => {
-    return reg.type === 'Classic_Register';
+    return reg.type === REGISTER_TYPE_CLASSIC;
 };
 
 export const getCircuitWidth = (circuitData: CircuitResponse): number => {
@@ -93,12 +98,32 @@ export interface CircuitResponse {
     layers: LayerResponse[];
 }
 
+/** Places a new operation into the given layer. */
+export interface AddQuantumOperationRequest {
+    quantumOperation: QuantumOperationDto;
+    layerIdx: number;
+}
+
 /** A drag that moves an existing operation to a new layer and qubit position. */
 export interface MoveQuantumOperationRequest {
     quantumOperationId: string;
     layerIdx: number;
     targetQubits: ElementSelectorDto[];
     controlQubits: ElementSelectorDto[];
+    classicBits?: ElementSelectorDto[];
 }
+
+/** Creates a register of the given kind; `size` is qubits or bits depending on `type`. */
+export interface RegisterRequest {
+    name: string;
+    type: RegisterType;
+    size: number;
+}
+
+export const getClassicCircuitWidth = (circuitData: CircuitResponse): number => {
+    return circuitData.registers.reduce((sum, reg) => {
+        return isClassicRegister(reg) ? sum + reg.numberOfBits : sum;
+    }, 0);
+};
 
 export { type QuantumOperationType } from '../gate-types.ts';
