@@ -30,7 +30,9 @@ ARG SKIP_FRONTEND=true
 # the frontend build (vite + swc native addon) needs more headroom.
 ENV NODE_OPTIONS="--max-old-space-size=6144"
 
-WORKDIR /app
+# The frontend imports @quak/* packages, which npm links locally via workspaces.
+# This only works if npm install runs from the workspace root.
+WORKDIR /workspace/backend
 
 # Use the checked-in wrapper so local, CI and Docker builds use the same Gradle version.
 COPY backend/gradlew backend/build.gradle backend/settings.gradle backend/node.gradle ./
@@ -39,9 +41,9 @@ COPY backend/gradle ./gradle
 # Copy source code
 COPY backend/src ./src
 
-# Copy frontend source code only for prod build
-RUN mkdir -p /frontend
-COPY frontend /frontend
+COPY package.json package-lock.json /workspace/
+COPY packages /workspace/packages
+COPY frontend /workspace/frontend
 
 # Build the application
 # Dev mode: only build backend JAR (no frontend operations at all)
@@ -63,7 +65,7 @@ RUN apt-get update && \
 
 WORKDIR /app
 
-COPY --from=builder /app/build/libs/*.jar quak.jar
+COPY --from=builder /workspace/backend/build/libs/*.jar quak.jar
 COPY --from=python-lsp-builder /opt/lsp/python /opt/lsp/python
 COPY --from=qasm-lsp-builder /go/bin/qasmlsp /opt/lsp/qasm/qasmlsp
 

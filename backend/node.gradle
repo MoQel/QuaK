@@ -10,13 +10,15 @@ tasks.register("removeCustomNode", Delete) {
     delete node.yarnWorkDir
 }
 
-tasks.named("npm_install") {
-    workingDir = layout.projectDirectory.file("../frontend")
+// npm ci must run from the workspace root to read the lockfile instead of rewriting it.
+// There @quak/* gets linked into node_modules
+tasks.named("npm_ci") {
+    workingDir = layout.projectDirectory.file("..")
 }
 
 tasks.named("npm_run_build") {
     dependsOn {
-        tasks.named("npm_install")
+        tasks.named("npm_ci")
     }
     workingDir = layout.projectDirectory.file("../frontend")
 }
