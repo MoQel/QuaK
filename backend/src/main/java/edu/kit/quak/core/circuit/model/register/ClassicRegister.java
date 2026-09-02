@@ -24,6 +24,10 @@ public class ClassicRegister extends Register {
         numberOfBits++;
     }
 
+    public void removeBit() {
+        numberOfBits--;
+    }
+
     @Override
     public String toString() {
         return "ClassicRegister %s with %d bits".formatted(getName(), numberOfBits);

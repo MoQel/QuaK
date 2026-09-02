@@ -35,6 +35,7 @@ export function PanelHeaderActions(props: IDockviewHeaderActionsProps) {
     if (!activeCircuitTabId) return null;
 
     if (activePanelId === 'circuit') {
+        if (!activeCircuit) return null;
         return (
             <div className="flex items-center h-full pl-4">
                 <CircuitToolbar circuit={activeCircuit} setCircuit={setActiveCircuit} />

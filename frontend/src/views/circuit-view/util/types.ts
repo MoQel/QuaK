@@ -1,5 +1,7 @@
-import { QuantumOperationDto } from '@/api/dto/circuit.ts';
+import { QuantumOperationDto, RegisterType } from '@/api/dto/circuit.ts';
 import { OperationIdentifier } from '@/lib/operations.ts';
+
+export type RegisterSection = 'quantum' | 'classic';
 
 export type UiLayer = {
     quantumOperations: UiQuantumOperation[];
@@ -21,6 +23,12 @@ export type FlatQubit = {
     regIdx: number;
     relQubitIdx: number;
     absQubitIdx: number;
+    regType: RegisterType;
+    section: RegisterSection;
+    headerY: number;
+    registerSize: number;
+    isCollapsed: boolean;
+    visualY: number;
 };
 
 export type HoverPos = {
