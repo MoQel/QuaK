@@ -3,6 +3,7 @@ import {
     ElementSelectorDto,
     getRegisterSize,
     getSelectorKey,
+    isClassicRegister,
     isQuantumRegister,
     RegisterResponse,
 } from './dto/circuit.ts';
@@ -12,8 +13,13 @@ import {
  * - `'all'`: every register, used for rendering, where classic wires are drawn too.
  * - `'quantum'`: only quantum registers, used for simulation, where indices must
  *   line up with the qubit indexing of the simulator backend.
+ * - `'classic'`: only classical registers, used for the simulator's classical
+ *   memory, which is addressed separately from the qubits.
+ *
+ * The modes are not views of one numbering: each starts at 0 and counts only the
+ * registers it selects, so a qubit and a classic bit can share an index.
  */
-export type CircuitIndexMode = 'all' | 'quantum';
+export type CircuitIndexMode = 'all' | 'quantum' | 'classic';
 
 /**
  * Maps a circuit element selector (register id + local index) to a single, global
@@ -35,6 +41,7 @@ export function buildWireIndex(registers: RegisterResponse[], mode: CircuitIndex
 
     for (const register of registers) {
         if (mode === 'quantum' && !isQuantumRegister(register)) continue;
+        if (mode === 'classic' && !isClassicRegister(register)) continue;
 
         for (let localIndex = 0; localIndex < getRegisterSize(register); localIndex++) {
             const selectorKey = getSelectorKey({ registerId: register.id, index: localIndex });

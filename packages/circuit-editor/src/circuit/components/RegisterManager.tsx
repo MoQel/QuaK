@@ -16,6 +16,8 @@ import {
 } from '@quak/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@quak/ui/select';
 import {
+    checkRegisterName,
+    describeRegisterNameProblem,
     isQuantumRegister,
     RegisterResponse,
     RegisterType,
@@ -23,9 +25,9 @@ import {
     REGISTER_TYPE_QUANTUM,
     REGISTER_TYPE_CLASSIC,
 } from '@quak/circuit-core';
-import { useCircuitStore } from '../../CircuitStoreContext.tsx';
-import { useCircuitCapabilities } from '../../CircuitCapabilitiesContext.tsx';
-import { createCircuitMutations } from '../../circuitMutations.ts';
+import { useCircuitStore } from '#CircuitStoreContext.tsx';
+import { useCircuitCapabilities } from '#CircuitCapabilitiesContext.tsx';
+import { createCircuitMutations } from '#circuitMutations.ts';
 
 /**
  * The register manager lives in the toolbar, but the canvas needs to open it too
@@ -62,8 +64,12 @@ export function RegisterManager() {
         return () => globalThis.removeEventListener(OPEN_REGISTER_MANAGER_EVENT, handler as EventListener);
     }, []);
 
+    // The name is written into generated OpenQASM verbatim, so it has to be an
+    // identifier there before it may be created here.
+    const nameProblem = checkRegisterName(newRegName);
+
     const handleAddRegister = () => {
-        if (!newRegName.trim()) return;
+        if (nameProblem) return;
         const payload: RegisterRequest = {
             name: newRegName.trim(),
             type: newRegType,
@@ -191,6 +197,8 @@ export function RegisterManager() {
                                 onChange={(e) => setNewRegName(e.target.value)}
                                 placeholder="e.g. q, a, c"
                                 className="h-8 font-mono text-sm"
+                                aria-invalid={newRegName.trim() !== '' && nameProblem !== null}
+                                aria-describedby="reg-name-problem"
                                 onKeyDown={(e) => e.key === 'Enter' && handleAddRegister()}
                             />
                         </div>
@@ -223,7 +231,12 @@ export function RegisterManager() {
                             />
                         </div>
                     </div>
-                    <Button onClick={handleAddRegister} className="w-full" size="sm" disabled={!newRegName.trim()}>
+                    {newRegName.trim() !== '' && nameProblem && (
+                        <p id="reg-name-problem" className="text-xs text-destructive">
+                            {describeRegisterNameProblem(nameProblem)}
+                        </p>
+                    )}
+                    <Button onClick={handleAddRegister} className="w-full" size="sm" disabled={nameProblem !== null}>
                         <Plus className="size-4 mr-1" />
                         Add Register
                     </Button>

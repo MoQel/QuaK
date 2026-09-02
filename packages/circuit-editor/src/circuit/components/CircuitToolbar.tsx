@@ -2,8 +2,8 @@ import { Button } from '@quak/ui/button';
 import { Minus, Plus, Trash2 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@quak/ui/popover';
 import { useState, type ReactNode } from 'react';
-import { useCircuitStore } from '../../CircuitStoreContext.tsx';
-import { createCircuitMutations } from '../../circuitMutations.ts';
+import { useCircuitStore } from '#CircuitStoreContext.tsx';
+import { createCircuitMutations } from '#circuitMutations.ts';
 import { RegisterManager } from './RegisterManager.tsx';
 
 interface CircuitToolbarProps {

@@ -1,10 +1,10 @@
 import React, { useMemo, useRef } from 'react';
-import styles from '../../circuit-editor.module.css';
+import styles from '#circuit-editor.module.css';
 import { QuantumOperationDto, RegisterResponse, getSelectorKey, formatRotationAngle } from '@quak/circuit-core';
-import { getOperationDefinition, OperationDefinition } from '../../operations.ts';
+import { getOperationDefinition, OperationDefinition } from '#operations.ts';
 import { CELL_WIDTH, getSelectorVisualY, isSelectorCollapsed, QUBIT_HEIGHT } from '../util/layout.ts';
 import { TextIcon } from '@quak/ui/text-icon';
-import { DragData } from '../../types.ts';
+import { DragData } from '#types.ts';
 import { FlatQubit } from '../util/types.ts';
 
 interface ElementaryQuantumGateProps {

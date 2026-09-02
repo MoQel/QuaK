@@ -5,7 +5,7 @@ import { Button } from '@quak/ui/button';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { FlatQubit } from '../util/types.ts';
 import { QubitLabel } from './QubitLabel.tsx';
-import { useCircuitStore } from '../../CircuitStoreContext.tsx';
+import { useCircuitStore } from '#CircuitStoreContext.tsx';
 import { LABEL_WIDTH, QUBIT_HEIGHT, REGISTER_HEADER_HEIGHT } from '../util/layout.ts';
 
 interface QubitWiresProps {

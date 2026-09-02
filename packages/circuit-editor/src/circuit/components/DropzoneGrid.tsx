@@ -9,10 +9,10 @@ import {
     REGISTER_TYPE_QUANTUM,
 } from '@quak/circuit-core';
 import { FlatQubit, HoverPos, UiLayer } from '../util/types.ts';
-import { useCircuitStore } from '../../CircuitStoreContext.tsx';
-import { getOperationDefinition, type OperationIdentifier } from '../../operations.ts';
-import { useCircuitDrag } from '../../CircuitDragContext.tsx';
-import { DragData } from '../../types.ts';
+import { useCircuitStore } from '#CircuitStoreContext.tsx';
+import { getOperationDefinition, type OperationIdentifier } from '#operations.ts';
+import { useCircuitDrag } from '#CircuitDragContext.tsx';
+import { DragData } from '#types.ts';
 
 /** Finds the operation with the given id across all layers, or undefined. */
 const findOperation = (layers: CircuitResponse['layers'], operationId: string): QuantumOperationDto | undefined => {

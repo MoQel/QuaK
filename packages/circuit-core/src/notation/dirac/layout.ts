@@ -1,4 +1,4 @@
-import { CircuitResponse, ElementaryQuantumGateDto } from '../../dto/circuit.ts';
+import { CircuitResponse, ElementaryQuantumGateDto } from '#dto/circuit.ts';
 
 const COMPOSITION = String.raw` \cdot `;
 

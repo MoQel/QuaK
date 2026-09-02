@@ -11,6 +11,9 @@
         "./styles.css": "./src/circuit-editor.module.css",
         "./editor.css": "./src/editor.css"
     },
+    "imports": {
+        "#*": "./src/*"
+    },
     "scripts": {
         "typecheck": "tsc --noEmit"
     },

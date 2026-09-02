@@ -30,6 +30,31 @@ const operations: OperationDefinitionResponse[] = [
     },
 ];
 
+// A classical register and a measurement, the shapes development added. They render
+// through the same store the extension uses, with no backend and no tab context.
+const circuitWithMeasurement: CircuitResponse = {
+    id: 'c2',
+    registers: [
+        { id: 'q', name: 'q', type: 'Quantum_Register', numberOfQubits: 1 },
+        { id: 'c', name: 'c', type: 'Classic_Register', numberOfBits: 2 },
+    ],
+    layers: [
+        {
+            quantumOperations: [
+                {
+                    id: 'm1',
+                    type: 'MEASUREMENT',
+                    identifier: 'MEASURE',
+                    inverseForm: false,
+                    targetQubits: [{ registerId: 'q', index: 0 }],
+                    controlQubits: [],
+                    classicBits: [{ registerId: 'c', index: 0 }],
+                },
+            ],
+        },
+    ],
+};
+
 describe('circuit editor renders without a backend', () => {
     it('renders the library from an operations prop', () => {
         render(
@@ -54,5 +79,25 @@ describe('circuit editor renders without a backend', () => {
 
         expect(screen.getByText('q[0]')).toBeInTheDocument();
         expect(screen.getByText('q[1]')).toBeInTheDocument();
+    });
+
+    it('renders a classical register and a measurement from the store alone', () => {
+        render(
+            <CircuitStoreProvider circuit={circuitWithMeasurement} setCircuit={vi.fn()}>
+                <CircuitDragProvider>
+                    <CircuitView />
+                </CircuitDragProvider>
+            </CircuitStoreProvider>,
+        );
+
+        // The quantum wire is labelled as before.
+        expect(screen.getByText('q[0]')).toBeInTheDocument();
+
+        // Classical registers start collapsed, as one row that can be opened.
+        expect(screen.getByRole('button', { name: 'Expand classical register' })).toBeInTheDocument();
+
+        // The measurement is drawn, and where it writes to is named: once on the gate
+        // itself and once on the connector routed to the classic bit.
+        expect(screen.getAllByTitle('q[0] -> c[0]')).toHaveLength(2);
     });
 });

@@ -5,7 +5,6 @@ import {
     getInvolvedSelectors,
     isClassicRegister,
     isQuantumRegister,
-    MoveQuantumOperationRequest,
     QuantumOperationDto,
     RegisterRequest,
     RegisterResponse,
@@ -158,39 +157,6 @@ export function createCircuitMutations(circuit: CircuitResponse | undefined, set
         setCircuit({ ...circuit, layers });
     };
 
-    const moveQuantumOperation = (payload: MoveQuantumOperationRequest) => {
-        if (!circuit) return;
-
-        const original = circuit.layers
-            .flatMap((layer) => layer.quantumOperations)
-            .find((operation) => operation.id === payload.quantumOperationId);
-        if (!original) return;
-
-        const movedOperation: QuantumOperationDto =
-            original.type === 'MEASUREMENT'
-                ? {
-                      ...original,
-                      targetQubits: payload.targetQubits,
-                      controlQubits: [],
-                      classicBits: payload.classicBits ?? original.classicBits,
-                  }
-                : {
-                      ...original,
-                      targetQubits: payload.targetQubits,
-                      controlQubits: payload.controlQubits,
-                  };
-
-        const layers = circuit.layers.map((layer) => ({
-            quantumOperations: layer.quantumOperations.filter((op) => op.id !== payload.quantumOperationId),
-        }));
-        while (layers.length <= payload.layerIdx) {
-            layers.push({ quantumOperations: [] });
-        }
-        layers[payload.layerIdx].quantumOperations.push(movedOperation);
-
-        setCircuit({ ...circuit, layers: layers.filter((layer) => layer.quantumOperations.length > 0) });
-    };
-
     const removeQuantumOperation = (operationId: string) => {
         if (!circuit) return;
         setCircuit({ ...circuit, layers: removeOperationFromLayers(circuit.layers, operationId) });
@@ -273,7 +239,6 @@ export function createCircuitMutations(circuit: CircuitResponse | undefined, set
         deleteLastQubit,
         resetCircuit,
         addQuantumOperation,
-        moveQuantumOperation,
         removeQuantumOperation,
         addRegister,
         deleteRegister,

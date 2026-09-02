@@ -6,6 +6,7 @@ export * from './gate-types.ts';
 export * from './dto/circuit.ts';
 export * from './dto/library.ts';
 export * from './quantumAngle.ts';
+export * from './registerName.ts';
 export * from './circuitContent.ts';
 export * from './circuitIndex.ts';
 export * from './support-matrix.ts';

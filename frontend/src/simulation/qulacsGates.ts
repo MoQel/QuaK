@@ -1,29 +1,25 @@
 import { ElementaryQuantumGateDto } from '@/api/dto/circuit.ts';
-import { RegisterOffsets } from '@/simulation/circuitContext.ts';
+import { resolveWireIndices, type WireIndex } from '@quak/circuit-core';
 import { Disposable } from '@/simulation/simulation.types.ts';
 import { throwSimulationError } from '@/simulation/simulation.errors.ts';
 import * as qulacs from 'qulacs-wasm';
 
-export function applyGateToState(
-    state: qulacs.QuantumState,
-    op: ElementaryQuantumGateDto,
-    offsets: RegisterOffsets,
-): void {
+export function applyGateToState(state: qulacs.QuantumState, op: ElementaryQuantumGateDto, wires: WireIndex): void {
     const circuit = new qulacs.QuantumCircuit(state.get_qubit_count());
 
     try {
-        applyGate(circuit, op, offsets);
+        applyGate(circuit, op, wires);
         circuit.update_quantum_state(state);
     } finally {
         (circuit as unknown as Disposable).delete();
     }
 }
 
-function applyGate(circuit: qulacs.QuantumCircuit, op: ElementaryQuantumGateDto, offsets: RegisterOffsets) {
+function applyGate(circuit: qulacs.QuantumCircuit, op: ElementaryQuantumGateDto, wires: WireIndex) {
     const type = op.identifier;
     const angle = op.rotationAngle;
-    const targets = op.targetQubits.map((t) => offsets[t.registerId] + t.index);
-    const controls = op.controlQubits.map((t) => offsets[t.registerId] + t.index);
+    const targets = resolveWireIndices(wires, op.targetQubits);
+    const controls = resolveWireIndices(wires, op.controlQubits);
 
     switch (type) {
         case 'H':

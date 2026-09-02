@@ -1,7 +1,7 @@
 import { QuantumOperationDto, RegisterResponse } from '@quak/circuit-core';
 import { ElementaryQuantumGate } from './ElementaryQuantumGate.tsx';
 import { FlatQubit, UiLayer } from '../util/types.ts';
-import { useCircuitDrag } from '../../CircuitDragContext.tsx';
+import { useCircuitDrag } from '#CircuitDragContext.tsx';
 import { CELL_WIDTH, getSelectorVisualY, QUBIT_HEIGHT } from '../util/layout.ts';
 
 interface QuantumOperationGridProps {

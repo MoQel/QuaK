@@ -14,6 +14,9 @@
         "./notation/quantikz": "./src/notation/quantikz/index.ts",
         "./notation/dirac": "./src/notation/dirac/index.ts"
     },
+    "imports": {
+        "#*": "./src/*"
+    },
     "scripts": {
         "typecheck": "tsc --noEmit"
     }

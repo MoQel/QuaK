@@ -7,14 +7,17 @@ import {
     isClassicRegister,
     isQuantumRegister,
 } from '@/api/dto/circuit.ts';
+import { buildWireIndex, type WireIndex } from '@quak/circuit-core';
 import { MeasurementMapping } from '@/simulation/simulation.types.ts';
 import { throwSimulationError } from '@/simulation/simulation.errors.ts';
 
-export type RegisterOffsets = Record<string, number>;
-
 export interface CircuitContext {
-    quantumOffsets: RegisterOffsets;
-    classicOffsets: RegisterOffsets;
+    /**
+     * Qubit and classical-bit numbering, from the same index the notation mappers
+     * use. The two are separate numberings: qubit 0 and classic bit 0 both exist.
+     */
+    quantumWires: WireIndex;
+    classicWires: WireIndex;
     quantumRegisters: Map<string, RegisterResponse>;
     classicRegisters: Map<string, RegisterResponse>;
     measurementMappings: MeasurementMapping[];
@@ -70,8 +73,8 @@ export function createCircuitContext(circuitData: CircuitResponse): CircuitConte
     }
 
     const context: CircuitContext = {
-        quantumOffsets: calculateQuantumRegisterOffsets(circuitData.registers),
-        classicOffsets: calculateClassicRegisterOffsets(circuitData.registers),
+        quantumWires: buildWireIndex(circuitData.registers, 'quantum'),
+        classicWires: buildWireIndex(circuitData.registers, 'classic'),
         quantumRegisters,
         classicRegisters,
         measurementMappings: [],
@@ -126,7 +129,7 @@ export function resolveQuantumSelector(
         });
     }
 
-    return context.quantumOffsets[selector.registerId] + selector.index;
+    return context.quantumWires.getWireIndex(selector) ?? 0;
 }
 
 export function resolveClassicSelector(
@@ -155,35 +158,7 @@ export function resolveClassicSelector(
         });
     }
 
-    return context.classicOffsets[selector.registerId] + selector.index;
-}
-
-function calculateQuantumRegisterOffsets(registers: RegisterResponse[]): RegisterOffsets {
-    const offsets: RegisterOffsets = {};
-    let offsetCount = 0;
-
-    for (const reg of registers) {
-        if (isQuantumRegister(reg)) {
-            offsets[reg.id] = offsetCount;
-            offsetCount += reg.numberOfQubits;
-        }
-    }
-
-    return offsets;
-}
-
-function calculateClassicRegisterOffsets(registers: RegisterResponse[]): RegisterOffsets {
-    const offsets: RegisterOffsets = {};
-    let offsetCount = 0;
-
-    for (const reg of registers) {
-        if (isClassicRegister(reg)) {
-            offsets[reg.id] = offsetCount;
-            offsetCount += reg.numberOfBits;
-        }
-    }
-
-    return offsets;
+    return context.classicWires.getWireIndex(selector) ?? 0;
 }
 
 function validateGate(op: ElementaryQuantumGateDto, context: CircuitContext): void {
@@ -292,13 +267,13 @@ function collectMeasurementMappings(circuitData: CircuitResponse, context: Circu
                         registerId: targetQubit.registerId,
                         registerName: quantumRegister.name,
                         bitIndex: targetQubit.index,
-                        globalQubitIndex: (context.quantumOffsets[targetQubit.registerId] ?? 0) + targetQubit.index,
+                        globalQubitIndex: context.quantumWires.getWireIndex(targetQubit) ?? 0,
                     },
                     target: {
                         registerId: classicBit.registerId,
                         registerName: classicRegister.name,
                         bitIndex: classicBit.index,
-                        classicalAddress: (context.classicOffsets[classicBit.registerId] ?? 0) + classicBit.index,
+                        classicalAddress: context.classicWires.getWireIndex(classicBit) ?? 0,
                     },
                 });
             });

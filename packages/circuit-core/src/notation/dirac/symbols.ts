@@ -1,5 +1,5 @@
-import { ElementaryQuantumGateDto } from '../../dto/circuit.ts';
-import { angleToLatex, resolveAngle } from '../../quantumAngle.ts';
+import { ElementaryQuantumGateDto } from '#dto/circuit.ts';
+import { angleToLatex, resolveAngle } from '#quantumAngle.ts';
 
 /**
  * Renders an upright Dirac operator symbol without qubit labels.

@@ -3,8 +3,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@quak/ui/popover';
 import { Button } from '@quak/ui/button';
 import { REGISTER_TYPE_QUANTUM } from '@quak/circuit-core';
 import { FlatQubit } from '../util/types.ts';
-import { useCircuitStore } from '../../CircuitStoreContext.tsx';
-import { createCircuitMutations } from '../../circuitMutations.ts';
+import { useCircuitStore } from '#CircuitStoreContext.tsx';
+import { createCircuitMutations } from '#circuitMutations.ts';
 import { LABEL_WIDTH, QUBIT_HEIGHT } from '../util/layout.ts';
 
 interface QubitLabelProps {
