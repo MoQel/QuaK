@@ -10,6 +10,7 @@ import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
 import edu.kit.quak.core.circuit.model.layer.operation.SubcircuitOperation;
 import edu.kit.quak.core.circuit.model.layer.operation.library.ConcreteQuantumOperation;
 import edu.kit.quak.core.circuit.model.layer.operation.library.QuantumOperationLibrary;
+import edu.kit.quak.core.circuit.model.register.ClassicRegister;
 import edu.kit.quak.core.circuit.model.register.QuantumRegister;
 import edu.kit.quak.core.circuit.model.register.Register;
 import java.util.ArrayList;
@@ -62,8 +63,17 @@ public class QasmCodeGenerator {
                     .append("] ")
                     .append(quantumRegister.getName())
                     .append(";\n");
+            } else if (register instanceof ClassicRegister classicRegister) {
+                // Declared as well, or a measurement below would write into a register that the
+                // emitted code never introduces -- and the result would not parse back.
+                codeStringBuilder.append("// Register ").append(classicRegister.getName()).append("\n");
+                codeStringBuilder
+                    .append("bit[")
+                    .append(classicRegister.getNumberOfBits())
+                    .append("] ")
+                    .append(classicRegister.getName())
+                    .append(";\n");
             }
-            // TODO classical register?
         }
 
         codeStringBuilder.append("\n");
@@ -146,6 +156,12 @@ public class QasmCodeGenerator {
 
         if (!qubitStrings.isEmpty()) {
             codeStringBuilder.append(" ").append(String.join(", ", qubitStrings));
+        }
+
+        // Where a measurement writes its result. Without the arrow the emitted `measure q[0];`
+        // loses the classic bit, and reads back as an incomplete measurement.
+        if (quantumOperation instanceof Measurement measurement && !measurement.getClassicBits().isEmpty()) {
+            codeStringBuilder.append(" -> ").append(toCode(quantumCircuit, measurement.getClassicBits().getFirst()));
         }
 
         // Semicolon
@@ -288,7 +304,15 @@ public class QasmCodeGenerator {
     }
 
     private static String toCode(QuantumCircuit quantumCircuit, ElementSelector elementSelector) {
-        String name = quantumCircuit.getQuantumRegisterNameById(elementSelector.getRegisterId());
+        // Not getQuantumRegisterNameById: a measurement's classic bit selects into a classical
+        // register, which that lookup does not know and would fail on.
+        String name = quantumCircuit
+            .getRegisters()
+            .stream()
+            .filter(register -> register.getId().equals(elementSelector.getRegisterId()))
+            .map(Register::getName)
+            .findFirst()
+            .orElseGet(() -> quantumCircuit.getQuantumRegisterNameById(elementSelector.getRegisterId()));
         return name + "[" + elementSelector.getIndex() + "]";
     }
 }

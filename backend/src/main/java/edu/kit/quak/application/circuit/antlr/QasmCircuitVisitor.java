@@ -8,9 +8,11 @@ import edu.kit.quak.core.circuit.model.gate.GateDefinition;
 import edu.kit.quak.core.circuit.model.layer.operation.CompositeQuantumGate;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementaryQuantumGate;
+import edu.kit.quak.core.circuit.model.layer.operation.Measurement;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
 import edu.kit.quak.core.circuit.model.layer.operation.SubcircuitOperation;
 import edu.kit.quak.core.circuit.model.layer.operation.library.QuantumOperationLibrary;
+import edu.kit.quak.core.circuit.model.register.ClassicRegister;
 import edu.kit.quak.core.circuit.model.register.QuantumRegister;
 import edu.kit.quak.core.circuit.model.register.Register;
 import java.util.ArrayList;
@@ -253,22 +255,51 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
     }
 
     /**
-     * OpenQASM 2 style register declarations (`qreg a[4];`), which the grammar still accepts. Without
-     * this handler they parse silently without declaring anything, and the first gate call then fails
-     * with a misleading "unknown qubit register". `creg` is ignored for the same reason `bit[n]` is:
-     * classical registers have no editor representation yet.
+     * OpenQASM 2 style register declarations (`qreg a[4];`, `creg ans[5];`), which the grammar still
+     * accepts. Without this handler they parse silently without declaring anything, and the first
+     * gate call then fails with a misleading "unknown qubit register".
      */
     @Override
     public Void visitOldStyleDeclarationStatement(OpenQASM3Parser.OldStyleDeclarationStatementContext ctx) {
         if (ctx.QREG() != null) {
             declareQuantumRegister(ctx.Identifier().getText(), ctx.designator());
+        } else if (ctx.CREG() != null) {
+            declareClassicRegister(ctx.Identifier().getText(), sizeOf(ctx.designator(), "classic register size"));
         }
         return null;
     }
 
+    /** Size of a `[n]` designator, defaulting to 1 when it is absent (`creg c;` is one bit). */
+    private int sizeOf(OpenQASM3Parser.DesignatorContext designator, String what) {
+        return designator != null ? toIntExact(evaluator.evaluateInt(designator.expression(), what)) : 1;
+    }
+
+    /**
+     * Declares a classical register, or resizes one already declared under that name.
+     *
+     * A classical register is where a measurement writes its result, so it has to exist in the
+     * circuit before any `measure ... -> c[i]` can refer to it.
+     */
+    private void declareClassicRegister(String registerName, int size) {
+        if (size < 1) {
+            throw new QasmParseException("Classic register '%s' must have at least one bit but got %d.".formatted(registerName, size));
+        }
+
+        var existingRegister = circuit.getRegisterByName(registerName);
+        if (existingRegister.isPresent()) {
+            if (existingRegister.get() instanceof ClassicRegister classicRegister) {
+                classicRegister.setNumberOfBits(size);
+            } else {
+                throw new QasmParseException("'%s' is already declared as a qubit register.".formatted(registerName));
+            }
+        } else {
+            circuit.addRegister(new ClassicRegister(registerName, size));
+        }
+    }
+
     private void declareQuantumRegister(String registerName, OpenQASM3Parser.DesignatorContext designator) {
         // Default to a single qubit when no [x] designator is given.
-        int size = designator != null ? toIntExact(evaluator.evaluateInt(designator.expression(), "qubit register size")) : 1;
+        int size = sizeOf(designator, "qubit register size");
         if (size < 1) {
             throw new QasmParseException("Qubit register '%s' must have at least one qubit but got %d.".formatted(registerName, size));
         }
@@ -442,6 +473,15 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
     @Override
     public Void visitClassicalDeclarationStatement(OpenQASM3Parser.ClassicalDeclarationStatementContext ctx) {
         String name = ctx.Identifier().getText();
+
+        // `bit[5] ans;` is the OpenQASM 3 spelling of `creg ans[5];` -- a place to measure into,
+        // not a constant to fold, so it becomes a register and stays unbound for the evaluator.
+        if (ctx.scalarType() != null && ctx.scalarType().BIT() != null) {
+            declareClassicRegister(name, sizeOf(ctx.scalarType().designator(), "classic register size"));
+            evaluator.unbind(name);
+            return null;
+        }
+
         OpenQASM3Parser.DeclarationExpressionContext declaration = ctx.declarationExpression();
         if (declaration == null || declaration.expression() == null) {
             evaluator.unbind(name);
@@ -451,6 +491,62 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
             evaluator.bindWithWidth(name, evaluator.evaluate(declaration.expression()), bitWidthOf(ctx.scalarType()));
         } catch (QasmParseException ex) {
             evaluator.unbind(name);
+        }
+        return null;
+    }
+
+    /**
+     * A measurement (`measure b[0] -> ans[0];`, or a slice like `measure b[0:3] -> ans[0:3];`).
+     *
+     * The classic bit is not optional: the circuit model requires a measurement to assign its
+     * result somewhere, and inventing a register the user never declared would put state into the
+     * circuit that its source does not contain. A bare `measure q[0];` is therefore a clear error
+     * rather than a silent half-measurement.
+     *
+     * A slice expands into one measurement per bit, the way everything statically decidable is
+     * expanded here. Taking only the first index instead would quietly measure one qubit and drop
+     * the rest -- a wrong circuit that still looks like it parsed.
+     */
+    @Override
+    public Void visitMeasureArrowAssignmentStatement(OpenQASM3Parser.MeasureArrowAssignmentStatementContext ctx) {
+        if (ctx.measureExpression() == null) {
+            // e.g. a `defcal` style quantum call, which has no editor representation.
+            throw new QasmParseException("Unsupported measurement statement: " + ctx.getText());
+        }
+        if (definitionUnderConstruction != null || qubitBindings != null) {
+            throw new QasmParseException("A gate body cannot contain a measurement, but '%s' does.".formatted(ctx.getText()));
+        }
+        if (ctx.indexedIdentifier() == null) {
+            throw new QasmParseException(
+                "A measurement must assign its result to a classic bit, e.g. `measure %s -> c[0];`.".formatted(
+                    ctx.measureExpression().gateOperand().getText()
+                )
+            );
+        }
+
+        List<ElementSelector> targetQubits = resolveMeasuredQubits(ctx.measureExpression().gateOperand());
+        List<ElementSelector> classicBits = resolveClassicBits(ctx.indexedIdentifier());
+        if (targetQubits.size() != classicBits.size()) {
+            throw new QasmParseException(
+                "Measurement assigns %d qubit(s) to %d classic bit(s) in '%s'; both sides must be the same width.".formatted(
+                    targetQubits.size(),
+                    classicBits.size(),
+                    ctx.getText()
+                )
+            );
+        }
+
+        // One operation per bit: a Measurement targets exactly one qubit by construction.
+        for (int i = 0; i < targetQubits.size(); i++) {
+            addOperation(
+                new Measurement(
+                    QuantumOperationLibrary.MEASURE,
+                    false,
+                    List.of(targetQubits.get(i)),
+                    List.of(),
+                    List.of(classicBits.get(i))
+                )
+            );
         }
         return null;
     }
@@ -668,10 +764,15 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
             return new ElementSelector(bound.getRegisterId(), bound.getIndex());
         }
 
-        String registerId = circuit
+        // Classical registers live in the circuit too now, so a name alone no longer proves this is
+        // a qubit: `x ans[0];` on a creg would otherwise select into it and corrupt the circuit.
+        Register register = circuit
             .getRegisterByName(name)
-            .map(Register::getId)
             .orElseThrow(() -> new QasmParseException("Gate references unknown qubit register '" + name + "'."));
+        if (!(register instanceof QuantumRegister)) {
+            throw new QasmParseException("Gate references '%s', which is a classic register and cannot hold a qubit.".formatted(name));
+        }
+        String registerId = register.getId();
 
         int index = 0;
         if (indices != null && !indices.isEmpty()) {
@@ -681,6 +782,128 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
             }
         }
         return new ElementSelector(registerId, index);
+    }
+
+    /** The qubits a measurement reads, expanding a slice like {@code b[0:3]}. */
+    private List<ElementSelector> resolveMeasuredQubits(OpenQASM3Parser.GateOperandContext operand) {
+        var indexedIdentifier = operand.indexedIdentifier();
+        if (indexedIdentifier == null) {
+            throw new QasmParseException("Unsupported measurement operand: " + operand.getText());
+        }
+
+        String name = indexedIdentifier.Identifier().getText();
+        QuantumRegister register = circuit
+            .getRegisterByName(name)
+            .filter(QuantumRegister.class::isInstance)
+            .map(QuantumRegister.class::cast)
+            .orElseThrow(() -> new QasmParseException("Measurement reads unknown qubit register '" + name + "'."));
+
+        return resolveSelectors(indexedIdentifier, register.getId(), register.getNumberOfQubits(), name, "qubit");
+    }
+
+    /** The classic bits a measurement writes to, expanding a slice like {@code ans[0:3]}. */
+    private List<ElementSelector> resolveClassicBits(OpenQASM3Parser.IndexedIdentifierContext indexedIdentifier) {
+        String name = indexedIdentifier.Identifier().getText();
+        ClassicRegister register = circuit
+            .getRegisterByName(name)
+            .flatMap(Register::asClassic)
+            .orElseThrow(() -> new QasmParseException("Measurement writes to unknown classic register '" + name + "'."));
+
+        return resolveSelectors(indexedIdentifier, register.getId(), register.getNumberOfBits(), name, "classic bit");
+    }
+
+    /**
+     * Indices an {@code indexedIdentifier} selects in a register of the given size: the whole
+     * register when unindexed, one index for {@code r[i]}, and the expanded slice for {@code r[a:b]}
+     * or {@code r[{a, b}]}.
+     */
+    private List<ElementSelector> resolveSelectors(
+        OpenQASM3Parser.IndexedIdentifierContext indexedIdentifier,
+        String registerId,
+        int registerSize,
+        String registerName,
+        String what
+    ) {
+        List<OpenQASM3Parser.IndexOperatorContext> indexOperators = indexedIdentifier.indexOperator();
+        List<Integer> indices = new ArrayList<>();
+
+        if (indexOperators == null || indexOperators.isEmpty()) {
+            // `measure b -> ans;` addresses the whole register.
+            for (int i = 0; i < registerSize; i++) {
+                indices.add(i);
+            }
+        } else {
+            OpenQASM3Parser.IndexOperatorContext indexOperator = indexOperators.getFirst();
+            if (indexOperator.rangeExpression() != null && !indexOperator.rangeExpression().isEmpty()) {
+                indices.addAll(sliceIndices(indexOperator.rangeExpression().getFirst(), registerSize, what));
+            } else {
+                for (OpenQASM3Parser.ExpressionContext expression : indexOperator.expression()) {
+                    indices.add(toIntExact(evaluator.evaluateInt(expression, what + " index")));
+                }
+            }
+        }
+
+        List<ElementSelector> selectors = new ArrayList<>();
+        for (int index : indices) {
+            if (index < 0 || index >= registerSize) {
+                throw new QasmParseException(
+                    "%s index %d is outside register '%s', which has %d.".formatted(what, index, registerName, registerSize)
+                );
+            }
+            selectors.add(new ElementSelector(registerId, index));
+        }
+        if (selectors.isEmpty()) {
+            throw new QasmParseException("Measurement selects no %s in register '%s'.".formatted(what, registerName));
+        }
+        return selectors;
+    }
+
+    /**
+     * Expands a register slice. Unlike a for-loop range both endpoints are optional here -- `[0:]`
+     * and `[:3]` are legal register slices -- so they default to the register's own bounds. The
+     * stop is inclusive, matching the loop ranges.
+     */
+    private List<Integer> sliceIndices(OpenQASM3Parser.RangeExpressionContext range, int registerSize, String what) {
+        List<OpenQASM3Parser.ExpressionContext> expressions = range.expression();
+        int colons = range.COLON().size();
+
+        long start;
+        long step;
+        long stop;
+        if (colons == 2 && expressions.size() == 3) {
+            start = evaluator.evaluateInt(expressions.get(0), what + " slice start");
+            step = evaluator.evaluateInt(expressions.get(1), what + " slice step");
+            stop = evaluator.evaluateInt(expressions.get(2), what + " slice stop");
+        } else if (colons == 1 && expressions.size() == 2) {
+            start = evaluator.evaluateInt(expressions.get(0), what + " slice start");
+            step = 1;
+            stop = evaluator.evaluateInt(expressions.get(1), what + " slice stop");
+        } else if (colons == 1 && expressions.size() == 1) {
+            // One endpoint given: `[2:]` counts up from it, `[:2]` counts up to it.
+            boolean startGiven = range.getChild(0) == expressions.getFirst();
+            start = startGiven ? evaluator.evaluateInt(expressions.getFirst(), what + " slice start") : 0;
+            step = 1;
+            stop = startGiven ? registerSize - 1L : evaluator.evaluateInt(expressions.getFirst(), what + " slice stop");
+        } else if (colons == 1) {
+            start = 0;
+            step = 1;
+            stop = registerSize - 1L;
+        } else {
+            throw new QasmParseException("Unsupported %s slice '[%s]'.".formatted(what, range.getText()));
+        }
+
+        if (step == 0) {
+            throw new QasmParseException("A %s slice step cannot be zero in '[%s]'.".formatted(what, range.getText()));
+        }
+
+        List<Integer> indices = new ArrayList<>();
+        for (long value = start; step > 0 ? value <= stop : value >= stop; value += step) {
+            indices.add(toIntExact(value));
+            if (indices.size() > registerSize) {
+                throw new QasmParseException("Slice '[%s]' selects more than register size %d.".formatted(range.getText(), registerSize));
+            }
+        }
+        return indices;
     }
 
     private List<String> identifiers(OpenQASM3Parser.IdentifierListContext list) {
