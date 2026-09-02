@@ -16,7 +16,7 @@ describe('useQuantumSimulation Hook', () => {
         vi.useFakeTimers();
         vi.clearAllMocks();
 
-        const MockWorker = vi.fn().mockImplementation(() => {
+        const MockWorker = vi.fn().mockImplementation(function () {
             const instance = {
                 postMessage: vi.fn(),
                 terminate: vi.fn(),

@@ -1,6 +1,6 @@
 import { CircuitResponse, isClassicRegister } from '@/api/dto/circuit.ts';
 import { ReadoutRegisterInfo, SimulationOutcome } from '@/simulation/simulation.types.ts';
-import { RegisterOffsets } from '@/simulation/circuitContext.ts';
+import type { WireIndex } from '@quak/circuit-core';
 import { throwSimulationError } from '@/simulation/simulation.errors.ts';
 
 export type Bit = 0 | 1;
@@ -18,18 +18,16 @@ export function getClassicBitWidth(circuitData: CircuitResponse): number {
 export function buildReadoutRegisters(
     circuitData: CircuitResponse,
     circuitWidth: number,
-    classicOffsets: RegisterOffsets,
+    classicWires: WireIndex,
     includeAutoReadout: boolean,
     autoReadoutOffset: number,
 ): InternalReadoutRegister[] {
-    const classicRegisters = circuitData.registers
-        .filter(isClassicRegister)
-        .map((register) => ({
-            registerId: register.id,
-            name: register.name,
-            size: register.numberOfBits,
-            offset: classicOffsets[register.id],
-        }));
+    const classicRegisters = circuitData.registers.filter(isClassicRegister).map((register) => ({
+        registerId: register.id,
+        name: register.name,
+        size: register.numberOfBits,
+        offset: classicWires.getWireIndex({ registerId: register.id, index: 0 }) ?? 0,
+    }));
     const readoutRegisters: InternalReadoutRegister[] = [...classicRegisters].reverse();
 
     if (includeAutoReadout) {
@@ -44,10 +42,7 @@ export function buildReadoutRegisters(
     return readoutRegisters;
 }
 
-export function classicalBitsToBitString(
-    classicalBits: Bit[],
-    readoutRegisters: InternalReadoutRegister[],
-): string {
+export function classicalBitsToBitString(classicalBits: Bit[], readoutRegisters: InternalReadoutRegister[]): string {
     return readoutRegisters.map((register) => serializeRegisterBits(classicalBits, register)).join(' ');
 }
 
@@ -117,8 +112,5 @@ export function compareOutcomeKeys(a: string, b: string): number {
 }
 
 function serializeRegisterBits(classicalBits: Bit[], register: InternalReadoutRegister): string {
-    return Array.from(
-        { length: register.size },
-        (_, index) => classicalBits[register.offset + index] ?? 0,
-    ).join('');
+    return Array.from({ length: register.size }, (_, index) => classicalBits[register.offset + index] ?? 0).join('');
 }

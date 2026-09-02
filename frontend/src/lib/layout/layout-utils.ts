@@ -1,6 +1,6 @@
 import { DockviewApi } from 'dockview-react';
 
-export const LAYOUT_STORAGE_KEY = 'ide-dockview-layout-v1';
+export const LAYOUT_STORAGE_KEY = 'ide-dockview-layout-v2';
 
 /**
  * Smart placement logic to determine where a new panel should appear
@@ -18,20 +18,10 @@ export const getOptimalPosition = (panelId: string, api: DockviewApi) => {
 
     switch (panelId) {
         case PANELS.file:
-            return (
-                tryPos(PANELS.circuit, 'left') ||
-                tryPos(PANELS.code, 'left') ||
-                tryPos(PANELS.library, 'above') ||
-                tryPos('inspector', 'above')
-            );
+            return tryPos(PANELS.circuit, 'left') || tryPos(PANELS.code, 'left') || tryPos('inspector', 'above');
 
         case PANELS.circuit:
-            return (
-                tryPos(PANELS.file, 'right') ||
-                tryPos(PANELS.code, 'left') ||
-                tryPos(PANELS.inspector, 'above') ||
-                tryPos(PANELS.library, 'right')
-            );
+            return tryPos(PANELS.file, 'right') || tryPos(PANELS.code, 'left') || tryPos(PANELS.inspector, 'above');
 
         case PANELS.code:
             return (
@@ -41,29 +31,11 @@ export const getOptimalPosition = (panelId: string, api: DockviewApi) => {
                 tryPos(PANELS.inspector, 'above')
             );
 
-        case PANELS.library:
-            return (
-                tryPos(PANELS.inspector, 'left') ||
-                tryPos(PANELS.results, 'left') ||
-                tryPos(PANELS.file, 'below') ||
-                tryPos(PANELS.circuit, 'below')
-            );
-
         case PANELS.inspector:
-            return (
-                tryPos(PANELS.library, 'right') ||
-                tryPos(PANELS.results, 'left') ||
-                tryPos(PANELS.circuit, 'below') ||
-                tryPos(PANELS.file, 'below')
-            );
+            return tryPos(PANELS.results, 'left') || tryPos(PANELS.circuit, 'below') || tryPos(PANELS.file, 'below');
 
         case PANELS.results:
-            return (
-                tryPos(PANELS.inspector, 'right') ||
-                tryPos(PANELS.library, 'right') ||
-                tryPos(PANELS.code, 'below') ||
-                tryPos(PANELS.circuit, 'below')
-            );
+            return tryPos(PANELS.inspector, 'right') || tryPos(PANELS.code, 'below') || tryPos(PANELS.circuit, 'below');
 
         default:
             return null;
@@ -76,9 +48,11 @@ export const getOptimalPosition = (panelId: string, api: DockviewApi) => {
 export const buildDefaultLayout = (api: DockviewApi) => {
     api.clear();
 
-    const LEFT_W = 400;
-    const RIGHT_W = 520;
-    const BOTTOM_H = 350;
+    const layoutWidth = api.width || 1200;
+    const projectWidth = Math.round(layoutWidth * 0.15);
+    const codeEditorWidth = Math.round(layoutWidth * 0.3);
+    const bottomPanelWidth = Math.round(layoutWidth * 0.5);
+    const bottomPanelHeight = 300;
 
     // 1. Top-row anchor
     const circuit = api.addPanel({
@@ -94,7 +68,7 @@ export const buildDefaultLayout = (api: DockviewApi) => {
         component: PANELS.inspector,
         title: 'Inspector',
         position: { referencePanel: circuit, direction: 'below' },
-        initialHeight: BOTTOM_H,
+        initialHeight: bottomPanelHeight,
     });
 
     // 3. Fill top row (left / right of circuit)
@@ -103,7 +77,7 @@ export const buildDefaultLayout = (api: DockviewApi) => {
         component: PANELS.file,
         title: 'Project',
         position: { referencePanel: circuit, direction: 'left' },
-        initialWidth: LEFT_W,
+        initialWidth: projectWidth,
     });
 
     api.addPanel({
@@ -111,24 +85,16 @@ export const buildDefaultLayout = (api: DockviewApi) => {
         component: PANELS.code,
         title: 'Code Editor',
         position: { referencePanel: circuit, direction: 'right' },
-        initialWidth: RIGHT_W,
+        initialWidth: codeEditorWidth,
     });
 
-    // 4. Fill bottom row (left / right of inspector)
-    api.addPanel({
-        id: PANELS.library,
-        component: PANELS.library,
-        title: 'Library',
-        position: { referencePanel: inspector, direction: 'left' },
-        initialWidth: LEFT_W,
-    });
-
+    // 4. Fill the remaining bottom row
     api.addPanel({
         id: PANELS.results,
         component: PANELS.results,
         title: 'Results',
         position: { referencePanel: inspector, direction: 'right' },
-        initialWidth: RIGHT_W,
+        initialWidth: bottomPanelWidth,
     });
 };
 
@@ -137,7 +103,6 @@ export const PANELS = {
     code: 'code',
     file: 'file',
     inspector: 'inspector',
-    library: 'library',
     results: 'results',
 };
 
@@ -146,7 +111,6 @@ export const PANEL_TITLES: Record<string, string> = {
     code: 'Code Editor',
     file: 'Project',
     inspector: 'Inspector',
-    library: 'Library',
     results: 'Results',
 };
 const PRIMARY_PANELS = new Set([PANELS.circuit, PANELS.code]);

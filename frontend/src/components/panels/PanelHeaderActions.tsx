@@ -2,8 +2,10 @@ import { IDockviewHeaderActionsProps } from 'dockview-react';
 import { useEffect, useState } from 'react';
 import { useCircuitTabs } from '@/contexts/CircuitTabsContext.tsx';
 import { useActiveCode } from '@/hooks/editor/useActiveCode.ts';
-import { CircuitToolbar } from '@/views/circuit-view/components/CircuitToolbar.tsx';
+import { CircuitStoreProvider, CircuitToolbar } from '@quak/circuit-editor';
 import { CodeToolbar } from '@/views/text-editor-view/components/CodeToolbar.tsx';
+import { QuantikzExportButton } from '@/views/circuit-workspace/notation/QuantikzExportButton.tsx';
+import { ParseEditorButton } from '@/views/circuit-workspace/ParseEditorButton.tsx';
 
 /** Tracks the group's active panel id, re-rendering when the user switches tabs within the group. */
 function useActivePanelId(props: IDockviewHeaderActionsProps): string | undefined {
@@ -36,9 +38,21 @@ export function PanelHeaderActions(props: IDockviewHeaderActionsProps) {
 
     if (activePanelId === 'circuit') {
         if (!activeCircuit) return null;
+
+        // The header sits outside the circuit panel, so it needs its own store:
+        // same two values, so both stay in sync through CircuitTabsContext.
         return (
             <div className="flex items-center h-full pl-4">
-                <CircuitToolbar circuit={activeCircuit} setCircuit={setActiveCircuit} />
+                <CircuitStoreProvider circuit={activeCircuit} setCircuit={setActiveCircuit}>
+                    <CircuitToolbar
+                        start={
+                            <>
+                                <QuantikzExportButton circuit={activeCircuit ?? null} />
+                                <ParseEditorButton circuit={activeCircuit} setCircuit={setActiveCircuit} />
+                            </>
+                        }
+                    />
+                </CircuitStoreProvider>
             </div>
         );
     }

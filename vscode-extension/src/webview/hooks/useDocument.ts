@@ -1,0 +1,83 @@
+// React hook for the webview side of the VSCode document protocol.
+import { useEffect, useRef, useState } from 'react';
+import type { CircuitContent, CircuitResponse } from '@quak/circuit-core';
+import type { DocumentClassification } from '@quak/qasm-transform';
+import { isHostMessage, type DocumentState } from '../../shared/protocol.ts';
+import { vscodeApi } from '../vscodeApi.ts';
+
+export interface DocumentSnapshot {
+    circuit: CircuitResponse | null;
+    version: number;
+    state: DocumentState;
+    /** Null when the host could not analyse the document at all. */
+    classification: DocumentClassification | null;
+}
+
+export interface RequestedEdit {
+    requestId: string;
+    baseVersion: number;
+}
+
+/** Mirrors the host-owned document and lets the webview request edits. */
+export function useDocument() {
+    const [snapshot, setSnapshot] = useState<DocumentSnapshot | undefined>();
+    const snapshotRef = useRef<DocumentSnapshot | undefined>(undefined);
+    // Last refused edit. The optimistic UI must stop showing it.
+    const [rejectedRequestId, setRejectedRequestId] = useState<string | undefined>();
+    // Last edit the host confirmed. Clears the optimistic UI when no document change follows.
+    const [appliedRequestId, setAppliedRequestId] = useState<string | undefined>();
+
+    useEffect(() => {
+        function onMessage(event: MessageEvent<unknown>) {
+            // The webview origin differs between desktop and hosted VSCode.
+            if (event.origin !== globalThis.origin) {
+                return;
+            }
+
+            const message = event.data;
+            if (!isHostMessage(message)) {
+                console.warn('Ignored a malformed host message', message);
+                return;
+            }
+
+            switch (message.type) {
+                case 'documentChanged': {
+                    const next = {
+                        circuit: message.circuit,
+                        version: message.version,
+                        state: message.state,
+                        classification: message.classification,
+                    };
+                    snapshotRef.current = next;
+                    setSnapshot(next);
+                    break;
+                }
+                case 'editApplied':
+                    setAppliedRequestId(message.requestId);
+                    break;
+                case 'editRejected':
+                    setRejectedRequestId(message.requestId);
+                    break;
+            }
+        }
+
+        window.addEventListener('message', onMessage);
+        vscodeApi.postMessage({ type: 'ready' });
+
+        return () => window.removeEventListener('message', onMessage);
+    }, []);
+
+    /** Returns the id the host will answer with, if a document snapshot exists. */
+    function requestEdit(content: CircuitContent): RequestedEdit | undefined {
+        const base = snapshotRef.current;
+        if (!base) {
+            return undefined;
+        }
+
+        const requestId = crypto.randomUUID();
+        vscodeApi.postMessage({ type: 'applyEdit', requestId, content, baseVersion: base.version });
+        return { requestId, baseVersion: base.version };
+    }
+
+    return { snapshot, requestEdit, rejectedRequestId, appliedRequestId };
+}

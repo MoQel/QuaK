@@ -4,7 +4,9 @@ import type { IDockviewHeaderActionsProps } from 'dockview-react';
 import { PanelHeaderActions } from './PanelHeaderActions.tsx';
 import { useCircuitTabs } from '@/contexts/CircuitTabsContext.tsx';
 
-vi.mock('@/views/circuit-view/components/CircuitToolbar.tsx', () => ({
+// Partial mock: the toolbar is stubbed, but CircuitStoreProvider around it stays real.
+vi.mock('@quak/circuit-editor', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('@quak/circuit-editor')>()),
     CircuitToolbar: () => <div data-testid="circuit-toolbar" />,
 }));
 vi.mock('@/views/text-editor-view/components/CodeToolbar.tsx', () => ({
@@ -51,7 +53,7 @@ describe('PanelHeaderActions', () => {
     });
 
     it('renders nothing for other panels', () => {
-        render(<PanelHeaderActions {...makeProps('library')} />);
+        render(<PanelHeaderActions {...makeProps('inspector')} />);
         expect(screen.queryByTestId('circuit-toolbar')).toBeNull();
         expect(screen.queryByTestId('code-toolbar')).toBeNull();
     });

@@ -140,3 +140,59 @@ jobs:
           git config --local user.name "GitHub Action"
           git add docs/api/openapi.yaml
           git diff --quiet && git diff --staged --quiet || (git commit -m "docs: automated update of openapi spec" && git pull --rebase origin ${{ github.head_ref || github.ref_name }} && git push)
+
+  js-checks:
+    name: js checks
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Lint
+        run: npm run lint
+
+      # Shared packages/ must not import from frontend/.
+      - name: Check package boundaries (dependency-cruiser)
+        run: npm run lint:boundaries
+
+      # The TS parser is generated from the same .g4 the backend uses and is
+      # committed (this job has no JDK). Fails if the grammars moved without it.
+      - name: Check the generated QASM parser is current
+        run: npm run check:generated
+
+      - name: Typecheck (frontend, packages, extension)
+        run: npm run typecheck
+
+      - name: Frontend tests
+        run: npm run test:frontend
+
+      - name: Shared package tests (QASM transform)
+        run: npm run test:packages
+
+      - name: Extension unit tests
+        run: npm run test:extension
+
+      - name: Build extension
+        run: npm run build:extension
+
+      # Packaging is where a stray runtime dependency would drag .git and .env
+      # into a published extension, so the artifact is checked on every push.
+      - name: Package extension and check the vsix
+        run: npm run package:extension
+
+      # Runs a real VSCode, which needs a virtual display on Linux.
+      - name: Extension integration tests
+        run: xvfb-run -a npm run test:extension:integration

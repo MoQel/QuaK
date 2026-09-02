@@ -164,7 +164,7 @@ export class QulacsMapper {
         const readoutRegisters = buildReadoutRegisters(
             circuitData,
             circuitWidth,
-            context.classicOffsets,
+            context.classicWires,
             includeAutoReadout,
             autoReadoutOffset,
         );
@@ -229,7 +229,7 @@ export class QulacsMapper {
         for (const layer of circuitData.layers) {
             for (const op of layer.quantumOperations) {
                 if (op.type === 'ELEMENTARY_QUANTUM_GATE') {
-                    applyGateToState(state, op, context.quantumOffsets);
+                    applyGateToState(state, op, context.quantumWires);
                 } else if (op.type === 'MEASUREMENT') {
                     measurementResults.push(...this.applyMeasurement(state, op, context, sampleCount));
                 }
@@ -286,7 +286,7 @@ export class QulacsMapper {
                 if (measuredQubits.has(key)) continue;
 
                 const targetQubit = { registerId: register.id, index };
-                const targetIndex = context.quantumOffsets[register.id] + index;
+                const targetIndex = context.quantumWires.getWireIndex(targetQubit) ?? 0;
                 const classicalAddress = autoReadoutOffset + targetIndex;
                 const { outcome, probabilities } = this.measureQubit(state, targetIndex, classicalAddress, {
                     code: 'RESULT_INTEGRITY_ERROR',

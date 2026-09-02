@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button.tsx';
 import { FileCode2 } from 'lucide-react';
-import { generateCircuitCode } from '@/views/circuit-view/util/circuitPersistence.ts';
+import { generateCircuitCode } from '@/views/circuit-workspace/circuitPersistence.ts';
 import { CircuitResponse } from '@/api/dto/circuit.ts';
 import { useState } from 'react';
 import { toast } from 'sonner';
