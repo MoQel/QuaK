@@ -24,8 +24,8 @@ public abstract class QuantumOperation extends ElementWithId {
         if (targetQubits.isEmpty()) {
             throw new InvalidOperationConfigurationException("Must provide at least one qubit to target.");
         }
-        this.targetQubits = targetQubits;
-        this.controlQubits = controlQubits;
+        this.targetQubits = List.copyOf(targetQubits);
+        this.controlQubits = controlQubits == null ? List.of() : List.copyOf(controlQubits);
     }
 
     /**

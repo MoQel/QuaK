@@ -22,13 +22,29 @@ repositories {
     mavenCentral()
 }
 
+def npmExecutableSuffix =
+	System.getProperty('os.name').toLowerCase().contains('windows')
+		? '/npm.cmd'
+		: '/bin/npm'
+
+def spotlessNpmExecutable =
+	"${tasks.named('npmSetup').get().npmDir.get()}${npmExecutableSuffix}"
+
 spotless {
 	java {
 		target 'src/*/java/**/*.java'
 		importOrder()
 		removeUnusedImports()
-		prettier(['prettier-plugin-java': '2.8.1']).configFile('.prettierrc.yaml')
+
+		prettier(['prettier-plugin-java': '2.8.1'])
+			.npmExecutable(spotlessNpmExecutable)
+			.configFile('.prettierrc.yaml')
 	}
+}
+
+tasks.named('spotlessJava').configure {
+	dependsOn tasks.named('nodeSetup')
+	dependsOn tasks.named('npmSetup')
 }
 
 
@@ -305,4 +321,3 @@ openApi {
         args.set(["--spring.profiles.active=dev"])
     }
 }
-

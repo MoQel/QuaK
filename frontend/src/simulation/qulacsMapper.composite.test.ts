@@ -1,7 +1,12 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { initQulacs } from 'qulacs-wasm';
 import { QulacsMapper } from './qulacsMapper.ts';
-import type { CircuitResponse, CompositeQuantumGateDto, QuantumOperationDto } from '@/api/dto/circuit.ts';
+import type {
+    CircuitResponse,
+    CompositeQuantumGateDto,
+    QuantumOperationDto,
+    SubcircuitOperationDto,
+} from '@/api/dto/circuit.ts';
 import type { SimulationResult } from '@/simulation/simulation.types.ts';
 
 const sel = (index: number) => ({ registerId: 'qreg-0', index });
@@ -90,6 +95,26 @@ describe('simulating user-defined gates', () => {
 
         expect(findState(result, '|00>').prob).toBeCloseTo(0.5);
         expect(findState(result, '|11>').prob).toBeCloseTo(0.5);
+    });
+
+    /**
+     * A subcircuit names another circuit and carries no body, so it cannot be expanded here. It
+     * must therefore fail visibly: skipping it would simulate a circuit without the gate and
+     * report a confidently wrong result.
+     */
+    it('refuses to simulate a subcircuit instead of skipping it', () => {
+        const subcircuit: SubcircuitOperationDto = {
+            id: 'sub-1',
+            type: 'SUBCIRCUIT_OPERATION',
+            identifier: 'bell_state',
+            definitionCircuitId: 'other-circuit',
+            definitionName: 'bell_state',
+            inverseForm: false,
+            targetQubits: [sel(0), sel(1)],
+            controlQubits: [],
+        };
+
+        expect(() => QulacsMapper.translateAndRun(circuitOf(2, [subcircuit]))).toThrow(/bell_state/);
     });
 
     it('treats a composite with an empty body as a no-op', () => {

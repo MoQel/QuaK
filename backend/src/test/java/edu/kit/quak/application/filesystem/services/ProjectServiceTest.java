@@ -9,9 +9,11 @@ import static org.mockito.Mockito.when;
 
 import edu.kit.quak.application.circuit.ports.in.CircuitServicePort;
 import edu.kit.quak.application.filesystem.exception.ProjectNotFoundException;
+import edu.kit.quak.application.filesystem.ports.out.FileContentRepositoryPort;
 import edu.kit.quak.application.filesystem.ports.out.ProjectRepositoryPort;
 import edu.kit.quak.application.user.ports.in.ProjectRoleServicePort;
 import edu.kit.quak.application.user.ports.out.ProjectRoleRepositoryPort;
+import edu.kit.quak.core.filesystem.model.File;
 import edu.kit.quak.core.filesystem.model.Project;
 import edu.kit.quak.core.user.model.User;
 import edu.kit.quak.shared.tags.UnitTest;
@@ -31,6 +33,9 @@ class ProjectServiceTest {
     private ProjectRepositoryPort repository;
 
     @Mock
+    private FileContentRepositoryPort fileContentRepository;
+
+    @Mock
     private ProjectRoleServicePort roleService;
 
     @Mock
@@ -44,7 +49,7 @@ class ProjectServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new ProjectService(repository, roleService, roleRepository, circuitService);
+        service = new ProjectService(repository, fileContentRepository, roleService, roleRepository, circuitService);
         testUser = new User();
         testUser.setId(UUID.randomUUID());
     }
@@ -57,6 +62,9 @@ class ProjectServiceTest {
         Project result = service.createProject(p, testUser);
 
         assertEquals(testUser.getId(), result.getOwnerId());
+        File initialFile = result.getContents().stream().filter(File.class::isInstance).map(File.class::cast).findFirst().orElseThrow();
+        assertEquals("hello_world.qasm", initialFile.getName());
+        verify(fileContentRepository).saveContent(anyString(), any());
         verify(repository).save(p);
         verify(roleRepository).save(any());
     }

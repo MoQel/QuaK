@@ -1,16 +1,10 @@
 import React, { useMemo, useRef, useState } from 'react';
-import {
-    CompositeQuantumGateDto,
-    isCompositeGate,
-    RegisterResponse,
-    SubcircuitOperationDto,
-} from '@/api/dto/circuit.ts';
+import { CompositeQuantumGateDto, isCompositeGate, SubcircuitOperationDto } from '@/api/dto/circuit.ts';
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu.tsx';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip.tsx';
 import { CompositeGatePreview } from '@/views/circuit-view/components/CompositeGatePreview.tsx';
-import { CELL_WIDTH, QUBIT_HEIGHT } from '@/views/circuit-view/util/layout.ts';
-import { toGlobalQubitIndex } from '@/views/circuit-view/util/spans.ts';
-import { DragData } from '../util/types';
+import { CELL_WIDTH, QUBIT_HEIGHT, getSelectorVisualY } from '@/views/circuit-view/util/layout.ts';
+import { DragData, FlatQubit } from '../util/types';
 
 /** Height of the box body within a wire's row, matching the 40px of an elementary gate. */
 const BOX_INSET_Y = 4;
@@ -42,7 +36,8 @@ interface CompositionBoxProps {
      * only in where the contents live — inline in a gate declaration, or in another circuit.
      */
     operation: CompositeQuantumGateDto | SubcircuitOperationDto;
-    registers: RegisterResponse[];
+    /** Wire rows in render order; a wire's y comes from here, not from its index. */
+    flatQubits: FlatQubit[];
     layerIdx: number;
     /** Semi-transparent and non-interactive while dragged; see ElementaryQuantumGate. */
     isGhost?: boolean;
@@ -69,7 +64,7 @@ interface CompositionBoxProps {
  */
 export function CompositionBox({
     operation,
-    registers,
+    flatQubits,
     layerIdx,
     isGhost = false,
     onDragStart,
@@ -87,24 +82,26 @@ export function CompositionBox({
     const { minY, spanHeight, ports } = useMemo(() => {
         // Parameter order, not wire order: position i belongs to portLabels[i]. A call may pass its
         // qubits in any order, so the box's extent comes from min/max rather than first/last.
-        const wireOfPosition = operation.targetQubits.map((selector) => toGlobalQubitIndex(registers, selector));
-        const min = Math.min(...wireOfPosition);
-        const max = Math.max(...wireOfPosition);
+        // Rows are taken as rendered y, not as qubit index: register headers, section gaps and
+        // collapsed registers all move a wire away from `index * QUBIT_HEIGHT`.
+        const yOfPosition = operation.targetQubits.map((selector) => getSelectorVisualY(flatQubits, selector));
+        const min = Math.min(...yOfPosition);
+        const max = Math.max(...yOfPosition);
 
         return {
             minY: min,
-            spanHeight: (max - min) * QUBIT_HEIGHT,
+            spanHeight: max - min,
             // Every declared parameter gets a port, including ones the body never touches: the wire
             // is bound to the gate either way, and leaving it unlabelled makes the box look as if it
             // took fewer qubits than it does. `usedQubitPositions` stays available on the DTO for
             // callers that do want the distinction.
-            ports: wireOfPosition.map((wire, position) => ({
+            ports: yOfPosition.map((y, position) => ({
                 position,
-                wire,
+                y,
                 label: isCompositeGate(operation) ? (operation.portLabels?.[position] ?? '') : `q${position}`,
             })),
         };
-    }, [operation, registers]);
+    }, [operation, flatQubits]);
 
     const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
         isDraggingRef.current = true;
@@ -179,7 +176,7 @@ export function CompositionBox({
                             onClick={handleClick}
                             className={`absolute z-30 group pointer-events-none ${isGhost ? 'opacity-50' : ''}`}
                             style={{
-                                top: minY * QUBIT_HEIGHT,
+                                top: minY,
                                 left: layerIdx * CELL_WIDTH,
                                 width: CELL_WIDTH,
                                 height: spanHeight + QUBIT_HEIGHT,
@@ -224,7 +221,7 @@ export function CompositionBox({
                                         key={port.position}
                                         className="absolute left-[3px] font-mono leading-none opacity-80 text-[9px]"
                                         style={{
-                                            top: (port.wire - minY) * QUBIT_HEIGHT + QUBIT_HEIGHT / 2 - BOX_INSET_Y - 4,
+                                            top: port.y - minY + QUBIT_HEIGHT / 2 - BOX_INSET_Y - 4,
                                         }}
                                     >
                                         {port.label}

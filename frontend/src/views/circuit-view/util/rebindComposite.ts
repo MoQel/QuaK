@@ -29,6 +29,12 @@ export const rebindComposite = (
         replacementByOldKey.get(getSelectorKey(selector)) ?? selector;
 
     const rebindOperation = (operation: QuantumOperationDto): QuantumOperationDto => {
+        // A measurement has no controls (the type says so: an empty tuple) and its classic bits
+        // name a classical register, which a gate's qubit parameters never rebind.
+        if (operation.type === 'MEASUREMENT') {
+            return { ...operation, targetQubits: operation.targetQubits.map(rebindSelector) };
+        }
+
         const rebound = {
             ...operation,
             targetQubits: operation.targetQubits.map(rebindSelector),

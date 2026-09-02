@@ -4,9 +4,12 @@ import { apiRequest } from '@/api/api.ts';
 import {
     CircuitResponse,
     CompositeQuantumGateDto,
+    isClassicRegister,
     isQuantumRegister,
     QuantumOperationDto,
     RegisterResponse,
+    REGISTER_TYPE_CLASSIC,
+    REGISTER_TYPE_QUANTUM,
 } from '@/api/dto/circuit.ts';
 import { createCircuitService } from '@/views/circuit-view/util/circuitService.ts';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover.tsx';
@@ -14,6 +17,8 @@ import { useState } from 'react';
 import { useActiveCode } from '@/hooks/editor/useActiveCode.ts';
 import { toast } from 'sonner';
 import { QuantikzExportButton } from '@/views/circuit-view/components/QuantikzExportButton.tsx';
+import { RegisterManager } from '@/views/circuit-view/components/RegisterManager.tsx';
+import type { OperationIdentifier } from '@/lib/operations.ts';
 
 interface CircuitToolbarProps {
     circuit: CircuitResponse | undefined;
@@ -25,7 +30,6 @@ export function CircuitToolbar({ circuit, setCircuit }: Readonly<CircuitToolbarP
     const [isPopoverOpen, setIsPopoverOpen] = useState(false);
     const [isParsing, setIsParsing] = useState(false);
     const { activeCodeTabId, getActiveCode } = useActiveCode();
-
 
     const parseActiveEditor = async () => {
         const code = getActiveCode();
@@ -62,6 +66,7 @@ export function CircuitToolbar({ circuit, setCircuit }: Readonly<CircuitToolbarP
     return (
         <div className="flex items-center justify-start gap-2">
             <QuantikzExportButton circuit={circuit ?? null} />
+            <RegisterManager circuit={circuit} setCircuit={setCircuit} />
             <div className="flex space-x-3">
                 <Button
                     onClick={parseActiveEditor}
@@ -73,7 +78,7 @@ export function CircuitToolbar({ circuit, setCircuit }: Readonly<CircuitToolbarP
                 >
                     <RefreshCw className={isParsing ? 'animate-spin' : undefined} />
                 </Button>
-                <Button onClick={addQubit} size="icon" className="size-8" variant="secondary" title="Add Qubit">
+                <Button onClick={() => addQubit()} size="icon" className="size-8" variant="secondary" title="Add Qubit">
                     <Plus />
                 </Button>
                 <Button
@@ -124,6 +129,7 @@ export function CircuitToolbar({ circuit, setCircuit }: Readonly<CircuitToolbarP
 type ParserRegister = Partial<RegisterResponse> & {
     id?: string;
     name?: string;
+    type?: RegisterResponse['type'];
     numberOfQubits?: number;
     numberOfBits?: number;
 };
@@ -136,21 +142,20 @@ type ParserLayer = {
     quantumOperations?: ParserOperation[];
 };
 
-// Content-only parse result: the backend returns registers and layers without any
-// circuit identity; ids are re-mapped onto the active circuit during normalization.
 type ParserCircuit = {
     registers?: ParserRegister[];
     layers?: ParserLayer[];
 };
 
-const extractIdentifier = (operation: ParserOperation): string => {
+const extractIdentifier = (operation: ParserOperation): OperationIdentifier => {
     const rawIdentifier = operation.identifier ?? operation.operationDefinition;
 
-    if (typeof rawIdentifier === 'string') return rawIdentifier.toUpperCase();
+    if (typeof rawIdentifier === 'string') return rawIdentifier.toUpperCase() as OperationIdentifier;
     if (rawIdentifier && typeof rawIdentifier === 'object') {
         const definition = rawIdentifier as { name?: unknown; identifier?: unknown };
-        if (typeof definition.name === 'string') return definition.name.toUpperCase();
-        if (typeof definition.identifier === 'string') return definition.identifier.toUpperCase();
+        if (typeof definition.name === 'string') return definition.name.toUpperCase() as OperationIdentifier;
+        if (typeof definition.identifier === 'string')
+            return definition.identifier.toUpperCase() as OperationIdentifier;
     }
 
     return 'DUMMY';
@@ -158,26 +163,54 @@ const extractIdentifier = (operation: ParserOperation): string => {
 
 const normalizeParsedCircuit = (rawCircuit: unknown, currentCircuit: CircuitResponse | undefined): CircuitResponse => {
     const parsed = rawCircuit as ParserCircuit;
-    const currentQuantumRegisters = currentCircuit?.registers.filter(isQuantumRegister) ?? [];
+    const currentRegistersByType = new Map<RegisterResponse['type'], RegisterResponse[]>();
+    for (const register of currentCircuit?.registers ?? []) {
+        const list = currentRegistersByType.get(register.type) ?? [];
+        list.push(register);
+        currentRegistersByType.set(register.type, list);
+    }
+
+    const registerTypeIndexes = new Map<RegisterResponse['type'], number>();
     const registerIdMap = new Map<string, string>();
 
     const registers: RegisterResponse[] = (parsed.registers ?? []).map((register, index) => {
-        const currentRegister = currentQuantumRegisters[index];
+        const type =
+            register.type ?? (register.numberOfBits !== undefined ? REGISTER_TYPE_CLASSIC : REGISTER_TYPE_QUANTUM);
+        const typeIndex = registerTypeIndexes.get(type) ?? 0;
+        registerTypeIndexes.set(type, typeIndex + 1);
+        const currentRegister = currentRegistersByType.get(type)?.[typeIndex];
         const id = currentRegister?.id ?? register.id ?? crypto.randomUUID();
 
         if (register.id) {
             registerIdMap.set(register.id, id);
         }
 
+        if (type === REGISTER_TYPE_CLASSIC) {
+            return {
+                id,
+                name:
+                    register.name ??
+                    (currentRegister && isClassicRegister(currentRegister) ? currentRegister.name : `c${index}`),
+                type: REGISTER_TYPE_CLASSIC,
+                numberOfBits:
+                    register.numberOfBits ??
+                    (currentRegister && isClassicRegister(currentRegister) ? currentRegister.numberOfBits : 1),
+            };
+        }
+
         return {
             id,
-            name: register.name ?? currentRegister?.name ?? `q${index}`,
-            type: 'Quantum_Register',
-            numberOfQubits: register.numberOfQubits ?? currentRegister?.numberOfQubits ?? 1,
+            name:
+                register.name ??
+                (currentRegister && isQuantumRegister(currentRegister) ? currentRegister.name : `q${index}`),
+            type: REGISTER_TYPE_QUANTUM,
+            numberOfQubits:
+                register.numberOfQubits ??
+                (currentRegister && isQuantumRegister(currentRegister) ? currentRegister.numberOfQubits : 1),
         };
     });
 
-    const fallbackRegister = currentQuantumRegisters[0];
+    const fallbackRegister = registers.find(isQuantumRegister) ?? currentCircuit?.registers.find(isQuantumRegister);
     if (registers.length === 0 && fallbackRegister) {
         registers.push(fallbackRegister);
     }
@@ -185,8 +218,8 @@ const normalizeParsedCircuit = (rawCircuit: unknown, currentCircuit: CircuitResp
     const normalizeSelector = (selector: { registerId?: string; index?: number }) => ({
         registerId:
             (selector.registerId ? registerIdMap.get(selector.registerId) : undefined) ??
-            fallbackRegister?.id ??
             selector.registerId ??
+            fallbackRegister?.id ??
             registers[0]?.id,
         index: selector.index ?? 0,
     });
@@ -203,6 +236,21 @@ const normalizeParsedCircuit = (rawCircuit: unknown, currentCircuit: CircuitResp
             targetQubits: (operation.targetQubits ?? []).map(normalizeSelector),
             controlQubits: (operation.controlQubits ?? []).map(normalizeSelector),
         };
+
+        if (operation.type === 'MEASUREMENT') {
+            // A measurement carries classic bits instead of controls and never an angle, so it
+            // cannot go through the elementary branch below.
+            return {
+                ...base,
+                type: 'MEASUREMENT',
+                identifier: extractIdentifier(operation),
+                inverseForm: false,
+                controlQubits: [],
+                classicBits: ('classicBits' in operation && operation.classicBits ? operation.classicBits : []).map(
+                    normalizeSelector,
+                ),
+            } as QuantumOperationDto;
+        }
 
         if (operation.type === 'COMPOSITE_QUANTUM_GATE') {
             const composite = operation as Partial<CompositeQuantumGateDto>;

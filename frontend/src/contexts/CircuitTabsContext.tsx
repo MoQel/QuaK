@@ -19,12 +19,18 @@ import { toast } from 'sonner';
 interface CircuitTabsContextType {
     activeCircuit: CircuitResponse | undefined;
     activeCircuitTabId: string | null;
+    activeCircuitLoading: boolean;
+    activeCircuitError: string | null;
+    reloadActiveCircuit: () => void;
     setActiveCircuit: React.Dispatch<SetStateAction<CircuitResponse | undefined>>;
 }
 
 const CircuitTabsContext = createContext<CircuitTabsContextType>({
     activeCircuit: undefined,
     activeCircuitTabId: null,
+    activeCircuitLoading: false,
+    activeCircuitError: null,
+    reloadActiveCircuit: () => {},
     setActiveCircuit: () => {},
 });
 
@@ -44,10 +50,14 @@ export const CircuitTabsProvider: React.FC<{ children: React.ReactNode }> = ({ c
         state.tabs.groups.flatMap((group) => group.openTabs.map((tab) => tab.id)).join('|'),
     );
     const [circuitsByTabId, setCircuitsByTabId] = useState<Record<string, CircuitResponse | undefined>>({});
+    const [circuitLoadErrorsByTabId, setCircuitLoadErrorsByTabId] = useState<Record<string, string | undefined>>({});
+    const [reloadRequestCount, setReloadRequestCount] = useState(0);
 
     // Each file tab shows the circuit stored for that file in the database
     // (single source of truth); without a tab there is no circuit to show.
     const activeCircuit = activeCircuitTabId ? circuitsByTabId[activeCircuitTabId] : undefined;
+    const activeCircuitError = activeCircuitTabId ? (circuitLoadErrorsByTabId[activeCircuitTabId] ?? null) : null;
+    const activeCircuitLoading = Boolean(activeCircuitTabId && !activeCircuit && !activeCircuitError);
 
     // Circuits whose local edits have not been written to the backend yet.
     const dirtyCircuitKeysRef = useRef<Set<string>>(new Set());
@@ -107,11 +117,19 @@ export const CircuitTabsProvider: React.FC<{ children: React.ReactNode }> = ({ c
         [activeCircuitTabId],
     );
 
+    const reloadActiveCircuit = useCallback(() => {
+        if (!activeCircuitTabId) return;
+        setCircuitLoadErrorsByTabId((prev) => ({ ...prev, [activeCircuitTabId]: undefined }));
+        setCircuitsByTabId((prev) => ({ ...prev, [activeCircuitTabId]: undefined }));
+        setReloadRequestCount((count) => count + 1);
+    }, [activeCircuitTabId]);
+
     // Load the circuit linked to the active file tab from the backend (get-or-create).
     useEffect(() => {
         if (!activeCircuitTabId || circuitsByTabId[activeCircuitTabId]) return;
 
         let cancelled = false;
+        setCircuitLoadErrorsByTabId((prev) => ({ ...prev, [activeCircuitTabId]: undefined }));
         api.get<CircuitResponse>(`/api/circuit/file/${activeCircuitTabId}`)
             .then((fetched) => {
                 if (cancelled) return;
@@ -120,12 +138,20 @@ export const CircuitTabsProvider: React.FC<{ children: React.ReactNode }> = ({ c
                     prev[activeCircuitTabId] ? prev : { ...prev, [activeCircuitTabId]: fetched },
                 );
             })
-            .catch((error) => console.error('Failed to load circuit for file', error));
+            .catch((error) => {
+                console.error('Failed to load circuit for file', error);
+                if (cancelled) return;
+                setCircuitLoadErrorsByTabId((prev) => ({
+                    ...prev,
+                    [activeCircuitTabId]:
+                        error instanceof Error ? error.message : 'Could not load the circuit for this file.',
+                }));
+            });
 
         return () => {
             cancelled = true;
         };
-    }, [activeCircuitTabId, circuitsByTabId]);
+    }, [activeCircuitTabId, circuitsByTabId, reloadRequestCount]);
 
     // Persist locally edited circuits to the backend (debounced full replace).
     useEffect(() => {
@@ -149,6 +175,7 @@ export const CircuitTabsProvider: React.FC<{ children: React.ReactNode }> = ({ c
     useEffect(() => {
         dirtyCircuitKeysRef.current.clear();
         setCircuitsByTabId({});
+        setCircuitLoadErrorsByTabId({});
 
         return () => {
             flushDirtyCircuits();
@@ -158,10 +185,20 @@ export const CircuitTabsProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const contextValue = useMemo(
         () => ({
             activeCircuit,
+            activeCircuitError,
+            activeCircuitLoading,
             activeCircuitTabId,
+            reloadActiveCircuit,
             setActiveCircuit,
         }),
-        [activeCircuit, activeCircuitTabId, setActiveCircuit],
+        [
+            activeCircuit,
+            activeCircuitError,
+            activeCircuitLoading,
+            activeCircuitTabId,
+            reloadActiveCircuit,
+            setActiveCircuit,
+        ],
     );
 
     return <CircuitTabsContext.Provider value={contextValue}>{children}</CircuitTabsContext.Provider>;

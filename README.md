@@ -58,7 +58,7 @@ or LSP dependency changes.
 2. **Start Database:**
 
     ```bash
-    docker-compose -f docker-compose.dev.yaml up -d database
+    docker compose -f docker-compose.dev.yaml up -d database
     ```
 
 3. **Start Backend (with Debugging):**

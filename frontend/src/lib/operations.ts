@@ -1,5 +1,5 @@
 import { Gauge, Plus, X as LucideX } from 'lucide-react';
-import { ComponentType } from 'react';
+import type { ComponentType } from 'react';
 import { QuantumOperationType } from '@/api/dto/circuit.ts';
 
 export type OperationIdentifier =

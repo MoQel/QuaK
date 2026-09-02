@@ -4,14 +4,24 @@ import { Provider } from 'react-redux';
 import { store } from '@/store/store.ts';
 import { DropzoneGrid } from './DropzoneGrid.tsx';
 import type { CircuitResponse, CompositeQuantumGateDto } from '@/api/dto/circuit.ts';
+import { REGISTER_TYPE_QUANTUM } from '@/api/dto/circuit.ts';
+import { QUBIT_HEIGHT, REGISTER_HEADER_HEIGHT } from '@/views/circuit-view/util/layout.ts';
 import type { DragData, FlatQubit, UiLayer } from '@/views/circuit-view/util/types.ts';
 
+// One quantum register of four wires, laid out the way buildFlatQubits would: a register header
+// above the first row, then one row per qubit.
 const flatQubits: FlatQubit[] = Array.from({ length: 4 }, (_, i) => ({
     regId: 'r1',
     regName: 'q',
     regIdx: 0,
     relQubitIdx: i,
     absQubitIdx: i,
+    regType: REGISTER_TYPE_QUANTUM,
+    section: 'quantum' as const,
+    headerY: 0,
+    registerSize: 4,
+    isCollapsed: false,
+    visualY: REGISTER_HEADER_HEIGHT + i * QUBIT_HEIGHT,
 }));
 
 const circuit: CircuitResponse = {

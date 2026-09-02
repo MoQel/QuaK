@@ -6,7 +6,9 @@ import edu.kit.quak.core.circuit.exceptions.OperationNotFoundException;
 import edu.kit.quak.core.circuit.exceptions.RegisterNotFoundException;
 import edu.kit.quak.core.circuit.model.layer.Layer;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
+import edu.kit.quak.core.circuit.model.layer.operation.Measurement;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
+import edu.kit.quak.core.circuit.model.register.ClassicRegister;
 import edu.kit.quak.core.circuit.model.register.QuantumRegister;
 import edu.kit.quak.core.circuit.model.register.Register;
 import edu.kit.quak.core.common.exception.RequestedIndexOutOfBounds;
@@ -119,7 +121,7 @@ public class QuantumCircuit extends ElementWithId {
                 // Remove all quantum operations that had this qubit either as target or as control.
                 boolean removeOperation = selectors
                     .stream()
-                    .anyMatch(selector -> selector.getRegisterId().equals(registers.getFirst().getId()) && selector.getIndex() == qubitIdx);
+                    .anyMatch(selector -> selector.getRegisterId().equals(registerId) && selector.getIndex() == qubitIdx);
                 if (removeOperation) {
                     layer.removeQuantumOperation(operation);
                     continue;
@@ -136,10 +138,99 @@ public class QuantumCircuit extends ElementWithId {
         flushLayers();
     }
 
+    /**
+     * Deletes a register from the circuit, removing all operations that reference
+     * any qubit or classic bit within the deleted register.
+     *
+     * @param registerId the ID of the register to delete
+     * @throws RegisterNotFoundException if no register with the given ID exists
+     */
+    public void deleteRegister(@NonNull String registerId) {
+        Register register = findRegisterById(registerId);
+
+        // Remove all operations that reference qubits or classic bits of this register.
+        for (Layer layer : layers) {
+            for (QuantumOperation operation : new ArrayList<>(layer.getQuantumOperations())) {
+                boolean referencesDeletedRegister = Stream.concat(
+                    operation.getTargetQubits().stream(),
+                    Stream.concat(
+                        operation.getControlQubits() != null ? operation.getControlQubits().stream() : Stream.empty(),
+                        operation instanceof Measurement m ? m.getClassicBits().stream() : Stream.empty()
+                    )
+                ).anyMatch(sel -> sel.getRegisterId().equals(registerId));
+
+                if (referencesDeletedRegister) {
+                    layer.removeQuantumOperation(operation);
+                }
+            }
+        }
+
+        registers.remove(register);
+        flushLayers();
+    }
+
+    /**
+     * Adds a classic bit to the specified ClassicRegister.
+     *
+     * @param registerId the ID of the ClassicRegister
+     * @throws RegisterNotFoundException  if no register with the given ID exists
+     * @throws InvalidRegisterTypeException if the register is not a ClassicRegister
+     */
+    public void addClassicBit(@NonNull String registerId) {
+        ClassicRegister classicRegister = findClassicRegisterById(registerId);
+        classicRegister.addBit();
+    }
+
+    /**
+     * Removes a classic bit from the specified ClassicRegister. All operations
+     * targeting the bit are removed, and indices of subsequent bits are decremented.
+     *
+     * @param registerId the ID of the ClassicRegister
+     * @param bitIdx     the index of the bit to remove
+     * @throws RegisterNotFoundException   if no register with the given ID exists
+     * @throws InvalidRegisterTypeException if the register is not a ClassicRegister
+     * @throws RequestedIndexOutOfBounds    if bitIdx is out of range
+     */
+    public void removeClassicBit(@NonNull String registerId, int bitIdx) {
+        ClassicRegister classicRegister = findClassicRegisterById(registerId);
+
+        if (bitIdx < 0 || bitIdx >= classicRegister.getNumberOfBits()) {
+            throw new RequestedIndexOutOfBounds("ClassicBit", bitIdx, classicRegister.getNumberOfBits());
+        }
+
+        classicRegister.removeBit();
+
+        for (Layer layer : layers) {
+            for (QuantumOperation operation : new ArrayList<>(layer.getQuantumOperations())) {
+                if (operation instanceof Measurement m) {
+                    List<ElementSelector> classicBits = m.getClassicBits();
+
+                    // Remove operations that target this exact bit.
+                    boolean targetsRemovedBit = classicBits
+                        .stream()
+                        .anyMatch(sel -> sel.getRegisterId().equals(registerId) && sel.getIndex() == bitIdx);
+                    if (targetsRemovedBit) {
+                        layer.removeQuantumOperation(operation);
+                        continue;
+                    }
+
+                    // Decrement indices for bits after the removed one.
+                    classicBits
+                        .stream()
+                        .filter(sel -> sel.getRegisterId().equals(registerId) && sel.getIndex() > bitIdx)
+                        .forEach(sel -> sel.setIndex(sel.getIndex() - 1));
+                }
+            }
+        }
+
+        flushLayers();
+    }
+
     public void addQuantumOperation(@NonNull QuantumOperation operation, int layerIdx) {
         if (layerIdx < 0 || layerIdx > layers.size()) {
             throw new RequestedIndexOutOfBounds("Layer", layerIdx, layers.size());
         }
+        validateOperationSelectors(operation);
 
         if (layerIdx == layers.size()) {
             layers.add(new Layer(List.of(operation)));
@@ -154,7 +245,8 @@ public class QuantumCircuit extends ElementWithId {
         @NonNull String operationId,
         int layerIdx,
         @NonNull List<ElementSelector> targetQubits,
-        List<ElementSelector> controlQubits
+        List<ElementSelector> controlQubits,
+        List<ElementSelector> classicBits
     ) {
         if (layerIdx < 0 || layerIdx > layers.size()) {
             throw new RequestedIndexOutOfBounds("Layer", layerIdx, layers.size());
@@ -167,9 +259,18 @@ public class QuantumCircuit extends ElementWithId {
             // 'for' loop CANNOT be replaced with enhanced 'for'
             for (QuantumOperation operation : layers.get(idx).getQuantumOperations()) {
                 if (operation.getId().equals(operationId)) {
+                    validateOperationSelectors(operation, targetQubits, controlQubits, classicBits);
+
                     // Set new target and control qubits.
                     operation.setTargetQubits(targetQubits);
-                    operation.setControlQubits(controlQubits);
+                    if (operation instanceof Measurement measurement) {
+                        measurement.setControlQubits(List.of());
+                        if (classicBits != null) {
+                            measurement.setClassicBits(classicBits);
+                        }
+                    } else {
+                        operation.setControlQubits(controlQubits == null ? List.of() : controlQubits);
+                    }
 
                     // Move operation to new layer.
                     layers.get(idx).removeQuantumOperation(operation);
@@ -182,8 +283,12 @@ public class QuantumCircuit extends ElementWithId {
     }
 
     public void removeQuantumOperation(String operationId) {
-        for (Layer layer : layers) {
-            for (QuantumOperation operation : layer.getQuantumOperations()) {
+        for (int layerIdx = 0; layerIdx < layers.size(); layerIdx++) {
+            Layer layer = layers.get(layerIdx);
+            List<QuantumOperation> operations = layer.getQuantumOperations();
+
+            for (int operationIdx = 0; operationIdx < operations.size(); operationIdx++) {
+                QuantumOperation operation = operations.get(operationIdx);
                 if (operation.getId().equals(operationId)) {
                     layer.removeQuantumOperation(operation);
                     rescheduleOperations();
@@ -278,9 +383,59 @@ public class QuantumCircuit extends ElementWithId {
 
     private Set<ElementSelector> getTargetAndControlQubits(QuantumOperation op) {
         Stream<ElementSelector> targetStream = op.getTargetQubits().stream();
-        Stream<ElementSelector> controlStream = op.getControlQubits() != null ? op.getControlQubits().stream() : Stream.empty();
+        Stream<ElementSelector> controlStream = op.getControlQubits().stream();
 
         return Stream.concat(targetStream, controlStream).collect(Collectors.toSet());
+    }
+
+    private void validateOperationSelectors(QuantumOperation operation) {
+        List<ElementSelector> classicBits = operation instanceof Measurement measurement ? measurement.getClassicBits() : null;
+        validateOperationSelectors(operation, operation.getTargetQubits(), operation.getControlQubits(), classicBits);
+    }
+
+    private void validateOperationSelectors(
+        QuantumOperation operation,
+        List<ElementSelector> targetQubits,
+        List<ElementSelector> controlQubits,
+        List<ElementSelector> classicBits
+    ) {
+        validateQuantumSelectors(targetQubits);
+        validateQuantumSelectors(controlQubits);
+
+        if (operation instanceof Measurement measurement) {
+            validateMeasurementSelectors(targetQubits, controlQubits, classicBits == null ? measurement.getClassicBits() : classicBits);
+            return;
+        }
+
+        if (classicBits != null && !classicBits.isEmpty()) {
+            throw new InvalidOperationConfigurationException("Classical bits are only allowed for measurement operations.");
+        }
+    }
+
+    private void validateQuantumSelectors(List<ElementSelector> selectors) {
+        if (selectors == null) return;
+        selectors.forEach(selector -> findQuantumRegisterById(selector.getRegisterId()));
+    }
+
+    private void validateMeasurementSelectors(
+        List<ElementSelector> targetQubits,
+        List<ElementSelector> controlQubits,
+        List<ElementSelector> classicBits
+    ) {
+        if (targetQubits.size() != 1) {
+            throw new InvalidOperationConfigurationException("A measurement operation must target exactly one qubit.");
+        }
+        if (controlQubits != null && !controlQubits.isEmpty()) {
+            throw new InvalidOperationConfigurationException("A measurement operation cannot be controlled.");
+        }
+        validateClassicBits(classicBits);
+    }
+
+    private void validateClassicBits(List<ElementSelector> selectors) {
+        if (selectors == null || selectors.isEmpty()) {
+            throw new InvalidOperationConfigurationException("A measurement operation must assign its result to at least one classic bit.");
+        }
+        selectors.forEach(selector -> findClassicRegisterById(selector.getRegisterId()));
     }
 
     /**
@@ -337,6 +492,28 @@ public class QuantumCircuit extends ElementWithId {
             }
         }
         throw new RegisterNotFoundException(quantumRegisterId);
+    }
+
+    private ClassicRegister findClassicRegisterById(String classicRegisterId) {
+        for (Register register : registers) {
+            if (register.getId().equals(classicRegisterId)) {
+                Optional<ClassicRegister> classicRegister = register.asClassic();
+                if (classicRegister.isEmpty()) {
+                    throw new InvalidRegisterTypeException(classicRegisterId);
+                }
+                return classicRegister.get();
+            }
+        }
+        throw new RegisterNotFoundException(classicRegisterId);
+    }
+
+    private Register findRegisterById(String registerId) {
+        for (Register register : registers) {
+            if (register.getId().equals(registerId)) {
+                return register;
+            }
+        }
+        throw new RegisterNotFoundException(registerId);
     }
 
     public String getQuantumRegisterNameById(String quantumRegisterId) {
