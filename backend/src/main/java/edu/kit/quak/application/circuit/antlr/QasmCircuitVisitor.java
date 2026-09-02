@@ -5,6 +5,7 @@ import edu.kit.quak.application.circuit.ports.out.QasmIncludeLoader;
 import edu.kit.quak.application.circuit.ports.out.QasmSource;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.core.circuit.model.gate.GateDefinition;
+import edu.kit.quak.core.circuit.model.layer.Layer;
 import edu.kit.quak.core.circuit.model.layer.operation.CompositeQuantumGate;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementaryQuantumGate;
@@ -328,9 +329,11 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
 
         String gateName = ctx.Identifier().getText();
 
-        List<ElementSelector> operands = new ArrayList<>();
+        // Each operand stands for one or more qubits: `q[0]` for one, `q` for the whole register,
+        // `q[0:1]` for a slice. A call mentioning a register applies the gate once per qubit.
+        List<List<ElementSelector>> operandSlots = new ArrayList<>();
         for (OpenQASM3Parser.GateOperandContext operand : ctx.gateOperandList().gateOperand()) {
-            operands.add(parseOperand(operand));
+            operandSlots.add(parseOperandSlots(operand));
         }
 
         List<Double> arguments = new ArrayList<>();
@@ -340,6 +343,57 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
             }
         }
 
+        for (List<ElementSelector> operands : broadcast(operandSlots, gateName)) {
+            emitGateCall(gateName, operands, arguments, ctx);
+        }
+        return null;
+    }
+
+    /**
+     * The operand lists of the individual calls a (possibly broadcast) gate call stands for.
+     *
+     * A gate named on registers applies once per qubit: `h q;` on a two-qubit register is two H
+     * gates, and `cx a, b;` pairs them up. Reading only the first qubit instead -- which is what
+     * this did before -- produced a circuit quietly missing most of its gates. A single qubit
+     * repeats against a register, so `cx a[0], b;` controls every qubit of b from a[0].
+     */
+    private List<List<ElementSelector>> broadcast(List<List<ElementSelector>> operandSlots, String gateName) {
+        int width = 1;
+        for (List<ElementSelector> slots : operandSlots) {
+            if (slots.size() > 1) {
+                if (width > 1 && slots.size() != width) {
+                    throw new QasmParseException(
+                        "Gate '%s' is called on registers of different sizes (%d and %d); they must match.".formatted(
+                            gateName,
+                            width,
+                            slots.size()
+                        )
+                    );
+                }
+                width = slots.size();
+            }
+        }
+
+        List<List<ElementSelector>> calls = new ArrayList<>();
+        for (int i = 0; i < width; i++) {
+            List<ElementSelector> operands = new ArrayList<>();
+            for (List<ElementSelector> slots : operandSlots) {
+                ElementSelector selector = slots.size() == 1 ? slots.getFirst() : slots.get(i);
+                // A fresh selector per operation: selectors are mutable and must not be shared.
+                operands.add(new ElementSelector(selector.getRegisterId(), selector.getIndex()));
+            }
+            calls.add(operands);
+        }
+        return calls;
+    }
+
+    /** Emits one gate call on already resolved operands. */
+    private void emitGateCall(
+        String gateName,
+        List<ElementSelector> operands,
+        List<Double> arguments,
+        OpenQASM3Parser.GateCallStatementContext ctx
+    ) {
         // A subcircuit is declared as a `gate` carrying a @composition annotation, so it also ends up
         // in gateDefinitions. The annotation is the more specific statement and therefore wins: only
         // it names another circuit, while the declaration itself is deliberately empty.
@@ -347,7 +401,7 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
             String definitionCircuitId = subcircuitsByGateName.get(gateName);
             QuantumOperation operation = new SubcircuitOperation(false, operands, null, definitionCircuitId);
             circuit.addQuantumOperation(operation, circuit.getLayers().size());
-            return null;
+            return;
         }
 
         OpenQASM3Parser.GateStatementContext customGate = gateDefinitions.get(gateName);
@@ -355,7 +409,7 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
             // A user-defined gate stays one operation instead of being expanded, so the editor can
             // draw it as a box. Its contents remain reachable via the definition.
             addOperation(new CompositeQuantumGate(resolveDefinition(gateName, customGate, arguments), false, operands));
-            return null;
+            return;
         }
 
         QuantumOperationLibrary operationType = resolveGate(gateName);
@@ -375,7 +429,6 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
         double rotationAngle = arguments.isEmpty() ? 0.0 : arguments.getFirst();
 
         addOperation(new ElementaryQuantumGate(operationType, false, targetQubits, controlQubits, rotationAngle));
-        return null;
     }
 
     /**
@@ -549,6 +602,50 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
             );
         }
         return null;
+    }
+
+    /**
+     * A reset (`reset cin;`, or a whole register).
+     *
+     * A circuit starts in |0...0>, so resetting a qubit that nothing has touched yet asks for the
+     * state it is already in -- the statement is redundant and emitting nothing keeps the circuit
+     * exactly right. That is the shape real files use it in: a block of resets at the top saying
+     * "start from zero".
+     *
+     * A reset *after* something acted on the qubit is a different operation entirely -- it collapses
+     * live state mid-circuit -- and there is no operation type for it. It is rejected rather than
+     * dropped, because dropping it would leave a circuit that quietly computes something else.
+     */
+    @Override
+    public Void visitResetStatement(OpenQASM3Parser.ResetStatementContext ctx) {
+        if (definitionUnderConstruction != null || qubitBindings != null) {
+            throw new QasmParseException("A gate body cannot contain a reset, but '%s' does.".formatted(ctx.getText()));
+        }
+
+        for (ElementSelector qubit : parseOperandSlots(ctx.gateOperand())) {
+            if (isQubitInUse(qubit)) {
+                throw new QasmParseException(
+                    "Reset of a qubit that operations already act on is not supported ('%s'); only a reset before any operation, which a circuit does anyway, can be expressed.".formatted(
+                        ctx.getText()
+                    )
+                );
+            }
+        }
+        return null;
+    }
+
+    /** Whether any operation already placed in the circuit acts on the given qubit. */
+    private boolean isQubitInUse(ElementSelector qubit) {
+        for (Layer layer : circuit.getLayers()) {
+            for (QuantumOperation operation : layer.getQuantumOperations()) {
+                // The bound qubits, not getUsedQubits(): a composite gate holds every qubit it was
+                // called on, and a wire it merely covers is still no longer untouched.
+                if (operation.getTargetQubits().contains(qubit) || operation.getControlQubits().contains(qubit)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /** An assigned variable is no longer a compile-time constant, so its binding is dropped. */
@@ -738,6 +835,34 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
         }
     }
 
+    /**
+     * The qubits one gate operand stands for: one for {@code q[0]} or a formal gate qubit, the whole
+     * register for a bare {@code q}, and the selected ones for a slice like {@code q[0:1]}.
+     */
+    private List<ElementSelector> parseOperandSlots(OpenQASM3Parser.GateOperandContext operand) {
+        // Inside a gate body only the formal qubits are visible, and each of them is exactly one
+        // qubit -- there is no register there to broadcast over.
+        if (qubitBindings != null) {
+            return List.of(parseOperand(operand));
+        }
+
+        var indexedIdentifier = operand.indexedIdentifier();
+        if (indexedIdentifier == null) {
+            // e.g. a hardware qubit like `$0`, which the editor model does not represent.
+            throw new QasmParseException("Unsupported gate operand: " + operand.getText());
+        }
+
+        String name = indexedIdentifier.Identifier().getText();
+        Register register = circuit
+            .getRegisterByName(name)
+            .orElseThrow(() -> new QasmParseException("Gate references unknown qubit register '" + name + "'."));
+        if (!(register instanceof QuantumRegister quantumRegister)) {
+            throw new QasmParseException("Gate references '%s', which is a classic register and cannot hold a qubit.".formatted(name));
+        }
+
+        return resolveSelectors(indexedIdentifier, quantumRegister.getId(), quantumRegister.getNumberOfQubits(), name, "qubit");
+    }
+
     /** Resolves a single gate operand (e.g. {@code q[0]}, {@code q[i + 1]} or a formal gate qubit). */
     private ElementSelector parseOperand(OpenQASM3Parser.GateOperandContext operand) {
         var indexedIdentifier = operand.indexedIdentifier();
@@ -814,8 +939,9 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
 
     /**
      * Indices an {@code indexedIdentifier} selects in a register of the given size: the whole
-     * register when unindexed, one index for {@code r[i]}, and the expanded slice for {@code r[a:b]}
-     * or {@code r[{a, b}]}.
+     * register when unindexed, one index for {@code r[i]}, and the expanded slice for {@code r[a:b]}.
+     *
+     * Shared by measurements and gate operands, which select the same way.
      */
     private List<ElementSelector> resolveSelectors(
         OpenQASM3Parser.IndexedIdentifierContext indexedIdentifier,
@@ -853,7 +979,7 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
             selectors.add(new ElementSelector(registerId, index));
         }
         if (selectors.isEmpty()) {
-            throw new QasmParseException("Measurement selects no %s in register '%s'.".formatted(what, registerName));
+            throw new QasmParseException("Selection covers no %s in register '%s'.".formatted(what, registerName));
         }
         return selectors;
     }

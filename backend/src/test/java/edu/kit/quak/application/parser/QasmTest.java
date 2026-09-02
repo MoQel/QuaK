@@ -955,6 +955,162 @@ class QasmTest {
      * as a box. Tests that are about the resulting gates rather than about the grouping therefore
      * look at the expansion, which is the same circuit the previous inlining produced.
      */
+    // ---- Reset ----------------------------------------------------------------------------------
+
+    /**
+     * A circuit starts in |0...0>, so a leading reset asks for the state the qubit already has.
+     * Files open with a block of them to say "start from zero".
+     */
+    @Test
+    void aLeadingResetIsRedundantAndEmitsNothing() {
+        QuantumCircuit circuit = new QasmService().parse(
+            """
+            OPENQASM 3.0;
+            include "stdgates.inc";
+            qubit[1] cin;
+            qubit[4] a;
+            reset cin;
+            reset a;
+            x a[0];
+            """
+        );
+
+        assertEquals(List.of("X"), sortedIdentifiers(circuit));
+    }
+
+    /** Resetting live state is a different operation, and silently dropping it would change the circuit. */
+    @Test
+    void aResetAfterAnOperationIsRejected() {
+        QasmParseException exception = assertThrows(QasmParseException.class, () ->
+            new QasmService().parse("OPENQASM 3.0;\ninclude \"stdgates.inc\";\nqubit[1] q;\nh q[0];\nreset q[0];\n")
+        );
+        assertTrue(exception.getMessage().contains("Reset"), exception.getMessage());
+    }
+
+    /** Only the qubits actually touched count, so a reset of an untouched register still passes. */
+    @Test
+    void aResetOfAnUntouchedRegisterIsStillFine() {
+        QuantumCircuit circuit = new QasmService().parse(
+            """
+            OPENQASM 3.0;
+            include "stdgates.inc";
+            qubit[1] a;
+            qubit[2] b;
+            h a[0];
+            reset b;
+            x b[0];
+            """
+        );
+
+        assertEquals(List.of("H", "X"), sortedIdentifiers(circuit));
+    }
+
+    // ---- Register broadcasting ------------------------------------------------------------------
+    // A gate named on a register applies once per qubit. The parser used to read only the first
+    // index, so `h q;` became a single H and the rest of the circuit silently went missing.
+
+    @Test
+    void gateOnARegisterAppliesToEveryQubit() {
+        QuantumCircuit circuit = new QasmService().parse(
+            """
+            OPENQASM 3.0;
+            include "stdgates.inc";
+            qubit[3] q;
+            h q;
+            """
+        );
+
+        assertEquals(List.of("H", "H", "H"), sortedIdentifiers(circuit));
+        assertEquals(List.of(0, 1, 2), targetIndices(circuit));
+    }
+
+    @Test
+    void twoRegistersBroadcastPairwise() {
+        QuantumCircuit circuit = new QasmService().parse(
+            """
+            OPENQASM 3.0;
+            include "stdgates.inc";
+            qubit[2] a;
+            qubit[2] b;
+            cx a, b;
+            """
+        );
+
+        List<QuantumOperation> operations = elementaryOperations(circuit);
+        assertEquals(2, operations.size());
+
+        String registerA = circuit.getRegisterByName("a").orElseThrow().getId();
+        String registerB = circuit.getRegisterByName("b").orElseThrow().getId();
+        List<String> pairs = operations
+            .stream()
+            .map(operation -> operation.getControlQubits().getFirst().getIndex() + "->" + operation.getTargetQubits().getFirst().getIndex())
+            .sorted()
+            .toList();
+        assertEquals(List.of("0->0", "1->1"), pairs);
+        assertEquals(registerA, operations.getFirst().getControlQubits().getFirst().getRegisterId());
+        assertEquals(registerB, operations.getFirst().getTargetQubits().getFirst().getRegisterId());
+    }
+
+    /** A single qubit repeats against a register, so one control drives every target. */
+    @Test
+    void aSingleQubitBroadcastsAgainstARegister() {
+        QuantumCircuit circuit = new QasmService().parse(
+            """
+            OPENQASM 3.0;
+            include "stdgates.inc";
+            qubit[1] a;
+            qubit[3] b;
+            cx a[0], b;
+            """
+        );
+
+        List<QuantumOperation> operations = elementaryOperations(circuit);
+        assertEquals(3, operations.size());
+        for (QuantumOperation operation : operations) {
+            assertEquals(0, operation.getControlQubits().getFirst().getIndex());
+        }
+        assertEquals(List.of(0, 1, 2), targetIndices(circuit));
+    }
+
+    @Test
+    void aSliceBroadcastsOverItsQubitsOnly() {
+        QuantumCircuit circuit = new QasmService().parse(
+            """
+            OPENQASM 3.0;
+            include "stdgates.inc";
+            qubit[4] q;
+            x q[1:2];
+            """
+        );
+
+        assertEquals(List.of("X", "X"), sortedIdentifiers(circuit));
+        assertEquals(List.of(1, 2), targetIndices(circuit));
+    }
+
+    @Test
+    void broadcastingRegistersOfDifferentSizesIsRejected() {
+        QasmParseException exception = assertThrows(QasmParseException.class, () ->
+            new QasmService().parse("OPENQASM 3.0;\ninclude \"stdgates.inc\";\nqubit[2] a;\nqubit[3] b;\ncx a, b;\n")
+        );
+        assertTrue(exception.getMessage().contains("different sizes"), exception.getMessage());
+    }
+
+    /** A gate body sees only its formal qubits, each exactly one qubit -- nothing to broadcast over. */
+    @Test
+    void aGateBodyDoesNotBroadcast() {
+        QuantumCircuit circuit = new QasmService().parse(
+            """
+            OPENQASM 3.0;
+            include "stdgates.inc";
+            gate flip a { x a; }
+            qubit[2] q;
+            flip q[0];
+            """
+        );
+
+        assertEquals(List.of("X"), sortedIdentifiers(circuit));
+    }
+
     // ---- Classical registers and measurements -------------------------------------------------
     // The parser used to drop `creg`/`bit[n]` and every `measure`, on the grounds that classical
     // registers had no editor representation. They have one now, so the circuit read back from a
@@ -1142,6 +1298,14 @@ class QasmTest {
         }
         identifiers.sort(String::compareTo);
         return identifiers;
+    }
+
+    private List<Integer> targetIndices(QuantumCircuit circuit) {
+        return elementaryOperations(circuit)
+            .stream()
+            .map(o -> o.getTargetQubits().getFirst().getIndex())
+            .sorted()
+            .toList();
     }
 
     private List<Measurement> measurements(QuantumCircuit circuit) {
