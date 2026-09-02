@@ -104,6 +104,39 @@ describe('toQuantikz', () => {
         expect(latex).toContain(String.raw`\begin{quantikz}[wire types={q,c}]`);
     });
 
+    it('wires the meter to the bit the result is written to', () => {
+        // One qubit, then one classic bit: the bit sits on the row below.
+        const latex = toQuantikz(circuit([qreg('q', 1), creg('c', 1)], [[measurement([sel('q', 0)], [sel('c', 0)])]]));
+
+        expect(latex).toContain(String.raw`\meter{} \wire[d][1]{c}`);
+    });
+
+    it('keeps two crossing measurements apart, which a bare meter cannot', () => {
+        // q[0] writes to c[1] and q[1] writes to c[0]. Rows: q0=0, q1=1, c0=2, c1=3.
+        const latex = toQuantikz(
+            circuit(
+                [qreg('q', 2), creg('c', 2)],
+                [[measurement([sel('q', 0)], [sel('c', 1)]), measurement([sel('q', 1)], [sel('c', 0)])]],
+            ),
+        );
+
+        expect(latex).toContain(String.raw`\meter{} \wire[d][3]{c}`);
+        expect(latex).toContain(String.raw`\meter{} \wire[d][1]{c}`);
+    });
+
+    it('sends the wire upwards when the classic register is declared first', () => {
+        const latex = toQuantikz(circuit([creg('c', 1), qreg('q', 1)], [[measurement([sel('q', 0)], [sel('c', 0)])]]));
+
+        expect(latex).toContain(String.raw`\meter{} \wire[u][1]{c}`);
+    });
+
+    it('still meters a target that has no bit to write to', () => {
+        const latex = toQuantikz(circuit([qreg('q', 1), creg('c', 1)], [[measurement([sel('q', 0)], [])]]));
+
+        expect(latex).toContain(String.raw`\meter{}`);
+        expect(latex).not.toContain(String.raw`\wire[`);
+    });
+
     it('lays layers out as columns and wires as rows, with one trailing wire column', () => {
         const latex = toQuantikz(
             circuit(

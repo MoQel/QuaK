@@ -6,9 +6,9 @@ import {
     MeasurementDto,
     QuantumOperationDto,
     RegisterResponse,
-} from '../../dto/circuit.ts';
-import { buildWireIndex, resolveWireIndices, WireIndex } from '../../circuitIndex.ts';
-import { angleToLatex, resolveAngle } from '../../quantumAngle.ts';
+} from '#dto/circuit.ts';
+import { buildWireIndex, resolveWireIndices, WireIndex } from '#circuitIndex.ts';
+import { angleToLatex, resolveAngle } from '#quantumAngle.ts';
 import { escapeLatexText } from '../latex/escape.ts';
 
 const ROTATION_GATES = new Set(['RX', 'RY', 'RZ']);
@@ -115,15 +115,24 @@ function buildLstick(register: RegisterResponse, wireIndex: number): string {
 }
 
 function applyMeasurement(grid: string[][], wireIndex: WireIndex, measurement: MeasurementDto, layerIdx: number): void {
-    for (let i = 0; i < measurement.targetQubits.length; i++) {
-        if (i >= measurement.classicBits.length) break;
+    for (const [pairIdx, targetQubit] of measurement.targetQubits.entries()) {
+        const qubitWire = wireIndex.getWireIndex(targetQubit);
+        if (qubitWire === undefined) continue;
 
-        const wireIdx = wireIndex.getWireIndex(measurement.targetQubits[i]);
+        const classicBit = measurement.classicBits[pairIdx];
+        const classicWire = classicBit === undefined ? undefined : wireIndex.getWireIndex(classicBit);
 
-        if (wireIdx !== undefined) {
-            grid[wireIdx][layerIdx] = String.raw`\meter{}`;
-        }
+        grid[qubitWire][layerIdx] =
+            classicWire === undefined || classicWire === qubitWire
+                ? String.raw`\meter{}`
+                : String.raw`\meter{} ${classicalWireTo(classicWire - qubitWire)}`;
     }
+}
+
+function classicalWireTo(rowOffset: number): string {
+    const direction = rowOffset > 0 ? 'd' : 'u';
+
+    return String.raw`\wire[${direction}][${Math.abs(rowOffset)}]{c}`;
 }
 
 function applyElementaryGate(
