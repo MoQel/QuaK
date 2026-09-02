@@ -7,7 +7,7 @@ import {
 } from '../../dto/circuit.ts';
 import { gateSymbol } from './symbols.ts';
 import { assembleDirac, buildLayerGroups, Layout } from './layout.ts';
-import { buildWireIndex, getGateOperands, resolveWireIndices, WireIndex } from '../../lib/circuitIndex.ts';
+import { buildWireIndex, getGateOperands, resolveWireIndices, WireIndex } from '../../circuitIndex.ts';
 import { escapeLatexText } from '../latex/escape.ts';
 
 type LabelResolver = (selector: ElementSelectorDto) => string;

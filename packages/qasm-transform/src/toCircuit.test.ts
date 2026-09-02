@@ -1,17 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { isQuantumRegister, type ElementaryQuantumGateDto } from '@quak/circuit-core';
 import { classify, isEditable, toCircuit } from './toCircuit.ts';
+import { circuitOf, HEADER } from './testFixtures.ts';
 
 /** The transform only ever produces quantum registers; narrows for assertions. */
-const qubitsIn = (source: string): number =>
-    toCircuit(source).content!.registers.filter(isQuantumRegister)[0].numberOfQubits;
-
-const HEADER = 'OPENQASM 3.0;\ninclude "stdgates.inc";\n';
+const qubitsIn = (source: string): number => circuitOf(source).registers.filter(isQuantumRegister)[0].numberOfQubits;
 
 describe('toCircuit: registers', () => {
     it('reads a sized qubit declaration', () => {
-        const { content } = toCircuit(`${HEADER}qubit[3] q;\n`);
-        expect(content?.registers).toEqual([{ id: 'qreg:q', name: 'q', type: 'Quantum_Register', numberOfQubits: 3 }]);
+        const { registers } = circuitOf(`${HEADER}qubit[3] q;\n`);
+        expect(registers).toEqual([{ id: 'qreg:q', name: 'q', type: 'Quantum_Register', numberOfQubits: 3 }]);
     });
 
     it('treats an undesignated qubit as a single qubit', () => {
@@ -49,8 +47,7 @@ describe('toCircuit: registers', () => {
 
 describe('toCircuit: gates', () => {
     it('splits operands into controls then targets, as OpenQASM orders them', () => {
-        const { content } = toCircuit(`${HEADER}qubit[2] q;\ncx q[0], q[1];\n`);
-        const op = content!.layers[0].quantumOperations[0];
+        const op = circuitOf(`${HEADER}qubit[2] q;\ncx q[0], q[1];\n`).layers[0].quantumOperations[0];
 
         expect(op.identifier).toBe('CX');
         expect(op.controlQubits).toEqual([{ registerId: 'qreg:q', index: 0 }]);
@@ -58,29 +55,27 @@ describe('toCircuit: gates', () => {
     });
 
     it('gives ccx two controls and one target', () => {
-        const { content } = toCircuit(`${HEADER}qubit[3] q;\nccx q[0], q[1], q[2];\n`);
-        const op = content!.layers[0].quantumOperations[0];
+        const op = circuitOf(`${HEADER}qubit[3] q;\nccx q[0], q[1], q[2];\n`).layers[0].quantumOperations[0];
 
         expect(op.controlQubits.map((s) => s.index)).toEqual([0, 1]);
         expect(op.targetQubits.map((s) => s.index)).toEqual([2]);
     });
 
     it('gives swap two targets and no control', () => {
-        const { content } = toCircuit(`${HEADER}qubit[2] q;\nswap q[0], q[1];\n`);
-        const op = content!.layers[0].quantumOperations[0];
+        const op = circuitOf(`${HEADER}qubit[2] q;\nswap q[0], q[1];\n`).layers[0].quantumOperations[0];
 
         expect(op.controlQubits).toEqual([]);
         expect(op.targetQubits.map((s) => s.index)).toEqual([0, 1]);
     });
 
     it('puts each gate in its own layer, in source order', () => {
-        const { content } = toCircuit(`${HEADER}qubit[2] q;\nh q[0];\nx q[1];\nz q[0];\n`);
-        expect(content!.layers.map((l) => l.quantumOperations[0].identifier)).toEqual(['H', 'X', 'Z']);
+        const { layers } = circuitOf(`${HEADER}qubit[2] q;\nh q[0];\nx q[1];\nz q[0];\n`);
+        expect(layers.map((l) => l.quantumOperations[0].identifier)).toEqual(['H', 'X', 'Z']);
     });
 
     it('reads an unindexed operand on a single-qubit register as that qubit', () => {
-        const { content } = toCircuit(`${HEADER}qubit q;\nh q;\n`);
-        expect(content!.layers[0].quantumOperations[0].targetQubits).toEqual([{ registerId: 'qreg:q', index: 0 }]);
+        const { layers } = circuitOf(`${HEADER}qubit q;\nh q;\n`);
+        expect(layers[0].quantumOperations[0].targetQubits).toEqual([{ registerId: 'qreg:q', index: 0 }]);
     });
 
     it('rejects a gate whose operand count does not match its arity', () => {
@@ -132,10 +127,8 @@ describe('toCircuit: an operand must name exactly one qubit', () => {
 
 describe('toCircuit: rotation angles', () => {
     const angleOf = (source: string) =>
-        (
-            toCircuit(`${HEADER}qubit[1] q;\n${source}\n`).content!.layers[0]
-                .quantumOperations[0] as ElementaryQuantumGateDto
-        ).rotationAngle;
+        (circuitOf(`${HEADER}qubit[1] q;\n${source}\n`).layers[0].quantumOperations[0] as ElementaryQuantumGateDto)
+            .rotationAngle;
 
     it('evaluates named constants and simple arithmetic', () => {
         expect(angleOf('rx(pi) q[0];')).toBeCloseTo(Math.PI, 12);
@@ -243,12 +236,10 @@ describe('toCircuit: stable identity across re-parses', () => {
     });
 
     it('keeps ids of untouched statements when a later one is edited', () => {
-        const before = toCircuit(`${HEADER}qubit[2] q;\nh q[0];\nx q[1];\n`);
-        const after = toCircuit(`${HEADER}qubit[2] q;\nh q[0];\nz q[1];\n`);
+        const before = circuitOf(`${HEADER}qubit[2] q;\nh q[0];\nx q[1];\n`);
+        const after = circuitOf(`${HEADER}qubit[2] q;\nh q[0];\nz q[1];\n`);
 
-        expect(after.content!.layers[0].quantumOperations[0].id).toBe(
-            before.content!.layers[0].quantumOperations[0].id,
-        );
+        expect(after.layers[0].quantumOperations[0].id).toBe(before.layers[0].quantumOperations[0].id);
     });
 });
 
@@ -259,17 +250,14 @@ describe('classify: the reason a document cannot be edited', () => {
     it('reports syntax errors, and suppresses what the recovered tree makes up', () => {
         const classification = classify(toCircuit(`${HEADER}qubit[2 q;\nh q[0]\nfoo q[1];\n`));
 
-        expect(classification.kind).toBe('invalid');
-        if (classification.kind !== 'invalid') throw new Error('unreachable');
-        expect(classification.problems.length).toBeGreaterThan(0);
+        expect(classification).toMatchObject({ kind: 'invalid' });
+        expect(classification.kind === 'invalid' && classification.problems.length).toBeGreaterThan(0);
     });
 
     it('names the version instead of every rejection it causes', () => {
         const classification = classify(toCircuit('OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[2];\nh q[0];\n'));
 
-        expect(classification.kind).toBe('unsupportedVersion');
-        if (classification.kind !== 'unsupportedVersion') throw new Error('unreachable');
-        expect(classification.version).toBe('2.0');
+        expect(classification).toMatchObject({ kind: 'unsupportedVersion', version: '2.0' });
     });
 
     it('rejects a version 2 header even when the body is valid OpenQASM 3', () => {
@@ -297,26 +285,24 @@ describe('classify: the reason a document cannot be edited', () => {
     });
 
     it('does not call a file with content empty just because it has no register', () => {
-        expect(kindOf('// hallo\n')).toBe('noRegister');
+        expect(kindOf('// hello\n')).toBe('noRegister');
         expect(kindOf('OPENQASM 3.0;\n')).toBe('noRegister');
         expect(kindOf(HEADER)).toBe('noRegister');
     });
 
     it('does not offer the comment opt-in when there is no circuit to unlock', () => {
         // The comment is the only rejection, but accepting its loss would change nothing.
-        expect(kindOf('OPENQASM 3.0;\n// hier\n')).toBe('noRegister');
+        expect(kindOf('OPENQASM 3.0;\n// here\n')).toBe('noRegister');
     });
 
     it('offers the comment opt-in when only comments stand in the way', () => {
-        const classification = classify(toCircuit(`${HEADER}qubit[2] q;\n// unten\nh q[0];\n`));
+        const classification = classify(toCircuit(`${HEADER}qubit[2] q;\n// below\nh q[0];\n`));
 
-        expect(classification.kind).toBe('commentsOnly');
-        if (classification.kind !== 'commentsOnly') throw new Error('unreachable');
-        expect(classification.comments.map((entry) => entry.message)).toHaveLength(1);
+        expect(classification).toMatchObject({ kind: 'commentsOnly', comments: [expect.anything()] });
     });
 
     it('keeps the comment opt-in behind constructs that cannot be opted out of', () => {
-        expect(kindOf(`${HEADER}qubit[2] q;\n// unten\nbarrier q;\n`)).toBe('unsupported');
+        expect(kindOf(`${HEADER}qubit[2] q;\n// below\nbarrier q;\n`)).toBe('unsupported');
     });
 
     it('accepts a register without any gates', () => {
@@ -373,7 +359,7 @@ describe('toCircuit: a half-written document is read, not thrown at', () => {
         }
     });
 
-    // The guards keep the transform alive; the syntax error is what explains the file.
+    // The guards keep the transform alive. The syntax error is what explains the file.
     it('never lets a guard speak for a document that parses', () => {
         const messages = [toCircuit('OPENQASM 3.0;\ninclude "x.inc;\n'), toCircuit(`${HEADER}qubit[] q;\n`)].map(
             (result) => {
@@ -402,7 +388,7 @@ describe('toCircuit: what a rejection quotes back', () => {
     });
 
     it('drops the token error recovery invented rather than quoting it', () => {
-        // ANTLR fills the gap with a `;` of its own; the excerpt must not pick it up.
+        // ANTLR fills the gap with a `;` of its own. The excerpt must not pick it up.
         const result = toCircuit(`${HEADER}qubit[2] q;\nbarrier q\nh q[0];\n`);
 
         expect(result.unsupported[0].message).toBe('Unsupported barrier: barrier q');
@@ -412,8 +398,9 @@ describe('toCircuit: what a rejection quotes back', () => {
 // Reading each operation as a layer of its own re-wrote the file on the next save,
 // turning the two layers the user had written into three.
 describe('toCircuit: layers are read the way the document writes them', () => {
+    // Not `circuitOf`: one case below is deliberately read-only and still has layers to check.
     const identifiersIn = (source: string) =>
-        toCircuit(source).content!.layers.map((layer) => layer.quantumOperations.map((op) => op.identifier));
+        toCircuit(source).content?.layers.map((layer) => layer.quantumOperations.map((op) => op.identifier));
 
     const MARKED = `${HEADER}\n// Register q\nqubit[3] q;\n\n// Layer 1\nh q[0];\nx q[1];\n\n// Layer 2\ncx q[0], q[1];\n`;
 

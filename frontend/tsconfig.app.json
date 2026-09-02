@@ -24,14 +24,8 @@
 
         "baseUrl": ".",
         "paths": {
-            "@/*": ["./src/*"],
-            "@quak/circuit-core": ["../packages/circuit-core/src/index.ts"],
-            "@quak/circuit-core/*": ["../packages/circuit-core/src/*"],
-            "@quak/ui": ["../packages/ui/src/index.ts"],
-            "@quak/ui/*": ["../packages/ui/src/*"],
-            "@quak/circuit-editor": ["../packages/circuit-editor/src/index.ts"],
-            "@quak/circuit-editor/*": ["../packages/circuit-editor/src/*"]
+            "@/*": ["./src/*"]
         }
     },
-    "include": ["src", "../packages/circuit-core/src", "../packages/ui/src", "../packages/circuit-editor/src"]
+    "include": ["src"]
 }

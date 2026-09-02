@@ -7,7 +7,7 @@ import * as vscode from 'vscode';
 // These run inside a real VSCode. They cover the wiring that unit tests cannot
 // reach: that the custom editor is registered, opens for .qasm, tolerates several
 // panels on one document, and leaves the document an ordinary TextDocument.
-// What a webview receives is deliberately not asserted here; messages to a
+// What a webview receives is deliberately not asserted here. Messages to a
 // webview cannot be observed from the outside, so those rules live in
 // arbitration.test.ts instead.
 
@@ -132,7 +132,7 @@ suite('QuaK circuit editor', () => {
         const [tab] = customTabsFor(uri);
         assert.ok(tab, 'expected a circuit editor tab');
         assert.notEqual(tab.group.viewColumn, vscode.ViewColumn.One);
-        // The text editor has to survive it; the circuit is a second view, not a swap.
+        // The text editor has to survive it. The circuit is a second view, not a swap.
         assert.equal(
             vscode.window.visibleTextEditors.some((editor) => editor.document.uri.toString() === uri.toString()),
             true,
@@ -156,7 +156,7 @@ suite('QuaK circuit editor', () => {
         await vscode.commands.executeCommand('quak.showSource', uri);
 
         assert.equal(vscode.window.activeTextEditor?.document.uri.toString(), uri.toString());
-        // The circuit stays open; this is a way back, not a way out.
+        // The circuit stays open. This is a way back, not a way out.
         assert.equal(customTabsFor(uri).length, 1);
     });
 
@@ -230,33 +230,72 @@ const UNSUPPORTED = `${HEADER}qubit[2] q;\nbarrier q;\n`;
 const MISSING_SEMICOLON = `${HEADER}qubit[2] q\nh q[0];\n`;
 
 const ourDiagnostics = (uri: vscode.Uri): vscode.Diagnostic[] =>
-    // Other extensions publish for .qasm too; only ours carry this source.
+    // Other extensions publish for .qasm too. Only ours carry this source.
     vscode.languages.getDiagnostics(uri).filter((diagnostic) => diagnostic.source === SOURCE);
 
-/** Resolves once our diagnostics for `uri` look the way the test expects. */
+// Below the Mocha timeout, so a failure here reports what it was waiting for rather
+// than only that the test ran out of time.
+const DIAGNOSTICS_TIMEOUT_MS = 10_000;
+
+const describeDiagnostics = (found: readonly vscode.Diagnostic[]): string =>
+    found.length === 0
+        ? 'none'
+        : found.map((entry) => `${String(entry.code)} on line ${entry.range.start.line}`).join(', ');
+
+/**
+ * Resolves once our diagnostics for `uri` look the way the test expects.
+ *
+ * Polled as well as event driven. Waiting on onDidChangeDiagnostics alone made a
+ * publish that lands before the listener attaches hang until Mocha gave up, and the
+ * listener was then never disposed, so it kept re-running a stale predicate for the
+ * rest of the run.
+ */
 function waitForDiagnostics(
     uri: vscode.Uri,
     predicate: (diagnostics: vscode.Diagnostic[]) => boolean,
 ): Promise<vscode.Diagnostic[]> {
-    if (predicate(ourDiagnostics(uri))) {
-        return Promise.resolve(ourDiagnostics(uri));
-    }
+    return new Promise((resolve, reject) => {
+        let settled = false;
 
-    return new Promise((resolve) => {
-        const sub = vscode.languages.onDidChangeDiagnostics((event) => {
-            const affected = event.uris.some((changed) => changed.toString() === uri.toString());
-            if (!affected || !predicate(ourDiagnostics(uri))) return;
+        const stop = (): void => {
+            settled = true;
+            subscription.dispose();
+            clearInterval(poll);
+            clearTimeout(expiry);
+        };
 
-            sub.dispose();
-            resolve(ourDiagnostics(uri));
-        });
+        const check = (): void => {
+            if (settled) return;
+
+            const found = ourDiagnostics(uri);
+            if (!predicate(found)) return;
+
+            stop();
+            resolve(found);
+        };
+
+        const subscription = vscode.languages.onDidChangeDiagnostics(check);
+        const poll = setInterval(check, 50);
+        const expiry = setTimeout(() => {
+            if (settled) return;
+
+            const seen = describeDiagnostics(ourDiagnostics(uri));
+            stop();
+            reject(
+                new Error(`waited ${DIAGNOSTICS_TIMEOUT_MS}ms for diagnostics on ${uri.path} to match, saw: ${seen}`),
+            );
+        }, DIAGNOSTICS_TIMEOUT_MS);
+
+        check();
     });
 }
 
 suite('QuaK diagnostics', () => {
     suiteSetup(async () => {
         // Publishing starts at activation, so do not rely on another suite for it.
-        await vscode.extensions.getExtension(EXTENSION_ID)?.activate();
+        const extension = vscode.extensions.getExtension(EXTENSION_ID);
+        assert.ok(extension, `extension ${EXTENSION_ID} not found`);
+        await extension.activate();
         // A run that never reached its teardown leaves the settings in the test
         // instance's user data, so start from a known state.
         await resetDiagnosticSettings();
@@ -366,7 +405,9 @@ async function hoverAt(uri: vscode.Uri, line: number, character: number): Promis
 
 suite('QuaK hover', () => {
     suiteSetup(async () => {
-        await vscode.extensions.getExtension(EXTENSION_ID)?.activate();
+        const extension = vscode.extensions.getExtension(EXTENSION_ID);
+        assert.ok(extension, `extension ${EXTENSION_ID} not found`);
+        await extension.activate();
         // Same reason as the diagnostics suite.
         await reset(HOVER_ENABLED);
     });
@@ -439,7 +480,9 @@ const labelsOf = (items: vscode.CompletionItem[]): string[] =>
 
 suite('QuaK completion', () => {
     suiteSetup(async () => {
-        await vscode.extensions.getExtension(EXTENSION_ID)?.activate();
+        const extension = vscode.extensions.getExtension(EXTENSION_ID);
+        assert.ok(extension, `extension ${EXTENSION_ID} not found`);
+        await extension.activate();
         await reset(COMPLETION_ENABLED);
     });
 
@@ -457,7 +500,7 @@ suite('QuaK completion', () => {
 
         assert.ok(cx, `expected a cx suggestion, got ${JSON.stringify(labelsOf(items))}`);
         assert.equal(cx.detail, 'CNOT');
-        // The snippet is what makes the operand order visible; two different wires.
+        // The snippet is what makes the operand order visible, on two different wires.
         assert.equal((cx.insertText as vscode.SnippetString).value, 'cx ${1:q[0]}, ${2:q[1]};');
     });
 

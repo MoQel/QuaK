@@ -1,4 +1,4 @@
-// @quak/circuit-editor - the circuit editor with its integrated gate library.
+// @quak/circuit-editor. The circuit editor with its integrated gate library.
 //
 // Backend-free by construction: the host supplies the circuit and a setter through
 // CircuitStoreProvider, and provides the theme tokens the styles reference. What an

@@ -29,8 +29,14 @@ describe('resolveAngle', () => {
 
     it('returns a plain number for values without a common π match', () => {
         expect(resolveAngle(1.23)).toEqual({ kind: 'number', radians: 1.23 });
-        // π/5 is a valid fraction but not in the curated common denominators.
-        expect(resolveAngle(Math.PI / 5)).toEqual({ kind: 'number', radians: Math.PI / 5 });
+        // π/13 is a valid fraction but not in the recognized denominators.
+        expect(resolveAngle(Math.PI / 13)).toEqual({ kind: 'number', radians: Math.PI / 13 });
+    });
+
+    it('recognizes the same denominators everywhere, so no notation disagrees with the gate box', () => {
+        // The gate label reads π/5 symbolically; Dirac, quantikz and QASM must not write 0.63 for it.
+        expect(resolveAngle(Math.PI / 5)).toEqual({ kind: 'pi', numerator: 1, denominator: 5 });
+        expect(resolveAngle(Math.PI / 16)).toEqual({ kind: 'pi', numerator: 1, denominator: 16 });
     });
 
     it('applies the tolerance in radians, independent of denominator', () => {

@@ -41,7 +41,7 @@ const SUPPORTED_GATES: readonly OperationIdentifier[] = [
 /**
  * Every gate `stdgates.inc` defines, plus the two language builtins.
  *
- * Not a list of what we support; that is SUPPORTED_GATES. This one separates "a real
+ * Not a list of what we support. That is SUPPORTED_GATES. This one separates "a real
  * gate this editor cannot draw" from "a name that exists nowhere", which are different
  * things to tell a user. It is sound because gate definitions of their own make a
  * document unsupported anyway, so in a file we would otherwise accept, every gate call

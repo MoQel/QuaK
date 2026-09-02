@@ -13,7 +13,7 @@ import { DropzoneGrid } from './components/DropzoneGrid.tsx';
 import { DropPlaceholder } from './components/DropPlaceholder.tsx';
 import { CircuitFooter } from './components/CircuitFooter.tsx';
 import { HoverPos, UiLayer, UiQuantumOperation } from './util/types.ts';
-import { CELL_WIDTH, LABEL_WIDTH, QUBIT_HEIGHT } from '../circuit/util/layout.ts';
+import { CELL_WIDTH, LABEL_WIDTH, QUBIT_HEIGHT } from './util/layout.ts';
 import { useCircuitStore } from '../CircuitStoreContext.tsx';
 import { useCircuitDrag } from '../CircuitDragContext.tsx';
 
@@ -127,8 +127,8 @@ export function CircuitView({ header }: Readonly<CircuitViewProps>) {
      * If a dummy operation is present, it is additionally constrained to the layer indicated by the
      * current hover position to reflect the user's intended placement.
      *
-     * @param allOps - Flat list of operations, pre-sorted by their original layer index.
-     * @returns Reconstructed layer array with no empty layers.
+     * Takes the operations pre-sorted by their original layer index and returns the
+     * rebuilt layers, with the empty ones dropped.
      */
     const rescheduleOperations = (allOps: UiQuantumOperation[]): UiLayer[] => {
         const newLayers: UiLayer[] = [];
@@ -190,7 +190,7 @@ export function CircuitView({ header }: Readonly<CircuitViewProps>) {
      * An operation may only be placed in the first layer or directly after
      * a layer that already contains an operation on at least one of the targeted qubits.
      *
-     * @returns A set of keys in the format `"qubitIdx-layerIdx"`.
+     * Returns a set of keys in the format `"qubitIdx-layerIdx"`.
      */
     const activeDropZones = useMemo(() => {
         const activeSet = new Set<string>();
@@ -210,7 +210,7 @@ export function CircuitView({ header }: Readonly<CircuitViewProps>) {
                 // the dropped span, the same span-overlap rule the collision check and the
                 // scheduler use. Checking only target/control selectors is too narrow: e.g.
                 // an H on q1 next to a ccx q[0],q[2],q[3] is a stable position (the CCX span
-                // blocks column 0) although q1 carries no selector of the CCX; the parser can
+                // blocks column 0) although q1 carries no selector of the CCX. The parser can
                 // produce such layouts, so dragging must be able to reach them too.
                 const dropSpanMax = qubitIdx + draggingOperationSize - 1;
                 const hasOperationAtLeft = layersWithoutDragOp[layerIdx - 1]?.quantumOperations

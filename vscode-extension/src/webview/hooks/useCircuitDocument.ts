@@ -7,12 +7,17 @@ import { showsPendingEdit, type PendingEdit } from '../lib/pendingEdit.ts';
 
 /** Connects the host-provided circuit snapshot to editable React state. */
 export function useCircuitDocument() {
-    const { snapshot, requestEdit, rejectedRequestId } = useDocument();
+    const { snapshot, requestEdit, rejectedRequestId, appliedRequestId } = useDocument();
 
-    // Optimistic circuit shown until the host broadcasts or rejects the edit.
+    // Optimistic circuit shown until the host broadcasts, rejects or confirms the edit.
     const [pending, setPending] = useState<PendingEdit | undefined>();
 
-    const showPending = showsPendingEdit({ pending, documentVersion: snapshot?.version, rejectedRequestId });
+    const showPending = showsPendingEdit({
+        pending,
+        documentVersion: snapshot?.version,
+        rejectedRequestId,
+        appliedRequestId,
+    });
     const circuit = showPending && pending ? pending.circuit : (snapshot?.circuit ?? undefined);
 
     const readOnly = snapshot !== undefined && !isWritable(snapshot.state);

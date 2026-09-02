@@ -128,15 +128,17 @@ Defined in `vscode-extension/src/shared/protocol.ts`. Small on purpose.
 | webview → host | `enableEditing` | Opt in to lossy editing for this document |
 | webview → host | `webviewError { message, stack }` | The circuit editor crashed while rendering |
 | host → webview | `documentChanged { circuit, version, state, classification }` | Authoritative state, broadcast to every panel of the URI |
-| host → webview | `editApplied { requestId, version }` | The edit landed |
+| host → webview | `editApplied { requestId, version }` | The edit landed; clears the optimistic circuit when the written text was identical and no `documentChanged` follows |
 | host → webview | `editRejected { requestId, reason, currentVersion }` | `stale`, `readOnly` or `applyFailed` |
 
 Arbitration is a pure function (`arbitration.ts`) so it can be tested without VSCode:
 the edit must match the current document version and the document must be writable.
+`applyOptIn` determines the edit state from its classification and the user's opt-in.
+Only `commentsOnly` can be enabled through opt-in. `PanelRegistry` keeps track of open panels per URI, 
+which the broadcast sends updates to.
 Which states are writable is defined once, in `protocol.ts`, and asked as a question,
 so a state added later is refused until someone decides otherwise.
-Rejected edits are not merged; the webview rebases on the next `documentChanged`. At
-human interaction speed that is rare, and rejecting is always safe while merging is not.
+Rejected edits are rebased on the next `documentChanged`. At human interaction speed rejected edits are rare.
 
 Accepted edits are applied as a `WorkspaceEdit`, which is what puts them into VSCode's
 undo history: Ctrl+Z in the text editor undoes a circuit edit.
@@ -157,10 +159,11 @@ in Java and in TypeScript, and anyone changing them has to touch both sides.
 Two properties make the duplication and the read-only rule tractable:
 
 **The visitor is strict.** Unlike the backend visitor, which walks past what it does not
-understand, this one rejects it. Every construct is either handled or recorded as
-unsupported with a line number and a reason. A transformation that silently drops a
-statement is perfectly round-trip idempotent and still lossy; strictness is what closes
-that gap.
+understand, this one writes it down. It never throws and never stops early: it walks the
+whole tree and records every construct it cannot write back with a line, a column and a
+reason, as `unsupported` when the OpenQASM is valid and as `invalid` when it is not. The
+user therefore sees every reason at once rather than the first. A transformation that
+silently drops a statement is perfectly round-trip idempotent and still lossy.
 
 **The support matrix is the single source.** `packages/circuit-core/src/support-matrix.ts`
 lists which statements and gates round-trip. The visitor consults it, the tests assert
@@ -173,8 +176,8 @@ where an unsupported construct's user-facing wording comes from.
 
 | Package | Contents | Depends on |
 |---|---|---|
-| `@quak/circuit-core` | DTOs, gate types, support matrix, quantikz export, angle formatting | nothing |
-| `@quak/ui` | The shadcn primitives both hosts use | radix, tailwind |
+| `@quak/circuit-core` | DTOs, gate types, support matrix, wire index, angle formatting, the quantikz and Dirac notation mappers | nothing |
+| `@quak/ui` | The shadcn primitives both hosts use | radix, tailwind-merge, lucide, react as a peer |
 | `@quak/circuit-editor` | The circuit editor with its integrated gate library | circuit-core, ui |
 | `@quak/qasm-transform` | OpenQASM 3 ↔ circuit, for the extension only | antlr4ng |
 
@@ -209,7 +212,8 @@ typed. It offers nothing in operand position, which other providers already cove
 The host bundle is built with esbuild (`dist/extension.cjs`), the webview with Vite. The
 webview is loaded through a CSP with a per-panel nonce and may only read from `dist/`.
 
-CI runs on every push: lint, package boundaries, typechecks, unit tests, the
+CI runs on pull requests and on pushes to `development` and `main`: lint, package
+boundaries, the generated-parser check, typechecks, unit tests, the
 `@vscode/test-electron` integration tests under xvfb, the extension build, and packaging.
 `check:vsix` inspects the produced archive and fails if sources, tests or secrets leak
 into it; it once caught a configuration that would have shipped `.git` and `.env`.

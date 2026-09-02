@@ -8,7 +8,7 @@ import {
     formatRotationAngle,
 } from '@quak/circuit-core';
 import { getOperationDefinition, OperationDefinition } from '../../operations.ts';
-import { CELL_WIDTH, QUBIT_HEIGHT } from '../../circuit/util/layout.ts';
+import { CELL_WIDTH, QUBIT_HEIGHT } from '../util/layout.ts';
 import { TextIcon } from '@quak/ui/text-icon';
 import { DragData } from '../../types.ts';
 
@@ -229,8 +229,7 @@ function TargetPoint({
             </div>
         );
     } else {
-        const TextIconComponent = TextIcon(definition.icon.text);
-        content = <TextIconComponent />;
+        content = <TextIcon text={definition.icon.text} />;
     }
 
     return (

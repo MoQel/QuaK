@@ -24,6 +24,7 @@ const gate = (
     controlQubits: ElementSelectorDto[] = [],
     overrides: Partial<ElementaryQuantumGateDto> = {},
 ): ElementaryQuantumGateDto => ({
+    id: `${identifier}-${targetQubits.map((selector) => selector.index).join('-')}`,
     type: 'ELEMENTARY_QUANTUM_GATE',
     identifier: identifier as ElementaryQuantumGateDto['identifier'],
     inverseForm: false,
@@ -129,6 +130,7 @@ describe('toLabeledDirac', () => {
 
     it('skips non-unitary operations such as measurements', () => {
         const measurement: QuantumOperationDto = {
+            id: 'measure',
             type: 'MEASUREMENT',
             identifier: 'MEASURE',
             inverseForm: false,

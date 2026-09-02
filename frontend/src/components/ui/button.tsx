@@ -1,3 +1,3 @@
-// Re-exported from @quak/ui to keep existing importers working.
-// New shared code should import from @quak/ui directly.
+// Moved to @quak/ui. This re-export keeps the existing importers working.
+// New code should import from @quak/ui/button directly.
 export * from '@quak/ui/button';

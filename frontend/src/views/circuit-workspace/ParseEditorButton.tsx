@@ -14,8 +14,8 @@ interface ParseEditorButtonProps {
 /**
  * Parses the active editor's code into the circuit, via the backend's
  * `/api/circuit/parse`. Web-IDE only: the shared circuit editor has no backend,
- * so this is injected into `CircuitToolbar`'s `start` slot. The extension will do
- * the same job locally once `packages/qasm-transform` exists.
+ * so this is injected into `CircuitToolbar`'s `start` slot. The extension does the
+ * same job locally with `@quak/qasm-transform`.
  */
 export function ParseEditorButton({ circuit, setCircuit }: Readonly<ParseEditorButtonProps>) {
     const [isParsing, setIsParsing] = useState(false);
@@ -78,7 +78,7 @@ type ParserLayer = {
 };
 
 // Content-only parse result: the backend returns registers and layers without any
-// circuit identity; ids are re-mapped onto the active circuit during normalization.
+// circuit identity. Ids are re-mapped onto the active circuit during normalization.
 type ParserCircuit = {
     registers?: ParserRegister[];
     layers?: ParserLayer[];

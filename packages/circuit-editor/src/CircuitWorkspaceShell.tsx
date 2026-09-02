@@ -13,7 +13,7 @@ interface CircuitWorkspaceShellProps {
     /**
      * Collapse is uncontrolled: the shell owns the state and only reports changes.
      * Each host persists it however it likes (localStorage in the web IDE, webview
-     * state in the extension); the shell knows nothing about any storage.
+     * state in the extension). The shell knows nothing about any storage.
      */
     defaultCollapsed?: boolean;
     onCollapsedChange?: (collapsed: boolean) => void;

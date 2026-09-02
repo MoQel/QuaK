@@ -26,4 +26,17 @@ describe('an optimistic edit is shown only while the host has not answered', () 
     it('keeps showing the edit when some other request was the one rejected', () => {
         expect(showsPendingEdit({ pending, documentVersion: 7, rejectedRequestId: 'req-0' })).toBe(true);
     });
+
+    // An edit whose QASM came out byte-identical changes nothing, so no newer version follows.
+    it('stops when the host confirms the edit without a document change', () => {
+        expect(
+            showsPendingEdit({ pending, documentVersion: 7, rejectedRequestId: undefined, appliedRequestId: 'req-1' }),
+        ).toBe(false);
+    });
+
+    it('keeps showing the edit when some other request was the one confirmed', () => {
+        expect(
+            showsPendingEdit({ pending, documentVersion: 7, rejectedRequestId: undefined, appliedRequestId: 'req-0' }),
+        ).toBe(true);
+    });
 });

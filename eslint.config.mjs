@@ -6,8 +6,9 @@ import tseslint from 'typescript-eslint';
 import eslintConfigPrettier from 'eslint-config-prettier';
 
 // One config for the whole monorepo. The areas differ in what they may assume:
-// the web IDE is React in a browser, the shared packages have neither React nor
-// DOM, the extension host is Node, and only the webview is browser again.
+// the web IDE, the circuit editor and the UI primitives are React in a browser,
+// circuit-core and qasm-transform have neither React nor DOM, the extension host
+// is Node, and the extension webview is React in a browser again.
 
 export default tseslint.config(
     // packages/qasm-transform/src/generated is ANTLR output, not hand-written code:
@@ -45,9 +46,15 @@ export default tseslint.config(
         },
     },
 
-    // Web IDE: React in the browser.
+    // React in a browser: the web IDE, the shared circuit editor and UI primitives,
+    // and the extension webview (a sandboxed browser frame).
     {
-        files: ['frontend/**/*.{ts,tsx}'],
+        files: [
+            'frontend/**/*.{ts,tsx}',
+            'packages/circuit-editor/**/*.{ts,tsx}',
+            'packages/ui/**/*.{ts,tsx}',
+            'vscode-extension/src/webview/**/*.{ts,tsx}',
+        ],
         languageOptions: {
             globals: globals.browser,
         },
@@ -58,31 +65,27 @@ export default tseslint.config(
         rules: {
             ...reactHooks.configs.recommended.rules,
             'react-refresh/only-export-components': 'off',
+            // The editor's effects deliberately list fewer dependencies than the rule
+            // wants (see the comments at those effects); the rule would only be noise.
             'react-hooks/exhaustive-deps': 'off',
         },
     },
 
-    // Shared packages: plain TypeScript, no React and no DOM.
+    // Shared non-UI packages: plain TypeScript, no React and no DOM.
     {
-        files: ['packages/**/*.ts'],
+        files: ['packages/circuit-core/**/*.ts', 'packages/qasm-transform/**/*.ts'],
         languageOptions: {
             globals: {},
         },
     },
 
-    // Extension host: runs in Node.
+    // Extension host and its shared protocol: run in Node (the shared part must stay
+    // environment-neutral, so it gets no browser globals either).
     {
         files: ['vscode-extension/src/**/*.ts'],
+        ignores: ['vscode-extension/src/webview/**'],
         languageOptions: {
             globals: globals.node,
-        },
-    },
-
-    // Extension webview: a sandboxed browser frame.
-    {
-        files: ['vscode-extension/src/webview/**/*.ts'],
-        languageOptions: {
-            globals: globals.browser,
         },
     },
 

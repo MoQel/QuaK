@@ -46,7 +46,7 @@ export function registerDiagnostics(documents: ClassificationCache): vscode.Disp
         // Ahead of the parse, so nothing is parsed only to be discarded.
         if (!reportsAnything(wanted)) return [];
 
-        // Nothing to report about a document that could not be analysed; the reason is
+        // Nothing to report about a document that could not be analysed. The reason is
         // in the log, and stale squiggles would be worse than none.
         const classified = documents.of(document);
         const findings = classified ? diagnosticsFor(classified.classification, wanted) : [];

@@ -483,7 +483,7 @@ function parseOperands(operandList: GateOperandListContext, builder: CircuitBuil
 }
 
 /**
- * OpenQASM allows a comma after the last entry of a list; we write the list without it,
+ * OpenQASM allows a comma after the last entry of a list. We write the list without it,
  * so accepting one silently would edit the file on the next save.
  */
 const endsWithComma = (list: { COMMA(): unknown[] }, entries: number): boolean =>

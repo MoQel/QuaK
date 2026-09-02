@@ -3,12 +3,12 @@
 import * as vscode from 'vscode';
 import { toQasm, type DocumentClassification } from '@quak/qasm-transform';
 import { applyOptIn, decideEdit, PanelRegistry } from './arbitration.ts';
-import type {
-    ApplyEditMessage,
-    DocumentState,
-    EditRejectedReason,
-    HostMessage,
-    WebviewMessage,
+import {
+    isWebviewMessage,
+    type ApplyEditMessage,
+    type DocumentState,
+    type EditRejectedReason,
+    type HostMessage,
 } from '../shared/protocol.ts';
 import type { ClassificationCache } from './documentModel.ts';
 
@@ -60,7 +60,15 @@ export class CircuitEditorProvider implements vscode.CustomTextEditorProvider {
         };
         webviewPanel.webview.html = this.buildHtml(webviewPanel.webview);
 
-        const messageSub = webviewPanel.webview.onDidReceiveMessage((message: WebviewMessage) => {
+        const messageSub = webviewPanel.webview.onDidReceiveMessage((message: unknown) => {
+            if (!isWebviewMessage(message)) {
+                this.onFailure(
+                    `Ignored a malformed webview message: ${describe(message)}`,
+                    `Circuit editor for ${key}`,
+                );
+                return;
+            }
+
             switch (message.type) {
                 case 'ready':
                     this.post(webviewPanel, document);
@@ -201,4 +209,13 @@ function wholeDocument(document: vscode.TextDocument): vscode.Range {
 
 function createNonce(): string {
     return crypto.randomUUID().replaceAll('-', '');
+}
+
+/** The message as far as it can be printed, so a protocol bug is diagnosable from the log. */
+function describe(message: unknown): string {
+    try {
+        return JSON.stringify(message)?.slice(0, 200) ?? String(message);
+    } catch {
+        return String(message);
+    }
 }

@@ -1,6 +1,6 @@
 import { QuantumOperationDto, RegisterResponse } from '@quak/circuit-core';
-import { ElementaryQuantumGate } from '../../circuit/components/ElementaryQuantumGate.tsx';
-import { UiLayer } from '../../circuit/util/types.ts';
+import { ElementaryQuantumGate } from './ElementaryQuantumGate.tsx';
+import { UiLayer } from '../util/types.ts';
 import { useCircuitDrag } from '../../CircuitDragContext.tsx';
 
 interface QuantumOperationGridProps {
@@ -59,9 +59,9 @@ export function QuantumOperationGrid({
                     registers={registers}
                     layerIdx={layerIdx}
                     isGhost={isGhost}
-                    onDragStart={(operationSize) => handleOperationDragStart(op.id!, operationSize)}
+                    onDragStart={(operationSize) => handleOperationDragStart(op.id, operationSize)}
                     onDragEnd={handleOperationDragEnd}
-                    onDelete={() => removeQuantumOperation(op.id!)}
+                    onDelete={() => removeQuantumOperation(op.id)}
                 />
             ))}
         </div>

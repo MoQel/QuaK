@@ -20,7 +20,7 @@ export function registerCommands(output: vscode.OutputChannel): vscode.Disposabl
 }
 
 async function openCircuitEditor(uri: vscode.Uri | undefined, column: vscode.ViewColumn): Promise<void> {
-    // Menus pass the resource; the command palette passes nothing.
+    // Menus pass the resource. The command palette passes nothing.
     const target = uri ?? activeQasmUri();
     if (!target) {
         void vscode.window.showWarningMessage('Open a .qasm file to show it as a circuit.');

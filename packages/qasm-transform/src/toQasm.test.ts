@@ -2,25 +2,29 @@ import { describe, expect, it } from 'vitest';
 import type { CircuitContent, OperationIdentifier } from '@quak/circuit-core';
 import { isEditable, toCircuit } from './toCircuit.ts';
 import { formatAngle, toQasm } from './toQasm.ts';
+import { circuitOf, HEADER, parseEditable } from './testFixtures.ts';
 
 const roundTrip = (source: string) => {
-    const parsed = toCircuit(source);
-    expect(isEditable(parsed), `fixture is not editable: ${JSON.stringify(parsed.unsupported)}`).toBe(true);
-    return toQasm(parsed.content!, parsed.preamble);
+    const parsed = parseEditable(source);
+    return toQasm(parsed.content, parsed.preamble);
 };
+
+// The editor packs independent operations into one layer, so this is the normal
+// shape of a saved circuit, not an edge case.
+const TWO_LAYERS_THREE_GATES =
+    `${HEADER}\n// Register q\nqubit[3] q;\n\n` + '// Layer 1\nh q[0];\nx q[1];\n\n// Layer 2\ncx q[0], q[1];\n';
 
 describe('toQasm: emission', () => {
     it('writes a valid standalone document, header and markers included', () => {
-        const parsed = toCircuit('OPENQASM 3.0;\ninclude "stdgates.inc";\nqubit[2] q;\nh q[0];\n');
+        const parsed = parseEditable(`${HEADER}qubit[2] q;\nh q[0];\n`);
 
-        expect(toQasm(parsed.content!, parsed.preamble)).toBe(
+        expect(toQasm(parsed.content, parsed.preamble)).toBe(
             'OPENQASM 3.0;\ninclude "stdgates.inc";\n\n// Register q\nqubit[2] q;\n\n// Layer 1\nh q[0];\n',
         );
     });
 
     it('supplies a header when the source had none, so the output still parses', () => {
-        const parsed = toCircuit('qubit[1] q;\nh q[0];\n');
-        const emitted = toQasm(parsed.content!);
+        const emitted = toQasm(circuitOf('qubit[1] q;\nh q[0];\n'));
 
         expect(emitted).toContain('OPENQASM 3.0;');
         expect(emitted).toContain('include "stdgates.inc";');
@@ -29,8 +33,7 @@ describe('toQasm: emission', () => {
 
     // Generated markers must not make generated files read-only.
     it('emits structural markers without making its own output read-only', () => {
-        const parsed = toCircuit('OPENQASM 3.0;\nqubit[2] q;\nh q[0];\ncx q[0], q[1];\n');
-        const emitted = toQasm(parsed.content!, parsed.preamble);
+        const emitted = roundTrip('OPENQASM 3.0;\nqubit[2] q;\nh q[0];\ncx q[0], q[1];\n');
 
         expect(emitted).toContain('// Register q');
         expect(emitted).toContain('// Layer 1');
@@ -42,11 +45,10 @@ describe('toQasm: emission', () => {
 
     it('preserves the header comment block, above everything else', () => {
         const source = '// Copyright 2026 KIT\n// Bell pair demo\nOPENQASM 3.0;\nqubit[2] q;\nh q[0];\n';
-        const parsed = toCircuit(source);
+        const parsed = parseEditable(source);
 
-        expect(isEditable(parsed)).toBe(true);
         expect(parsed.preamble.headerComments).toEqual(['// Copyright 2026 KIT', '// Bell pair demo']);
-        expect(toQasm(parsed.content!, parsed.preamble)).toMatch(/^\/\/ Copyright 2026 KIT\n\/\/ Bell pair demo\n\n/);
+        expect(toQasm(parsed.content, parsed.preamble)).toMatch(/^\/\/ Copyright 2026 KIT\n\/\/ Bell pair demo\n\n/);
     });
 
     it('keeps a document with comments below the header read-only', () => {
@@ -86,13 +88,7 @@ describe('toQasm: emission', () => {
 // Editor-created DTOs may carry default angles on gates that are not parametric.
 describe('what toQasm writes, toCircuit has to accept again', () => {
     it('round trips a circuit whose layers hold more than one operation', () => {
-        // The editor packs independent operations into one layer, so this is the normal
-        // shape of a saved circuit, not an edge case.
-        const source =
-            'OPENQASM 3.0;\ninclude "stdgates.inc";\n\n// Register q\nqubit[3] q;\n\n' +
-            '// Layer 1\nh q[0];\nx q[1];\n\n// Layer 2\ncx q[0], q[1];\n';
-        const written = roundTrip(source);
-        const reread = toCircuit(written);
+        const reread = toCircuit(roundTrip(TWO_LAYERS_THREE_GATES));
 
         expect(reread.unsupported, 'QuaK flagged its own output').toEqual([]);
         expect(isEditable(reread)).toBe(true);
@@ -100,11 +96,7 @@ describe('what toQasm writes, toCircuit has to accept again', () => {
 
     it('leaves a file of its own byte for byte alone', () => {
         // Anything less rewrites the user's file on an edit that changed nothing else.
-        const source =
-            'OPENQASM 3.0;\ninclude "stdgates.inc";\n\n// Register q\nqubit[3] q;\n\n' +
-            '// Layer 1\nh q[0];\nx q[1];\n\n// Layer 2\ncx q[0], q[1];\n';
-
-        expect(roundTrip(source)).toBe(source);
+        expect(roundTrip(TWO_LAYERS_THREE_GATES)).toBe(TWO_LAYERS_THREE_GATES);
     });
 });
 
@@ -185,22 +177,24 @@ describe('formatAngle: symbolic, so round trips do not decay', () => {
         expect(formatAngle(angle)).toBe(expected);
     });
 
-    it('never emits a non-QASM token for a non-finite angle', () => {
-        expect(formatAngle(Number.NaN)).toBe('0');
-        expect(formatAngle(Number.POSITIVE_INFINITY)).toBe('0');
-    });
+    // Writing `rx(0)` for an angle nobody chose would put a different circuit into the
+    // user's file without a word. Refusing lets the host reject the edit instead.
+    it.each([Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY])(
+        'refuses to write %s rather than silently writing 0',
+        (angle) => {
+            expect(() => formatAngle(angle)).toThrow(/non-finite/);
+        },
+    );
 });
 
 describe('round trip is idempotent', () => {
     const fixtures: Record<string, string> = {
-        'single gate': 'OPENQASM 3.0;\ninclude "stdgates.inc";\nqubit[1] q;\nh q[0];\n',
-        'bell pair': 'OPENQASM 3.0;\ninclude "stdgates.inc";\nqubit[2] q;\nh q[0];\ncx q[0], q[1];\n',
-        toffoli: 'OPENQASM 3.0;\ninclude "stdgates.inc";\nqubit[3] q;\nccx q[0], q[1], q[2];\n',
-        swap: 'OPENQASM 3.0;\ninclude "stdgates.inc";\nqubit[2] q;\nswap q[0], q[1];\n',
-        rotations:
-            'OPENQASM 3.0;\ninclude "stdgates.inc";\nqubit[1] q;\nrx(pi/2) q[0];\nry(tau) q[0];\nrz(-pi/4) q[0];\n',
-        'multiple registers':
-            'OPENQASM 3.0;\ninclude "stdgates.inc";\nqubit[2] a;\nqubit[1] b;\nh a[0];\ncx a[1], b[0];\n',
+        'single gate': `${HEADER}qubit[1] q;\nh q[0];\n`,
+        'bell pair': `${HEADER}qubit[2] q;\nh q[0];\ncx q[0], q[1];\n`,
+        toffoli: `${HEADER}qubit[3] q;\nccx q[0], q[1], q[2];\n`,
+        swap: `${HEADER}qubit[2] q;\nswap q[0], q[1];\n`,
+        rotations: `${HEADER}qubit[1] q;\nrx(pi/2) q[0];\nry(tau) q[0];\nrz(-pi/4) q[0];\n`,
+        'multiple registers': `${HEADER}qubit[2] a;\nqubit[1] b;\nh a[0];\ncx a[1], b[0];\n`,
     };
 
     it.each(Object.entries(fixtures))('%s survives generate → parse → generate unchanged', (_name, source) => {
@@ -211,32 +205,29 @@ describe('round trip is idempotent', () => {
     });
 
     it.each(Object.entries(fixtures))('%s keeps its circuit through the round trip', (_name, source) => {
-        const before = toCircuit(source).content;
-        const after = toCircuit(roundTrip(source)).content;
+        const before = circuitOf(source);
+        const after = circuitOf(roundTrip(source));
 
-        // Ids are position-derived, so regenerating moves them; the circuit itself must not change.
+        // Ids are position-derived, so regenerating moves them. The circuit itself must not change.
         expect(stripIds(after)).toEqual(stripIds(before));
     });
 
     it('round-trips a file the web IDE generated, markers and all', () => {
         const webIdeStyle = '// Register q\nqubit[2] q;\n\n// Layer 1\nh q[0];\n\n// Layer 2\ncx q[0], q[1];\n';
-        const parsed = toCircuit(webIdeStyle);
-
-        expect(isEditable(parsed)).toBe(true);
-        expect(isEditable(toCircuit(toQasm(parsed.content!, parsed.preamble)))).toBe(true);
+        expect(isEditable(toCircuit(roundTrip(webIdeStyle)))).toBe(true);
     });
 
     it('preserves the angle exactly, not just approximately', () => {
-        const parsed = toCircuit(roundTrip('OPENQASM 3.0;\nqubit[1] q;\nrx(2*pi/3) q[0];\n'));
-        const operation = parsed.content!.layers[0].quantumOperations[0];
+        const operation = circuitOf(roundTrip('OPENQASM 3.0;\nqubit[1] q;\nrx(2*pi/3) q[0];\n')).layers[0]
+            .quantumOperations[0];
 
         expect('rotationAngle' in operation && operation.rotationAngle).toBeCloseTo((2 * Math.PI) / 3, 12);
     });
 });
 
-const stripIds = (content: ReturnType<typeof toCircuit>['content']) => ({
-    registers: content!.registers.map(({ id: _id, ...rest }) => rest),
-    layers: content!.layers.map((layer) => ({
+const stripIds = (content: CircuitContent) => ({
+    registers: content.registers.map(({ id: _id, ...rest }) => rest),
+    layers: content.layers.map((layer) => ({
         quantumOperations: layer.quantumOperations.map(({ id: _id, ...rest }) => rest),
     })),
 });

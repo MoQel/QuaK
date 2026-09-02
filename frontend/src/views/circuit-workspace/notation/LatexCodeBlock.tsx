@@ -4,7 +4,7 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Button } from '@/components/ui/button.tsx';
 import { useTheme } from '@/theme.tsx';
-import { ExportStatus } from '@/views/circuit-workspace/notation/useQuantikzExport.ts';
+import type { ExportStatus } from '@quak/circuit-editor';
 
 interface LatexCodeBlockProps {
     code: string;

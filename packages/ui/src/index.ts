@@ -1,4 +1,4 @@
-// @quak/ui - shadcn primitives that are safe to share outside the web IDE.
+// @quak/ui. Shadcn primitives that are safe to share outside the web IDE.
 // Keep app-specific components in their consuming app until another consumer exists.
 
 export * from './lib/utils.ts';

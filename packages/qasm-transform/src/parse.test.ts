@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseQasm } from './parse.ts';
-
-const HEADER = 'OPENQASM 3.0;\ninclude "stdgates.inc";\n';
+import { HEADER } from './testFixtures.ts';
 
 // Half-written files are the normal state while someone is typing, so where these
 // errors point decides whether the editor is helpful or in the way.

@@ -53,7 +53,7 @@ describe('PanelHeaderActions', () => {
     });
 
     it('renders nothing for other panels', () => {
-        render(<PanelHeaderActions {...makeProps('library')} />);
+        render(<PanelHeaderActions {...makeProps('inspector')} />);
         expect(screen.queryByTestId('circuit-toolbar')).toBeNull();
         expect(screen.queryByTestId('code-toolbar')).toBeNull();
     });

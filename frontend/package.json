@@ -11,8 +11,7 @@
         "test": "vitest run",
         "test:watch": "vitest",
         "test:ui": "vitest --ui",
-        "test:coverage": "vitest run --coverage",
-        "prepare": "husky"
+        "test:coverage": "vitest run --coverage"
     },
     "dependencies": {
         "@chakra-ui/react": "^3.16.1",
@@ -22,6 +21,9 @@
         "@hello-pangea/dnd": "^18.0.1",
         "@hookform/resolvers": "^5.0.1",
         "@monaco-editor/react": "^4.7.0",
+        "@quak/circuit-core": "*",
+        "@quak/circuit-editor": "*",
+        "@quak/ui": "*",
         "@radix-ui/react-context-menu": "^2.2.15",
         "@radix-ui/react-dialog": "^1.1.14",
         "@radix-ui/react-dropdown-menu": "^2.1.16",

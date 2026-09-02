@@ -27,7 +27,7 @@ const UNREADABLE = 'This statement cannot be read.';
 const MISSING_TOKEN = /^missing (.+?) at /;
 
 /**
- * ANTLR's default listener prints to stderr; syntax errors belong in the document
+ * ANTLR's default listener prints to stderr. Syntax errors belong in the document
  * state instead. None of its wording survives: it names grammar rules and lists every
  * token that could have followed. Nor do its positions, which blame the token *after*
  * a gap that the hidden channel can put lines away.
@@ -85,7 +85,7 @@ class CollectingErrorListener extends BaseErrorListener {
         if (offendingSymbol.type === Token.EOF) return this.endOfContent();
 
         // ANTLR gives up at the token that ruled everything out, which is where the
-        // *next* statement starts; the unreadable one began earlier.
+        // *next* statement starts. The unreadable one began earlier.
         if (e instanceof NoViableAltException && e.startToken) {
             return { line: e.startToken.line, column: e.startToken.column, message: UNREADABLE };
         }

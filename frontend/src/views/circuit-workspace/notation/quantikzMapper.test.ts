@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { toQuantikz, toStandaloneQuantikzDocument } from '@quak/circuit-core/quantikz';
+import { toQuantikz, toStandaloneQuantikzDocument } from '@quak/circuit-core/notation/quantikz';
 import type {
     CircuitResponse,
     ClassicRegisterResponse,
@@ -35,6 +35,7 @@ const gate = (
     targetQubits: ElementSelectorDto[],
     opts: { controlQubits?: ElementSelectorDto[]; rotationAngle?: number } = {},
 ): ElementaryQuantumGateDto => ({
+    id: `${identifier}-${targetQubits.map((selector) => selector.index).join('-')}`,
     type: 'ELEMENTARY_QUANTUM_GATE',
     identifier,
     inverseForm: false,
@@ -44,6 +45,7 @@ const gate = (
 });
 
 const measurement = (targetQubits: ElementSelectorDto[], classicBits: ElementSelectorDto[]): MeasurementDto => ({
+    id: 'measure',
     type: 'MEASUREMENT',
     identifier: 'MEASURE',
     inverseForm: false,
@@ -100,6 +102,34 @@ describe('toQuantikz', () => {
 
         expect(latex).toContain(String.raw`\meter{}`);
         expect(latex).toContain(String.raw`\begin{quantikz}[wire types={q,c}]`);
+    });
+
+    it('lays layers out as columns and wires as rows, with one trailing wire column', () => {
+        const latex = toQuantikz(
+            circuit(
+                [qreg('q', 2)],
+                [
+                    [gate('H', [sel('q', 0)]), gate('X', [sel('q', 1)])],
+                    [gate('CX', [sel('q', 1)], { controlQubits: [sel('q', 0)] })],
+                ],
+            ),
+        );
+
+        expect(latex).toBe(
+            [
+                String.raw`\begin{quantikz}[wire types={q,q}]`,
+                String.raw`    \lstick{q[0]} & \gate{H} & \ctrl{1} &  \\`,
+                String.raw`    \lstick{q[1]} & \gate{X} & \targ{} &  \\`,
+                String.raw`\end{quantikz}`,
+                '',
+            ].join('\n'),
+        );
+    });
+
+    it('draws a multi-target gate other than SWAP as nothing rather than as one of its targets', () => {
+        const latex = toQuantikz(circuit([qreg('q', 2)], [[gate('H', [sel('q', 0), sel('q', 1)])]]));
+
+        expect(latex).not.toContain(String.raw`\gate{H}`);
     });
 
     it('escapes LaTeX-special characters in register names', () => {

@@ -8,7 +8,7 @@ import {
     QuantumOperationDto,
     QuantumRegisterResponse,
 } from '@/api/dto/circuit';
-import { OperationIdentifier } from '@/lib/operations.ts';
+import type { OperationIdentifier } from '@quak/circuit-core';
 import { SimulationResult } from '@/simulation/simulation.types.ts';
 
 // --- Test Helpers ---

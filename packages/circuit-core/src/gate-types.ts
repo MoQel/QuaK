@@ -26,7 +26,7 @@ export type QuantumOperationType = 'ELEMENTARY_QUANTUM_GATE' | 'MEASUREMENT' | '
  * to split an operand list. OpenQASM writes controls first, so `cx q[0], q[1]`
  * is only unambiguous if you know CX takes one control and one target.
  *
- * Mirrors the backend's `QuantumOperationLibrary` definitions; the fixture suite
+ * Mirrors the backend's `QuantumOperationLibrary` definitions. The fixture suite
  * is what keeps the two honest.
  */
 export interface GateArity {

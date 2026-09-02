@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildWireIndex } from './circuitIndex';
+import { buildWireIndex } from '@quak/circuit-core';
 import { ClassicRegisterResponse, QuantumRegisterResponse, RegisterResponse } from '@/api/dto/circuit';
 
 const quantumRegister = (id: string, numberOfQubits: number): QuantumRegisterResponse => ({
@@ -69,7 +69,7 @@ describe('buildWireIndex', () => {
 
         expect(wireIndex.getWireIndex({ registerId: 'q0', index: 0 })).toBe(0);
         expect(wireIndex.getWireIndex({ registerId: 'q0', index: 1 })).toBe(1);
-        // q1 follows immediately after q0; the classic register does not consume an index.
+        // q1 follows immediately after q0. The classic register does not consume an index.
         expect(wireIndex.getWireIndex({ registerId: 'q1', index: 0 })).toBe(2);
         // Classic selectors are not indexed in quantum mode.
         expect(wireIndex.getWireIndex({ registerId: 'c0', index: 0 })).toBeUndefined();

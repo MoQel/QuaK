@@ -1,5 +1,5 @@
-import { CELL_WIDTH, QUBIT_HEIGHT } from '../../circuit/util/layout.ts';
-import { HoverPos } from '../../circuit/util/types.ts';
+import { CELL_WIDTH, QUBIT_HEIGHT } from '../util/layout.ts';
+import { HoverPos } from '../util/types.ts';
 
 interface DropPlaceholderProps {
     hoverPos: HoverPos | null;

@@ -65,7 +65,7 @@ describe('completionsFor - gate calls', () => {
     });
 
     it('leaves classical registers out of the operands', () => {
-        // `h c[0]` is not a gate call; a classical bit is no qubit.
+        // `h c[0]` is not a gate call. A classical bit is no qubit.
         expect(insertOf('cx', [classical('c', 4), quantum('q', 2)])).toBe('cx ${1:q[0]}, ${2:q[1]};');
     });
 

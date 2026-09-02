@@ -1,8 +1,8 @@
 import { Card, CardContent, CardHeader } from '@quak/ui/card';
-import LibraryBoxView from '../library/components/LibraryBoxView.tsx';
+import LibraryBoxView from './components/LibraryBoxView.tsx';
 import { Button } from '@quak/ui/button';
 import { List, LayoutGrid } from 'lucide-react';
-import LibraryListView from '../library/components/LibraryListView.tsx';
+import LibraryListView from './components/LibraryListView.tsx';
 import { useState } from 'react';
 import { OperationDefinitionResponse } from '@quak/circuit-core';
 

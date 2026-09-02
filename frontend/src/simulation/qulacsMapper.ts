@@ -8,7 +8,7 @@ import {
     SimulationResult,
     StateVectorEntry,
 } from '@/simulation/simulation.types.ts';
-import { buildWireIndex, WireIndex } from '@/lib/circuitIndex.ts';
+import { buildWireIndex, WireIndex } from '@quak/circuit-core';
 
 type GateType = ElementaryQuantumGateDto['identifier'];
 

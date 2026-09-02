@@ -83,7 +83,7 @@ const EDITING_BY_CHOICE: NoticeCopy = {
 /**
  * Explains why the circuit cannot be edited, and what to do about it.
  *
- * The reason is decided in the transform; this only puts it in words.
+ * The reason is decided in the transform. This only puts it in words.
  */
 export function DocumentNotice({ state, classification, hasCircuit, onEditAnyway }: Readonly<DocumentNoticeProps>) {
     const copy = noticeFor(state, classification, hasCircuit);

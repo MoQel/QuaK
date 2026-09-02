@@ -1,4 +1,4 @@
-import { LibraryElement } from '../../library/components/LibraryElement.tsx';
+import { LibraryElement } from './LibraryElement.tsx';
 import { OperationDefinitionResponse } from '@quak/circuit-core';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@quak/ui/card';
 import { Separator } from '@quak/ui/separator';

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-// The formatter lives in @quak/circuit-core; the test stays here because
-// packages/ has no test runner of its own.
+// The formatter lives in @quak/circuit-core. The test stays here because
+// circuit-core has no test runner of its own.
 import { formatRotationAngle } from '@quak/circuit-core';
 
 describe('formatRotationAngle', () => {

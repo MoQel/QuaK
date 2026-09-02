@@ -96,6 +96,11 @@ const QASM_ANGLE_SYMBOLS: AngleSymbols = {
 };
 
 /**
- * Formats an angle for QASM, symbolically where possible.
+ * Formats an angle for QASM, symbolically where possible. A non-finite angle has no
+ * QASM spelling; writing `0` for it would change the circuit without a word, so it is
+ * refused and the host rejects the edit.
  */
-export const formatAngle = (angle: number): string => formatAngleWith(angle, QASM_ANGLE_SYMBOLS);
+export const formatAngle = (angle: number): string => {
+    if (!Number.isFinite(angle)) throw new Error(`Cannot write a non-finite rotation angle (${angle}) to QASM.`);
+    return formatAngleWith(angle, QASM_ANGLE_SYMBOLS);
+};

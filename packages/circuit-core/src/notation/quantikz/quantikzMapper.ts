@@ -7,8 +7,8 @@ import {
     QuantumOperationDto,
     RegisterResponse,
 } from '../../dto/circuit.ts';
-import { buildWireIndex, resolveWireIndices, WireIndex } from '../../lib/circuitIndex.ts';
-import { angleToLatex, resolveAngle } from '../../lib/quantumAngle.ts';
+import { buildWireIndex, resolveWireIndices, WireIndex } from '../../circuitIndex.ts';
+import { angleToLatex, resolveAngle } from '../../quantumAngle.ts';
 import { escapeLatexText } from '../latex/escape.ts';
 
 const ROTATION_GATES = new Set(['RX', 'RY', 'RZ']);

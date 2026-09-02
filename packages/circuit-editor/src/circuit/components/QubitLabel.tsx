@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from '@quak/ui/popover';
 import { Button } from '@quak/ui/button';
-import { FlatQubit } from '../../circuit/util/types.ts';
+import { FlatQubit } from '../util/types.ts';
 import { useCircuitStore } from '../../CircuitStoreContext.tsx';
 import { createCircuitMutations } from '../../circuitMutations.ts';
-import { LABEL_WIDTH, QUBIT_HEIGHT } from '../../circuit/util/layout.ts';
+import { LABEL_WIDTH, QUBIT_HEIGHT } from '../util/layout.ts';
 
 interface QubitLabelProps {
     qubit: FlatQubit;

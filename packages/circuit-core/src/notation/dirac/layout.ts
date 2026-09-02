@@ -33,7 +33,7 @@ export function buildLayerGroups(
 
 /**
  * Builds the final Dirac product.
- * `inline` returns one line; `layered` returns an aligned block with one row per layer.
+ * `inline` returns one line. `layered` returns an aligned block with one row per layer.
  */
 export function assembleDirac(layerGroups: string[][], ket: string, layout: Layout): string {
     const groups = layerGroups.filter((tokens) => tokens.length > 0);

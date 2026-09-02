@@ -24,7 +24,7 @@ interface QuantikzExportButtonProps {
     circuit: CircuitResponse | null;
     /**
      * How the generated LaTeX is displayed in the dialog. The web IDE injects a
-     * syntax-highlighted block; the extension omits it so `react-syntax-highlighter`
+     * syntax-highlighted block. The extension omits it so `react-syntax-highlighter`
      * stays out of the webview bundle and the default plain block is used.
      */
     renderCode?: (props: LatexCodePreviewProps) => ReactNode;

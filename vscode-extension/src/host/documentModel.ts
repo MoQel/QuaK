@@ -135,7 +135,7 @@ export function diagnosticsFor(
         case 'commentsOnly':
             return categories.syncSupport ? classification.comments.map((entry) => toDiagnostic(entry, 'hint')) : [];
 
-        // Facts about the whole document; the notice states them, no line to underline.
+        // Facts about the whole document. The notice states them, no line to underline.
         case 'unsupportedVersion':
         case 'empty':
         case 'noRegister':

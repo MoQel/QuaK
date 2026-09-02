@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { CELL_WIDTH, QUBIT_HEIGHT } from '../../circuit/util/layout.ts';
+import { CELL_WIDTH, QUBIT_HEIGHT } from '../util/layout.ts';
 import {
     CircuitResponse,
     ElementaryQuantumGateDto,
@@ -8,7 +8,7 @@ import {
     MoveQuantumOperationRequest,
     QuantumOperationDto,
 } from '@quak/circuit-core';
-import { FlatQubit, HoverPos, UiLayer } from '../../circuit/util/types.ts';
+import { FlatQubit, HoverPos, UiLayer } from '../util/types.ts';
 import { useCircuitStore } from '../../CircuitStoreContext.tsx';
 import { getOperationDefinition } from '../../operations.ts';
 import { useCircuitDrag } from '../../CircuitDragContext.tsx';
@@ -74,9 +74,7 @@ export function DropzoneGrid({
         setCircuit((prev) => {
             if (!prev) return prev;
 
-            const newOperation = { ...operation, id: crypto.randomUUID() };
-
-            const previewLayers = layersFromPreview(newOperation);
+            const previewLayers = layersFromPreview(operation);
             if (previewLayers) return { ...prev, layers: previewLayers };
 
             // Fallback without an active preview: append to the target layer.
@@ -88,7 +86,7 @@ export function DropzoneGrid({
                 layers.push({ quantumOperations: [] });
             }
 
-            layers[targetLayerIdx].quantumOperations.push(newOperation);
+            layers[targetLayerIdx].quantumOperations.push(operation);
 
             return {
                 ...prev,
@@ -150,7 +148,7 @@ export function DropzoneGrid({
         setHoverPos((prev) => (prev?.qubitIdx === qubitIdx && prev?.layerIdx === layerIdx ? null : prev));
     };
 
-    /** Creates a lookup map of the server-side circuit state. */
+    /** Where every operation sits in the circuit as the store currently holds it. */
     const createCircuitLookupMap = () => {
         const originalPositions = new Map<
             string,
@@ -165,7 +163,7 @@ export function DropzoneGrid({
 
         for (const [layerIdx, layer] of circuit.layers.entries()) {
             for (const op of layer.quantumOperations) {
-                originalPositions.set(op.id!, {
+                originalPositions.set(op.id, {
                     layerIdx,
                     targetQubits: op.targetQubits,
                     controlQubits: op.controlQubits,
@@ -176,9 +174,10 @@ export function DropzoneGrid({
     };
 
     /**
-     * Compares the current circuit state against the UI layer representation to determine
+     * Compares the stored circuit against the UI layer representation to determine
      * whether any operation has shifted to a different layer or qubit position.
-     * Used to avoid sending unnecessary move requests to the API when nothing has changed.
+     * A drop that changes nothing must not produce a store update (and, in the
+     * extension, a document edit).
      */
     const hasCircuitStateChanged = useCallback(
         (operationToMove: MoveQuantumOperationRequest): boolean => {
@@ -200,7 +199,7 @@ export function DropzoneGrid({
             // Check if any other operation has moved (due to temporary detachment of the operation to move).
             for (let layerIdx = 0; layerIdx < uiLayers.length; layerIdx++) {
                 for (const op of uiLayers[layerIdx].quantumOperations) {
-                    const original = originalPositions.get(op.id!);
+                    const original = originalPositions.get(op.id);
                     if (!original) continue;
 
                     const isSameLayer = original.layerIdx === layerIdx;
@@ -239,6 +238,7 @@ export function DropzoneGrid({
                     case 'library': {
                         if (operationDefinition.type === 'ELEMENTARY_QUANTUM_GATE') {
                             const operation: ElementaryQuantumGateDto = {
+                                id: crypto.randomUUID(),
                                 type: 'ELEMENTARY_QUANTUM_GATE',
                                 identifier: data.operationIdentifier,
                                 inverseForm: false,
@@ -253,6 +253,7 @@ export function DropzoneGrid({
                             addQuantumOperationLocally(operation, layerIdx);
                         } else if (operationDefinition.type === 'MEASUREMENT') {
                             const operation: MeasurementDto = {
+                                id: crypto.randomUUID(),
                                 type: 'MEASUREMENT',
                                 identifier: data.operationIdentifier,
                                 inverseForm: false,
@@ -266,7 +267,7 @@ export function DropzoneGrid({
                     }
                     case 'circuit': {
                         const payload: MoveQuantumOperationRequest = {
-                            quantumOperationId: data.id!,
+                            quantumOperationId: data.id,
                             layerIdx,
                             targetQubits,
                             controlQubits,

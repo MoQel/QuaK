@@ -30,8 +30,7 @@ export function LibraryElement({ identifier, onClick, matrix }: Readonly<Library
         const ComponentIcon = definition.icon.component;
         icon = <ComponentIcon className="size-4 stroke-4" />;
     } else {
-        const TextIconComponent = TextIcon(identifier);
-        icon = <TextIconComponent />;
+        icon = <TextIcon text={identifier} />;
     }
 
     const handleDragStart = (e: React.DragEvent<HTMLElement>) => {

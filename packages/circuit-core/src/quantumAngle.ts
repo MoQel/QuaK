@@ -1,7 +1,8 @@
-// Recognized denominators of pi: powers of two for QFT/phase gates, plus 3, 6 and 12.
+// Recognized denominators of pi: everything up to 12, plus the powers of two QFT and
+// phase gates use. One list for every notation, so the gate box, the Dirac view, the
+// quantikz export and the QASM writer agree on which angles have a symbolic form.
 // Pass `denominators` for anything outside that set.
-const DEFAULT_PI_DENOMINATORS = [1, 2, 3, 4, 6, 8, 12, 16, 32, 64, 128];
-const FORMAT_PI_DENOMINATORS = Array.from({ length: 12 }, (_, index) => index + 1);
+const DEFAULT_PI_DENOMINATORS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 16, 32, 64, 128];
 const DEFAULT_TOLERANCE = 1e-9;
 
 const TWO_PI = 2 * Math.PI;
@@ -92,11 +93,7 @@ export interface AngleSymbols {
 export function formatAngle(angle: number, symbols: AngleSymbols): string {
     if (!Number.isFinite(angle) || angle === 0) return '0';
 
-    return (
-        tryNamedConstant(angle, symbols) ??
-        angleToSymbols(resolveAngle(angle, { denominators: FORMAT_PI_DENOMINATORS }), symbols) ??
-        symbols.plain(angle)
-    );
+    return tryNamedConstant(angle, symbols) ?? angleToSymbols(resolveAngle(angle), symbols) ?? symbols.plain(angle);
 }
 
 const DISPLAY_SYMBOLS: AngleSymbols = {

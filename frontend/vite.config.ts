@@ -27,10 +27,10 @@ export default defineConfig(({ mode }) => {
             },
         },
         resolve: {
+            // @quak/* resolve through the workspace links and each package's `exports`
+            // map, the same way the extension resolves them.
             alias: {
                 '@': path.resolve(__dirname, './src'),
-                '@quak/circuit-core': path.resolve(__dirname, '../packages/circuit-core/src'),
-                '@quak/ui': path.resolve(__dirname, '../packages/ui/src'),
             },
         },
         server: {

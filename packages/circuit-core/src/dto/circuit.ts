@@ -1,4 +1,4 @@
-// --- DTOs ---
+// Circuit DTOs shared by the web IDE, the extension and the QASM transform.
 
 import type { OperationIdentifier, QuantumOperationType } from '../gate-types.ts';
 
@@ -10,7 +10,7 @@ export interface ElementSelectorDto {
 export const getSelectorKey = (sel: ElementSelectorDto): string => `${sel.registerId}-${sel.index}`;
 
 export interface AbstractQuantumOperationDto {
-    id?: string; // Only for response
+    id: string;
     type: QuantumOperationType;
     identifier: OperationIdentifier;
     inverseForm: boolean;
@@ -43,7 +43,6 @@ export const getInvolvedSelectors = (op: QuantumOperationDto): ElementSelectorDt
     return selectors;
 };
 
-// --- Responses ---
 type RegisterType = 'Quantum_Register' | 'Classic_Register';
 
 export interface AbstractRegisterResponse {
@@ -94,13 +93,7 @@ export interface CircuitResponse {
     layers: LayerResponse[];
 }
 
-// --- Requests ---
-
-export interface AddQuantumOperationRequest {
-    quantumOperation: QuantumOperationDto;
-    layerIdx: number;
-}
-
+/** A drag that moves an existing operation to a new layer and qubit position. */
 export interface MoveQuantumOperationRequest {
     quantumOperationId: string;
     layerIdx: number;

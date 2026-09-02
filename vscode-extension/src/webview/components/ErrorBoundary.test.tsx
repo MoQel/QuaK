@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
 import { ErrorBoundary } from './ErrorBoundary.tsx';
 
 function Boom(): ReactNode {
@@ -20,12 +20,16 @@ function render(children: ReactNode, onError: (error: Error, componentStack: str
 }
 
 describe('ErrorBoundary', () => {
-    // React reports a caught render error on the console; the test asserts on the boundary, not on that.
+    // React reports a caught render error on the console. The test asserts on the boundary, not on that.
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     afterEach(() => {
         document.body.replaceChildren();
         consoleError.mockClear();
+    });
+
+    afterAll(() => {
+        consoleError.mockRestore();
     });
 
     it('stays out of the way while nothing throws', () => {

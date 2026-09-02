@@ -3,12 +3,17 @@ import { completionAt, wordAt, type CompletionContext, type WordRole } from './q
 
 const HEADER = 'OPENQASM 3.0;\ninclude "stdgates.inc";\n';
 
-/** Marks the cursor in the source, so a test reads as what a user is pointing at. */
-function at(source: string): ReturnType<typeof wordAt> {
+/** Splits a source with a `|` cursor marker, so a test reads as what a user is pointing at. */
+function cursorIn(source: string): { text: string; offset: number } {
     const offset = source.indexOf('|');
     expect(offset, 'every case marks the cursor with |').toBeGreaterThan(-1);
 
-    return wordAt(source.replace('|', ''), offset);
+    return { text: source.replace('|', ''), offset };
+}
+
+function at(source: string): ReturnType<typeof wordAt> {
+    const { text, offset } = cursorIn(source);
+    return wordAt(text, offset);
 }
 
 describe('wordAt: which word', () => {
@@ -87,10 +92,8 @@ describe('wordAt - which role', () => {
 
 describe('completionAt - what belongs here', () => {
     const fits = (source: string): CompletionContext | null => {
-        const offset = source.indexOf('|');
-        expect(offset, 'every case marks the cursor with |').toBeGreaterThan(-1);
-
-        return completionAt(source.replace('|', ''), offset);
+        const { text, offset } = cursorIn(source);
+        return completionAt(text, offset);
     };
 
     const DECLARED = 'qubit[2] q;\n';

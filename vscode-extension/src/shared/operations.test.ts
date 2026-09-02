@@ -1,18 +1,14 @@
 import { describe, expect, it } from 'vitest';
+import { supportedGates } from '@quak/circuit-core';
 import { OPERATIONS } from './operations.ts';
 
-// Guards the cast in library.ts: the backend owns this data, we only bundle it.
-
-const KNOWN_SYMBOLS = ['H', 'X', 'Y', 'Z', 'CX', 'CCX', 'CZ', 'SWAP', 'S', 'T', 'RX', 'RY', 'RZ', 'MEASURE', 'DUMMY'];
+// Guards the cast in operations.ts: the backend owns this data, we only bundle it.
 
 describe('the bundled gate library', () => {
-    it('is not empty', () => {
-        expect(OPERATIONS.length).toBeGreaterThan(0);
-    });
+    it('offers exactly the gates the editor can place: every supported gate call, plus measurement', () => {
+        const offered = OPERATIONS.map((operation) => operation.symbol).sort();
 
-    it('only uses symbols the editor can render', () => {
-        const unknown = OPERATIONS.filter((o) => !KNOWN_SYMBOLS.includes(o.symbol));
-        expect(unknown.map((o) => o.symbol)).toEqual([]);
+        expect(offered).toEqual([...supportedGates(), 'MEASURE'].sort());
     });
 
     it('has everything the DTO says is required', () => {

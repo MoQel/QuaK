@@ -1,19 +1,19 @@
 import { describe, expect, it } from 'vitest';
-import {
-    GATE_ARITY,
-    SUPPORT_MATRIX,
-    isGateSupported,
-    supportedGates,
-    unsupportedStatementRules,
-} from '@quak/circuit-core';
+import { GATE_ARITY, SUPPORT_MATRIX, isGateSupported, unsupportedStatementRules } from '@quak/circuit-core';
+import { OpenQASM3Parser } from './generated/OpenQASM3Parser.js';
 import { isEditable, toCircuit } from './toCircuit.ts';
+import { HEADER } from './testFixtures.ts';
 
 // The matrix is useful only if the transform cannot quietly disagree with it.
 describe('support matrix is consistent with the rest of the transform', () => {
-    it('claims support only for gates the editor has a shape for', () => {
-        for (const gate of supportedGates()) {
-            expect(GATE_ARITY[gate], `${gate} is in the matrix but has no arity`).toBeDefined();
-        }
+    it('names only statement rules the grammar actually has', () => {
+        // The visitor finds the rule by its name on the parse tree. A misspelt key would
+        // never match, and its statement would come back as an "unrecognized statement".
+        const unknown = Object.keys(unsupportedStatementRules()).filter(
+            (rule) => !OpenQASM3Parser.ruleNames.includes(rule),
+        );
+
+        expect(unknown).toEqual([]);
     });
 
     it('lists every supported gate exactly once', () => {
@@ -37,22 +37,59 @@ describe('support matrix is consistent with the rest of the transform', () => {
 });
 
 describe('the visitor rejects what the matrix says it rejects', () => {
-    it('reports the matrix note as the reason, for every unsupported statement rule', () => {
-        const result = toCircuit('OPENQASM 3.0;\nqubit[2] q;\nfor int i in [0:2] { h q[0]; }\n');
-        const rejection = result.unsupported.find((u) => u.construct === 'forStatement');
+    // One valid OpenQASM statement per rule the matrix lists as unsupported.
+    const STATEMENTS: Record<string, string> = {
+        aliasDeclarationStatement: 'let a = q[0];',
+        assignmentStatement: 'c = 1;',
+        barrierStatement: 'barrier q;',
+        boxStatement: 'box { h q[0]; }',
+        breakStatement: 'break;',
+        calStatement: 'cal { }',
+        calibrationGrammarStatement: 'defcalgrammar "openpulse";',
+        classicalDeclarationStatement: 'bit[2] c;',
+        constDeclarationStatement: 'const int n = 4;',
+        continueStatement: 'continue;',
+        defStatement: 'def f() { }',
+        defcalStatement: 'defcal x $0 { }',
+        delayStatement: 'delay[100ns] q[0];',
+        endStatement: 'end;',
+        expressionStatement: '1 + 1;',
+        externStatement: 'extern f(int) -> int;',
+        forStatement: 'for int i in [0:2] { h q[0]; }',
+        gateStatement: 'gate my a { h a; }',
+        ifStatement: 'if (true) { h q[0]; }',
+        ioDeclarationStatement: 'input int x;',
+        measureArrowAssignmentStatement: 'measure q[0];',
+        oldStyleDeclarationStatement: 'creg c[2];',
+        pragma: 'pragma keep going',
+        resetStatement: 'reset q[0];',
+        returnStatement: 'return;',
+        switchStatement: 'switch (1) { case 1 { } }',
+        whileStatement: 'while (true) { h q[0]; }',
+    };
 
-        expect(rejection?.message).toContain(unsupportedStatementRules().forStatement);
+    it('has a statement for every rule the matrix lists, and no other', () => {
+        expect(Object.keys(STATEMENTS).sort()).toEqual(Object.keys(unsupportedStatementRules()).sort());
+    });
+
+    it.each(Object.entries(STATEMENTS))('rejects %s with the reason the matrix gives', (rule, statement) => {
+        const result = toCircuit(`${HEADER}qubit[2] q;\n${statement}\n`);
+
+        expect(result.syntaxErrors, 'the fixture has to be valid OpenQASM to reach the rule').toEqual([]);
+        const rejection = result.unsupported.find((u) => u.construct === rule);
+        expect(rejection?.message, `no rejection names ${rule}`).toContain(unsupportedStatementRules()[rule]);
+        expect(isEditable(result)).toBe(false);
     });
 
     it('keeps support a matrix decision, not an arity one', () => {
         // DUMMY has a shape and is still not supported. It is also not OpenQASM, so this
-        // rule can only be stated here; no document can reach it through a gate call.
+        // rule can only be stated here. No document can reach it through a gate call.
         expect(GATE_ARITY.DUMMY).toBeDefined();
         expect(isGateSupported('DUMMY')).toBe(false);
     });
 
     it('calls a real gate it cannot draw unsupported', () => {
-        // sdg is in stdgates.inc; that this editor has no shape for it is our limit.
+        // sdg is in stdgates.inc. That this editor has no shape for it is our limit.
         const [rejection, ...rest] = toCircuit('OPENQASM 3.0;\nqubit[1] q;\nsdg q[0];\n').unsupported;
 
         expect(rest).toEqual([]);

@@ -3,8 +3,9 @@
  *
  * Shared code under packages/ is reused by both the web IDE and the VSCode
  * extension, so it must never import from frontend/. The Redux store, the REST
- * layer (@/api), ProjectContext and the app shell all live there. Injecting a
- * dependency (e.g. via CircuitPort) is the way around this, not reaching back.
+ * layer (@/api), ProjectContext and the app shell all live there. Injecting what the
+ * editor needs (the circuit and its setter via CircuitStoreProvider, the gate library
+ * as a prop) is the way around this, not reaching back.
  *
  * Run: `npm run lint:boundaries`.
  *

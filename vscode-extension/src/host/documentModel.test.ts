@@ -4,7 +4,6 @@ import {
     classifyText,
     diagnosticsFor,
     positionOf,
-    reportsAnything,
     type DiagnosticCategories,
     type DocumentDiagnostic,
 } from './documentModel.ts';
@@ -26,7 +25,7 @@ describe('classifyText: document state', () => {
         ['a syntax error', `${HEADER}qubit[2 q;\n`],
         ['an unsupported construct', `${HEADER}qubit[2] q;\nbarrier q;\n`],
         ['a rotation gate without its angle', `${HEADER}qubit[2] q;\nrx q[0];\n`],
-        ['a comment below the header', `${HEADER}qubit[2] q;\n// unten\nh q[0];\n`],
+        ['a comment below the header', `${HEADER}qubit[2] q;\n// below\nh q[0];\n`],
         ['an OpenQASM 2 header', 'OPENQASM 2.0;\nqreg q[2];\nh q[0];\n'],
         ['no qubit register', 'OPENQASM 3.0;\n'],
         ['nothing at all', ''],
@@ -253,12 +252,12 @@ describe('diagnosticsFor', () => {
     });
 
     it('treats unsupported constructs as information, not as a defect', () => {
-        // The file is valid OpenQASM; it is this editor that cannot write it back.
+        // The file is valid OpenQASM. It is this editor that cannot write it back.
         expect(diagnosticsIn(`${HEADER}qubit[2] q;\nbarrier q;\n`)[0].severity).toBe('info');
     });
 
     it('reports the comments that would be lost, so the opt-in is informed', () => {
-        const [diagnostic, ...rest] = diagnosticsIn(`${HEADER}qubit[2] q;\n// unten\nh q[0];\n`);
+        const [diagnostic, ...rest] = diagnosticsIn(`${HEADER}qubit[2] q;\n// below\nh q[0];\n`);
 
         expect(rest).toEqual([]);
         expect(diagnostic.construct).toBe('comment');
@@ -271,7 +270,7 @@ describe('diagnosticsFor', () => {
 
     it.each([
         ['an unsupported construct', `${HEADER}qubit[2] q;\nbarrier q;\n`],
-        ['a comment below the header', `${HEADER}qubit[2] q;\n// unten\nh q[0];\n`],
+        ['a comment below the header', `${HEADER}qubit[2] q;\n// below\nh q[0];\n`],
     ])('says nothing about %s while support is switched off', (_case, source) => {
         expect(diagnosticsIn(source, { errors: true, syncSupport: false })).toEqual([]);
     });
@@ -289,13 +288,13 @@ describe('diagnosticsFor', () => {
 
     it('keeps quiet about comments while a construct blocks editing anyway', () => {
         // Accepting the comment loss would not unlock anything here.
-        expect(constructsIn(`${HEADER}qubit[2] q;\n// unten\nbarrier q;\n`)).toEqual(['barrierStatement']);
+        expect(constructsIn(`${HEADER}qubit[2] q;\n// below\nbarrier q;\n`)).toEqual(['barrierStatement']);
     });
 
     it.each([
         ['an empty file', ''],
         ['a file with no register yet', 'OPENQASM 3.0;\n'],
-        ['a started file whose only comment cannot be opted out of', 'OPENQASM 3.0;\n// hier\n'],
+        ['a started file whose only comment cannot be opted out of', 'OPENQASM 3.0;\n// here\n'],
         ['a document the editor can regenerate', `${HEADER}qubit[2] q;\nh q[0];\n`],
     ])('reports nothing for %s, where the notice says it all', (_case, source) => {
         expect(diagnosticsIn(source)).toEqual([]);
@@ -316,18 +315,6 @@ describe('diagnosticsFor: findings that sit at the end of a line', () => {
     });
 });
 
-// What lets the diagnostics skip the parse entirely rather than parse and discard.
-describe('reportsAnything', () => {
-    it.each([
-        [{ errors: true, syncSupport: true }, true],
-        [{ errors: true, syncSupport: false }, true],
-        [{ errors: false, syncSupport: true }, true],
-        [{ errors: false, syncSupport: false }, false],
-    ])('%o -> %s', (categories, expected) => {
-        expect(reportsAnything(categories)).toBe(expected);
-    });
-});
-
 // The one place where two counting conventions meet.
 describe('positionOf', () => {
     const at = (line: number, column: number): DocumentDiagnostic => ({
@@ -339,7 +326,7 @@ describe('positionOf', () => {
     });
 
     it('shifts the line down by one and leaves the column alone', () => {
-        // ANTLR counts lines from 1 and columns from 0; VSCode counts both from 0.
+        // ANTLR counts lines from 1 and columns from 0. VSCode counts both from 0.
         expect(positionOf(at(4, 4))).toEqual({ line: 3, column: 4 });
         expect(positionOf(at(1, 0))).toEqual({ line: 0, column: 0 });
     });

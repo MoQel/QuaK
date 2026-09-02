@@ -1,13 +1,5 @@
 import { CircuitDragProvider, CircuitStoreProvider, CircuitView, LibraryView } from '@quak/circuit-editor';
 import { vi, describe, it, expect } from 'vitest';
-
-// Radix / resizable primitives used deeper in the tree expect these browser APIs.
-globalThis.ResizeObserver = vi.fn().mockImplementation(() => ({
-    observe: vi.fn(),
-    unobserve: vi.fn(),
-    disconnect: vi.fn(),
-}));
-
 import { render, screen } from '@testing-library/react';
 import { CircuitResponse } from '@/api/dto/circuit.ts';
 import { OperationDefinitionResponse } from '@/api/dto/library.ts';
@@ -40,19 +32,19 @@ const operations: OperationDefinitionResponse[] = [
 
 describe('circuit editor renders without a backend', () => {
     it('renders the library from an operations prop', () => {
-        const { container } = render(
+        render(
             <CircuitDragProvider>
                 <LibraryView operations={operations} onOperationSelect={vi.fn()} />
             </CircuitDragProvider>,
         );
 
         expect(screen.getByText('Single-qubit gates')).toBeInTheDocument();
-        expect(container.querySelector('#h')).not.toBeNull();
+        expect(screen.getByRole('button', { name: 'H' })).toBeInTheDocument();
     });
 
     it('renders the circuit from the store alone', () => {
         // A plain state setter: no backend, and the editor cannot tell the difference.
-        const { container } = render(
+        render(
             <CircuitStoreProvider circuit={circuit} setCircuit={vi.fn()}>
                 <CircuitDragProvider>
                     <CircuitView />
@@ -60,7 +52,6 @@ describe('circuit editor renders without a backend', () => {
             </CircuitStoreProvider>,
         );
 
-        expect(container).not.toBeEmptyDOMElement();
         expect(screen.getByText('q[0]')).toBeInTheDocument();
         expect(screen.getByText('q[1]')).toBeInTheDocument();
     });
