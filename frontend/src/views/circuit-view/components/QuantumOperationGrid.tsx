@@ -1,4 +1,5 @@
-import { QuantumOperationDto, RegisterResponse } from '@/api/dto/circuit.ts';
+import { isComposedOperation, isCompositeGate, QuantumOperationDto, RegisterResponse } from '@/api/dto/circuit.ts';
+import { CompositionBox } from '@/views/circuit-view/components/CompositionBox.tsx';
 import { ElementaryQuantumGate } from '@/views/circuit-view/components/ElementaryQuantumGate.tsx';
 import { FlatQubit, UiLayer } from '@/views/circuit-view/util/types.ts';
 import { useDispatch } from 'react-redux';
@@ -11,6 +12,8 @@ interface QuantumOperationGridProps {
     flatQubits: FlatQubit[];
     isOperationDragging: boolean;
     removeQuantumOperation: (operationId: string) => void;
+    /** Replaces a composite gate by the operations it is made of. */
+    ungroupQuantumOperation: (operationId: string) => void;
     setDraggingOperationId: (id: string | null) => void;
     setHoverPos: (pos: null) => void;
     draggingOperation: { op: QuantumOperationDto; layerIdx: number } | null;
@@ -36,14 +39,15 @@ export function QuantumOperationGrid({
     flatQubits,
     isOperationDragging,
     removeQuantumOperation,
+    ungroupQuantumOperation,
     setDraggingOperationId,
     setHoverPos,
     draggingOperation,
 }: Readonly<QuantumOperationGridProps>) {
     const dispatch = useDispatch();
 
-    const handleOperationDragStart = (operationId: string, operationSize: number) => {
-        dispatch(startOperationDrag(operationSize));
+    const handleOperationDragStart = (operationId: string, operationSize: number, grabOffset: number) => {
+        dispatch(startOperationDrag({ size: operationSize, grabOffset }));
         setDraggingOperationId(operationId);
     };
 
@@ -81,20 +85,40 @@ export function QuantumOperationGrid({
         <div className={`absolute inset-0 z-20 ${isOperationDragging ? 'pointer-events-none' : ''}`}>
             <MeasurementConnectorLayer uiLayers={uiLayers} registers={registers} flatQubits={flatQubits} />
 
-            {renderedOperations.map(({ op, layerIdx, isGhost, measurementColor }) => (
-                <ElementaryQuantumGate
-                    key={op.id}
-                    operation={op}
-                    registers={registers}
-                    flatQubits={flatQubits}
-                    layerIdx={layerIdx}
-                    isGhost={isGhost}
-                    measurementColor={measurementColor}
-                    onDragStart={(operationSize) => handleOperationDragStart(op.id!, operationSize)}
-                    onDragEnd={handleOperationDragEnd}
-                    onDelete={() => removeQuantumOperation(op.id!)}
-                />
-            ))}
+            {renderedOperations.map(({ op, layerIdx, isGhost, measurementColor }) =>
+                // A composed operation is one box rather than a set of target/control markers.
+                isComposedOperation(op) ? (
+                    <CompositionBox
+                        key={op.id}
+                        operation={op}
+                        flatQubits={flatQubits}
+                        layerIdx={layerIdx}
+                        isGhost={isGhost}
+                        onDragStart={(operationSize, grabOffset) =>
+                            handleOperationDragStart(op.id!, operationSize, grabOffset)
+                        }
+                        onDragEnd={handleOperationDragEnd}
+                        onDelete={() => removeQuantumOperation(op.id!)}
+                        // Only a composite gate has a body in this circuit to dissolve into.
+                        onUngroup={isCompositeGate(op) ? () => ungroupQuantumOperation(op.id!) : undefined}
+                    />
+                ) : (
+                    <ElementaryQuantumGate
+                        key={op.id}
+                        operation={op}
+                        registers={registers}
+                        flatQubits={flatQubits}
+                        layerIdx={layerIdx}
+                        isGhost={isGhost}
+                        measurementColor={measurementColor}
+                        onDragStart={(operationSize, grabOffset) =>
+                            handleOperationDragStart(op.id!, operationSize, grabOffset)
+                        }
+                        onDragEnd={handleOperationDragEnd}
+                        onDelete={() => removeQuantumOperation(op.id!)}
+                    />
+                ),
+            )}
         </div>
     );
 }

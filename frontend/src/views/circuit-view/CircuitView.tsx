@@ -1,6 +1,6 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button.tsx';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
     type CircuitResponse,
     ElementSelectorDto,
@@ -23,14 +23,9 @@ import { DropPlaceholder } from './components/DropPlaceholder.tsx';
 import { CircuitFooter } from './components/CircuitFooter.tsx';
 import type { FlatQubit, HoverPos, UiLayer, UiQuantumOperation } from './util/types.ts';
 import { createCircuitService } from '@/views/circuit-view/util/circuitService.ts';
+import { ungroupComposite } from '@/views/circuit-view/util/ungroupComposite.ts';
 import { MeasurementTargetDialog } from './components/MeasurementTargetDialog';
-import {
-    CELL_WIDTH,
-    LABEL_WIDTH,
-    QUBIT_HEIGHT,
-    REGISTER_HEADER_HEIGHT,
-    REGISTER_SECTION_GAP,
-} from '@/views/circuit-view/util/layout.ts';
+import { CELL_WIDTH, LABEL_WIDTH, QUBIT_HEIGHT } from '@/views/circuit-view/util/layout.ts';
 import type { OperationIdentifier } from '@/lib/operations.ts';
 import { useCircuitTabs } from '@/contexts/CircuitTabsContext.tsx';
 
@@ -45,9 +40,39 @@ export function CircuitView() {
     } = useCircuitTabs();
     const { removeQuantumOperation, addQuantumOperation } = createCircuitService(circuit, setCircuit);
 
-    const { isOperationDragging, draggingOperationSize } = useSelector((state: RootState) => state.dragOperation);
+    /** Replaces a composite gate by the operations it is made of; offered on right-click. */
+    const ungroupQuantumOperation = (operationId: string) => {
+        setCircuit((prev) => (prev ? { ...prev, layers: ungroupComposite(prev.layers, operationId) } : prev));
+    };
+
+    const { isOperationDragging, draggingOperationSize, draggingGrabOffset } = useSelector(
+        (state: RootState) => state.dragOperation,
+    );
 
     const [hoverPos, setHoverPos] = useState<HoverPos | null>(null);
+
+    // The placeholder is cleared on drop and on leaving a cell, but a drag can also end without
+    // either: pressing Escape, or releasing over a cell that declines the drop (which omits
+    // preventDefault and so never fires one). The dashed rectangle then stayed on the canvas until
+    // the next drag.
+    useEffect(() => {
+        if (!isOperationDragging) setHoverPos(null);
+    }, [isOperationDragging]);
+
+    // Belt and braces, because the line above depends on the drag source dispatching
+    // stopOperationDrag from its own dragend — and dragend does not fire at all when that element
+    // leaves the DOM mid-drag, which is exactly the trap the operation grid keeps its ghost mounted
+    // for. These listeners sit on the window, so they run whatever the source did or did not do.
+    useEffect(() => {
+        const clear = () => setHoverPos(null);
+        window.addEventListener('dragend', clear);
+        window.addEventListener('drop', clear);
+        return () => {
+            window.removeEventListener('dragend', clear);
+            window.removeEventListener('drop', clear);
+        };
+    }, []);
+
     const [draggingOperationId, setDraggingOperationId] = useState<string | null>(null);
     const [measurementDialogOpen, setMeasurementDialogOpen] = useState(false);
     const [expandedClassicRegisterIds, setExpandedClassicRegisterIds] = useState<Set<string>>(() => new Set());
@@ -220,6 +245,7 @@ export function CircuitView() {
                                 flatQubits={flatQubits}
                                 isOperationDragging={isOperationDragging}
                                 removeQuantumOperation={removeQuantumOperation}
+                                ungroupQuantumOperation={ungroupQuantumOperation}
                                 setDraggingOperationId={setDraggingOperationId}
                                 setHoverPos={setHoverPos}
                                 draggingOperation={draggingOperation}
@@ -231,6 +257,8 @@ export function CircuitView() {
                                 flatQubits={flatQubits}
                                 uiLayers={uiLayers}
                                 activeDropZones={activeDropZones}
+                                draggingOperationSize={draggingOperationSize}
+                                draggingGrabOffset={draggingGrabOffset}
                                 setHoverPos={setHoverPos}
                                 setDraggingOperationId={setDraggingOperationId}
                                 onRequestMeasurementTarget={(ctx) => {
@@ -286,28 +314,28 @@ interface BuildUiLayersInput {
     selectorRowIndex: Map<string, number>;
 }
 
+/**
+ * Rows in render order, with the y each is drawn at.
+ *
+ * The rows follow each other with nothing in between. A header bar above every register, and the
+ * gap between the quantum and classical sections, cut straight through each gate reaching across
+ * two registers -- and a composed gate on `cin[0], b[0], a[0]` reaches across three. Every row
+ * carries a label naming its register and index, so the header said little the reader did not have.
+ *
+ * A collapsed classical register is a single row standing for all its bits.
+ */
 function buildFlatQubits(displayRegisters: RegisterResponse[], collapsedClassicRegisterIds: Set<string>): FlatQubit[] {
     let globalCounter = 0;
     let visualYOffset = 0;
-    let classicSectionStarted = false;
 
     return displayRegisters.flatMap((register, registerIndex) => {
-        const startsClassicSection = isClassicRegister(register) && !classicSectionStarted;
-        if (registerIndex > 0 && startsClassicSection) {
-            visualYOffset += REGISTER_SECTION_GAP;
-        }
-
         const size = getRegisterSize(register);
         const headerY = visualYOffset;
         const collapsed = isClassicRegister(register) && collapsedClassicRegisterIds.has(register.id);
-        const showHeader = !collapsed;
         const visibleRows = collapsed ? 1 : size;
-        const firstRowY = headerY + (showHeader ? REGISTER_HEADER_HEIGHT : 0);
+        const firstRowY = headerY;
 
-        visualYOffset += (showHeader ? REGISTER_HEADER_HEIGHT : 0) + visibleRows * QUBIT_HEIGHT;
-        if (isClassicRegister(register)) {
-            classicSectionStarted = true;
-        }
+        visualYOffset += visibleRows * QUBIT_HEIGHT;
 
         return Array.from({ length: visibleRows }).map((_, relativeIndex) => ({
             regId: register.id,

@@ -131,15 +131,18 @@ function shouldExpandReadoutStates(result: SimulationResult): boolean {
 function buildReadoutKeys(result: SimulationResult): string[] {
     const registers = result.readoutRegisters ?? [];
 
-    return registers.reduce<string[]>((keys, register) => {
-        const registerKeys = Array.from({ length: 1 << register.size }, (_, value) =>
-            value.toString(2).padStart(register.size, '0'),
-        );
+    return registers.reduce<string[]>(
+        (keys, register) => {
+            const registerKeys = Array.from({ length: 1 << register.size }, (_, value) =>
+                value.toString(2).padStart(register.size, '0'),
+            );
 
-        return keys.flatMap((prefix) =>
-            registerKeys.map((registerKey) => (prefix ? `${prefix} ${registerKey}` : registerKey)),
-        );
-    }, ['']);
+            return keys.flatMap((prefix) =>
+                registerKeys.map((registerKey) => (prefix ? `${prefix} ${registerKey}` : registerKey)),
+            );
+        },
+        [''],
+    );
 }
 
 function splitReadoutKey(combinedKey: string, result: SimulationResult): Record<string, string> {

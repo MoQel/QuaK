@@ -1,5 +1,5 @@
 import { api } from '@/api/api.ts';
-import { CircuitResponse } from '@/api/dto/circuit.ts';
+import { CircuitResponse, isSubcircuit, SubcircuitOperationDto } from '@/api/dto/circuit.ts';
 
 /**
  * Builds the registers/layers payload for the circuit content endpoints.
@@ -23,3 +23,34 @@ export const generateCircuitCode = (circuit: CircuitResponse): Promise<string> =
     api
         .post<{ code: string }>('/api/circuit/qasmCode', toCircuitContentPayload(circuit))
         .then((response) => response.code);
+
+/**
+ * Copies the fields the backend resolves onto a circuit held in memory, matched by operation id.
+ *
+ * A subcircuit is created client-side from a drop knowing only which circuit it points at; what
+ * that circuit *does* is filled in on read. Discarding the save's response left the circuit in the
+ * browser without it, so a freshly placed subcircuit could not be simulated until the tab was
+ * reloaded. Only the resolved fields are taken: the response also carries the backend's own
+ * scheduling, and adopting that wholesale would move gates under an edit still in progress.
+ */
+export const withResolvedSubcircuits = (circuit: CircuitResponse, saved: CircuitResponse): CircuitResponse => {
+    const resolved = new Map<string, SubcircuitOperationDto>();
+    for (const layer of saved.layers) {
+        for (const operation of layer.quantumOperations) {
+            if (isSubcircuit(operation) && operation.id) resolved.set(operation.id, operation);
+        }
+    }
+    if (resolved.size === 0) return circuit;
+
+    return {
+        ...circuit,
+        layers: circuit.layers.map((layer) => ({
+            ...layer,
+            quantumOperations: layer.quantumOperations.map((operation) => {
+                const match = operation.id ? resolved.get(operation.id) : undefined;
+                if (!match || !isSubcircuit(operation)) return operation;
+                return { ...operation, body: match.body, definitionName: match.definitionName };
+            }),
+        })),
+    };
+};

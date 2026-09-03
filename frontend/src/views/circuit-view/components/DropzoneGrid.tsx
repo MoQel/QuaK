@@ -1,15 +1,19 @@
-import React, { SetStateAction, useCallback } from 'react';
+import React, { SetStateAction, useCallback, useRef } from 'react';
 import { useDispatch } from 'react-redux';
 import { stopOperationDrag } from '@/store/circuit/dragOperationSlice.ts';
 import { CELL_WIDTH, QUBIT_HEIGHT } from '@/views/circuit-view/util/layout.ts';
-import { REGISTER_TYPE_QUANTUM } from '@/api/dto/circuit.ts';
+import { isCompositeGate, REGISTER_TYPE_QUANTUM } from '@/api/dto/circuit.ts';
 import type {
     CircuitResponse,
     ElementaryQuantumGateDto,
     ElementSelectorDto,
     MoveQuantumOperationRequest,
     QuantumOperationDto,
+    SubcircuitOperationDto,
 } from '@/api/dto/circuit.ts';
+import { dropAnchorRow } from '@/views/circuit-view/util/dropAnchor.ts';
+import { withFreshIds } from '@/lib/operationIds.ts';
+import { rebindComposite } from '@/views/circuit-view/util/rebindComposite.ts';
 import { DragData, FlatQubit, HoverPos, UiLayer } from '@/views/circuit-view/util/types.ts';
 import { getOperationDefinition } from '@/lib/operations.ts';
 import type { OperationIdentifier } from '@/lib/operations.ts';
@@ -54,12 +58,126 @@ const hasSamePosition = (
     selectorsEqual(original.controlQubits, controlQubits) &&
     selectorsEqual(original.classicBits ?? [], classicBits);
 
+/**
+ * How many wires a dropped operation takes, and how they split into controls and targets.
+ *
+ * An operation that already exists — the one being moved, or the template of a user-defined gate
+ * dragged in from the library — answers for itself. Only a built-in has to be looked up, which is
+ * just as well: the catalogue holds nothing else and warns about every name it does not know.
+ */
+const qubitCountsOf = (
+    own: QuantumOperationDto | undefined,
+    identifier: string,
+): { controlSize: number; targetSize: number } => {
+    if (own) return { controlSize: own.controlQubits.length, targetSize: own.targetQubits.length };
+
+    const definition = getOperationDefinition(identifier);
+    return { controlSize: definition.controlSize, targetSize: definition.targetSize };
+};
+
+/**
+ * The wires a drop occupies, split into controls and targets the way QASM orders them.
+ */
+const dropSelectors = (
+    regId: string,
+    regIdx: number,
+    controlSize: number,
+    targetSize: number,
+): { controlQubits: ElementSelectorDto[]; targetQubits: ElementSelectorDto[] } => ({
+    controlQubits: Array.from({ length: controlSize }, (_, i) => ({ registerId: regId, index: regIdx + i })),
+    targetQubits: Array.from({ length: targetSize }, (_, i) => ({
+        registerId: regId,
+        index: regIdx + controlSize + i,
+    })),
+});
+
+/**
+ * The operation a library drop inserts, or null when it cannot be inserted straight away.
+ *
+ * Null means a measurement: it needs a classic bit to write to, which the user picks in a dialog,
+ * so it is added once that comes back rather than here.
+ */
+const libraryOperation = (
+    data: DragData,
+    targetQubits: ElementSelectorDto[],
+    controlQubits: ElementSelectorDto[],
+): QuantumOperationDto | null => {
+    if (data.composite) {
+        // A user-defined gate, recognised by the template rather than by the catalogue lookup: its
+        // name is an arbitrary identifier the catalogue does not have. The body travels bound to the
+        // wires the template was collected from, so it has to be re-bound onto the drop's wires --
+        // and copied under fresh ids, body included, since this is a new operation.
+        return withFreshIds(rebindComposite(data.composite, targetQubits));
+    }
+
+    if (data.subcircuit) {
+        // Nothing to re-bind: a subcircuit stores only the id of the circuit it points at, and its
+        // body stays where it is. The name rides along so the box is labelled before the next read.
+        return {
+            id: crypto.randomUUID(),
+            type: 'SUBCIRCUIT_OPERATION',
+            identifier: data.subcircuit.name,
+            inverseForm: false,
+            definitionCircuitId: data.subcircuit.circuitId,
+            definitionName: data.subcircuit.name,
+            targetQubits,
+            controlQubits,
+        } as SubcircuitOperationDto;
+    }
+
+    if (getOperationDefinition(data.operationIdentifier).type !== 'ELEMENTARY_QUANTUM_GATE') return null;
+
+    return {
+        type: 'ELEMENTARY_QUANTUM_GATE',
+        identifier: data.operationIdentifier,
+        inverseForm: false,
+        targetQubits,
+        controlQubits,
+        rotationAngle: Math.PI / 2, // standard rotation
+    } as ElementaryQuantumGateDto;
+};
+
+/**
+ * How many wires a drop takes, from whichever source knows best.
+ *
+ * Whenever there is an actual operation to ask, its own qubits are the truth: the one already in
+ * the circuit for a move, the dragged template for a custom gate from the library. The built-in
+ * catalogue knows only the built-ins, so a user-defined gate would otherwise be truncated to the
+ * single-qubit fallback and lose qubits.
+ */
+const dropSizes = (data: DragData, dragged: QuantumOperationDto | undefined) =>
+    data.subcircuit
+        ? { controlSize: 0, targetSize: Math.max(data.subcircuit.qubitCount, 1) }
+        : qubitCountsOf(dragged ?? data.composite, data.operationIdentifier);
+
+/** Where a gate already in the circuit is being moved to. A measurement keeps its classic bits. */
+const movePayload = (
+    operationId: string,
+    dragged: QuantumOperationDto | undefined,
+    layerIdx: number,
+    targetQubits: ElementSelectorDto[],
+    controlQubits: ElementSelectorDto[],
+): MoveQuantumOperationRequest => {
+    const isMeasurement = dragged?.type === 'MEASUREMENT';
+    return {
+        quantumOperationId: operationId,
+        layerIdx,
+        targetQubits,
+        controlQubits: isMeasurement ? [] : controlQubits,
+        classicBits: isMeasurement ? getClassicBits(dragged) : undefined,
+    };
+};
+
 interface DropzoneGridProps {
     circuit: CircuitResponse | undefined;
     setCircuit: React.Dispatch<SetStateAction<CircuitResponse | undefined>>;
     flatQubits: FlatQubit[];
     uiLayers: UiLayer[];
     activeDropZones: Set<string>;
+    /** Number of wires the dragged operation covers; decides how far its anchor may sit. */
+    draggingOperationSize: number;
+    /** Which wire of the dragged operation the pointer grabbed, counted from its topmost one. */
+    draggingGrabOffset: number;
     setHoverPos: React.Dispatch<React.SetStateAction<HoverPos | null>>;
     setDraggingOperationId: (id: string | null) => void;
     onRequestMeasurementTarget?: (context: {
@@ -76,11 +194,16 @@ export function DropzoneGrid({
     flatQubits,
     uiLayers,
     activeDropZones,
+    draggingOperationSize,
+    draggingGrabOffset,
     setHoverPos,
     setDraggingOperationId,
     onRequestMeasurementTarget,
 }: Readonly<DropzoneGridProps>) {
     const dispatch = useDispatch();
+
+    /** The cell the pointer is currently in; see handleDragLeave for why this is kept by cell. */
+    const hoveredCellRef = useRef<string | null>(null);
 
     const layersFromPreview = (operation: QuantumOperationDto): CircuitResponse['layers'] | null => {
         let dummyReplaced = false;
@@ -129,19 +252,26 @@ export function DropzoneGrid({
 
             const original = findOperation(prev.layers, payload.quantumOperationId);
             if (!original) return prev;
-            const movedOperation: QuantumOperationDto =
-                original.type === 'MEASUREMENT'
-                    ? {
-                          ...original,
-                          targetQubits: payload.targetQubits,
-                          controlQubits: [],
-                          classicBits: payload.classicBits ?? original.classicBits,
-                      }
-                    : {
-                          ...original,
-                          targetQubits: payload.targetQubits,
-                          controlQubits: payload.controlQubits,
-                      };
+            // A composite's body is stored bound to the call's qubits, so moving the box has to
+            // re-bind it: replacing only targetQubits would leave the body on wires the box no
+            // longer covers.
+            let movedOperation: QuantumOperationDto;
+            if (isCompositeGate(original)) {
+                movedOperation = rebindComposite(original, payload.targetQubits);
+            } else if (original.type === 'MEASUREMENT') {
+                movedOperation = {
+                    ...original,
+                    targetQubits: payload.targetQubits,
+                    controlQubits: [],
+                    classicBits: payload.classicBits ?? original.classicBits,
+                };
+            } else {
+                movedOperation = {
+                    ...original,
+                    targetQubits: payload.targetQubits,
+                    controlQubits: payload.controlQubits,
+                };
+            }
 
             const previewLayers = layersFromPreview(movedOperation);
             if (previewLayers) return { ...prev, layers: previewLayers };
@@ -160,18 +290,37 @@ export function DropzoneGrid({
         });
     };
 
-    const handleDragOver = (e: React.DragEvent, qubitIdx: number, layerIdx: number) => {
+    const handleDragOver = (e: React.DragEvent, cellKey: string, anchorIdx: number, layerIdx: number) => {
         e.preventDefault();
-        setHoverPos((prev) => {
-            if (prev?.qubitIdx === qubitIdx && prev?.layerIdx === layerIdx) {
-                return prev;
-            }
-            return { qubitIdx, layerIdx };
-        });
+        hoveredCellRef.current = cellKey;
+        // Use a functional update to access the latest state without triggering unnecessary re-renders.
+        // Returning the previous value unchanged causes React to bail out of the render cycle,
+        // preventing performance degradation from rapid mousemove events (render thrashing).
+        setHoverPos((prev) =>
+            prev?.qubitIdx === anchorIdx && prev?.layerIdx === layerIdx ? prev : { qubitIdx: anchorIdx, layerIdx },
+        );
     };
 
-    const handleDragLeave = (qubitIdx: number, layerIdx: number) => {
-        setHoverPos((prev) => (prev?.qubitIdx === qubitIdx && prev?.layerIdx === layerIdx ? null : prev));
+    /**
+     * Records the cell the pointer entered without moving the preview.
+     *
+     * Used by the cells that decline the drop: the leave guard keys on the current cell, so a
+     * declining cell has to claim it — otherwise the drag-leave of the valid cell just left behind
+     * would clear the preview, which is the blink this whole arrangement avoids.
+     */
+    const markCellHovered = (cellKey: string) => {
+        hoveredCellRef.current = cellKey;
+    };
+
+    // Guarded reset against hover flicker on cell changes: when crossing into an adjacent zone,
+    // dragenter on the new cell fires BEFORE dragleave on the old one (HTML5 event order), so by the
+    // time this runs the pointer may already be somewhere else. The guard keys on the *cell* rather
+    // than on the resulting hover position, because several rows now resolve to the same anchor and
+    // comparing anchors would let the old cell's leave wipe the hover its neighbour just set.
+    const handleDragLeave = (cellKey: string) => {
+        if (hoveredCellRef.current !== cellKey) return;
+        hoveredCellRef.current = null;
+        setHoverPos(null);
     };
 
     const hasCircuitStateChanged = useCallback(
@@ -238,104 +387,94 @@ export function DropzoneGrid({
         [circuit, uiLayers],
     );
 
-    const handleDrop = (e: React.DragEvent<HTMLDivElement>, regId: string, regIdx: number, layerIdx: number) => {
-        e.preventDefault();
-        try {
-            const data: DragData = JSON.parse(e.dataTransfer.getData('text/plain'));
-            const operationDefinition = getOperationDefinition(data.operationIdentifier);
-            const controlQubits: ElementSelectorDto[] = Array.from(
-                { length: operationDefinition.controlSize },
-                (_, index) => ({
-                    registerId: regId,
-                    index: regIdx + index,
-                }),
-            );
-            const targetQubits: ElementSelectorDto[] = Array.from(
-                { length: operationDefinition.targetSize },
-                (_, index) => ({
-                    registerId: regId,
-                    index: regIdx + operationDefinition.controlSize + index,
-                }),
-            );
+    const handleDrop = useCallback(
+        (e: React.DragEvent<HTMLDivElement>, regId: string, regIdx: number, layerIdx: number) => {
+            e.preventDefault();
+            try {
+                const data: DragData = JSON.parse(e.dataTransfer.getData('text/plain'));
 
-            switch (data.origin) {
-                case 'library': {
-                    if (operationDefinition.type === 'ELEMENTARY_QUANTUM_GATE') {
-                        const operation: ElementaryQuantumGateDto = {
-                            type: 'ELEMENTARY_QUANTUM_GATE',
-                            identifier: data.operationIdentifier,
-                            inverseForm: false,
-                            targetQubits,
-                            controlQubits,
-                            rotationAngle: Math.PI / 2,
-                        };
+                // Only a move has an operation to look up; a library drag carries a template.
+                const dragged =
+                    data.origin === 'circuit' && data.id ? findOperation(circuit?.layers ?? [], data.id) : undefined;
+                const { controlSize, targetSize } = dropSizes(data, dragged);
+                const { controlQubits, targetQubits } = dropSelectors(regId, regIdx, controlSize, targetSize);
+
+                if (data.origin === 'library') {
+                    const operation = libraryOperation(data, targetQubits, controlQubits);
+                    if (operation) {
                         addQuantumOperationLocally(operation, layerIdx);
-                    } else if (operationDefinition.type === 'MEASUREMENT') {
+                    } else {
                         onRequestMeasurementTarget?.({
                             layerIdx,
                             targetQubits,
                             controlQubits: [],
-                            operationIdentifier: data.operationIdentifier,
+                            // Narrowed by the catalogue lookup: only a built-in resolves to a
+                            // definition at all, so reaching here means the name is one.
+                            operationIdentifier: data.operationIdentifier as OperationIdentifier,
                         });
                     }
-                    break;
-                }
-                case 'circuit': {
-                    if (!data.id) break;
-
-                    const operationToMove = circuit?.layers
-                        .flatMap((layer) => layer.quantumOperations)
-                        .find((operation) => operation.id === data.id);
-                    const payload: MoveQuantumOperationRequest = {
-                        quantumOperationId: data.id,
-                        layerIdx,
-                        targetQubits,
-                        controlQubits: operationToMove?.type === 'MEASUREMENT' ? [] : controlQubits,
-                        classicBits:
-                            operationToMove?.type === 'MEASUREMENT' ? getClassicBits(operationToMove) : undefined,
-                    };
-
+                } else if (data.origin === 'circuit' && data.id) {
+                    const payload = movePayload(data.id, dragged, layerIdx, targetQubits, controlQubits);
                     if (hasCircuitStateChanged(payload)) {
                         moveQuantumOperationLocally(payload);
                     }
-                    break;
-                }
-                default:
+                } else if (data.origin !== 'circuit') {
                     console.error(`Unknown drag origin: ${String((data as Partial<DragData>).origin)}`);
-                    break;
+                }
+            } catch (error) {
+                console.error('Failed to parse drag data', error);
+            } finally {
+                dispatch(stopOperationDrag());
+                setHoverPos(null);
+                setDraggingOperationId(null);
             }
-        } catch (error) {
-            console.error('Failed to parse drag data', error);
-        } finally {
-            dispatch(stopOperationDrag());
-            setHoverPos(null);
-            setDraggingOperationId(null);
-        }
-    };
+        },
+        // `circuit` is read directly now (to size a dragged operation from its own qubits), so it
+        // must be a dependency rather than riding along on hasCircuitStateChanged's identity.
+        [circuit, hasCircuitStateChanged, dispatch, onRequestMeasurementTarget],
+    );
 
     return (
         <div className="absolute inset-0 z-10">
             {flatQubits.map((qubit, qIdx) =>
                 Array.from({ length: uiLayers.length + 1 }).map((_, layerIdx) => {
-                    const isZoneActive = activeDropZones.has(`${qIdx}-${layerIdx}`);
-                    if (!isZoneActive) return null;
+                    const anchorIdx = dropAnchorRow(qIdx, draggingGrabOffset, draggingOperationSize, flatQubits.length);
+                    const anchor = flatQubits[anchorIdx];
+                    const cellKey = `${qIdx}-${layerIdx}`;
 
-                    if (qubit.regType !== REGISTER_TYPE_QUANTUM) return null;
+                    // A cell exists for every position, droppable or not. Leaving the forbidden ones
+                    // out left literal holes in the grid: crossing one fired a drag-leave with no
+                    // drag-enter to follow, so the placeholder blinked away and back and the drag
+                    // felt like it kept losing its grip. A forbidden cell now simply declines the
+                    // drop — no preventDefault, so the cursor says "no" — while the last valid
+                    // preview stays put. A classical row is one of those forbidden positions.
+                    const isDroppable =
+                        anchor?.regType === REGISTER_TYPE_QUANTUM && activeDropZones.has(`${anchorIdx}-${layerIdx}`);
 
                     return (
                         <div
-                            key={`drop-${qIdx}-${layerIdx}`}
+                            key={`drop-${cellKey}`}
                             style={{
                                 position: 'absolute',
                                 left: layerIdx * CELL_WIDTH,
+                                // Rows are placed at their rendered y: register headers, section
+                                // gaps and collapsed registers all break `qIdx * QUBIT_HEIGHT`.
                                 top: qubit.visualY,
                                 width: CELL_WIDTH,
                                 height: QUBIT_HEIGHT,
                             }}
-                            onDragEnter={(e) => handleDragOver(e, qIdx, layerIdx)}
-                            onDragOver={(e) => handleDragOver(e, qIdx, layerIdx)}
-                            onDragLeave={() => handleDragLeave(qIdx, layerIdx)}
-                            onDrop={(e) => handleDrop(e, qubit.regId, qubit.relQubitIdx, layerIdx)}
+                            onDragEnter={(e) =>
+                                isDroppable ? handleDragOver(e, cellKey, anchorIdx, layerIdx) : markCellHovered(cellKey)
+                            }
+                            onDragOver={(e) =>
+                                isDroppable ? handleDragOver(e, cellKey, anchorIdx, layerIdx) : markCellHovered(cellKey)
+                            }
+                            onDragLeave={() => handleDragLeave(cellKey)}
+                            onDrop={
+                                isDroppable
+                                    ? (e) => handleDrop(e, anchor.regId, anchor.relQubitIdx, layerIdx)
+                                    : undefined
+                            }
                         />
                     );
                 }),

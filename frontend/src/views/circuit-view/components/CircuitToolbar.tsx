@@ -3,6 +3,8 @@ import { Minus, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import { apiRequest } from '@/api/api.ts';
 import {
     CircuitResponse,
+    CompositeQuantumGateDto,
+    SubcircuitOperationDto,
     isClassicRegister,
     isQuantumRegister,
     QuantumOperationDto,
@@ -28,7 +30,7 @@ export function CircuitToolbar({ circuit, setCircuit }: Readonly<CircuitToolbarP
     const { addQubit, deleteLastQubit, resetCircuit } = createCircuitService(circuit, setCircuit);
     const [isPopoverOpen, setIsPopoverOpen] = useState(false);
     const [isParsing, setIsParsing] = useState(false);
-    const { getActiveCode } = useActiveCode();
+    const { activeCodeTabId, getActiveCode } = useActiveCode();
 
     const parseActiveEditor = async () => {
         const code = getActiveCode();
@@ -39,7 +41,12 @@ export function CircuitToolbar({ circuit, setCircuit }: Readonly<CircuitToolbarP
 
         setIsParsing(true);
         try {
-            const parsedCircuit = await apiRequest<unknown>('/api/circuit/parse', {
+            // The tab id is the file id; the backend needs it to resolve `include "..."`
+            // against the project's other files. Without it only the standard libraries work.
+            const url = activeCodeTabId
+                ? `/api/circuit/parse?fileId=${encodeURIComponent(activeCodeTabId)}`
+                : '/api/circuit/parse';
+            const parsedCircuit = await apiRequest<unknown>(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain' },
                 body: code,
@@ -155,7 +162,10 @@ const extractIdentifier = (operation: ParserOperation): OperationIdentifier => {
     return 'DUMMY';
 };
 
-const normalizeParsedCircuit = (rawCircuit: unknown, currentCircuit: CircuitResponse | undefined): CircuitResponse => {
+export const normalizeParsedCircuit = (
+    rawCircuit: unknown,
+    currentCircuit: CircuitResponse | undefined,
+): CircuitResponse => {
     const parsed = rawCircuit as ParserCircuit;
     const currentRegistersByType = new Map<RegisterResponse['type'], RegisterResponse[]>();
     for (const register of currentCircuit?.registers ?? []) {
@@ -218,37 +228,74 @@ const normalizeParsedCircuit = (rawCircuit: unknown, currentCircuit: CircuitResp
         index: selector.index ?? 0,
     });
 
+    /**
+     * A composite keeps its own name as identifier (not upper-cased, that is the gate as written)
+     * plus the fields that make the box drawable: ports, which of them are actually used, and the
+     * body. Dropping them here would turn every user-defined gate back into an unlabelled box.
+     */
+    const normalizeOperation = (operation: ParserOperation): QuantumOperationDto => {
+        const base = {
+            id: operation.id ?? crypto.randomUUID(),
+            inverseForm: operation.inverseForm ?? false,
+            targetQubits: (operation.targetQubits ?? []).map(normalizeSelector),
+            controlQubits: (operation.controlQubits ?? []).map(normalizeSelector),
+        };
+
+        if (operation.type === 'MEASUREMENT') {
+            // A measurement carries classic bits instead of controls and never an angle, so it
+            // cannot go through the elementary branch below.
+            return {
+                ...base,
+                type: 'MEASUREMENT',
+                identifier: extractIdentifier(operation),
+                inverseForm: false,
+                controlQubits: [],
+                classicBits: ('classicBits' in operation && operation.classicBits ? operation.classicBits : []).map(
+                    normalizeSelector,
+                ),
+            } as QuantumOperationDto;
+        }
+
+        if (operation.type === 'SUBCIRCUIT_OPERATION') {
+            // The reference is the whole operation: dropped into the generic branch below it keeps
+            // its type but points nowhere, and every consumer that reads the id then trips over it.
+            // The body rides along so the circuit stays simulatable until the next read refills it.
+            const subcircuit = operation as Partial<SubcircuitOperationDto>;
+            return {
+                ...base,
+                type: 'SUBCIRCUIT_OPERATION',
+                identifier: subcircuit.identifier,
+                definitionCircuitId: subcircuit.definitionCircuitId ?? '',
+                definitionName: subcircuit.definitionName,
+                body: subcircuit.body?.map((part) => normalizeOperation(part as ParserOperation)),
+            } as QuantumOperationDto;
+        }
+
+        if (operation.type === 'COMPOSITE_QUANTUM_GATE') {
+            const composite = operation as Partial<CompositeQuantumGateDto>;
+            return {
+                ...base,
+                type: 'COMPOSITE_QUANTUM_GATE',
+                identifier: composite.identifier ?? '?',
+                portLabels: composite.portLabels ?? [],
+                usedQubitPositions: composite.usedQubitPositions ?? [],
+                body: (composite.body ?? []).map((part) => normalizeOperation(part as ParserOperation)),
+            };
+        }
+
+        return {
+            ...base,
+            type: operation.type ?? 'ELEMENTARY_QUANTUM_GATE',
+            identifier: extractIdentifier(operation),
+            rotationAngle: 'rotationAngle' in operation ? operation.rotationAngle : 0,
+        } as QuantumOperationDto;
+    };
+
     return {
         id: currentCircuit?.id ?? crypto.randomUUID(),
         registers,
         layers: (parsed.layers ?? []).map((layer) => ({
-            quantumOperations: (layer.quantumOperations ?? []).map((operation) => {
-                const type = operation.type ?? 'ELEMENTARY_QUANTUM_GATE';
-                if (type === 'MEASUREMENT') {
-                    return {
-                        id: operation.id ?? crypto.randomUUID(),
-                        type: 'MEASUREMENT',
-                        identifier: extractIdentifier(operation),
-                        inverseForm: false,
-                        targetQubits: (operation.targetQubits ?? []).map(normalizeSelector),
-                        controlQubits: [],
-                        classicBits: ('classicBits' in operation && operation.classicBits
-                            ? operation.classicBits
-                            : []
-                        ).map(normalizeSelector),
-                    };
-                }
-
-                return {
-                    id: operation.id ?? crypto.randomUUID(),
-                    type: 'ELEMENTARY_QUANTUM_GATE',
-                    identifier: extractIdentifier(operation),
-                    inverseForm: operation.inverseForm ?? false,
-                    targetQubits: (operation.targetQubits ?? []).map(normalizeSelector),
-                    controlQubits: (operation.controlQubits ?? []).map(normalizeSelector),
-                    rotationAngle: 'rotationAngle' in operation ? (operation.rotationAngle ?? 0) : 0,
-                };
-            }) as QuantumOperationDto[],
+            quantumOperations: (layer.quantumOperations ?? []).map(normalizeOperation),
         })),
     };
 };
