@@ -63,7 +63,7 @@ class ProjectServiceTest {
 
         assertEquals(testUser.getId(), result.getOwnerId());
         File initialFile = result.getContents().stream().filter(File.class::isInstance).map(File.class::cast).findFirst().orElseThrow();
-        assertEquals("hello_world.qasm", initialFile.getName());
+        assertEquals("ripple_carry_adder.qasm", initialFile.getName());
         verify(fileContentRepository).saveContent(anyString(), any());
         verify(repository).save(p);
         verify(roleRepository).save(any());

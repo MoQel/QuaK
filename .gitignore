@@ -13,3 +13,6 @@ node_modules/
 /package-lock.json
 /.claude/
 CLAUDE.md
+
+# Demo profile H2 database
+backend/data/

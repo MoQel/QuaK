@@ -45,7 +45,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
-@Profile("!dev") // This config is NOT active when 'dev' profile is enabled
+@Profile("!dev & !demo") // Replaced by DevSecurityConfig / DemoSecurityConfig under those profiles
 public class SecurityConfig {
 
     @Value("${app.frontend.url}")
