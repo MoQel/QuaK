@@ -1,6 +1,6 @@
 import { SubcircuitOption } from '@/views/library-view/util/subcircuits.ts';
 import { CompositeQuantumGateDto, QuantumOperationDto, RegisterType } from '@/api/dto/circuit.ts';
-import { OperationIdentifier } from '@/lib/operations.ts';
+import { GateIdentifier } from '@/lib/operations.ts';
 
 export type RegisterSection = 'quantum' | 'classic';
 
@@ -15,7 +15,7 @@ export type UiQuantumOperation = QuantumOperationDto & {
 export type DragData = {
     origin: 'library' | 'circuit';
     /** A library gate's identifier, or a user-defined gate's own name when dragging a composite. */
-    operationIdentifier: OperationIdentifier | string;
+    operationIdentifier: GateIdentifier;
     id?: string;
     /**
      * The gate to insert, when a user-defined one is dragged in from the library.

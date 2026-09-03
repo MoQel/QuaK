@@ -112,7 +112,7 @@ export function CompositionBox({
         };
     }, [operation, flatQubits]);
 
-    const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
+    const handleDragStart = (e: React.DragEvent<HTMLButtonElement>) => {
         isDraggingRef.current = true;
         setIsPreviewOpen(false);
 
@@ -182,15 +182,30 @@ export function CompositionBox({
             disableHoverableContent
         >
             <ContextMenu>
-                <ContextMenuTrigger asChild disabled={isGhost}>
+                {/*
+                 * No `disabled` on the trigger: Radix forwards it to the child, and on a real
+                 * button that is the HTML attribute, which would switch the box off for everyone.
+                 * A ghost is already inert -- it carries pointer-events-none and its own disabled.
+                 */}
+                <ContextMenuTrigger asChild>
                     <TooltipTrigger asChild>
-                        <div
+                        {/*
+                         * A real button rather than a div with a role: it brings focus, Enter and
+                         * Space with it. The browser defaults are stripped because the box draws
+                         * itself -- and it stays the very element the drag, the context menu and
+                         * the preview all hang off, which is what the two `asChild` triggers above
+                         * are for.
+                         */}
+                        <button
                             data-gate
+                            type="button"
                             draggable
+                            disabled={isGhost}
+                            aria-label={`${label} gate on ${operation.targetQubits.length} qubits`}
                             onDragStart={handleDragStart}
                             onDragEnd={handleDragEnd}
                             onClick={handleClick}
-                            className={`absolute z-30 group pointer-events-none ${isGhost ? 'opacity-50' : ''}`}
+                            className={`absolute z-30 group border-0 bg-transparent p-0 text-left pointer-events-none ${isGhost ? 'opacity-50' : ''}`}
                             style={{
                                 top: minY,
                                 left: layerIdx * CELL_WIDTH,
@@ -244,7 +259,7 @@ export function CompositionBox({
                                     </span>
                                 ))}
                             </div>
-                        </div>
+                        </button>
                     </TooltipTrigger>
                 </ContextMenuTrigger>
 
