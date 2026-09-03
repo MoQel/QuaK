@@ -56,7 +56,7 @@ const NUMBER = String.raw`\d+(?:\.\d+)?|\.\d+`;
 const MAGNITUDE_PATTERN = new RegExp(String.raw`^([+-])?\s*(${NUMBER})?\s*(?:\*\s*)?(pi|π|tau|τ|e)?$`, 'i');
 
 /** The part after the `/`: a plain number, nothing else. */
-const DIVISOR_PATTERN = new RegExp(String.raw`^(${NUMBER})$`);
+const DIVISOR_PATTERN = new RegExp(`^(${NUMBER})$`);
 
 /**
  * Reads an angle the user typed, in radians, or null when it is not an angle.
