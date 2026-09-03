@@ -8,6 +8,7 @@ import edu.kit.quak.application.user.ports.in.UserServicePort;
 import edu.kit.quak.core.circuit.codegen.QasmCodeGenerator;
 import edu.kit.quak.core.circuit.model.LoopBlock;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
+import edu.kit.quak.core.circuit.model.SubcircuitBinding;
 import edu.kit.quak.core.circuit.model.layer.Layer;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
@@ -18,6 +19,8 @@ import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.CircuitContentRespons
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.CircuitResponse;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.GeneratedCodeResponse;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.MoveQuantumOperationRequest;
+import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.QuantumOperationDto;
+import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.RegisterRequest;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.SubcircuitOperationDto;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.SubcircuitOptionResponse;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.UpdateCircuitRequest;
@@ -111,7 +114,48 @@ public class CircuitRestAdapter {
             user
         );
         subcircuits.forEach(subcircuit -> subcircuit.setDefinitionName(names.get(subcircuit.getDefinitionCircuitId())));
+        subcircuits.forEach(subcircuit -> fillBody(subcircuit, circuit.getProjectId(), user, 0));
         return response;
+    }
+
+    /**
+     * How deep a subcircuit chain is followed when filling bodies.
+     *
+     * <p>References cannot form a cycle -- the listing refuses one -- but a chain still costs a
+     * repository read per link, and a consumer that only draws the top level pays for depth it
+     * never looks at. Well beyond anything a circuit built by hand reaches.
+     */
+    private static final int MAX_SUBCIRCUIT_DEPTH = 8;
+
+    /**
+     * Fills in what a subcircuit call does, expressed in the qubits it was called on.
+     *
+     * <p>The call stores only an id, so this is the only way a consumer can look inside: the
+     * simulator expands the body rather than refusing the circuit. Nested calls are filled too,
+     * because expanding the outer one only uncovers the next call node.
+     */
+    private void fillBody(SubcircuitOperationDto subcircuit, String projectId, User user, int depth) {
+        if (depth >= MAX_SUBCIRCUIT_DEPTH) {
+            return;
+        }
+        Optional<QuantumCircuit> definition = subcircuitNames.resolveDefinition(subcircuit.getDefinitionCircuitId(), projectId, user);
+        if (definition.isEmpty()) {
+            return;
+        }
+
+        List<ElementSelector> callQubits = subcircuit.getTargetQubits().stream().map(elementSelectorDtoMapper::toDomain).toList();
+        List<QuantumOperation> bound = SubcircuitBinding.bind(definition.get(), callQubits);
+        if (bound.isEmpty()) {
+            return;
+        }
+
+        List<QuantumOperationDto> body = bound.stream().map(quantumOperationDtoMapper::toResponse).toList();
+        body
+            .stream()
+            .filter(SubcircuitOperationDto.class::isInstance)
+            .map(SubcircuitOperationDto.class::cast)
+            .forEach(nested -> fillBody(nested, projectId, user, depth + 1));
+        subcircuit.setBody(body);
     }
 
     /**
@@ -363,13 +407,17 @@ public class CircuitRestAdapter {
         User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
 
         List<ElementSelector> targetQubits = request.targetQubits().stream().map(elementSelectorDtoMapper::toDomain).toList();
-        List<ElementSelector> controlQubits = request.controlQubits().stream().map(elementSelectorDtoMapper::toDomain).toList();
+        List<ElementSelector> controlQubits =
+            request.controlQubits() == null ? List.of() : request.controlQubits().stream().map(elementSelectorDtoMapper::toDomain).toList();
+        List<ElementSelector> classicBits =
+            request.classicBits() == null ? null : request.classicBits().stream().map(elementSelectorDtoMapper::toDomain).toList();
         QuantumCircuit circuit = service.moveQuantumOperation(
             circuitId,
             request.quantumOperationId(),
             request.layerIdx(),
             targetQubits,
             controlQubits,
+            classicBits,
             user
         );
         return toResponse(circuit, user);
@@ -392,5 +440,64 @@ public class CircuitRestAdapter {
 
         QuantumCircuit circuit = service.removeQuantumOperation(circuitId, operationId, user);
         return toResponse(circuit, user);
+    }
+
+    /**
+     * Creates a new register (QuantumRegister or ClassicRegister) in the specified circuit.
+     */
+    @PostMapping("/{circuitId}/register")
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("isAuthenticated()")
+    public CircuitResponse addRegister(
+        @PathVariable String circuitId,
+        @RequestBody RegisterRequest request,
+        Authentication authentication
+    ) {
+        log.info("REST request to add register '{}' of type '{}' to circuit '{}'", request.name(), request.type(), circuitId);
+        User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
+        QuantumCircuit circuit = service.addRegister(circuitId, request.name(), request.type(), request.size(), user);
+        return mapper.toResponse(circuit);
+    }
+
+    /**
+     * Deletes a register and all associated operations from the circuit.
+     */
+    @DeleteMapping("/{circuitId}/register/{registerId}")
+    @PreAuthorize("isAuthenticated()")
+    public CircuitResponse deleteRegister(@PathVariable String circuitId, @PathVariable String registerId, Authentication authentication) {
+        log.info("REST request to delete register '{}' from circuit '{}'", registerId, circuitId);
+        User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
+        QuantumCircuit circuit = service.deleteRegister(circuitId, registerId, user);
+        return mapper.toResponse(circuit);
+    }
+
+    /**
+     * Adds a classic bit to a ClassicRegister.
+     */
+    @PostMapping("/{circuitId}/register/{registerId}/bit")
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("isAuthenticated()")
+    public CircuitResponse addClassicBit(@PathVariable String circuitId, @PathVariable String registerId, Authentication authentication) {
+        log.info("REST request to add classic bit to register '{}' in circuit '{}'", registerId, circuitId);
+        User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
+        QuantumCircuit circuit = service.addClassicBit(circuitId, registerId, user);
+        return mapper.toResponse(circuit);
+    }
+
+    /**
+     * Removes a classic bit from a ClassicRegister.
+     */
+    @DeleteMapping("/{circuitId}/register/{registerId}/bit/{bitIdx}")
+    @PreAuthorize("isAuthenticated()")
+    public CircuitResponse removeClassicBit(
+        @PathVariable String circuitId,
+        @PathVariable String registerId,
+        @PathVariable int bitIdx,
+        Authentication authentication
+    ) {
+        log.info("REST request to remove classic bit at index {} from register '{}' in circuit '{}'", bitIdx, registerId, circuitId);
+        User user = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
+        QuantumCircuit circuit = service.removeClassicBit(circuitId, registerId, bitIdx, user);
+        return mapper.toResponse(circuit);
     }
 }

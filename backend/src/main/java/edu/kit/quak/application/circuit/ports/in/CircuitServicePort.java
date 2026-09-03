@@ -6,6 +6,7 @@ import edu.kit.quak.core.circuit.model.layer.Layer;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
 import edu.kit.quak.core.circuit.model.register.Register;
+import edu.kit.quak.core.circuit.model.register.RegisterType;
 import edu.kit.quak.core.user.model.User;
 import java.util.List;
 
@@ -48,10 +49,19 @@ public interface CircuitServicePort {
         int layerIdx,
         List<ElementSelector> targetQubits,
         List<ElementSelector> controlQubits,
+        List<ElementSelector> classicBits,
         User user
     );
 
     QuantumCircuit removeQuantumOperation(String circuitId, String operationId, User user);
+
+    QuantumCircuit addRegister(String circuitId, String name, RegisterType type, int size, User user);
+
+    QuantumCircuit deleteRegister(String circuitId, String registerId, User user);
+
+    QuantumCircuit addClassicBit(String circuitId, String registerId, User user);
+
+    QuantumCircuit removeClassicBit(String circuitId, String registerId, int bitIdx, User user);
 
     /**
      * Deletes the circuit linked to the given file. Internal cleanup hook for

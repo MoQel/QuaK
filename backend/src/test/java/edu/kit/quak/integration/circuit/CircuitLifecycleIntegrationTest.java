@@ -74,14 +74,22 @@ class CircuitLifecycleIntegrationTest {
 
         CircuitResponse circuit = objectMapper.readValue(circuitResult.getResponse().getContentAsString(), CircuitResponse.class);
         String circuitId = circuit.id();
-        String registerId = circuit.registers().getFirst().getId();
 
-        // 3. Add qubit to circuit (by circuitId)
-        mockMvc
-            .perform(post("/api/circuit/" + circuitId + "/register/" + registerId).with(authenticatedUser()).with(csrf()))
-            .andExpect(status().isCreated());
+        // 3. Create the quantum register explicitly
+        MvcResult registerResult = mockMvc
+            .perform(
+                post("/api/circuit/" + circuitId + "/register")
+                    .with(authenticatedUser())
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(buildRegisterJson("q", "Quantum_Register", 4))
+            )
+            .andExpect(status().isCreated())
+            .andReturn();
+        JsonNode registerNode = objectMapper.readTree(registerResult.getResponse().getContentAsString());
+        String registerId = registerNode.at("/registers/0/id").asText();
 
-        // 4. Add H-Gate (Added this back, as it was missing but required for Step 7)
+        // 4. Add H gate on qubit 0
         String hGateJson = buildGateJson("H", registerId, 0, null);
         mockMvc
             .perform(
@@ -128,7 +136,7 @@ class CircuitLifecycleIntegrationTest {
         mockMvc
             .perform(get("/api/circuit/file/" + fileId).with(authenticatedUser()))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.layers.length()").value(2)) // Now correctly separated
+            .andExpect(jsonPath("$.layers.length()").value(2))
             .andExpect(jsonPath("$.layers[0].quantumOperations[0].identifier").value("H"))
             .andExpect(jsonPath("$.layers[1].quantumOperations[0].identifier").value("CX"))
             .andExpect(jsonPath("$.layers[1].quantumOperations[0].targetQubits[0].index").value(0));
@@ -389,6 +397,19 @@ class CircuitLifecycleIntegrationTest {
             }
         }
         throw new AssertionError("No operation with identifier '" + identifier + "' found in circuit");
+    }
+
+    /**
+     * Builds JSON for creating a register.
+     */
+    private String buildRegisterJson(String name, String type, int size) {
+        return """
+        {
+          "name": "%s",
+          "type": "%s",
+          "size": %d
+        }
+        """.formatted(name, type, size);
     }
 
     /**

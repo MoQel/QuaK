@@ -1,10 +1,26 @@
 import { describe, it, expect, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { CompositionBox } from './CompositionBox.tsx';
-import type { CompositeQuantumGateDto, RegisterResponse } from '@/api/dto/circuit.ts';
+import type { CompositeQuantumGateDto } from '@/api/dto/circuit.ts';
+import { REGISTER_TYPE_QUANTUM } from '@/api/dto/circuit.ts';
 import { QUBIT_HEIGHT } from '@/views/circuit-view/util/layout.ts';
+import type { FlatQubit } from '@/views/circuit-view/util/types.ts';
 
-const registers: RegisterResponse[] = [{ id: 'r1', name: 'q', type: 'Quantum_Register', numberOfQubits: 4 }];
+// The box takes its rows from the rendered wire list, so the fixture is one four-wire quantum
+// register with no header offset: wire i sits at i * QUBIT_HEIGHT.
+const flatQubits: FlatQubit[] = Array.from({ length: 4 }, (_, i) => ({
+    regId: 'r1',
+    regName: 'q',
+    regIdx: 0,
+    relQubitIdx: i,
+    absQubitIdx: i,
+    regType: REGISTER_TYPE_QUANTUM,
+    section: 'quantum' as const,
+    headerY: 0,
+    registerSize: 4,
+    isCollapsed: false,
+    visualY: i * QUBIT_HEIGHT,
+}));
 
 const bell = (overrides: Partial<CompositeQuantumGateDto> = {}): CompositeQuantumGateDto => ({
     id: 'op1',
@@ -39,7 +55,7 @@ const renderGate = (
     render(
         <CompositionBox
             operation={operation}
-            registers={registers}
+            flatQubits={flatQubits}
             layerIdx={0}
             onDragStart={vi.fn()}
             onDragEnd={vi.fn()}
@@ -71,6 +87,36 @@ describe('CompositionBox', () => {
         expect(wrapper.style.top).toBe('0px');
         // Two wires apart, so the box covers three rows.
         expect(wrapper.style.height).toBe(`${2 * QUBIT_HEIGHT + QUBIT_HEIGHT}px`);
+    });
+
+    /**
+     * The box takes its rows from the rendered y, never from the qubit index -- folding a classical
+     * register above it moves every wire below without changing a single index.
+     */
+    it('sits on its wires when the grid does not start at zero', () => {
+        const offset = 3 * QUBIT_HEIGHT;
+        const offsetQubits = flatQubits.map((qubit, i) => ({ ...qubit, visualY: offset + i * QUBIT_HEIGHT }));
+
+        const { container } = render(
+            <CompositionBox
+                operation={bell({
+                    targetQubits: [
+                        { registerId: 'r1', index: 1 },
+                        { registerId: 'r1', index: 2 },
+                    ],
+                })}
+                flatQubits={offsetQubits}
+                layerIdx={0}
+                onDragStart={vi.fn()}
+                onDragEnd={vi.fn()}
+                onDelete={vi.fn()}
+                onUngroup={vi.fn()}
+            />,
+        );
+
+        const wrapper = container.firstElementChild as HTMLElement;
+        expect(wrapper.style.top).toBe(`${offset + QUBIT_HEIGHT}px`);
+        expect(wrapper.style.height).toBe(`${2 * QUBIT_HEIGHT}px`);
     });
 
     /**
@@ -124,7 +170,7 @@ describe('CompositionBox', () => {
         const { container } = render(
             <CompositionBox
                 operation={bell()}
-                registers={registers}
+                flatQubits={flatQubits}
                 layerIdx={0}
                 onDragStart={onDragStart}
                 onDragEnd={vi.fn()}

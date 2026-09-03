@@ -1,10 +1,12 @@
 package edu.kit.quak.application.circuit.ports.in;
 
+import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.core.circuit.model.SubcircuitOption;
 import edu.kit.quak.core.user.model.User;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public interface SubcircuitServicePort {
     /**
@@ -31,6 +33,14 @@ public interface SubcircuitServicePort {
      *
      * @param excludeCircuitId the circuit being edited; a circuit cannot contain itself
      */
+    /**
+     * The circuit a subcircuit call points at, or empty when it cannot be read.
+     *
+     * <p>Bounded to the calling circuit's project for the same reason the name lookup is: the id
+     * comes from the client, so without the check a crafted circuit could read foreign circuits.
+     */
+    Optional<QuantumCircuit> resolveDefinition(String circuitId, String projectId, User user);
+
     List<SubcircuitOption> listAvailable(String projectId, String excludeCircuitId, User user);
 
     /**

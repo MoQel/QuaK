@@ -37,7 +37,9 @@ public interface QuantumOperationDtoMapper {
     @Mapping(target = "identifier", source = "operationDefinition")
     MeasurementDto toResponse(Measurement domain);
 
+    /** The body is not stored with the call; the adapter fills it per response, like the name. */
     @Mapping(target = "identifier", ignore = true)
+    @Mapping(target = "body", ignore = true)
     SubcircuitOperationDto toResponse(SubcircuitOperation domain);
 
     /**

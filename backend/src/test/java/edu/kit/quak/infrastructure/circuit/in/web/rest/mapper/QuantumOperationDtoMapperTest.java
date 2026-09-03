@@ -2,6 +2,7 @@ package edu.kit.quak.infrastructure.circuit.in.web.rest.mapper;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import edu.kit.quak.core.circuit.exceptions.InvalidOperationConfigurationException;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementaryQuantumGate;
 import edu.kit.quak.core.circuit.model.layer.operation.Measurement;
@@ -104,6 +105,19 @@ class QuantumOperationDtoMapperTest {
         assertInstanceOf(SubcircuitOperation.class, composite);
         assertEquals(compositeDto.getId(), composite.getId());
         assertEquals("target-circuit-123", ((SubcircuitOperation) composite).getDefinitionCircuitId());
+    }
+
+    @Test
+    void toDomain_rejectsControlledMeasurement() {
+        // Arrange
+        ElementSelectorDto target = new ElementSelectorDto("reg_id", 0);
+        ElementSelectorDto control = new ElementSelectorDto("reg_id", 1);
+        ElementSelectorDto classicBit = new ElementSelectorDto("creg_id", 0);
+
+        // Act & Assert
+        assertThrows(InvalidOperationConfigurationException.class, () ->
+            new MeasurementDto("id", QuantumOperationLibrary.MEASURE.name(), false, List.of(target), List.of(control), List.of(classicBit))
+        );
     }
 
     @Test

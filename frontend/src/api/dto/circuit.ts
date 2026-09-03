@@ -1,5 +1,3 @@
-// --- DTOs ---
-
 import { OperationIdentifier } from '@/lib/operations.ts';
 
 export interface ElementSelectorDto {
@@ -17,7 +15,7 @@ export type QuantumOperationType =
     | 'DUMMY';
 
 export interface AbstractQuantumOperationDto {
-    id?: string; // Only for response
+    id?: string;
     type: QuantumOperationType;
     /**
      * A library gate's name for built-in operations. A composite carries its user-defined gate
@@ -34,8 +32,10 @@ export interface ElementaryQuantumGateDto extends AbstractQuantumOperationDto {
     rotationAngle: number;
 }
 
-export interface MeasurementDto extends AbstractQuantumOperationDto {
+export interface MeasurementDto extends Omit<AbstractQuantumOperationDto, 'inverseForm' | 'controlQubits'> {
     type: 'MEASUREMENT';
+    inverseForm: false;
+    controlQubits: [];
     classicBits: ElementSelectorDto[];
 }
 
@@ -51,6 +51,13 @@ export interface SubcircuitOperationDto extends AbstractQuantumOperationDto {
      * reference cannot be resolved — the box then falls back to a short form of the id.
      */
     definitionName?: string;
+    /**
+     * What the referenced circuit does, already bound to this call's qubits, filled in by the
+     * backend on read. Absent when the contents cannot be expressed in the caller's qubits -- a
+     * circuit that measures, or a call passing too few qubits -- and consumers must then say so
+     * rather than quietly leave the gate out.
+     */
+    body?: QuantumOperationDto[];
 }
 
 /**
@@ -73,7 +80,6 @@ export interface CompositeQuantumGateDto extends AbstractQuantumOperationDto {
     body: QuantumOperationDto[];
 }
 
-// Temporary placeholder only — must never appear in a finalized or submitted circuit.
 export interface DummyDto extends AbstractQuantumOperationDto {
     type: 'DUMMY';
 }
@@ -103,8 +109,10 @@ export const getInvolvedSelectors = (op: QuantumOperationDto): ElementSelectorDt
     return selectors;
 };
 
-// --- Responses ---
-type RegisterType = 'Quantum_Register' | 'Classic_Register';
+export type RegisterType = 'Quantum_Register' | 'Classic_Register';
+
+export const REGISTER_TYPE_QUANTUM = 'Quantum_Register' as const;
+export const REGISTER_TYPE_CLASSIC = 'Classic_Register' as const;
 
 export interface AbstractRegisterResponse {
     id: string;
@@ -131,11 +139,11 @@ export const getRegisterSize = (reg: RegisterResponse): number => {
 };
 
 export const isQuantumRegister = (reg: RegisterResponse): reg is QuantumRegisterResponse => {
-    return reg.type === 'Quantum_Register';
+    return reg.type === REGISTER_TYPE_QUANTUM;
 };
 
 export const isClassicRegister = (reg: RegisterResponse): reg is ClassicRegisterResponse => {
-    return reg.type === 'Classic_Register';
+    return reg.type === REGISTER_TYPE_CLASSIC;
 };
 
 export const getCircuitWidth = (circuitData: CircuitResponse): number => {
@@ -171,8 +179,6 @@ export interface CircuitResponse {
     loopBlocks?: LoopBlockDto[];
 }
 
-// --- Requests ---
-
 export interface AddQuantumOperationRequest {
     quantumOperation: QuantumOperationDto;
     layerIdx: number;
@@ -183,4 +189,46 @@ export interface MoveQuantumOperationRequest {
     layerIdx: number;
     targetQubits: ElementSelectorDto[];
     controlQubits: ElementSelectorDto[];
+    classicBits?: ElementSelectorDto[];
 }
+
+export interface RegisterRequest {
+    name: string;
+    type: RegisterType;
+    size: number;
+}
+
+export const getClassicCircuitWidth = (circuitData: CircuitResponse): number => {
+    return circuitData.registers.reduce((sum, reg) => {
+        return isClassicRegister(reg) ? sum + reg.numberOfBits : sum;
+    }, 0);
+};
+
+export const getVisualY = (registers: RegisterResponse[], registerId: string, index: number): number => {
+    let visualY = 0;
+    let classicSectionStarted = false;
+
+    for (const [regIdx, reg] of registers.entries()) {
+        const previousRegister = regIdx > 0 ? registers[regIdx - 1] : undefined;
+        const startsClassicSection = isClassicRegister(reg) && !classicSectionStarted;
+
+        if (!previousRegister || startsClassicSection) {
+            if (previousRegister) {
+                visualY += 20;
+            }
+        }
+
+        const size = getRegisterSize(reg);
+        if (reg.id === registerId) {
+            return visualY + 28 + index * 48;
+        }
+
+        if (isClassicRegister(reg)) {
+            classicSectionStarted = true;
+        }
+
+        visualY += 28 + size * 48;
+    }
+
+    return 0;
+};

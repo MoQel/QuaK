@@ -72,8 +72,6 @@ class CircuitRestAdapterTest {
     @MockitoBean
     private AuthenticationMapper authMapper;
 
-    public static final int INIT_QUBITS = 4;
-
     @Test
     void parseQasmCode_ShouldReturnContentWithoutIdentity() throws Exception {
         String qasm = """
@@ -275,7 +273,7 @@ class CircuitRestAdapterTest {
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.registers").exists())
             .andExpect(jsonPath("$.registers").isArray())
-            .andExpect(jsonPath("$.registers[0].numberOfQubits").value(INIT_QUBITS + 1));
+            .andExpect(jsonPath("$.registers[0].numberOfQubits").value(5));
     }
 
     @Test
@@ -329,7 +327,6 @@ class CircuitRestAdapterTest {
         QuantumCircuit circuit = new QuantumCircuit(projectId, "f-1");
         circuit.setId(circuitId);
         String registerId = circuit.getRegisters().getFirst().getId();
-        circuit.addQubit(registerId);
         ElementSelector target = new ElementSelector(registerId, 0);
         ElementaryQuantumGate operation = new ElementaryQuantumGate(QuantumOperationLibrary.H, false, List.of(target), null, 0d);
         int layerIdx = 0;

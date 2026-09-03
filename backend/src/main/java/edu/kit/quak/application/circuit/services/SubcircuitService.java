@@ -143,14 +143,31 @@ public class SubcircuitService implements SubcircuitServicePort {
             .sum();
     }
 
-    private Optional<String> resolveName(String circuitId, String projectId, User user) {
+    @Override
+    public Optional<QuantumCircuit> resolveDefinition(String circuitId, String projectId, User user) {
+        return referencedCircuit(circuitId, projectId);
+    }
+
+    /** The referenced circuit, if it exists and belongs to the same project. */
+    private Optional<QuantumCircuit> referencedCircuit(String circuitId, String projectId) {
         if (circuitId == null || circuitId.isBlank()) {
             return Optional.empty();
         }
         Optional<QuantumCircuit> referenced = circuitRepository.findById(circuitId);
         // Staying inside the project is what keeps this from being a lookup oracle: the id is
-        // client-supplied, so without the check a crafted circuit could read foreign file names.
+        // client-supplied, so without the check a crafted circuit could read foreign circuits.
         if (referenced.isEmpty() || !projectId.equals(referenced.get().getProjectId())) {
+            return Optional.empty();
+        }
+        return referenced;
+    }
+
+    private Optional<String> resolveName(String circuitId, String projectId, User user) {
+        if (circuitId == null || circuitId.isBlank()) {
+            return Optional.empty();
+        }
+        Optional<QuantumCircuit> referenced = referencedCircuit(circuitId, projectId);
+        if (referenced.isEmpty()) {
             return Optional.empty();
         }
         String fileId = referenced.get().getFileId();

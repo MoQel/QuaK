@@ -51,6 +51,40 @@ describe('normalizeParsedCircuit', () => {
         expect(result.loopBlocks?.[0].repeatCount).toBe(3);
     });
 
+    /** The resolved body keeps a freshly parsed subcircuit runnable until the next read refills it. */
+    it('carries the resolved body over', () => {
+        const result = normalizeParsedCircuit(
+            {
+                ...parsedWithSubcircuit,
+                layers: [
+                    {
+                        quantumOperations: [
+                            {
+                                ...parsedWithSubcircuit.layers[0].quantumOperations[0],
+                                body: [
+                                    {
+                                        id: 'body-h',
+                                        type: 'ELEMENTARY_QUANTUM_GATE',
+                                        identifier: 'H',
+                                        inverseForm: false,
+                                        rotationAngle: 0,
+                                        targetQubits: [{ registerId: 'r-parsed', index: 0 }],
+                                        controlQubits: [],
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                ],
+            },
+            current,
+        );
+        const operation = result.layers[0].quantumOperations[0] as SubcircuitOperationDto;
+
+        expect(operation.body).toHaveLength(1);
+        expect(operation.body?.[0].identifier).toBe('H');
+    });
+
     it('still normalizes an elementary gate', () => {
         const result = normalizeParsedCircuit(
             {

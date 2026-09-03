@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.CircuitResponse;
+import edu.kit.quak.infrastructure.circuit.in.web.rest.dto.QuantumRegisterResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -38,7 +39,7 @@ class CircuitDtoMapperTest {
         assertNotNull(response);
         assertEquals(circuit.getId(), response.id());
         assertEquals(1, response.registers().size());
-        assertEquals("q", response.registers().getFirst().getName());
+        assertEquals(4, ((QuantumRegisterResponse) response.registers().getFirst()).getNumberOfQubits());
         assertEquals(0, response.layers().size());
     }
 }

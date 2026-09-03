@@ -1,22 +1,25 @@
 import React, { useMemo, useRef } from 'react';
 import styles from '@/App.module.css';
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu.tsx';
-import { QuantumOperationDto, RegisterResponse, ElementSelectorDto, getRegisterSize } from '@/api/dto/circuit.ts';
+import { getSelectorKey, QuantumOperationDto, RegisterResponse } from '@/api/dto/circuit.ts';
 import { getOperationDefinition, OperationDefinition } from '@/lib/operations.ts';
-import { CELL_WIDTH, LOOP_GATE_SCALE, QUBIT_HEIGHT } from '@/views/circuit-view/util/layout.ts';
+import {
+    CELL_WIDTH,
+    getSelectorVisualY,
+    isSelectorCollapsed,
+    LOOP_GATE_SCALE,
+    QUBIT_HEIGHT,
+} from '@/views/circuit-view/util/layout.ts';
 import { TextIcon } from '@/components/ui/text-icon.tsx';
 import { formatRotationAngle } from '@/views/circuit-view/util/angle.ts';
-import { DragData } from '../util/types';
+import { DragData, FlatQubit } from '../util/types';
 
 interface ElementaryQuantumGateProps {
     operation: QuantumOperationDto;
     registers: RegisterResponse[];
+    flatQubits: FlatQubit[];
     layerIdx: number;
-    /**
-     * Renders the gate semi-transparent and non-interactive while it is being
-     * dragged. The element must stay mounted as the drag source (dragend), but it
-     * must not swallow dragover events of the drop zone underneath it.
-     */
+    measurementColor?: string;
     isGhost?: boolean;
     /** Drawn slightly smaller when the gate sits inside a repetition frame, so the box has room. */
     isInLoop?: boolean;
@@ -31,19 +34,12 @@ interface ElementaryQuantumGateProps {
     onEditAngle?: () => void;
 }
 
-const getGlobalIndex = (selector: ElementSelectorDto, registers: RegisterResponse[]): number => {
-    let offset = 0;
-    for (const reg of registers) {
-        if (reg.id === selector.registerId) return offset + selector.index;
-        offset += getRegisterSize(reg);
-    }
-    return 0;
-};
-
 export function ElementaryQuantumGate({
     operation,
     registers,
+    flatQubits,
     layerIdx,
+    measurementColor = 'var(--classical)',
     isGhost = false,
     isInLoop = false,
     onDragStart,
@@ -57,28 +53,50 @@ export function ElementaryQuantumGate({
     const isDraggingRef = useRef(false);
     const interactivity = isGhost ? 'pointer-events-none' : 'pointer-events-auto';
     const scale = isInLoop ? LOOP_GATE_SCALE : 1;
+    const registerNameById = useMemo(
+        () => new Map(registers.map((register) => [register.id, register.name])),
+        [registers],
+    );
+    const formatSelector = (selector: { registerId: string; index: number }) =>
+        `${registerNameById.get(selector.registerId) ?? selector.registerId}[${selector.index}]`;
+    const measurementHints =
+        operation.type === 'MEASUREMENT'
+            ? operation.targetQubits.map((targetQubit, index) => {
+                  const classicBit = operation.classicBits[index];
+                  if (!classicBit) return formatSelector(targetQubit);
+                  return `${formatSelector(targetQubit)} -> ${formatSelector(classicBit)}`;
+              })
+            : [];
+    const measurementHint = measurementHints.join('\n');
 
-    // Rotation gates (rx/ry/rz) show their angle on the box, e.g. "π/2".
     const angleLabel =
         definition.hasRotationAngle && operation.type === 'ELEMENTARY_QUANTUM_GATE'
             ? formatRotationAngle(operation.rotationAngle)
             : null;
 
-    // Compute geometry (indices, span, bounds)
-    const { targetIndices, controlIndices, minY, spanHeight } = useMemo(() => {
-        const tIndices = operation.targetQubits.map((t) => getGlobalIndex(t, registers));
-        const cIndices = operation.controlQubits.map((c) => getGlobalIndex(c, registers));
-        const all = [...tIndices, ...cIndices];
-        const min = Math.min(...all);
-        const max = Math.max(...all);
+    const { targetYs, controlYs, classicPoints, visualTop, spanHeight } = useMemo(() => {
+        const tYs = operation.targetQubits.map((target) => getSelectorVisualY(flatQubits, target));
+        const cYs = operation.controlQubits.map((control) => getSelectorVisualY(flatQubits, control));
+        const clPoints =
+            operation.type === 'MEASUREMENT'
+                ? operation.classicBits.map((classicBit) => ({
+                      selector: classicBit,
+                      y: getSelectorVisualY(flatQubits, classicBit),
+                      collapsed: isSelectorCollapsed(flatQubits, classicBit),
+                  }))
+                : [];
+        const allYs = [...tYs, ...cYs, ...clPoints.map((point) => point.y)];
+        const visualTop = allYs.length > 0 ? Math.min(...allYs) : 0;
+        const visualBottom = allYs.length > 0 ? Math.max(...allYs) : 0;
 
         return {
-            targetIndices: tIndices,
-            controlIndices: cIndices,
-            minY: min,
-            spanHeight: (max - min) * QUBIT_HEIGHT,
+            targetYs: tYs,
+            controlYs: cYs,
+            classicPoints: clPoints,
+            visualTop,
+            spanHeight: visualBottom - visualTop,
         };
-    }, [operation, registers]);
+    }, [flatQubits, operation]);
 
     const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
         isDraggingRef.current = true;
@@ -89,7 +107,6 @@ export function ElementaryQuantumGate({
             id: operation.id,
         };
 
-        // 'text/plain' is required for Safari browser support
         e.dataTransfer.setData('text/plain', JSON.stringify(data));
         e.dataTransfer.effectAllowed = 'move';
 
@@ -105,7 +122,6 @@ export function ElementaryQuantumGate({
 
     const handleDragEnd = () => {
         onDragEnd?.();
-        // Prevent immediate click (delete) after drop
         setTimeout(() => {
             isDraggingRef.current = false;
         }, 100);
@@ -113,26 +129,25 @@ export function ElementaryQuantumGate({
 
     const handleClick = (e: React.MouseEvent) => {
         e.stopPropagation();
-        if (!isDraggingRef.current) onDelete?.();
+        if (!isDraggingRef.current && !isGhost) onDelete?.();
     };
 
     const gate = (
         <div
             data-gate
-            draggable
+            draggable={!isGhost}
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
             onClick={handleClick}
             className={`absolute z-30 flex flex-col items-center group pointer-events-none ${isGhost ? 'opacity-50' : ''}`}
             style={{
-                top: minY * QUBIT_HEIGHT,
+                top: visualTop,
                 left: layerIdx * CELL_WIDTH,
                 width: CELL_WIDTH,
                 height: spanHeight + QUBIT_HEIGHT,
             }}
         >
-            {/* Connector Line for Multi-Qubit Gates with hitbox container*/}
-            {targetIndices.length + controlIndices.length > 1 && (
+            {targetYs.length + controlYs.length > 1 && operation.type !== 'MEASUREMENT' && (
                 <div
                     className={`
                     absolute left-1/2 -translate-x-1/2 w-2
@@ -152,29 +167,42 @@ export function ElementaryQuantumGate({
                 </div>
             )}
 
-            {/* Render Controls */}
-            {controlIndices.map((idx) => (
+            {controlYs.map((y, idx) => (
                 <ControlPoint
-                    key={`control-${idx}`}
-                    relativeIdx={idx - minY}
+                    key={`control-${getSelectorKey(operation.controlQubits[idx])}`}
+                    relativeY={y - visualTop}
                     definition={definition}
                     interactivity={interactivity}
                     scale={scale}
                 />
             ))}
 
-            {/* Render Targets */}
-            {targetIndices.map((idx) => (
+            {targetYs.map((y, idx) => (
                 <TargetPoint
-                    key={`target-${idx}`}
-                    relativeIdx={idx - minY}
+                    key={`target-${getSelectorKey(operation.targetQubits[idx])}`}
+                    relativeY={y - visualTop}
                     definition={definition}
                     isSWAP={operation.identifier === 'SWAP'}
+                    accentColor={operation.type === 'MEASUREMENT' ? measurementColor : undefined}
+                    title={operation.type === 'MEASUREMENT' ? (measurementHints[idx] ?? measurementHint) : undefined}
                     angleLabel={angleLabel}
                     interactivity={interactivity}
                     scale={scale}
                 />
             ))}
+
+            {operation.type === 'MEASUREMENT' &&
+                classicPoints.map((point, idx) =>
+                    point.collapsed ? null : (
+                        <ClassicBitTargetPoint
+                            key={`classic-${getSelectorKey(point.selector)}`}
+                            relativeY={point.y - visualTop}
+                            title={measurementHints[idx] ?? measurementHint}
+                            color={measurementColor}
+                            interactivity={interactivity}
+                        />
+                    ),
+                )}
         </div>
     );
 
@@ -202,23 +230,51 @@ export function ElementaryQuantumGate({
     );
 }
 
+function ClassicBitTargetPoint({
+    relativeY,
+    title,
+    color,
+    interactivity,
+}: Readonly<{ relativeY: number; title?: string; color: string; interactivity: string }>) {
+    return (
+        <div
+            className="absolute inset-x-0 z-20 flex items-center justify-center pointer-events-none"
+            style={{ top: relativeY, height: QUBIT_HEIGHT }}
+            title={title}
+            aria-label={title}
+        >
+            <div
+                className={`
+                    size-3 rounded-full border-2 border-bg-subtle
+                    ${interactivity} cursor-grab active:cursor-grabbing`}
+                title={title}
+                aria-label={title}
+                style={{
+                    backgroundColor: color,
+                    boxShadow: `0 0 0 1px var(--text-muted), 0 0 0 5px var(--bg-subtle)`,
+                }}
+            />
+        </div>
+    );
+}
+
 function ControlPoint({
-    relativeIdx,
+    relativeY,
     definition,
     interactivity,
     scale,
-}: Readonly<{ relativeIdx: number; definition: OperationDefinition; interactivity: string; scale: number }>) {
+}: Readonly<{ relativeY: number; definition: OperationDefinition; interactivity: string; scale: number }>) {
     const size: number = 12 * scale;
     return (
         <div
             className={`
-                absolute left-1/2 -translate-x-1/2 rounded-full
+                absolute left-1/2 z-20 -translate-x-1/2 rounded-full
                 bg-bg-light border-border
                 ${interactivity} cursor-grab active:cursor-grabbing
                 group-hover:brightness-90 dark:group-hover:brightness-125 transition-colors`}
             style={{
                 backgroundColor: definition.color,
-                top: relativeIdx * QUBIT_HEIGHT + QUBIT_HEIGHT / 2 - size / 2,
+                top: relativeY + QUBIT_HEIGHT / 2 - size / 2,
                 width: `${size}px`,
                 height: `${size}px`,
             }}
@@ -227,27 +283,37 @@ function ControlPoint({
 }
 
 function TargetPoint({
-    relativeIdx,
+    relativeY,
     definition,
     isSWAP,
+    accentColor,
+    title,
     angleLabel,
     interactivity,
     scale,
 }: Readonly<{
-    relativeIdx: number;
+    relativeY: number;
     definition: OperationDefinition;
     isSWAP: boolean;
+    accentColor?: string;
+    title?: string;
     angleLabel?: string | null;
     interactivity: string;
     scale: number;
 }>) {
+    // Scaled rather than resized: a transform leaves the grid geometry alone, so a gate inside a
+    // repetition frame keeps sitting exactly on its wire and in its column. Composed with the
+    // measurement's own nudge, which would otherwise be overwritten.
+    const transform =
+        [definition.type === 'MEASUREMENT' ? 'translateY(1px)' : null, scale === 1 ? null : `scale(${scale})`]
+            .filter(Boolean)
+            .join(' ') || undefined;
     let content: React.ReactNode;
 
     if (definition.icon.type === 'component') {
         const ComponentIcon = definition.icon.component;
         content = <ComponentIcon className="size-4 stroke-4" />;
     } else if (angleLabel) {
-        // Rotation gate: stack the identifier over its angle so both fit the box.
         content = (
             <div className="flex flex-col items-center justify-center leading-none">
                 <span style={{ fontSize: '12px' }}>{definition.icon.text}</span>
@@ -263,10 +329,11 @@ function TargetPoint({
 
     return (
         <div
-            className="absolute inset-x-0 flex items-center justify-center pointer-events-none"
-            style={{ top: relativeIdx * QUBIT_HEIGHT, height: QUBIT_HEIGHT }}
+            className="absolute inset-x-0 z-20 flex items-center justify-center pointer-events-none"
+            style={{ top: relativeY, height: QUBIT_HEIGHT }}
+            title={title}
+            aria-label={title}
         >
-            {/* Similar to badge.tsx but supporting group-hover */}
             <div
                 className={`
                     ${definition.formClass}
@@ -274,18 +341,19 @@ function TargetPoint({
                     ${interactivity} cursor-grab active:cursor-grabbing
                     group-hover:brightness-90 dark:group-hover:brightness-125 transition-colors
                     ${isSWAP ? '' : styles.quantumOperation}`}
-                style={{
-                    // Scaled rather than resized: a transform leaves the grid geometry alone, so a
-                    // gate inside a frame keeps sitting exactly on its wire and in its column.
-                    ...(scale === 1 ? {} : { transform: `scale(${scale})` }),
-                    ...(isSWAP
-                        ? { backgroundColor: 'transparent', color: definition.color }
+                title={title}
+                aria-label={title}
+                style={
+                    isSWAP
+                        ? { backgroundColor: 'transparent', color: definition.color, transform }
                         : {
                               backgroundColor: definition.color,
                               color: 'var(--bg-dark)',
+                              transform,
+                              boxShadow: accentColor ? `0 0 0 3px ${accentColor}` : undefined,
                               ...(angleLabel ? { padding: '2px 3px' } : {}),
-                          }),
-                }}
+                          }
+                }
             >
                 {content}
             </div>
