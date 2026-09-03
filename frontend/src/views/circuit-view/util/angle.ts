@@ -38,10 +38,25 @@ const NAMED_CONSTANTS: Record<string, number> = {
 };
 
 /**
- * One optional sign, one optional factor, one optional named constant, one optional divisor —
- * `-2*pi/3`, `π/4`, `2pi`, `1.5708`, `tau`. The `*` and the whitespace are optional throughout.
+ * A decimal number, written so it can match only one way.
+ *
+ * The obvious `\d*\.?\d+` is ambiguous — for `123` the two parts can split four ways — and every
+ * split is retried when the rest of the pattern fails, which is what made this quadratic on input
+ * that turns out not to be an angle.
  */
-const ANGLE_PATTERN = /^([+-])?\s*(\d*\.?\d+)?\s*\*?\s*(pi|π|tau|τ|e)?\s*(?:\/\s*(\d*\.?\d+))?$/i;
+const NUMBER = String.raw`\d+(?:\.\d+)?|\.\d+`;
+
+/**
+ * The part before any `/`: an optional sign, an optional factor, an optional named constant —
+ * `-2*pi`, `π`, `2pi`, `1.5708`, `tau`.
+ *
+ * The separator is `\s*(?:\*\s*)?` rather than `\s*\*?\s*`: the latter can split a run of spaces
+ * at any point, so it backtracks through every position before giving up.
+ */
+const MAGNITUDE_PATTERN = new RegExp(String.raw`^([+-])?\s*(${NUMBER})?\s*(?:\*\s*)?(pi|π|tau|τ|e)?$`, 'i');
+
+/** The part after the `/`: a plain number, nothing else. */
+const DIVISOR_PATTERN = new RegExp(String.raw`^(${NUMBER})$`);
 
 /**
  * Reads an angle the user typed, in radians, or null when it is not an angle.
@@ -58,10 +73,20 @@ export function parseRotationAngle(input: string): number | null {
     const text = input.trim();
     if (text === '') return null;
 
-    const match = ANGLE_PATTERN.exec(text);
+    // Split on the divisor first, so neither half has to describe the other. One `/` at most.
+    const parts = text.split('/');
+    if (parts.length > 2) return null;
+
+    const match = MAGNITUDE_PATTERN.exec(parts[0].trim());
     if (!match) return null;
 
-    const [, sign, factorText, constantText, divisorText] = match;
+    const [, sign, factorText, constantText] = match;
+
+    let divisorText: string | undefined;
+    if (parts.length === 2) {
+        divisorText = parts[1].trim();
+        if (!DIVISOR_PATTERN.test(divisorText)) return null;
+    }
 
     // Something must actually be there: the pattern's parts are all optional, so a lone "-" or "/2"
     // would otherwise come out as 0 rather than as the error it is.

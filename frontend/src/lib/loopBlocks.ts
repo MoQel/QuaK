@@ -34,17 +34,17 @@ export const innermostBlockCovering = (blocks: LoopBlockDto[], operationId: stri
 
     const tightest = Math.min(...covering.map((block) => block.operationIds.length));
     const candidates = covering.filter((block) => block.operationIds.length === tightest);
-    return candidates[candidates.length - 1];
+    return candidates.at(-1);
 };
 
 /**
  * Whether one frame sits strictly inside another. Equal member sets do not nest — which is also what
  * stops the recursion when two loops end up covering exactly the same operations.
  */
-export const isStrictlyInside = (candidate: LoopBlockDto, block: LoopBlockDto): boolean =>
-    candidate.id !== block.id &&
-    candidate.operationIds.length < block.operationIds.length &&
-    candidate.operationIds.every((id) => block.operationIds.includes(id));
+export const isStrictlyInside = (inner: LoopBlockDto, outer: LoopBlockDto): boolean =>
+    inner.id !== outer.id &&
+    inner.operationIds.length < outer.operationIds.length &&
+    inner.operationIds.every((id) => outer.operationIds.includes(id));
 
 /**
  * The circuit's operations in execution order, with every repetition frame's body repeated.

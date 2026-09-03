@@ -73,6 +73,17 @@ describe('parseRotationAngle', () => {
     });
 
     /**
+     * The pattern is split on the `/` and both halves are written so they can match only one way --
+     * an ambiguous number or whitespace run is retried at every position when the rest fails.
+     */
+    it('handles whitespace runs and refuses a second divisor', () => {
+        expect(parseRotationAngle('3   *   π   /   4')).toBeCloseTo((3 * Math.PI) / 4, 10);
+        expect(parseRotationAngle('pi/2/3')).toBeNull();
+        expect(parseRotationAngle('     pi     ')).toBeCloseTo(Math.PI, 10);
+        expect(parseRotationAngle('.5')).toBeCloseTo(0.5, 10);
+    });
+
+    /**
      * The point of the parser: the box shows `π/2`, so that is what lands in the edit field and has
      * to come back as the very same angle. Without this a single edit would round the angle.
      */

@@ -46,11 +46,13 @@ export const getLoopFrames = (
  * boxes are drawn nested instead of exactly on top of one another.
  */
 const nestingDepth = (block: LoopBlockDto, loopBlocks: LoopBlockDto[]): number => {
-    const enclosing = loopBlocks.filter((candidate) => isStrictlyInside(block, candidate)).length;
+    // Named for what it is on this side of the call: `isStrictlyInside(inner, outer)` asks whether
+    // the first lies in the second, and here it is this frame that is being enclosed.
+    const enclosing = loopBlocks.filter((outer) => isStrictlyInside(block, outer)).length;
     const sameArea = loopBlocks.filter(
-        (candidate) =>
-            candidate.operationIds.length === block.operationIds.length &&
-            candidate.operationIds.every((id) => block.operationIds.includes(id)),
+        (other) =>
+            other.operationIds.length === block.operationIds.length &&
+            other.operationIds.every((id) => block.operationIds.includes(id)),
     );
     return enclosing + sameArea.indexOf(block);
 };

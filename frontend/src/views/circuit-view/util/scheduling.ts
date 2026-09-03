@@ -14,6 +14,24 @@ interface LayoutContext {
 }
 
 /**
+ * The state one layout pass carries while it fills columns.
+ *
+ * Grouped rather than threaded through as separate arguments: every step mutates the same four
+ * structures plus the context, and passing them apart made the signatures say little beyond how
+ * many there were.
+ */
+interface LayoutPass {
+    columns: UiLayer[];
+    /** Rightmost column each wire is occupied up to. */
+    lastColumnPerQubit: Map<string, number>;
+    /** Rectangles frames have claimed, which nothing outside them may enter. */
+    reserved: Reservation[];
+    /** Operations already laid out, so a frame's members are not placed twice. */
+    placed: Set<string>;
+    context: LayoutContext;
+}
+
+/**
  * ASAP (as-soon-as-possible) left-justified scheduling, giving every repetition frame a column range
  * of its own.
  *
@@ -35,36 +53,34 @@ export const layOutColumns = (
     blocks: LoopBlockDto[],
     context: LayoutContext,
 ): UiLayer[] => {
-    const columns: UiLayer[] = [];
-    const lastColumnPerQubit = new Map<string, number>();
-    const reserved: Reservation[] = [];
-    const placed = new Set<string>();
+    const pass: LayoutPass = {
+        columns: [],
+        lastColumnPerQubit: new Map<string, number>(),
+        reserved: [],
+        placed: new Set<string>(),
+        context,
+    };
 
     for (const operation of operations) {
         const id = operation.id;
-        if (id && placed.has(id)) continue;
+        if (id && pass.placed.has(id)) continue;
 
         // Frames over the same operations share one rectangle, so any of them lays it out.
         const block = id ? outermostBlocksCovering(blocks, id)[0] : undefined;
         if (!block) {
-            placeOperation(operation, columns, lastColumnPerQubit, reserved, context);
-            if (id) placed.add(id);
+            placeOperation(operation, pass);
+            if (id) pass.placed.add(id);
         } else {
-            placeBlock(block, blocks, operations, columns, lastColumnPerQubit, reserved, placed, context);
+            placeBlock(block, blocks, operations, pass);
         }
     }
 
-    return columns.filter((column) => column.quantumOperations.length > 0);
+    return pass.columns.filter((column) => column.quantumOperations.length > 0);
 };
 
 /** Puts one operation in the leftmost column that is neither occupied nor inside a frame. */
-const placeOperation = (
-    operation: UiQuantumOperation,
-    columns: UiLayer[],
-    lastColumnPerQubit: Map<string, number>,
-    reserved: Reservation[],
-    context: LayoutContext,
-): void => {
+const placeOperation = (operation: UiQuantumOperation, pass: LayoutPass): void => {
+    const { columns, lastColumnPerQubit, reserved, context } = pass;
     const span = context.spanOf(operation);
     let columnIdx = Math.max(earliestColumn(operation, lastColumnPerQubit), context.minColumnFor?.(operation) ?? 0);
 
@@ -84,12 +100,9 @@ const placeBlock = (
     block: LoopBlockDto,
     blocks: LoopBlockDto[],
     operations: UiQuantumOperation[],
-    columns: UiLayer[],
-    lastColumnPerQubit: Map<string, number>,
-    reserved: Reservation[],
-    placed: Set<string>,
-    context: LayoutContext,
+    pass: LayoutPass,
 ): void => {
+    const { columns, lastColumnPerQubit, reserved, placed, context } = pass;
     const byId = new Map(operations.map((operation) => [operation.id, operation]));
     const members = block.operationIds
         .map((id) => byId.get(id))
