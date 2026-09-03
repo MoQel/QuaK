@@ -137,6 +137,37 @@ const libraryOperation = (
     } as ElementaryQuantumGateDto;
 };
 
+/**
+ * How many wires a drop takes, from whichever source knows best.
+ *
+ * Whenever there is an actual operation to ask, its own qubits are the truth: the one already in
+ * the circuit for a move, the dragged template for a custom gate from the library. The built-in
+ * catalogue knows only the built-ins, so a user-defined gate would otherwise be truncated to the
+ * single-qubit fallback and lose qubits.
+ */
+const dropSizes = (data: DragData, dragged: QuantumOperationDto | undefined) =>
+    data.subcircuit
+        ? { controlSize: 0, targetSize: Math.max(data.subcircuit.qubitCount, 1) }
+        : qubitCountsOf(dragged ?? data.composite, data.operationIdentifier);
+
+/** Where a gate already in the circuit is being moved to. A measurement keeps its classic bits. */
+const movePayload = (
+    operationId: string,
+    dragged: QuantumOperationDto | undefined,
+    layerIdx: number,
+    targetQubits: ElementSelectorDto[],
+    controlQubits: ElementSelectorDto[],
+): MoveQuantumOperationRequest => {
+    const isMeasurement = dragged?.type === 'MEASUREMENT';
+    return {
+        quantumOperationId: operationId,
+        layerIdx,
+        targetQubits,
+        controlQubits: isMeasurement ? [] : controlQubits,
+        classicBits: isMeasurement ? getClassicBits(dragged) : undefined,
+    };
+};
+
 interface DropzoneGridProps {
     circuit: CircuitResponse | undefined;
     setCircuit: React.Dispatch<SetStateAction<CircuitResponse | undefined>>;
@@ -362,16 +393,10 @@ export function DropzoneGrid({
             try {
                 const data: DragData = JSON.parse(e.dataTransfer.getData('text/plain'));
 
-                // Whenever there is an actual operation to ask, its own qubits are the truth: the one
-                // already in the circuit for a move, the dragged template for a custom gate from the
-                // library. The built-in catalogue knows only the built-ins, so a user-defined gate
-                // would otherwise be truncated to the single-qubit fallback and lose qubits.
+                // Only a move has an operation to look up; a library drag carries a template.
                 const dragged =
                     data.origin === 'circuit' && data.id ? findOperation(circuit?.layers ?? [], data.id) : undefined;
-                const { controlSize, targetSize } = data.subcircuit
-                    ? { controlSize: 0, targetSize: Math.max(data.subcircuit.qubitCount, 1) }
-                    : qubitCountsOf(dragged ?? data.composite, data.operationIdentifier);
-
+                const { controlSize, targetSize } = dropSizes(data, dragged);
                 const { controlQubits, targetQubits } = dropSelectors(regId, regIdx, controlSize, targetSize);
 
                 if (data.origin === 'library') {
@@ -389,14 +414,7 @@ export function DropzoneGrid({
                         });
                     }
                 } else if (data.origin === 'circuit' && data.id) {
-                    const isMeasurement = dragged?.type === 'MEASUREMENT';
-                    const payload: MoveQuantumOperationRequest = {
-                        quantumOperationId: data.id,
-                        layerIdx,
-                        targetQubits,
-                        controlQubits: isMeasurement ? [] : controlQubits,
-                        classicBits: isMeasurement ? getClassicBits(dragged) : undefined,
-                    };
+                    const payload = movePayload(data.id, dragged, layerIdx, targetQubits, controlQubits);
                     if (hasCircuitStateChanged(payload)) {
                         moveQuantumOperationLocally(payload);
                     }

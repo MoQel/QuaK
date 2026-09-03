@@ -103,7 +103,7 @@ export function CompositionBox({
         };
     }, [operation, flatQubits]);
 
-    const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
+    const handleDragStart = (e: React.DragEvent<HTMLButtonElement>) => {
         isDraggingRef.current = true;
         setIsPreviewOpen(false);
 
@@ -138,20 +138,6 @@ export function CompositionBox({
         if (!isDraggingRef.current) onDelete?.();
     };
 
-    /**
-     * The same action from the keyboard.
-     *
-     * The box has to stay a plain element -- it is the HTML5 drag source, and both the context menu
-     * and the preview hang off that very node -- so it carries the button role and its own key
-     * handling instead of being one. Without this a composite could only be removed with a mouse.
-     */
-    const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key !== 'Enter' && e.key !== ' ') return;
-        e.preventDefault();
-        e.stopPropagation();
-        onDelete?.();
-    };
-
     const handlePreviewOpenChange = (open: boolean) => {
         // The pointer is still over the box right after a drop, so without this the panel would
         // reappear on top of the gate the user just placed.
@@ -180,19 +166,30 @@ export function CompositionBox({
             disableHoverableContent
         >
             <ContextMenu>
-                <ContextMenuTrigger asChild disabled={isGhost}>
+                {/*
+                 * No `disabled` on the trigger: Radix forwards it to the child, and on a real
+                 * button that is the HTML attribute, which would switch the box off for everyone.
+                 * A ghost is already inert -- it carries pointer-events-none and its own disabled.
+                 */}
+                <ContextMenuTrigger asChild>
                     <TooltipTrigger asChild>
-                        <div
+                        {/*
+                         * A real button rather than a div with a role: it brings focus, Enter and
+                         * Space with it. The browser defaults are stripped because the box draws
+                         * itself -- and it stays the very element the drag, the context menu and
+                         * the preview all hang off, which is what the two `asChild` triggers above
+                         * are for.
+                         */}
+                        <button
                             data-gate
+                            type="button"
                             draggable
-                            role="button"
-                            tabIndex={isGhost ? -1 : 0}
-                            aria-label={`${label} gate, ${operation.targetQubits.length} qubits`}
+                            disabled={isGhost}
+                            aria-label={`${label} gate on ${operation.targetQubits.length} qubits`}
                             onDragStart={handleDragStart}
                             onDragEnd={handleDragEnd}
                             onClick={handleClick}
-                            onKeyDown={handleKeyDown}
-                            className={`absolute z-30 group pointer-events-none ${isGhost ? 'opacity-50' : ''}`}
+                            className={`absolute z-30 group border-0 bg-transparent p-0 text-left pointer-events-none ${isGhost ? 'opacity-50' : ''}`}
                             style={{
                                 top: minY,
                                 left: layerIdx * CELL_WIDTH,
@@ -246,7 +243,7 @@ export function CompositionBox({
                                     </span>
                                 ))}
                             </div>
-                        </div>
+                        </button>
                     </TooltipTrigger>
                 </ContextMenuTrigger>
 
