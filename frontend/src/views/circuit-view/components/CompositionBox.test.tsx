@@ -3,7 +3,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { CompositionBox } from './CompositionBox.tsx';
 import type { CompositeQuantumGateDto } from '@/api/dto/circuit.ts';
 import { REGISTER_TYPE_QUANTUM } from '@/api/dto/circuit.ts';
-import { QUBIT_HEIGHT, REGISTER_HEADER_HEIGHT } from '@/views/circuit-view/util/layout.ts';
+import { QUBIT_HEIGHT } from '@/views/circuit-view/util/layout.ts';
 import type { FlatQubit } from '@/views/circuit-view/util/types.ts';
 
 // The box takes its rows from the rendered wire list, so the fixture is one four-wire quantum
@@ -90,15 +90,12 @@ describe('CompositionBox', () => {
     });
 
     /**
-     * Rows are not evenly spaced from the top of the canvas: a register header sits above the first
-     * wire, and a classical section adds a gap. Positioning the box by qubit *index* therefore drew
-     * it a header's height too high, off its own wires.
+     * The box takes its rows from the rendered y, never from the qubit index -- folding a classical
+     * register above it moves every wire below without changing a single index.
      */
-    it('sits on its wires when a register header offsets them', () => {
-        const offsetQubits = flatQubits.map((qubit, i) => ({
-            ...qubit,
-            visualY: REGISTER_HEADER_HEIGHT + i * QUBIT_HEIGHT,
-        }));
+    it('sits on its wires when the grid does not start at zero', () => {
+        const offset = 3 * QUBIT_HEIGHT;
+        const offsetQubits = flatQubits.map((qubit, i) => ({ ...qubit, visualY: offset + i * QUBIT_HEIGHT }));
 
         const { container } = render(
             <CompositionBox
@@ -118,7 +115,7 @@ describe('CompositionBox', () => {
         );
 
         const wrapper = container.firstElementChild as HTMLElement;
-        expect(wrapper.style.top).toBe(`${REGISTER_HEADER_HEIGHT + QUBIT_HEIGHT}px`);
+        expect(wrapper.style.top).toBe(`${offset + QUBIT_HEIGHT}px`);
         expect(wrapper.style.height).toBe(`${2 * QUBIT_HEIGHT}px`);
     });
 

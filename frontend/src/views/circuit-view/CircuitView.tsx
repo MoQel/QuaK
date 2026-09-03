@@ -25,13 +25,7 @@ import type { FlatQubit, HoverPos, UiLayer, UiQuantumOperation } from './util/ty
 import { createCircuitService } from '@/views/circuit-view/util/circuitService.ts';
 import { ungroupComposite } from '@/views/circuit-view/util/ungroupComposite.ts';
 import { MeasurementTargetDialog } from './components/MeasurementTargetDialog';
-import {
-    CELL_WIDTH,
-    LABEL_WIDTH,
-    QUBIT_HEIGHT,
-    REGISTER_HEADER_HEIGHT,
-    REGISTER_SECTION_GAP,
-} from '@/views/circuit-view/util/layout.ts';
+import { CELL_WIDTH, LABEL_WIDTH, QUBIT_HEIGHT } from '@/views/circuit-view/util/layout.ts';
 import type { OperationIdentifier } from '@/lib/operations.ts';
 import { useCircuitTabs } from '@/contexts/CircuitTabsContext.tsx';
 
@@ -320,28 +314,28 @@ interface BuildUiLayersInput {
     selectorRowIndex: Map<string, number>;
 }
 
+/**
+ * Rows in render order, with the y each is drawn at.
+ *
+ * The rows follow each other with nothing in between. A header bar above every register, and the
+ * gap between the quantum and classical sections, cut straight through each gate reaching across
+ * two registers -- and a composed gate on `cin[0], b[0], a[0]` reaches across three. Every row
+ * carries a label naming its register and index, so the header said little the reader did not have.
+ *
+ * A collapsed classical register is a single row standing for all its bits.
+ */
 function buildFlatQubits(displayRegisters: RegisterResponse[], collapsedClassicRegisterIds: Set<string>): FlatQubit[] {
     let globalCounter = 0;
     let visualYOffset = 0;
-    let classicSectionStarted = false;
 
     return displayRegisters.flatMap((register, registerIndex) => {
-        const startsClassicSection = isClassicRegister(register) && !classicSectionStarted;
-        if (registerIndex > 0 && startsClassicSection) {
-            visualYOffset += REGISTER_SECTION_GAP;
-        }
-
         const size = getRegisterSize(register);
         const headerY = visualYOffset;
         const collapsed = isClassicRegister(register) && collapsedClassicRegisterIds.has(register.id);
-        const showHeader = !collapsed;
         const visibleRows = collapsed ? 1 : size;
-        const firstRowY = headerY + (showHeader ? REGISTER_HEADER_HEIGHT : 0);
+        const firstRowY = headerY;
 
-        visualYOffset += (showHeader ? REGISTER_HEADER_HEIGHT : 0) + visibleRows * QUBIT_HEIGHT;
-        if (isClassicRegister(register)) {
-            classicSectionStarted = true;
-        }
+        visualYOffset += visibleRows * QUBIT_HEIGHT;
 
         return Array.from({ length: visibleRows }).map((_, relativeIndex) => ({
             regId: register.id,
