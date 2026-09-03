@@ -1,10 +1,8 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { FlatQubit } from '@/views/circuit-view/util/types.ts';
 import { CircuitResponse, isClassicRegister } from '@/api/dto/circuit.ts';
 import { QubitLabel } from '@/views/circuit-view/components/QubitLabel.tsx';
-import { LABEL_WIDTH, QUBIT_HEIGHT, REGISTER_HEADER_HEIGHT } from '@/views/circuit-view/util/layout.ts';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { LABEL_WIDTH, QUBIT_HEIGHT } from '@/views/circuit-view/util/layout.ts';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 
 interface QubitWiresProps {
@@ -21,6 +19,14 @@ type RegisterGroup = {
     qubits: FlatQubit[];
 };
 
+/**
+ * The wires of the circuit: one row per qubit, and per classical bit unless the register is folded.
+ *
+ * No register is framed or given a header bar. A bar above each register interrupted the very grid
+ * it sat in and cut through every gate reaching across two registers; each row's label names its
+ * register anyway. Folding a classical register survives that, but as a control inside the label
+ * column that appears when the pointer is on the register -- at rest the column shows names only.
+ */
 export function QubitWires({
     circuit,
     setCircuit,
@@ -49,116 +55,104 @@ export function QubitWires({
                 const first = group.qubits[0];
                 const register = circuit?.registers?.find((r) => r.id === first.regId);
                 const isClassic = register ? isClassicRegister(register) : false;
-                const isCollapsedClassic = isClassic && first.isCollapsed;
 
                 return (
-                    <div key={`reg-group-${first.regId}`}>
-                        {isCollapsedClassic ? (
-                            <CollapsedClassicRegister
-                                circuitWidth={circuitWidth}
-                                qubit={first}
-                                onToggleClassicRegister={onToggleClassicRegister}
-                            />
-                        ) : (
-                            <RegisterHeader
-                                circuitWidth={circuitWidth}
-                                group={group}
-                                isClassic={isClassic}
-                                onToggleClassicRegister={onToggleClassicRegister}
-                            />
-                        )}
-
-                        {!isCollapsedClassic &&
-                            group.qubits.map((q) => (
-                                <div
-                                    key={`wire-${q.regId}-${q.relQubitIdx}`}
-                                    className="absolute left-0"
-                                    style={{ top: q.visualY, height: QUBIT_HEIGHT, width: circuitWidth }}
-                                >
-                                    <QubitLabel circuit={circuit} setCircuit={setCircuit} qubit={q} />
-
-                                    <WireLine circuitWidth={circuitWidth} isClassic={isClassic} />
-                                </div>
-                            ))}
-                    </div>
+                    <RegisterRows
+                        key={`reg-group-${first.regId}`}
+                        circuit={circuit}
+                        setCircuit={setCircuit}
+                        group={group}
+                        circuitWidth={circuitWidth}
+                        isClassic={isClassic}
+                        onToggle={() => onToggleClassicRegister(first.regId)}
+                    />
                 );
             })}
         </>
     );
 }
 
-function RegisterHeader({
-    circuitWidth,
+function RegisterRows({
+    circuit,
+    setCircuit,
     group,
-    isClassic,
-    onToggleClassicRegister,
-}: Readonly<{
-    circuitWidth: number;
-    group: RegisterGroup;
-    isClassic: boolean;
-    onToggleClassicRegister: (registerId: string) => void;
-}>) {
-    const first = group.qubits[0];
-
-    return (
-        <div
-            className="absolute left-0 z-40 flex items-center gap-2 border-b border-border bg-bg-subtle px-2"
-            style={{ top: group.headerY, height: REGISTER_HEADER_HEIGHT, width: circuitWidth }}
-        >
-            {isClassic && (
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="size-5 shrink-0 rounded-sm text-text-muted hover:bg-bg-light"
-                    title="Collapse classical register"
-                    aria-label="Collapse classical register"
-                    onClick={() => onToggleClassicRegister(first.regId)}
-                >
-                    <ChevronDown className="size-3.5" />
-                </Button>
-            )}
-            <span className="truncate font-mono text-[11px] font-semibold text-text">{first.regName}</span>
-            <Badge variant={isClassic ? 'secondary' : 'default'} className="h-4 px-1.5 text-[10px]">
-                {isClassic ? 'Classic' : 'Quantum'}
-            </Badge>
-        </div>
-    );
-}
-
-function CollapsedClassicRegister({
     circuitWidth,
-    qubit,
-    onToggleClassicRegister,
+    isClassic,
+    onToggle,
 }: Readonly<{
+    circuit: CircuitResponse | undefined;
+    setCircuit: (circuit: CircuitResponse) => void;
+    group: RegisterGroup;
     circuitWidth: number;
-    qubit: FlatQubit;
-    onToggleClassicRegister: (registerId: string) => void;
+    isClassic: boolean;
+    onToggle: () => void;
 }>) {
-    return (
-        <div className="absolute left-0" style={{ top: qubit.visualY, height: QUBIT_HEIGHT, width: circuitWidth }}>
-            <div
-                className="absolute z-40 flex items-center gap-1 bg-bg-subtle px-1"
-                style={{ height: QUBIT_HEIGHT, width: LABEL_WIDTH }}
-            >
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="size-5 shrink-0 rounded-sm text-text-muted hover:bg-bg-light"
-                    title="Expand classical register"
-                    aria-label="Expand classical register"
-                    onClick={() => onToggleClassicRegister(qubit.regId)}
-                >
-                    <ChevronRight className="size-3.5" />
-                </Button>
-                <span className="truncate font-mono text-[12px] text-text">
-                    {qubit.regName}
-                    {qubit.registerSize}
-                </span>
-            </div>
+    const [showFoldControl, setShowFoldControl] = useState(false);
+    const first = group.qubits[0];
+    const isFolded = first.isCollapsed;
 
-            <WireLine circuitWidth={circuitWidth} isClassic />
+    // Only a classical register folds: its bits are written by measurements, which name the bit they
+    // land in, so one row can stand for all of them.
+    const foldHandlers = isClassic
+        ? {
+              onMouseEnter: () => setShowFoldControl(true),
+              onMouseLeave: () => setShowFoldControl(false),
+          }
+        : {};
+
+    return (
+        <div {...foldHandlers}>
+            {isFolded ? (
+                <div
+                    className="absolute left-0"
+                    style={{ top: first.visualY, height: QUBIT_HEIGHT, width: circuitWidth }}
+                >
+                    <div
+                        className="absolute z-40 flex items-center bg-bg-subtle px-1 font-mono text-[12px] text-text"
+                        style={{ height: QUBIT_HEIGHT, width: LABEL_WIDTH }}
+                    >
+                        {/* The folded register stands for every one of its bits, so it is named
+                            without an index: `ans5` is the five-bit register `ans`. */}
+                        <span className="truncate">
+                            {first.regName}
+                            {group.qubits.length === 1 ? first.registerSize : ''}
+                        </span>
+                    </div>
+
+                    <WireLine circuitWidth={circuitWidth} isClassic />
+                </div>
+            ) : (
+                group.qubits.map((q) => (
+                    <div
+                        key={`wire-${q.regId}-${q.relQubitIdx}`}
+                        className="absolute left-0"
+                        style={{ top: q.visualY, height: QUBIT_HEIGHT, width: circuitWidth }}
+                    >
+                        <QubitLabel circuit={circuit} setCircuit={setCircuit} qubit={q} />
+
+                        <WireLine circuitWidth={circuitWidth} isClassic={isClassic} />
+                    </div>
+                ))
+            )}
+
+            {isClassic && (
+                <button
+                    type="button"
+                    title={isFolded ? 'Expand classical register' : 'Collapse classical register'}
+                    aria-label={isFolded ? 'Expand classical register' : 'Collapse classical register'}
+                    onClick={onToggle}
+                    onFocus={() => setShowFoldControl(true)}
+                    onBlur={() => setShowFoldControl(false)}
+                    // The icon is small, the target is not: it spans the row's full height so the
+                    // control can be hit without aiming.
+                    className={`absolute z-50 flex items-center justify-center text-text-muted hover:text-text ${
+                        showFoldControl ? '' : 'sr-only'
+                    }`}
+                    style={{ top: first.visualY, left: LABEL_WIDTH - 20, height: QUBIT_HEIGHT, width: 20 }}
+                >
+                    {isFolded ? <ChevronRight className="size-3.5" /> : <ChevronDown className="size-3.5" />}
+                </button>
+            )}
         </div>
     );
 }

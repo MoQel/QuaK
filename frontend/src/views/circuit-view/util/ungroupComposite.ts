@@ -1,0 +1,96 @@
+import {
+    CircuitResponse,
+    CompositeQuantumGateDto,
+    isCompositeGate,
+    LoopBlockDto,
+    QuantumOperationDto,
+} from '@/api/dto/circuit.ts';
+import { withFreshIds } from '@/lib/operationIds.ts';
+
+type Layers = CircuitResponse['layers'];
+
+const copyLayer = (layer: Layers[number]): Layers[number] => ({ quantumOperations: [...layer.quantumOperations] });
+
+/** The composite with the given id together with its layer, or null if the id names something else. */
+const findComposite = (
+    layers: Layers,
+    operationId: string,
+): { layerIdx: number; gate: CompositeQuantumGateDto } | null => {
+    for (const [layerIdx, layer] of layers.entries()) {
+        const operation = layer.quantumOperations.find((candidate) => candidate.id === operationId);
+        if (operation) return isCompositeGate(operation) ? { layerIdx, gate: operation } : null;
+    }
+    return null;
+};
+
+/**
+ * Replaces a composite gate by the operations it is made of — the editor's "Ungroup".
+ *
+ * The DTO's `body` is the gate expanded **one level** and already bound to this call's qubits, so
+ * nothing has to be re-derived: a nested gate stays a box, and dropping the body into the circuit is
+ * enough. The body is a statement sequence, not a layout, so every operation gets its **own layer**,
+ * spliced in where the box stood. That is not cosmetic: both schedulers order the operations of a
+ * single layer by their topmost qubit, so putting the whole body into one layer would silently
+ * reorder it — `gate g a, b { h b; cx a, b; }` would come out as `cx` before `h`. With one operation
+ * per layer the relative order is fixed, and the ASAP scheduler compacts the columns back on render.
+ *
+ * A gate with an empty body simply disappears, which is what ungrouping nothing amounts to.
+ *
+ * <p>A repetition frame around the box survives: its members are ids, and the box's id is replaced
+ * in place by the ids of what came out of it. Without that the frame would lose its only member and
+ * vanish — dissolving a gate would silently drop the loop it was sitting in.
+ *
+ * @param operationId the composite to dissolve; anything else leaves the circuit untouched
+ */
+export const ungroupComposite = (circuit: CircuitResponse, operationId: string): CircuitResponse => {
+    const found = findComposite(circuit.layers, operationId);
+    if (!found) return circuit;
+
+    const { layerIdx, gate } = found;
+    const layers = circuit.layers;
+    const freed = (gate.body ?? []).map(withFreshIds);
+
+    // Everything left of the box is unaffected; its own layer keeps whatever else stood in it.
+    const rebuilt: Layers = layers.slice(0, layerIdx).map(copyLayer);
+    rebuilt.push({ quantumOperations: layers[layerIdx].quantumOperations.filter((op) => op.id !== operationId) });
+
+    freed.forEach((operation, position) => {
+        const targetIdx = layerIdx + position;
+        while (rebuilt.length <= targetIdx) rebuilt.push({ quantumOperations: [] });
+        rebuilt[targetIdx].quantumOperations.push(operation);
+    });
+
+    // Appended after the inserted layers, so everything that came after the box still does.
+    rebuilt.push(...layers.slice(layerIdx + 1).map(copyLayer));
+
+    return {
+        ...circuit,
+        layers: rebuilt.filter((layer) => layer.quantumOperations.length > 0),
+        loopBlocks: inheritMembership(circuit.loopBlocks ?? [], operationId, freed),
+    };
+};
+
+/**
+ * Hands the dissolved gate's place in every frame over to the operations that replaced it.
+ *
+ * The freed ids go in at the position the box held, so the members stay in program order — which is
+ * what code generation writes inside the `for`.
+ */
+const inheritMembership = (
+    loopBlocks: LoopBlockDto[],
+    operationId: string,
+    freed: QuantumOperationDto[],
+): LoopBlockDto[] => {
+    const freedIds = freed.map((operation) => operation.id!);
+
+    return loopBlocks
+        .map((block) =>
+            block.operationIds.includes(operationId)
+                ? {
+                      ...block,
+                      operationIds: block.operationIds.flatMap((id) => (id === operationId ? freedIds : [id])),
+                  }
+                : block,
+        )
+        .filter((block) => block.operationIds.length > 0);
+};

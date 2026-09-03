@@ -1,5 +1,7 @@
 import {
     CircuitResponse,
+    CompositeQuantumGateDto,
+    SubcircuitOperationDto,
     ElementaryQuantumGateDto,
     getRegisterSize,
     isQuantumRegister,
@@ -7,6 +9,7 @@ import {
     QuantumOperationDto,
     RegisterResponse,
 } from '@/api/dto/circuit.ts';
+import { getLoopFrames, LoopFrame } from '@/views/circuit-view/util/loopFrames.ts';
 import { buildWireIndex, resolveWireIndices, WireIndex } from '@/lib/circuitIndex.ts';
 import { angleToLatex, resolveAngle } from '@/lib/quantumAngle.ts';
 import { escapeLatexText } from '@/notation/latex/escape.ts';
@@ -29,6 +32,8 @@ export function toQuantikz(circuit: CircuitResponse): string {
             applyOperation(grid, wireIndex, operation, layerIdx);
         }
     }
+
+    applyLoopFrames(grid, circuit);
 
     const rows = buildRows(circuit.registers, grid);
 
@@ -65,6 +70,30 @@ export function toStandaloneDocument(latexCode: string): string {
     ].join('\n');
 }
 
+/**
+ * Draws the repetition frames as quantikz gate groups.
+ *
+ * `\gategroup` is attached to the top-left cell of the area it covers and takes the size in wires
+ * and steps, which is exactly the bounding box a frame already is. Without this the exported LaTeX
+ * would show the loop body once with nothing saying it repeats — the same silent loss the simulator
+ * would suffer by ignoring frames.
+ */
+function applyLoopFrames(grid: string[][], circuit: CircuitResponse): void {
+    for (const frame of getLoopFrames(circuit.layers, circuit.loopBlocks ?? [], circuit.registers)) {
+        grid[frame.topWire][frame.firstColumn] += buildGateGroup(frame);
+    }
+}
+
+function buildGateGroup(frame: LoopFrame): string {
+    const wires = frame.bottomWire - frame.topWire + 1;
+    const steps = frame.lastColumn - frame.firstColumn + 1;
+
+    return (
+        String.raw`\gategroup[${wires},steps=${steps},style={dashed,rounded corners},background,` +
+        String.raw`label style={label position=below,anchor=north,yshift=-0.2cm}]{$\times ${frame.repeatCount}$}`
+    );
+}
+
 function buildGrid(registers: RegisterResponse[], totalLayers: number): string[][] {
     return registers.flatMap((register) =>
         Array.from({ length: getRegisterSize(register) }, () => new Array<string>(totalLayers).fill('')),
@@ -88,9 +117,56 @@ function applyOperation(
         return;
     }
 
+    if (operation.type === 'COMPOSITE_QUANTUM_GATE') {
+        applyCompositionBox(grid, wireIndex, operation, operation.identifier, layerIdx);
+        return;
+    }
+
+    if (operation.type === 'SUBCIRCUIT_OPERATION') {
+        // Labelled the way the editor labels it: the referenced circuit's file name, or a short
+        // form of the id when that reference no longer resolves.
+        applyCompositionBox(
+            grid,
+            wireIndex,
+            operation,
+            operation.definitionName ?? operation.definitionCircuitId?.slice(0, 8) ?? 'subcircuit',
+            layerIdx,
+        );
+        return;
+    }
+
     if (operation.type === 'ELEMENTARY_QUANTUM_GATE') {
         applyElementaryGate(grid, wireIndex, operation, layerIdx);
     }
+}
+
+/**
+ * A user-defined gate becomes one multi-wire box, mirroring how the editor draws it.
+ *
+ * Expanding it into its elementary gates instead would not work here: the whole body sits in a
+ * single layer, so several gates would compete for the same grid cell and all but one would be
+ * lost. `\gate[n]{...}` is placed on the topmost wire and quantikz draws it across the following
+ * n-1 wires, which is why the spanned cells are left empty.
+ */
+function applyCompositionBox(
+    grid: string[][],
+    wireIndex: WireIndex,
+    gate: CompositeQuantumGateDto | SubcircuitOperationDto,
+    name: string | undefined,
+    layerIdx: number,
+): void {
+    const wires = gate.targetQubits
+        .map((qubit) => wireIndex.getWireIndex(qubit))
+        .filter((wire): wire is number => wire !== undefined);
+
+    if (wires.length === 0) return;
+
+    const topWire = Math.min(...wires);
+    const span = Math.max(...wires) - topWire + 1;
+    // Gate names are user-chosen, so they need the same escaping as the register labels.
+    const label = escapeLatexText(name ?? '');
+
+    grid[topWire][layerIdx] = span > 1 ? String.raw`\gate[${span}]{${label}}` : String.raw`\gate{${label}}`;
 }
 
 function buildRows(registers: RegisterResponse[], grid: string[][]): string[] {

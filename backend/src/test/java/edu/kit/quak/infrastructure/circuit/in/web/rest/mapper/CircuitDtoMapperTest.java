@@ -21,6 +21,9 @@ class CircuitDtoMapperTest {
     @Spy
     private LayerDtoMapperImpl layerDtoMapper;
 
+    @Spy
+    private LoopBlockDtoMapperImpl loopBlockDtoMapper;
+
     @InjectMocks
     private CircuitDtoMapperImpl mapper;
 

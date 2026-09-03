@@ -1,5 +1,6 @@
 package edu.kit.quak.application.circuit.ports.in;
 
+import edu.kit.quak.core.circuit.model.LoopBlock;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.core.circuit.model.layer.Layer;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
@@ -20,10 +21,10 @@ public interface CircuitServicePort {
     QuantumCircuit getOrCreateByFileId(String fileId, User user);
 
     /**
-     * Replaces the registers and layers of an existing circuit with the given
+     * Replaces the registers, layers and repetition frames of an existing circuit with the given
      * content. Identity (circuitId, projectId, fileId) is preserved.
      */
-    QuantumCircuit replaceContent(String circuitId, List<Register> registers, List<Layer> layers, User user);
+    QuantumCircuit replaceContent(String circuitId, List<Register> registers, List<Layer> layers, List<LoopBlock> loopBlocks, User user);
 
     /**
      * Deletes a specific circuit by its unique ID.

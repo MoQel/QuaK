@@ -8,6 +8,7 @@ import edu.kit.quak.application.common.exceptions.ResourceNotFoundException;
 import edu.kit.quak.application.filesystem.delegator.FileElementContainerRepositoryDelegator;
 import edu.kit.quak.application.filesystem.ports.out.FileRepositoryPort;
 import edu.kit.quak.application.user.ports.in.ProjectRoleServicePort;
+import edu.kit.quak.core.circuit.model.LoopBlock;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.core.circuit.model.layer.Layer;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
@@ -92,18 +93,30 @@ public class CircuitService implements CircuitServicePort {
     }
 
     @Override
-    public QuantumCircuit replaceContent(String circuitId, List<Register> registers, List<Layer> layers, User user) {
+    public QuantumCircuit replaceContent(
+        String circuitId,
+        List<Register> registers,
+        List<Layer> layers,
+        List<LoopBlock> loopBlocks,
+        User user
+    ) {
         log.info("Replacing content of circuit. circuitId={}", circuitId);
         QuantumCircuit existing = getById(circuitId);
         verifyAccess(existing.getProjectId(), user, ProjectRole.OWNER);
         verifyOperationIdIntegrity(existing, layers);
 
+        // Only registers and layers are content. Everything else the circuit knows about itself has
+        // to be carried over by hand here, or a plain autosave would quietly reset it - which is
+        // what happened to the subcircuit flag: declaring a circuit a building block survived until
+        // the next edit of it.
         QuantumCircuit replacement = QuantumCircuit.builder()
             .id(existing.getId())
             .projectId(existing.getProjectId())
             .fileId(existing.getFileId())
+            .offeredAsSubcircuit(existing.isOfferedAsSubcircuit())
             .registers(registers)
             .layers(layers)
+            .loopBlocks(loopBlocks)
             .build();
         touchProject(existing.getProjectId());
         return repository.save(replacement);

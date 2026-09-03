@@ -62,6 +62,13 @@
     --phase: hsl(203 100% 60%);
     --quantum: hsl(334 74% 36%);
     --non-unitary-and-modifiers: hsl(0 0% 50%);
+    /* User-defined (composite) gates: deliberately neutral so they read as a container
+       rather than as one more gate kind competing with the colors above. */
+    --composite: hsl(210 10% 40%);
+    /* Repetition frames. Must not be --composite: a frame is frequently drawn around a composite
+       gate, and in the same color the two read as one object instead of a box around a box. Amber
+       is free of the gate palette above, so it cannot be mistaken for a gate kind either. */
+    --loop-frame: hsl(35 92% 42%);
 }
 
 .dark {
@@ -104,6 +111,8 @@
     --phase: hsl(202 100% 86%);
     --quantum: hsl(334 100% 75%);
     --non-unitary-and-modifiers: hsl(0 0% 70%);
+    --composite: hsl(210 12% 78%);
+    --loop-frame: hsl(38 95% 62%);
 }
 
 @layer base {

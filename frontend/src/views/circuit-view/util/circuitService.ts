@@ -12,6 +12,7 @@ import {
     REGISTER_TYPE_CLASSIC,
     REGISTER_TYPE_QUANTUM,
 } from '@/api/dto/circuit.ts';
+import { detachFromLoops } from '@/views/circuit-view/util/loopMembership.ts';
 
 /** True if the operation acts on the given qubit (target or control). */
 const operationTouchesQubit = (op: QuantumOperationDto, registerId: string, qubitIdx: number): boolean =>
@@ -194,7 +195,13 @@ export function createCircuitService(
 
     const removeQuantumOperation = (operationId: string) => {
         if (!circuit) return;
-        setCircuit({ ...circuit, layers: removeOperationFromLayers(circuit.layers, operationId) });
+        setCircuit({
+            ...circuit,
+            layers: removeOperationFromLayers(circuit.layers, operationId),
+            // A frame may not name an operation the circuit no longer has: the backend rejects the
+            // whole save for it, so a deleted gate has to leave its repetition frames too.
+            loopBlocks: detachFromLoops(circuit.loopBlocks ?? [], operationId),
+        });
     };
 
     const addRegister = (payload: RegisterRequest) => {

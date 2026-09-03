@@ -254,6 +254,66 @@ class CircuitLifecycleIntegrationTest {
             .andExpect(status().isUnprocessableEntity());
     }
 
+    @Test
+    @DisplayName("E2E: A repetition frame survives a save and comes back on the next read")
+    void testLoopBlockRoundTrip() throws Exception {
+        syncService.syncUser("test", new OidcUserInfo("test-sub", "test@example.com", true, "Test User", null, null, null));
+        MvcResult projectResult = mockMvc
+            .perform(
+                post("/api/project")
+                    .with(authenticatedUser())
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        """
+                        { "name": "Loop Frame Project" }
+                        """
+                    )
+            )
+            .andExpect(status().isCreated())
+            .andReturn();
+        String projectId = objectMapper.readTree(projectResult.getResponse().getContentAsString()).get("id").asText();
+
+        String fileId = createFile(projectId);
+        JsonNode circuit = getCircuitByFile(fileId);
+        String circuitId = circuit.get("id").asText();
+        String registerId = circuit.at("/registers/0/id").asText();
+        String operationId = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
+        String blockId = "99999999-8888-7777-6666-555555555555";
+
+        mockMvc
+            .perform(
+                put("/api/circuit/" + circuitId)
+                    .with(authenticatedUser())
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(replaceContentJson(registerId, operationId, blockId, 5))
+            )
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.loopBlocks[0].id").value(blockId))
+            .andExpect(jsonPath("$.loopBlocks[0].repeatCount").value(5));
+
+        // Read it back from the database rather than from the response of the write.
+        mockMvc
+            .perform(get("/api/circuit/file/" + fileId).with(authenticatedUser()))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.loopBlocks.length()").value(1))
+            .andExpect(jsonPath("$.loopBlocks[0].id").value(blockId))
+            .andExpect(jsonPath("$.loopBlocks[0].repeatCount").value(5))
+            .andExpect(jsonPath("$.loopBlocks[0].operationIds[0]").value(operationId));
+
+        // A frame naming an operation the payload does not contain must not be stored.
+        mockMvc
+            .perform(
+                put("/api/circuit/" + circuitId)
+                    .with(authenticatedUser())
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(replaceContentJson(registerId, operationId, blockId, 5).replace(operationId + "\" ]", "ghost\" ]"))
+            )
+            .andExpect(status().isUnprocessableEntity());
+    }
+
     // --- Helper Methods ---
 
     private JsonNode getCircuitByFile(String fileId) throws Exception {
@@ -288,6 +348,19 @@ class CircuitLifecycleIntegrationTest {
           ]
         }
         """.formatted(registerId, operationId, registerId);
+    }
+
+    /** The same payload plus a repetition frame over its single operation. */
+    private String replaceContentJson(String registerId, String operationId, String blockId, int repeatCount) {
+        String withoutFrame = replaceContentJson(registerId, operationId);
+        String frame = """
+            ,
+              "loopBlocks": [
+                { "id": "%s", "repeatCount": %d, "operationIds": [ "%s" ] }
+              ]
+            }
+            """.formatted(blockId, repeatCount, operationId);
+        return withoutFrame.stripTrailing().replaceAll("}$", "") + frame;
     }
 
     /** Creates a file directly under the project root and returns its id. */

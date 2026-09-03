@@ -1,4 +1,12 @@
-import { QuantumOperationDto, RegisterResponse } from '@/api/dto/circuit.ts';
+import {
+    isComposedOperation,
+    isCompositeGate,
+    LoopBlockDto,
+    QuantumOperationDto,
+    RegisterResponse,
+} from '@/api/dto/circuit.ts';
+import { innermostBlockCovering } from '@/lib/loopBlocks.ts';
+import { CompositionBox } from '@/views/circuit-view/components/CompositionBox.tsx';
 import { ElementaryQuantumGate } from '@/views/circuit-view/components/ElementaryQuantumGate.tsx';
 import { FlatQubit, UiLayer } from '@/views/circuit-view/util/types.ts';
 import { useDispatch } from 'react-redux';
@@ -10,7 +18,15 @@ interface QuantumOperationGridProps {
     registers: RegisterResponse[];
     flatQubits: FlatQubit[];
     isOperationDragging: boolean;
+    /** Repetition frames, so each gate knows whether it sits in one and which to offer removing. */
+    loopBlocks: LoopBlockDto[];
     removeQuantumOperation: (operationId: string) => void;
+    /** Drops a repetition frame, leaving its gates where they are. */
+    removeLoopBlock: (loopBlockId: string) => void;
+    /** Replaces a composite gate by the operations it is made of. */
+    ungroupQuantumOperation: (operationId: string) => void;
+    /** Asks for the angle editor; the gate itself decides whether it has an angle to edit. */
+    editRotationAngle: (operation: QuantumOperationDto) => void;
     setDraggingOperationId: (id: string | null) => void;
     setHoverPos: (pos: null) => void;
     draggingOperation: { op: QuantumOperationDto; layerIdx: number } | null;
@@ -35,15 +51,19 @@ export function QuantumOperationGrid({
     registers,
     flatQubits,
     isOperationDragging,
+    loopBlocks,
     removeQuantumOperation,
+    removeLoopBlock,
+    ungroupQuantumOperation,
+    editRotationAngle,
     setDraggingOperationId,
     setHoverPos,
     draggingOperation,
 }: Readonly<QuantumOperationGridProps>) {
     const dispatch = useDispatch();
 
-    const handleOperationDragStart = (operationId: string, operationSize: number) => {
-        dispatch(startOperationDrag(operationSize));
+    const handleOperationDragStart = (operationId: string, operationSize: number, grabOffset: number) => {
+        dispatch(startOperationDrag({ size: operationSize, grabOffset }));
         setDraggingOperationId(operationId);
     };
 
@@ -81,20 +101,52 @@ export function QuantumOperationGrid({
         <div className={`absolute inset-0 z-20 ${isOperationDragging ? 'pointer-events-none' : ''}`}>
             <MeasurementConnectorLayer uiLayers={uiLayers} registers={registers} flatQubits={flatQubits} />
 
-            {renderedOperations.map(({ op, layerIdx, isGhost, measurementColor }) => (
-                <ElementaryQuantumGate
-                    key={op.id}
-                    operation={op}
-                    registers={registers}
-                    flatQubits={flatQubits}
-                    layerIdx={layerIdx}
-                    isGhost={isGhost}
-                    measurementColor={measurementColor}
-                    onDragStart={(operationSize) => handleOperationDragStart(op.id!, operationSize)}
-                    onDragEnd={handleOperationDragEnd}
-                    onDelete={() => removeQuantumOperation(op.id!)}
-                />
-            ))}
+            {renderedOperations.map(({ op, layerIdx, isGhost, measurementColor }) => {
+                // The frame drawn tightest around this gate: it decides both the smaller rendering
+                // and which loop the gate's context menu offers to remove.
+                const enclosingLoop = op.id ? innermostBlockCovering(loopBlocks, op.id) : undefined;
+                const onRemoveLoop = enclosingLoop ? () => removeLoopBlock(enclosingLoop.id) : undefined;
+
+                // A composed operation is one box rather than a set of target/control markers.
+                return isComposedOperation(op) ? (
+                    <CompositionBox
+                        key={op.id}
+                        operation={op}
+                        flatQubits={flatQubits}
+                        layerIdx={layerIdx}
+                        isGhost={isGhost}
+                        isInLoop={enclosingLoop !== undefined}
+                        loopRepeatCount={enclosingLoop?.repeatCount}
+                        onDragStart={(operationSize, grabOffset) =>
+                            handleOperationDragStart(op.id!, operationSize, grabOffset)
+                        }
+                        onDragEnd={handleOperationDragEnd}
+                        onDelete={() => removeQuantumOperation(op.id!)}
+                        // Only a composite gate has a body in this circuit to dissolve into.
+                        onUngroup={isCompositeGate(op) ? () => ungroupQuantumOperation(op.id!) : undefined}
+                        onRemoveLoop={onRemoveLoop}
+                    />
+                ) : (
+                    <ElementaryQuantumGate
+                        key={op.id}
+                        operation={op}
+                        registers={registers}
+                        flatQubits={flatQubits}
+                        layerIdx={layerIdx}
+                        isGhost={isGhost}
+                        isInLoop={enclosingLoop !== undefined}
+                        loopRepeatCount={enclosingLoop?.repeatCount}
+                        measurementColor={measurementColor}
+                        onDragStart={(operationSize, grabOffset) =>
+                            handleOperationDragStart(op.id!, operationSize, grabOffset)
+                        }
+                        onDragEnd={handleOperationDragEnd}
+                        onDelete={() => removeQuantumOperation(op.id!)}
+                        onRemoveLoop={onRemoveLoop}
+                        onEditAngle={() => editRotationAngle(op)}
+                    />
+                );
+            })}
         </div>
     );
 }

@@ -2,4 +2,11 @@ package edu.kit.quak.infrastructure.circuit.in.web.rest.dto;
 
 import java.util.List;
 
-public record CircuitResponse(String id, String projectId, String fileId, List<RegisterResponse> registers, List<LayerResponse> layers) {}
+public record CircuitResponse(
+    String id,
+    String projectId,
+    String fileId,
+    List<RegisterResponse> registers,
+    List<LayerResponse> layers,
+    List<LoopBlockDto> loopBlocks
+) {}

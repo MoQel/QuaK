@@ -1,4 +1,13 @@
-import { CircuitResponse, MeasurementDto, getCircuitWidth, isQuantumRegister } from '@/api/dto/circuit.ts';
+import {
+    CircuitResponse,
+    ElementaryQuantumGateDto,
+    MeasurementDto,
+    QuantumOperationDto,
+    getCircuitWidth,
+    isCompositeGate,
+    isQuantumRegister,
+    isSubcircuit,
+} from '@/api/dto/circuit.ts';
 import * as qulacs from 'qulacs-wasm';
 import { Complex } from 'qulacs-wasm';
 import {
@@ -9,6 +18,7 @@ import {
     validateOperations,
 } from '@/simulation/circuitContext.ts';
 import { applyGateToState } from '@/simulation/qulacsGates.ts';
+import { toExecutionOrder } from '@/lib/loopBlocks.ts';
 import {
     Bit,
     buildOutcomes,
@@ -226,17 +236,47 @@ export class QulacsMapper {
     ): MeasurementResult[] {
         const measurementResults: MeasurementResult[] = [];
 
-        for (const layer of circuitData.layers) {
-            for (const op of layer.quantumOperations) {
-                if (op.type === 'ELEMENTARY_QUANTUM_GATE') {
-                    applyGateToState(state, op, context.quantumOffsets);
-                } else if (op.type === 'MEASUREMENT') {
-                    measurementResults.push(...this.applyMeasurement(state, op, context, sampleCount));
-                }
+        // Execution order rather than layer by layer: a repetition frame means its body runs *n*
+        // times, and reading the layers directly would run it once -- simulating a different
+        // circuit than the editor shows, silently, since the frame still looks right there.
+        for (const op of toExecutionOrder(circuitData)) {
+            if (op.type === 'MEASUREMENT') {
+                measurementResults.push(...this.applyMeasurement(state, op, context, sampleCount));
+                continue;
+            }
+            for (const gate of this.toElementaryGates(op)) {
+                applyGateToState(state, gate, context.quantumOffsets);
             }
         }
 
         return measurementResults;
+    }
+
+    /**
+     * The elementary gates an operation stands for, in program order.
+     *
+     * A user-defined gate carries the gates it is made of, already bound to the qubits of its call,
+     * so it is expanded here (recursively, since a body may contain further user-defined gates).
+     * Skipping it instead would silently simulate a *different* circuit — the gate would simply have
+     * no effect — which is far worse than failing loudly. A subcircuit cannot be expanded here at
+     * all, because its body lives in another circuit; it therefore raises instead of being dropped.
+     */
+    private static toElementaryGates(op: QuantumOperationDto): ElementaryQuantumGateDto[] {
+        if (isCompositeGate(op)) {
+            return (op.body ?? []).flatMap((part) => this.toElementaryGates(part));
+        }
+        if (isSubcircuit(op)) {
+            // A subcircuit stores only the id of the circuit it calls; the backend resolves that
+            // into a body bound to this call's qubits. Without one there is nothing to run, and
+            // skipping it would simulate a circuit missing the gate, so it fails visibly instead.
+            if (!op.body) {
+                throw new Error(
+                    `Cannot simulate a subcircuit: the contents of ${op.definitionName ?? op.definitionCircuitId} could not be resolved.`,
+                );
+            }
+            return op.body.flatMap((part) => this.toElementaryGates(part));
+        }
+        return op.type === 'ELEMENTARY_QUANTUM_GATE' ? [op] : [];
     }
 
     private static applyMeasurement(
