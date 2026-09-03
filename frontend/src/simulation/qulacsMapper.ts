@@ -264,12 +264,15 @@ export class QulacsMapper {
             return (op.body ?? []).flatMap((part) => this.toElementaryGates(part));
         }
         if (isSubcircuit(op)) {
-            // Unlike a composite gate a subcircuit does not carry its body: it only names another
-            // circuit, which is not loaded here. Skipping it would simulate a different circuit, so
-            // this fails visibly until the referenced circuit is resolved before simulation.
-            throw new Error(
-                `Cannot simulate a subcircuit yet: this circuit references ${op.definitionCircuitId}, whose contents are not loaded.`,
-            );
+            // A subcircuit stores only the id of the circuit it calls; the backend resolves that
+            // into a body bound to this call's qubits. Without one there is nothing to run, and
+            // skipping it would simulate a circuit missing the gate, so it fails visibly instead.
+            if (!op.body) {
+                throw new Error(
+                    `Cannot simulate a subcircuit: the contents of ${op.definitionName ?? op.definitionCircuitId} could not be resolved.`,
+                );
+            }
+            return op.body.flatMap((part) => this.toElementaryGates(part));
         }
         return op.type === 'ELEMENTARY_QUANTUM_GATE' ? [op] : [];
     }

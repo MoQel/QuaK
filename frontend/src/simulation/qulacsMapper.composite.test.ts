@@ -97,12 +97,32 @@ describe('simulating user-defined gates', () => {
         expect(findState(result, '|11>').prob).toBeCloseTo(0.5);
     });
 
+    /** The backend resolves a subcircuit into a body bound to the call, and it runs like any gate. */
+    it('runs a subcircuit through the body the backend resolved', () => {
+        const subcircuit: SubcircuitOperationDto = {
+            id: 'sub-1',
+            type: 'SUBCIRCUIT_OPERATION',
+            identifier: 'bell_state',
+            definitionCircuitId: 'other-circuit',
+            definitionName: 'bell_state',
+            inverseForm: false,
+            targetQubits: [sel(0), sel(1)],
+            controlQubits: [],
+            body: bellOn(0, 1).body,
+        };
+
+        const result = QulacsMapper.translateAndRun(circuitOf(2, [subcircuit]));
+
+        expect(findState(result, '|00>').prob).toBeCloseTo(0.5);
+        expect(findState(result, '|11>').prob).toBeCloseTo(0.5);
+    });
+
     /**
-     * A subcircuit names another circuit and carries no body, so it cannot be expanded here. It
-     * must therefore fail visibly: skipping it would simulate a circuit without the gate and
-     * report a confidently wrong result.
+     * Without a body there is nothing to run -- the referenced circuit could not be resolved, or it
+     * measures. Skipping it would simulate a circuit without the gate and report a confidently
+     * wrong result, so it fails visibly instead.
      */
-    it('refuses to simulate a subcircuit instead of skipping it', () => {
+    it('refuses to simulate a subcircuit whose body could not be resolved', () => {
         const subcircuit: SubcircuitOperationDto = {
             id: 'sub-1',
             type: 'SUBCIRCUIT_OPERATION',

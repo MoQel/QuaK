@@ -12,7 +12,7 @@ import { api } from '@/api/api.ts';
 import { CircuitResponse } from '@/api/dto/circuit.ts';
 import { useAppSelector } from '@/hooks/useAppSelector.ts';
 import { useProject } from '@/contexts/ProjectContext.tsx';
-import { saveCircuitContent } from '@/views/circuit-view/util/circuitPersistence.ts';
+import { saveCircuitContent, withResolvedSubcircuits } from '@/views/circuit-view/util/circuitPersistence.ts';
 import { store } from '@/store/store.ts';
 import { toast } from 'sonner';
 
@@ -76,19 +76,31 @@ export const CircuitTabsProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
             const target = latestCircuitsRef.current[key];
             if (target) {
-                saveCircuitContent(target).catch((error) => {
-                    console.error('Failed to save circuit', error);
-                    // A failing autosave used to be console-only, so the circuit silently stopped
-                    // persisting and the next thing the user noticed was lost work. The toast id is
-                    // per circuit so repeated failures replace one message instead of stacking up.
-                    toast.error('Could not save the circuit', {
-                        id: `circuit-save-failed-${key}`,
-                        description:
-                            error instanceof Error
-                                ? error.message
-                                : 'Your changes are only in this browser tab. Check the connection and try again.',
+                saveCircuitContent(target)
+                    .then((saved) =>
+                        // A subcircuit placed by a drop knows only which circuit it points at; what
+                        // that circuit does is resolved server-side. Without taking it back the
+                        // circuit in this tab has no body to simulate until it is loaded afresh.
+                        setCircuitsByTabId((current) => {
+                            const held = current[key];
+                            if (!held) return current;
+                            const merged = withResolvedSubcircuits(held, saved);
+                            return merged === held ? current : { ...current, [key]: merged };
+                        }),
+                    )
+                    .catch((error) => {
+                        console.error('Failed to save circuit', error);
+                        // A failing autosave used to be console-only, so the circuit silently stopped
+                        // persisting and the next thing the user noticed was lost work. The toast id is
+                        // per circuit so repeated failures replace one message instead of stacking up.
+                        toast.error('Could not save the circuit', {
+                            id: `circuit-save-failed-${key}`,
+                            description:
+                                error instanceof Error
+                                    ? error.message
+                                    : 'Your changes are only in this browser tab. Check the connection and try again.',
+                        });
                     });
-                });
             }
         }
     }, []);

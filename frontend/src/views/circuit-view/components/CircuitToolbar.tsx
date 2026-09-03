@@ -4,6 +4,7 @@ import { apiRequest } from '@/api/api.ts';
 import {
     CircuitResponse,
     CompositeQuantumGateDto,
+    SubcircuitOperationDto,
     isClassicRegister,
     isQuantumRegister,
     QuantumOperationDto,
@@ -161,7 +162,10 @@ const extractIdentifier = (operation: ParserOperation): OperationIdentifier => {
     return 'DUMMY';
 };
 
-const normalizeParsedCircuit = (rawCircuit: unknown, currentCircuit: CircuitResponse | undefined): CircuitResponse => {
+export const normalizeParsedCircuit = (
+    rawCircuit: unknown,
+    currentCircuit: CircuitResponse | undefined,
+): CircuitResponse => {
     const parsed = rawCircuit as ParserCircuit;
     const currentRegistersByType = new Map<RegisterResponse['type'], RegisterResponse[]>();
     for (const register of currentCircuit?.registers ?? []) {
@@ -249,6 +253,21 @@ const normalizeParsedCircuit = (rawCircuit: unknown, currentCircuit: CircuitResp
                 classicBits: ('classicBits' in operation && operation.classicBits ? operation.classicBits : []).map(
                     normalizeSelector,
                 ),
+            } as QuantumOperationDto;
+        }
+
+        if (operation.type === 'SUBCIRCUIT_OPERATION') {
+            // The reference is the whole operation: dropped into the generic branch below it keeps
+            // its type but points nowhere, and every consumer that reads the id then trips over it.
+            // The body rides along so the circuit stays simulatable until the next read refills it.
+            const subcircuit = operation as Partial<SubcircuitOperationDto>;
+            return {
+                ...base,
+                type: 'SUBCIRCUIT_OPERATION',
+                identifier: subcircuit.identifier,
+                definitionCircuitId: subcircuit.definitionCircuitId ?? '',
+                definitionName: subcircuit.definitionName,
+                body: subcircuit.body?.map((part) => normalizeOperation(part as ParserOperation)),
             } as QuantumOperationDto;
         }
 

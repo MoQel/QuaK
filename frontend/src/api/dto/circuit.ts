@@ -51,6 +51,13 @@ export interface SubcircuitOperationDto extends AbstractQuantumOperationDto {
      * reference cannot be resolved — the box then falls back to a short form of the id.
      */
     definitionName?: string;
+    /**
+     * What the referenced circuit does, already bound to this call's qubits, filled in by the
+     * backend on read. Absent when the contents cannot be expressed in the caller's qubits -- a
+     * circuit that measures, or a call passing too few qubits -- and consumers must then say so
+     * rather than quietly leave the gate out.
+     */
+    body?: QuantumOperationDto[];
 }
 
 /**

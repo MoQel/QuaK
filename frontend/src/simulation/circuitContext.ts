@@ -109,11 +109,18 @@ function validateOperation(op: QuantumOperationDto, context: CircuitContext): vo
             validateOperation(part, context);
         }
     } else if (isSubcircuit(op)) {
-        throwSimulationError({
-            code: 'UNSUPPORTED_OPERATION',
-            message: `Subcircuit '${op.definitionName ?? op.identifier}' references another circuit, whose contents are not loaded for simulation.`,
-            operationId: op.id,
-        });
+        // Resolved by the backend into a body bound to this call's qubits; validated through it,
+        // like a composite. Without one the circuit cannot be run at all, which is worth saying.
+        if (!op.body) {
+            throwSimulationError({
+                code: 'UNSUPPORTED_OPERATION',
+                message: `Subcircuit '${op.definitionName ?? op.identifier}' could not be resolved, so its contents cannot be simulated.`,
+                operationId: op.id,
+            });
+        }
+        for (const part of op.body) {
+            validateOperation(part, context);
+        }
     } else {
         throwSimulationError({
             code: 'UNSUPPORTED_OPERATION',
