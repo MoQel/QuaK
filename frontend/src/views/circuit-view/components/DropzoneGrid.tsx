@@ -75,6 +75,68 @@ const qubitCountsOf = (
     return { controlSize: definition.controlSize, targetSize: definition.targetSize };
 };
 
+/**
+ * The wires a drop occupies, split into controls and targets the way QASM orders them.
+ */
+const dropSelectors = (
+    regId: string,
+    regIdx: number,
+    controlSize: number,
+    targetSize: number,
+): { controlQubits: ElementSelectorDto[]; targetQubits: ElementSelectorDto[] } => ({
+    controlQubits: Array.from({ length: controlSize }, (_, i) => ({ registerId: regId, index: regIdx + i })),
+    targetQubits: Array.from({ length: targetSize }, (_, i) => ({
+        registerId: regId,
+        index: regIdx + controlSize + i,
+    })),
+});
+
+/**
+ * The operation a library drop inserts, or null when it cannot be inserted straight away.
+ *
+ * Null means a measurement: it needs a classic bit to write to, which the user picks in a dialog,
+ * so it is added once that comes back rather than here.
+ */
+const libraryOperation = (
+    data: DragData,
+    targetQubits: ElementSelectorDto[],
+    controlQubits: ElementSelectorDto[],
+): QuantumOperationDto | null => {
+    if (data.composite) {
+        // A user-defined gate, recognised by the template rather than by the catalogue lookup: its
+        // name is an arbitrary identifier the catalogue does not have. The body travels bound to the
+        // wires the template was collected from, so it has to be re-bound onto the drop's wires --
+        // and copied under fresh ids, body included, since this is a new operation.
+        return withFreshIds(rebindComposite(data.composite, targetQubits));
+    }
+
+    if (data.subcircuit) {
+        // Nothing to re-bind: a subcircuit stores only the id of the circuit it points at, and its
+        // body stays where it is. The name rides along so the box is labelled before the next read.
+        return {
+            id: crypto.randomUUID(),
+            type: 'SUBCIRCUIT_OPERATION',
+            identifier: data.subcircuit.name,
+            inverseForm: false,
+            definitionCircuitId: data.subcircuit.circuitId,
+            definitionName: data.subcircuit.name,
+            targetQubits,
+            controlQubits,
+        } as SubcircuitOperationDto;
+    }
+
+    if (getOperationDefinition(data.operationIdentifier).type !== 'ELEMENTARY_QUANTUM_GATE') return null;
+
+    return {
+        type: 'ELEMENTARY_QUANTUM_GATE',
+        identifier: data.operationIdentifier,
+        inverseForm: false,
+        targetQubits,
+        controlQubits,
+        rotationAngle: Math.PI / 2, // standard rotation
+    } as ElementaryQuantumGateDto;
+};
+
 interface DropzoneGridProps {
     circuit: CircuitResponse | undefined;
     setCircuit: React.Dispatch<SetStateAction<CircuitResponse | undefined>>;
@@ -310,91 +372,36 @@ export function DropzoneGrid({
                     ? { controlSize: 0, targetSize: Math.max(data.subcircuit.qubitCount, 1) }
                     : qubitCountsOf(dragged ?? data.composite, data.operationIdentifier);
 
-                const controlQubits: ElementSelectorDto[] = Array.from({ length: controlSize }, (_, i) => ({
-                    registerId: regId,
-                    index: regIdx + i,
-                }));
+                const { controlQubits, targetQubits } = dropSelectors(regId, regIdx, controlSize, targetSize);
 
-                const targetQubits: ElementSelectorDto[] = Array.from({ length: targetSize }, (_, i) => ({
-                    registerId: regId,
-                    index: regIdx + controlSize + i,
-                }));
-
-                switch (data.origin) {
-                    case 'library': {
-                        if (data.composite) {
-                            // A user-defined gate, recognised by the template rather than by the
-                            // catalogue lookup: its name is an arbitrary identifier the catalogue
-                            // does not have. The body travels bound to the wires the template was
-                            // collected from, so it has to be re-bound onto the drop's wires — and
-                            // copied under fresh ids, body included, since this is a new operation
-                            // and not the one the template came from.
-                            const operation = withFreshIds(rebindComposite(data.composite, targetQubits));
-                            addQuantumOperationLocally(operation, layerIdx);
-                            break;
-                        }
-
-                        if (data.subcircuit) {
-                            // Nothing to re-bind: a subcircuit stores only the id of the circuit it
-                            // points at, and its body stays where it is. The name rides along so the
-                            // box is labelled before the next read fills it in again.
-                            const operation: SubcircuitOperationDto = {
-                                id: crypto.randomUUID(),
-                                type: 'SUBCIRCUIT_OPERATION',
-                                identifier: data.subcircuit.name,
-                                inverseForm: false,
-                                definitionCircuitId: data.subcircuit.circuitId,
-                                definitionName: data.subcircuit.name,
-                                targetQubits,
-                                controlQubits,
-                            };
-                            addQuantumOperationLocally(operation, layerIdx);
-                            break;
-                        }
-
-                        const operationDefinition = getOperationDefinition(data.operationIdentifier);
-                        if (operationDefinition.type === 'ELEMENTARY_QUANTUM_GATE') {
-                            const operation: ElementaryQuantumGateDto = {
-                                type: 'ELEMENTARY_QUANTUM_GATE',
-                                identifier: data.operationIdentifier,
-                                inverseForm: false,
-                                targetQubits,
-                                controlQubits,
-                                rotationAngle: Math.PI / 2, // standard rotation
-                            };
-                            addQuantumOperationLocally(operation, layerIdx);
-                        } else if (operationDefinition.type === 'MEASUREMENT') {
-                            // A measurement needs a classic bit to write to, which the user picks in
-                            // a dialog; it is added once that comes back, not here.
-                            onRequestMeasurementTarget?.({
-                                layerIdx,
-                                targetQubits,
-                                controlQubits: [],
-                                // Narrowed by the lookup above: only a built-in resolves to a
-                                // definition at all, so reaching here means the name is one.
-                                operationIdentifier: data.operationIdentifier as OperationIdentifier,
-                            });
-                        }
-                        break;
-                    }
-                    case 'circuit': {
-                        if (!data.id) break;
-
-                        const payload: MoveQuantumOperationRequest = {
-                            quantumOperationId: data.id,
+                if (data.origin === 'library') {
+                    const operation = libraryOperation(data, targetQubits, controlQubits);
+                    if (operation) {
+                        addQuantumOperationLocally(operation, layerIdx);
+                    } else {
+                        onRequestMeasurementTarget?.({
                             layerIdx,
                             targetQubits,
-                            controlQubits: dragged?.type === 'MEASUREMENT' ? [] : controlQubits,
-                            classicBits: dragged?.type === 'MEASUREMENT' ? getClassicBits(dragged) : undefined,
-                        };
-                        if (hasCircuitStateChanged(payload)) {
-                            moveQuantumOperationLocally(payload);
-                        }
-                        break;
+                            controlQubits: [],
+                            // Narrowed by the catalogue lookup: only a built-in resolves to a
+                            // definition at all, so reaching here means the name is one.
+                            operationIdentifier: data.operationIdentifier as OperationIdentifier,
+                        });
                     }
-                    default:
-                        console.error(`Unknown drag origin: ${String((data as Partial<DragData>).origin)}`);
-                        break;
+                } else if (data.origin === 'circuit' && data.id) {
+                    const isMeasurement = dragged?.type === 'MEASUREMENT';
+                    const payload: MoveQuantumOperationRequest = {
+                        quantumOperationId: data.id,
+                        layerIdx,
+                        targetQubits,
+                        controlQubits: isMeasurement ? [] : controlQubits,
+                        classicBits: isMeasurement ? getClassicBits(dragged) : undefined,
+                    };
+                    if (hasCircuitStateChanged(payload)) {
+                        moveQuantumOperationLocally(payload);
+                    }
+                } else if (data.origin !== 'circuit') {
+                    console.error(`Unknown drag origin: ${String((data as Partial<DragData>).origin)}`);
                 }
             } catch (error) {
                 console.error('Failed to parse drag data', error);
@@ -424,9 +431,7 @@ export function DropzoneGrid({
                     // drop — no preventDefault, so the cursor says "no" — while the last valid
                     // preview stays put. A classical row is one of those forbidden positions.
                     const isDroppable =
-                        anchor !== undefined &&
-                        anchor.regType === REGISTER_TYPE_QUANTUM &&
-                        activeDropZones.has(`${anchorIdx}-${layerIdx}`);
+                        anchor?.regType === REGISTER_TYPE_QUANTUM && activeDropZones.has(`${anchorIdx}-${layerIdx}`);
 
                     return (
                         <div

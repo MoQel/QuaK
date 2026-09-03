@@ -1,4 +1,4 @@
-import { OperationIdentifier } from '@/lib/operations.ts';
+import { GateIdentifier } from '@/lib/operations.ts';
 
 export interface ElementSelectorDto {
     registerId: string;
@@ -21,7 +21,7 @@ export interface AbstractQuantumOperationDto {
      * A library gate's name for built-in operations. A composite carries its user-defined gate
      * name here instead, which is why `type` — not this field — decides how an operation renders.
      */
-    identifier: OperationIdentifier | string;
+    identifier: GateIdentifier;
     inverseForm: boolean;
     targetQubits: ElementSelectorDto[];
     controlQubits: ElementSelectorDto[];
