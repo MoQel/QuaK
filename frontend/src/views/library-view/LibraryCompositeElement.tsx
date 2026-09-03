@@ -68,10 +68,17 @@ export function LibraryCompositeElement({ gate }: Readonly<LibraryCompositeEleme
                     className="
                         group cursor-grab active:cursor-grabbing
                         flex items-center justify-center
-                        h-10 w-max min-w-[84px] px-3
+                        w-max min-w-[84px] px-3
                         font-mono font-bold select-none
                         hover:brightness-90 dark:hover:brightness-125 transition-colors"
-                    style={{ backgroundColor: 'var(--composite)', color: 'var(--bg-dark)' }}
+                    style={{
+                        backgroundColor: 'var(--composite)',
+                        color: 'var(--bg-dark)',
+                        // The same height the built-in tiles take, so a row of
+                        // mixed tiles lines up. Tailwind's h-10 is rem-based and
+                        // this panel shrinks rem, which left it 5px short.
+                        height: 'var(--quantumOperationHeight)',
+                    }}
                 >
                     {/* The name sets the width. A built-in's 40px square fits a symbol, not a name:
                         cut to size, every custom gate read as `b…`, `d…`, `r…` and they were

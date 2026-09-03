@@ -77,13 +77,15 @@ export function LibrarySubcircuitElement({ option }: Readonly<LibrarySubcircuitE
                     className="
                         group cursor-grab active:cursor-grabbing
                         flex items-center justify-center
-                        h-10 w-max min-w-[84px] px-3
+                        w-max min-w-[84px] px-3
                         font-mono font-bold select-none
                         hover:brightness-90 dark:hover:brightness-125 transition-colors"
                     style={{
                         backgroundColor: 'var(--composite)',
                         color: 'var(--bg-dark)',
                         opacity: isEmpty ? 0.55 : 1,
+                        // The same height the built-in tiles take, so a row of mixed tiles lines up.
+                        height: 'var(--quantumOperationHeight)',
                     }}
                 >
                     <span className="whitespace-nowrap text-[11px] leading-none">{option.name}</span>

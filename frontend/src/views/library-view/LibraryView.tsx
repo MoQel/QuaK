@@ -8,12 +8,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { api } from '@/api/api.ts';
 import { OperationDefinitionResponse } from '@/api/dto/library.ts';
 import { useCircuitTabs } from '@/contexts/CircuitTabsContext.tsx';
-import { LibraryCompositeElement } from '@/views/library-view/LibraryCompositeElement.tsx';
 import { collectCustomGates } from '@/views/library-view/util/customGates.ts';
-import { LibrarySubcircuitElement } from '@/views/library-view/LibrarySubcircuitElement.tsx';
 import { useSubcircuitOptions } from '@/views/library-view/util/subcircuits.ts';
 import { NewSubcircuitDialog } from '@/views/library-view/NewSubcircuitDialog.tsx';
-import { Plus } from 'lucide-react';
 import { useProject } from '@/contexts/ProjectContext.tsx';
 
 interface LibraryViewProps {
@@ -65,7 +62,10 @@ export function LibraryView({ onOperationSelect }: Readonly<LibraryViewProps>) {
                         {boxMode && (
                             <LibraryBoxView
                                 quantumOperations={quantumOperations}
+                                customGates={customGates}
+                                subcircuits={subcircuits}
                                 onOperationClick={handleOperationClick}
+                                onNewSubcircuit={projectId ? () => setIsNewSubcircuitOpen(true) : undefined}
                             />
                         )}
                         {!boxMode && (
@@ -80,35 +80,6 @@ export function LibraryView({ onOperationSelect }: Readonly<LibraryViewProps>) {
                         the built-ins off the panel. Absent entirely while there are none. */}
                     {/* Always present, unlike the custom gates: without the section there would be
                         no place to create the first subcircuit from. */}
-                    {projectId && (
-                        <div className="shrink-0 max-h-[45%] overflow-auto border-t border-border pt-3">
-                            <div className="flex items-center justify-between mb-2">
-                                <div className="text-xs font-semibold text-text-muted">Subcircuits</div>
-                                <Button
-                                    size="icon"
-                                    variant="ghost"
-                                    className="size-6"
-                                    title="New subcircuit"
-                                    onClick={() => setIsNewSubcircuitOpen(true)}
-                                >
-                                    <Plus className="size-4" />
-                                </Button>
-                            </div>
-                            {subcircuits.length > 0 ? (
-                                <div className="flex flex-wrap gap-3">
-                                    {subcircuits.map((option) => (
-                                        <LibrarySubcircuitElement key={option.circuitId} option={option} />
-                                    ))}
-                                </div>
-                            ) : (
-                                <p className="text-xs text-text-muted">
-                                    Another circuit of this project can be dropped in as one box. None yet — use + to
-                                    create one or adopt an existing file.
-                                </p>
-                            )}
-                        </div>
-                    )}
-
                     <NewSubcircuitDialog
                         open={isNewSubcircuitOpen}
                         onOpenChange={setIsNewSubcircuitOpen}
@@ -116,19 +87,6 @@ export function LibraryView({ onOperationSelect }: Readonly<LibraryViewProps>) {
                         known={subcircuits}
                         onAdded={reloadSubcircuits}
                     />
-
-                    {customGates.length > 0 && (
-                        <div className="shrink-0 max-h-[45%] overflow-auto border-t border-border pt-3">
-                            <div className="text-xs font-semibold text-text-muted mb-2">Custom Gates</div>
-                            {/* Wrapping row rather than the built-ins' fixed 5-column grid: these
-                                tiles are labelled with a name and need whatever width is going. */}
-                            <div className="flex flex-wrap gap-3">
-                                {customGates.map((gate) => (
-                                    <LibraryCompositeElement key={gate.key} gate={gate} />
-                                ))}
-                            </div>
-                        </div>
-                    )}
                 </div>
             </CardContent>
         </Card>

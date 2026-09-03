@@ -55,15 +55,14 @@ const renderLibrary = async (activeCircuit: CircuitResponse | undefined) => {
 };
 
 describe('LibraryView', () => {
+    /** A gate the circuit defines sits among the built-ins, with no heading of its own. */
     it('offers the gates the open circuit defines', async () => {
         await renderLibrary(circuitWith(bell));
 
-        expect(screen.getByText('Custom Gates')).toBeInTheDocument();
         expect(screen.getByText('bell')).toBeInTheDocument();
     });
 
-    /** The section is about the open circuit, so with nothing to show it should not take up room. */
-    it('hides the section while the circuit defines no gates', async () => {
+    it('offers no custom gate while the circuit defines none', async () => {
         await renderLibrary(
             circuitWith({
                 id: 'h',
@@ -76,12 +75,12 @@ describe('LibraryView', () => {
             }),
         );
 
-        expect(screen.queryByText('Custom Gates')).not.toBeInTheDocument();
+        expect(screen.queryByText('bell')).not.toBeInTheDocument();
     });
 
-    it('hides the section while no circuit is open', async () => {
+    it('offers no custom gate while no circuit is open', async () => {
         await renderLibrary(undefined);
 
-        expect(screen.queryByText('Custom Gates')).not.toBeInTheDocument();
+        expect(screen.queryByText('bell')).not.toBeInTheDocument();
     });
 });
