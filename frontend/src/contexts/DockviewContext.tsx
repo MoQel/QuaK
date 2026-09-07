@@ -32,11 +32,6 @@ export const useDockview = () => {
     return ctx;
 };
 
-//this is for the navbar because it appears all the time not only in the IDE
-export const useDockviewOptional = () => {
-    return useContext(DockviewContext);
-};
-
 export const DockviewProvider = ({ children }: { children: React.ReactNode }) => {
     const [api, _setApi] = useState<DockviewApi | null>(null);
     // Ensure group type is set
