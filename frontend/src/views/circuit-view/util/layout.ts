@@ -3,9 +3,8 @@ import type { FlatQubit } from '@/views/circuit-view/util/types.ts';
 
 export const CELL_WIDTH = 64;
 export const QUBIT_HEIGHT = 48;
-export const LABEL_WIDTH = 48;
-export const REGISTER_SECTION_GAP = 20;
-export const REGISTER_HEADER_HEIGHT = 28;
+/** Left column holding the wire labels. Fits `cout[0]` next to a fold control. */
+export const LABEL_WIDTH = 64;
 
 export function getSelectorVisualY(flatQubits: FlatQubit[], selector: ElementSelectorDto): number {
     const exactRow = flatQubits.find(

@@ -2,21 +2,57 @@ package edu.kit.quak.core.circuit.codegen;
 
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.core.circuit.model.layer.Layer;
+import edu.kit.quak.core.circuit.model.layer.operation.CompositeQuantumGate;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementaryQuantumGate;
+import edu.kit.quak.core.circuit.model.layer.operation.Measurement;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
+import edu.kit.quak.core.circuit.model.layer.operation.SubcircuitOperation;
 import edu.kit.quak.core.circuit.model.layer.operation.library.ConcreteQuantumOperation;
 import edu.kit.quak.core.circuit.model.layer.operation.library.QuantumOperationLibrary;
+import edu.kit.quak.core.circuit.model.register.ClassicRegister;
 import edu.kit.quak.core.circuit.model.register.QuantumRegister;
 import edu.kit.quak.core.circuit.model.register.Register;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 public class QasmCodeGenerator {
 
     public static String toCode(QuantumCircuit quantumCircuit) {
         StringBuilder codeStringBuilder = new StringBuilder();
 
+        // 1. Generate pseudo gate definitions for all composite operations at the top
+        List<SubcircuitOperation> compositeOps = quantumCircuit
+            .getLayers()
+            .stream()
+            .flatMap(l -> l.getQuantumOperations().stream())
+            .filter(op -> op instanceof SubcircuitOperation)
+            .map(op -> (SubcircuitOperation) op)
+            .toList();
+
+        Map<String, Integer> distinctComposites = new LinkedHashMap<>();
+        for (SubcircuitOperation op : compositeOps) {
+            distinctComposites.putIfAbsent(op.getDefinitionCircuitId(), op.getTargetQubits().size());
+        }
+
+        if (!distinctComposites.isEmpty()) {
+            for (Map.Entry<String, Integer> entry : distinctComposites.entrySet()) {
+                String defId = entry.getKey();
+                int qubitCount = entry.getValue();
+                String gateName = subcircuitGateName(defId);
+                List<String> paramNames = new ArrayList<>();
+                for (int i = 0; i < qubitCount; i++) {
+                    paramNames.add("q" + i);
+                }
+                codeStringBuilder.append("@composition \"circuit\" ").append(defId).append("\n");
+                codeStringBuilder.append("gate ").append(gateName).append(" ").append(String.join(", ", paramNames)).append(" {\n}\n\n");
+            }
+        }
+
+        // 2. Register declarations
         List<Register> registers = quantumCircuit.getRegisters();
         for (Register register : registers) {
             if (register instanceof QuantumRegister quantumRegister) {
@@ -27,12 +63,22 @@ public class QasmCodeGenerator {
                     .append("] ")
                     .append(quantumRegister.getName())
                     .append(";\n");
+            } else if (register instanceof ClassicRegister classicRegister) {
+                // Declared as well, or a measurement below would write into a register that the
+                // emitted code never introduces -- and the result would not parse back.
+                codeStringBuilder.append("// Register ").append(classicRegister.getName()).append("\n");
+                codeStringBuilder
+                    .append("bit[")
+                    .append(classicRegister.getNumberOfBits())
+                    .append("] ")
+                    .append(classicRegister.getName())
+                    .append(";\n");
             }
-            // TODO classical register?
         }
 
         codeStringBuilder.append("\n");
 
+        // 3. Layers and operations
         List<Layer> layers = quantumCircuit.getLayers();
         for (int layerIdx = 0; layerIdx < layers.size(); layerIdx++) {
             Layer layer = layers.get(layerIdx);
@@ -41,6 +87,17 @@ public class QasmCodeGenerator {
         }
 
         return codeStringBuilder.toString();
+    }
+
+    public static String subcircuitGateName(String definitionCircuitId) {
+        if (definitionCircuitId == null || definitionCircuitId.isBlank()) {
+            return "comp_gate";
+        }
+        String sanitized = definitionCircuitId.replaceAll("[^a-zA-Z0-9_]", "_");
+        if (sanitized.startsWith("comp_")) {
+            return sanitized;
+        }
+        return "comp_" + sanitized;
     }
 
     private static String toCode(QuantumCircuit quantumCircuit, Layer layer) {
@@ -101,6 +158,12 @@ public class QasmCodeGenerator {
             codeStringBuilder.append(" ").append(String.join(", ", qubitStrings));
         }
 
+        // Where a measurement writes its result. Without the arrow the emitted `measure q[0];`
+        // loses the classic bit, and reads back as an incomplete measurement.
+        if (quantumOperation instanceof Measurement measurement && !measurement.getClassicBits().isEmpty()) {
+            codeStringBuilder.append(" -> ").append(toCode(quantumCircuit, measurement.getClassicBits().getFirst()));
+        }
+
         // Semicolon
         codeStringBuilder.append(";");
 
@@ -108,19 +171,29 @@ public class QasmCodeGenerator {
     }
 
     private static String operatorToCode(QuantumOperation quantumOperation) {
-        QuantumOperationLibrary operationDefinition = quantumOperation.getOperationDefinition();
-        String operatorCode = toCode(operationDefinition);
         if (quantumOperation instanceof ElementaryQuantumGate elementaryQuantumGate) {
+            QuantumOperationLibrary operationDefinition = elementaryQuantumGate.getOperationDefinition();
+            String operatorCode = toCode(operationDefinition);
             if (operationDefinition.getDefinition() instanceof ConcreteQuantumOperation<?> definition && definition.isHasRotationAngle()) {
                 return operatorCode + "(" + formatAngle(elementaryQuantumGate.getRotationAngle()) + ")";
             }
             return operatorCode;
         }
 
-        // TODO CompositeOperations
-        // TODO Meassurement
+        if (quantumOperation instanceof Measurement measurement) {
+            return toCode(measurement.getOperationDefinition());
+        }
 
-        return operatorCode;
+        // A user-defined gate's name comes from its own definition, not from the library enum.
+        if (quantumOperation instanceof CompositeQuantumGate composite) {
+            return composite.getGateName();
+        }
+
+        if (quantumOperation instanceof SubcircuitOperation subcircuitOperation) {
+            return subcircuitGateName(subcircuitOperation.getDefinitionCircuitId());
+        }
+
+        return "";
     }
 
     /** Named constants the QASM parser understands, with a small tolerance for round-trip matching. */
@@ -231,7 +304,15 @@ public class QasmCodeGenerator {
     }
 
     private static String toCode(QuantumCircuit quantumCircuit, ElementSelector elementSelector) {
-        String name = quantumCircuit.getQuantumRegisterNameById(elementSelector.getRegisterId());
+        // Not getQuantumRegisterNameById: a measurement's classic bit selects into a classical
+        // register, which that lookup does not know and would fail on.
+        String name = quantumCircuit
+            .getRegisters()
+            .stream()
+            .filter(register -> register.getId().equals(elementSelector.getRegisterId()))
+            .map(Register::getName)
+            .findFirst()
+            .orElseGet(() -> quantumCircuit.getQuantumRegisterNameById(elementSelector.getRegisterId()));
         return name + "[" + elementSelector.getIndex() + "]";
     }
 }

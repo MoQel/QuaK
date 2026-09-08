@@ -98,10 +98,15 @@ public class CircuitService implements CircuitServicePort {
         verifyAccess(existing.getProjectId(), user, ProjectRole.OWNER);
         verifyOperationIdIntegrity(existing, layers);
 
+        // Only registers and layers are content. Everything else the circuit knows about itself has
+        // to be carried over by hand here, or a plain autosave would quietly reset it - which is
+        // what happened to the subcircuit flag: declaring a circuit a building block survived until
+        // the next edit of it.
         QuantumCircuit replacement = QuantumCircuit.builder()
             .id(existing.getId())
             .projectId(existing.getProjectId())
             .fileId(existing.getFileId())
+            .offeredAsSubcircuit(existing.isOfferedAsSubcircuit())
             .registers(registers)
             .layers(layers)
             .build();

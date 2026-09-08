@@ -9,6 +9,7 @@ import lombok.NonNull;
 @Getter
 public class Measurement extends QuantumOperation {
 
+    private QuantumOperationLibrary operationDefinition;
     private List<ElementSelector> classicBits;
 
     public Measurement(
@@ -18,7 +19,8 @@ public class Measurement extends QuantumOperation {
         List<ElementSelector> controlQubits,
         @NonNull List<ElementSelector> classicBits
     ) {
-        super(operationDefinition, inverseForm, targetQubits, controlQubits);
+        super(inverseForm, targetQubits, controlQubits);
+        this.operationDefinition = operationDefinition;
         if (operationDefinition.getDefinition().getType() != getClass()) {
             throw new InvalidOperationConfigurationException(
                 "Operation type mismatch: expected %s but got %s".formatted(getClass(), operationDefinition.getDefinition().getType())
@@ -57,6 +59,17 @@ public class Measurement extends QuantumOperation {
             throw new InvalidOperationConfigurationException("A measurement operation must assign its result to at least one classic bit.");
         }
         this.classicBits = List.copyOf(classicBits);
+    }
+
+    @Override
+    public Measurement copyForQubits(@NonNull List<ElementSelector> targetQubits, @NonNull List<ElementSelector> controlQubits) {
+        return new Measurement(
+            operationDefinition,
+            inverseForm,
+            copySelectors(targetQubits),
+            copySelectors(controlQubits),
+            copySelectors(classicBits)
+        );
     }
 
     @Override

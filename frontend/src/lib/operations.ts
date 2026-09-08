@@ -19,6 +19,15 @@ export type OperationIdentifier =
     | 'MEASURE'
     | 'DUMMY';
 
+/**
+ * The name an operation carries: one of the built-ins above, or a user-defined gate's own name.
+ *
+ * `string & {}` rather than a plain `string`: a bare union with `string` is collapsed to `string`
+ * by the compiler, which drops the built-in names from autocomplete and reads as if the field were
+ * constrained when it is not. This keeps the suggestions while still accepting any name.
+ */
+export type GateIdentifier = OperationIdentifier | (string & {});
+
 const isOperationIdentifier = (identifier: string): identifier is OperationIdentifier => {
     return identifier in OPERATION_DEFINITIONS;
 };

@@ -18,6 +18,7 @@ import java.util.stream.Stream;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
 
 public class QuantumCircuit extends ElementWithId {
 
@@ -31,6 +32,17 @@ public class QuantumCircuit extends ElementWithId {
     @Getter
     private final String fileId;
 
+    /**
+     * Whether this circuit is offered as a building block in other circuits of the project.
+     *
+     * <p>Being a subcircuit is a decision, not a side effect: every file gets a circuit the moment
+     * it is opened, so without this flag the library would offer every file anyone ever looked at -
+     * including the one the user thinks of as their main circuit.
+     */
+    @Getter
+    @Setter
+    private boolean offeredAsSubcircuit;
+
     private final List<Register> registers = new ArrayList<>();
     private final List<Layer> layers = new ArrayList<>();
 
@@ -42,11 +54,19 @@ public class QuantumCircuit extends ElementWithId {
     }
 
     @Builder
-    public QuantumCircuit(String id, String projectId, String fileId, List<Register> registers, List<Layer> layers) {
+    public QuantumCircuit(
+        String id,
+        String projectId,
+        String fileId,
+        boolean offeredAsSubcircuit,
+        List<Register> registers,
+        List<Layer> layers
+    ) {
         super();
         this.id = id;
         this.projectId = projectId;
         this.fileId = fileId;
+        this.offeredAsSubcircuit = offeredAsSubcircuit;
         this.registers.addAll(registers);
         this.layers.addAll(layers);
     }

@@ -14,7 +14,7 @@ interface ElementaryQuantumGateProps {
     layerIdx: number;
     measurementColor?: string;
     isGhost?: boolean;
-    onDragStart: (operationSize: number) => void;
+    onDragStart: (operationSize: number, grabOffset: number) => void;
     onDragEnd: () => void;
     onDelete: () => void;
 }
@@ -90,7 +90,14 @@ export function ElementaryQuantumGate({
         e.dataTransfer.setData('text/plain', JSON.stringify(data));
         e.dataTransfer.effectAllowed = 'move';
 
-        setTimeout(() => onDragStart?.(definition.totalSize), 0);
+        // Which wire of this gate the pointer grabbed, so the box can stay under the cursor
+        // instead of jumping so that its top wire lands there.
+        const bounds = e.currentTarget.getBoundingClientRect();
+        const grabOffset = Math.floor((e.clientY - bounds.top) / QUBIT_HEIGHT);
+
+        // Use setTimeout to ensure the browser captures the element as the "drag image"
+        // before React potentially re-renders or hides it.
+        setTimeout(() => onDragStart?.(definition.totalSize, grabOffset), 0);
     };
 
     const handleDragEnd = () => {

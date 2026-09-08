@@ -3,9 +3,12 @@ import {
     ElementSelectorDto,
     ElementaryQuantumGateDto,
     MeasurementDto,
+    QuantumOperationDto,
     RegisterResponse,
     isClassicRegister,
+    isCompositeGate,
     isQuantumRegister,
+    isSubcircuit,
 } from '@/api/dto/circuit.ts';
 import { MeasurementMapping } from '@/simulation/simulation.types.ts';
 import { throwSimulationError } from '@/simulation/simulation.errors.ts';
@@ -85,18 +88,45 @@ export function createCircuitContext(circuitData: CircuitResponse): CircuitConte
 export function validateOperations(circuitData: CircuitResponse, context: CircuitContext): void {
     for (const layer of circuitData.layers) {
         for (const op of layer.quantumOperations) {
-            if (op.type === 'ELEMENTARY_QUANTUM_GATE') {
-                validateGate(op, context);
-            } else if (op.type === 'MEASUREMENT') {
-                validateMeasurement(op, context);
-            } else {
-                throwSimulationError({
-                    code: 'UNSUPPORTED_OPERATION',
-                    message: `Operation '${op.identifier}' is not supported by the simulator.`,
-                    operationId: op.id,
-                });
-            }
+            validateOperation(op, context);
         }
+    }
+}
+
+/**
+ * A user-defined gate is validated through its body rather than rejected: it carries the gates it
+ * is made of, already bound to the qubits of its call, so the simulator can expand it. A subcircuit
+ * cannot be expanded — its body lives in another circuit that is not loaded here — and is reported
+ * as unsupported instead, which is what keeps it from being silently skipped.
+ */
+function validateOperation(op: QuantumOperationDto, context: CircuitContext): void {
+    if (op.type === 'ELEMENTARY_QUANTUM_GATE') {
+        validateGate(op, context);
+    } else if (op.type === 'MEASUREMENT') {
+        validateMeasurement(op, context);
+    } else if (isCompositeGate(op)) {
+        for (const part of op.body ?? []) {
+            validateOperation(part, context);
+        }
+    } else if (isSubcircuit(op)) {
+        // Resolved by the backend into a body bound to this call's qubits; validated through it,
+        // like a composite. Without one the circuit cannot be run at all, which is worth saying.
+        if (!op.body) {
+            throwSimulationError({
+                code: 'UNSUPPORTED_OPERATION',
+                message: `Subcircuit '${op.definitionName ?? op.identifier}' could not be resolved, so its contents cannot be simulated.`,
+                operationId: op.id,
+            });
+        }
+        for (const part of op.body) {
+            validateOperation(part, context);
+        }
+    } else {
+        throwSimulationError({
+            code: 'UNSUPPORTED_OPERATION',
+            message: `Operation '${op.identifier}' is not supported by the simulator.`,
+            operationId: op.id,
+        });
     }
 }
 

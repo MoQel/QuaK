@@ -1,6 +1,7 @@
 package edu.kit.quak.infrastructure.circuit.out.db.jpa.mapper;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.spy;
 
@@ -72,6 +73,10 @@ class LayerJpaMapperTest {
         // Assert
         assertNotNull(domain);
         assertEquals(1, domain.getQuantumOperations().size());
-        assertEquals(QuantumOperationLibrary.X, domain.getQuantumOperations().getFirst().getOperationDefinition());
+        assertInstanceOf(ElementaryQuantumGate.class, domain.getQuantumOperations().getFirst());
+        assertEquals(
+            QuantumOperationLibrary.X,
+            ((ElementaryQuantumGate) domain.getQuantumOperations().getFirst()).getOperationDefinition()
+        );
     }
 }
