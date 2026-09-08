@@ -6,6 +6,9 @@ import {
     applyGroupType,
     PANEL_TITLES,
     PANELS,
+    getSavedPanelPlacement,
+    resolveSavedPanelPlacement,
+    type SavedPanelPlacement,
 } from '@/lib/layout/layout-utils';
 import type { DockviewApi } from 'dockview-react';
 type PanelKey = keyof typeof PANELS;
@@ -53,6 +56,7 @@ export const DockviewProvider = ({ children }: { children: React.ReactNode }) =>
     };
 
     const [openPanels, setOpenPanels] = useState<Set<PanelKey>>(new Set());
+    const savedPanelPlacementsRef = useRef<Map<PanelKey, SavedPanelPlacement>>(new Map());
     const isResettingRef = useRef(false);
 
     const value = useMemo<DockviewContextType>(() => {
@@ -64,7 +68,9 @@ export const DockviewProvider = ({ children }: { children: React.ReactNode }) =>
             if (!api) return;
             if (api.getPanel(id)) return;
 
-            let position = getOptimalPosition(id, api);
+            const savedPlacement = savedPanelPlacementsRef.current.get(id);
+            const restoredPlacement = savedPlacement ? resolveSavedPanelPlacement(savedPlacement, api) : null;
+            let position = restoredPlacement?.position ?? getOptimalPosition(id, api);
 
             if (!position && api.panels.length > 0) {
                 position = { referencePanel: api.panels[0], direction: 'right' };
@@ -75,6 +81,8 @@ export const DockviewProvider = ({ children }: { children: React.ReactNode }) =>
                 component: id,
                 title: PANEL_TITLES[id],
                 position: position || undefined,
+                initialWidth: restoredPlacement?.initialWidth,
+                initialHeight: restoredPlacement?.initialHeight,
             });
 
             setOpenPanels((prev) => new Set(prev).add(id));
@@ -84,6 +92,8 @@ export const DockviewProvider = ({ children }: { children: React.ReactNode }) =>
             if (!api) return;
             const panel = api.getPanel(id);
             if (!panel) return;
+            const placement = getSavedPanelPlacement(api.toJSON(), id);
+            if (placement) savedPanelPlacementsRef.current.set(id, placement);
             api.removePanel(panel);
             setOpenPanels((prev) => {
                 const next = new Set(prev);
@@ -101,6 +111,7 @@ export const DockviewProvider = ({ children }: { children: React.ReactNode }) =>
         const resetLayout = () => {
             if (!api) return;
             isResettingRef.current = true;
+            savedPanelPlacementsRef.current.clear();
             api.clear();
             localStorage.removeItem(LAYOUT_STORAGE_KEY);
             buildDefaultLayout(api);

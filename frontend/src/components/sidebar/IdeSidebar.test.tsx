@@ -31,15 +31,6 @@ vi.mock('@/contexts/AuthContext.tsx', () => ({
     }),
 }));
 
-vi.mock('@/hooks/useUser.ts', () => ({
-    useCurrentUser: () => ({
-        user: {
-            name: 'Ilias',
-            email: 'ilias@example.com',
-        },
-    }),
-}));
-
 vi.mock('@/theme.tsx', () => ({
     useTheme: () => ({
         theme: 'dark',
@@ -55,9 +46,9 @@ vi.mock('@/components/projects/useProjectActionsDialog.tsx', () => ({
     }),
 }));
 
-const renderSidebar = () =>
+const renderSidebar = (initialEntries = ['/project/project-1']) =>
     render(
-        <MemoryRouter>
+        <MemoryRouter initialEntries={initialEntries}>
             <IdeSidebar />
         </MemoryRouter>,
     );
@@ -126,5 +117,14 @@ describe('IdeSidebar', () => {
             { id: 'project-1', name: 'New Project2' },
             { onDeleted: expect.any(Function) },
         );
+    });
+
+    it('hides IDE panel controls outside project routes', () => {
+        renderSidebar(['/settings']);
+
+        expect(screen.queryByRole('button', { name: 'Project panel' })).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'Circuit panel' })).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'Rename project' })).not.toBeInTheDocument();
+        expect(screen.getByRole('link', { name: 'Settings' })).toHaveClass('text-special');
     });
 });

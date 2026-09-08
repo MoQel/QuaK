@@ -11,7 +11,6 @@ import { useTabsPersistence } from '@/hooks/useTabsPersistence.ts';
 import { useMonacoGarbageCollector } from '@/hooks/editor/useMonacoGarbageCollector.ts';
 import { lspManager } from '@/lsp/LSPClientManager';
 import { useEffect } from 'react';
-import { IdeSidebar } from '@/components/sidebar/IdeSidebar.tsx';
 
 function App() {
     const { onReady } = useDockviewLogic();
@@ -29,17 +28,14 @@ function App() {
     }, [projectId]);
 
     return (
-        <div className="flex h-full w-full overflow-hidden bg-bg-dark">
-            <IdeSidebar />
-            <div className="min-w-0 flex-1">
-                <DockviewReact
-                    components={componentRegistry}
-                    defaultTabComponent={CustomTabRenderer}
-                    leftHeaderActionsComponent={PanelHeaderActions}
-                    onReady={onReady}
-                    className="dockview-theme-custom h-full w-full"
-                />
-            </div>
+        <div className="h-full w-full overflow-hidden bg-bg-dark">
+            <DockviewReact
+                components={componentRegistry}
+                defaultTabComponent={CustomTabRenderer}
+                leftHeaderActionsComponent={PanelHeaderActions}
+                onReady={onReady}
+                className="dockview-theme-custom h-full w-full"
+            />
 
             <Toaster />
         </div>

@@ -24,7 +24,6 @@ import { Button } from '@/components/ui/button.tsx';
 import { useAuth } from '@/contexts/AuthContext.tsx';
 import { useDockview } from '@/contexts/DockviewContext.tsx';
 import { useProject } from '@/contexts/ProjectContext.tsx';
-import { useCurrentUser } from '@/hooks/useUser.ts';
 import { PANELS, PANEL_TITLES } from '@/lib/layout/layout-utils.ts';
 import { cn } from '@/lib/utils.ts';
 import { useProjectActionsDialog } from '@/components/projects/useProjectActionsDialog.tsx';
@@ -66,15 +65,15 @@ const NAV_ITEMS = [
 export function IdeSidebar() {
     const navigate = useNavigate();
     const { pathname } = useLocation();
+    const isIdeView = pathname.startsWith('/project');
     const { logout } = useAuth();
     const { theme, toggleTheme } = useTheme();
     const { projectId, projectName, refreshProject } = useProject();
-    const { user } = useCurrentUser();
     const { dialog, openDeleteProjectDialog, openRenameProjectDialog } = useProjectActionsDialog();
     const { openPanels, togglePanel } = useDockview();
     const [collapsed, setCollapsed] = useState(false);
     const isDark = theme === 'dark';
-    const projectTitle = projectName ?? 'QuaK';
+    const projectTitle = isIdeView ? (projectName ?? 'QuaK') : 'QuaK';
 
     return (
         <aside
@@ -96,7 +95,7 @@ export function IdeSidebar() {
                 {!collapsed && (
                     <>
                         <span className="min-w-0 flex-1 truncate text-lg font-semibold">{projectTitle}</span>
-                        {projectId && projectName && (
+                        {isIdeView && projectId && projectName && (
                             <div className="flex shrink-0 items-center gap-1">
                                 <Button
                                     type="button"
@@ -147,32 +146,36 @@ export function IdeSidebar() {
                 </Button>
             </header>
 
-            <nav className="flex-1 overflow-y-auto px-2 py-5">
-                <SidebarSectionLabel collapsed={collapsed}>Panels</SidebarSectionLabel>
-                <ul className="space-y-1">
-                    {PANEL_ITEMS.map((item) => {
-                        const isOpen = openPanels.has(item.id);
-                        const Icon = item.icon;
-                        const title = `${PANEL_TITLES[item.id]} panel`;
+            {isIdeView ? (
+                <nav className="flex-1 overflow-y-auto px-2 py-5">
+                    <SidebarSectionLabel collapsed={collapsed}>Panels</SidebarSectionLabel>
+                    <ul className="space-y-1">
+                        {PANEL_ITEMS.map((item) => {
+                            const isOpen = openPanels.has(item.id);
+                            const Icon = item.icon;
+                            const title = `${PANEL_TITLES[item.id]} panel`;
 
-                        return (
-                            <li key={item.id}>
-                                <button
-                                    type="button"
-                                    className={sidebarItemClassName({ active: isOpen, collapsed })}
-                                    aria-pressed={isOpen}
-                                    aria-label={title}
-                                    title={collapsed ? title : undefined}
-                                    onClick={() => togglePanel(item.id)}
-                                >
-                                    <Icon className="size-5 shrink-0" />
-                                    {!collapsed && <span className="truncate">{PANEL_TITLES[item.id]}</span>}
-                                </button>
-                            </li>
-                        );
-                    })}
-                </ul>
-            </nav>
+                            return (
+                                <li key={item.id}>
+                                    <button
+                                        type="button"
+                                        className={sidebarItemClassName({ active: isOpen, collapsed })}
+                                        aria-pressed={isOpen}
+                                        aria-label={title}
+                                        title={collapsed ? title : undefined}
+                                        onClick={() => togglePanel(item.id)}
+                                    >
+                                        <Icon className="size-5 shrink-0" />
+                                        {!collapsed && <span className="truncate">{PANEL_TITLES[item.id]}</span>}
+                                    </button>
+                                </li>
+                            );
+                        })}
+                    </ul>
+                </nav>
+            ) : (
+                <div className="flex-1" />
+            )}
 
             <footer className="shrink-0 border-t border-border px-2 py-4">
                 <SidebarSectionLabel collapsed={collapsed}>Navigation</SidebarSectionLabel>
@@ -197,7 +200,7 @@ export function IdeSidebar() {
                     })}
                 </ul>
 
-                <div className="mt-4 space-y-1">
+                <div className="mt-1 space-y-1">
                     <button
                         type="button"
                         className={sidebarItemClassName({ collapsed, muted: true })}
@@ -206,34 +209,9 @@ export function IdeSidebar() {
                         title={collapsed ? 'Dark Mode' : undefined}
                         onClick={toggleTheme}
                     >
-                        {isDark ? <Moon className="size-5 shrink-0" /> : <Sun className="size-5 shrink-0" />}
-                        {!collapsed && (
-                            <>
-                                <span className="min-w-0 flex-1 truncate text-left">Dark Mode</span>
-                                <span
-                                    className={cn(
-                                        'relative h-6 w-11 rounded-full bg-bg-light transition-colors shadow-inner',
-                                        isDark && 'bg-special',
-                                    )}
-                                    aria-hidden="true"
-                                >
-                                    <span
-                                        className={cn(
-                                            'absolute left-1 top-1 size-4 rounded-full bg-white transition-transform',
-                                            isDark && 'translate-x-5',
-                                        )}
-                                    />
-                                </span>
-                            </>
-                        )}
+                        {isDark ? <Sun className="size-5 shrink-0" /> : <Moon className="size-5 shrink-0" />}
+                        {!collapsed && <span className="truncate text-left">Dark Mode</span>}
                     </button>
-
-                    {user && !collapsed && (
-                        <div className="px-3 py-2 text-xs text-text-muted">
-                            <div className="truncate font-semibold text-text">{user.name}</div>
-                            <div className="truncate">{user.email}</div>
-                        </div>
-                    )}
 
                     <button
                         type="button"
