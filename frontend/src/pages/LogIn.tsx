@@ -42,7 +42,7 @@ export const LoginOptions: React.FC = () => {
             <button
                 type="button"
                 onClick={() => login('google')}
-                className="flex w-full cursor-pointer items-center justify-center gap-3 border border-[#8d9692] bg-white px-5 py-3.5 text-sm font-bold hover:border-[#00876c] hover:text-[#00735c]"
+                className="flex w-full rounded-xl cursor-pointer items-center justify-center gap-3 border border-[#8d9692] bg-white px-5 py-3.5 text-sm font-bold hover:border-[#00876c] hover:text-[#00735c]"
             >
                 <GoogleMark />
                 Continue with Google
@@ -50,7 +50,7 @@ export const LoginOptions: React.FC = () => {
             <button
                 type="button"
                 onClick={() => login('github')}
-                className="flex w-full cursor-pointer items-center justify-center gap-3 bg-[#202725] px-5 py-3.5 text-sm font-bold text-white hover:bg-black"
+                className="flex w-full rounded-xl cursor-pointer items-center justify-center gap-3 bg-[#202725] px-5 py-3.5 text-sm font-bold text-white hover:bg-black"
             >
                 <GithubMark />
                 Continue with GitHub
@@ -66,7 +66,7 @@ export const LogIn: React.FC = () => {
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     useEffect(() => {
-        if (isAuthenticated) navigate('/app');
+        if (isAuthenticated) navigate('/');
     }, [isAuthenticated, navigate]);
 
     useEffect(() => {
@@ -89,12 +89,12 @@ export const LogIn: React.FC = () => {
                     QuaK
                 </Link>
 
-                <section className="my-auto w-full max-w-md self-center border border-[#c9cfcc] bg-[#fbfbf9] p-7 sm:p-10">
+                <section className="my-auto w-full max-w-md self-center rounded-3xl border border-[#c9cfcc] bg-[#fbfbf9] p-7 sm:p-10">
                     <p className="text-xs font-bold uppercase tracking-[0.15em] text-[#59635f]">Workspace access</p>
                     <h1 className="mt-3 text-3xl font-normal">Sign in to QuaK</h1>
 
                     {errorMessage && (
-                        <div className="mt-5 border-l-4 border-[#a22223] bg-[#f5e8e8] px-4 py-3 text-sm text-[#791f20]">
+                        <div className="mt-5 rounded-xl border-l-4 border-[#a22223] bg-[#f5e8e8] px-4 py-3 text-sm text-[#791f20]">
                             {errorMessage}
                         </div>
                     )}

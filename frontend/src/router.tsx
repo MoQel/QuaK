@@ -1,4 +1,4 @@
-import { createBrowserRouter, RouteObject } from 'react-router-dom';
+import { createBrowserRouter, RouteObject, useLocation } from 'react-router-dom';
 import Project from './App';
 import LandingPage from './pages/LandingPageAlternative';
 import LogIn from './pages/LogIn';
@@ -7,18 +7,26 @@ import Profile from './pages/Profile';
 import Settings from './pages/Settings';
 import NotFound from './pages/NotFound';
 import Layout from './components/Layout';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
+// Keep the application's original URLs while making the home URL public to visitors.
+function LandingOrApplication() {
+    const { isAuthenticated, isLoading } = useAuth();
+    const { pathname } = useLocation();
+
+    if (pathname === '/' && !isLoading && !isAuthenticated) {
+        return <LandingPage />;
+    }
+
+    return (
+        <ProtectedRoute>
+            <Layout />
+        </ProtectedRoute>
+    );
+}
+
 const routes: RouteObject[] = [
-    {
-        path: '/',
-        element: (
-            <AuthProvider>
-                <LandingPage />
-            </AuthProvider>
-        ),
-    },
     {
         path: '/login',
         element: (
@@ -28,12 +36,10 @@ const routes: RouteObject[] = [
         ),
     },
     {
-        path: '/app',
+        path: '/',
         element: (
             <AuthProvider>
-                <ProtectedRoute>
-                    <Layout />
-                </ProtectedRoute>
+                <LandingOrApplication />
             </AuthProvider>
         ),
         children: [
