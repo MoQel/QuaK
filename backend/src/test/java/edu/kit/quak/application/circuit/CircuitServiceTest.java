@@ -170,6 +170,31 @@ class CircuitServiceTest {
     }
 
     @Test
+    void replaceContent_keepsTheSubcircuitDeclaration() {
+        // A full-replace save rebuilds the circuit from its content, so anything that is not content
+        // has to be carried over deliberately. Losing this flag meant declaring a circuit a building
+        // block held only until the next edit of that circuit.
+        String circuitId = "c-1";
+        String projectId = "p-1";
+        User user = mockUser();
+        QuantumCircuit existing = QuantumCircuit.builder()
+            .id(circuitId)
+            .projectId(projectId)
+            .fileId("f-1")
+            .offeredAsSubcircuit(true)
+            .registers(List.of())
+            .layers(List.of())
+            .build();
+        when(repository.findById(circuitId)).thenReturn(Optional.of(existing));
+        when(repository.save(any(QuantumCircuit.class))).thenAnswer(i -> i.getArguments()[0]);
+        mockAccess(projectId, user, ProjectRole.OWNER);
+
+        QuantumCircuit result = service.replaceContent(circuitId, List.of(), List.of(), user);
+
+        assertTrue(result.isOfferedAsSubcircuit());
+    }
+
+    @Test
     void replaceContent_rejectsOperationIdsOfAnotherCircuit() {
         // setup: "stolen-1" is persisted for a different circuit
         String circuitId = "c-1";
@@ -302,10 +327,10 @@ class CircuitServiceTest {
         mockAccess(projectId, user, ProjectRole.OWNER);
 
         // execute
-        QuantumCircuit result = service.moveQuantumOperation(circuitId, operationId, layerIdx, targetQubits, controlQubits, user);
+        QuantumCircuit result = service.moveQuantumOperation(circuitId, operationId, layerIdx, targetQubits, controlQubits, null, user);
 
         // verify delegation and save
-        verify(circuitMock).moveQuantumOperation(operationId, layerIdx, targetQubits, controlQubits);
+        verify(circuitMock).moveQuantumOperation(operationId, layerIdx, targetQubits, controlQubits, null);
         verify(repository).save(circuitMock);
         assertEquals(circuitMock, result);
     }
@@ -343,7 +368,7 @@ class CircuitServiceTest {
 
         // Act & Assert
         CircuitNotFoundException exception = assertThrows(CircuitNotFoundException.class, () ->
-            service.moveQuantumOperation(circuitId, "H", 0, emptyTargets, emptyControls, user)
+            service.moveQuantumOperation(circuitId, "H", 0, emptyTargets, emptyControls, null, user)
         );
 
         // verify context data (RFC 7807)

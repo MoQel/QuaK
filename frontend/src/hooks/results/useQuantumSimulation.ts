@@ -3,7 +3,6 @@ import { CircuitResponse } from '@/api/dto/circuit.ts';
 import { WorkerRequest, WorkerResponse } from '@/workers/messages.ts';
 import { SimulationResult, SimulationOptions } from '@/simulation/simulation.types.ts';
 
-// Debounce delay in milliseconds
 const SIMULATION_DELAY_MS = 300;
 
 export function useQuantumSimulation(circuit: CircuitResponse | undefined, options: SimulationOptions = {}) {
@@ -25,13 +24,13 @@ export function useQuantumSimulation(circuit: CircuitResponse | undefined, optio
         worker.onmessage = (event: MessageEvent<WorkerResponse>) => {
             const msg = event.data;
 
-            // Discard responses from outdated requests
             if (msg.requestId !== requestIdRef.current) return;
 
             if (msg.type === 'SUCCESS') {
                 setResult(msg.payload);
                 setError(null);
             } else {
+                setResult(null);
                 setError(msg.error);
             }
 
@@ -43,30 +42,29 @@ export function useQuantumSimulation(circuit: CircuitResponse | undefined, optio
         };
     }, []);
 
-    // Handle circuit or option changes with debouncing
     useEffect(() => {
-        // Clear any pending simulation request
         if (debounceTimerRef.current) {
             clearTimeout(debounceTimerRef.current);
         }
 
-        // Reset if circuit is empty
         if (!circuit) {
             setResult(null);
+            setError(null);
             setIsCalculating(false);
             return;
         }
 
+        setResult(null);
+        setError(null);
+
         setIsCalculating(true);
 
-        // Start debounce timer
         debounceTimerRef.current = setTimeout(() => {
             if (!workerRef.current) return;
 
             const requestId = ++requestIdRef.current;
             setIsCalculating(true);
 
-            // Send to worker including options
             workerRef.current.postMessage({
                 type: 'CALCULATE_CIRCUIT',
                 requestId,
@@ -75,14 +73,12 @@ export function useQuantumSimulation(circuit: CircuitResponse | undefined, optio
             } satisfies WorkerRequest);
         }, SIMULATION_DELAY_MS);
 
-        // Cleanup timer on unmount or dependency change
         return () => {
             if (debounceTimerRef.current) {
                 clearTimeout(debounceTimerRef.current);
             }
         };
-    }, [circuit, options.mode, options.sampleCount, options.maxCircuitWidth]);
-    // Note: We decompose 'options' in deps to avoid re-runs on new object references
+    }, [circuit, options.mode, options.measurementMode, options.sampleCount, options.maxCircuitWidth]);
 
     return { result, isCalculating, error };
 }

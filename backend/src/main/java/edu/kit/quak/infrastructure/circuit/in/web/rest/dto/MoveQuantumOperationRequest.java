@@ -6,5 +6,6 @@ public record MoveQuantumOperationRequest(
     String quantumOperationId,
     int layerIdx,
     List<ElementSelectorDto> targetQubits,
-    List<ElementSelectorDto> controlQubits
+    List<ElementSelectorDto> controlQubits,
+    List<ElementSelectorDto> classicBits
 ) {}

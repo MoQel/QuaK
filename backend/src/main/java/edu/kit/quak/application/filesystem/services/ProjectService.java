@@ -4,14 +4,17 @@ import edu.kit.quak.application.circuit.ports.in.CircuitServicePort;
 import edu.kit.quak.application.common.exceptions.AccessDeniedException;
 import edu.kit.quak.application.filesystem.exception.ProjectNotFoundException;
 import edu.kit.quak.application.filesystem.ports.in.ProjectServicePort;
+import edu.kit.quak.application.filesystem.ports.out.FileContentRepositoryPort;
 import edu.kit.quak.application.filesystem.ports.out.ProjectRepositoryPort;
 import edu.kit.quak.application.user.ports.in.ProjectRoleServicePort;
 import edu.kit.quak.application.user.ports.out.ProjectRoleRepositoryPort;
 import edu.kit.quak.core.filesystem.exception.DuplicateNameException;
+import edu.kit.quak.core.filesystem.model.File;
 import edu.kit.quak.core.filesystem.model.Project;
 import edu.kit.quak.core.user.model.ProjectRole;
 import edu.kit.quak.core.user.model.ProjectRoleAssignment;
 import edu.kit.quak.core.user.model.User;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
@@ -23,18 +26,31 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class ProjectService implements ProjectServicePort {
 
+    private static final String INITIAL_QASM_FILE_NAME = "hello_world.qasm";
+    private static final String INITIAL_QASM_CONTENT = """
+        OPENQASM 3.0;
+
+        qubit[2] q;
+
+        h q[0];
+        cx q[0], q[1];
+        """;
+
     private final ProjectRepositoryPort repository;
+    private final FileContentRepositoryPort fileContentRepository;
     private final ProjectRoleServicePort roleService;
     private final ProjectRoleRepositoryPort roleRepository;
     private final CircuitServicePort circuitService;
 
     public ProjectService(
         ProjectRepositoryPort repository,
+        FileContentRepositoryPort fileContentRepository,
         ProjectRoleServicePort roleService,
         ProjectRoleRepositoryPort roleRepository,
         CircuitServicePort circuitService
     ) {
         this.repository = repository;
+        this.fileContentRepository = fileContentRepository;
         this.roleService = roleService;
         this.roleRepository = roleRepository;
         this.circuitService = circuitService;
@@ -45,7 +61,10 @@ public class ProjectService implements ProjectServicePort {
         log.info("Creating project '{}' for user '{}'", project.getName(), user.getId());
         checkForDuplicateProjectName(project.getName(), null, user);
         project.setOwnerId(user.getId());
+        File initialFile = new File(INITIAL_QASM_FILE_NAME, project.getId());
+        project.addChild(initialFile);
         Project savedProject = repository.save(project);
+        fileContentRepository.saveContent(initialFile.getId(), INITIAL_QASM_CONTENT.getBytes(StandardCharsets.UTF_8));
 
         // Auto-assign OWNER role to the creator
         ProjectRoleAssignment ownerRole = new ProjectRoleAssignment(user.getId(), savedProject.getId(), ProjectRole.OWNER);
