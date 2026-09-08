@@ -7,6 +7,7 @@ import {
     SubcircuitOperationDto,
     isClassicRegister,
     isQuantumRegister,
+    LoopBlockDto,
     QuantumOperationDto,
     RegisterResponse,
     REGISTER_TYPE_CLASSIC,
@@ -143,9 +144,14 @@ type ParserLayer = {
     quantumOperations?: ParserOperation[];
 };
 
+type ParserLoopBlock = Partial<LoopBlockDto>;
+
+// Content-only parse result: the backend returns registers, layers and repetition frames without
+// any circuit identity; ids are re-mapped onto the active circuit during normalization.
 type ParserCircuit = {
     registers?: ParserRegister[];
     layers?: ParserLayer[];
+    loopBlocks?: ParserLoopBlock[];
 };
 
 const extractIdentifier = (operation: ParserOperation): OperationIdentifier => {
@@ -162,6 +168,7 @@ const extractIdentifier = (operation: ParserOperation): OperationIdentifier => {
     return 'DUMMY';
 };
 
+/** Exported for tests: this is the one path everything the parser produces has to survive. */
 export const normalizeParsedCircuit = (
     rawCircuit: unknown,
     currentCircuit: CircuitResponse | undefined,
@@ -291,11 +298,37 @@ export const normalizeParsedCircuit = (
         } as QuantumOperationDto;
     };
 
+    const layers = (parsed.layers ?? []).map((layer) => ({
+        quantumOperations: (layer.quantumOperations ?? []).map(normalizeOperation),
+    }));
+
     return {
         id: currentCircuit?.id ?? crypto.randomUUID(),
         registers,
-        layers: (parsed.layers ?? []).map((layer) => ({
-            quantumOperations: (layer.quantumOperations ?? []).map(normalizeOperation),
-        })),
+        layers,
+        loopBlocks: normalizeLoopBlocks(parsed.loopBlocks, layers),
     };
+};
+
+/**
+ * Carries the parsed repetition frames over, keeping only those whose members survived.
+ *
+ * A frame references operations by id, and `normalizeOperation` invents an id for an operation that
+ * arrives without one — a frame pointing at a replaced id would be rejected by the backend on the
+ * next save (422) with nothing the user could do about it. Dropping such a frame loses the box but
+ * keeps the circuit; the gates themselves are all still there.
+ */
+const normalizeLoopBlocks = (
+    parsedBlocks: ParserLoopBlock[] | undefined,
+    layers: CircuitResponse['layers'],
+): LoopBlockDto[] => {
+    const present = new Set(layers.flatMap((layer) => layer.quantumOperations.map((op) => op.id)));
+
+    return (parsedBlocks ?? [])
+        .map((block) => ({
+            id: block.id ?? crypto.randomUUID(),
+            repeatCount: block.repeatCount ?? 0,
+            operationIds: (block.operationIds ?? []).filter((id) => present.has(id)),
+        }))
+        .filter((block) => block.repeatCount >= 2 && block.operationIds.length > 0);
 };

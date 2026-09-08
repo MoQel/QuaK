@@ -5,6 +5,7 @@ import {
     ElementaryQuantumGateDto,
     ElementSelectorDto,
     isCompositeGate,
+    LoopBlockDto,
 } from '@/api/dto/circuit.ts';
 import { ungroupComposite } from './ungroupComposite.ts';
 
@@ -39,17 +40,61 @@ const bell = (overrides: Partial<CompositeQuantumGateDto> = {}): CompositeQuantu
     ...overrides,
 });
 
-const layersOf = (...layers: CircuitResponse['layers'][number]['quantumOperations'][]): CircuitResponse['layers'] =>
-    layers.map((quantumOperations) => ({ quantumOperations }));
+const circuitOf = (
+    layers: CircuitResponse['layers'][number]['quantumOperations'][],
+    loopBlocks: LoopBlockDto[] = [],
+): CircuitResponse => ({
+    id: 'c1',
+    registers: [{ id: 'r1', name: 'q', type: 'Quantum_Register', numberOfQubits: 4 }],
+    layers: layers.map((quantumOperations) => ({ quantumOperations })),
+    loopBlocks,
+});
 
-const identifiersPerLayer = (layers: CircuitResponse['layers']): string[][] =>
-    layers.map((layer) => layer.quantumOperations.map((op) => op.identifier as string));
+const identifiersPerLayer = (circuit: CircuitResponse): string[][] =>
+    circuit.layers.map((layer) => layer.quantumOperations.map((op) => op.identifier as string));
 
 describe('ungroupComposite', () => {
     it('replaces the box by its body, one operation per layer so program order survives', () => {
-        const result = ungroupComposite(layersOf([bell()]), 'composite');
+        const result = ungroupComposite(circuitOf([[bell()]]), 'composite');
 
         expect(identifiersPerLayer(result)).toEqual([['H'], ['X']]);
+    });
+
+    /**
+     * A frame holds ids, so dissolving the gate it covered would leave it pointing at nothing and
+     * the loop would silently disappear along with the box.
+     */
+    it('hands the box’s place in a frame to the operations that replaced it', () => {
+        const circuit = circuitOf([[bell()]], [{ id: 'loop', repeatCount: 3, operationIds: ['composite'] }]);
+
+        const result = ungroupComposite(circuit, 'composite');
+
+        const freedIds = result.layers.flatMap((layer) => layer.quantumOperations.map((op) => op.id!));
+        expect(result.loopBlocks).toEqual([{ id: 'loop', repeatCount: 3, operationIds: freedIds }]);
+    });
+
+    it('keeps the freed operations in program order inside the frame', () => {
+        const circuit = circuitOf(
+            [[gate('before', 'Y', [3]), bell()]],
+            [{ id: 'loop', repeatCount: 2, operationIds: ['before', 'composite'] }],
+        );
+
+        const result = ungroupComposite(circuit, 'composite');
+
+        // 'before' keeps its slot, the two freed gates take the box's place behind it.
+        expect(result.loopBlocks![0].operationIds).toHaveLength(3);
+        expect(result.loopBlocks![0].operationIds[0]).toBe('before');
+    });
+
+    it('leaves frames that did not cover the box alone', () => {
+        const circuit = circuitOf(
+            [[bell(), gate('other', 'Y', [3])]],
+            [{ id: 'loop', repeatCount: 2, operationIds: ['other'] }],
+        );
+
+        expect(ungroupComposite(circuit, 'composite').loopBlocks).toEqual([
+            { id: 'loop', repeatCount: 2, operationIds: ['other'] },
+        ]);
     });
 
     /**
@@ -59,18 +104,18 @@ describe('ungroupComposite', () => {
      */
     it('keeps a body that acts bottom-up in its written order', () => {
         const result = ungroupComposite(
-            layersOf([bell({ body: [gate('body-h', 'H', [1]), gate('body-cx', 'X', [1], [0])] })]),
+            circuitOf([[bell({ body: [gate('body-h', 'H', [1]), gate('body-cx', 'X', [1], [0])] })]]),
             'composite',
         );
 
         expect(identifiersPerLayer(result)).toEqual([['H'], ['X']]);
-        expect(result[0].quantumOperations[0].targetQubits).toEqual([qubit(1)]);
+        expect(result.layers[0].quantumOperations[0].targetQubits).toEqual([qubit(1)]);
     });
 
     it('gives every freed operation a fresh identity', () => {
-        const result = ungroupComposite(layersOf([bell()]), 'composite');
+        const result = ungroupComposite(circuitOf([[bell()]]), 'composite');
 
-        const ids = result.flatMap((layer) => layer.quantumOperations.map((op) => op.id));
+        const ids = result.layers.flatMap((layer) => layer.quantumOperations.map((op) => op.id));
         expect(ids).toHaveLength(2);
         expect(new Set(ids).size).toBe(2);
         expect(ids).not.toContain('body-h');
@@ -80,7 +125,7 @@ describe('ungroupComposite', () => {
 
     it('leaves the rest of the box’s layer in place and keeps later layers behind the body', () => {
         const result = ungroupComposite(
-            layersOf([bell(), gate('other', 'Y', [3])], [gate('later', 'Z', [0])]),
+            circuitOf([[bell(), gate('other', 'Y', [3])], [gate('later', 'Z', [0])]]),
             'composite',
         );
 
@@ -92,24 +137,24 @@ describe('ungroupComposite', () => {
         const nested = bell({ id: 'nested', identifier: 'inner' });
         const outer = bell({ id: 'composite', identifier: 'outer', body: [gate('body-h', 'H', [0]), nested] });
 
-        const result = ungroupComposite(layersOf([outer]), 'composite');
+        const result = ungroupComposite(circuitOf([[outer]]), 'composite');
 
-        const freed = result[1].quantumOperations[0];
+        const freed = result.layers[1].quantumOperations[0];
         expect(isCompositeGate(freed)).toBe(true);
         expect(freed.identifier).toBe('inner');
         expect(isCompositeGate(freed) && freed.body.map((op) => op.identifier)).toEqual(['H', 'X']);
     });
 
     it('drops a gate with an empty body, and the layer with it', () => {
-        const result = ungroupComposite(layersOf([bell({ body: [] })]), 'composite');
+        const result = ungroupComposite(circuitOf([[bell({ body: [] })]]), 'composite');
 
-        expect(result).toEqual([]);
+        expect(result.layers).toEqual([]);
     });
 
     it('changes nothing for an unknown id or an operation that is not a composite', () => {
-        const layers = layersOf([bell(), gate('plain', 'Y', [3])]);
+        const circuit = circuitOf([[bell(), gate('plain', 'Y', [3])]]);
 
-        expect(ungroupComposite(layers, 'plain')).toBe(layers);
-        expect(ungroupComposite(layers, 'nobody')).toBe(layers);
+        expect(ungroupComposite(circuit, 'plain')).toBe(circuit);
+        expect(ungroupComposite(circuit, 'nobody')).toBe(circuit);
     });
 });

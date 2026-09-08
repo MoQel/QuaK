@@ -18,6 +18,7 @@ import {
     validateOperations,
 } from '@/simulation/circuitContext.ts';
 import { applyGateToState } from '@/simulation/qulacsGates.ts';
+import { toExecutionOrder } from '@/lib/loopBlocks.ts';
 import {
     Bit,
     buildOutcomes,
@@ -235,15 +236,16 @@ export class QulacsMapper {
     ): MeasurementResult[] {
         const measurementResults: MeasurementResult[] = [];
 
-        for (const layer of circuitData.layers) {
-            for (const op of layer.quantumOperations) {
-                if (op.type === 'MEASUREMENT') {
-                    measurementResults.push(...this.applyMeasurement(state, op, context, sampleCount));
-                    continue;
-                }
-                for (const gate of this.toElementaryGates(op)) {
-                    applyGateToState(state, gate, context.quantumOffsets);
-                }
+        // Execution order rather than layer by layer: a repetition frame means its body runs *n*
+        // times, and reading the layers directly would run it once -- simulating a different
+        // circuit than the editor shows, silently, since the frame still looks right there.
+        for (const op of toExecutionOrder(circuitData)) {
+            if (op.type === 'MEASUREMENT') {
+                measurementResults.push(...this.applyMeasurement(state, op, context, sampleCount));
+                continue;
+            }
+            for (const gate of this.toElementaryGates(op)) {
+                applyGateToState(state, gate, context.quantumOffsets);
             }
         }
 
