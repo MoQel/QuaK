@@ -118,8 +118,8 @@
 }
 
 .landing-page .landing-brand-subtitle {
-    max-width: 30ch;
-    font-size: 14px;
+    white-space: nowrap;
+    font-size: clamp(12px, 3.5vw, 14px);
     line-height: 1.4;
 }
 
