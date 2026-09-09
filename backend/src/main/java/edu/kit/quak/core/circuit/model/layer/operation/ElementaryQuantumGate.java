@@ -11,6 +11,7 @@ import lombok.Setter;
 @Setter
 public class ElementaryQuantumGate extends QuantumOperation {
 
+    private QuantumOperationLibrary operationDefinition;
     private double rotationAngle;
 
     public ElementaryQuantumGate(
@@ -20,13 +21,25 @@ public class ElementaryQuantumGate extends QuantumOperation {
         List<ElementSelector> controlQubits,
         double rotationAngle
     ) {
-        super(operationDefinition, inverseForm, targetQubits, controlQubits);
+        super(inverseForm, targetQubits, controlQubits);
+        this.operationDefinition = operationDefinition;
         this.rotationAngle = rotationAngle;
         if (operationDefinition.getDefinition().getType() != getClass()) {
             throw new InvalidOperationConfigurationException(
                 "Operation type mismatch: expected %s but got %s".formatted(getClass(), operationDefinition.getDefinition().getType())
             );
         }
+    }
+
+    @Override
+    public ElementaryQuantumGate copyForQubits(@NonNull List<ElementSelector> targetQubits, @NonNull List<ElementSelector> controlQubits) {
+        return new ElementaryQuantumGate(
+            operationDefinition,
+            inverseForm,
+            copySelectors(targetQubits),
+            copySelectors(controlQubits),
+            rotationAngle
+        );
     }
 
     @Override

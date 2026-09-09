@@ -37,11 +37,6 @@ export function UnsavedChangesAlertDialog() {
                 break;
         }
 
-        // Trigger close panel event if should close is set
-        if (pendingAction.shouldCloseCodePanel) {
-            globalThis.dispatchEvent(new CustomEvent('dockview-close-panel-code'));
-        }
-
         // Clear the pending state
         dispatch(setPendingClose(null));
     };

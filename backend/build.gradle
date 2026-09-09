@@ -1,5 +1,6 @@
 plugins {
 	id 'java'
+	id 'antlr'
 	id 'org.springframework.boot' version '3.4.5'
 	id 'io.spring.dependency-management' version '1.1.7'
 	id "com.github.node-gradle.node" version "7.1.0"
@@ -21,13 +22,29 @@ repositories {
     mavenCentral()
 }
 
+def npmExecutableSuffix =
+	System.getProperty('os.name').toLowerCase().contains('windows')
+		? '/npm.cmd'
+		: '/bin/npm'
+
+def spotlessNpmExecutable =
+	"${tasks.named('npmSetup').get().npmDir.get()}${npmExecutableSuffix}"
+
 spotless {
 	java {
 		target 'src/*/java/**/*.java'
 		importOrder()
 		removeUnusedImports()
-		prettier(['prettier-plugin-java': '2.8.1']).configFile('.prettierrc.yaml')
+
+		prettier(['prettier-plugin-java': '2.8.1'])
+			.npmExecutable(spotlessNpmExecutable)
+			.configFile('.prettierrc.yaml')
 	}
+}
+
+tasks.named('spotlessJava').configure {
+	dependsOn tasks.named('nodeSetup')
+	dependsOn tasks.named('npmSetup')
 }
 
 
@@ -36,8 +53,11 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-jdbc'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+	implementation "org.antlr:antlr4-runtime:4.13.1"
+	antlr "org.antlr:antlr4:4.13.1"
 	implementation 'org.springframework.boot:spring-boot-starter-websocket'
-	
+
 	// Lombok - must be declared before MapStruct for proper annotation processor ordering
 	compileOnly 'org.projectlombok:lombok:1.18.30'
 	annotationProcessor 'org.projectlombok:lombok:1.18.30'
@@ -59,6 +79,24 @@ dependencies {
 	testImplementation 'org.springframework.security:spring-security-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
+
+// Including parser and lexer in generated-src
+def generatedRoot = layout.buildDirectory.dir("generated-src/antlr/main")
+def generatedPkg  = generatedRoot.map { it.dir("edu/kit/quak/application/circuit/antlr") }
+
+generateGrammarSource {
+	maxHeapSize = "64m"
+	arguments += ['-visitor', '-long-messages', '-package', 'edu.kit.quak.application.circuit.antlr']
+
+	outputDirectory = generatedPkg.get().asFile
+}
+
+sourceSets.main.java.srcDir(generatedRoot)
+
+tasks.compileJava {
+	dependsOn(tasks.named("generateGrammarSource"))
+}
+
 
 tasks.register('cleanFrontendFiles', Delete) {
     group = 'QuaK'
@@ -85,7 +123,7 @@ tasks.register('prepareDevStatic') {
 	doLast {
 		def staticDir = file("src/main/resources/static")
 		if (!staticDir.exists()) staticDir.mkdirs()
-		
+
 		// Delete stale files
 		staticDir.listFiles().each { f ->
 			if (f.name != ".gitkeep") {
@@ -139,6 +177,7 @@ tasks.named("processResources") {
 tasks.named("bootRun") {
 	group = 'QuaK'
 	mainClass = 'edu.kit.quak.QuaKApplication'
+	dependsOn generateGrammarSource
 
 	// Load environment variables from .env file for local development
 	if (file(".env").exists()) {
@@ -282,4 +321,3 @@ openApi {
         args.set(["--spring.profiles.active=dev"])
     }
 }
-

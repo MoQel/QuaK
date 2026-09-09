@@ -1,5 +1,6 @@
 package edu.kit.quak.integration.filesystem;
 
+import static org.hamcrest.Matchers.hasItem;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.oidcLogin;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -158,7 +159,7 @@ class ProjectLifecycleIntegrationTest {
             .perform(get("/api/project/" + projectId).with(authenticatedUser()))
             .andExpect(status().isOk())
             // Should the directory contain
-            .andExpect(jsonPath("$.contents[0].id").value(dirId));
+            .andExpect(jsonPath("$.contents[*].id").value(hasItem(dirId)));
 
         // Delete Project (Cascading Delete Test)
         mockMvc.perform(delete("/api/project/" + projectId).with(authenticatedUser()).with(csrf())).andExpect(status().isNoContent());

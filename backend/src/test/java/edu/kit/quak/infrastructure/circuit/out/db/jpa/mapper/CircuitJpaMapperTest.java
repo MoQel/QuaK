@@ -17,6 +17,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class CircuitJpaMapperTest {
 
+    private static final int TEST_QUBITS = 4;
+
     @Spy
     private RegisterJpaMapperImpl registerJpaMapper;
 
@@ -26,13 +28,11 @@ class CircuitJpaMapperTest {
     @InjectMocks
     private CircuitJpaMapperImpl mapper;
 
-    public static final int INIT_QUBITS = 4;
-
     @Test
     void domainToEntity() {
         // Arrange
         String projectId = "p-id";
-        QuantumCircuit domain = new QuantumCircuit(projectId);
+        QuantumCircuit domain = new QuantumCircuit(projectId, "f-1");
         String circuitId = domain.getId();
 
         // Act
@@ -43,9 +43,9 @@ class CircuitJpaMapperTest {
         assertEquals(circuitId, entity.getId());
         assertEquals(projectId, entity.getProjectId());
         assertEquals(1, entity.getRegisters().size());
-        assertEquals("x", entity.getRegisters().getFirst().getName());
+        assertEquals("q", entity.getRegisters().getFirst().getName());
         assertInstanceOf(JpaQuantumRegister.class, entity.getRegisters().getFirst());
-        assertEquals(INIT_QUBITS, ((JpaQuantumRegister) entity.getRegisters().getFirst()).getNumberOfQubits());
+        assertEquals(TEST_QUBITS, ((JpaQuantumRegister) entity.getRegisters().getFirst()).getNumberOfQubits());
         assertEquals(entity, entity.getRegisters().getFirst().getCircuit()); // AfterMapping
 
         assertEquals(0, entity.getLayers().size());

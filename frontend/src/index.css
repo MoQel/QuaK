@@ -62,6 +62,9 @@
     --phase: hsl(203 100% 60%);
     --quantum: hsl(334 74% 36%);
     --non-unitary-and-modifiers: hsl(0 0% 50%);
+    /* User-defined (composite) gates: deliberately neutral so they read as a container
+       rather than as one more gate kind competing with the colors above. */
+    --composite: hsl(210 10% 40%);
 }
 
 .dark {
@@ -104,6 +107,7 @@
     --phase: hsl(202 100% 86%);
     --quantum: hsl(334 100% 75%);
     --non-unitary-and-modifiers: hsl(0 0% 70%);
+    --composite: hsl(210 12% 78%);
 }
 
 @layer base {

@@ -69,11 +69,11 @@ export function LibraryElement({ identifier, onClick, matrix }: Readonly<Library
                 <div
                     id={identifier.toLowerCase()}
                     onClick={onClick}
-                    draggable={identifier !== 'MEASURE'} // Disable Measurement Operation, as it is currently not working.
-                    onDragStart={identifier === 'MEASURE' ? undefined : handleDragStart}
-                    onDragEnd={identifier === 'MEASURE' ? undefined : handleDragEnd}
+                    draggable
+                    onDragStart={handleDragStart}
+                    onDragEnd={handleDragEnd}
                     className={`
-                        group ${identifier === 'MEASURE' ? '' : 'cursor-grab active:cursor-grabbing'}
+                        group cursor-grab active:cursor-grabbing
                         flex items-center justify-center
                         hover:brightness-90 dark:hover:brightness-125 transition-colors
                         ${styles.libraryElement}`}

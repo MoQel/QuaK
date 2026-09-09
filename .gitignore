@@ -1,5 +1,6 @@
 **/.idea/
 .env
+.env.prod
 .nvm
 
 # OS Junk files
@@ -9,3 +10,6 @@ Thumbs.db
 # Global dependencies
 node_modules/
 .vscode/settings.json
+/package-lock.json
+/.claude/
+CLAUDE.md

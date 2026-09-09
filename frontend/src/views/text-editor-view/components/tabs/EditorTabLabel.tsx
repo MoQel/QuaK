@@ -19,7 +19,7 @@ export const EditorTabLabel = React.forwardRef<HTMLDivElement, EditorTabLabelPro
                 ref={ref}
                 {...props}
                 className={cn(
-                    'group relative flex h-full rounded-none min-w-[120px] max-w-[200px] cursor-pointer select-none items-center px-3 text-sm font-medium transition-colors',
+                    'group relative flex h-full rounded-none min-w-[100px] max-w-[200px] cursor-pointer select-none items-center px-3 text-sm font-medium transition-colors',
                     isActive
                         ? 'bg-subtle text-text border-b-2'
                         : 'bg-transparent text-text-muted hover:bg-bg hover:text-text border-b-2 border-b-transparent',

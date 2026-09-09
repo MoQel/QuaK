@@ -16,8 +16,8 @@ The goal is to bridge textual and visual quantum programming, making development
 
 ### Local Setup
 
-The frontend reads backend URLs from environment variables. For local development these are
-pre-configured in `.env.development` (committed, no action required):
+The frontend reads backend URLs from environment variables. When no overrides are present,
+development uses these built-in defaults:
 
 | Variable | Default | Purpose |
 |---|---|---|

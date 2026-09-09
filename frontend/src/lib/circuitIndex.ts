@@ -1,4 +1,5 @@
 import {
+    ElementaryQuantumGateDto,
     ElementSelectorDto,
     getRegisterSize,
     getSelectorKey,
@@ -54,4 +55,25 @@ export function buildWireIndex(registers: RegisterResponse[], mode: CircuitIndex
     return {
         getWireIndex: (selector) => wireIndexBySelectorKey.get(getSelectorKey(selector)),
     };
+}
+
+/**
+ * Returns all qubit operands of a gate in semantic order:
+ * controls first, followed by targets.
+ *
+ * The returned array is a new array and does not mutate the gate.
+ */
+export function getGateOperands(gate: ElementaryQuantumGateDto): ElementSelectorDto[] {
+    return [...gate.controlQubits, ...gate.targetQubits];
+}
+
+/**
+ * Resolves element selectors to their global wire indices.
+ *
+ * Selectors that are not present in the index are omitted. The order of all successfully resolved selectors is preserved.
+ */
+export function resolveWireIndices(wireIndex: WireIndex, selectors: readonly ElementSelectorDto[]): number[] {
+    return selectors
+        .map((selector) => wireIndex.getWireIndex(selector))
+        .filter((index): index is number => index !== undefined);
 }

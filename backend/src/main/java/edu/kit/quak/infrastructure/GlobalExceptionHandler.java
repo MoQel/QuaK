@@ -1,5 +1,6 @@
 package edu.kit.quak.infrastructure;
 
+import edu.kit.quak.application.circuit.exceptions.QasmParseException;
 import edu.kit.quak.application.common.exceptions.AccessDeniedException;
 import edu.kit.quak.application.common.exceptions.ResourceNotFoundException;
 import edu.kit.quak.application.user.exceptions.UserNotFoundException;
@@ -10,6 +11,7 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -105,6 +107,19 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handles failures while translating OpenQASM source into a circuit (syntax errors,
+     * unsupported gates/operands, non-constant indices). Mapped to 400 Bad Request.
+     */
+    @ExceptionHandler(QasmParseException.class)
+    public ProblemDetail handleQasmParseError(QasmParseException ex) {
+        log.warn("OpenQASM parsing failed: {}", ex.getMessage());
+
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problem.setTitle("Invalid OpenQASM Code");
+        return problem;
+    }
+
+    /**
      * Handles business rule violations from the domain core.
      * Mapped to 422 Unprocessable Content.
      */
@@ -140,6 +155,35 @@ public class GlobalExceptionHandler {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR);
         problem.setTitle(INTERNAL_SERVER_ERROR);
         return problem;
+    }
+
+    /**
+     * Handles a request body Jackson could not turn into the expected object — a missing {@code type}
+     * discriminator on a polymorphic operation, a null list entry, malformed JSON.
+     *
+     * <p>Without this the catch-all below answers 500 "An unexpected error occurred.", which blames
+     * the server for a client-side mistake and tells nobody what was wrong. Mapped to 400 with the
+     * parser's own reason, which names the offending field.
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ProblemDetail handleUnreadableBody(HttpMessageNotReadableException ex) {
+        log.warn("Rejected unreadable request body: {}", ex.getMessage());
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+            HttpStatus.BAD_REQUEST,
+            "The request body could not be read: " + rootCauseMessage(ex)
+        );
+        problem.setTitle("Bad Request");
+        return problem;
+    }
+
+    /** Innermost cause message, which is where Jackson puts the actual field-level reason. */
+    private static String rootCauseMessage(Throwable throwable) {
+        Throwable cause = throwable;
+        while (cause.getCause() != null && cause.getCause() != cause) {
+            cause = cause.getCause();
+        }
+        String message = cause.getMessage();
+        return message == null ? throwable.getClass().getSimpleName() : message.split("\n")[0];
     }
 
     /**

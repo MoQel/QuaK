@@ -85,6 +85,21 @@ public class FileElementContainerRepositoryDelegator {
      * @param elementId The ID of any file element (file, directory, or project)
      * @return The project ID of the root project
      */
+    /**
+     * Marks the root project containing the given element as modified by
+     * updating its lastAccess timestamp. No-op when no project can be resolved.
+     *
+     * @param elementId an element id or the project id itself
+     */
+    public void touchRootProject(String elementId) {
+        findProjectIdByElementId(elementId)
+            .flatMap(this::findContainerById)
+            .ifPresent(project -> {
+                project.setLastAccessNow();
+                save(project);
+            });
+    }
+
     public Optional<String> findProjectIdByElementId(String elementId) {
         if (elementId == null || elementId.isBlank()) return Optional.empty();
 

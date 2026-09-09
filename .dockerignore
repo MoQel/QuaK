@@ -18,6 +18,7 @@ backend/build/
 **/.env
 **/.env.local
 **/.env.*.local
+.env.prod
 
 # Git
 .git/
