@@ -1,8 +1,8 @@
 import { Separator } from '@/components/ui/separator.tsx';
-import type { TooltipProps } from 'recharts';
+import type { TooltipContentProps } from 'recharts';
 import { getBarColor } from '@/views/results-view/util/quantum-utils.ts';
 
-interface CustomTooltipProps extends Partial<TooltipProps<string | number | Array<string | number>, string | number>> {
+interface CustomTooltipProps extends Partial<TooltipContentProps> {
     sampleCount?: number;
 }
 
