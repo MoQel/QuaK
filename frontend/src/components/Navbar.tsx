@@ -1,44 +1,21 @@
-import React, { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import React from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Home, User, Settings, LogOut, Menu, Pencil, Trash2 } from 'lucide-react';
+import { Home, User, Settings, LogOut } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCurrentUser } from '@/hooks/useUser';
 import ThemeSwitch from '@/components/ThemeSwitch';
 import { Button } from '@/components/ui/button';
-import { IdeMenubar } from '@/components/MenuBar';
-import { useDockviewOptional } from '@/contexts/DockviewContext';
-import { useProject } from '@/contexts/ProjectContext';
-import { useProjectActionsDialog } from '@/components/projects/useProjectActionsDialog.tsx';
 import UserAvatar from '@/components/UserAvatar';
 
 export const Navbar: React.FC = () => {
     const location = useLocation();
-    const navigate = useNavigate();
     const { logout } = useAuth();
     const { user } = useCurrentUser();
-    const { projectName, projectId, refreshProject } = useProject();
-    const { dialog, openRenameProjectDialog, openDeleteProjectDialog } = useProjectActionsDialog();
-    const [isMenubarVisible, setIsMenubarVisible] = useState(false);
-
-    const isIdeView = location.pathname.startsWith('/project');
-
-    const dockview = useDockviewOptional();
-
-    const dockviewVisiblePanels = {
-        file: !!dockview?.openPanels?.has('file'),
-        circuit: !!dockview?.openPanels?.has('circuit'),
-        code: !!dockview?.openPanels?.has('code'),
-        results: !!dockview?.openPanels?.has('results'),
-        inspector: !!dockview?.openPanels?.has('inspector'),
-        library: !!dockview?.openPanels?.has('library'),
-    };
 
     const getActiveTab = () => {
         if (location.pathname === '/' || location.pathname.startsWith('/home')) {
             return 'home';
-        } else if (location.pathname.startsWith('/project')) {
-            return 'project';
         } else if (location.pathname.startsWith('/profile')) {
             return 'profile';
         } else if (location.pathname.startsWith('/settings')) {
@@ -49,7 +26,6 @@ export const Navbar: React.FC = () => {
 
     return (
         <nav className="bg-bg-dark border-b border-border px-6 py-4 sticky top-0 z-50">
-            {dialog}
             <div className="flex items-center justify-between w-full gap-4 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                 {/* Left section */}
                 <div className="flex items-center gap-4 shrink-0">
@@ -58,70 +34,6 @@ export const Navbar: React.FC = () => {
                             QuaK
                         </h1>
                     </Link>
-
-                    {isIdeView && (
-                        <div className="flex items-center gap-2 border-l border-border pl-4 ml-2">
-                            <Button
-                                variant={isMenubarVisible ? 'secondary' : 'ghost'}
-                                size="icon"
-                                className="h-8 w-8"
-                                onClick={() => setIsMenubarVisible((prev) => !prev)}
-                            >
-                                <Menu className="h-4 w-4" />
-                            </Button>
-
-                            {isMenubarVisible && (
-                                <IdeMenubar
-                                    visiblePanels={dockviewVisiblePanels}
-                                    togglePanel={(key) => dockview?.togglePanel?.(key)}
-                                    resetLayout={() => dockview?.resetLayout?.()}
-                                />
-                            )}
-                        </div>
-                    )}
-                </div>
-
-                {/* Center section - Project Name */}
-                <div className="flex justify-center flex-1 min-w-0 px-2 lg:px-4">
-                    {isIdeView && projectName && projectId && (
-                        <div className="group flex items-center gap-2 min-w-0">
-                            <span className="text-lg font-bold text-foreground truncate">{projectName}</span>
-                            <div className="flex items-center gap-1 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity shrink-0">
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8"
-                                    title="Rename project"
-                                    aria-label="Rename project"
-                                    onClick={() =>
-                                        openRenameProjectDialog(
-                                            { id: projectId, name: projectName },
-                                            { onRenamed: () => refreshProject() },
-                                        )
-                                    }
-                                >
-                                    <Pencil className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8 text-destructive-text"
-                                    title="Delete project"
-                                    aria-label="Delete project"
-                                    onClick={() =>
-                                        openDeleteProjectDialog(
-                                            { id: projectId, name: projectName },
-                                            { onDeleted: () => navigate('/') },
-                                        )
-                                    }
-                                >
-                                    <Trash2 className="h-4 w-4" />
-                                </Button>
-                            </div>
-                        </div>
-                    )}
                 </div>
 
                 {/* Right section */}
