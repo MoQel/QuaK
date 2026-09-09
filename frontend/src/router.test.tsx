@@ -61,7 +61,12 @@ describe('landing page with original application URLs', () => {
             'Build and simulate quantum circuits in your browser.',
         );
         expect(screen.queryByTestId('application-layout')).not.toBeInTheDocument();
-        expect(screen.getByRole('link', { name: 'Sign in' })).toHaveAttribute('href', '/login');
+        expect(screen.getByRole('button', { name: 'Continue with Google' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Continue with GitHub' })).toBeInTheDocument();
+        expect(screen.getByRole('img', { name: 'KIT - Karlsruher Institut für Technologie' })).toHaveAttribute(
+            'src',
+            '/kit-logo.svg',
+        );
     });
 
     it('waits for authentication before choosing landing or application', () => {
