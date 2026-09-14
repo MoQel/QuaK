@@ -1,4 +1,4 @@
-import { DockviewApi } from 'dockview-react';
+import { Orientation, type AddPanelPositionOptions, type DockviewApi, type SerializedDockview } from 'dockview-react';
 
 export const LAYOUT_STORAGE_KEY = 'ide-dockview-layout-v1';
 
@@ -148,6 +148,142 @@ export const PANEL_TITLES: Record<string, string> = {
     inspector: 'Inspector',
     library: 'Library',
     results: 'Results',
+};
+
+type SerializedGridNode = SerializedDockview['grid']['root'];
+
+type SerializedDockviewGroup = {
+    id: string;
+    views: string[];
+    activeView?: string;
+};
+
+type PanelLeafMatch = {
+    group: SerializedDockviewGroup;
+    node: SerializedGridNode;
+    parent?: {
+        children: SerializedGridNode[];
+        childIndex: number;
+        orientation: SerializedDockview['grid']['orientation'];
+    };
+};
+
+export type SavedPanelPlacement = {
+    position: AddPanelPositionOptions;
+    initialWidth?: number;
+    initialHeight?: number;
+};
+
+const oppositeOrientation = (orientation: SerializedDockview['grid']['orientation']) =>
+    orientation === Orientation.HORIZONTAL ? Orientation.VERTICAL : Orientation.HORIZONTAL;
+
+const findPanelLeaf = (
+    node: SerializedGridNode,
+    panelId: string,
+    orientation: SerializedDockview['grid']['orientation'],
+    parent?: PanelLeafMatch['parent'],
+): PanelLeafMatch | null => {
+    if (node.type === 'leaf') {
+        const group = node.data as SerializedDockviewGroup;
+        return group.views.includes(panelId) ? { group, node, parent } : null;
+    }
+
+    const children = node.data as SerializedGridNode[];
+    for (const [childIndex, child] of children.entries()) {
+        const match = findPanelLeaf(child, panelId, oppositeOrientation(orientation), {
+            children,
+            childIndex,
+            orientation,
+        });
+        if (match) return match;
+    }
+
+    return null;
+};
+
+const findReferencePanelId = (node: SerializedGridNode, edge: 'start' | 'end'): string | null => {
+    if (node.type === 'leaf') {
+        const group = node.data as SerializedDockviewGroup;
+        return group.views[0] ?? null;
+    }
+
+    const children = node.data as SerializedGridNode[];
+    const child = edge === 'start' ? children[0] : children.at(-1);
+    return child ? findReferencePanelId(child, edge) : null;
+};
+
+const savedSize = (
+    node: SerializedGridNode,
+    orientation?: SerializedDockview['grid']['orientation'],
+): Pick<SavedPanelPlacement, 'initialWidth' | 'initialHeight'> => {
+    if (!orientation || typeof node.size !== 'number') return {};
+    return orientation === Orientation.HORIZONTAL ? { initialWidth: node.size } : { initialHeight: node.size };
+};
+
+export const getSavedPanelPlacement = (layout: SerializedDockview, panelId: string): SavedPanelPlacement | null => {
+    const match = findPanelLeaf(layout.grid.root, panelId, layout.grid.orientation);
+    if (!match) return null;
+
+    const index = match.group.views.indexOf(panelId);
+    const remainingTabs = match.group.views.filter((view) => view !== panelId);
+
+    if (remainingTabs.length > 0) {
+        return {
+            position: {
+                referenceGroup: match.group.id,
+                direction: 'within',
+                index,
+            },
+        };
+    }
+
+    if (!match.parent) return null;
+
+    const { children, childIndex, orientation } = match.parent;
+    const nextReferencePanelId = children[childIndex + 1]
+        ? findReferencePanelId(children[childIndex + 1], 'start')
+        : null;
+
+    if (nextReferencePanelId) {
+        return {
+            position: {
+                referencePanel: nextReferencePanelId,
+                direction: orientation === Orientation.HORIZONTAL ? 'left' : 'above',
+            },
+            ...savedSize(match.node, orientation),
+        };
+    }
+
+    const previousReferencePanelId = children[childIndex - 1]
+        ? findReferencePanelId(children[childIndex - 1], 'end')
+        : null;
+
+    if (previousReferencePanelId) {
+        return {
+            position: {
+                referencePanel: previousReferencePanelId,
+                direction: orientation === Orientation.HORIZONTAL ? 'right' : 'below',
+            },
+            ...savedSize(match.node, orientation),
+        };
+    }
+
+    return null;
+};
+
+export const resolveSavedPanelPlacement = (
+    placement: SavedPanelPlacement,
+    api: DockviewApi,
+): SavedPanelPlacement | null => {
+    if ('referenceGroup' in placement.position) {
+        return api.getGroup(String(placement.position.referenceGroup)) ? placement : null;
+    }
+
+    if ('referencePanel' in placement.position) {
+        return api.getPanel(String(placement.position.referencePanel)) ? placement : null;
+    }
+
+    return placement;
 };
 const PRIMARY_PANELS = new Set([PANELS.circuit, PANELS.code]);
 

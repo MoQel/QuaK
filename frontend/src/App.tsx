@@ -28,7 +28,7 @@ function App() {
     }, [projectId]);
 
     return (
-        <div className="h-full w-full">
+        <div className="h-full w-full overflow-hidden bg-bg-dark">
             <DockviewReact
                 components={componentRegistry}
                 defaultTabComponent={CustomTabRenderer}

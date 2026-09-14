@@ -1,11 +1,12 @@
 import React from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
-import { Navbar } from '@/components/Navbar';
+import { IdeSidebar } from '@/components/sidebar/IdeSidebar.tsx';
 import { Toaster } from '@/components/ui/sonner.tsx';
 import { ProjectProvider } from '@/contexts/ProjectContext';
 import { DockviewProvider } from '@/contexts/DockviewContext';
 import { PanelDataProvider } from '@/contexts/panel/PanelDataProvider';
 import { CircuitTabsProvider } from '@/contexts/CircuitTabsContext.tsx';
+import { cn } from '@/lib/utils.ts';
 
 export const Layout: React.FC = () => {
     const { pathname } = useLocation();
@@ -18,11 +19,19 @@ export const Layout: React.FC = () => {
                 <PanelDataProvider>
                     <DockviewProvider>
                         <div
-                            className={isIDE ? 'h-screen flex flex-col overflow-hidden' : 'min-h-screen flex flex-col'}
+                            className={cn(
+                                'flex bg-bg-dark',
+                                isIDE ? 'h-screen overflow-hidden' : 'min-h-screen overflow-auto',
+                            )}
                         >
-                            <Navbar />
+                            <IdeSidebar />
 
-                            <main className={isIDE ? 'flex-1 min-h-0 overflow-hidden relative' : 'flex-1 w-full'}>
+                            <main
+                                className={cn(
+                                    'min-w-0 flex-1',
+                                    isIDE ? 'min-h-0 overflow-hidden relative' : 'overflow-auto',
+                                )}
+                            >
                                 <Outlet />
                             </main>
 
