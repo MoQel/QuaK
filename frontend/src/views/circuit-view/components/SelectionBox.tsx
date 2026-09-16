@@ -20,8 +20,8 @@ export function SelectionBox({ rect }: Readonly<SelectionBoxProps>) {
                 top: rect.topWire * QUBIT_HEIGHT,
                 width: (rect.lastColumn - rect.firstColumn + 1) * CELL_WIDTH,
                 height: (rect.bottomWire - rect.topWire + 1) * QUBIT_HEIGHT,
-                borderColor: 'var(--loop-frame)',
-                backgroundColor: 'color-mix(in srgb, var(--loop-frame) 12%, transparent)',
+                borderColor: 'var(--selection)',
+                backgroundColor: 'var(--selection-bg)',
             }}
         />
     );

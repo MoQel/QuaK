@@ -84,7 +84,7 @@ export function LibrarySubcircuitElement({ option, onRemove }: Readonly<LibraryS
                         font-mono font-bold select-none
                         hover:brightness-90 dark:hover:brightness-125 transition-colors"
                     style={{
-                        backgroundColor: 'var(--composite)',
+                        backgroundColor: 'var(--subcircuit)',
                         color: 'var(--bg-dark)',
                         opacity: isEmpty ? 0.55 : 1,
                         // The same height the built-in tiles take, so a row of mixed tiles lines up.

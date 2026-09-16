@@ -20,6 +20,7 @@ import { rebindComposite } from '@/views/circuit-view/util/rebindComposite.ts';
 import { DragData, FlatQubit, HoverPos, UiLayer } from '@/views/circuit-view/util/types.ts';
 import { getOperationDefinition } from '@/lib/operations.ts';
 import type { OperationIdentifier } from '@/lib/operations.ts';
+import type { SubcircuitOption } from '@/views/library-view/util/subcircuits.ts';
 
 const findOperation = (layers: CircuitResponse['layers'], operationId: string): QuantumOperationDto | undefined => {
     for (const layer of layers) {

@@ -16,11 +16,14 @@ export interface LoopDraft {
     /** Identifies this attempt, so re-opening the dialog starts from a fresh form. */
     id: string;
     operationIds: string[];
+    initialRepeatCount?: number;
+    isEditing?: boolean;
+    loopBlockId?: string;
 }
 
 interface LoopBlockDialogProps {
     draft: LoopDraft | null;
-    onSubmit: (operationIds: string[], repeatCount: number) => void;
+    onSubmit: (operationIds: string[], repeatCount: number, loopBlockId?: string) => void;
     onClose: () => void;
 }
 
@@ -49,8 +52,12 @@ export function LoopBlockDialog({ draft, onSubmit, onClose }: Readonly<LoopBlock
     );
 }
 
-function RepeatForm({ draft, onSubmit, onClose }: Readonly<LoopBlockDialogProps & { draft: LoopDraft }>) {
-    const [text, setText] = useState('2');
+function RepeatForm({
+    draft,
+    onSubmit,
+    onClose,
+}: Readonly<Omit<LoopBlockDialogProps, 'draft'> & { draft: LoopDraft }>) {
+    const [text, setText] = useState(String(draft.initialRepeatCount ?? 2));
 
     const repeatCount = Number(text);
     const isValid = Number.isInteger(repeatCount) && repeatCount >= MIN_REPEAT_COUNT;
@@ -58,7 +65,7 @@ function RepeatForm({ draft, onSubmit, onClose }: Readonly<LoopBlockDialogProps 
     const handleSubmit = (event: React.FormEvent) => {
         event.preventDefault();
         if (!isValid) return;
-        onSubmit(draft.operationIds, repeatCount);
+        onSubmit(draft.operationIds, repeatCount, draft.loopBlockId);
         onClose();
     };
 
@@ -67,11 +74,13 @@ function RepeatForm({ draft, onSubmit, onClose }: Readonly<LoopBlockDialogProps 
     return (
         <form onSubmit={handleSubmit}>
             <DialogHeader>
-                <DialogTitle>Repeat</DialogTitle>
+                <DialogTitle>{draft.isEditing ? 'Edit Loop' : 'Repeat'}</DialogTitle>
                 <DialogDescription>
-                    {gateCount === 1
-                        ? 'Wraps the selected gate in a loop. It stays editable — the frame only says how often it runs.'
-                        : `Wraps the selected ${gateCount} gates in a loop. They stay editable — the frame only says how often they run.`}
+                    {draft.isEditing
+                        ? 'Adjust how often this loop executes.'
+                        : gateCount === 1
+                          ? 'Wraps the selected gate in a loop. It stays editable — the frame only says how often it runs.'
+                          : `Wraps the selected ${gateCount} gates in a loop. They stay editable — the frame only says how often they run.`}
                 </DialogDescription>
             </DialogHeader>
 
@@ -95,7 +104,7 @@ function RepeatForm({ draft, onSubmit, onClose }: Readonly<LoopBlockDialogProps 
                     Cancel
                 </Button>
                 <Button type="submit" disabled={!isValid}>
-                    Add loop
+                    {draft.isEditing ? 'Save changes' : 'Add loop'}
                 </Button>
             </DialogFooter>
         </form>

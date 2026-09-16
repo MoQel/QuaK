@@ -3,11 +3,14 @@ import { LibraryElement } from '@/views/library-view/LibraryElement.tsx';
 import { OperationDefinitionResponse } from '@/api/dto/library.ts';
 import { SubcircuitOption } from '@/views/library-view/util/subcircuits.ts';
 import { LibrarySubcircuitElement } from '@/views/library-view/LibrarySubcircuitElement.tsx';
+import { CustomGateTemplate } from '@/views/library-view/util/customGates.ts';
+import { LibraryCompositeElement } from '@/views/library-view/LibraryCompositeElement.tsx';
 import { useDispatch } from 'react-redux';
 import { openTab } from '@/store/tabs/tabsSlice.ts';
 
 interface LibraryListViewProps {
     quantumOperations: OperationDefinitionResponse[];
+    customGates?: CustomGateTemplate[];
     subcircuits?: SubcircuitOption[];
     onOperationClick: (operation: OperationDefinitionResponse) => void;
     onRemoveSubcircuit?: (option: SubcircuitOption) => void;
@@ -15,6 +18,7 @@ interface LibraryListViewProps {
 
 function LibraryListView({
     quantumOperations,
+    customGates,
     subcircuits,
     onOperationClick,
     onRemoveSubcircuit,
@@ -68,6 +72,44 @@ function LibraryListView({
                         </React.Fragment>
                     );
                 })}
+
+                {customGates && customGates.length > 0 && (
+                    <>
+                        <div
+                            className="sticky top-0 z-10 bg-bg text-text border-b border-border font-semibold text-sm px-4 py-3"
+                            style={{ borderTop: '1px solid var(--border)' }}
+                        >
+                            Compositions
+                        </div>
+                        {customGates.map((gate) => {
+                            const contents = (gate.template.body ?? []).map((part) => part.identifier).join(', ');
+                            return (
+                                <li
+                                    key={gate.key}
+                                    className="
+                                        border-b border-border
+                                        last:border-b-0
+                                        hover:bg-bg transition-colors
+                                        cursor-pointer px-4 py-3"
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-auto flex justify-center items-center">
+                                            <LibraryCompositeElement gate={gate} />
+                                        </div>
+
+                                        <div className="text-left">
+                                            <div className="font-semibold text-sm text-text mb-2px">{gate.name}</div>
+                                            <div className="text-xs text-text-muted leading-tight">
+                                                {gate.portLabels.length} qubit{gate.portLabels.length === 1 ? '' : 's'}
+                                                {contents ? ` · ${contents}` : ''}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </li>
+                            );
+                        })}
+                    </>
+                )}
 
                 {subcircuits && subcircuits.length > 0 && (
                     <>

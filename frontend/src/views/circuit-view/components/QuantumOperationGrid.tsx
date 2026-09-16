@@ -4,6 +4,7 @@ import {
     LoopBlockDto,
     QuantumOperationDto,
     RegisterResponse,
+    SubcircuitOperationDto,
 } from '@/api/dto/circuit.ts';
 import { innermostBlockCovering } from '@/lib/loopBlocks.ts';
 import { CompositionBox } from '@/views/circuit-view/components/CompositionBox.tsx';
@@ -31,6 +32,11 @@ interface QuantumOperationGridProps {
     setHoverPos: (pos: null) => void;
     draggingOperation: { op: QuantumOperationDto; layerIdx: number } | null;
     onEditSubcircuit?: (op: SubcircuitOperationDto) => void;
+    selectedOperationIds?: string[];
+    onToggleSelect?: (operationId: string) => void;
+    onAddLoop?: (operationId: string) => void;
+    onEditLoop?: (enclosingLoop: LoopBlockDto) => void;
+    onGroupSelected?: (operationId: string) => void;
 }
 
 type MeasurementRoute = {
@@ -61,6 +67,11 @@ export function QuantumOperationGrid({
     setHoverPos,
     draggingOperation,
     onEditSubcircuit,
+    selectedOperationIds = [],
+    onToggleSelect,
+    onAddLoop,
+    onEditLoop,
+    onGroupSelected,
 }: Readonly<QuantumOperationGridProps>) {
     const dispatch = useDispatch();
 
@@ -108,6 +119,7 @@ export function QuantumOperationGrid({
                 // and which loop the gate's context menu offers to remove.
                 const enclosingLoop = op.id ? innermostBlockCovering(loopBlocks, op.id) : undefined;
                 const onRemoveLoop = enclosingLoop ? () => removeLoopBlock(enclosingLoop.id) : undefined;
+                const isSelected = op.id ? selectedOperationIds.includes(op.id) : false;
 
                 // A composed operation is one box rather than a set of target/control markers.
                 return isComposedOperation(op) ? (
@@ -127,7 +139,12 @@ export function QuantumOperationGrid({
                         // Only a composite gate has a body in this circuit to dissolve into.
                         onUngroup={isCompositeGate(op) ? () => ungroupQuantumOperation(op.id!) : undefined}
                         onRemoveLoop={onRemoveLoop}
+                        onAddLoop={op.id && onAddLoop ? () => onAddLoop(op.id!) : undefined}
+                        onEditLoop={enclosingLoop && onEditLoop ? () => onEditLoop(enclosingLoop) : undefined}
+                        onGroup={op.id && onGroupSelected ? () => onGroupSelected(op.id!) : undefined}
                         onEdit={onEditSubcircuit}
+                        isSelected={isSelected}
+                        onToggleSelect={op.id && onToggleSelect ? () => onToggleSelect(op.id!) : undefined}
                     />
                 ) : (
                     <ElementaryQuantumGate
@@ -147,6 +164,15 @@ export function QuantumOperationGrid({
                         onDelete={() => removeQuantumOperation(op.id!)}
                         onRemoveLoop={onRemoveLoop}
                         onEditAngle={() => editRotationAngle(op)}
+                        onAddLoop={op.id && onAddLoop ? () => onAddLoop(op.id!) : undefined}
+                        onEditLoop={enclosingLoop && onEditLoop ? () => onEditLoop(enclosingLoop) : undefined}
+                        onGroup={
+                            op.id && op.type !== 'MEASUREMENT' && onGroupSelected
+                                ? () => onGroupSelected(op.id!)
+                                : undefined
+                        }
+                        isSelected={isSelected}
+                        onToggleSelect={op.id && onToggleSelect ? () => onToggleSelect(op.id!) : undefined}
                     />
                 );
             })}

@@ -58,6 +58,18 @@ function ContextMenuSubContent({ className, ...props }: React.ComponentProps<typ
     return (
         <ContextMenuPrimitive.SubContent
             data-slot="context-menu-sub-content"
+            onPointerDown={(e) => {
+                e.stopPropagation();
+                props.onPointerDown?.(e);
+            }}
+            onPointerUp={(e) => {
+                e.stopPropagation();
+                props.onPointerUp?.(e);
+            }}
+            onClick={(e) => {
+                e.stopPropagation();
+                props.onClick?.(e);
+            }}
             className={cn(
                 // FIX: Changed bg-popover -> bg-bg-light
                 // FIX: Changed text-popover-foreground -> text-text
@@ -74,6 +86,18 @@ function ContextMenuContent({ className, ...props }: React.ComponentProps<typeof
         <ContextMenuPrimitive.Portal>
             <ContextMenuPrimitive.Content
                 data-slot="context-menu-content"
+                onPointerDown={(e) => {
+                    e.stopPropagation();
+                    props.onPointerDown?.(e);
+                }}
+                onPointerUp={(e) => {
+                    e.stopPropagation();
+                    props.onPointerUp?.(e);
+                }}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    props.onClick?.(e);
+                }}
                 className={cn(
                     // FIX: Changed bg-popover -> bg-bg-light
                     // FIX: Changed text-popover-foreground -> text-text

@@ -39,6 +39,8 @@ import { SelectionBox } from './components/SelectionBox.tsx';
 import { AngleEditTarget, RotationAngleDialog } from './components/RotationAngleDialog.tsx';
 import { createCircuitService } from '@/views/circuit-view/util/circuitService.ts';
 import { ungroupComposite } from '@/views/circuit-view/util/ungroupComposite.ts';
+import { groupIntoComposite } from '@/views/circuit-view/util/groupIntoComposite.ts';
+import { GroupCompositeDialog } from './components/GroupCompositeDialog.tsx';
 import { MeasurementTargetDialog } from './components/MeasurementTargetDialog';
 import { CELL_WIDTH, LABEL_WIDTH, QUBIT_HEIGHT } from '@/views/circuit-view/util/layout.ts';
 import type { OperationIdentifier } from '@/lib/operations.ts';
@@ -192,6 +194,67 @@ export function CircuitView() {
 
     /** Operations chosen for a new frame, waiting for the repeat count. */
     const [loopDraft, setLoopDraft] = useState<LoopDraft | null>(null);
+
+    /** Currently selected operation IDs for multi-select, grouping, or looping. */
+    const [selectedOperationIds, setSelectedOperationIds] = useState<string[]>([]);
+    const [isGroupDialogOpen, setIsGroupDialogOpen] = useState(false);
+    const [operationsToGroup, setOperationsToGroup] = useState<string[]>([]);
+
+    const handleToggleSelect = (operationId: string) => {
+        setSelectedOperationIds((prev) =>
+            prev.includes(operationId) ? prev.filter((id) => id !== operationId) : [...prev, operationId],
+        );
+    };
+
+    const handleAddLoop = (operationId: string) => {
+        const ids = selectedOperationIds.includes(operationId) ? selectedOperationIds : [operationId];
+        setLoopDraft({
+            id: crypto.randomUUID(),
+            operationIds: ids,
+            initialRepeatCount: 2,
+            isEditing: false,
+        });
+    };
+
+    const handleEditLoop = (enclosingLoop: LoopBlockDto) => {
+        setLoopDraft({
+            id: crypto.randomUUID(),
+            operationIds: enclosingLoop.operationIds,
+            initialRepeatCount: enclosingLoop.repeatCount,
+            isEditing: true,
+            loopBlockId: enclosingLoop.id,
+        });
+    };
+
+    const handleLoopSubmit = (operationIds: string[], repeatCount: number, loopBlockId?: string) => {
+        if (loopBlockId) {
+            setCircuit((prev) =>
+                prev
+                    ? {
+                          ...prev,
+                          loopBlocks: (prev.loopBlocks ?? []).map((block) =>
+                              block.id === loopBlockId ? { ...block, repeatCount } : block,
+                          ),
+                      }
+                    : prev,
+            );
+        } else {
+            addLoopBlock(operationIds, repeatCount);
+        }
+        setSelectedOperationIds([]);
+    };
+
+    const handleGroupSelected = (operationId: string) => {
+        const ids = selectedOperationIds.includes(operationId) ? selectedOperationIds : [operationId];
+        setOperationsToGroup(ids);
+        setIsGroupDialogOpen(true);
+    };
+
+    const handleGroupSubmit = (gateName: string) => {
+        if (!circuit || operationsToGroup.length === 0) return;
+        setCircuit((prev) => (prev ? groupIntoComposite(prev, operationsToGroup, gateName, flatQubits) : prev));
+        setSelectedOperationIds([]);
+    };
 
     /** The operation area, so pointer positions can be turned into grid cells. */
     const operationAreaRef = useRef<HTMLDivElement>(null);
@@ -390,30 +453,44 @@ export function CircuitView() {
     const isOnGate = (event: React.PointerEvent | React.MouseEvent) =>
         (event.target as Element).closest('[data-gate]') !== null;
 
+    /** Whether a pointer event landed on empty circuit canvas rather than on a gate, menu, dialog, or outside node. */
+    const isCanvasEvent = (event: React.PointerEvent | React.MouseEvent) => {
+        const target = event.target as Element | null;
+        if (!target) return false;
+        if (
+            target.closest('[data-slot^="context-menu"], [role="menu"], [role="menuitem"], [data-radix-portal]') !==
+                null ||
+            !operationAreaRef.current?.contains(target)
+        ) {
+            return false;
+        }
+        return !isOnGate(event);
+    };
+
     /**
-     * Starts dragging out a selection — on the **right** button, and only on empty canvas.
-     *
-     * Drawing a loop is a deliberate act and has to be asked for: on the left button every stray
-     * click in the circuit tore open a rectangle and popped up the repeat dialog, which got in the
-     * way of everything else. The right button is free here — a gate's own context menu keeps it,
-     * which is why a pointer landing on a gate is left alone.
+     * Starts dragging out a selection rectangle on empty canvas.
      */
     const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
-        if (event.button !== 2 || isOnGate(event)) return;
+        if (!isCanvasEvent(event)) return;
+        if (event.button !== 0 && event.button !== 2) return;
 
         // Capturing means the rest of the drag arrives here even when the pointer leaves the canvas,
         // so releasing outside cannot leave a selection stuck open.
-        event.currentTarget.setPointerCapture(event.pointerId);
+        try {
+            event.currentTarget.setPointerCapture(event.pointerId);
+        } catch {
+            // ignore if capture fails
+        }
         const cell = cellAt(event.clientX, event.clientY);
         updateSelection({ from: cell, to: cell, origin: { x: event.clientX, y: event.clientY }, dragged: false });
     };
 
     /**
      * Keeps the browser's own menu out of the way of a right-drag on empty canvas — but only there,
-     * so right-clicking a gate still opens its menu (remove loop, change angle, ungroup).
+     * so right-clicking a gate or context menu still works as expected.
      */
     const handleContextMenu = (event: React.MouseEvent<HTMLDivElement>) => {
-        if (!isOnGate(event)) event.preventDefault();
+        if (isCanvasEvent(event)) event.preventDefault();
     };
 
     const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -433,19 +510,29 @@ export function CircuitView() {
     const handlePointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
         const current = selectionRef.current;
         if (!current) return;
-        event.currentTarget.releasePointerCapture(event.pointerId);
+        try {
+            event.currentTarget.releasePointerCapture(event.pointerId);
+        } catch {
+            // ignore
+        }
 
         const covered = operationsInRect(uiLayers, circuit?.registers ?? [], rectBetween(current.from, current.to));
         updateSelection(null);
 
-        // A plain click is not a selection. Gates inside a frame are drawn smaller, so aiming at one
-        // and missing by a few pixels is easy — and putting a dialog in the way of that miss is how
-        // the frame's own context menu became unreachable.
-        if (!current.dragged) return;
+        if (!current.dragged) {
+            if (!event.shiftKey) {
+                setSelectedOperationIds([]);
+            }
+            return;
+        }
 
-        // An empty rectangle is how the user cancels: nothing selected, nothing to ask about.
-        if (covered.length > 0) {
-            setLoopDraft({ id: crypto.randomUUID(), operationIds: covered.map((operation) => operation.id!) });
+        const coveredIds = covered.map((operation) => operation.id!).filter(Boolean);
+        if (coveredIds.length > 0) {
+            if (event.shiftKey) {
+                setSelectedOperationIds((prev) => Array.from(new Set([...prev, ...coveredIds])));
+            } else {
+                setSelectedOperationIds(coveredIds);
+            }
         }
     };
 
@@ -578,6 +665,11 @@ export function CircuitView() {
                                 setHoverPos={setHoverPos}
                                 draggingOperation={draggingOperation}
                                 onEditSubcircuit={handleEditSubcircuit}
+                                selectedOperationIds={selectedOperationIds}
+                                onToggleSelect={handleToggleSelect}
+                                onAddLoop={handleAddLoop}
+                                onEditLoop={handleEditLoop}
+                                onGroupSelected={handleGroupSelected}
                             />
 
                             <DropzoneGrid
@@ -652,7 +744,14 @@ export function CircuitView() {
                     onClose={() => setAngleTarget(null)}
                 />
 
-                <LoopBlockDialog draft={loopDraft} onSubmit={addLoopBlock} onClose={() => setLoopDraft(null)} />
+                <GroupCompositeDialog
+                    open={isGroupDialogOpen}
+                    onOpenChange={setIsGroupDialogOpen}
+                    operationCount={operationsToGroup.length}
+                    onSubmit={handleGroupSubmit}
+                />
+
+                <LoopBlockDialog draft={loopDraft} onSubmit={handleLoopSubmit} onClose={() => setLoopDraft(null)} />
             </CardContent>
         </Card>
     );

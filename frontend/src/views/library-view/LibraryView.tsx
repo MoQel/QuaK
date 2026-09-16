@@ -83,6 +83,7 @@ export function LibraryView({ onOperationSelect }: Readonly<LibraryViewProps>) {
                         {!boxMode && (
                             <LibraryListView
                                 quantumOperations={quantumOperations}
+                                customGates={customGates}
                                 subcircuits={subcircuits}
                                 onOperationClick={handleOperationClick}
                                 onRemoveSubcircuit={handleRemoveSubcircuit}
