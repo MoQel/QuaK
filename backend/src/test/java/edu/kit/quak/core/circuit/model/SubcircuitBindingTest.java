@@ -128,4 +128,50 @@ class SubcircuitBindingTest {
 
         assertTrue(bound.isEmpty());
     }
+
+    @Test
+    void partialImportIndependentQubitSucceeds() {
+        QuantumRegister register = new QuantumRegister("q", 2);
+        QuantumCircuit circuit = QuantumCircuit.builder()
+            .projectId("proj-1")
+            .fileId("file-1")
+            .registers(new java.util.ArrayList<>(List.of(register)))
+            .layers(new java.util.ArrayList<>())
+            .build();
+        circuit.addQuantumOperation(
+            new ElementaryQuantumGate(QuantumOperationLibrary.H, false, List.of(new ElementSelector(register.getId(), 0)), List.of(), 0),
+            0
+        );
+        circuit.addQuantumOperation(
+            new ElementaryQuantumGate(QuantumOperationLibrary.X, false, List.of(new ElementSelector(register.getId(), 1)), List.of(), 0),
+            0
+        );
+
+        // Only import qubit 1 onto caller's qubit 3
+        SubcircuitBinding.BindingResult result = SubcircuitBinding.bindWithResult(
+            circuit,
+            List.of(new ElementSelector("caller", 3)),
+            List.of(1)
+        );
+
+        assertTrue(result.isSuccess());
+        assertEquals(1, result.operations().size());
+        assertEquals("caller", result.operations().getFirst().getTargetQubits().getFirst().getRegisterId());
+        assertEquals(3, result.operations().getFirst().getTargetQubits().getFirst().getIndex());
+    }
+
+    @Test
+    void partialImportEntangledQubitFailsWithDescriptiveError() {
+        // bellDefinition has H on q0 and CX on q0, q1.
+        // If we only import qubit 1, it is linked to missing qubit 0 via CX.
+        SubcircuitBinding.BindingResult result = SubcircuitBinding.bindWithResult(
+            bellDefinition(),
+            List.of(new ElementSelector("caller", 0)),
+            List.of(1)
+        );
+
+        org.junit.jupiter.api.Assertions.assertFalse(result.isSuccess());
+        org.junit.jupiter.api.Assertions.assertNotNull(result.errorMessage());
+        assertTrue(result.errorMessage().contains("linked to unmapped qubit q[0] via CX"), result.errorMessage());
+    }
 }

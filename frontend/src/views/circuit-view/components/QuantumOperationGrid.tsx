@@ -30,6 +30,7 @@ interface QuantumOperationGridProps {
     setDraggingOperationId: (id: string | null) => void;
     setHoverPos: (pos: null) => void;
     draggingOperation: { op: QuantumOperationDto; layerIdx: number } | null;
+    onEditSubcircuit?: (op: SubcircuitOperationDto) => void;
 }
 
 type MeasurementRoute = {
@@ -59,6 +60,7 @@ export function QuantumOperationGrid({
     setDraggingOperationId,
     setHoverPos,
     draggingOperation,
+    onEditSubcircuit,
 }: Readonly<QuantumOperationGridProps>) {
     const dispatch = useDispatch();
 
@@ -125,6 +127,7 @@ export function QuantumOperationGrid({
                         // Only a composite gate has a body in this circuit to dissolve into.
                         onUngroup={isCompositeGate(op) ? () => ungroupQuantumOperation(op.id!) : undefined}
                         onRemoveLoop={onRemoveLoop}
+                        onEdit={onEditSubcircuit}
                     />
                 ) : (
                     <ElementaryQuantumGate

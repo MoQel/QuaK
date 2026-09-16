@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { CompositeQuantumGateDto, isCompositeGate, SubcircuitOperationDto } from '@/api/dto/circuit.ts';
+import { CompositeQuantumGateDto, isCompositeGate, isSubcircuit, SubcircuitOperationDto } from '@/api/dto/circuit.ts';
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu.tsx';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip.tsx';
 import { CompositeGatePreview } from '@/views/circuit-view/components/CompositeGatePreview.tsx';
@@ -55,6 +55,8 @@ interface CompositionBoxProps {
     loopRepeatCount?: number;
     /** Drops the enclosing repetition frame; absent when the box is not in one. */
     onRemoveLoop?: () => void;
+    /** Opens the qubit mapping dialog to edit this subcircuit; absent for composites. */
+    onEdit?: (op: SubcircuitOperationDto) => void;
 }
 
 /**
@@ -80,6 +82,7 @@ export function CompositionBox({
     onUngroup,
     loopRepeatCount,
     onRemoveLoop,
+    onEdit,
 }: Readonly<CompositionBoxProps>) {
     const isDraggingRef = useRef(false);
     const interactivity = isGhost ? 'pointer-events-none' : 'pointer-events-auto';
@@ -107,7 +110,11 @@ export function CompositionBox({
             ports: yOfPosition.map((y, position) => ({
                 position,
                 y,
-                label: isCompositeGate(operation) ? (operation.portLabels?.[position] ?? '') : `q${position}`,
+                label: isCompositeGate(operation)
+                    ? (operation.portLabels?.[position] ?? '')
+                    : operation.subcircuitQubitIndices?.[position] !== undefined
+                      ? `q${operation.subcircuitQubitIndices[position]}`
+                      : `q${position}`,
             })),
         };
     }, [operation, flatQubits]);
@@ -264,6 +271,9 @@ export function CompositionBox({
                 </ContextMenuTrigger>
 
                 <ContextMenuContent>
+                    {isSubcircuit(operation) && onEdit && (
+                        <ContextMenuItem onSelect={() => onEdit(operation)}>Edit</ContextMenuItem>
+                    )}
                     {onUngroup && <ContextMenuItem onSelect={onUngroup}>Ungroup</ContextMenuItem>}
                     {onRemoveLoop && (
                         <ContextMenuItem onSelect={onRemoveLoop}>Remove loop ×{loopRepeatCount}</ContextMenuItem>

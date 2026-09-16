@@ -21,11 +21,14 @@ import {
     offerAsSubcircuit,
     SubcircuitOption,
 } from '@/views/library-view/util/subcircuits.ts';
+import { useProject } from '@/contexts/ProjectContext.tsx';
 
 interface NewSubcircuitDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     projectId: string | null;
+    currentCircuitId?: string;
+    currentFileId?: string;
     /** Already listed subcircuits, so an existing file is not offered twice. */
     known: SubcircuitOption[];
     /** Reload the library's list once one was added. */
@@ -44,6 +47,8 @@ export function NewSubcircuitDialog({
     open,
     onOpenChange,
     projectId,
+    currentCircuitId,
+    currentFileId,
     known,
     onAdded,
 }: Readonly<NewSubcircuitDialogProps>) {
@@ -53,18 +58,19 @@ export function NewSubcircuitDialog({
     const [selectedFileId, setSelectedFileId] = useState('');
     const [isBusy, setIsBusy] = useState(false);
     const dispatch = useDispatch();
+    const { refreshProjectFiles } = useProject();
 
     useEffect(() => {
         if (!open || !projectId) return;
         setName('');
         setSelectedFileId('');
-        findUndeclaredCircuitFiles(projectId, known, undefined)
+        findUndeclaredCircuitFiles(projectId, currentCircuitId, currentFileId, known)
             .then(setCandidates)
             .catch(() => setCandidates([]));
         // Deliberately not depending on `known`: it is a fresh array on every render of the
         // library, so the candidate list would reload continuously while the dialog is open. It is
         // only read once here, when the dialog opens.
-    }, [open, projectId]);
+    }, [open, projectId, currentCircuitId, currentFileId]);
 
     const submit = async () => {
         if (!projectId) return;
@@ -77,6 +83,7 @@ export function NewSubcircuitDialog({
                     return;
                 }
                 const { fileId, fileName } = await createSubcircuitFile(projectId, trimmed);
+                refreshProjectFiles();
                 // Opened straight away: a new subcircuit is empty, and an empty one is useless
                 // until something is in it. Creating it without opening it left no way to do that.
                 dispatch(openTab({ tab: { id: fileId, title: fileName, language: '' } }));
@@ -87,14 +94,20 @@ export function NewSubcircuitDialog({
                     return;
                 }
                 const adopted = candidates.find((file) => file.id === selectedFileId);
-                await offerAsSubcircuit(selectedFileId);
+                await offerAsSubcircuit(selectedFileId, currentCircuitId);
                 dispatch(openTab({ tab: { id: selectedFileId, title: adopted?.name ?? '', language: '' } }));
                 toast.success('Added to the subcircuit library');
             }
             onAdded();
             onOpenChange(false);
-        } catch {
-            toast.error('Could not create the subcircuit.');
+        } catch (error) {
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : mode === 'new'
+                      ? 'Could not create the subcircuit.'
+                      : 'Could not add the subcircuit.',
+            );
         } finally {
             setIsBusy(false);
         }

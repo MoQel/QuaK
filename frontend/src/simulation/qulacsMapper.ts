@@ -270,8 +270,9 @@ export class QulacsMapper {
             // into a body bound to this call's qubits. Without one there is nothing to run, and
             // skipping it would simulate a circuit missing the gate, so it fails visibly instead.
             if (!op.body) {
+                const reason = op.bindingError ? `: ${op.bindingError}` : ' could not be resolved.';
                 throw new Error(
-                    `Cannot simulate a subcircuit: the contents of ${op.definitionName ?? op.definitionCircuitId} could not be resolved.`,
+                    `Cannot simulate a subcircuit: the contents of ${op.definitionName ?? op.definitionCircuitId}${reason}`,
                 );
             }
             return op.body.flatMap((part) => this.toElementaryGates(part));

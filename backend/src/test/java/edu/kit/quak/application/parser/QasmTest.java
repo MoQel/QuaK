@@ -307,9 +307,9 @@ class QasmTest {
         QuantumCircuit circuit = qasmService.parse(qasmCode);
         String generatedQasm = QasmCodeGenerator.toCode(circuit);
 
-        assertTrue(generatedQasm.contains("@composition \"circuit\" my_circuit_id_123"), "Should contain @composition: " + generatedQasm);
-        assertTrue(generatedQasm.contains("gate comp_my_circuit_id_123 q0, q1"), "Should contain gate declaration: " + generatedQasm);
-        assertTrue(generatedQasm.contains("comp_my_circuit_id_123 q[1], q[0];"), "Should call composite gate: " + generatedQasm);
+        assertTrue(generatedQasm.contains("@composition \"sub.qasm\" my_circuit_id_123"), "Should contain @composition: " + generatedQasm);
+        assertTrue(generatedQasm.contains("gate sub q0, q1"), "Should contain gate declaration: " + generatedQasm);
+        assertTrue(generatedQasm.contains("sub q[1], q[0];"), "Should call composite gate: " + generatedQasm);
 
         // Reparse generated code
         QuantumCircuit reparsed = qasmService.parse(generatedQasm);

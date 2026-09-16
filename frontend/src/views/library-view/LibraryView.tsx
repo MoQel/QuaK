@@ -9,9 +9,10 @@ import { api } from '@/api/api.ts';
 import { OperationDefinitionResponse } from '@/api/dto/library.ts';
 import { useCircuitTabs } from '@/contexts/CircuitTabsContext.tsx';
 import { collectCustomGates } from '@/views/library-view/util/customGates.ts';
-import { useSubcircuitOptions } from '@/views/library-view/util/subcircuits.ts';
+import { removeSubcircuit, SubcircuitOption, useSubcircuitOptions } from '@/views/library-view/util/subcircuits.ts';
 import { NewSubcircuitDialog } from '@/views/library-view/NewSubcircuitDialog.tsx';
 import { useProject } from '@/contexts/ProjectContext.tsx';
+import { toast } from 'sonner';
 
 interface LibraryViewProps {
     onOperationSelect: (operation: OperationDefinitionResponse) => void;
@@ -24,7 +25,7 @@ export function LibraryView({ onOperationSelect }: Readonly<LibraryViewProps>) {
     // The gates the open circuit itself defines. They are not part of the catalogue — the backend
     // only serves the built-ins — so they are read straight off the circuit and follow it: parsing
     // a file with a new `gate` in it makes that gate appear here without a round trip.
-    const { activeCircuit } = useCircuitTabs();
+    const { activeCircuit, activeCircuitTabId } = useCircuitTabs();
     const customGates = useMemo(() => collectCustomGates(activeCircuit), [activeCircuit]);
 
     // The project's other circuits, which can be dropped in as a box referencing them.
@@ -42,6 +43,16 @@ export function LibraryView({ onOperationSelect }: Readonly<LibraryViewProps>) {
     const handleOperationClick = (operation: OperationDefinitionResponse) => {
         if (onOperationSelect) {
             onOperationSelect(operation);
+        }
+    };
+
+    const handleRemoveSubcircuit = async (option: SubcircuitOption) => {
+        try {
+            await removeSubcircuit(option.fileId);
+            reloadSubcircuits();
+            toast.success(`Removed ${option.name} from library`);
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'Could not remove subcircuit');
         }
     };
 
@@ -66,12 +77,15 @@ export function LibraryView({ onOperationSelect }: Readonly<LibraryViewProps>) {
                                 subcircuits={subcircuits}
                                 onOperationClick={handleOperationClick}
                                 onNewSubcircuit={projectId ? () => setIsNewSubcircuitOpen(true) : undefined}
+                                onRemoveSubcircuit={handleRemoveSubcircuit}
                             />
                         )}
                         {!boxMode && (
                             <LibraryListView
                                 quantumOperations={quantumOperations}
+                                subcircuits={subcircuits}
                                 onOperationClick={handleOperationClick}
+                                onRemoveSubcircuit={handleRemoveSubcircuit}
                             />
                         )}
                     </div>
@@ -84,6 +98,8 @@ export function LibraryView({ onOperationSelect }: Readonly<LibraryViewProps>) {
                         open={isNewSubcircuitOpen}
                         onOpenChange={setIsNewSubcircuitOpen}
                         projectId={projectId}
+                        currentCircuitId={activeCircuit?.id}
+                        currentFileId={activeCircuitTabId ?? undefined}
                         known={subcircuits}
                         onAdded={reloadSubcircuits}
                     />

@@ -21,17 +21,35 @@ public class SubcircuitOperation extends QuantumOperation {
      */
     private String definitionName;
 
+    /**
+     * The 0-based indices of the subcircuit's qubits mapped to the call's targetQubits.
+     * Null or empty means the default sequential mapping [0, 1, ..., targetQubits.size() - 1].
+     */
+    private List<Integer> subcircuitQubitIndices;
+
     public SubcircuitOperation(
         boolean inverseForm,
         @NonNull List<ElementSelector> targetQubits,
         List<ElementSelector> controlQubits,
         @NonNull String definitionCircuitId
     ) {
+        this(inverseForm, targetQubits, controlQubits, definitionCircuitId, null);
+    }
+
+    @edu.kit.quak.shared.annotations.Default
+    public SubcircuitOperation(
+        boolean inverseForm,
+        @NonNull List<ElementSelector> targetQubits,
+        List<ElementSelector> controlQubits,
+        @NonNull String definitionCircuitId,
+        List<Integer> subcircuitQubitIndices
+    ) {
         super(inverseForm, targetQubits, controlQubits);
         if (definitionCircuitId.isBlank()) {
             throw new InvalidOperationConfigurationException("A composite quantum operation must have a valid definitionCircuitId.");
         }
         this.definitionCircuitId = definitionCircuitId;
+        this.subcircuitQubitIndices = subcircuitQubitIndices != null ? new java.util.ArrayList<>(subcircuitQubitIndices) : null;
     }
 
     /**
@@ -40,7 +58,15 @@ public class SubcircuitOperation extends QuantumOperation {
      */
     @Override
     public SubcircuitOperation copyForQubits(@NonNull List<ElementSelector> targetQubits, @NonNull List<ElementSelector> controlQubits) {
-        return new SubcircuitOperation(inverseForm, copySelectors(targetQubits), copySelectors(controlQubits), definitionCircuitId);
+        SubcircuitOperation copy = new SubcircuitOperation(
+            inverseForm,
+            copySelectors(targetQubits),
+            copySelectors(controlQubits),
+            definitionCircuitId,
+            subcircuitQubitIndices != null ? new java.util.ArrayList<>(subcircuitQubitIndices) : null
+        );
+        copy.setDefinitionName(definitionName);
+        return copy;
     }
 
     /**
@@ -54,7 +80,8 @@ public class SubcircuitOperation extends QuantumOperation {
     public boolean isStructurallyEqualTo(QuantumOperation other) {
         return (
             super.isStructurallyEqualTo(other) &&
-            java.util.Objects.equals(definitionCircuitId, ((SubcircuitOperation) other).definitionCircuitId)
+            java.util.Objects.equals(definitionCircuitId, ((SubcircuitOperation) other).definitionCircuitId) &&
+            java.util.Objects.equals(subcircuitQubitIndices, ((SubcircuitOperation) other).subcircuitQubitIndices)
         );
     }
 

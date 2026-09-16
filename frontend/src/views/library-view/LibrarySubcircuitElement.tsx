@@ -5,9 +5,12 @@ import { startOperationDrag, stopOperationDrag } from '@/store/circuit/dragOpera
 import { openTab } from '@/store/tabs/tabsSlice.ts';
 import { DragData } from '@/views/circuit-view/util/types.ts';
 import { SubcircuitOption } from '@/views/library-view/util/subcircuits.ts';
+import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu.tsx';
+import { Trash2 } from 'lucide-react';
 
 type LibrarySubcircuitElementProps = {
     option: SubcircuitOption;
+    onRemove?: () => void;
 };
 
 /**
@@ -18,7 +21,7 @@ type LibrarySubcircuitElementProps = {
  * is what travels with the drag — a custom gate carries its body, a subcircuit only the id of the
  * circuit it points at, because that body is not loaded here.
  */
-export function LibrarySubcircuitElement({ option }: Readonly<LibrarySubcircuitElementProps>) {
+export function LibrarySubcircuitElement({ option, onRemove }: Readonly<LibrarySubcircuitElementProps>) {
     const DELAY_DURATION = 700;
 
     const [isDragging, setIsDragging] = useState(false);
@@ -66,7 +69,7 @@ export function LibrarySubcircuitElement({ option }: Readonly<LibrarySubcircuitE
     // making it disappear until the first gate lands would be more confusing than marking it.
     const isEmpty = option.operationCount === 0;
 
-    return (
+    const tile = (
         <Tooltip delayDuration={DELAY_DURATION} open={isOpen} onOpenChange={handleOpenChange}>
             <TooltipTrigger asChild>
                 <div
@@ -98,8 +101,32 @@ export function LibrarySubcircuitElement({ option }: Readonly<LibrarySubcircuitE
                     {option.qubitCount} qubit{option.qubitCount === 1 ? '' : 's'} ·{' '}
                     {isEmpty ? 'still empty — dropping it in does nothing yet' : 'another circuit of this project'}
                 </div>
-                <div className="text-xs text-text-muted mt-1">Drag to place it · double-click to edit it</div>
+                <div className="text-xs text-text-muted mt-1">
+                    Drag to place it · double-click to edit it{onRemove ? ' · right-click to delete' : ''}
+                </div>
             </TooltipContent>
         </Tooltip>
+    );
+
+    if (!onRemove) {
+        return tile;
+    }
+
+    return (
+        <ContextMenu>
+            <ContextMenuTrigger asChild>{tile}</ContextMenuTrigger>
+            <ContextMenuContent>
+                <ContextMenuItem
+                    variant="destructive"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onRemove();
+                    }}
+                >
+                    <Trash2 className="size-4" />
+                    Delete
+                </ContextMenuItem>
+            </ContextMenuContent>
+        </ContextMenu>
     );
 }

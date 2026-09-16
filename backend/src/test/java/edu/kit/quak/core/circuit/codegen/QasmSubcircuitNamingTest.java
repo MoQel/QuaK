@@ -61,6 +61,7 @@ class QasmSubcircuitNamingTest {
     void namesTheGateAfterTheReferencedFile() {
         String code = codeOf(circuitCalling("id-1", "Bell State.qasm"));
 
+        assertTrue(code.contains("@composition \"Bell State.qasm\" id-1"), "annotation has filename: " + code);
         assertTrue(code.contains("gate bell_state "), code);
         assertTrue(code.contains("bell_state q[0], q[1];"), "the call uses the same name: " + code);
     }

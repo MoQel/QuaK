@@ -56,15 +56,28 @@ public class QasmCodeGenerator {
             .flatMap(layer -> layer.getQuantumOperations().stream())
             .filter(SubcircuitOperation.class::isInstance)
             .map(SubcircuitOperation.class::cast)
-            .forEach(call -> subcircuits.putIfAbsent(call.getDefinitionCircuitId(), call));
+            .forEach(call -> subcircuits.putIfAbsent(subcircuitKey(call), call));
 
         Map<String, String> subcircuitNames = assignSubcircuitNames(subcircuits);
         for (Map.Entry<String, SubcircuitOperation> entry : subcircuits.entrySet()) {
+            SubcircuitOperation op = entry.getValue();
             List<String> paramNames = new ArrayList<>();
-            for (int i = 0; i < entry.getValue().getTargetQubits().size(); i++) {
-                paramNames.add("q" + i);
+            if (op.getSubcircuitQubitIndices() != null && !op.getSubcircuitQubitIndices().isEmpty()) {
+                for (int idx : op.getSubcircuitQubitIndices()) {
+                    paramNames.add("q" + idx);
+                }
+            } else {
+                for (int i = 0; i < op.getTargetQubits().size(); i++) {
+                    paramNames.add("q" + i);
+                }
             }
-            codeStringBuilder.append("@composition \"circuit\" ").append(entry.getKey()).append("\n");
+            String annotationName = resolveAnnotationName(op.getDefinitionName());
+            codeStringBuilder
+                .append("@composition \"")
+                .append(annotationName)
+                .append("\" ")
+                .append(op.getDefinitionCircuitId())
+                .append("\n");
             codeStringBuilder
                 .append("gate ")
                 .append(subcircuitNames.get(entry.getKey()))
@@ -430,6 +443,20 @@ public class QasmCodeGenerator {
         return dot > 0 ? fileName.substring(0, dot) : fileName;
     }
 
+    private static String resolveAnnotationName(String definitionName) {
+        if (definitionName == null || definitionName.isBlank()) {
+            return "circuit";
+        }
+        return definitionName.replace("\"", "");
+    }
+
+    private static String subcircuitKey(SubcircuitOperation op) {
+        if (op.getSubcircuitQubitIndices() == null || op.getSubcircuitQubitIndices().isEmpty()) {
+            return op.getDefinitionCircuitId();
+        }
+        return op.getDefinitionCircuitId() + "#" + op.getSubcircuitQubitIndices();
+    }
+
     /** Fallback name when the referenced circuit's file is unknown; sanitized from the id. */
     public static String subcircuitGateName(String definitionCircuitId) {
         if (definitionCircuitId == null || definitionCircuitId.isBlank()) {
@@ -448,8 +475,8 @@ public class QasmCodeGenerator {
 
         // A subcircuit is named after the circuit it points at, declared as an empty gate above.
         if (quantumOperation instanceof SubcircuitOperation subcircuitOperation) {
-            String circuitId = subcircuitOperation.getDefinitionCircuitId();
-            return emission.subcircuitNames().getOrDefault(circuitId, subcircuitGateName(circuitId));
+            String key = subcircuitKey(subcircuitOperation);
+            return emission.subcircuitNames().getOrDefault(key, subcircuitGateName(subcircuitOperation.getDefinitionCircuitId()));
         }
 
         // operationDefinition lives on the subclasses that have one, so each is asked in turn.

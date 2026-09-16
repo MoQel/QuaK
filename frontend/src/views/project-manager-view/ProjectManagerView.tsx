@@ -24,6 +24,7 @@ import { toast } from 'sonner';
 import { FileSelect, ParentRefresh, SelectedFolder } from '@/views/project-manager-view/ProjectManagerContexts.ts';
 import { useAppDispatch } from '@/hooks/useAppDispatch.ts';
 import { openTab } from '@/store/tabs/tabsSlice.ts';
+import { useProject } from '@/contexts/ProjectContext.tsx';
 
 /**
  * Displays a tree-view of the projects inside a {@link Card}
@@ -35,6 +36,7 @@ interface ProjectManagerViewProps {
 }
 
 export function ProjectManagerView({ onFileSelect, projectId }: Readonly<ProjectManagerViewProps>) {
+    const { projectFilesToken } = useProject();
     const [content, setContent] = useState([<Skeleton className="h-4" key="LOADING" />]);
     const [reloaded, setReloaded] = useState(false);
     const reload = useCallback(() => setReloaded((prev) => !prev), []);
@@ -54,7 +56,7 @@ export function ProjectManagerView({ onFileSelect, projectId }: Readonly<Project
 
     useEffect(() => {
         fetchProjects(projectId).then(setContent);
-    }, [reloaded, projectId]);
+    }, [reloaded, projectId, projectFilesToken]);
 
     return (
         <Card className="h-full border-none rounded-none bg-background shadow-none p-0 gap-0">

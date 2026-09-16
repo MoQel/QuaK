@@ -191,6 +191,7 @@ interface DropzoneGridProps {
         controlQubits: ElementSelectorDto[];
         operationIdentifier: OperationIdentifier;
     }) => void;
+    onRequestSubcircuitMapping?: (ctx: { subcircuit: SubcircuitOption; layerIdx: number }) => void;
 }
 
 export function DropzoneGrid({
@@ -205,6 +206,7 @@ export function DropzoneGrid({
     setHoverPos,
     setDraggingOperationId,
     onRequestMeasurementTarget,
+    onRequestSubcircuitMapping,
 }: Readonly<DropzoneGridProps>) {
     const dispatch = useDispatch();
 
@@ -423,6 +425,13 @@ export function DropzoneGrid({
                 const { controlQubits, targetQubits } = dropSelectors(regId, regIdx, controlSize, targetSize);
 
                 if (data.origin === 'library') {
+                    if (data.subcircuit) {
+                        onRequestSubcircuitMapping?.({
+                            subcircuit: data.subcircuit,
+                            layerIdx,
+                        });
+                        return;
+                    }
                     const operation = libraryOperation(data, targetQubits, controlQubits);
                     if (operation) {
                         addQuantumOperationLocally(operation, layerIdx);

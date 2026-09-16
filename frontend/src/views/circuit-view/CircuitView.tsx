@@ -10,13 +10,18 @@ import {
     type QuantumOperationDto,
     isClassicRegister,
     isQuantumRegister,
+    isSubcircuit,
     MeasurementDto,
+    SubcircuitOperationDto,
     type LoopBlockDto,
     type RegisterResponse,
     REGISTER_TYPE_QUANTUM,
 } from '@/api/dto/circuit';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store.ts';
+import { useProject } from '@/contexts/ProjectContext.tsx';
+import { SubcircuitOption, useSubcircuitOptions } from '@/views/library-view/util/subcircuits.ts';
+import { QubitMappingItem, SubcircuitQubitMappingDialog } from './components/SubcircuitQubitMappingDialog.tsx';
 import { CircuitTabBar } from '@/views/circuit-view/components/CircuitTabBar.tsx';
 import { QubitWires } from './components/QubitWires.tsx';
 import { QuantumOperationGrid } from './components/QuantumOperationGrid.tsx';
@@ -81,6 +86,92 @@ export function CircuitView() {
 
     /** The rotation gate whose angle is being edited, or null while the dialog is closed. */
     const [angleTarget, setAngleTarget] = useState<AngleEditTarget | null>(null);
+
+    interface SubcircuitMappingContext {
+        subcircuitName: string;
+        subcircuitCircuitId: string;
+        subcircuitQubitCount: number;
+        layerIdx?: number;
+        existingOperationId?: string;
+        initialMapping?: QubitMappingItem[];
+    }
+    const [subcircuitMappingContext, setSubcircuitMappingContext] = useState<SubcircuitMappingContext | null>(null);
+
+    const { projectId } = useProject();
+    const { options: availableSubcircuits } = useSubcircuitOptions(projectId, circuit?.id);
+
+    const handleEditSubcircuit = (op: SubcircuitOperationDto) => {
+        const option = availableSubcircuits.find((o) => o.circuitId === op.definitionCircuitId);
+        const subcircuitQubitCount =
+            option?.qubitCount ?? Math.max(...(op.subcircuitQubitIndices ?? []), op.targetQubits.length);
+        const initialMapping: QubitMappingItem[] = op.targetQubits.map((targetQubit, idx) => ({
+            subcircuitIndex: op.subcircuitQubitIndices ? op.subcircuitQubitIndices[idx] : idx,
+            targetQubit,
+        }));
+        setSubcircuitMappingContext({
+            subcircuitName: op.definitionName ?? option?.name ?? 'Subcircuit',
+            subcircuitCircuitId: op.definitionCircuitId,
+            subcircuitQubitCount,
+            existingOperationId: op.id,
+            initialMapping,
+        });
+    };
+
+    const handleRequestSubcircuitMapping = (ctx: { subcircuit: SubcircuitOption; layerIdx: number }) => {
+        setSubcircuitMappingContext({
+            subcircuitName: ctx.subcircuit.name,
+            subcircuitCircuitId: ctx.subcircuit.circuitId,
+            subcircuitQubitCount: ctx.subcircuit.qubitCount,
+            layerIdx: ctx.layerIdx,
+            initialMapping: [],
+        });
+    };
+
+    const handleSubcircuitMappingSubmit = (mapping: QubitMappingItem[]) => {
+        if (!subcircuitMappingContext) return;
+        const targetQubits = mapping.map((m) => m.targetQubit);
+        const subcircuitQubitIndices = mapping.map((m) => m.subcircuitIndex);
+
+        if (subcircuitMappingContext.existingOperationId) {
+            setCircuit((prev) => {
+                if (!prev) return prev;
+                return {
+                    ...prev,
+                    layers: prev.layers.map((layer) => ({
+                        quantumOperations: layer.quantumOperations.map((operation) => {
+                            if (
+                                operation.id === subcircuitMappingContext.existingOperationId &&
+                                isSubcircuit(operation)
+                            ) {
+                                return {
+                                    ...operation,
+                                    targetQubits,
+                                    subcircuitQubitIndices,
+                                    body: undefined,
+                                    bindingError: undefined,
+                                };
+                            }
+                            return operation;
+                        }),
+                    })),
+                };
+            });
+        } else {
+            const operation: SubcircuitOperationDto = {
+                id: crypto.randomUUID(),
+                type: 'SUBCIRCUIT_OPERATION',
+                identifier: subcircuitMappingContext.subcircuitName,
+                inverseForm: false,
+                definitionCircuitId: subcircuitMappingContext.subcircuitCircuitId,
+                definitionName: subcircuitMappingContext.subcircuitName,
+                targetQubits,
+                controlQubits: [],
+                subcircuitQubitIndices,
+            };
+            addQuantumOperation({ quantumOperation: operation, layerIdx: subcircuitMappingContext.layerIdx ?? 0 });
+        }
+        setSubcircuitMappingContext(null);
+    };
 
     /** The rectangle currently being dragged out over the circuit, in grid cells. */
     const [selection, setSelection] = useState<Selection | null>(null);
@@ -486,6 +577,7 @@ export function CircuitView() {
                                 setDraggingOperationId={setDraggingOperationId}
                                 setHoverPos={setHoverPos}
                                 draggingOperation={draggingOperation}
+                                onEditSubcircuit={handleEditSubcircuit}
                             />
 
                             <DropzoneGrid
@@ -503,6 +595,7 @@ export function CircuitView() {
                                     setMeasurementContext(ctx);
                                     setMeasurementDialogOpen(true);
                                 }}
+                                onRequestSubcircuitMapping={handleRequestSubcircuitMapping}
                             />
 
                             <LoopFrames frames={loopFrames} />
@@ -539,6 +632,17 @@ export function CircuitView() {
                             setMeasurementDialogOpen(false);
                             setMeasurementContext(null);
                         }}
+                    />
+                    <SubcircuitQubitMappingDialog
+                        open={subcircuitMappingContext !== null}
+                        onOpenChange={(open) => {
+                            if (!open) setSubcircuitMappingContext(null);
+                        }}
+                        subcircuitName={subcircuitMappingContext?.subcircuitName ?? ''}
+                        subcircuitQubitCount={subcircuitMappingContext?.subcircuitQubitCount ?? 0}
+                        flatQubits={flatQubits.filter((q) => q.section === 'quantum')}
+                        initialMapping={subcircuitMappingContext?.initialMapping}
+                        onSubmit={handleSubcircuitMappingSubmit}
                     />
                 </div>
                 {/* Outside the scrolling canvas: these are modals, not part of the circuit. */}

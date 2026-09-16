@@ -48,7 +48,37 @@ public interface SubcircuitServicePort {
      *
      * <p>Needed because a circuit exists as soon as its file is opened: without an explicit
      * declaration the library could only guess, and would offer every file the user ever looked at.
-     * Calling it twice is harmless.
+     * Calling it twice is harmless when not targeted at a specific circuit.
      */
-    void offerAsSubcircuit(String circuitId, User user);
+    default void offerAsSubcircuit(String circuitId, User user) {
+        offerAsSubcircuit(circuitId, null, user);
+    }
+
+    /**
+     * Declares a circuit to be available as a subcircuit for the given target circuit, validating
+     * against self-reference and circular dependencies.
+     *
+     * @param circuitId the circuit to be offered
+     * @param forCircuitId the circuit being edited that intends to use it, or null
+     * @param user authenticated user
+     */
+    void offerAsSubcircuit(String circuitId, String forCircuitId, User user);
+
+    /**
+     * Returns file IDs of circuits in the project that cannot be chosen as subcircuits for the
+     * given circuit being edited (self, already offered, or would cause a circular dependency).
+     *
+     * @param projectId the project
+     * @param currentCircuitId the circuit currently being edited, or null
+     * @param user authenticated user
+     */
+    List<String> listDisallowedFileIds(String projectId, String currentCircuitId, User user);
+
+    /**
+     * Revokes a circuit from being offered as a subcircuit in the project.
+     *
+     * @param circuitId the circuit id to revoke
+     * @param user authenticated user
+     */
+    void revokeSubcircuit(String circuitId, User user);
 }

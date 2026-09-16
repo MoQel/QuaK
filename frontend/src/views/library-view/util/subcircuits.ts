@@ -83,38 +83,64 @@ export async function collectProjectFiles(elements: FileElementDto[]): Promise<F
 }
 
 /**
- * The project's circuit files that are not offered as a subcircuit yet.
- *
- * Both kinds qualify: a file that has no circuit at all, and one that has a circuit but was never
- * declared to be a building block - the user's main circuit is exactly the second kind, and it must
- * stay pickable in case they do want it as one.
+ * Lists file IDs that cannot be chosen as subcircuits for the given active circuit
+ * (self, already offered, or loop-forming).
+ */
+export async function fetchDisallowedFileIds(
+    projectId: string,
+    currentCircuitId: string | undefined,
+): Promise<string[]> {
+    const query = currentCircuitId ? `?currentCircuitId=${encodeURIComponent(currentCircuitId)}` : '';
+    try {
+        return await api.get<string[]>(`/api/circuit/project/${projectId}/subcircuit-disallowed-files${query}`);
+    } catch {
+        return [];
+    }
+}
+
+/**
+ * The project's circuit files that are eligible to become a subcircuit.
+ * Excludes the current circuit's file, circuits that would close a loop, and circuits
+ * already offered as subcircuits.
  */
 export async function findUndeclaredCircuitFiles(
     projectId: string,
-    known: SubcircuitOption[],
-    currentCircuitFileName: string | undefined,
+    currentCircuitId: string | undefined,
+    currentFileId: string | undefined,
+    known?: SubcircuitOption[],
 ): Promise<FileElementDto[]> {
-    const project = await api.get<ProjectContentsResponse>(`/api/project/${projectId}`);
+    const [project, disallowedFileIds] = await Promise.all([
+        api.get<ProjectContentsResponse>(`/api/project/${projectId}`),
+        fetchDisallowedFileIds(projectId, currentCircuitId),
+    ]);
     const files = project.contents ? await collectProjectFiles(project.contents) : [];
-    const taken = new Set(known.map((option) => option.name));
+    const disallowed = new Set(disallowedFileIds);
+    if (currentFileId) {
+        disallowed.add(currentFileId);
+    }
+    if (known) {
+        for (const option of known) {
+            if (option.fileId) disallowed.add(option.fileId);
+        }
+    }
 
-    return files.filter(
-        (file) =>
-            file.name.toLowerCase().endsWith(CIRCUIT_FILE_EXTENSION) &&
-            !taken.has(file.name) &&
-            file.name !== currentCircuitFileName,
-    );
+    return files.filter((file) => file.name.toLowerCase().endsWith(CIRCUIT_FILE_EXTENSION) && !disallowed.has(file.id));
 }
 
 /**
  * Declares a file's circuit to be a subcircuit, creating the circuit if the file has none yet.
- *
- * Being a subcircuit is a decision rather than a side effect: a circuit exists the moment its file
- * is opened, so listing every circuit of the project would offer the user's main circuit as a
- * building block too. This is the one place that decision is recorded.
+ * When forCircuitId is provided, validates against self-reference and circular dependencies.
  */
-export async function offerAsSubcircuit(fileId: string): Promise<CircuitResponse> {
-    return api.post<CircuitResponse>(`/api/circuit/file/${fileId}/subcircuit`);
+export async function offerAsSubcircuit(fileId: string, forCircuitId?: string): Promise<CircuitResponse> {
+    const query = forCircuitId ? `?forCircuitId=${encodeURIComponent(forCircuitId)}` : '';
+    return api.post<CircuitResponse>(`/api/circuit/file/${fileId}/subcircuit${query}`);
+}
+
+/**
+ * Removes a file's circuit from being offered as a subcircuit.
+ */
+export async function removeSubcircuit(fileId: string): Promise<void> {
+    return api.delete<void>(`/api/circuit/file/${fileId}/subcircuit`);
 }
 
 /** Creates a new circuit file in the project root and gives it a circuit. */

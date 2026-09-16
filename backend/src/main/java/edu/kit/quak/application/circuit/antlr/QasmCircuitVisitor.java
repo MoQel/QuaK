@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -63,8 +64,20 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
     /** Gate names declared with a @composition annotation, mapped to the circuit they stand for. */
     private final Map<String, String> subcircuitsByGateName = new HashMap<>();
 
+    /** File or circuit display names declared with a @composition annotation. */
+    private final Map<String, String> subcircuitNamesByGateName = new HashMap<>();
+
+    /** Mapped subcircuit qubit indices declared in gate parameter names (e.g. q1, q2 -> [1, 2]). */
+    private final Map<String, List<Integer>> subcircuitQubitIndicesByGateName = new HashMap<>();
+
     /** Circuit id from the @composition annotation just read, consumed by the gate declaration after it. */
     private String pendingSubcircuitId = null;
+
+    /** Circuit name from the @composition annotation just read, consumed by the gate declaration after it. */
+    private String pendingSubcircuitName = null;
+
+    /** Whether an unconsumed @composition annotation was encountered before a gate declaration. */
+    private boolean pendingComposition = false;
     private final QasmExpressionEvaluator evaluator = new QasmExpressionEvaluator();
 
     /** Parsed `gate` declarations by name, turned into a {@link GateDefinition} on first call. */
@@ -222,22 +235,52 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
         if (ctx.gateStatement() != null) {
             String gateName = ctx.gateStatement().Identifier().getText();
             String circuitId = null;
-            if (ctx.annotation() != null) {
+            String circuitName = null;
+            boolean hasCompositionAnnotation = false;
+            if (ctx.annotation() != null && !ctx.annotation().isEmpty()) {
                 for (var ann : ctx.annotation()) {
                     String kw = ann.AnnotationKeyword() != null ? ann.AnnotationKeyword().getText() : "";
                     if (kw.equalsIgnoreCase("@composition")) {
+                        hasCompositionAnnotation = true;
                         String rem = ann.RemainingLineContent() != null ? ann.RemainingLineContent().getText().trim() : "";
                         circuitId = parseCircuitIdFromAnnotation(rem);
+                        circuitName = parseCircuitNameFromAnnotation(rem);
                         break;
                     }
                 }
             }
-            if (circuitId == null && pendingSubcircuitId != null) {
+            if (!hasCompositionAnnotation && pendingComposition) {
+                hasCompositionAnnotation = true;
                 circuitId = pendingSubcircuitId;
+                circuitName = pendingSubcircuitName;
+                pendingComposition = false;
                 pendingSubcircuitId = null;
+                pendingSubcircuitName = null;
             }
-            if (circuitId != null) {
+            if (hasCompositionAnnotation) {
+                if (circuitId == null) {
+                    if (circuitName != null && !circuitName.isBlank()) {
+                        Optional<String> resolved = includeLoader.resolveCircuitId(currentFileId, circuitName);
+                        if (resolved.isPresent()) {
+                            circuitId = resolved.get();
+                        } else if (currentFileId != null && includeLoader != QasmIncludeLoader.NONE) {
+                            throw new QasmParseException(
+                                "Could not resolve subcircuit file '%s': no such file in this project.".formatted(circuitName)
+                            );
+                        }
+                    }
+                }
+                if (circuitId == null) {
+                    circuitId = UUID.randomUUID().toString();
+                }
                 subcircuitsByGateName.put(gateName, circuitId);
+                if (circuitName != null && !circuitName.isBlank()) {
+                    subcircuitNamesByGateName.put(gateName, circuitName);
+                }
+                List<Integer> qubitIndices = extractSubcircuitQubitIndices(ctx.gateStatement());
+                if (qubitIndices != null && !qubitIndices.isEmpty()) {
+                    subcircuitQubitIndicesByGateName.put(gateName, qubitIndices);
+                }
                 return null; // Skip statement body of pseudo composite gate
             }
         }
@@ -248,27 +291,68 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
     public Void visitAnnotation(OpenQASM3Parser.AnnotationContext ctx) {
         String keyword = ctx.AnnotationKeyword() != null ? ctx.AnnotationKeyword().getText() : "";
         if (keyword.equalsIgnoreCase("@composition")) {
+            pendingComposition = true;
             String remaining = ctx.RemainingLineContent() != null ? ctx.RemainingLineContent().getText().trim() : "";
             pendingSubcircuitId = parseCircuitIdFromAnnotation(remaining);
+            pendingSubcircuitName = parseCircuitNameFromAnnotation(remaining);
         }
         return super.visitAnnotation(ctx);
     }
 
+    private List<Integer> extractSubcircuitQubitIndices(OpenQASM3Parser.GateStatementContext gateStatement) {
+        if (gateStatement == null || gateStatement.qubits == null || gateStatement.qubits.Identifier() == null) {
+            return null;
+        }
+        List<org.antlr.v4.runtime.tree.TerminalNode> idNodes = gateStatement.qubits.Identifier();
+        if (idNodes.isEmpty()) {
+            return null;
+        }
+        List<Integer> indices = new ArrayList<>();
+        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("(\\d+)$");
+        for (var node : idNodes) {
+            String name = node.getText();
+            java.util.regex.Matcher matcher = pattern.matcher(name);
+            if (matcher.find()) {
+                indices.add(Integer.parseInt(matcher.group(1)));
+            } else {
+                return null;
+            }
+        }
+        return indices;
+    }
+
+    private String parseCircuitNameFromAnnotation(String text) {
+        if (text == null || text.isBlank()) {
+            return null;
+        }
+        String trimmed = text.trim();
+        int firstQuote = trimmed.indexOf('"');
+        int lastQuote = trimmed.lastIndexOf('"');
+        if (firstQuote >= 0 && lastQuote > firstQuote) {
+            String name = trimmed.substring(firstQuote + 1, lastQuote).trim();
+            return name.isEmpty() ? null : name;
+        }
+        return null;
+    }
+
     private String parseCircuitIdFromAnnotation(String text) {
         if (text == null || text.isBlank()) {
-            return UUID.randomUUID().toString();
+            return null;
         }
         String trimmed = text.trim();
         int lastQuoteIndex = trimmed.lastIndexOf('"');
-        if (lastQuoteIndex >= 0 && lastQuoteIndex + 1 < trimmed.length()) {
-            String afterQuote = trimmed.substring(lastQuoteIndex + 1).trim();
-            if (!afterQuote.isEmpty()) {
-                return afterQuote;
+        if (lastQuoteIndex >= 0) {
+            if (lastQuoteIndex + 1 < trimmed.length()) {
+                String afterQuote = trimmed.substring(lastQuoteIndex + 1).trim();
+                if (!afterQuote.isEmpty()) {
+                    return afterQuote;
+                }
             }
+            return null;
         }
         String[] parts = trimmed.split("\\s+");
-        String candidate = parts[parts.length - 1].replace("\"", "").trim();
-        return candidate.isEmpty() ? UUID.randomUUID().toString() : candidate;
+        String candidate = parts[parts.length - 1].trim();
+        return candidate.isEmpty() ? null : candidate;
     }
 
     @Override
@@ -424,7 +508,19 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
             // bypassed the loop capture (a subcircuit in a `for` was unrolled instead of framed),
             // the definition under construction (one inside a `gate` body escaped into the circuit)
             // and the expansion budget.
-            addOperation(new SubcircuitOperation(false, operands, null, subcircuitsByGateName.get(gateName)));
+            List<Integer> qubitIndices = subcircuitQubitIndicesByGateName.get(gateName);
+            SubcircuitOperation subcircuit = new SubcircuitOperation(
+                false,
+                operands,
+                null,
+                subcircuitsByGateName.get(gateName),
+                qubitIndices
+            );
+            String definitionName = subcircuitNamesByGateName.get(gateName);
+            if (definitionName != null && !definitionName.isBlank()) {
+                subcircuit.setDefinitionName(definitionName);
+            }
+            addOperation(subcircuit);
             return;
         }
 

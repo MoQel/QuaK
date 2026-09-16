@@ -75,7 +75,13 @@ export const withResolvedSubcircuits = (circuit: CircuitResponse, saved: Circuit
             quantumOperations: layer.quantumOperations.map((operation) => {
                 const match = operation.id ? resolved.get(operation.id) : undefined;
                 if (!match || !isSubcircuit(operation)) return operation;
-                return { ...operation, body: match.body, definitionName: match.definitionName };
+                return {
+                    ...operation,
+                    body: match.body,
+                    definitionName: match.definitionName,
+                    bindingError: match.bindingError,
+                    subcircuitQubitIndices: match.subcircuitQubitIndices ?? operation.subcircuitQubitIndices,
+                };
             }),
         })),
     };

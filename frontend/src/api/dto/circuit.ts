@@ -58,6 +58,15 @@ export interface SubcircuitOperationDto extends AbstractQuantumOperationDto {
      * rather than quietly leave the gate out.
      */
     body?: QuantumOperationDto[];
+    /**
+     * The 0-based indices of the subcircuit's qubits mapped to the call's targetQubits.
+     * When undefined or empty, defaults to sequential [0, 1, ..., targetQubits.length - 1].
+     */
+    subcircuitQubitIndices?: number[];
+    /**
+     * Reason why body could not be bound (e.g., entangled with unmapped qubits or missing measurements).
+     */
+    bindingError?: string;
 }
 
 /**

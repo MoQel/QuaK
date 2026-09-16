@@ -274,6 +274,8 @@ export const normalizeParsedCircuit = (
                 identifier: subcircuit.identifier,
                 definitionCircuitId: subcircuit.definitionCircuitId ?? '',
                 definitionName: subcircuit.definitionName,
+                subcircuitQubitIndices: subcircuit.subcircuitQubitIndices,
+                bindingError: subcircuit.bindingError,
                 body: subcircuit.body?.map((part) => normalizeOperation(part as ParserOperation)),
             } as QuantumOperationDto;
         }

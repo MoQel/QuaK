@@ -14,6 +14,7 @@ import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
 import edu.kit.quak.core.circuit.model.layer.operation.SubcircuitOperation;
 import edu.kit.quak.core.circuit.model.register.QuantumRegister;
+import edu.kit.quak.core.common.exception.DomainRuleViolationException;
 import edu.kit.quak.core.filesystem.model.File;
 import edu.kit.quak.core.user.model.User;
 import edu.kit.quak.shared.tags.UnitTest;
@@ -195,6 +196,98 @@ class SubcircuitServiceTest {
 
         assertTrue(plain.isOfferedAsSubcircuit());
         verify(circuitRepository).save(plain);
+    }
+
+    @Test
+    void offerAsSubcircuitRejectsSelfReference() {
+        QuantumCircuit self = circuitOf(PROJECT, "f-1");
+        when(circuitRepository.findById("c-1")).thenReturn(Optional.of(self));
+
+        assertThrows(DomainRuleViolationException.class, () -> service.offerAsSubcircuit("c-1", "c-1", user));
+    }
+
+    @Test
+    void offerAsSubcircuitRejectsCircularDependency() {
+        QuantumCircuit target = circuitOf(PROJECT, "f-target");
+        target.setId("target");
+        QuantumCircuit loopCircuit = circuitOfCalling("loop", "f-loop", "target");
+        when(circuitRepository.findById("loop")).thenReturn(Optional.of(loopCircuit));
+        when(circuitRepository.findAllByProjectId(PROJECT)).thenReturn(List.of(target, loopCircuit));
+
+        assertThrows(DomainRuleViolationException.class, () -> service.offerAsSubcircuit("loop", "target", user));
+    }
+
+    @Test
+    void offerAsSubcircuitRejectsAlreadyOfferedCircuitWhenForCircuitSpecified() {
+        QuantumCircuit already = offeredCircuit(PROJECT, "f-1");
+        QuantumCircuit target = circuitOf(PROJECT, "f-target");
+        target.setId("target");
+        when(circuitRepository.findById("c-1")).thenReturn(Optional.of(already));
+        when(circuitRepository.findAllByProjectId(PROJECT)).thenReturn(List.of(already, target));
+
+        assertThrows(DomainRuleViolationException.class, () -> service.offerAsSubcircuit("c-1", "target", user));
+    }
+
+    @Test
+    void listDisallowedFileIdsIncludesSelfAlreadyOfferedAndCycleFormingCircuits() {
+        QuantumCircuit current = circuitOf(PROJECT, "f-current");
+        current.setId("current");
+
+        QuantumCircuit alreadyOffered = offeredCircuit(PROJECT, "f-offered");
+        alreadyOffered.setId("offered");
+
+        QuantumCircuit cycle = circuitOfCalling("cycle", "f-cycle", "current");
+
+        QuantumCircuit validCandidate = circuitOf(PROJECT, "f-valid");
+        validCandidate.setId("valid");
+
+        when(circuitRepository.findAllByProjectId(PROJECT)).thenReturn(List.of(current, alreadyOffered, cycle, validCandidate));
+
+        List<String> disallowed = service.listDisallowedFileIds(PROJECT, "current", user);
+
+        assertTrue(disallowed.contains("f-current"), "Current circuit's file should be disallowed (self)");
+        assertTrue(disallowed.contains("f-offered"), "Already offered circuit's file should be disallowed");
+        assertTrue(disallowed.contains("f-cycle"), "Cycle forming circuit's file should be disallowed");
+        assertFalse(disallowed.contains("f-valid"), "Valid circuit's file should NOT be disallowed");
+    }
+
+    @Test
+    void revokingOfferedCircuitClearsFlagAndSaves() {
+        QuantumCircuit offered = offeredCircuit(PROJECT, "f-1");
+        when(circuitRepository.findById("c-1")).thenReturn(Optional.of(offered));
+
+        service.revokeSubcircuit("c-1", user);
+
+        assertFalse(offered.isOfferedAsSubcircuit());
+        verify(circuitRepository).save(offered);
+    }
+
+    @Test
+    void revokingUnofferedCircuitDoesNothing() {
+        QuantumCircuit plain = circuitOf(PROJECT, "f-1");
+        when(circuitRepository.findById("c-1")).thenReturn(Optional.of(plain));
+
+        service.revokeSubcircuit("c-1", user);
+
+        assertFalse(plain.isOfferedAsSubcircuit());
+        verify(circuitRepository, never()).save(any());
+    }
+
+    private static QuantumCircuit circuitOfCalling(String id, String fileId, String callsCircuitId) {
+        QuantumOperation call = new SubcircuitOperation(
+            false,
+            new ArrayList<>(List.of(new ElementSelector("reg", 0))),
+            new ArrayList<>(),
+            callsCircuitId
+        );
+        return QuantumCircuit.builder()
+            .id(id)
+            .projectId(PROJECT)
+            .fileId(fileId)
+            .offeredAsSubcircuit(false)
+            .registers(List.of())
+            .layers(List.of(new Layer(new ArrayList<>(List.of(call)))))
+            .build();
     }
 
     /** A circuit that is offered as a subcircuit and itself calls the given one. */
