@@ -102,6 +102,14 @@ describe('landing page with original application URLs', () => {
         expect(screen.getByTestId('current-path')).toHaveTextContent(/^\/$/);
     });
 
+    it('does not show login providers while authentication is loading', () => {
+        auth.isLoading = true;
+        visit('/login');
+        expect(screen.getByText('Loading...')).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'Continue with Google' })).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'Continue with GitHub' })).not.toBeInTheDocument();
+    });
+
     it('retains the sign-in error message on the dedicated page', async () => {
         visit('/login?error=email_exists');
         expect(

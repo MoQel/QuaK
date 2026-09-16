@@ -45,7 +45,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
-@Profile("!dev") // This config is NOT active when 'dev' profile is enabled
+@Profile("!dev & !local") // OAuth security is not active in development or trusted local mode
 public class SecurityConfig {
 
     @Value("${app.frontend.url}")

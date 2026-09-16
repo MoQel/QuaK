@@ -9,31 +9,33 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 
 /**
- * Automatically seeds the database with a development user when running with
- * the 'dev' profile.
- * This ensures that HTTP Basic Auth with the admin user works against the
- * database.
+ * Seeds the database with the trusted local user used by the {@code dev} and {@code local}
+ * profiles. In development this backs HTTP Basic authentication; in local mode requests are
+ * automatically authenticated as the same user.
  */
 @Configuration
-@Profile("dev")
+@Profile({ "dev", "local" })
 @Slf4j
 public class DevDataSeeder implements CommandLineRunner {
 
     private final UserRepositoryPort userRepository;
-    private final String devUsername;
+    private final String localUsername;
 
-    public DevDataSeeder(UserRepositoryPort userRepository, @Value("${app.dev.username:admin}") String devUsername) {
+    public DevDataSeeder(
+        UserRepositoryPort userRepository,
+        @Value("${app.local.username:${app.dev.username:admin}}") String localUsername
+    ) {
         this.userRepository = userRepository;
-        this.devUsername = devUsername;
+        this.localUsername = localUsername;
     }
 
     @Override
     public void run(String... args) {
         String issuer = "local";
-        String subject = devUsername;
+        String subject = localUsername;
 
         if (userRepository.findByIssuerAndSub(issuer, subject).isEmpty()) {
-            log.info("Seeding dev user: {}/{}", issuer, subject);
+            log.info("Seeding trusted local user: {}/{}", issuer, subject);
             User devUser = new User();
             devUser.setIssuer(issuer);
             devUser.setSub(subject);
@@ -42,9 +44,9 @@ public class DevDataSeeder implements CommandLineRunner {
             devUser.setEmailVerified(true);
 
             userRepository.save(devUser);
-            log.info("Dev user seeded successfully.");
+            log.info("Trusted local user seeded successfully.");
         } else {
-            log.debug("Dev user already exists, skipping seeding.");
+            log.debug("Trusted local user already exists, skipping seeding.");
         }
     }
 }

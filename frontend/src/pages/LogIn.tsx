@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import './LandingPageAlternative.css';
 
@@ -60,14 +60,9 @@ export const LoginOptions: React.FC = () => {
 };
 
 export const LogIn: React.FC = () => {
-    const { isAuthenticated } = useAuth();
-    const navigate = useNavigate();
+    const { isAuthenticated, isLoading } = useAuth();
     const [searchParams, setSearchParams] = useSearchParams();
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-    useEffect(() => {
-        if (isAuthenticated) navigate('/');
-    }, [isAuthenticated, navigate]);
 
     useEffect(() => {
         if (searchParams.get('error') === 'email_exists') {
@@ -76,6 +71,21 @@ export const LogIn: React.FC = () => {
             setSearchParams(searchParams);
         }
     }, [searchParams, setSearchParams]);
+
+    if (isLoading) {
+        return (
+            <div className="flex h-screen items-center justify-center">
+                <div className="text-center">
+                    <div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-blue-500" />
+                    <p className="mt-4 text-gray-600">Loading...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (isAuthenticated) {
+        return <Navigate to="/" replace />;
+    }
 
     return (
         <main className="quak-landing min-h-screen bg-[#f7f6f2] text-[#17211f]">

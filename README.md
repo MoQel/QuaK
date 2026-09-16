@@ -10,6 +10,24 @@ This repository contains the source code for the Quantum Kit (QuaK) Web IDE.
 
 ## Docker Workflows
 
+### Local Passwordless Deployment
+
+For a trusted, single-user installation, start the complete application with:
+
+```bash
+docker compose -f docker-compose.local.yaml up --build
+```
+
+Then open `http://localhost:8080`. QuaK opens the project dashboard without an
+OAuth login; projects can be created and opened in the editor normally. Project
+data is persisted in the `local-db` Docker volume.
+
+> [!WARNING]
+> Local mode automatically authenticates every request as its single local user.
+> The Compose file binds QuaK and MariaDB to `127.0.0.1` for that reason. Do not
+> change those bindings or expose a local-profile deployment to an untrusted
+> network. Use the production workflow when access control is required.
+
 ### Development Workflow (Docker-only)
 
 This ensures a consistent environment. Rebuild the backend image after backend
