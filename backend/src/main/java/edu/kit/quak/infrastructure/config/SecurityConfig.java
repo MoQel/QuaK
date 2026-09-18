@@ -81,6 +81,7 @@ public class SecurityConfig {
                         "/*.ico",
                         "/*.png",
                         "/*.jpg",
+                        "/*.svg",
                         "/assets/**",
                         // OpenAPI / Swagger endpoints
                         "/swagger-ui/**",
