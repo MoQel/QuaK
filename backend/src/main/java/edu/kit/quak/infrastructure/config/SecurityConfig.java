@@ -71,6 +71,9 @@ public class SecurityConfig {
                 auth
                     .requestMatchers(
                         "/",
+                        "/project/**",
+                        "/profile",
+                        "/settings",
                         "/login/**",
                         "/oauth2/**",
                         "/api/auth/user",
