@@ -79,9 +79,12 @@ export const buildCompositePreview = (gate: CompositeQuantumGateDto): CompositeP
 
     // The same ASAP pass the circuit itself is laid out with, so the preview groups the body's
     // operations into columns exactly as ungrouping the gate would show them.
-    const columns = layOutColumns(drawable.map((operation, index) => ({ ...operation, originalLayerIdx: index })), {
-        spanOf,
-    });
+    const columns = layOutColumns(
+        drawable.map((operation, index) => ({ ...operation, originalLayerIdx: index })),
+        {
+            spanOf,
+        },
+    );
 
     const visible = columns.slice(0, MAX_PREVIEW_COLUMNS);
     const hiddenOperations = columns
