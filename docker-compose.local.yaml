@@ -1,0 +1,59 @@
+services:
+  database:
+    image: "mariadb:latest"
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3306:3306"
+    environment:
+      MARIADB_ROOT_PASSWORD: local-only-password
+      MARIADB_DATABASE: quak
+    volumes:
+      - local-db:/var/lib/mysql
+    healthcheck:
+      test: [ "CMD", "mariadb-admin", "ping", "-h", "localhost", "--password=local-only-password" ]
+      interval: 1m
+      timeout: 5s
+      start_period: 1m
+      start_interval: 5s
+    networks:
+      - quak-local-network
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      args:
+        SKIP_FRONTEND: "false"
+    container_name: quak-local
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      database:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+      SPRING_DATASOURCE_URL: jdbc:mariadb://database:3306/quak
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.mariadb.jdbc.Driver
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: local-only-password
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      FRONTEND_URL: http://localhost:8080
+      QUAK_LSP_SERVERS_PYTHON_COMMAND_0: /opt/lsp/python/bin/pylsp
+      QUAK_LSP_SERVERS_PYTHON_WORKINGDIRECTORY: /var/lib/quak/lsp-workspace
+      QUAK_LSP_SERVERS_PYTHON_ENVIRONMENT_PYTHONUNBUFFERED: "1"
+      QUAK_LSP_SERVERS_QASM_COMMAND_0: /opt/lsp/qasm/qasmlsp
+      QUAK_LSP_SERVERS_QASM_WORKINGDIRECTORY: /var/lib/quak/lsp-workspace
+      QUAK_LSP_LIMITS_MAXPROCESSES: ${QUAK_LSP_MAX_PROCESSES:-40}
+      QUAK_LSP_LIMITS_MAXPROCESSESPERUSER: ${QUAK_LSP_MAX_PROCESSES_PER_USER:-4}
+    tmpfs:
+      - /var/lib/quak/lsp-workspace:uid=10001,gid=10001,mode=0700
+    networks:
+      - quak-local-network
+    restart: unless-stopped
+
+volumes:
+  local-db:
+
+networks:
+  quak-local-network:
+    driver: bridge
