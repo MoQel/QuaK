@@ -161,28 +161,15 @@ type OperationHandlers = Pick<
     | 'onGroupSelected'
 >;
 
-/** Binds a handler to this operation's id, or drops it when either the id or the handler is absent. */
-function bindToId(
-    operationId: string | undefined,
-    handler: ((operationId: string) => void) | undefined,
-): (() => void) | undefined {
-    return operationId && handler ? () => handler(operationId) : undefined;
+/**
+ * Binds a handler to the value it acts on, or drops the handler when either is absent. Every menu
+ * entry below is optional in exactly this way, so the check lives here instead of at each call.
+ */
+function bindTo<T>(value: T | undefined, handler: ((value: T) => void) | undefined): (() => void) | undefined {
+    return value !== undefined && handler ? () => handler(value) : undefined;
 }
 
-/** One gate on the grid: either a box for a composed operation, or target/control markers. */
-function GridOperation({
-    op,
-    layerIdx,
-    isGhost,
-    measurementColor,
-    registers,
-    flatQubits,
-    loopBlocks,
-    isSelected,
-    onDragStart,
-    onDragEnd,
-    handlers,
-}: Readonly<{
+type GridOperationProps = Readonly<{
     op: QuantumOperationDto;
     layerIdx: number;
     isGhost: boolean;
@@ -194,27 +181,31 @@ function GridOperation({
     onDragStart: (operationId: string, operationSize: number, grabOffset: number) => void;
     onDragEnd: () => void;
     handlers: OperationHandlers;
-}>) {
-    const {
-        removeQuantumOperation,
-        removeLoopBlock,
-        ungroupQuantumOperation,
-        editRotationAngle,
-        onEditSubcircuit,
-        onToggleSelect,
-        onAddLoop,
-        onEditLoop,
-        onGroupSelected,
-    } = handlers;
+}>;
+
+/**
+ * Everything both renderings take, identical either way. `operation` stays out of it: the box demands
+ * the narrowed type, which only the type guard in GridOperation establishes.
+ */
+function sharedGateProps({
+    op,
+    layerIdx,
+    isGhost,
+    flatQubits,
+    loopBlocks,
+    isSelected,
+    onDragStart,
+    onDragEnd,
+    handlers,
+}: GridOperationProps) {
+    const { removeQuantumOperation, removeLoopBlock, onAddLoop, onEditLoop, onToggleSelect } = handlers;
 
     const operationId = op.id;
     // The frame drawn tightest around this gate: it decides both the smaller rendering
     // and which loop the gate's context menu offers to remove.
     const enclosingLoop = operationId ? innermostBlockCovering(loopBlocks, operationId) : undefined;
 
-    // Everything both renderings take. `operation` stays out of it: the box demands the narrowed type,
-    // which only the type guard below establishes.
-    const shared = {
+    return {
         flatQubits,
         layerIdx,
         isGhost,
@@ -224,12 +215,27 @@ function GridOperation({
             onDragStart(operationId!, operationSize, grabOffset),
         onDragEnd,
         onDelete: () => removeQuantumOperation(operationId!),
-        onRemoveLoop: enclosingLoop ? () => removeLoopBlock(enclosingLoop.id) : undefined,
-        onAddLoop: bindToId(operationId, onAddLoop),
-        onEditLoop: enclosingLoop && onEditLoop ? () => onEditLoop(enclosingLoop) : undefined,
+        onRemoveLoop: bindTo(enclosingLoop, (loop) => removeLoopBlock(loop.id)),
+        onAddLoop: bindTo(operationId, onAddLoop),
+        onEditLoop: bindTo(enclosingLoop, onEditLoop),
         isSelected,
-        onToggleSelect: bindToId(operationId, onToggleSelect),
+        onToggleSelect: bindTo(operationId, onToggleSelect),
     };
+}
+
+/** One gate on the grid: either a box for a composed operation, or target/control markers. */
+function GridOperation(props: GridOperationProps) {
+    const { op, registers, measurementColor, handlers } = props;
+    const shared = sharedGateProps(props);
+
+    // Which of the two optional menu entries this operation earns, decided before the split because
+    // neither depends on how the gate is drawn.
+    // A measurement cannot become part of a composite, so it is never offered for grouping.
+    const groupableId = op.type === 'MEASUREMENT' ? undefined : op.id;
+    // Only a composite gate has a body in this circuit to dissolve into.
+    const ungroupableId = isCompositeGate(op) ? op.id : undefined;
+
+    const onGroup = bindTo(groupableId, handlers.onGroupSelected);
 
     // A composed operation is one box rather than a set of target/control markers.
     if (isComposedOperation(op)) {
@@ -237,10 +243,9 @@ function GridOperation({
             <CompositionBox
                 {...shared}
                 operation={op}
-                // Only a composite gate has a body in this circuit to dissolve into.
-                onUngroup={isCompositeGate(op) ? () => ungroupQuantumOperation(operationId!) : undefined}
-                onGroup={bindToId(operationId, onGroupSelected)}
-                onEdit={onEditSubcircuit}
+                onUngroup={bindTo(ungroupableId, handlers.ungroupQuantumOperation)}
+                onGroup={onGroup}
+                onEdit={handlers.onEditSubcircuit}
             />
         );
     }
@@ -251,9 +256,8 @@ function GridOperation({
             operation={op}
             registers={registers}
             measurementColor={measurementColor}
-            onEditAngle={() => editRotationAngle(op)}
-            // A measurement cannot become part of a composite, so it is never offered for grouping.
-            onGroup={op.type === 'MEASUREMENT' ? undefined : bindToId(operationId, onGroupSelected)}
+            onEditAngle={() => handlers.editRotationAngle(op)}
+            onGroup={onGroup}
         />
     );
 }
