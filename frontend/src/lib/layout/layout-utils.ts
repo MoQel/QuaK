@@ -26,7 +26,7 @@ export const DEFAULT_GRID: string[][] = [
 ];
 
 /** The sizes `buildDefaultLayout` hands out, reused when a panel is reopened. */
-const DEFAULT_SIZES: Record<string, Pick<SavedPanelPlacement, 'initialWidth' | 'initialHeight'>> = {
+const DEFAULT_SIZES: Record<string, Pick<PanelPlacement, 'initialWidth' | 'initialHeight'>> = {
     [PANELS.file]: { initialWidth: LEFT_W },
     [PANELS.code]: { initialWidth: RIGHT_W },
     [PANELS.library]: { initialWidth: LEFT_W },
@@ -46,7 +46,7 @@ const gridPosition = (panelId: string): { row: number; column: number } | null =
  * Where a reopened panel belongs, derived from the default arrangement: it rejoins its own row next
  * to the nearest neighbour still open there.
  */
-export const getDefaultPlacement = (panelId: string, api: DockviewApi): SavedPanelPlacement | null => {
+export const getDefaultPlacement = (panelId: string, api: DockviewApi): PanelPlacement | null => {
     const home = gridPosition(panelId);
     if (!home) return null;
 
@@ -57,7 +57,7 @@ export const getDefaultPlacement = (panelId: string, api: DockviewApi): SavedPan
     const nextInRow = row.slice(home.column + 1).find(isOpen);
     if (nextInRow) return { position: { referencePanel: nextInRow, direction: 'left' }, ...size };
 
-    const previousInRow = [...row.slice(0, home.column)].reverse().find(isOpen);
+    const previousInRow = row.slice(0, home.column).reverse().find(isOpen);
     if (previousInRow) return { position: { referencePanel: previousInRow, direction: 'right' }, ...size };
 
     // Its whole row is closed, so the row itself has to come back. That is an absolute position:
@@ -161,14 +161,6 @@ export type PanelPlacement = {
     initialHeight?: number;
 };
 
-/**
- * What is worth remembering about a closed panel: only the tab group it shared with others. Neither
- * its grid position nor its size is, because both only describe what happened to be true at the
- * moment of closing — restoring them once the neighbours are back puts the panel in the wrong column
- * at the wrong width. Both come from the default arrangement instead.
- */
-export type SavedPanelPlacement = PanelPlacement;
-
 /** The serialized group a panel sits in, or null when the layout does not hold it. */
 const findGroupContaining = (node: SerializedGridNode, panelId: string): SerializedDockviewGroup | null => {
     if (node.type === 'leaf') {
@@ -184,7 +176,13 @@ const findGroupContaining = (node: SerializedGridNode, panelId: string): Seriali
     return null;
 };
 
-export const getSavedPanelPlacement = (layout: SerializedDockview, panelId: string): SavedPanelPlacement | null => {
+/**
+ * What is worth remembering about a closed panel: only the tab group it shared with others. Neither
+ * its grid position nor its size is, because both only describe what happened to be true at the
+ * moment of closing — restoring them once the neighbours are back puts the panel in the wrong column
+ * at the wrong width. Both come from the default arrangement instead.
+ */
+export const getSavedPanelPlacement = (layout: SerializedDockview, panelId: string): PanelPlacement | null => {
     const group = findGroupContaining(layout.grid.root, panelId);
     if (!group) return null;
 
@@ -196,10 +194,7 @@ export const getSavedPanelPlacement = (layout: SerializedDockview, panelId: stri
     return { position: { referenceGroup: group.id, direction: 'within', index: group.views.indexOf(panelId) } };
 };
 
-export const resolveSavedPanelPlacement = (
-    placement: SavedPanelPlacement,
-    api: DockviewApi,
-): SavedPanelPlacement | null => {
+export const resolveSavedPanelPlacement = (placement: PanelPlacement, api: DockviewApi): PanelPlacement | null => {
     if (!placement.position) return placement;
 
     if ('referenceGroup' in placement.position) {
@@ -216,7 +211,7 @@ export const resolveSavedPanelPlacement = (
 export const restorePlacement = (
     panelId: string,
     api: DockviewApi,
-    saved: SavedPanelPlacement | undefined,
+    saved: PanelPlacement | undefined,
 ): PanelPlacement => {
     const tabGroup = saved ? resolveSavedPanelPlacement(saved, api) : null;
     if (tabGroup?.position) return { position: tabGroup.position };

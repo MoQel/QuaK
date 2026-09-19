@@ -8,7 +8,7 @@ import {
     PANELS,
     getSavedPanelPlacement,
     restorePlacement,
-    type SavedPanelPlacement,
+    type PanelPlacement,
 } from '@/lib/layout/layout-utils';
 import type { DockviewApi } from 'dockview-react';
 type PanelKey = keyof typeof PANELS;
@@ -56,7 +56,7 @@ export const DockviewProvider = ({ children }: { children: React.ReactNode }) =>
     };
 
     const [openPanels, setOpenPanels] = useState<Set<PanelKey>>(new Set());
-    const savedPanelPlacementsRef = useRef<Map<PanelKey, SavedPanelPlacement>>(new Map());
+    const savedPanelPlacementsRef = useRef<Map<PanelKey, PanelPlacement>>(new Map());
     const isResettingRef = useRef(false);
 
     const value = useMemo<DockviewContextType>(() => {
