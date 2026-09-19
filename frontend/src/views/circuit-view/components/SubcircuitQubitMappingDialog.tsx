@@ -78,6 +78,9 @@ export function SubcircuitQubitMappingDialog({
 
     const hasAtLeastOneMapping = Object.values(mapping).some((val) => val !== NONE_VALUE);
 
+    // Named rather than counted: the label is stable per row and doubles as the row's key.
+    const subcircuitQubitLabels = Array.from({ length: subcircuitQubitCount }, (_, index) => `q${index}`);
+
     const handleConfirm = () => {
         const result: QubitMappingItem[] = [];
         for (let i = 0; i < subcircuitQubitCount; i++) {
@@ -109,16 +112,16 @@ export function SubcircuitQubitMappingDialog({
                 </DialogHeader>
 
                 <div className="space-y-3 max-h-72 overflow-y-auto my-2 pr-1">
-                    {Array.from({ length: subcircuitQubitCount }).map((_, subIndex) => {
+                    {subcircuitQubitLabels.map((qubitLabel, subIndex) => {
                         const otherSelected = getSelectedTargetsExcluding(subIndex);
                         const currentValue = mapping[subIndex] ?? NONE_VALUE;
 
                         return (
                             <div
-                                key={subIndex}
+                                key={qubitLabel}
                                 className="flex items-center justify-between gap-4 p-2.5 rounded-md border bg-card text-card-foreground shadow-xs"
                             >
-                                <span className="font-mono text-sm font-medium">q{subIndex}</span>
+                                <span className="font-mono text-sm font-medium">{qubitLabel}</span>
                                 <span className="text-muted-foreground text-xs">➔</span>
                                 <div className="w-56">
                                     <Select

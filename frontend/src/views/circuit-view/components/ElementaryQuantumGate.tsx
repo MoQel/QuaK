@@ -14,6 +14,8 @@ import { TextIcon } from '@/components/ui/text-icon.tsx';
 import { formatRotationAngle } from '@/views/circuit-view/util/angle.ts';
 import { DragData, FlatQubit } from '../util/types';
 
+const SELECTION_SHADOW = '0 0 0 3px var(--selection), 0 0 10px var(--selection)';
+
 interface ElementaryQuantumGateProps {
     operation: QuantumOperationDto;
     registers: RegisterResponse[];
@@ -312,10 +314,33 @@ function ControlPoint({
                 top: relativeY + QUBIT_HEIGHT / 2 - size / 2,
                 width: `${size}px`,
                 height: `${size}px`,
-                boxShadow: isSelected ? '0 0 0 3px var(--selection), 0 0 10px var(--selection)' : undefined,
+                boxShadow: isSelected ? SELECTION_SHADOW : undefined,
             }}
         />
     );
+}
+
+/** The glyph inside a gate box: a component icon, or its text, stacked over a rotation angle if there is one. */
+function GateIcon({
+    definition,
+    angleLabel,
+}: Readonly<{ definition: OperationDefinition; angleLabel?: string | null }>) {
+    if (definition.icon.type === 'component') {
+        const ComponentIcon = definition.icon.component;
+        return <ComponentIcon className="size-4 stroke-4" />;
+    }
+    if (angleLabel) {
+        return (
+            <div className="flex flex-col items-center justify-center leading-none">
+                <span style={{ fontSize: '12px' }}>{definition.icon.text}</span>
+                <span style={{ fontSize: '9px' }} className="font-semibold opacity-90">
+                    {angleLabel}
+                </span>
+            </div>
+        );
+    }
+    const TextIconComponent = TextIcon(definition.icon.text);
+    return <TextIconComponent />;
 }
 
 function TargetPoint({
@@ -346,24 +371,26 @@ function TargetPoint({
         [definition.type === 'MEASUREMENT' ? 'translateY(1px)' : null, scale === 1 ? null : `scale(${scale})`]
             .filter(Boolean)
             .join(' ') || undefined;
-    let content: React.ReactNode;
+    // Selection wins over the measurement accent, so the two are resolved in order rather than nested.
+    const selectionShadow = isSelected ? SELECTION_SHADOW : undefined;
+    const accentShadow = accentColor ? `0 0 0 3px ${accentColor}` : undefined;
 
-    if (definition.icon.type === 'component') {
-        const ComponentIcon = definition.icon.component;
-        content = <ComponentIcon className="size-4 stroke-4" />;
-    } else if (angleLabel) {
-        content = (
-            <div className="flex flex-col items-center justify-center leading-none">
-                <span style={{ fontSize: '12px' }}>{definition.icon.text}</span>
-                <span style={{ fontSize: '9px' }} className="font-semibold opacity-90">
-                    {angleLabel}
-                </span>
-            </div>
-        );
-    } else {
-        const TextIconComponent = TextIcon(definition.icon.text);
-        content = <TextIconComponent />;
-    }
+    // A SWAP is drawn as a bare glyph: the gate's colour becomes its ink instead of its fill, and it
+    // carries no accent ring.
+    const boxStyle: React.CSSProperties = isSWAP
+        ? {
+              backgroundColor: 'transparent',
+              color: definition.color,
+              transform,
+              boxShadow: selectionShadow,
+          }
+        : {
+              backgroundColor: definition.color,
+              color: 'var(--bg-dark)',
+              transform,
+              boxShadow: selectionShadow ?? accentShadow,
+              ...(angleLabel ? { padding: '2px 3px' } : {}),
+          };
 
     return (
         <div
@@ -381,30 +408,9 @@ function TargetPoint({
                     ${isSWAP ? '' : styles.quantumOperation}`}
                 title={title}
                 aria-label={title}
-                style={
-                    isSWAP
-                        ? {
-                              backgroundColor: 'transparent',
-                              color: definition.color,
-                              transform,
-                              boxShadow: isSelected
-                                  ? '0 0 0 3px var(--selection), 0 0 10px var(--selection)'
-                                  : undefined,
-                          }
-                        : {
-                              backgroundColor: definition.color,
-                              color: 'var(--bg-dark)',
-                              transform,
-                              boxShadow: isSelected
-                                  ? '0 0 0 3px var(--selection), 0 0 10px var(--selection)'
-                                  : accentColor
-                                    ? `0 0 0 3px ${accentColor}`
-                                    : undefined,
-                              ...(angleLabel ? { padding: '2px 3px' } : {}),
-                          }
-                }
+                style={boxStyle}
             >
-                {content}
+                <GateIcon definition={definition} angleLabel={angleLabel} />
             </div>
         </div>
     );

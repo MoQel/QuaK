@@ -52,6 +52,15 @@ export function LoopBlockDialog({ draft, onSubmit, onClose }: Readonly<LoopBlock
     );
 }
 
+/** The frame only annotates gates, so the wording stresses that they stay editable. */
+function describeLoop(isEditing: boolean | undefined, gateCount: number): string {
+    if (isEditing) return 'Adjust how often this loop executes.';
+    if (gateCount === 1) {
+        return 'Wraps the selected gate in a loop. It stays editable — the frame only says how often it runs.';
+    }
+    return `Wraps the selected ${gateCount} gates in a loop. They stay editable — the frame only says how often they run.`;
+}
+
 function RepeatForm({
     draft,
     onSubmit,
@@ -70,18 +79,13 @@ function RepeatForm({
     };
 
     const gateCount = draft.operationIds.length;
+    const description = describeLoop(draft.isEditing, gateCount);
 
     return (
         <form onSubmit={handleSubmit}>
             <DialogHeader>
                 <DialogTitle>{draft.isEditing ? 'Edit Loop' : 'Repeat'}</DialogTitle>
-                <DialogDescription>
-                    {draft.isEditing
-                        ? 'Adjust how often this loop executes.'
-                        : gateCount === 1
-                          ? 'Wraps the selected gate in a loop. It stays editable — the frame only says how often it runs.'
-                          : `Wraps the selected ${gateCount} gates in a loop. They stay editable — the frame only says how often they run.`}
-                </DialogDescription>
+                <DialogDescription>{description}</DialogDescription>
             </DialogHeader>
 
             <div className="grid gap-2 py-4">

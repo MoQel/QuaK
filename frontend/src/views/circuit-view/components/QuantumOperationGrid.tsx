@@ -110,73 +110,151 @@ export function QuantumOperationGrid({
         }),
     ];
 
+    // Passed through unchanged for every gate, so they travel as one bundle rather than 9 props.
+    const handlers: OperationHandlers = {
+        removeQuantumOperation,
+        removeLoopBlock,
+        ungroupQuantumOperation,
+        editRotationAngle,
+        onEditSubcircuit,
+        onToggleSelect,
+        onAddLoop,
+        onEditLoop,
+        onGroupSelected,
+    };
+
     return (
         <div className={`absolute inset-0 z-20 ${isOperationDragging ? 'pointer-events-none' : ''}`}>
             <MeasurementConnectorLayer uiLayers={uiLayers} registers={registers} flatQubits={flatQubits} />
 
-            {renderedOperations.map(({ op, layerIdx, isGhost, measurementColor }) => {
-                // The frame drawn tightest around this gate: it decides both the smaller rendering
-                // and which loop the gate's context menu offers to remove.
-                const enclosingLoop = op.id ? innermostBlockCovering(loopBlocks, op.id) : undefined;
-                const onRemoveLoop = enclosingLoop ? () => removeLoopBlock(enclosingLoop.id) : undefined;
-                const isSelected = op.id ? selectedOperationIds.includes(op.id) : false;
-
-                // A composed operation is one box rather than a set of target/control markers.
-                return isComposedOperation(op) ? (
-                    <CompositionBox
-                        key={op.id}
-                        operation={op}
-                        flatQubits={flatQubits}
-                        layerIdx={layerIdx}
-                        isGhost={isGhost}
-                        isInLoop={enclosingLoop !== undefined}
-                        loopRepeatCount={enclosingLoop?.repeatCount}
-                        onDragStart={(operationSize, grabOffset) =>
-                            handleOperationDragStart(op.id!, operationSize, grabOffset)
-                        }
-                        onDragEnd={handleOperationDragEnd}
-                        onDelete={() => removeQuantumOperation(op.id!)}
-                        // Only a composite gate has a body in this circuit to dissolve into.
-                        onUngroup={isCompositeGate(op) ? () => ungroupQuantumOperation(op.id!) : undefined}
-                        onRemoveLoop={onRemoveLoop}
-                        onAddLoop={op.id && onAddLoop ? () => onAddLoop(op.id!) : undefined}
-                        onEditLoop={enclosingLoop && onEditLoop ? () => onEditLoop(enclosingLoop) : undefined}
-                        onGroup={op.id && onGroupSelected ? () => onGroupSelected(op.id!) : undefined}
-                        onEdit={onEditSubcircuit}
-                        isSelected={isSelected}
-                        onToggleSelect={op.id && onToggleSelect ? () => onToggleSelect(op.id!) : undefined}
-                    />
-                ) : (
-                    <ElementaryQuantumGate
-                        key={op.id}
-                        operation={op}
-                        registers={registers}
-                        flatQubits={flatQubits}
-                        layerIdx={layerIdx}
-                        isGhost={isGhost}
-                        isInLoop={enclosingLoop !== undefined}
-                        loopRepeatCount={enclosingLoop?.repeatCount}
-                        measurementColor={measurementColor}
-                        onDragStart={(operationSize, grabOffset) =>
-                            handleOperationDragStart(op.id!, operationSize, grabOffset)
-                        }
-                        onDragEnd={handleOperationDragEnd}
-                        onDelete={() => removeQuantumOperation(op.id!)}
-                        onRemoveLoop={onRemoveLoop}
-                        onEditAngle={() => editRotationAngle(op)}
-                        onAddLoop={op.id && onAddLoop ? () => onAddLoop(op.id!) : undefined}
-                        onEditLoop={enclosingLoop && onEditLoop ? () => onEditLoop(enclosingLoop) : undefined}
-                        onGroup={
-                            op.id && op.type !== 'MEASUREMENT' && onGroupSelected
-                                ? () => onGroupSelected(op.id!)
-                                : undefined
-                        }
-                        isSelected={isSelected}
-                        onToggleSelect={op.id && onToggleSelect ? () => onToggleSelect(op.id!) : undefined}
-                    />
-                );
-            })}
+            {renderedOperations.map(({ op, layerIdx, isGhost, measurementColor }) => (
+                <GridOperation
+                    key={op.id}
+                    op={op}
+                    layerIdx={layerIdx}
+                    isGhost={isGhost}
+                    measurementColor={measurementColor}
+                    registers={registers}
+                    flatQubits={flatQubits}
+                    loopBlocks={loopBlocks}
+                    isSelected={op.id ? selectedOperationIds.includes(op.id) : false}
+                    onDragStart={handleOperationDragStart}
+                    onDragEnd={handleOperationDragEnd}
+                    handlers={handlers}
+                />
+            ))}
         </div>
+    );
+}
+
+/** The grid's callbacks, handed to every rendered operation unchanged. */
+type OperationHandlers = Pick<
+    QuantumOperationGridProps,
+    | 'removeQuantumOperation'
+    | 'removeLoopBlock'
+    | 'ungroupQuantumOperation'
+    | 'editRotationAngle'
+    | 'onEditSubcircuit'
+    | 'onToggleSelect'
+    | 'onAddLoop'
+    | 'onEditLoop'
+    | 'onGroupSelected'
+>;
+
+/** Binds a handler to this operation's id, or drops it when either the id or the handler is absent. */
+function bindToId(
+    operationId: string | undefined,
+    handler: ((operationId: string) => void) | undefined,
+): (() => void) | undefined {
+    return operationId && handler ? () => handler(operationId) : undefined;
+}
+
+/** One gate on the grid: either a box for a composed operation, or target/control markers. */
+function GridOperation({
+    op,
+    layerIdx,
+    isGhost,
+    measurementColor,
+    registers,
+    flatQubits,
+    loopBlocks,
+    isSelected,
+    onDragStart,
+    onDragEnd,
+    handlers,
+}: Readonly<{
+    op: QuantumOperationDto;
+    layerIdx: number;
+    isGhost: boolean;
+    measurementColor?: string;
+    registers: RegisterResponse[];
+    flatQubits: FlatQubit[];
+    loopBlocks: LoopBlockDto[];
+    isSelected: boolean;
+    onDragStart: (operationId: string, operationSize: number, grabOffset: number) => void;
+    onDragEnd: () => void;
+    handlers: OperationHandlers;
+}>) {
+    const {
+        removeQuantumOperation,
+        removeLoopBlock,
+        ungroupQuantumOperation,
+        editRotationAngle,
+        onEditSubcircuit,
+        onToggleSelect,
+        onAddLoop,
+        onEditLoop,
+        onGroupSelected,
+    } = handlers;
+
+    const operationId = op.id;
+    // The frame drawn tightest around this gate: it decides both the smaller rendering
+    // and which loop the gate's context menu offers to remove.
+    const enclosingLoop = operationId ? innermostBlockCovering(loopBlocks, operationId) : undefined;
+
+    // Everything both renderings take. `operation` stays out of it: the box demands the narrowed type,
+    // which only the type guard below establishes.
+    const shared = {
+        flatQubits,
+        layerIdx,
+        isGhost,
+        isInLoop: enclosingLoop !== undefined,
+        loopRepeatCount: enclosingLoop?.repeatCount,
+        onDragStart: (operationSize: number, grabOffset: number) =>
+            onDragStart(operationId!, operationSize, grabOffset),
+        onDragEnd,
+        onDelete: () => removeQuantumOperation(operationId!),
+        onRemoveLoop: enclosingLoop ? () => removeLoopBlock(enclosingLoop.id) : undefined,
+        onAddLoop: bindToId(operationId, onAddLoop),
+        onEditLoop: enclosingLoop && onEditLoop ? () => onEditLoop(enclosingLoop) : undefined,
+        isSelected,
+        onToggleSelect: bindToId(operationId, onToggleSelect),
+    };
+
+    // A composed operation is one box rather than a set of target/control markers.
+    if (isComposedOperation(op)) {
+        return (
+            <CompositionBox
+                {...shared}
+                operation={op}
+                // Only a composite gate has a body in this circuit to dissolve into.
+                onUngroup={isCompositeGate(op) ? () => ungroupQuantumOperation(operationId!) : undefined}
+                onGroup={bindToId(operationId, onGroupSelected)}
+                onEdit={onEditSubcircuit}
+            />
+        );
+    }
+
+    return (
+        <ElementaryQuantumGate
+            {...shared}
+            operation={op}
+            registers={registers}
+            measurementColor={measurementColor}
+            onEditAngle={() => editRotationAngle(op)}
+            // A measurement cannot become part of a composite, so it is never offered for grouping.
+            onGroup={op.type === 'MEASUREMENT' ? undefined : bindToId(operationId, onGroupSelected)}
+        />
     );
 }
 

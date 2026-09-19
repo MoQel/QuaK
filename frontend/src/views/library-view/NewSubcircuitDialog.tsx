@@ -101,13 +101,8 @@ export function NewSubcircuitDialog({
             onAdded();
             onOpenChange(false);
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : mode === 'new'
-                      ? 'Could not create the subcircuit.'
-                      : 'Could not add the subcircuit.',
-            );
+            const fallback = mode === 'new' ? 'Could not create the subcircuit.' : 'Could not add the subcircuit.';
+            toast.error(error instanceof Error ? error.message : fallback);
         } finally {
             setIsBusy(false);
         }

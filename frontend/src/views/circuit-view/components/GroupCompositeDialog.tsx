@@ -18,7 +18,7 @@ interface GroupCompositeDialogProps {
     onSubmit: (gateName: string) => void;
 }
 
-const IDENTIFIER_REGEX = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
+const IDENTIFIER_REGEX = /^[a-zA-Z_]\w*$/;
 
 export function GroupCompositeDialog({
     open,

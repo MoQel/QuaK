@@ -16,6 +16,14 @@ interface LibraryListViewProps {
     onRemoveSubcircuit?: (option: SubcircuitOption) => void;
 }
 
+const pluralize = (count: number, noun: string) => `${count} ${noun}${count === 1 ? '' : 's'}`;
+
+/** The subtitle under a subcircuit's name, e.g. "4 qubits · 7 operations". */
+function describeSubcircuit(qubitCount: number, operationCount: number): string {
+    const operations = operationCount === 0 ? 'empty circuit' : pluralize(operationCount, 'operation');
+    return `${pluralize(qubitCount, 'qubit')} · ${operations}`;
+}
+
 function LibraryListView({
     quantumOperations,
     customGates,
@@ -142,10 +150,7 @@ function LibraryListView({
                                     <div className="text-left">
                                         <div className="font-semibold text-sm text-text mb-2px">{option.name}</div>
                                         <div className="text-xs text-text-muted leading-tight">
-                                            {option.qubitCount} qubit{option.qubitCount === 1 ? '' : 's'} ·{' '}
-                                            {option.operationCount === 0
-                                                ? 'empty circuit'
-                                                : `${option.operationCount} operation${option.operationCount === 1 ? '' : 's'}`}
+                                            {describeSubcircuit(option.qubitCount, option.operationCount)}
                                         </div>
                                     </div>
                                 </div>
