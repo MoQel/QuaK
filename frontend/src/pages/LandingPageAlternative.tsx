@@ -1,5 +1,6 @@
 import React from 'react';
 import { ArrowUpRight, Braces, Github } from 'lucide-react';
+import { isKitHostname } from '@/lib/hostname';
 import { LoginOptions } from './LogIn';
 import './LandingPageAlternative.css';
 
@@ -23,6 +24,8 @@ const capabilities = [
 ];
 
 export const LandingPageAlternative: React.FC = () => {
+    const showKitLegalLinks = isKitHostname(globalThis.location.hostname);
+
     return (
         <div className="quak-landing rounded-design landing-page min-h-screen bg-[#f5f7f6] text-[#17211f]">
             <header className="landing-header border border-[#d5e0db] bg-[#ffffff]">
@@ -180,22 +183,26 @@ export const LandingPageAlternative: React.FC = () => {
                         >
                             GitHub
                         </a>
-                        <a
-                            href="https://www.kit.edu/legals.php"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="hover:text-[#00876c]"
-                        >
-                            Imprint
-                        </a>
-                        <a
-                            href="https://www.kit.edu/privacypolicy.php"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="hover:text-[#00876c]"
-                        >
-                            Data protection
-                        </a>
+                        {showKitLegalLinks && (
+                            <>
+                                <a
+                                    href="https://www.kit.edu/legals.php"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="hover:text-[#00876c]"
+                                >
+                                    Imprint
+                                </a>
+                                <a
+                                    href="https://www.kit.edu/privacypolicy.php"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="hover:text-[#00876c]"
+                                >
+                                    Data protection
+                                </a>
+                            </>
+                        )}
                     </div>
                 </div>
             </footer>

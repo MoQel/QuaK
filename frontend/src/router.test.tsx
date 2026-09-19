@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, useLocation, useRoutes } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const auth = vi.hoisted(() => ({
     isAuthenticated: false,
@@ -54,8 +54,13 @@ beforeEach(() => {
     auth.isLoading = false;
 });
 
+afterEach(() => {
+    vi.unstubAllGlobals();
+});
+
 describe('landing page with original application URLs', () => {
     it('shows the public landing page at home when signed out', () => {
+        vi.stubGlobal('location', { hostname: 'quak.kit.edu' });
         visit('/');
         expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
             'Build and simulate quantum circuits in your browser.',
@@ -67,6 +72,19 @@ describe('landing page with original application URLs', () => {
             'src',
             '/kit-logo.svg',
         );
+        expect(screen.getByRole('link', { name: 'Imprint' })).toHaveAttribute('href', 'https://www.kit.edu/legals.php');
+        expect(screen.getByRole('link', { name: 'Data protection' })).toHaveAttribute(
+            'href',
+            'https://www.kit.edu/privacypolicy.php',
+        );
+    });
+
+    it('hides KIT legal links outside a KIT hostname', () => {
+        vi.stubGlobal('location', { hostname: 'quak.example.com' });
+        visit('/');
+
+        expect(screen.queryByRole('link', { name: 'Imprint' })).not.toBeInTheDocument();
+        expect(screen.queryByRole('link', { name: 'Data protection' })).not.toBeInTheDocument();
     });
 
     it('waits for authentication before choosing landing or application', () => {
