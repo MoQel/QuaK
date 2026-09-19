@@ -1,9 +1,9 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { CompositeQuantumGateDto, isCompositeGate, SubcircuitOperationDto } from '@/api/dto/circuit.ts';
+import { CompositeQuantumGateDto, isCompositeGate, isSubcircuit, SubcircuitOperationDto } from '@/api/dto/circuit.ts';
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu.tsx';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip.tsx';
 import { CompositeGatePreview } from '@/views/circuit-view/components/CompositeGatePreview.tsx';
-import { CELL_WIDTH, QUBIT_HEIGHT, getSelectorVisualY } from '@/views/circuit-view/util/layout.ts';
+import { CELL_WIDTH, LOOP_GATE_SCALE, QUBIT_HEIGHT, getSelectorVisualY } from '@/views/circuit-view/util/layout.ts';
 import { DragData, FlatQubit } from '../util/types';
 
 /** Height of the box body within a wire's row, matching the 40px of an elementary gate. */
@@ -49,6 +49,24 @@ interface CompositionBoxProps {
      * subcircuit: its body is not in this circuit, so there is nothing here to dissolve into.
      */
     onUngroup?: () => void;
+    /** Drawn slightly narrower when the box sits inside a repetition frame, so the frame has room. */
+    isInLoop?: boolean;
+    /** How often the enclosing frame repeats, shown on the menu entry that removes it. */
+    loopRepeatCount?: number;
+    /** Drops the enclosing repetition frame; absent when the box is not in one. */
+    onRemoveLoop?: () => void;
+    /** Opens the loop dialog to add an outer or new loop */
+    onAddLoop?: () => void;
+    /** Opens the loop dialog to edit the enclosing loop count */
+    onEditLoop?: () => void;
+    /** Groups this gate (and any other selected) into a composite */
+    onGroup?: () => void;
+    /** Opens the qubit mapping dialog to edit this subcircuit; absent for composites. */
+    onEdit?: (op: SubcircuitOperationDto) => void;
+    /** Whether this box is currently selected */
+    isSelected?: boolean;
+    /** Toggles selection when Shift-clicked */
+    onToggleSelect?: () => void;
 }
 
 /**
@@ -67,10 +85,19 @@ export function CompositionBox({
     flatQubits,
     layerIdx,
     isGhost = false,
+    isInLoop = false,
     onDragStart,
     onDragEnd,
     onDelete,
     onUngroup,
+    loopRepeatCount,
+    onRemoveLoop,
+    onAddLoop,
+    onEditLoop,
+    onGroup,
+    onEdit,
+    isSelected = false,
+    onToggleSelect,
 }: Readonly<CompositionBoxProps>) {
     const isDraggingRef = useRef(false);
     const interactivity = isGhost ? 'pointer-events-none' : 'pointer-events-auto';
@@ -88,20 +115,25 @@ export function CompositionBox({
         const min = Math.min(...yOfPosition);
         const max = Math.max(...yOfPosition);
 
+        // A port marker for every declared parameter. When the parameter names match the default
+        // `q0, q1, ...` they are suppressed: they only repeat what the wire label to the left already
+        // says, and on a narrow 1-wire box omitting them leaves the gate name twice as much room.
+        const portLabels = isCompositeGate(operation)
+            ? operation.portLabels
+            : (operation.subcircuitQubitIndices?.map((idx) => `q${idx}`) ??
+              operation.targetQubits.map((_, idx) => `q${idx}`));
+        const ports = portLabels.map((label, position) => ({
+            position,
+            label,
+            y: yOfPosition[position],
+        }));
+
         return {
             minY: min,
             spanHeight: max - min,
-            // Every declared parameter gets a port, including ones the body never touches: the wire
-            // is bound to the gate either way, and leaving it unlabelled makes the box look as if it
-            // took fewer qubits than it does. `usedQubitPositions` stays available on the DTO for
-            // callers that do want the distinction.
-            ports: yOfPosition.map((y, position) => ({
-                position,
-                y,
-                label: isCompositeGate(operation) ? (operation.portLabels?.[position] ?? '') : `q${position}`,
-            })),
+            ports,
         };
-    }, [operation, flatQubits]);
+    }, [flatQubits, operation]);
 
     const handleDragStart = (e: React.DragEvent<HTMLButtonElement>) => {
         isDraggingRef.current = true;
@@ -135,7 +167,12 @@ export function CompositionBox({
 
     const handleClick = (e: React.MouseEvent) => {
         e.stopPropagation();
-        if (!isDraggingRef.current) onDelete?.();
+        if (isDraggingRef.current) return;
+        if (e.shiftKey) {
+            onToggleSelect?.();
+            return;
+        }
+        onDelete?.();
     };
 
     const handlePreviewOpenChange = (open: boolean) => {
@@ -145,6 +182,13 @@ export function CompositionBox({
         setIsPreviewOpen(open);
     };
 
+    // Vertically only, and by inset rather than transform. A transform would pull the ports off the
+    // wires they are bound to, and the width is already spoken for: the port gutter plus the gate
+    // name have to fit into 48px, so there is nothing there to give away.
+    const insetY = isInLoop
+        ? BOX_INSET_Y + (QUBIT_HEIGHT - 2 * BOX_INSET_Y) * ((1 - LOOP_GATE_SCALE) / 2)
+        : BOX_INSET_Y;
+
     /** A box covering more than one wire has more height than width, so the name reads better turned. */
     const isTall = spanHeight > 0;
 
@@ -153,7 +197,7 @@ export function CompositionBox({
     // resolves — a deleted file, or one moved out of this project.
     const label = isCompositeGate(operation)
         ? operation.identifier
-        : (operation.definitionName ?? operation.definitionCircuitId.slice(0, 8));
+        : (operation.definitionName ?? operation.definitionCircuitId?.slice(0, 8) ?? 'subcircuit');
 
     return (
         // The preview lives outside the context menu but shares its trigger element: nesting the
@@ -203,12 +247,15 @@ export function CompositionBox({
                             ${interactivity} cursor-grab active:cursor-grabbing
                             group-hover:brightness-90 dark:group-hover:brightness-125 transition-colors`}
                                 style={{
-                                    top: BOX_INSET_Y,
+                                    top: insetY,
                                     left: BOX_INSET_X,
                                     width: CELL_WIDTH - 2 * BOX_INSET_X,
-                                    height: spanHeight + QUBIT_HEIGHT - 2 * BOX_INSET_Y,
-                                    backgroundColor: 'var(--composite)',
+                                    height: spanHeight + QUBIT_HEIGHT - 2 * insetY,
+                                    backgroundColor: isSubcircuit(operation) ? 'var(--subcircuit)' : 'var(--composite)',
                                     color: 'var(--bg-dark)',
+                                    boxShadow: isSelected
+                                        ? '0 0 0 3px var(--selection), 0 0 10px var(--selection)'
+                                        : undefined,
                                 }}
                             >
                                 {/*
@@ -236,7 +283,7 @@ export function CompositionBox({
                                         key={port.position}
                                         className="absolute left-[3px] font-mono leading-none opacity-80 text-[9px]"
                                         style={{
-                                            top: port.y - minY + QUBIT_HEIGHT / 2 - BOX_INSET_Y - 4,
+                                            top: port.y - minY + QUBIT_HEIGHT / 2 - insetY - 4,
                                         }}
                                     >
                                         {port.label}
@@ -248,7 +295,18 @@ export function CompositionBox({
                 </ContextMenuTrigger>
 
                 <ContextMenuContent>
+                    {isSubcircuit(operation) && onEdit && (
+                        <ContextMenuItem onSelect={() => onEdit(operation)}>Edit</ContextMenuItem>
+                    )}
                     {onUngroup && <ContextMenuItem onSelect={onUngroup}>Ungroup</ContextMenuItem>}
+                    {onGroup && <ContextMenuItem onSelect={onGroup}>Group…</ContextMenuItem>}
+                    {onAddLoop && <ContextMenuItem onSelect={onAddLoop}>Add loop…</ContextMenuItem>}
+                    {onEditLoop && (
+                        <ContextMenuItem onSelect={onEditLoop}>Edit loop ×{loopRepeatCount}…</ContextMenuItem>
+                    )}
+                    {onRemoveLoop && (
+                        <ContextMenuItem onSelect={onRemoveLoop}>Remove loop ×{loopRepeatCount}</ContextMenuItem>
+                    )}
                     <ContextMenuItem variant="destructive" onSelect={onDelete}>
                         Delete
                     </ContextMenuItem>
@@ -264,7 +322,8 @@ export function CompositionBox({
                     // A subcircuit's body lives in another circuit and is not loaded here, so there
                     // is nothing to draw; naming what it points at is all this panel can honestly say.
                     <span className="text-xs">
-                        Subcircuit: {operation.definitionName ?? operation.definitionCircuitId}
+                        Subcircuit:{' '}
+                        {operation.definitionName ?? operation.definitionCircuitId ?? 'unresolved reference'}
                     </span>
                 )}
             </TooltipContent>

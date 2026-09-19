@@ -1,5 +1,6 @@
 package edu.kit.quak.application.circuit.services;
 
+import edu.kit.quak.application.circuit.ports.in.CircuitServicePort;
 import edu.kit.quak.application.circuit.ports.out.QasmIncludeLoader;
 import edu.kit.quak.application.circuit.ports.out.QasmSource;
 import edu.kit.quak.application.common.exceptions.AccessDeniedException;
@@ -39,17 +40,20 @@ public class ProjectQasmIncludeResolver {
     private final FileContentRepositoryPort contentRepository;
     private final FileElementContainerRepositoryDelegator delegator;
     private final ProjectRoleServicePort roleService;
+    private final CircuitServicePort circuitService;
 
     public ProjectQasmIncludeResolver(
         FileRepositoryPort fileRepository,
         FileContentRepositoryPort contentRepository,
         FileElementContainerRepositoryDelegator delegator,
-        ProjectRoleServicePort roleService
+        ProjectRoleServicePort roleService,
+        CircuitServicePort circuitService
     ) {
         this.fileRepository = fileRepository;
         this.contentRepository = contentRepository;
         this.delegator = delegator;
         this.roleService = roleService;
+        this.circuitService = circuitService;
     }
 
     /**
@@ -59,11 +63,22 @@ public class ProjectQasmIncludeResolver {
      */
     @Transactional(readOnly = true)
     public QasmIncludeLoader forUser(User user) {
-        return (fromFileId, path) -> {
-            if (fromFileId == null || fromFileId.isBlank()) {
-                return Optional.empty();
+        return new QasmIncludeLoader() {
+            @Override
+            public Optional<QasmSource> load(String fromFileId, String path) {
+                if (fromFileId == null || fromFileId.isBlank()) {
+                    return Optional.empty();
+                }
+                return resolve(fromFileId, path, user);
             }
-            return resolve(fromFileId, path, user);
+
+            @Override
+            public Optional<String> resolveCircuitId(String fromFileId, String path) {
+                if (fromFileId == null || fromFileId.isBlank()) {
+                    return Optional.empty();
+                }
+                return resolveCircuitIdForFile(fromFileId, path, user);
+            }
         };
     }
 
@@ -74,9 +89,34 @@ public class ProjectQasmIncludeResolver {
         }
         verifyAccess(includingFile.get().getParentId(), user);
 
+        String normalizedPath = path.replace('\\', '/').trim();
         return findContainer(includingFile.get().getParentId())
-            .flatMap(directory -> walkToTarget(directory, path))
+            .flatMap(directory -> walkToTarget(directory, normalizedPath))
             .flatMap(this::toSource);
+    }
+
+    private Optional<String> resolveCircuitIdForFile(String fromFileId, String path, User user) {
+        Optional<File> includingFile = fileRepository.findById(fromFileId);
+        if (includingFile.isEmpty()) {
+            return Optional.empty();
+        }
+        verifyAccess(includingFile.get().getParentId(), user);
+
+        String normalizedPath = path.replace('\\', '/').trim();
+        return findContainer(includingFile.get().getParentId())
+            .flatMap(directory -> findTargetFile(directory, normalizedPath))
+            .map(targetFile -> circuitService.getOrCreateByFileId(targetFile.getId(), user).getId());
+    }
+
+    private Optional<File> findTargetFile(FileElementContainer<?> startDirectory, String path) {
+        Optional<File> direct = walkToTarget(startDirectory, path);
+        if (direct.isPresent()) {
+            return direct;
+        }
+        if (!path.toLowerCase().endsWith(".qasm")) {
+            return walkToTarget(startDirectory, path + ".qasm");
+        }
+        return Optional.empty();
     }
 
     /** Walks the {@code /}-separated path segments, returning the file the last segment names. */

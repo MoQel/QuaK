@@ -31,6 +31,16 @@ public class SubcircuitOperationDto extends QuantumOperationDto {
      */
     private List<QuantumOperationDto> body;
 
+    /**
+     * The 0-based indices of the subcircuit's qubits mapped to the call's targetQubits.
+     */
+    private List<Integer> subcircuitQubitIndices;
+
+    /**
+     * An explanatory message if the subcircuit could not be bound (e.g. linked to unmapped qubits).
+     */
+    private String bindingError;
+
     public SubcircuitOperationDto(
         String id,
         String identifier,
@@ -41,5 +51,21 @@ public class SubcircuitOperationDto extends QuantumOperationDto {
     ) {
         super(id, identifier, inverseForm, targetQubits, controlQubits);
         this.definitionCircuitId = definitionCircuitId;
+    }
+
+    @com.fasterxml.jackson.annotation.JsonCreator
+    @edu.kit.quak.shared.annotations.Default
+    public SubcircuitOperationDto(
+        @com.fasterxml.jackson.annotation.JsonProperty("id") String id,
+        @com.fasterxml.jackson.annotation.JsonProperty("identifier") String identifier,
+        @com.fasterxml.jackson.annotation.JsonProperty("inverseForm") boolean inverseForm,
+        @com.fasterxml.jackson.annotation.JsonProperty("targetQubits") List<ElementSelectorDto> targetQubits,
+        @com.fasterxml.jackson.annotation.JsonProperty("controlQubits") List<ElementSelectorDto> controlQubits,
+        @com.fasterxml.jackson.annotation.JsonProperty("definitionCircuitId") String definitionCircuitId,
+        @com.fasterxml.jackson.annotation.JsonProperty("subcircuitQubitIndices") List<Integer> subcircuitQubitIndices
+    ) {
+        super(id, identifier, inverseForm, targetQubits, controlQubits);
+        this.definitionCircuitId = definitionCircuitId;
+        this.subcircuitQubitIndices = subcircuitQubitIndices;
     }
 }

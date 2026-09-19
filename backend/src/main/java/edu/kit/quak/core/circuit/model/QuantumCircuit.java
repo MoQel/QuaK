@@ -46,6 +46,12 @@ public class QuantumCircuit extends ElementWithId {
     private final List<Register> registers = new ArrayList<>();
     private final List<Layer> layers = new ArrayList<>();
 
+    /**
+     * Repetition frames drawn around parts of the circuit. They sit beside the layers rather than
+     * in them, because a loop's body stays visible and editable; see {@link LoopBlock}.
+     */
+    private final List<LoopBlock> loopBlocks = new ArrayList<>();
+
     public QuantumCircuit(String projectId, String fileId) {
         super();
         this.projectId = projectId;
@@ -60,7 +66,8 @@ public class QuantumCircuit extends ElementWithId {
         String fileId,
         boolean offeredAsSubcircuit,
         List<Register> registers,
-        List<Layer> layers
+        List<Layer> layers,
+        List<LoopBlock> loopBlocks
     ) {
         super();
         this.id = id;
@@ -69,6 +76,14 @@ public class QuantumCircuit extends ElementWithId {
         this.offeredAsSubcircuit = offeredAsSubcircuit;
         this.registers.addAll(registers);
         this.layers.addAll(layers);
+        if (loopBlocks != null) {
+            // Checked here too, not only in addLoopBlock: this is the path a stored circuit and a
+            // client's full-replace payload come in through, and a frame naming an operation that is
+            // not here would draw around nothing and make code generation repeat a body that is not
+            // there. Deliberately no rescheduling — a save must store the layering it was sent.
+            loopBlocks.forEach(this::requireCoveredOperationsExist);
+            this.loopBlocks.addAll(loopBlocks);
+        }
     }
 
     public List<Register> getRegisters() {
@@ -82,6 +97,46 @@ public class QuantumCircuit extends ElementWithId {
 
     public List<Layer> getLayers() {
         return Collections.unmodifiableList(layers);
+    }
+
+    public List<LoopBlock> getLoopBlocks() {
+        return Collections.unmodifiableList(loopBlocks);
+    }
+
+    /**
+     * Adds a repetition frame over operations that are already part of this circuit.
+     *
+     * <p>Membership is checked here rather than trusted: a block naming an operation the circuit
+     * does not contain would draw a frame around nothing and, worse, make code generation repeat a
+     * body that is not there.
+     */
+    public void addLoopBlock(@NonNull LoopBlock loopBlock) {
+        requireCoveredOperationsExist(loopBlock);
+        loopBlocks.add(loopBlock);
+        // A frame constrains the layout — it has to keep its rectangle to itself — so the columns
+        // have to be worked out again, exactly as when an operation is added.
+        rescheduleOperations();
+    }
+
+    private void requireCoveredOperationsExist(LoopBlock loopBlock) {
+        Set<String> known = allOperations().map(QuantumOperation::getId).collect(Collectors.toSet());
+        List<String> unknown = loopBlock
+            .getOperationIds()
+            .stream()
+            .filter(id -> !known.contains(id))
+            .toList();
+        if (!unknown.isEmpty()) {
+            throw new InvalidOperationConfigurationException("Loop block covers operations that are not in this circuit: " + unknown);
+        }
+    }
+
+    private Stream<QuantumOperation> allOperations() {
+        return layers.stream().flatMap(layer -> layer.getQuantumOperations().stream());
+    }
+
+    /** Drops the operation from every frame that covered it, and any frame left empty. */
+    private void detachFromLoopBlocks(String operationId) {
+        loopBlocks.removeIf(block -> block.covers(operationId) && block.removeOperation(operationId));
     }
 
     /**
@@ -124,6 +179,7 @@ public class QuantumCircuit extends ElementWithId {
                     .anyMatch(selector -> selector.getRegisterId().equals(registerId) && selector.getIndex() == qubitIdx);
                 if (removeOperation) {
                     layer.removeQuantumOperation(operation);
+                    detachFromLoopBlocks(operation.getId());
                     continue;
                 }
 
@@ -291,12 +347,46 @@ public class QuantumCircuit extends ElementWithId {
                 QuantumOperation operation = operations.get(operationIdx);
                 if (operation.getId().equals(operationId)) {
                     layer.removeQuantumOperation(operation);
+                    detachFromLoopBlocks(operationId);
                     rescheduleOperations();
                     return;
                 }
             }
         }
         throw new OperationNotFoundException(operationId);
+    }
+
+    /**
+     * Removes several operations at once, rescheduling only afterwards.
+     *
+     * <p>Exists for the QASM parser, which unrolls a loop, notices the iterations are identical and
+     * then has to drop all but the first — doing that one by one would re-run ASAP scheduling over
+     * the whole circuit per discarded operation. Unknown ids are ignored, so a caller may pass a set
+     * it collected earlier without re-checking what is still there.
+     */
+    public void removeQuantumOperations(@NonNull Collection<String> operationIds) {
+        if (operationIds.isEmpty()) {
+            return;
+        }
+        Set<String> doomed = Set.copyOf(operationIds);
+        for (Layer layer : layers) {
+            for (QuantumOperation operation : new ArrayList<>(layer.getQuantumOperations())) {
+                if (doomed.contains(operation.getId())) {
+                    layer.removeQuantumOperation(operation);
+                }
+            }
+        }
+        doomed.forEach(this::detachFromLoopBlocks);
+        rescheduleOperations();
+    }
+
+    /** Removes repetition frames by id, e.g. the ones an abandoned loop iteration created. */
+    public void removeLoopBlocks(@NonNull Collection<String> loopBlockIds) {
+        if (loopBlockIds.isEmpty()) {
+            return;
+        }
+        Set<String> doomed = Set.copyOf(loopBlockIds);
+        loopBlocks.removeIf(block -> doomed.contains(block.getId()));
     }
 
     /**
@@ -314,71 +404,273 @@ public class QuantumCircuit extends ElementWithId {
      * logical dependency barriers.
      */
     private void rescheduleOperations() {
-        // 1. Extract all operations in canonical order: original layer first, then by topmost
-        // involved qubit. This mirrors the order the frontend renders with, so the stored layers
-        // (and the generated code) line up with the rendered circuit columns.
+        // Operations in canonical order: original layer first, then by topmost involved qubit. This
+        // mirrors the order the frontend renders with, so the stored layers (and the generated code)
+        // line up with the rendered circuit columns.
         List<QuantumOperation> allOps = layers
             .stream()
             .flatMap(layer -> layer.getQuantumOperations().stream().sorted(Comparator.comparingInt(op -> operationSpan(op)[0])))
             .toList();
 
-        // 2. Clear current layers
+        List<List<QuantumOperation>> columns = layOutColumns(withTerminalMeasurementsLast(allOps), loopBlocks);
+
         layers.forEach(Layer::clearQuantumOperations);
-
-        // Track the last occupied layer index for each specific qubit.
-        // Key: Selector that points to the qubit, Value: Last occupied layer index
-        Map<ElementSelector, Integer> lastLayerPerQubit = new HashMap<>();
-
-        // 3. Re-insert the operations into the first possible layer where it fits
-        // while respecting the "last occupied layer" logic
-        for (QuantumOperation op : allOps) {
-            Set<ElementSelector> involvedQubits = getTargetAndControlQubits(op);
-
-            // Find the earliest possible layer where this operation could be placed
-            // using the maximal last occupied layer index of the affected qubits as the baseline.
-            int minLayerIdx = 0;
-            for (ElementSelector s : involvedQubits) {
-                minLayerIdx = Math.max(minLayerIdx, lastLayerPerQubit.getOrDefault(s, -1));
-            }
-
-            // Search for the first layer (starting from minLayerIdx) that has no collision.
-            int layerIdx = minLayerIdx;
-            while (isQubitCollisionInLayer(op, layerIdx)) {
-                layerIdx++;
-            }
-
-            // Ensure layer exists
-            while (layers.size() <= layerIdx) {
+        for (int columnIdx = 0; columnIdx < columns.size(); columnIdx++) {
+            while (layers.size() <= columnIdx) {
                 layers.add(new Layer(new ArrayList<>()));
             }
-
-            layers.get(layerIdx).addQuantumOperation(op); // Add operation to target layer
-
-            // Update the last occupied layer index for all involved qubits
-            for (ElementSelector s : involvedQubits) {
-                lastLayerPerQubit.put(s, layerIdx);
-            }
+            columns.get(columnIdx).forEach(layers.get(columnIdx)::addQuantumOperation);
         }
 
         flushLayers();
     }
 
     /**
-     * Checks if a quantum operation conflicts with existing operations in a specific layer.
+     * Moves every terminal measurement — one with nothing on its qubit after it — behind the gates.
      *
-     * @param op The quantum operation to check for potential collisions.
-     * @param layerIdx The index of the layer to inspect.
-     * @return {@code true} if the operation's span overlaps an existing operation's span.
+     * <p>Needed because the stored layering *is* the program order, and a circuit laid out before
+     * measurements were pinned has that order scrambled: the columns ASAP picked back then were
+     * written back as layers, so a measurement that had drifted left now looks like it was meant to
+     * run there, and pinning alone would faithfully keep it. Reordering here undoes that once, on
+     * the next layout, and is safe because a measurement with nothing after it on its own wire
+     * cannot affect anything by moving later.
+     *
+     * <p>A measurement that something on its wire still follows is a real mid-circuit measurement
+     * and stays where it is — as does the whole order when nothing drifted, which makes this a
+     * no-op for circuits laid out under the current rules.
      */
-    private boolean isQubitCollisionInLayer(QuantumOperation op, int layerIdx) {
-        if (layerIdx >= layers.size()) return false;
+    private List<QuantumOperation> withTerminalMeasurementsLast(List<QuantumOperation> operations) {
+        Set<ElementSelector> usedLater = new HashSet<>();
+        Deque<QuantumOperation> terminal = new ArrayDeque<>();
+        Deque<QuantumOperation> rest = new ArrayDeque<>();
 
-        int[] span = operationSpan(op);
-        return layers
-            .get(layerIdx)
-            .getQuantumOperations()
+        // Backwards, so `usedLater` holds exactly the qubits the operations after this one touch.
+        for (int i = operations.size() - 1; i >= 0; i--) {
+            QuantumOperation operation = operations.get(i);
+            Set<ElementSelector> qubits = getTargetAndControlQubits(operation);
+            if (isMeasurement(operation) && Collections.disjoint(qubits, usedLater)) {
+                terminal.addFirst(operation);
+            } else {
+                rest.addFirst(operation);
+            }
+            usedLater.addAll(qubits);
+        }
+
+        List<QuantumOperation> ordered = new ArrayList<>(rest);
+        ordered.addAll(terminal);
+        return ordered;
+    }
+
+    /**
+     * ASAP-places operations into columns, giving every loop block a column range of its own.
+     *
+     * <p>A block is placed as a unit rather than operation by operation, because a frame is only
+     * honest while the rectangle it is drawn as — its members' wire span across the columns they
+     * occupy — contains exactly those members. Left to the plain left-justified pass, an unrelated
+     * gate slides into the first column a member happens to leave free on its wire, ends up inside
+     * the drawn frame and is then shown as repeating although it runs once.
+     *
+     * <p>The members' own layout is this same routine one level down, over the blocks strictly
+     * inside this one. That recursion is what makes nesting work, and it is also why the reservation
+     * never has to be propagated upwards: a nested frame is enforced against its fellow members
+     * where they are laid out, while the enclosing reservation already keeps everyone else out of
+     * the whole rectangle.
+     *
+     * @param operations the operations to place, in the order they should be considered
+     * @param blocks the frames that apply at this level
+     * @return the operations grouped by column, leftmost first
+     */
+    private List<List<QuantumOperation>> layOutColumns(List<QuantumOperation> operations, List<LoopBlock> blocks) {
+        LayoutPass pass = new LayoutPass();
+
+        for (QuantumOperation operation : operations) {
+            if (pass.placed.contains(operation.getId())) {
+                continue;
+            }
+            // Frames over the same operations share one rectangle, so any of them lays it out.
+            LoopBlock block = LoopBlock.outermostCovering(blocks, operation.getId()).stream().findFirst().orElse(null);
+            if (block == null) {
+                placeOperation(operation, pass);
+                pass.placed.add(operation.getId());
+            } else {
+                placeBlock(block, blocks, operations, pass);
+            }
+        }
+        return pass.columns;
+    }
+
+    /**
+     * The mutable state one layout pass carries while it fills columns. Grouped rather than threaded
+     * through as separate arguments: every step touches the same structures, and passing them apart
+     * said little beyond how many there were.
+     */
+    private static final class LayoutPass {
+
+        private final List<List<QuantumOperation>> columns = new ArrayList<>();
+        private final Map<ElementSelector, Integer> lastColumnPerQubit = new HashMap<>();
+        private final List<int[]> reserved = new ArrayList<>();
+        private final Set<String> placed = new HashSet<>();
+
+        /**
+         * Rightmost column a gate occupies so far. A measurement may not be placed left of it: ASAP
+         * would otherwise pull every measurement forward to wherever its own wire happens to fall
+         * idle, scattering the measurements of one circuit across as many columns as it has qubits.
+         */
+        private int lastGateColumn = -1;
+    }
+
+    private static boolean isMeasurement(QuantumOperation operation) {
+        return operation instanceof Measurement;
+    }
+
+    /** The column a measurement may not start left of; gates stay free to go as far left as they fit. */
+    private static int measurementFloor(QuantumOperation operation, LayoutPass pass) {
+        return isMeasurement(operation) ? pass.lastGateColumn + 1 : 0;
+    }
+
+    /**
+     * Whether putting this measurement here would land it next to another one.
+     *
+     * <p>Each measurement draws its own dashed wire down to a classic bit, and that wire is placed by
+     * the column alone — so two measurements sharing a column draw their wires exactly on top of each
+     * other and only one bit label stays readable. A column of its own per measurement is what keeps
+     * the classical side legible.
+     */
+    private static boolean wouldShareColumnWithMeasurement(
+        QuantumOperation operation,
+        int columnIdx,
+        List<List<QuantumOperation>> columns
+    ) {
+        if (!isMeasurement(operation) || columnIdx >= columns.size()) {
+            return false;
+        }
+        return columns.get(columnIdx).stream().anyMatch(QuantumCircuit::isMeasurement);
+    }
+
+    /** Records how far right the gates reach, which is the floor for every measurement placed later. */
+    private static void noteGateColumn(QuantumOperation operation, int columnIdx, LayoutPass pass) {
+        if (!isMeasurement(operation)) {
+            pass.lastGateColumn = Math.max(pass.lastGateColumn, columnIdx);
+        }
+    }
+
+    /** Puts one operation in the leftmost column that is neither occupied nor inside a frame. */
+    private void placeOperation(QuantumOperation operation, LayoutPass pass) {
+        int[] span = operationSpan(operation);
+        int columnIdx = Math.max(earliestColumn(operation, pass.lastColumnPerQubit), measurementFloor(operation, pass));
+        while (
+            isColumnBlocked(span, columnIdx, pass.columns) ||
+            isReserved(span, columnIdx, pass.reserved) ||
+            wouldShareColumnWithMeasurement(operation, columnIdx, pass.columns)
+        ) {
+            columnIdx++;
+        }
+        addToColumn(pass.columns, columnIdx, operation);
+        markOccupied(operation, columnIdx, pass.lastColumnPerQubit);
+        noteGateColumn(operation, columnIdx, pass);
+    }
+
+    /**
+     * Places a whole frame: lays its members out among themselves, then slides that rectangle right
+     * until it clears everything already placed, and reserves it against everything placed later.
+     */
+    private void placeBlock(LoopBlock block, List<LoopBlock> blocks, List<QuantumOperation> operations, LayoutPass pass) {
+        Map<String, QuantumOperation> byId = operations.stream().collect(Collectors.toMap(QuantumOperation::getId, op -> op, (a, b) -> a));
+        List<QuantumOperation> members = block.getOperationIds().stream().map(byId::get).filter(Objects::nonNull).toList();
+        if (members.isEmpty()) {
+            return;
+        }
+
+        List<LoopBlock> nested = blocks
+            .stream()
+            .filter(candidate -> candidate.isStrictlyInside(block))
+            .toList();
+        List<List<QuantumOperation>> localColumns = layOutColumns(members, nested);
+        int width = localColumns.size();
+        int[] blockSpan = spanOver(members);
+
+        int start = 0;
+        for (QuantumOperation member : members) {
+            start = Math.max(start, earliestColumn(member, pass.lastColumnPerQubit));
+            start = Math.max(start, measurementFloor(member, pass));
+        }
+        while (!rectangleIsFree(blockSpan, start, width, pass.columns, pass.reserved)) {
+            start++;
+        }
+
+        for (int relative = 0; relative < width; relative++) {
+            for (QuantumOperation member : localColumns.get(relative)) {
+                addToColumn(pass.columns, start + relative, member);
+                markOccupied(member, start + relative, pass.lastColumnPerQubit);
+                noteGateColumn(member, start + relative, pass);
+                pass.placed.add(member.getId());
+            }
+        }
+        pass.reserved.add(new int[] { blockSpan[0], blockSpan[1], start, start + width - 1 });
+    }
+
+    /** Leftmost column an operation could go by its qubits alone, ignoring collisions and frames. */
+    private int earliestColumn(QuantumOperation operation, Map<ElementSelector, Integer> lastColumnPerQubit) {
+        int columnIdx = 0;
+        for (ElementSelector selector : getTargetAndControlQubits(operation)) {
+            columnIdx = Math.max(columnIdx, lastColumnPerQubit.getOrDefault(selector, -1));
+        }
+        return columnIdx;
+    }
+
+    private void markOccupied(QuantumOperation operation, int columnIdx, Map<ElementSelector, Integer> lastColumnPerQubit) {
+        for (ElementSelector selector : getTargetAndControlQubits(operation)) {
+            lastColumnPerQubit.put(selector, columnIdx);
+        }
+    }
+
+    private static void addToColumn(List<List<QuantumOperation>> columns, int columnIdx, QuantumOperation operation) {
+        while (columns.size() <= columnIdx) {
+            columns.add(new ArrayList<>());
+        }
+        columns.get(columnIdx).add(operation);
+    }
+
+    /** Whether something already in this column reaches into the given span. */
+    private boolean isColumnBlocked(int[] span, int columnIdx, List<List<QuantumOperation>> columns) {
+        if (columnIdx >= columns.size()) {
+            return false;
+        }
+        return columns
+            .get(columnIdx)
             .stream()
             .anyMatch(existing -> spansOverlap(span, operationSpan(existing)));
+    }
+
+    /** Whether the given span at the given column falls inside a frame it is not part of. */
+    private static boolean isReserved(int[] span, int columnIdx, List<int[]> reserved) {
+        return reserved
+            .stream()
+            .anyMatch(
+                rectangle ->
+                    spansOverlap(span, new int[] { rectangle[0], rectangle[1] }) && columnIdx >= rectangle[2] && columnIdx <= rectangle[3]
+            );
+    }
+
+    private boolean rectangleIsFree(int[] span, int start, int width, List<List<QuantumOperation>> columns, List<int[]> reserved) {
+        for (int columnIdx = start; columnIdx < start + width; columnIdx++) {
+            if (isColumnBlocked(span, columnIdx, columns) || isReserved(span, columnIdx, reserved)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /** Topmost to bottommost qubit reached by any of the given operations. */
+    private int[] spanOver(List<QuantumOperation> operations) {
+        int min = Integer.MAX_VALUE;
+        int max = Integer.MIN_VALUE;
+        for (QuantumOperation operation : operations) {
+            int[] span = operationSpan(operation);
+            min = Math.min(min, span[0]);
+            max = Math.max(max, span[1]);
+        }
+        return new int[] { min, max };
     }
 
     private Set<ElementSelector> getTargetAndControlQubits(QuantumOperation op) {

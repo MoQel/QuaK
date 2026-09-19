@@ -24,4 +24,16 @@ public interface QasmIncludeLoader {
      * @return the resolved source, or empty if no such file exists
      */
     Optional<QasmSource> load(String fromFileId, String path);
+
+    /**
+     * Resolves the circuit id of the file {@code path} refers to, as seen from the file currently being parsed.
+     *
+     * @param fromFileId id of the file containing the composition statement, or {@code null} when the
+     *                   parse started from unsaved content
+     * @param path       the path or filename from the composition annotation, e.g. {@code "bell.qasm"}
+     * @return the resolved circuit id, or empty if no such file exists
+     */
+    default Optional<String> resolveCircuitId(String fromFileId, String path) {
+        return Optional.empty();
+    }
 }

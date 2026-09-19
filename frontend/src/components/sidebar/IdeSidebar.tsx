@@ -5,6 +5,7 @@ import {
     Code2,
     Folder,
     Home,
+    LayoutGrid,
     Library,
     LogOut,
     Moon,
@@ -70,7 +71,7 @@ export function IdeSidebar() {
     const { theme, toggleTheme } = useTheme();
     const { projectId, projectName, refreshProject } = useProject();
     const { dialog, openDeleteProjectDialog, openRenameProjectDialog } = useProjectActionsDialog();
-    const { openPanels, togglePanel } = useDockview();
+    const { openPanels, togglePanel, resetLayout } = useDockview();
     const [collapsed, setCollapsed] = useState(false);
     const isDark = theme === 'dark';
     const projectTitle = isIdeView ? (projectName ?? 'QuaK') : 'QuaK';
@@ -172,6 +173,17 @@ export function IdeSidebar() {
                             );
                         })}
                     </ul>
+
+                    <button
+                        type="button"
+                        className={cn('mt-2', sidebarItemClassName({ collapsed, muted: true }))}
+                        aria-label="Reset layout"
+                        title={collapsed ? 'Reset layout' : undefined}
+                        onClick={resetLayout}
+                    >
+                        <LayoutGrid className="size-5 shrink-0" />
+                        {!collapsed && <span className="truncate">Reset Layout</span>}
+                    </button>
                 </nav>
             ) : (
                 <div className="flex-1" />

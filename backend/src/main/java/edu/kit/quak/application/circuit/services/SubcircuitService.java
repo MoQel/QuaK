@@ -8,6 +8,7 @@ import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.core.circuit.model.SubcircuitOption;
 import edu.kit.quak.core.circuit.model.layer.operation.SubcircuitOperation;
 import edu.kit.quak.core.circuit.model.register.QuantumRegister;
+import edu.kit.quak.core.common.exception.DomainRuleViolationException;
 import edu.kit.quak.core.user.model.User;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -44,12 +45,7 @@ public class SubcircuitService implements SubcircuitServicePort {
     @Override
     public List<SubcircuitOption> listAvailable(String projectId, String excludeCircuitId, User user) {
         List<QuantumCircuit> all = circuitRepository.findAllByProjectId(projectId);
-        Map<String, List<String>> referenceGraph = new HashMap<>();
-        for (QuantumCircuit circuit : all) {
-            if (circuit.getId() != null) {
-                referenceGraph.put(circuit.getId(), referencesOf(circuit));
-            }
-        }
+        Map<String, List<String>> referenceGraph = buildReferenceGraph(all);
 
         List<SubcircuitOption> options = new ArrayList<>();
         for (QuantumCircuit candidate : all) {
@@ -84,16 +80,82 @@ public class SubcircuitService implements SubcircuitServicePort {
     }
 
     @Override
-    public void offerAsSubcircuit(String circuitId, User user) {
+    public List<String> listDisallowedFileIds(String projectId, String currentCircuitId, User user) {
+        if (projectId == null || projectId.isBlank()) {
+            return List.of();
+        }
+        List<QuantumCircuit> all = circuitRepository.findAllByProjectId(projectId);
+        Map<String, List<String>> referenceGraph = buildReferenceGraph(all);
+
+        Set<String> disallowed = new HashSet<>();
+        for (QuantumCircuit candidate : all) {
+            if (candidate.getFileId() == null) {
+                continue;
+            }
+            if (currentCircuitId != null && candidate.getId() != null && candidate.getId().equals(currentCircuitId)) {
+                disallowed.add(candidate.getFileId());
+                continue;
+            }
+            if (candidate.isOfferedAsSubcircuit()) {
+                disallowed.add(candidate.getFileId());
+                continue;
+            }
+            if (currentCircuitId != null && candidate.getId() != null && reaches(candidate.getId(), currentCircuitId, referenceGraph)) {
+                disallowed.add(candidate.getFileId());
+            }
+        }
+        return new ArrayList<>(disallowed);
+    }
+
+    @Override
+    public void offerAsSubcircuit(String circuitId, String forCircuitId, User user) {
         QuantumCircuit circuit = circuitRepository
             .findById(circuitId)
             .orElseThrow(() -> new ResourceNotFoundException("Circuit", circuitId));
+
+        if (forCircuitId != null) {
+            if (circuitId.equals(forCircuitId)) {
+                throw new DomainRuleViolationException("A circuit cannot reference itself as a subcircuit.");
+            }
+            List<QuantumCircuit> all = circuitRepository.findAllByProjectId(circuit.getProjectId());
+            Map<String, List<String>> referenceGraph = buildReferenceGraph(all);
+            if (reaches(circuitId, forCircuitId, referenceGraph)) {
+                throw new DomainRuleViolationException("Cannot add subcircuit: It would create a circular dependency.");
+            }
+            if (circuit.isOfferedAsSubcircuit()) {
+                throw new DomainRuleViolationException("This circuit is already offered as a subcircuit.");
+            }
+        }
+
         if (circuit.isOfferedAsSubcircuit()) {
             return;
         }
         circuit.setOfferedAsSubcircuit(true);
         circuitRepository.save(circuit);
         log.info("Circuit is now offered as a subcircuit. circuitId={}", circuitId);
+    }
+
+    @Override
+    public void revokeSubcircuit(String circuitId, User user) {
+        QuantumCircuit circuit = circuitRepository
+            .findById(circuitId)
+            .orElseThrow(() -> new ResourceNotFoundException("Circuit", circuitId));
+        if (!circuit.isOfferedAsSubcircuit()) {
+            return;
+        }
+        circuit.setOfferedAsSubcircuit(false);
+        circuitRepository.save(circuit);
+        log.info("Circuit is no longer offered as a subcircuit. circuitId={}", circuitId);
+    }
+
+    private static Map<String, List<String>> buildReferenceGraph(List<QuantumCircuit> circuits) {
+        Map<String, List<String>> referenceGraph = new HashMap<>();
+        for (QuantumCircuit circuit : circuits) {
+            if (circuit.getId() != null) {
+                referenceGraph.put(circuit.getId(), referencesOf(circuit));
+            }
+        }
+        return referenceGraph;
     }
 
     /** The circuits this one calls directly. */

@@ -12,17 +12,44 @@ public class SubcircuitOperation extends QuantumOperation {
 
     private String definitionCircuitId;
 
+    /**
+     * Name of the referenced circuit's file, when the caller knows it.
+     *
+     * <p>Not persisted and not part of the reference - the id is what identifies the circuit. This
+     * only lets code generation name the gate after the file instead of after a sanitized UUID, and
+     * is simply absent when nothing resolved it.
+     */
+    private String definitionName;
+
+    /**
+     * The 0-based indices of the subcircuit's qubits mapped to the call's targetQubits.
+     * Null or empty means the default sequential mapping [0, 1, ..., targetQubits.size() - 1].
+     */
+    private List<Integer> subcircuitQubitIndices;
+
     public SubcircuitOperation(
         boolean inverseForm,
         @NonNull List<ElementSelector> targetQubits,
         List<ElementSelector> controlQubits,
         @NonNull String definitionCircuitId
     ) {
+        this(inverseForm, targetQubits, controlQubits, definitionCircuitId, null);
+    }
+
+    @edu.kit.quak.shared.annotations.Default
+    public SubcircuitOperation(
+        boolean inverseForm,
+        @NonNull List<ElementSelector> targetQubits,
+        List<ElementSelector> controlQubits,
+        @NonNull String definitionCircuitId,
+        List<Integer> subcircuitQubitIndices
+    ) {
         super(inverseForm, targetQubits, controlQubits);
         if (definitionCircuitId.isBlank()) {
             throw new InvalidOperationConfigurationException("A composite quantum operation must have a valid definitionCircuitId.");
         }
         this.definitionCircuitId = definitionCircuitId;
+        this.subcircuitQubitIndices = subcircuitQubitIndices != null ? new java.util.ArrayList<>(subcircuitQubitIndices) : null;
     }
 
     /**
@@ -31,7 +58,31 @@ public class SubcircuitOperation extends QuantumOperation {
      */
     @Override
     public SubcircuitOperation copyForQubits(@NonNull List<ElementSelector> targetQubits, @NonNull List<ElementSelector> controlQubits) {
-        return new SubcircuitOperation(inverseForm, copySelectors(targetQubits), copySelectors(controlQubits), definitionCircuitId);
+        SubcircuitOperation copy = new SubcircuitOperation(
+            inverseForm,
+            copySelectors(targetQubits),
+            copySelectors(controlQubits),
+            definitionCircuitId,
+            subcircuitQubitIndices != null ? new java.util.ArrayList<>(subcircuitQubitIndices) : null
+        );
+        copy.setDefinitionName(definitionName);
+        return copy;
+    }
+
+    /**
+     * Two calls are alike only when they point at the same circuit.
+     *
+     * <p>Without this, a loop body calling different subcircuits would compare equal and collapse
+     * into one framed repetition that runs the wrong one - the same reason a composite gate compares
+     * by definition id.
+     */
+    @Override
+    public boolean isStructurallyEqualTo(QuantumOperation other) {
+        return (
+            super.isStructurallyEqualTo(other) &&
+            java.util.Objects.equals(definitionCircuitId, ((SubcircuitOperation) other).definitionCircuitId) &&
+            java.util.Objects.equals(subcircuitQubitIndices, ((SubcircuitOperation) other).subcircuitQubitIndices)
+        );
     }
 
     @Override

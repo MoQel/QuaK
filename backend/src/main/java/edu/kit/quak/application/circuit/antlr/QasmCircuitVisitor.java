@@ -3,6 +3,7 @@ package edu.kit.quak.application.circuit.antlr;
 import edu.kit.quak.application.circuit.exceptions.QasmParseException;
 import edu.kit.quak.application.circuit.ports.out.QasmIncludeLoader;
 import edu.kit.quak.application.circuit.ports.out.QasmSource;
+import edu.kit.quak.core.circuit.model.LoopBlock;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.core.circuit.model.gate.GateDefinition;
 import edu.kit.quak.core.circuit.model.layer.Layer;
@@ -16,11 +17,14 @@ import edu.kit.quak.core.circuit.model.layer.operation.library.QuantumOperationL
 import edu.kit.quak.core.circuit.model.register.ClassicRegister;
 import edu.kit.quak.core.circuit.model.register.QuantumRegister;
 import edu.kit.quak.core.circuit.model.register.Register;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -60,8 +64,20 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
     /** Gate names declared with a @composition annotation, mapped to the circuit they stand for. */
     private final Map<String, String> subcircuitsByGateName = new HashMap<>();
 
+    /** File or circuit display names declared with a @composition annotation. */
+    private final Map<String, String> subcircuitNamesByGateName = new HashMap<>();
+
+    /** Mapped subcircuit qubit indices declared in gate parameter names (e.g. q1, q2 -> [1, 2]). */
+    private final Map<String, List<Integer>> subcircuitQubitIndicesByGateName = new HashMap<>();
+
     /** Circuit id from the @composition annotation just read, consumed by the gate declaration after it. */
     private String pendingSubcircuitId = null;
+
+    /** Circuit name from the @composition annotation just read, consumed by the gate declaration after it. */
+    private String pendingSubcircuitName = null;
+
+    /** Whether an unconsumed @composition annotation was encountered before a gate declaration. */
+    private boolean pendingComposition = false;
     private final QasmExpressionEvaluator evaluator = new QasmExpressionEvaluator();
 
     /** Parsed `gate` declarations by name, turned into a {@link GateDefinition} on first call. */
@@ -85,6 +101,25 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
     private int unrolledIterations = 0;
 
     private int emittedOperations = 0;
+
+    /**
+     * What the loop iterations currently being unrolled have produced, innermost last.
+     *
+     * <p>A loop has to know exactly which operations its body emitted in order to compare its
+     * iterations, and the circuit is no help there: {@link QuantumCircuit#addQuantumOperation}
+     * reschedules on every insert, so "the last few operations" is not a thing one can read back
+     * afterwards. Recording them on the way out is. The stack is for nested loops: an inner loop
+     * captures into its own frame and, once it has decided what survives, hands that up to the
+     * enclosing iteration — otherwise the outer loop would compare iterations it cannot see into.
+     */
+    private final Deque<LoopCapture> loopCaptures = new ArrayDeque<>();
+
+    /** Operations and repetition frames one loop iteration produced. */
+    private record LoopCapture(List<QuantumOperation> operations, List<LoopBlock> loopBlocks) {
+        LoopCapture() {
+            this(new ArrayList<>(), new ArrayList<>());
+        }
+    }
 
     /** Loads the files pulled in by `include` statements, already bound to the requesting user. */
     private final QasmIncludeLoader includeLoader;
@@ -200,22 +235,52 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
         if (ctx.gateStatement() != null) {
             String gateName = ctx.gateStatement().Identifier().getText();
             String circuitId = null;
-            if (ctx.annotation() != null) {
+            String circuitName = null;
+            boolean hasCompositionAnnotation = false;
+            if (ctx.annotation() != null && !ctx.annotation().isEmpty()) {
                 for (var ann : ctx.annotation()) {
                     String kw = ann.AnnotationKeyword() != null ? ann.AnnotationKeyword().getText() : "";
                     if (kw.equalsIgnoreCase("@composition")) {
+                        hasCompositionAnnotation = true;
                         String rem = ann.RemainingLineContent() != null ? ann.RemainingLineContent().getText().trim() : "";
                         circuitId = parseCircuitIdFromAnnotation(rem);
+                        circuitName = parseCircuitNameFromAnnotation(rem);
                         break;
                     }
                 }
             }
-            if (circuitId == null && pendingSubcircuitId != null) {
+            if (!hasCompositionAnnotation && pendingComposition) {
+                hasCompositionAnnotation = true;
                 circuitId = pendingSubcircuitId;
+                circuitName = pendingSubcircuitName;
+                pendingComposition = false;
                 pendingSubcircuitId = null;
+                pendingSubcircuitName = null;
             }
-            if (circuitId != null) {
+            if (hasCompositionAnnotation) {
+                if (circuitId == null) {
+                    if (circuitName != null && !circuitName.isBlank()) {
+                        Optional<String> resolved = includeLoader.resolveCircuitId(currentFileId, circuitName);
+                        if (resolved.isPresent()) {
+                            circuitId = resolved.get();
+                        } else if (currentFileId != null && includeLoader != QasmIncludeLoader.NONE) {
+                            throw new QasmParseException(
+                                "Could not resolve subcircuit file '%s': no such file in this project.".formatted(circuitName)
+                            );
+                        }
+                    }
+                }
+                if (circuitId == null) {
+                    circuitId = UUID.randomUUID().toString();
+                }
                 subcircuitsByGateName.put(gateName, circuitId);
+                if (circuitName != null && !circuitName.isBlank()) {
+                    subcircuitNamesByGateName.put(gateName, circuitName);
+                }
+                List<Integer> qubitIndices = extractSubcircuitQubitIndices(ctx.gateStatement());
+                if (qubitIndices != null && !qubitIndices.isEmpty()) {
+                    subcircuitQubitIndicesByGateName.put(gateName, qubitIndices);
+                }
                 return null; // Skip statement body of pseudo composite gate
             }
         }
@@ -226,27 +291,68 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
     public Void visitAnnotation(OpenQASM3Parser.AnnotationContext ctx) {
         String keyword = ctx.AnnotationKeyword() != null ? ctx.AnnotationKeyword().getText() : "";
         if (keyword.equalsIgnoreCase("@composition")) {
+            pendingComposition = true;
             String remaining = ctx.RemainingLineContent() != null ? ctx.RemainingLineContent().getText().trim() : "";
             pendingSubcircuitId = parseCircuitIdFromAnnotation(remaining);
+            pendingSubcircuitName = parseCircuitNameFromAnnotation(remaining);
         }
         return super.visitAnnotation(ctx);
     }
 
+    private List<Integer> extractSubcircuitQubitIndices(OpenQASM3Parser.GateStatementContext gateStatement) {
+        if (gateStatement == null || gateStatement.qubits == null || gateStatement.qubits.Identifier() == null) {
+            return null;
+        }
+        List<org.antlr.v4.runtime.tree.TerminalNode> idNodes = gateStatement.qubits.Identifier();
+        if (idNodes.isEmpty()) {
+            return null;
+        }
+        List<Integer> indices = new ArrayList<>();
+        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("(\\d+)$");
+        for (var node : idNodes) {
+            String name = node.getText();
+            java.util.regex.Matcher matcher = pattern.matcher(name);
+            if (matcher.find()) {
+                indices.add(Integer.parseInt(matcher.group(1)));
+            } else {
+                return null;
+            }
+        }
+        return indices;
+    }
+
+    private String parseCircuitNameFromAnnotation(String text) {
+        if (text == null || text.isBlank()) {
+            return null;
+        }
+        String trimmed = text.trim();
+        int firstQuote = trimmed.indexOf('"');
+        int lastQuote = trimmed.lastIndexOf('"');
+        if (firstQuote >= 0 && lastQuote > firstQuote) {
+            String name = trimmed.substring(firstQuote + 1, lastQuote).trim();
+            return name.isEmpty() ? null : name;
+        }
+        return null;
+    }
+
     private String parseCircuitIdFromAnnotation(String text) {
         if (text == null || text.isBlank()) {
-            return UUID.randomUUID().toString();
+            return null;
         }
         String trimmed = text.trim();
         int lastQuoteIndex = trimmed.lastIndexOf('"');
-        if (lastQuoteIndex >= 0 && lastQuoteIndex + 1 < trimmed.length()) {
-            String afterQuote = trimmed.substring(lastQuoteIndex + 1).trim();
-            if (!afterQuote.isEmpty()) {
-                return afterQuote;
+        if (lastQuoteIndex >= 0) {
+            if (lastQuoteIndex + 1 < trimmed.length()) {
+                String afterQuote = trimmed.substring(lastQuoteIndex + 1).trim();
+                if (!afterQuote.isEmpty()) {
+                    return afterQuote;
+                }
             }
+            return null;
         }
         String[] parts = trimmed.split("\\s+");
-        String candidate = parts[parts.length - 1].replace("\"", "").trim();
-        return candidate.isEmpty() ? UUID.randomUUID().toString() : candidate;
+        String candidate = parts[parts.length - 1].trim();
+        return candidate.isEmpty() ? null : candidate;
     }
 
     @Override
@@ -398,9 +504,23 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
         // in gateDefinitions. The annotation is the more specific statement and therefore wins: only
         // it names another circuit, while the declaration itself is deliberately empty.
         if (subcircuitsByGateName.containsKey(gateName)) {
-            String definitionCircuitId = subcircuitsByGateName.get(gateName);
-            QuantumOperation operation = new SubcircuitOperation(false, operands, null, definitionCircuitId);
-            circuit.addQuantumOperation(operation, circuit.getLayers().size());
+            // Through addOperation like every other operation: writing to the circuit directly
+            // bypassed the loop capture (a subcircuit in a `for` was unrolled instead of framed),
+            // the definition under construction (one inside a `gate` body escaped into the circuit)
+            // and the expansion budget.
+            List<Integer> qubitIndices = subcircuitQubitIndicesByGateName.get(gateName);
+            SubcircuitOperation subcircuit = new SubcircuitOperation(
+                false,
+                operands,
+                null,
+                subcircuitsByGateName.get(gateName),
+                qubitIndices
+            );
+            String definitionName = subcircuitNamesByGateName.get(gateName);
+            if (definitionName != null && !definitionName.isBlank()) {
+                subcircuit.setDefinitionName(definitionName);
+            }
+            addOperation(subcircuit);
             return;
         }
 
@@ -452,6 +572,18 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
      * value, with the loop variable bound in the expression evaluator. Loops whose iteration
      * values are not compile-time constants (arrays, aliases) cannot be represented as a static
      * circuit and are rejected.
+     *
+     * <p>When every pass turns out to have emitted the same operations on the same qubits — that is,
+     * the loop counter never reached the gates — the extra copies are dropped again and a
+     * {@link LoopBlock} is put over the first pass instead, so the editor can draw the body once
+     * inside a frame with a repeat count. A loop whose passes differ ({@code cx q[i], q[i+1]}) stays
+     * unrolled and unmarked, exactly as before: with one wire per row there is no honest way to draw
+     * "×n" over gates that each sit somewhere else.
+     *
+     * <p>Deciding this by comparing what was emitted rather than by inspecting where the counter
+     * appears keeps the rule independent of how the body is written — a counter used only in a
+     * folded {@code if} condition, or in an angle that happens to come out the same, lands on the
+     * right side of the line by construction.
      */
     @Override
     public Void visitForStatement(OpenQASM3Parser.ForStatementContext ctx) {
@@ -461,6 +593,11 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
             return null;
         }
 
+        // Inside a gate body there are no circuit operations to frame — the gate is already drawn as
+        // one box, and its contents are not laid out in the circuit's layers.
+        boolean framable = definitionUnderConstruction == null && values.size() > 1;
+
+        List<LoopCapture> passes = new ArrayList<>(framable ? values.size() : 0);
         Double previousBinding = evaluator.bind(loopVariable, values.getFirst());
         try {
             for (double value : values) {
@@ -468,12 +605,103 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
                     throw loopBudgetExceeded();
                 }
                 evaluator.bind(loopVariable, value);
-                visit(ctx.body);
+                if (framable) {
+                    passes.add(runCapturedPass(ctx));
+                } else {
+                    visit(ctx.body);
+                }
             }
         } finally {
             evaluator.restore(loopVariable, previousBinding);
         }
+
+        if (framable) {
+            finishLoop(passes);
+        }
         return null;
+    }
+
+    /** Visits the loop body once, recording everything it emits into a fresh capture frame. */
+    private LoopCapture runCapturedPass(OpenQASM3Parser.ForStatementContext ctx) {
+        LoopCapture pass = new LoopCapture();
+        loopCaptures.push(pass);
+        try {
+            visit(ctx.body);
+        } finally {
+            loopCaptures.pop();
+        }
+        return pass;
+    }
+
+    /**
+     * Collapses the unrolled passes into a framed body when they are all alike, and reports whatever
+     * survived to the enclosing loop iteration, if there is one.
+     */
+    private void finishLoop(List<LoopCapture> passes) {
+        LoopCapture first = passes.getFirst();
+        List<LoopCapture> repetitions = passes.subList(1, passes.size());
+
+        if (repetitions.stream().allMatch(pass -> isSamePass(first, pass)) && !first.operations().isEmpty()) {
+            discard(repetitions);
+            LoopBlock block = new LoopBlock(passes.size(), first.operations().stream().map(QuantumOperation::getId).toList());
+            circuit.addLoopBlock(block);
+            first.loopBlocks().add(block);
+            reportToEnclosingIteration(first);
+            return;
+        }
+
+        passes.forEach(this::reportToEnclosingIteration);
+    }
+
+    /** Two passes are alike when they emitted the same operations, in order, and the same frames. */
+    private boolean isSamePass(LoopCapture a, LoopCapture b) {
+        if (a.operations().size() != b.operations().size() || a.loopBlocks().size() != b.loopBlocks().size()) {
+            return false;
+        }
+        for (int i = 0; i < a.operations().size(); i++) {
+            if (!a.operations().get(i).isStructurallyEqualTo(b.operations().get(i))) {
+                return false;
+            }
+        }
+        // A nested loop that collapsed leaves a frame behind; two passes only match if their inner
+        // loops repeat equally often, otherwise the outer frame would hide a real difference.
+        for (int i = 0; i < a.loopBlocks().size(); i++) {
+            if (a.loopBlocks().get(i).getRepeatCount() != b.loopBlocks().get(i).getRepeatCount()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Removes the redundant passes from the circuit again and refunds their share of the operation
+     * budget — they never end up in the result, so charging for them would cap the repeat count of a
+     * perfectly small loop body.
+     */
+    private void discard(List<LoopCapture> passes) {
+        List<String> operationIds = passes
+            .stream()
+            .flatMap(pass -> pass.operations().stream())
+            .map(QuantumOperation::getId)
+            .toList();
+        circuit.removeQuantumOperations(operationIds);
+        circuit.removeLoopBlocks(
+            passes
+                .stream()
+                .flatMap(pass -> pass.loopBlocks().stream())
+                .map(LoopBlock::getId)
+                .toList()
+        );
+        emittedOperations -= operationIds.size();
+    }
+
+    /** Hands a pass's surviving content to the loop one level out, so it can compare its own passes. */
+    private void reportToEnclosingIteration(LoopCapture pass) {
+        LoopCapture enclosing = loopCaptures.peek();
+        if (enclosing != null) {
+            enclosing.operations().addAll(pass.operations());
+            enclosing.loopBlocks().addAll(pass.loopBlocks());
+        }
     }
 
     /**
@@ -832,6 +1060,9 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
             definitionUnderConstruction.addOperation(operation);
         } else {
             circuit.addQuantumOperation(operation, circuit.getLayers().size());
+            if (!loopCaptures.isEmpty()) {
+                loopCaptures.peek().operations().add(operation);
+            }
         }
     }
 

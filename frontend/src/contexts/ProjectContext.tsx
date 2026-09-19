@@ -8,6 +8,8 @@ interface ProjectContextType {
     projectId: string | null;
     isLoadingProject: boolean;
     refreshProject: () => Promise<void>;
+    refreshProjectFiles: () => void;
+    projectFilesToken: number;
 }
 
 const ProjectContext = createContext<ProjectContextType>({
@@ -15,6 +17,8 @@ const ProjectContext = createContext<ProjectContextType>({
     projectId: null,
     isLoadingProject: false,
     refreshProject: async () => {},
+    refreshProjectFiles: () => {},
+    projectFilesToken: 0,
 });
 
 export const useProject = () => useContext(ProjectContext);
@@ -23,6 +27,11 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const { projectId } = useParams<{ projectId: string }>();
     const [projectName, setProjectName] = useState<string | null>(null);
     const [isLoadingProject, setIsLoadingProject] = useState(false);
+    const [projectFilesToken, setProjectFilesToken] = useState(0);
+
+    const refreshProjectFiles = useCallback(() => {
+        setProjectFilesToken((prev) => prev + 1);
+    }, []);
 
     const refreshProject = useCallback(async () => {
         if (!projectId) {
@@ -61,8 +70,10 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
             projectId: projectId || null,
             isLoadingProject,
             refreshProject,
+            refreshProjectFiles,
+            projectFilesToken,
         }),
-        [projectName, projectId, isLoadingProject, refreshProject],
+        [projectName, projectId, isLoadingProject, refreshProject, refreshProjectFiles, projectFilesToken],
     );
 
     return <ProjectContext.Provider value={contextValue}>{children}</ProjectContext.Provider>;

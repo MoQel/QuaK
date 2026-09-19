@@ -112,9 +112,10 @@ function validateOperation(op: QuantumOperationDto, context: CircuitContext): vo
         // Resolved by the backend into a body bound to this call's qubits; validated through it,
         // like a composite. Without one the circuit cannot be run at all, which is worth saying.
         if (!op.body) {
+            const detail = op.bindingError ? `: ${op.bindingError}` : ', so its contents cannot be simulated.';
             throwSimulationError({
                 code: 'UNSUPPORTED_OPERATION',
-                message: `Subcircuit '${op.definitionName ?? op.identifier}' could not be resolved, so its contents cannot be simulated.`,
+                message: `Subcircuit '${op.definitionName ?? op.identifier}' could not be resolved${detail}`,
                 operationId: op.id,
             });
         }
