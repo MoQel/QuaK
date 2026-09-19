@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { LoopBlockDto, RegisterResponse } from '@/api/dto/circuit.ts';
 import { getOperationSpan } from './spans.ts';
-import { layOutColumns } from './scheduling.ts';
+import { layOutColumns, withTerminalMeasurementsLast } from './scheduling.ts';
 import { UiQuantumOperation } from './types.ts';
 
 const registers: RegisterResponse[] = [{ id: 'r1', name: 'q', type: 'Quantum_Register', numberOfQubits: 4 }];
@@ -22,6 +22,17 @@ const gate = (
     targetQubits: targets.map(qubit),
     controlQubits: controls.map(qubit),
     rotationAngle: 0,
+    originalLayerIdx,
+});
+
+const measurement = (id: string, target: number, bit: number, originalLayerIdx = 0): UiQuantumOperation => ({
+    id,
+    type: 'MEASUREMENT',
+    identifier: 'MEASURE',
+    inverseForm: false,
+    targetQubits: [qubit(target)],
+    controlQubits: [],
+    classicBits: [{ registerId: 'c1', index: bit }],
     originalLayerIdx,
 });
 
@@ -107,5 +118,84 @@ describe('layOutColumns', () => {
         const blocks: LoopBlockDto[] = [{ id: 'loop', repeatCount: 2, operationIds: ['deleted'] }];
 
         expect(idsPerColumn(operations, blocks)).toEqual([['a']]);
+    });
+
+    it('does not let a measurement slide left past earlier gates', () => {
+        // h q[0]; t q[0]; measure q[3] — wire 3 is idle from the start, so plain ASAP would put the
+        // measurement in column 0, drawn as if it ran before the gates.
+        const operations = [gate('h', 'H', [0]), gate('t', 'T', [0]), measurement('m', 3, 0)];
+
+        expect(idsPerColumn(operations)).toEqual([['h'], ['t'], ['m']]);
+    });
+
+    it('gives every measurement a column of its own', () => {
+        // Sharing one would draw their classical wires on top of each other, leaving a single
+        // readable bit label for all of them.
+        const operations = [
+            gate('h', 'H', [0]),
+            gate('t', 'T', [0]),
+            measurement('m0', 0, 0),
+            measurement('m1', 1, 1),
+            measurement('m2', 2, 2),
+        ];
+
+        expect(idsPerColumn(operations)).toEqual([['h'], ['t'], ['m0'], ['m1'], ['m2']]);
+    });
+
+    it('still lets a gate pass a measurement that came before it', () => {
+        // Only measurements are pinned; an independent gate stays free to left-justify.
+        const operations = [gate('h', 'H', [0]), measurement('m', 0, 0), gate('x', 'X', [3])];
+
+        expect(idsPerColumn(operations)).toEqual([['h', 'x'], ['m']]);
+    });
+});
+
+describe('withTerminalMeasurementsLast', () => {
+    it('heals an order a pre-fix layout left behind', () => {
+        // Each measurement is stored in the column it had drifted into, interleaved with the gates.
+        const operations = [
+            gate('h', 'H', [0]),
+            gate('cx01', 'CX', [1], [0]),
+            measurement('m0', 0, 0),
+            gate('cx12', 'CX', [2], [1]),
+            measurement('m1', 1, 1),
+            gate('cx23', 'CX', [3], [2]),
+            measurement('m2', 2, 2),
+            measurement('m3', 3, 3),
+        ];
+
+        expect(idsPerColumn(withTerminalMeasurementsLast(operations))).toEqual([
+            ['h'],
+            ['cx01'],
+            ['cx12'],
+            ['cx23'],
+            ['m0'],
+            ['m1'],
+            ['m2'],
+            ['m3'],
+        ]);
+    });
+
+    it('leaves a real mid-circuit measurement where it is', () => {
+        // Something still follows on wire 0, so this measurement is not terminal.
+        const operations = [gate('h', 'H', [0]), measurement('m', 0, 0), gate('x', 'X', [0])];
+
+        expect(withTerminalMeasurementsLast(operations).map((operation) => operation.id)).toEqual(['h', 'm', 'x']);
+    });
+
+    it('changes nothing when the measurements already come last', () => {
+        const operations = [gate('h', 'H', [0]), measurement('m0', 0, 0), measurement('m1', 1, 1)];
+
+        expect(withTerminalMeasurementsLast(operations).map((operation) => operation.id)).toEqual(['h', 'm0', 'm1']);
+    });
+
+    it('keeps only the last of two measurements on one wire at the back', () => {
+        const operations = [measurement('early', 0, 0), gate('x', 'X', [0]), measurement('late', 0, 1)];
+
+        expect(withTerminalMeasurementsLast(operations).map((operation) => operation.id)).toEqual([
+            'early',
+            'x',
+            'late',
+        ]);
     });
 });

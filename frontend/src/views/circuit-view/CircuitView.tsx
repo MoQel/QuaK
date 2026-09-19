@@ -29,7 +29,7 @@ import { DropzoneGrid } from './components/DropzoneGrid.tsx';
 import { DropPlaceholder } from './components/DropPlaceholder.tsx';
 import { CircuitFooter } from './components/CircuitFooter.tsx';
 import type { FlatQubit, HoverPos, UiLayer, UiQuantumOperation } from './util/types.ts';
-import { layOutColumns } from '@/views/circuit-view/util/scheduling.ts';
+import { layOutColumns, withTerminalMeasurementsLast } from '@/views/circuit-view/util/scheduling.ts';
 import { getLoopFrames } from '@/views/circuit-view/util/loopFrames.ts';
 import { framesAround } from '@/views/circuit-view/util/loopMembership.ts';
 import { Cell, operationsInRect, rectBetween } from '@/views/circuit-view/util/selection.ts';
@@ -831,7 +831,7 @@ function buildLayersWithoutDragOp(
     );
 
     operations.sort((left, right) => compareCanonicalOrder(left, right, selectorRowIndex));
-    return rescheduleOperations(operations, selectorRowIndex, loopBlocks);
+    return rescheduleOperations(withTerminalMeasurementsLast(operations), selectorRowIndex, loopBlocks);
 }
 
 function buildActiveDropZones(
@@ -884,7 +884,12 @@ function buildUiLayers({
     }
 
     allOperations.sort((left, right) => compareCanonicalOrder(left, right, selectorRowIndex));
-    return rescheduleOperations(allOperations, selectorRowIndex, loopBlocks, hoverPos?.layerIdx);
+    return rescheduleOperations(
+        withTerminalMeasurementsLast(allOperations),
+        selectorRowIndex,
+        loopBlocks,
+        hoverPos?.layerIdx,
+    );
 }
 
 /**

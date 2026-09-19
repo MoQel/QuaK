@@ -412,7 +412,7 @@ public class QuantumCircuit extends ElementWithId {
             .flatMap(layer -> layer.getQuantumOperations().stream().sorted(Comparator.comparingInt(op -> operationSpan(op)[0])))
             .toList();
 
-        List<List<QuantumOperation>> columns = layOutColumns(allOps, loopBlocks);
+        List<List<QuantumOperation>> columns = layOutColumns(withTerminalMeasurementsLast(allOps), loopBlocks);
 
         layers.forEach(Layer::clearQuantumOperations);
         for (int columnIdx = 0; columnIdx < columns.size(); columnIdx++) {
@@ -423,6 +423,42 @@ public class QuantumCircuit extends ElementWithId {
         }
 
         flushLayers();
+    }
+
+    /**
+     * Moves every terminal measurement — one with nothing on its qubit after it — behind the gates.
+     *
+     * <p>Needed because the stored layering *is* the program order, and a circuit laid out before
+     * measurements were pinned has that order scrambled: the columns ASAP picked back then were
+     * written back as layers, so a measurement that had drifted left now looks like it was meant to
+     * run there, and pinning alone would faithfully keep it. Reordering here undoes that once, on
+     * the next layout, and is safe because a measurement with nothing after it on its own wire
+     * cannot affect anything by moving later.
+     *
+     * <p>A measurement that something on its wire still follows is a real mid-circuit measurement
+     * and stays where it is — as does the whole order when nothing drifted, which makes this a
+     * no-op for circuits laid out under the current rules.
+     */
+    private List<QuantumOperation> withTerminalMeasurementsLast(List<QuantumOperation> operations) {
+        Set<ElementSelector> usedLater = new HashSet<>();
+        Deque<QuantumOperation> terminal = new ArrayDeque<>();
+        Deque<QuantumOperation> rest = new ArrayDeque<>();
+
+        // Backwards, so `usedLater` holds exactly the qubits the operations after this one touch.
+        for (int i = operations.size() - 1; i >= 0; i--) {
+            QuantumOperation operation = operations.get(i);
+            Set<ElementSelector> qubits = getTargetAndControlQubits(operation);
+            if (isMeasurement(operation) && Collections.disjoint(qubits, usedLater)) {
+                terminal.addFirst(operation);
+            } else {
+                rest.addFirst(operation);
+            }
+            usedLater.addAll(qubits);
+        }
+
+        List<QuantumOperation> ordered = new ArrayList<>(rest);
+        ordered.addAll(terminal);
+        return ordered;
     }
 
     /**
@@ -445,56 +481,100 @@ public class QuantumCircuit extends ElementWithId {
      * @return the operations grouped by column, leftmost first
      */
     private List<List<QuantumOperation>> layOutColumns(List<QuantumOperation> operations, List<LoopBlock> blocks) {
-        List<List<QuantumOperation>> columns = new ArrayList<>();
-        Map<ElementSelector, Integer> lastColumnPerQubit = new HashMap<>();
-        List<int[]> reserved = new ArrayList<>();
-        Set<String> placed = new HashSet<>();
+        LayoutPass pass = new LayoutPass();
 
         for (QuantumOperation operation : operations) {
-            if (placed.contains(operation.getId())) {
+            if (pass.placed.contains(operation.getId())) {
                 continue;
             }
             // Frames over the same operations share one rectangle, so any of them lays it out.
             LoopBlock block = LoopBlock.outermostCovering(blocks, operation.getId()).stream().findFirst().orElse(null);
             if (block == null) {
-                placeOperation(operation, columns, lastColumnPerQubit, reserved);
-                placed.add(operation.getId());
+                placeOperation(operation, pass);
+                pass.placed.add(operation.getId());
             } else {
-                placeBlock(block, blocks, operations, columns, lastColumnPerQubit, reserved, placed);
+                placeBlock(block, blocks, operations, pass);
             }
         }
-        return columns;
+        return pass.columns;
+    }
+
+    /**
+     * The mutable state one layout pass carries while it fills columns. Grouped rather than threaded
+     * through as separate arguments: every step touches the same structures, and passing them apart
+     * said little beyond how many there were.
+     */
+    private static final class LayoutPass {
+
+        private final List<List<QuantumOperation>> columns = new ArrayList<>();
+        private final Map<ElementSelector, Integer> lastColumnPerQubit = new HashMap<>();
+        private final List<int[]> reserved = new ArrayList<>();
+        private final Set<String> placed = new HashSet<>();
+
+        /**
+         * Rightmost column a gate occupies so far. A measurement may not be placed left of it: ASAP
+         * would otherwise pull every measurement forward to wherever its own wire happens to fall
+         * idle, scattering the measurements of one circuit across as many columns as it has qubits.
+         */
+        private int lastGateColumn = -1;
+    }
+
+    private static boolean isMeasurement(QuantumOperation operation) {
+        return operation instanceof Measurement;
+    }
+
+    /** The column a measurement may not start left of; gates stay free to go as far left as they fit. */
+    private static int measurementFloor(QuantumOperation operation, LayoutPass pass) {
+        return isMeasurement(operation) ? pass.lastGateColumn + 1 : 0;
+    }
+
+    /**
+     * Whether putting this measurement here would land it next to another one.
+     *
+     * <p>Each measurement draws its own dashed wire down to a classic bit, and that wire is placed by
+     * the column alone — so two measurements sharing a column draw their wires exactly on top of each
+     * other and only one bit label stays readable. A column of its own per measurement is what keeps
+     * the classical side legible.
+     */
+    private static boolean wouldShareColumnWithMeasurement(
+        QuantumOperation operation,
+        int columnIdx,
+        List<List<QuantumOperation>> columns
+    ) {
+        if (!isMeasurement(operation) || columnIdx >= columns.size()) {
+            return false;
+        }
+        return columns.get(columnIdx).stream().anyMatch(QuantumCircuit::isMeasurement);
+    }
+
+    /** Records how far right the gates reach, which is the floor for every measurement placed later. */
+    private static void noteGateColumn(QuantumOperation operation, int columnIdx, LayoutPass pass) {
+        if (!isMeasurement(operation)) {
+            pass.lastGateColumn = Math.max(pass.lastGateColumn, columnIdx);
+        }
     }
 
     /** Puts one operation in the leftmost column that is neither occupied nor inside a frame. */
-    private void placeOperation(
-        QuantumOperation operation,
-        List<List<QuantumOperation>> columns,
-        Map<ElementSelector, Integer> lastColumnPerQubit,
-        List<int[]> reserved
-    ) {
+    private void placeOperation(QuantumOperation operation, LayoutPass pass) {
         int[] span = operationSpan(operation);
-        int columnIdx = earliestColumn(operation, lastColumnPerQubit);
-        while (isColumnBlocked(span, columnIdx, columns) || isReserved(span, columnIdx, reserved)) {
+        int columnIdx = Math.max(earliestColumn(operation, pass.lastColumnPerQubit), measurementFloor(operation, pass));
+        while (
+            isColumnBlocked(span, columnIdx, pass.columns) ||
+            isReserved(span, columnIdx, pass.reserved) ||
+            wouldShareColumnWithMeasurement(operation, columnIdx, pass.columns)
+        ) {
             columnIdx++;
         }
-        addToColumn(columns, columnIdx, operation);
-        markOccupied(operation, columnIdx, lastColumnPerQubit);
+        addToColumn(pass.columns, columnIdx, operation);
+        markOccupied(operation, columnIdx, pass.lastColumnPerQubit);
+        noteGateColumn(operation, columnIdx, pass);
     }
 
     /**
      * Places a whole frame: lays its members out among themselves, then slides that rectangle right
      * until it clears everything already placed, and reserves it against everything placed later.
      */
-    private void placeBlock(
-        LoopBlock block,
-        List<LoopBlock> blocks,
-        List<QuantumOperation> operations,
-        List<List<QuantumOperation>> columns,
-        Map<ElementSelector, Integer> lastColumnPerQubit,
-        List<int[]> reserved,
-        Set<String> placed
-    ) {
+    private void placeBlock(LoopBlock block, List<LoopBlock> blocks, List<QuantumOperation> operations, LayoutPass pass) {
         Map<String, QuantumOperation> byId = operations.stream().collect(Collectors.toMap(QuantumOperation::getId, op -> op, (a, b) -> a));
         List<QuantumOperation> members = block.getOperationIds().stream().map(byId::get).filter(Objects::nonNull).toList();
         if (members.isEmpty()) {
@@ -511,20 +591,22 @@ public class QuantumCircuit extends ElementWithId {
 
         int start = 0;
         for (QuantumOperation member : members) {
-            start = Math.max(start, earliestColumn(member, lastColumnPerQubit));
+            start = Math.max(start, earliestColumn(member, pass.lastColumnPerQubit));
+            start = Math.max(start, measurementFloor(member, pass));
         }
-        while (!rectangleIsFree(blockSpan, start, width, columns, reserved)) {
+        while (!rectangleIsFree(blockSpan, start, width, pass.columns, pass.reserved)) {
             start++;
         }
 
         for (int relative = 0; relative < width; relative++) {
             for (QuantumOperation member : localColumns.get(relative)) {
-                addToColumn(columns, start + relative, member);
-                markOccupied(member, start + relative, lastColumnPerQubit);
-                placed.add(member.getId());
+                addToColumn(pass.columns, start + relative, member);
+                markOccupied(member, start + relative, pass.lastColumnPerQubit);
+                noteGateColumn(member, start + relative, pass);
+                pass.placed.add(member.getId());
             }
         }
-        reserved.add(new int[] { blockSpan[0], blockSpan[1], start, start + width - 1 });
+        pass.reserved.add(new int[] { blockSpan[0], blockSpan[1], start, start + width - 1 });
     }
 
     /** Leftmost column an operation could go by its qubits alone, ignoring collisions and frames. */

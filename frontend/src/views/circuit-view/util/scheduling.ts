@@ -28,8 +28,71 @@ interface LayoutPass {
     reserved: Reservation[];
     /** Operations already laid out, so a frame's members are not placed twice. */
     placed: Set<string>;
+    /**
+     * Rightmost column a gate occupies so far. A measurement may not be placed left of it: ASAP
+     * would otherwise pull each measurement forward to wherever its own wire happens to fall idle,
+     * scattering the measurements of one circuit across as many columns as there are qubits.
+     */
+    lastGateColumn: number;
     context: LayoutContext;
 }
+
+const isMeasurement = (operation: UiQuantumOperation): boolean => operation.type === 'MEASUREMENT';
+
+/**
+ * Moves every terminal measurement — one with nothing on its qubit after it — behind the gates.
+ *
+ * The stored layering *is* the program order, so a circuit laid out before measurements were pinned
+ * carries that drift in its order: the columns ASAP picked back then were written back as layers, a
+ * measurement that had slid left now looks like it was meant to run there, and pinning alone would
+ * faithfully keep it. Reordering undoes that once, on the next layout.
+ *
+ * Safe, because a measurement with nothing after it on its own wire cannot affect anything by moving
+ * later. One that something on its wire still follows is a real mid-circuit measurement and stays
+ * put — as does the whole order when nothing drifted, which makes this a no-op for circuits laid out
+ * under the current rules.
+ */
+export const withTerminalMeasurementsLast = (operations: UiQuantumOperation[]): UiQuantumOperation[] => {
+    const usedLater = new Set<string>();
+    const terminal: UiQuantumOperation[] = [];
+    const rest: UiQuantumOperation[] = [];
+
+    // Backwards, so `usedLater` holds exactly the qubits the operations after this one touch.
+    for (let index = operations.length - 1; index >= 0; index--) {
+        const operation = operations[index];
+        const keys = getInvolvedSelectors(operation).map(getSelectorKey);
+        (isMeasurement(operation) && keys.every((key) => !usedLater.has(key)) ? terminal : rest).unshift(operation);
+        keys.forEach((key) => usedLater.add(key));
+    }
+
+    return [...rest, ...terminal];
+};
+
+/** The column a measurement may not start left of; gates are free to go as far left as they fit. */
+const measurementFloor = (operation: UiQuantumOperation, pass: LayoutPass): number =>
+    isMeasurement(operation) ? pass.lastGateColumn + 1 : 0;
+
+/**
+ * Whether putting this measurement here would land it next to another one.
+ *
+ * Each measurement draws its own dashed wire down to a classic bit, and that wire is placed by the
+ * column alone — so two measurements sharing a column draw their wires exactly on top of each other
+ * and only the last one's bit label is readable. Giving every measurement a column of its own is
+ * what keeps the classical side legible.
+ */
+const wouldShareColumnWithMeasurement = (
+    operation: UiQuantumOperation,
+    columnIdx: number,
+    columns: UiLayer[],
+): boolean =>
+    isMeasurement(operation) && columnIdx < columns.length && columns[columnIdx].quantumOperations.some(isMeasurement);
+
+/** Records how far right the gates reach, which is the floor for every measurement placed later. */
+const noteGateColumn = (operation: UiQuantumOperation, columnIdx: number, pass: LayoutPass): void => {
+    if (!isMeasurement(operation)) {
+        pass.lastGateColumn = Math.max(pass.lastGateColumn, columnIdx);
+    }
+};
 
 /**
  * ASAP (as-soon-as-possible) left-justified scheduling, giving every repetition frame a column range
@@ -58,6 +121,7 @@ export const layOutColumns = (
         lastColumnPerQubit: new Map<string, number>(),
         reserved: [],
         placed: new Set<string>(),
+        lastGateColumn: -1,
         context,
     };
 
@@ -82,14 +146,23 @@ export const layOutColumns = (
 const placeOperation = (operation: UiQuantumOperation, pass: LayoutPass): void => {
     const { columns, lastColumnPerQubit, reserved, context } = pass;
     const span = context.spanOf(operation);
-    let columnIdx = Math.max(earliestColumn(operation, lastColumnPerQubit), context.minColumnFor?.(operation) ?? 0);
+    let columnIdx = Math.max(
+        earliestColumn(operation, lastColumnPerQubit),
+        context.minColumnFor?.(operation) ?? 0,
+        measurementFloor(operation, pass),
+    );
 
-    while (isColumnBlocked(span, columnIdx, columns, context) || isReserved(span, columnIdx, reserved)) {
+    while (
+        isColumnBlocked(span, columnIdx, columns, context) ||
+        isReserved(span, columnIdx, reserved) ||
+        wouldShareColumnWithMeasurement(operation, columnIdx, columns)
+    ) {
         columnIdx++;
     }
 
     addToColumn(columns, columnIdx, operation);
     markOccupied(operation, columnIdx, lastColumnPerQubit);
+    noteGateColumn(operation, columnIdx, pass);
 };
 
 /**
@@ -119,7 +192,7 @@ const placeBlock = (
 
     let start = 0;
     for (const member of members) {
-        start = Math.max(start, earliestColumn(member, lastColumnPerQubit));
+        start = Math.max(start, earliestColumn(member, lastColumnPerQubit), measurementFloor(member, pass));
     }
     while (!rectangleIsFree(blockSpan, start, width, columns, reserved, context)) {
         start++;
@@ -129,6 +202,7 @@ const placeBlock = (
         for (const member of localColumn.quantumOperations) {
             addToColumn(columns, start + relative, member);
             markOccupied(member, start + relative, lastColumnPerQubit);
+            noteGateColumn(member, start + relative, pass);
             if (member.id) placed.add(member.id);
         }
     });
