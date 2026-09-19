@@ -1,73 +1,83 @@
-import { Orientation, type AddPanelPositionOptions, type DockviewApi, type SerializedDockview } from 'dockview-react';
+import type { AddPanelPositionOptions, DockviewApi, SerializedDockview } from 'dockview-react';
 
 export const LAYOUT_STORAGE_KEY = 'ide-dockview-layout-v1';
 
+export const PANELS = {
+    circuit: 'circuit',
+    code: 'code',
+    file: 'file',
+    inspector: 'inspector',
+    library: 'library',
+    results: 'results',
+};
+
+const LEFT_W = 400;
+const RIGHT_W = 520;
+const BOTTOM_H = 350;
+
 /**
- * Smart placement logic to determine where a new panel should appear
- * based on existing neighbors.
+ * The default arrangement as rows of panels. Reopening a panel restores it into *this* shape rather
+ * than next to whatever happens to be open, so toggling panels can never reshuffle the grid.
+ * Keep in sync with `buildDefaultLayout` below.
  */
-export const getOptimalPosition = (panelId: string, api: DockviewApi) => {
-    const exists = (id: string) => !!api.getPanel(id);
+export const DEFAULT_GRID: string[][] = [
+    [PANELS.file, PANELS.circuit, PANELS.code],
+    [PANELS.library, PANELS.inspector, PANELS.results],
+];
 
-    const tryPos = (neighborId: string, direction: 'above' | 'below' | 'left' | 'right') => {
-        if (exists(neighborId)) {
-            return { referencePanel: api.getPanel(neighborId)!, direction };
-        }
-        return null;
-    };
+/** The sizes `buildDefaultLayout` hands out, reused when a panel is reopened. */
+const DEFAULT_SIZES: Record<string, Pick<SavedPanelPlacement, 'initialWidth' | 'initialHeight'>> = {
+    [PANELS.file]: { initialWidth: LEFT_W },
+    [PANELS.code]: { initialWidth: RIGHT_W },
+    [PANELS.library]: { initialWidth: LEFT_W },
+    [PANELS.results]: { initialWidth: RIGHT_W },
+};
 
-    switch (panelId) {
-        case PANELS.file:
-            return (
-                tryPos(PANELS.circuit, 'left') ||
-                tryPos(PANELS.code, 'left') ||
-                tryPos(PANELS.library, 'above') ||
-                tryPos('inspector', 'above')
-            );
-
-        case PANELS.circuit:
-            return (
-                tryPos(PANELS.file, 'right') ||
-                tryPos(PANELS.code, 'left') ||
-                tryPos(PANELS.inspector, 'above') ||
-                tryPos(PANELS.library, 'right')
-            );
-
-        case PANELS.code:
-            return (
-                tryPos(PANELS.circuit, 'right') ||
-                tryPos(PANELS.file, 'right') ||
-                tryPos(PANELS.results, 'above') ||
-                tryPos(PANELS.inspector, 'above')
-            );
-
-        case PANELS.library:
-            return (
-                tryPos(PANELS.inspector, 'left') ||
-                tryPos(PANELS.results, 'left') ||
-                tryPos(PANELS.file, 'below') ||
-                tryPos(PANELS.circuit, 'below')
-            );
-
-        case PANELS.inspector:
-            return (
-                tryPos(PANELS.library, 'right') ||
-                tryPos(PANELS.results, 'left') ||
-                tryPos(PANELS.circuit, 'below') ||
-                tryPos(PANELS.file, 'below')
-            );
-
-        case PANELS.results:
-            return (
-                tryPos(PANELS.inspector, 'right') ||
-                tryPos(PANELS.library, 'right') ||
-                tryPos(PANELS.code, 'below') ||
-                tryPos(PANELS.circuit, 'below')
-            );
-
-        default:
-            return null;
+/** Where a panel sits in the default arrangement, or null for one that is not part of it. */
+const gridPosition = (panelId: string): { row: number; column: number } | null => {
+    for (const [row, panels] of DEFAULT_GRID.entries()) {
+        const column = panels.indexOf(panelId);
+        if (column >= 0) return { row, column };
     }
+    return null;
+};
+
+/**
+ * Where a reopened panel belongs, derived from the default arrangement: it rejoins its own row next
+ * to the nearest neighbour still open there.
+ */
+export const getDefaultPlacement = (panelId: string, api: DockviewApi): SavedPanelPlacement | null => {
+    const home = gridPosition(panelId);
+    if (!home) return null;
+
+    const isOpen = (id: string) => !!api.getPanel(id);
+    const row = DEFAULT_GRID[home.row];
+    const size = DEFAULT_SIZES[panelId] ?? {};
+
+    const nextInRow = row.slice(home.column + 1).find(isOpen);
+    if (nextInRow) return { position: { referencePanel: nextInRow, direction: 'left' }, ...size };
+
+    const previousInRow = [...row.slice(0, home.column)].reverse().find(isOpen);
+    if (previousInRow) return { position: { referencePanel: previousInRow, direction: 'right' }, ...size };
+
+    // Its whole row is closed, so the row itself has to come back. That is an absolute position:
+    // naming a reference panel would split *that panel's cell* instead of adding a row, which is
+    // exactly how a reopened panel used to end up stacked inside a neighbour's column.
+    const rowHeight = home.row === DEFAULT_GRID.length - 1 ? { initialHeight: BOTTOM_H } : {};
+
+    if (DEFAULT_GRID.slice(0, home.row).flat().some(isOpen)) {
+        return { position: { direction: 'below' }, ...rowHeight };
+    }
+    if (
+        DEFAULT_GRID.slice(home.row + 1)
+            .flat()
+            .some(isOpen)
+    ) {
+        return { position: { direction: 'above' }, ...rowHeight };
+    }
+
+    // Nothing is open at all: the panel becomes the first one and needs no position.
+    return null;
 };
 
 /**
@@ -75,10 +85,6 @@ export const getOptimalPosition = (panelId: string, api: DockviewApi) => {
  */
 export const buildDefaultLayout = (api: DockviewApi) => {
     api.clear();
-
-    const LEFT_W = 400;
-    const RIGHT_W = 520;
-    const BOTTOM_H = 350;
 
     // 1. Top-row anchor
     const circuit = api.addPanel({
@@ -132,15 +138,6 @@ export const buildDefaultLayout = (api: DockviewApi) => {
     });
 };
 
-export const PANELS = {
-    circuit: 'circuit',
-    code: 'code',
-    file: 'file',
-    inspector: 'inspector',
-    library: 'library',
-    results: 'results',
-};
-
 export const PANEL_TITLES: Record<string, string> = {
     circuit: 'Circuit',
     code: 'Code Editor',
@@ -158,133 +155,101 @@ type SerializedDockviewGroup = {
     activeView?: string;
 };
 
-type PanelLeafMatch = {
-    group: SerializedDockviewGroup;
-    node: SerializedGridNode;
-    parent?: {
-        children: SerializedGridNode[];
-        childIndex: number;
-        orientation: SerializedDockview['grid']['orientation'];
-    };
-};
-
-export type SavedPanelPlacement = {
-    position: AddPanelPositionOptions;
+export type PanelPlacement = {
+    position?: AddPanelPositionOptions;
     initialWidth?: number;
     initialHeight?: number;
 };
 
-const oppositeOrientation = (orientation: SerializedDockview['grid']['orientation']) =>
-    orientation === Orientation.HORIZONTAL ? Orientation.VERTICAL : Orientation.HORIZONTAL;
+/**
+ * What is worth remembering about a closed panel: only the tab group it shared with others. Neither
+ * its grid position nor its size is, because both only describe what happened to be true at the
+ * moment of closing — restoring them once the neighbours are back puts the panel in the wrong column
+ * at the wrong width. Both come from the default arrangement instead.
+ */
+export type SavedPanelPlacement = PanelPlacement;
 
-const findPanelLeaf = (
-    node: SerializedGridNode,
-    panelId: string,
-    orientation: SerializedDockview['grid']['orientation'],
-    parent?: PanelLeafMatch['parent'],
-): PanelLeafMatch | null => {
+/** The serialized group a panel sits in, or null when the layout does not hold it. */
+const findGroupContaining = (node: SerializedGridNode, panelId: string): SerializedDockviewGroup | null => {
     if (node.type === 'leaf') {
         const group = node.data as SerializedDockviewGroup;
-        return group.views.includes(panelId) ? { group, node, parent } : null;
+        return group.views.includes(panelId) ? group : null;
     }
 
-    const children = node.data as SerializedGridNode[];
-    for (const [childIndex, child] of children.entries()) {
-        const match = findPanelLeaf(child, panelId, oppositeOrientation(orientation), {
-            children,
-            childIndex,
-            orientation,
-        });
-        if (match) return match;
+    for (const child of node.data as SerializedGridNode[]) {
+        const group = findGroupContaining(child, panelId);
+        if (group) return group;
     }
 
     return null;
-};
-
-const findReferencePanelId = (node: SerializedGridNode, edge: 'start' | 'end'): string | null => {
-    if (node.type === 'leaf') {
-        const group = node.data as SerializedDockviewGroup;
-        return group.views[0] ?? null;
-    }
-
-    const children = node.data as SerializedGridNode[];
-    const child = edge === 'start' ? children[0] : children.at(-1);
-    return child ? findReferencePanelId(child, edge) : null;
-};
-
-const savedSize = (
-    node: SerializedGridNode,
-    orientation?: SerializedDockview['grid']['orientation'],
-): Pick<SavedPanelPlacement, 'initialWidth' | 'initialHeight'> => {
-    if (!orientation || typeof node.size !== 'number') return {};
-    return orientation === Orientation.HORIZONTAL ? { initialWidth: node.size } : { initialHeight: node.size };
 };
 
 export const getSavedPanelPlacement = (layout: SerializedDockview, panelId: string): SavedPanelPlacement | null => {
-    const match = findPanelLeaf(layout.grid.root, panelId, layout.grid.orientation);
-    if (!match) return null;
+    const group = findGroupContaining(layout.grid.root, panelId);
+    if (!group) return null;
 
-    const index = match.group.views.indexOf(panelId);
-    const remainingTabs = match.group.views.filter((view) => view !== panelId);
+    // A panel that had its group to itself leaves nothing worth restoring: its place in the grid is
+    // decided by the default arrangement when it comes back.
+    const sharesTabGroup = group.views.some((view) => view !== panelId);
+    if (!sharesTabGroup) return null;
 
-    if (remainingTabs.length > 0) {
-        return {
-            position: {
-                referenceGroup: match.group.id,
-                direction: 'within',
-                index,
-            },
-        };
-    }
-
-    if (!match.parent) return null;
-
-    const { children, childIndex, orientation } = match.parent;
-    const nextReferencePanelId = children[childIndex + 1]
-        ? findReferencePanelId(children[childIndex + 1], 'start')
-        : null;
-
-    if (nextReferencePanelId) {
-        return {
-            position: {
-                referencePanel: nextReferencePanelId,
-                direction: orientation === Orientation.HORIZONTAL ? 'left' : 'above',
-            },
-            ...savedSize(match.node, orientation),
-        };
-    }
-
-    const previousReferencePanelId = children[childIndex - 1]
-        ? findReferencePanelId(children[childIndex - 1], 'end')
-        : null;
-
-    if (previousReferencePanelId) {
-        return {
-            position: {
-                referencePanel: previousReferencePanelId,
-                direction: orientation === Orientation.HORIZONTAL ? 'right' : 'below',
-            },
-            ...savedSize(match.node, orientation),
-        };
-    }
-
-    return null;
+    return { position: { referenceGroup: group.id, direction: 'within', index: group.views.indexOf(panelId) } };
 };
 
 export const resolveSavedPanelPlacement = (
     placement: SavedPanelPlacement,
     api: DockviewApi,
 ): SavedPanelPlacement | null => {
+    if (!placement.position) return placement;
+
     if ('referenceGroup' in placement.position) {
         return api.getGroup(String(placement.position.referenceGroup)) ? placement : null;
     }
 
-    if ('referencePanel' in placement.position) {
-        return api.getPanel(String(placement.position.referencePanel)) ? placement : null;
-    }
-
     return placement;
 };
+
+/**
+ * Where a reopened panel goes: back into its tab group while that still exists, otherwise into its
+ * home in the default arrangement.
+ */
+export const restorePlacement = (
+    panelId: string,
+    api: DockviewApi,
+    saved: SavedPanelPlacement | undefined,
+): PanelPlacement => {
+    const tabGroup = saved ? resolveSavedPanelPlacement(saved, api) : null;
+    if (tabGroup?.position) return { position: tabGroup.position };
+
+    return getDefaultPlacement(panelId, api) ?? {};
+};
+
+/**
+ * Puts a row back to its default column widths. Dockview spreads a closed panel's space across its
+ * neighbours and does not hand it back when the panel returns, so without this the two rows end up
+ * with their splitters in different places.
+ */
+export const applyDefaultRowSizes = (api: DockviewApi, panelId: string) => {
+    const home = gridPosition(panelId);
+    if (!home) return;
+
+    const row = DEFAULT_GRID[home.row];
+    const groupOf = (id: string) => api.getPanel(id)?.group;
+
+    for (const id of row) {
+        const width = DEFAULT_SIZES[id]?.initialWidth;
+        const group = groupOf(id);
+        if (width && group) group.api.setSize({ width });
+    }
+
+    // A row rebuilt from scratch splits the canvas evenly with the other one, so the bottom row is
+    // put back to the strip the default layout gives it.
+    if (home.row === DEFAULT_GRID.length - 1) {
+        const anyGroupInRow = row.map(groupOf).find(Boolean);
+        anyGroupInRow?.api.setSize({ height: BOTTOM_H });
+    }
+};
+
 const PRIMARY_PANELS = new Set([PANELS.circuit, PANELS.code]);
 
 export const applyGroupType = (api: DockviewApi, id: string) => {
