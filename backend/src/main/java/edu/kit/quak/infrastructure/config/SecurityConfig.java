@@ -45,7 +45,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
-@Profile("!dev") // This config is NOT active when 'dev' profile is enabled
+@Profile("!dev & !local") // OAuth security is not active in development or trusted local mode
 public class SecurityConfig {
 
     @Value("${app.frontend.url}")
@@ -71,6 +71,9 @@ public class SecurityConfig {
                 auth
                     .requestMatchers(
                         "/",
+                        "/project/**",
+                        "/profile",
+                        "/settings",
                         "/login/**",
                         "/oauth2/**",
                         "/api/auth/user",
@@ -81,6 +84,7 @@ public class SecurityConfig {
                         "/*.ico",
                         "/*.png",
                         "/*.jpg",
+                        "/*.svg",
                         "/assets/**",
                         // OpenAPI / Swagger endpoints
                         "/swagger-ui/**",
