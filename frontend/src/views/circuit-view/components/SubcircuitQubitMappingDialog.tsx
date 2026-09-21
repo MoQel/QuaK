@@ -106,8 +106,7 @@ export function SubcircuitQubitMappingDialog({
                 <DialogHeader>
                     <DialogTitle>Subcircuit Qubit Mapping</DialogTitle>
                     <DialogDescription>
-                        Wähle aus, welche Qubits aus <strong>{subcircuitName}</strong> auf welche Qubits deines Circuits
-                        abgebildet werden sollen.
+                        Pick which qubits of <strong>{subcircuitName}</strong> map onto which qubits of your circuit.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -136,7 +135,7 @@ export function SubcircuitQubitMappingDialog({
                                                 value={NONE_VALUE}
                                                 className="text-muted-foreground font-medium"
                                             >
-                                                ✕ Nicht importieren
+                                                ✕ Do not import
                                             </SelectItem>
                                             {flatQubits.map((q) => {
                                                 const key = `${q.regId}:${q.relQubitIdx}`;
@@ -162,10 +161,10 @@ export function SubcircuitQubitMappingDialog({
 
                 <DialogFooter className="mt-4 flex gap-2">
                     <Button variant="secondary" onClick={() => onOpenChange(false)}>
-                        Abbrechen
+                        Cancel
                     </Button>
                     <Button onClick={handleConfirm} disabled={!hasAtLeastOneMapping}>
-                        Bestätigen
+                        Confirm
                     </Button>
                 </DialogFooter>
             </DialogContent>

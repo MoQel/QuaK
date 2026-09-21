@@ -37,7 +37,7 @@ describe('SubcircuitQubitMappingDialog', () => {
         expect(screen.getByText('q2')).toBeDefined();
         expect(screen.getByText('q3')).toBeDefined();
 
-        const unmappedLabels = screen.getAllByText('✕ Nicht importieren');
+        const unmappedLabels = screen.getAllByText('✕ Do not import');
         expect(unmappedLabels.length).toBeGreaterThanOrEqual(4);
     });
 });

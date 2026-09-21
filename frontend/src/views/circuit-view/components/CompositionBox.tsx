@@ -55,6 +55,8 @@ interface CompositionBoxProps {
     loopRepeatCount?: number;
     /** Drops the enclosing repetition frame; absent when the box is not in one. */
     onRemoveLoop?: () => void;
+    /** Writes the enclosing frame out as literal repetitions; absent when the box is not in one. */
+    onUnrollLoop?: () => void;
     /** Opens the loop dialog to add an outer or new loop */
     onAddLoop?: () => void;
     /** Opens the loop dialog to edit the enclosing loop count */
@@ -92,6 +94,7 @@ export function CompositionBox({
     onUngroup,
     loopRepeatCount,
     onRemoveLoop,
+    onUnrollLoop,
     onAddLoop,
     onEditLoop,
     onGroup,
@@ -303,6 +306,9 @@ export function CompositionBox({
                     {onAddLoop && <ContextMenuItem onSelect={onAddLoop}>Add loop…</ContextMenuItem>}
                     {onEditLoop && (
                         <ContextMenuItem onSelect={onEditLoop}>Edit loop ×{loopRepeatCount}…</ContextMenuItem>
+                    )}
+                    {onUnrollLoop && (
+                        <ContextMenuItem onSelect={onUnrollLoop}>Unroll ×{loopRepeatCount}</ContextMenuItem>
                     )}
                     {onRemoveLoop && (
                         <ContextMenuItem onSelect={onRemoveLoop}>Remove loop ×{loopRepeatCount}</ContextMenuItem>

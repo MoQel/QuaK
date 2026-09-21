@@ -32,6 +32,8 @@ interface ElementaryQuantumGateProps {
     loopRepeatCount?: number;
     /** Drops the enclosing repetition frame; absent when the gate is not in one. */
     onRemoveLoop?: () => void;
+    /** Writes the enclosing frame out as literal repetitions; absent when the gate is not in one. */
+    onUnrollLoop?: () => void;
     /** Opens the angle editor; only offered on a rotation gate (rx/ry/rz). */
     onEditAngle?: () => void;
     /** Opens loop dialog to add loop */
@@ -59,6 +61,7 @@ export function ElementaryQuantumGate({
     onDelete,
     loopRepeatCount,
     onRemoveLoop,
+    onUnrollLoop,
     onEditAngle,
     onAddLoop,
     onEditLoop,
@@ -234,7 +237,9 @@ export function ElementaryQuantumGate({
     // not apply to it. The gate decides this itself because it already holds the definition.
     const canEditAngle = definition.hasRotationAngle && onEditAngle !== undefined;
 
-    const hasContextMenu = Boolean(canEditAngle || onRemoveLoop || onAddLoop || onEditLoop || onGroup || onDelete);
+    const hasContextMenu = Boolean(
+        canEditAngle || onRemoveLoop || onUnrollLoop || onAddLoop || onEditLoop || onGroup || onDelete,
+    );
     if (!hasContextMenu) return gate;
 
     return (
@@ -247,6 +252,7 @@ export function ElementaryQuantumGate({
                 {onGroup && <ContextMenuItem onSelect={onGroup}>Group…</ContextMenuItem>}
                 {onAddLoop && <ContextMenuItem onSelect={onAddLoop}>Add loop…</ContextMenuItem>}
                 {onEditLoop && <ContextMenuItem onSelect={onEditLoop}>Edit loop ×{loopRepeatCount}…</ContextMenuItem>}
+                {onUnrollLoop && <ContextMenuItem onSelect={onUnrollLoop}>Unroll ×{loopRepeatCount}</ContextMenuItem>}
                 {onRemoveLoop && (
                     <ContextMenuItem onSelect={onRemoveLoop}>Remove loop ×{loopRepeatCount}</ContextMenuItem>
                 )}

@@ -39,6 +39,7 @@ import { SelectionBox } from './components/SelectionBox.tsx';
 import { AngleEditTarget, RotationAngleDialog } from './components/RotationAngleDialog.tsx';
 import { createCircuitService } from '@/views/circuit-view/util/circuitService.ts';
 import { ungroupComposite } from '@/views/circuit-view/util/ungroupComposite.ts';
+import { unrollLoop } from '@/views/circuit-view/util/unrollLoop.ts';
 import { groupIntoComposite } from '@/views/circuit-view/util/groupIntoComposite.ts';
 import { GroupCompositeDialog } from './components/GroupCompositeDialog.tsx';
 import { MeasurementTargetDialog } from './components/MeasurementTargetDialog';
@@ -84,6 +85,16 @@ export function CircuitView() {
         setCircuit((prev) =>
             prev ? { ...prev, loopBlocks: (prev.loopBlocks ?? []).filter((block) => block.id !== loopBlockId) } : prev,
         );
+    };
+
+    /**
+     * Writes a repetition frame out in full, so every pass stands in the circuit as its own gates.
+     *
+     * Unlike removing a frame this keeps what the circuit computes; it is the way to open a loop up
+     * when only one of its rounds is supposed to differ.
+     */
+    const unrollLoopBlock = (loopBlockId: string) => {
+        setCircuit((prev) => (prev ? unrollLoop(prev, loopBlockId) : prev));
     };
 
     /** The rotation gate whose angle is being edited, or null while the dialog is closed. */
@@ -659,6 +670,7 @@ export function CircuitView() {
                                 loopBlocks={circuit?.loopBlocks ?? []}
                                 removeQuantumOperation={removeQuantumOperation}
                                 removeLoopBlock={removeLoopBlock}
+                                unrollLoopBlock={unrollLoopBlock}
                                 ungroupQuantumOperation={ungroupQuantumOperation}
                                 editRotationAngle={editRotationAngle}
                                 setDraggingOperationId={setDraggingOperationId}

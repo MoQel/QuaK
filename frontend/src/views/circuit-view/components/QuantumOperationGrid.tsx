@@ -24,6 +24,8 @@ interface QuantumOperationGridProps {
     removeQuantumOperation: (operationId: string) => void;
     /** Drops a repetition frame, leaving its gates where they are. */
     removeLoopBlock: (loopBlockId: string) => void;
+    /** Writes a repetition frame out, so every pass stands in the circuit as its own gates. */
+    unrollLoopBlock: (loopBlockId: string) => void;
     /** Replaces a composite gate by the operations it is made of. */
     ungroupQuantumOperation: (operationId: string) => void;
     /** Asks for the angle editor; the gate itself decides whether it has an angle to edit. */
@@ -61,6 +63,7 @@ export function QuantumOperationGrid({
     loopBlocks,
     removeQuantumOperation,
     removeLoopBlock,
+    unrollLoopBlock,
     ungroupQuantumOperation,
     editRotationAngle,
     setDraggingOperationId,
@@ -114,6 +117,7 @@ export function QuantumOperationGrid({
     const handlers: OperationHandlers = {
         removeQuantumOperation,
         removeLoopBlock,
+        unrollLoopBlock,
         ungroupQuantumOperation,
         editRotationAngle,
         onEditSubcircuit,
@@ -152,6 +156,7 @@ type OperationHandlers = Pick<
     QuantumOperationGridProps,
     | 'removeQuantumOperation'
     | 'removeLoopBlock'
+    | 'unrollLoopBlock'
     | 'ungroupQuantumOperation'
     | 'editRotationAngle'
     | 'onEditSubcircuit'
@@ -198,7 +203,8 @@ function sharedGateProps({
     onDragEnd,
     handlers,
 }: GridOperationProps) {
-    const { removeQuantumOperation, removeLoopBlock, onAddLoop, onEditLoop, onToggleSelect } = handlers;
+    const { removeQuantumOperation, removeLoopBlock, unrollLoopBlock, onAddLoop, onEditLoop, onToggleSelect } =
+        handlers;
 
     const operationId = op.id;
     // The frame drawn tightest around this gate: it decides both the smaller rendering
@@ -216,6 +222,7 @@ function sharedGateProps({
         onDragEnd,
         onDelete: () => removeQuantumOperation(operationId!),
         onRemoveLoop: bindTo(enclosingLoop, (loop) => removeLoopBlock(loop.id)),
+        onUnrollLoop: bindTo(enclosingLoop, (loop) => unrollLoopBlock(loop.id)),
         onAddLoop: bindTo(operationId, onAddLoop),
         onEditLoop: bindTo(enclosingLoop, onEditLoop),
         isSelected,
