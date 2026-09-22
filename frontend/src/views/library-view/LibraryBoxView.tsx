@@ -13,6 +13,7 @@ interface LibraryBoxViewProps {
     onOperationClick: (operation: OperationDefinitionResponse) => void;
     /** Absent outside a project, where there is nothing to build a subcircuit from. */
     onNewSubcircuit?: () => void;
+    onRemoveSubcircuit?: (option: SubcircuitOption) => void;
 }
 
 /**
@@ -29,6 +30,7 @@ function LibraryBoxView({
     subcircuits,
     onOperationClick,
     onNewSubcircuit,
+    onRemoveSubcircuit,
 }: Readonly<LibraryBoxViewProps>) {
     return (
         <div className="flex flex-wrap gap-4 content-start">
@@ -46,7 +48,11 @@ function LibraryBoxView({
             ))}
 
             {subcircuits.map((option) => (
-                <LibrarySubcircuitElement key={option.circuitId} option={option} />
+                <LibrarySubcircuitElement
+                    key={option.circuitId}
+                    option={option}
+                    onRemove={onRemoveSubcircuit ? () => onRemoveSubcircuit(option) : undefined}
+                />
             ))}
 
             {/* The one thing here that is not a gate: it makes a new one. As a tile it stays with

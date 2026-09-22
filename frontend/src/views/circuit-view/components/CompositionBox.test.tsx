@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { CompositionBox } from './CompositionBox.tsx';
-import type { CompositeQuantumGateDto } from '@/api/dto/circuit.ts';
+import type { CompositeQuantumGateDto, SubcircuitOperationDto } from '@/api/dto/circuit.ts';
 import { REGISTER_TYPE_QUANTUM } from '@/api/dto/circuit.ts';
 import { QUBIT_HEIGHT } from '@/views/circuit-view/util/layout.ts';
 import type { FlatQubit } from '@/views/circuit-view/util/types.ts';
@@ -235,5 +235,44 @@ describe('CompositionBox', () => {
         fireEvent.click(item);
 
         expect(onUngroup).toHaveBeenCalledTimes(1);
+    });
+
+    it('renders subcircuit port labels using subcircuitQubitIndices and offers Edit on right-click', async () => {
+        const subcircuitOp: SubcircuitOperationDto = {
+            id: 'sub-1',
+            type: 'SUBCIRCUIT_OPERATION',
+            identifier: 'sub',
+            definitionCircuitId: 'circuit-sub-1',
+            definitionName: 'sub.qasm',
+            inverseForm: false,
+            targetQubits: [
+                { registerId: 'r1', index: 0 },
+                { registerId: 'r1', index: 2 },
+            ],
+            controlQubits: [],
+            subcircuitQubitIndices: [1, 3],
+        };
+
+        const onEdit = vi.fn();
+        const { container } = render(
+            <CompositionBox
+                operation={subcircuitOp}
+                flatQubits={flatQubits}
+                layerIdx={0}
+                onDragStart={vi.fn()}
+                onDragEnd={vi.fn()}
+                onDelete={vi.fn()}
+                onEdit={onEdit}
+            />,
+        );
+
+        expect(screen.getByText('q1')).toBeDefined();
+        expect(screen.getByText('q3')).toBeDefined();
+
+        fireEvent.contextMenu(container.firstElementChild as HTMLElement);
+        const editItem = await screen.findByText('Edit');
+        fireEvent.click(editItem);
+
+        expect(onEdit).toHaveBeenCalledWith(subcircuitOp);
     });
 });

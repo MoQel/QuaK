@@ -11,6 +11,7 @@ import edu.kit.quak.application.circuit.ports.out.QasmSource;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.core.circuit.model.layer.operation.CompositeQuantumGate;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementaryQuantumGate;
+import edu.kit.quak.core.circuit.model.layer.operation.SubcircuitOperation;
 import edu.kit.quak.shared.tags.UnitTest;
 import java.util.HashMap;
 import java.util.Map;
@@ -31,15 +32,26 @@ class QasmIncludeTest {
     private static final class FakeFiles implements QasmIncludeLoader {
 
         private final Map<String, String> byName = new HashMap<>();
+        private final Map<String, String> circuitIdsByName = new HashMap<>();
 
         FakeFiles add(String name, String code) {
             byName.put(name, code);
             return this;
         }
 
+        FakeFiles addCircuit(String name, String circuitId) {
+            circuitIdsByName.put(name, circuitId);
+            return this;
+        }
+
         @Override
         public Optional<QasmSource> load(String fromFileId, String path) {
             return Optional.ofNullable(byName.get(path)).map(code -> new QasmSource("f-" + path, path, code));
+        }
+
+        @Override
+        public Optional<String> resolveCircuitId(String fromFileId, String path) {
+            return Optional.ofNullable(circuitIdsByName.get(path));
         }
     }
 
@@ -220,5 +232,71 @@ class QasmIncludeTest {
         );
 
         assertTrue(ex.getMessage().contains("broken.qasm"), ex.getMessage());
+    }
+
+    @Test
+    void resolvesSubcircuitCircuitIdFromProjectFileWhenOnlyFilenameGiven() {
+        String main = """
+            OPENQASM 3.0;
+
+            @composition "hello_world.qasm"
+            gate hello_world q0, q1, q2, q3 {
+            }
+
+            qubit[4] q;
+            hello_world q[0], q[1], q[2], q[3];
+            """;
+
+        FakeFiles files = new FakeFiles().addCircuit("hello_world.qasm", "hw-circuit-uuid-123");
+        QuantumCircuit circuit = service.parse(main, "f-main.qasm", files);
+
+        assertEquals(1, circuit.getLayers().size());
+        var op = circuit.getLayers().getFirst().getQuantumOperations().getFirst();
+        assertTrue(op instanceof SubcircuitOperation);
+        SubcircuitOperation subcircuit = (SubcircuitOperation) op;
+        assertEquals("hw-circuit-uuid-123", subcircuit.getDefinitionCircuitId());
+        assertEquals("hello_world.qasm", subcircuit.getDefinitionName());
+    }
+
+    @Test
+    void keepsExplicitCircuitIdWhenProvidedInAnnotation() {
+        String main = """
+            OPENQASM 3.0;
+
+            @composition "hello_world.qasm" explicit-id-456
+            gate hello_world q0, q1 {
+            }
+
+            qubit[2] q;
+            hello_world q[0], q[1];
+            """;
+
+        FakeFiles files = new FakeFiles().addCircuit("hello_world.qasm", "hw-circuit-uuid-123");
+        QuantumCircuit circuit = service.parse(main, "f-main.qasm", files);
+
+        assertEquals(1, circuit.getLayers().size());
+        var op = circuit.getLayers().getFirst().getQuantumOperations().getFirst();
+        assertTrue(op instanceof SubcircuitOperation);
+        SubcircuitOperation subcircuit = (SubcircuitOperation) op;
+        assertEquals("explicit-id-456", subcircuit.getDefinitionCircuitId());
+        assertEquals("hello_world.qasm", subcircuit.getDefinitionName());
+    }
+
+    @Test
+    void reportsMissingSubcircuitFileWhenParsedWithFileContext() {
+        String main = """
+            OPENQASM 3.0;
+
+            @composition "missing.qasm"
+            gate missing q0 {
+            }
+
+            qubit[1] q;
+            missing q[0];
+            """;
+
+        QasmParseException ex = assertThrows(QasmParseException.class, () -> service.parse(main, "f-main.qasm", new FakeFiles()));
+
+        assertTrue(ex.getMessage().contains("missing.qasm"), ex.getMessage());
     }
 }

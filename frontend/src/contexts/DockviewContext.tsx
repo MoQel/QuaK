@@ -2,13 +2,13 @@ import React, { createContext, useContext, useMemo, useRef, useState } from 'rea
 import {
     buildDefaultLayout,
     LAYOUT_STORAGE_KEY,
-    getOptimalPosition,
+    applyDefaultRowSizes,
     applyGroupType,
     PANEL_TITLES,
     PANELS,
     getSavedPanelPlacement,
-    resolveSavedPanelPlacement,
-    type SavedPanelPlacement,
+    restorePlacement,
+    type PanelPlacement,
 } from '@/lib/layout/layout-utils';
 import type { DockviewApi } from 'dockview-react';
 type PanelKey = keyof typeof PANELS;
@@ -56,7 +56,7 @@ export const DockviewProvider = ({ children }: { children: React.ReactNode }) =>
     };
 
     const [openPanels, setOpenPanels] = useState<Set<PanelKey>>(new Set());
-    const savedPanelPlacementsRef = useRef<Map<PanelKey, SavedPanelPlacement>>(new Map());
+    const savedPanelPlacementsRef = useRef<Map<PanelKey, PanelPlacement>>(new Map());
     const isResettingRef = useRef(false);
 
     const value = useMemo<DockviewContextType>(() => {
@@ -68,22 +68,13 @@ export const DockviewProvider = ({ children }: { children: React.ReactNode }) =>
             if (!api) return;
             if (api.getPanel(id)) return;
 
-            const savedPlacement = savedPanelPlacementsRef.current.get(id);
-            const restoredPlacement = savedPlacement ? resolveSavedPanelPlacement(savedPlacement, api) : null;
-            let position = restoredPlacement?.position ?? getOptimalPosition(id, api);
-
-            if (!position && api.panels.length > 0) {
-                position = { referencePanel: api.panels[0], direction: 'right' };
-            }
-
             api.addPanel({
                 id,
                 component: id,
                 title: PANEL_TITLES[id],
-                position: position || undefined,
-                initialWidth: restoredPlacement?.initialWidth,
-                initialHeight: restoredPlacement?.initialHeight,
+                ...restorePlacement(id, api, savedPanelPlacementsRef.current.get(id)),
             });
+            applyDefaultRowSizes(api, id);
 
             setOpenPanels((prev) => new Set(prev).add(id));
         };

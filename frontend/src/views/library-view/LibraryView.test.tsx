@@ -1,5 +1,5 @@
 import { describe, expect, it, Mock, vi } from 'vitest';
-import { act, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { store } from '@/store/store.ts';
 import { LibraryView } from './LibraryView.tsx';
@@ -82,5 +82,16 @@ describe('LibraryView', () => {
         await renderLibrary(undefined);
 
         expect(screen.queryByText('bell')).not.toBeInTheDocument();
+    });
+
+    it('renders Compositions section in list view', async () => {
+        await renderLibrary(circuitWith(bell));
+
+        // Switch to list view (click the toggle button)
+        const toggleBtn = screen.getByRole('button');
+        fireEvent.click(toggleBtn);
+
+        expect(screen.getByText('Compositions')).toBeInTheDocument();
+        expect(screen.getAllByText('bell').length).toBeGreaterThan(0);
     });
 });

@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import edu.kit.quak.core.circuit.exceptions.InvalidOperationConfigurationException;
 import edu.kit.quak.core.circuit.exceptions.InvalidRegisterTypeException;
+import edu.kit.quak.core.circuit.model.layer.Layer;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementaryQuantumGate;
 import edu.kit.quak.core.circuit.model.layer.operation.Measurement;
@@ -12,6 +13,7 @@ import edu.kit.quak.core.circuit.model.layer.operation.library.QuantumOperationL
 import edu.kit.quak.core.circuit.model.register.ClassicRegister;
 import edu.kit.quak.core.circuit.model.register.QuantumRegister;
 import edu.kit.quak.core.common.exception.RequestedIndexOutOfBounds;
+import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -341,5 +343,125 @@ class QuantumCircuitTest {
 
         Measurement movedMeasurement = (Measurement) circuit.getLayers().getFirst().getQuantumOperations().getFirst();
         assertEquals(secondClassicRegister.getId(), movedMeasurement.getClassicBits().getFirst().getRegisterId());
+    }
+
+    @Test
+    void measurementIsNotPulledLeftPastEarlierGates() {
+        QuantumCircuit circuit = createCircuitWithQuantumRegister();
+        String registerId = circuit.getRegisters().getFirst().asQuantum().orElseThrow().getId();
+        ClassicRegister classicRegister = new ClassicRegister("c", 1);
+        circuit.addRegister(classicRegister);
+
+        circuit.addQuantumOperation(gate(QuantumOperationLibrary.H, registerId, 0), 0);
+        circuit.addQuantumOperation(gate(QuantumOperationLibrary.T, registerId, 0), 1);
+        // Wire 3 is idle from the start, so plain ASAP would put this in the very first layer.
+        QuantumOperation measurement = measure(registerId, 3, classicRegister.getId(), 0);
+        circuit.addQuantumOperation(measurement, 2);
+
+        assertEquals(3, circuit.getLayers().size(), "The measurement must not share the first layer with the gates.");
+        assertEquals(
+            measurement.getId(),
+            circuit.getLayers().get(2).getQuantumOperations().getFirst().getId(),
+            "A measurement belongs after the gates that precede it."
+        );
+    }
+
+    @Test
+    void everyMeasurementGetsALayerOfItsOwn() {
+        QuantumCircuit circuit = createCircuitWithQuantumRegister();
+        String registerId = circuit.getRegisters().getFirst().asQuantum().orElseThrow().getId();
+        ClassicRegister classicRegister = new ClassicRegister("c", 3);
+        circuit.addRegister(classicRegister);
+
+        circuit.addQuantumOperation(gate(QuantumOperationLibrary.H, registerId, 0), 0);
+        circuit.addQuantumOperation(gate(QuantumOperationLibrary.T, registerId, 0), 1);
+        for (int qubit = 0; qubit < 3; qubit++) {
+            circuit.addQuantumOperation(measure(registerId, qubit, classicRegister.getId(), qubit), 2);
+        }
+
+        assertEquals(5, circuit.getLayers().size(), "Two layers for the gates, then one per measurement.");
+        for (int layer = 2; layer < 5; layer++) {
+            assertEquals(
+                1,
+                circuit.getLayers().get(layer).getQuantumOperations().size(),
+                "Two measurements in one layer would draw their classical wires on top of each other."
+            );
+        }
+    }
+
+    @Test
+    void gateStillPassesAMeasurementThatCameBeforeIt() {
+        QuantumCircuit circuit = createCircuitWithQuantumRegister();
+        String registerId = circuit.getRegisters().getFirst().asQuantum().orElseThrow().getId();
+        ClassicRegister classicRegister = new ClassicRegister("c", 1);
+        circuit.addRegister(classicRegister);
+
+        circuit.addQuantumOperation(gate(QuantumOperationLibrary.H, registerId, 0), 0);
+        circuit.addQuantumOperation(measure(registerId, 0, classicRegister.getId(), 0), 1);
+        // Only measurements are pinned; an independent gate stays free to left-justify.
+        circuit.addQuantumOperation(gate(QuantumOperationLibrary.X, registerId, 3), 2);
+
+        assertEquals(2, circuit.getLayers().size(), "The X has nothing to wait for and joins the first layer.");
+        assertEquals(2, circuit.getLayers().getFirst().getQuantumOperations().size(), "H and X share the first layer.");
+    }
+
+    private static QuantumOperation gate(QuantumOperationLibrary definition, String registerId, int qubit) {
+        return new ElementaryQuantumGate(definition, false, List.of(new ElementSelector(registerId, qubit)), List.of(), 0d);
+    }
+
+    private static QuantumOperation measure(String registerId, int qubit, String classicRegisterId, int bit) {
+        return new Measurement(
+            QuantumOperationLibrary.MEASURE,
+            false,
+            List.of(new ElementSelector(registerId, qubit)),
+            List.of(),
+            List.of(new ElementSelector(classicRegisterId, bit))
+        );
+    }
+
+    @Test
+    void driftedMeasurementsAreHealedOnTheNextLayout() {
+        QuantumRegister quantumRegister = new QuantumRegister("q", 4);
+        ClassicRegister classicRegister = new ClassicRegister("c", 4);
+        String qubits = quantumRegister.getId();
+        String bits = classicRegister.getId();
+
+        // The layering a pre-fix layout left behind: every measurement sits in the column it had
+        // drifted into, which is then indistinguishable from a deliberate mid-circuit measurement
+        // until the reordering sees that nothing follows on its wire.
+        List<Layer> drifted = List.of(
+            new Layer(new ArrayList<>(List.of(gate(QuantumOperationLibrary.H, qubits, 0)))),
+            new Layer(new ArrayList<>(List.of(cx(qubits, 0, 1)))),
+            new Layer(new ArrayList<>(List.of(cx(qubits, 1, 2), measure(qubits, 0, bits, 0)))),
+            new Layer(new ArrayList<>(List.of(cx(qubits, 2, 3), measure(qubits, 1, bits, 1)))),
+            new Layer(new ArrayList<>(List.of(measure(qubits, 2, bits, 2), measure(qubits, 3, bits, 3))))
+        );
+
+        // The builder deliberately stores a layering as sent, so this is how a stored circuit arrives.
+        QuantumCircuit circuit = QuantumCircuit.builder()
+            .projectId("")
+            .fileId("f-1")
+            .registers(List.of(quantumRegister, classicRegister))
+            .layers(drifted)
+            .build();
+
+        circuit.reschedule();
+
+        assertEquals(8, circuit.getLayers().size(), "Four gate columns, then one per measurement.");
+        for (int layer = 4; layer < 8; layer++) {
+            List<QuantumOperation> operations = circuit.getLayers().get(layer).getQuantumOperations();
+            assertEquals(1, operations.size(), "Each measurement keeps a layer to itself.");
+            assertTrue(operations.getFirst() instanceof Measurement, "The drift should be undone, leaving the gates first.");
+        }
+    }
+
+    private static QuantumOperation cx(String registerId, int control, int target) {
+        return new ElementaryQuantumGate(
+            QuantumOperationLibrary.CX,
+            false,
+            List.of(new ElementSelector(registerId, target)),
+            List.of(new ElementSelector(registerId, control)),
+            0d
+        );
     }
 }

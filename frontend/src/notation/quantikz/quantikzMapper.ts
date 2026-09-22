@@ -9,6 +9,7 @@ import {
     QuantumOperationDto,
     RegisterResponse,
 } from '@/api/dto/circuit.ts';
+import { getLoopFrames, LoopFrame } from '@/views/circuit-view/util/loopFrames.ts';
 import { buildWireIndex, resolveWireIndices, WireIndex } from '@/lib/circuitIndex.ts';
 import { angleToLatex, resolveAngle } from '@/lib/quantumAngle.ts';
 import { escapeLatexText } from '@/notation/latex/escape.ts';
@@ -31,6 +32,8 @@ export function toQuantikz(circuit: CircuitResponse): string {
             applyOperation(grid, wireIndex, operation, layerIdx);
         }
     }
+
+    applyLoopFrames(grid, circuit);
 
     const rows = buildRows(circuit.registers, grid);
 
@@ -65,6 +68,30 @@ export function toStandaloneDocument(latexCode: string): string {
         String.raw`\end{document}`,
         '',
     ].join('\n');
+}
+
+/**
+ * Draws the repetition frames as quantikz gate groups.
+ *
+ * `\gategroup` is attached to the top-left cell of the area it covers and takes the size in wires
+ * and steps, which is exactly the bounding box a frame already is. Without this the exported LaTeX
+ * would show the loop body once with nothing saying it repeats — the same silent loss the simulator
+ * would suffer by ignoring frames.
+ */
+function applyLoopFrames(grid: string[][], circuit: CircuitResponse): void {
+    for (const frame of getLoopFrames(circuit.layers, circuit.loopBlocks ?? [], circuit.registers)) {
+        grid[frame.topWire][frame.firstColumn] += buildGateGroup(frame);
+    }
+}
+
+function buildGateGroup(frame: LoopFrame): string {
+    const wires = frame.bottomWire - frame.topWire + 1;
+    const steps = frame.lastColumn - frame.firstColumn + 1;
+
+    return (
+        String.raw`\gategroup[${wires},steps=${steps},style={dashed,rounded corners},background,` +
+        String.raw`label style={label position=below,anchor=north,yshift=-0.2cm}]{$\times ${frame.repeatCount}$}`
+    );
 }
 
 function buildGrid(registers: RegisterResponse[], totalLayers: number): string[][] {
@@ -102,7 +129,7 @@ function applyOperation(
             grid,
             wireIndex,
             operation,
-            operation.definitionName ?? operation.definitionCircuitId.slice(0, 8),
+            operation.definitionName ?? operation.definitionCircuitId?.slice(0, 8) ?? 'subcircuit',
             layerIdx,
         );
         return;

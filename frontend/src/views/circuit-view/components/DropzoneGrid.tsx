@@ -12,11 +12,15 @@ import type {
     SubcircuitOperationDto,
 } from '@/api/dto/circuit.ts';
 import { dropAnchorRow } from '@/views/circuit-view/util/dropAnchor.ts';
+import { LoopFrame } from '@/views/circuit-view/util/loopFrames.ts';
+import { rebindMembership } from '@/views/circuit-view/util/loopMembership.ts';
+import { getOperationSpan } from '@/views/circuit-view/util/spans.ts';
 import { withFreshIds } from '@/lib/operationIds.ts';
 import { rebindComposite } from '@/views/circuit-view/util/rebindComposite.ts';
 import { DragData, FlatQubit, HoverPos, UiLayer } from '@/views/circuit-view/util/types.ts';
 import { getOperationDefinition } from '@/lib/operations.ts';
 import type { OperationIdentifier } from '@/lib/operations.ts';
+import type { SubcircuitOption } from '@/views/library-view/util/subcircuits.ts';
 
 const findOperation = (layers: CircuitResponse['layers'], operationId: string): QuantumOperationDto | undefined => {
     for (const layer of layers) {
@@ -173,6 +177,8 @@ interface DropzoneGridProps {
     setCircuit: React.Dispatch<SetStateAction<CircuitResponse | undefined>>;
     flatQubits: FlatQubit[];
     uiLayers: UiLayer[];
+    /** The repetition frames as currently drawn; a drop inside one joins it, outside one leaves it. */
+    loopFrames: LoopFrame[];
     activeDropZones: Set<string>;
     /** Number of wires the dragged operation covers; decides how far its anchor may sit. */
     draggingOperationSize: number;
@@ -186,6 +192,7 @@ interface DropzoneGridProps {
         controlQubits: ElementSelectorDto[];
         operationIdentifier: OperationIdentifier;
     }) => void;
+    onRequestSubcircuitMapping?: (ctx: { subcircuit: SubcircuitOption; layerIdx: number }) => void;
 }
 
 export function DropzoneGrid({
@@ -193,12 +200,14 @@ export function DropzoneGrid({
     setCircuit,
     flatQubits,
     uiLayers,
+    loopFrames,
     activeDropZones,
     draggingOperationSize,
     draggingGrabOffset,
     setHoverPos,
     setDraggingOperationId,
     onRequestMeasurementTarget,
+    onRequestSubcircuitMapping,
 }: Readonly<DropzoneGridProps>) {
     const dispatch = useDispatch();
 
@@ -273,8 +282,24 @@ export function DropzoneGrid({
                 };
             }
 
+            // Which loops the gate belongs to after landing — see `rebindMembership`.
+            //
+            // Judged against the cell the user aimed at, deliberately not against where the
+            // placeholder ended up: the scheduler reserves a frame's rectangle against everything
+            // that is not a member, so the preview can never show an outsider *inside* a frame. Read
+            // from the preview, dropping something into a loop would therefore be impossible.
+            const loopBlocks = rebindMembership(
+                prev.loopBlocks ?? [],
+                loopFrames,
+                payload.quantumOperationId,
+                payload.layerIdx,
+                getOperationSpan(prev.registers, movedOperation),
+            );
+
+            // The dragged operation is already excluded from the rendered preview,
+            // so substituting the dummy re-inserts it exactly where the preview showed it.
             const previewLayers = layersFromPreview(movedOperation);
-            if (previewLayers) return { ...prev, layers: previewLayers };
+            if (previewLayers) return { ...prev, layers: previewLayers, loopBlocks };
 
             const layers = stripOperation(prev.layers, payload.quantumOperationId);
             while (layers.length <= payload.layerIdx) {
@@ -286,6 +311,7 @@ export function DropzoneGrid({
             return {
                 ...prev,
                 layers: layers.filter((layer) => layer.quantumOperations.length > 0),
+                loopBlocks,
             };
         });
     };
@@ -400,6 +426,13 @@ export function DropzoneGrid({
                 const { controlQubits, targetQubits } = dropSelectors(regId, regIdx, controlSize, targetSize);
 
                 if (data.origin === 'library') {
+                    if (data.subcircuit) {
+                        onRequestSubcircuitMapping?.({
+                            subcircuit: data.subcircuit,
+                            layerIdx,
+                        });
+                        return;
+                    }
                     const operation = libraryOperation(data, targetQubits, controlQubits);
                     if (operation) {
                         addQuantumOperationLocally(operation, layerIdx);
