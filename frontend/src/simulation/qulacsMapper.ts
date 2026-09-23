@@ -18,7 +18,7 @@ import {
     validateOperations,
 } from '@/simulation/circuitContext.ts';
 import { applyGateToState } from '@/simulation/qulacsGates.ts';
-import { toExecutionOrder } from '@/lib/loopBlocks.ts';
+import { toExecutionOrder } from '@quak/circuit-core';
 import {
     Bit,
     buildOutcomes,
@@ -174,7 +174,7 @@ export class QulacsMapper {
         const readoutRegisters = buildReadoutRegisters(
             circuitData,
             circuitWidth,
-            context.classicOffsets,
+            context.classicWires,
             includeAutoReadout,
             autoReadoutOffset,
         );
@@ -245,7 +245,7 @@ export class QulacsMapper {
                 continue;
             }
             for (const gate of this.toElementaryGates(op)) {
-                applyGateToState(state, gate, context.quantumOffsets);
+                applyGateToState(state, gate, context.quantumWires);
             }
         }
 
@@ -327,7 +327,7 @@ export class QulacsMapper {
                 if (measuredQubits.has(key)) continue;
 
                 const targetQubit = { registerId: register.id, index };
-                const targetIndex = context.quantumOffsets[register.id] + index;
+                const targetIndex = context.quantumWires.getWireIndex(targetQubit) ?? 0;
                 const classicalAddress = autoReadoutOffset + targetIndex;
                 const { outcome, probabilities } = this.measureQubit(state, targetIndex, classicalAddress, {
                     code: 'RESULT_INTEGRITY_ERROR',

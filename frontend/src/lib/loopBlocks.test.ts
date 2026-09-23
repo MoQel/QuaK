@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CircuitResponse, ElementaryQuantumGateDto, LoopBlockDto } from '@/api/dto/circuit.ts';
-import { innermostBlockCovering, toExecutionOrder } from './loopBlocks.ts';
+import { innermostBlockCovering, toExecutionOrder } from '@quak/circuit-core';
 
 const gate = (id: string, identifier: string, qubitIdx = 0): ElementaryQuantumGateDto => ({
     id,

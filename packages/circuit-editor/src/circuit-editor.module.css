@@ -1,0 +1,23 @@
+/* Styles for the gate boxes, extracted from the web IDE's App.module.css.
+   The colour tokens (--bg-light, --text, --font-mono) and the gate colours
+   (--hadamard, --quantum, ...) are deliberately NOT defined here: the host
+   provides them, so the editor follows the app's theme in the web IDE and
+   VSCode's theme in the extension instead of carrying a second palette. */
+
+.libraryElement,
+.quantumOperation {
+    box-sizing: border-box;
+    font-family: var(--font-mono), monospace;
+    font-size: 16px;
+    font-weight: bold;
+    height: var(--quantumOperationHeight, 40px);
+    padding: 9px 11px;
+    text-align: center;
+    user-select: none;
+    width: var(--quantumOperationWidth, 40px);
+}
+
+.libraryElement:hover {
+    background-color: var(--bg-light);
+    -webkit-user-drag: element; /* Prevents Safari from "forgetting" the element when dragging */
+}

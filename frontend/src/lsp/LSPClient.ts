@@ -148,7 +148,7 @@ export class LSPClient {
                         this.state = 'error';
                         reject(new Error(`LSP transport disconnected before initialize: "${this.options.languageId}"`));
                     } else if (this.state === 'ready') {
-                        // Transport closed after initialization — e.g. server-side idle timeout.
+                        // Transport closed after initialization, e.g. server-side idle timeout.
                         // Mark as error so the manager recreates the client on next activity.
                         this.state = 'error';
                     }

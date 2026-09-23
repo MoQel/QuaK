@@ -6,7 +6,6 @@ import {
     Folder,
     Home,
     LayoutGrid,
-    Library,
     LogOut,
     Moon,
     PanelLeftClose,
@@ -47,7 +46,6 @@ const PANEL_ITEMS: SidebarPanelItem[] = [
     { id: 'file', icon: Folder },
     { id: 'circuit', icon: CircuitBoard },
     { id: 'code', icon: Code2 },
-    { id: 'library', icon: Library },
     { id: 'inspector', icon: Search },
     { id: 'results', icon: BarChart3 },
 ];

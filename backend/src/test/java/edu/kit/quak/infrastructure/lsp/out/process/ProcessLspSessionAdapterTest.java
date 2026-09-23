@@ -124,7 +124,7 @@ class ProcessLspSessionAdapterTest {
         ProcessLspSessionAdapter adapter = adapter("sess-idem");
         adapter.start(definitionFor(List.of("sh", "-c", "cat"), workDir));
 
-        // execute — should not throw
+        // execute: should not throw
         adapter.close();
         assertDoesNotThrow(adapter::close);
     }

@@ -12,7 +12,7 @@ import {
     REGISTER_TYPE_CLASSIC,
     REGISTER_TYPE_QUANTUM,
 } from '@/api/dto/circuit';
-import { OperationIdentifier } from '@/lib/operations.ts';
+import type { OperationIdentifier } from '@quak/circuit-core';
 import { SimulationResult } from '@/simulation/simulation.types.ts';
 
 const createCircuit = (

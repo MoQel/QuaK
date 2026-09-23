@@ -7,8 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.t
 import { Button } from '@/components/ui/button.tsx';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle.tsx';
 import { CircuitResponse } from '@/api/dto/circuit.ts';
-import { toLabeledDirac } from '@/notation/dirac/labeledMapper.ts';
-import { Layout } from '@/notation/dirac/layout.ts';
+import { toLabeledDirac, type Layout } from '@quak/circuit-core/notation/dirac';
 
 interface DiracInspectorViewProps {
     circuit: CircuitResponse | undefined;

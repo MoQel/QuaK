@@ -1,0 +1,215 @@
+{
+    "name": "quak-vscode",
+    "displayName": "QuaK",
+    "description": "Visual circuit editor for OpenQASM files",
+    "icon": "icon.png",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/MoQel/QuaK.git",
+        "directory": "vscode-extension"
+    },
+    "keywords": [
+        "openqasm",
+        "qasm",
+        "quantum",
+        "quantum-computing",
+        "circuit"
+    ],
+    "version": "0.0.1",
+    "private": true,
+    "publisher": "quak",
+    "engines": {
+        "vscode": "^1.90.0"
+    },
+    "categories": [
+        "Visualization",
+        "Programming Languages"
+    ],
+    "extensionKind": [
+        "workspace"
+    ],
+    "activationEvents": [
+        "onLanguage:openqasm",
+        "workspaceContains:**/*.qasm"
+    ],
+    "main": "./dist/extension.cjs",
+    "capabilities": {
+        "untrustedWorkspaces": {
+            "supported": true
+        }
+    },
+    "contributes": {
+        "languages": [
+            {
+                "id": "openqasm",
+                "aliases": [
+                    "OpenQASM",
+                    "openqasm",
+                    "QASM"
+                ],
+                "extensions": [
+                    ".qasm"
+                ],
+                "configuration": "./language-configuration.json"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "openqasm",
+                "scopeName": "source.openqasm",
+                "path": "./syntaxes/openqasm.tmLanguage.json"
+            }
+        ],
+        "customEditors": [
+            {
+                "viewType": "quak.circuitEditor",
+                "displayName": "QuaK Circuit Editor",
+                "selector": [
+                    {
+                        "filenamePattern": "*.qasm"
+                    }
+                ],
+                "priority": "option"
+            }
+        ],
+        "commands": [
+            {
+                "command": "quak.openCircuitEditorToSide",
+                "title": "Open Circuit Editor to the Side",
+                "category": "QuaK",
+                "icon": "$(circuit-board)"
+            },
+            {
+                "command": "quak.openCircuitEditor",
+                "title": "Open Circuit Editor",
+                "category": "QuaK",
+                "icon": "$(circuit-board)"
+            },
+            {
+                "command": "quak.showSource",
+                "title": "Show Source",
+                "category": "QuaK",
+                "icon": "$(file-code)"
+            },
+            {
+                "command": "quak.showLog",
+                "title": "Show Log",
+                "category": "QuaK"
+            }
+        ],
+        "menus": {
+            "editor/title": [
+                {
+                    "command": "quak.openCircuitEditorToSide",
+                    "alt": "quak.openCircuitEditor",
+                    "when": "resourceExtname == .qasm && activeCustomEditorId != 'quak.circuitEditor'",
+                    "group": "navigation"
+                },
+                {
+                    "command": "quak.showSource",
+                    "when": "activeCustomEditorId == 'quak.circuitEditor'",
+                    "group": "navigation"
+                }
+            ],
+            "explorer/context": [
+                {
+                    "command": "quak.openCircuitEditor",
+                    "when": "resourceExtname == .qasm",
+                    "group": "navigation"
+                }
+            ],
+            "commandPalette": [
+                {
+                    "command": "quak.openCircuitEditorToSide",
+                    "when": "resourceExtname == .qasm"
+                },
+                {
+                    "command": "quak.openCircuitEditor",
+                    "when": "resourceExtname == .qasm"
+                },
+                {
+                    "command": "quak.showSource",
+                    "when": "activeCustomEditorId == 'quak.circuitEditor'"
+                },
+                {
+                    "command": "quak.showLog",
+                    "when": "resourceExtname == .qasm"
+                }
+            ]
+        },
+        "keybindings": [
+            {
+                "command": "quak.openCircuitEditorToSide",
+                "key": "ctrl+k q",
+                "mac": "cmd+k q",
+                "when": "editorFocus && editorLangId == openqasm && !notebookEditorFocused"
+            },
+            {
+                "command": "quak.showSource",
+                "key": "ctrl+k q",
+                "mac": "cmd+k q",
+                "when": "activeCustomEditorId == 'quak.circuitEditor'"
+            }
+        ],
+        "configuration": {
+            "title": "QuaK",
+            "properties": {
+                "quak.diagnostics.errors": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Show diagnostics for errors in OpenQASM code."
+                },
+                "quak.diagnostics.syncSupport": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Show diagnostics for code that cannot be synced with the circuit editor."
+                },
+                "quak.hover.enabled": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Show information about gates and qubit registers on hover."
+                },
+                "quak.completion.enabled": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Suggest gate calls and the qubits of a register while typing."
+                }
+            }
+        }
+    },
+    "scripts": {
+        "build": "node esbuild.mjs && vite build --config vite.webview.config.ts",
+        "package": "npm run build && vsce package --no-dependencies",
+        "check:vsix": "node scripts/check-vsix-contents.mjs",
+        "watch": "node scripts/watch.mjs",
+        "typecheck": "tsc --noEmit",
+        "test": "vitest run",
+        "test:integration": "npm run build && vscode-test"
+    },
+    "devDependencies": {
+        "@quak/circuit-core": "^0.0.0",
+        "@quak/circuit-editor": "^0.0.0",
+        "@quak/qasm-transform": "^0.0.0",
+        "@tailwindcss/vite": "^4.3.2",
+        "@types/mocha": "^10.0.10",
+        "@types/node": "^22.20.1",
+        "@types/react": "^19.2.17",
+        "@types/react-dom": "^19.2.3",
+        "@types/vscode": "^1.90.0",
+        "@vitejs/plugin-react": "^4.7.0",
+        "@vscode/test-cli": "^0.0.15",
+        "@vscode/test-electron": "^3.1.0",
+        "@vscode/vsce": "^3.9.2",
+        "esbuild": "^0.25.0",
+        "jsdom": "^27.4.0",
+        "mocha": "^11.8.0",
+        "react": "^19.2.7",
+        "react-dom": "^19.2.7",
+        "tailwindcss": "^4.1.17",
+        "tw-animate-css": "^1.4.0",
+        "typescript": "~5.7.2",
+        "vite": "^6.4.3",
+        "vitest": "^4.1.10"
+    }
+}

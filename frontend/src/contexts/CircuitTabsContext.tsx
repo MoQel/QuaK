@@ -12,7 +12,7 @@ import { api } from '@/api/api.ts';
 import { CircuitResponse } from '@/api/dto/circuit.ts';
 import { useAppSelector } from '@/hooks/useAppSelector.ts';
 import { useProject } from '@/contexts/ProjectContext.tsx';
-import { saveCircuitContent, withResolvedSubcircuits } from '@/views/circuit-view/util/circuitPersistence.ts';
+import { saveCircuitContent, withResolvedSubcircuits } from '@/views/circuit-workspace/circuitPersistence.ts';
 import { store } from '@/store/store.ts';
 import { toast } from 'sonner';
 

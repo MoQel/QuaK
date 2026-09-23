@@ -1,6 +1,6 @@
 import { CircuitResponse, isClassicRegister } from '@/api/dto/circuit.ts';
 import { ReadoutRegisterInfo, SimulationOutcome } from '@/simulation/simulation.types.ts';
-import { RegisterOffsets } from '@/simulation/circuitContext.ts';
+import type { WireIndex } from '@quak/circuit-core';
 import { throwSimulationError } from '@/simulation/simulation.errors.ts';
 
 export type Bit = 0 | 1;
@@ -18,7 +18,7 @@ export function getClassicBitWidth(circuitData: CircuitResponse): number {
 export function buildReadoutRegisters(
     circuitData: CircuitResponse,
     circuitWidth: number,
-    classicOffsets: RegisterOffsets,
+    classicWires: WireIndex,
     includeAutoReadout: boolean,
     autoReadoutOffset: number,
 ): InternalReadoutRegister[] {
@@ -26,7 +26,7 @@ export function buildReadoutRegisters(
         registerId: register.id,
         name: register.name,
         size: register.numberOfBits,
-        offset: classicOffsets[register.id],
+        offset: classicWires.getWireIndex({ registerId: register.id, index: 0 }) ?? 0,
     }));
     const readoutRegisters: InternalReadoutRegister[] = [...classicRegisters].reverse();
 
