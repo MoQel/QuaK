@@ -87,10 +87,11 @@ export type DocumentClassification =
     /** Nothing to draw yet; the notice names the lines that are still missing. */
     | { kind: 'noRegister'; hasVersion: boolean; hasInclude: boolean };
 
-const SUPPORTED_MAJOR_VERSION = '3';
+/** OpenQASM 2 is read as well, the way the backend reads it, and written back as OpenQASM 3. */
+const SUPPORTED_MAJOR_VERSIONS: ReadonlySet<string> = new Set(['2', '3']);
 
 /** `OPENQASM 3;` and `OPENQASM 3.0;` declare the same major version. */
-const majorVersion = (version: string): string => version.split('.')[0];
+export const majorVersion = (version: string): string => version.split('.')[0];
 
 /** Comments are the one rejection a user can knowingly accept, so they stand apart. */
 const isComment = (entry: QasmRejection): boolean => entry.construct === 'comment';
@@ -112,7 +113,7 @@ export function classify(result: ToCircuitResult): DocumentClassification {
     }
 
     const { version, includes, headerComments } = result.preamble;
-    if (version !== null && majorVersion(version) !== SUPPORTED_MAJOR_VERSION) {
+    if (version !== null && !SUPPORTED_MAJOR_VERSIONS.has(majorVersion(version))) {
         return { kind: 'unsupportedVersion', version };
     }
 
@@ -222,7 +223,7 @@ class CircuitBuilder {
 }
 
 /**
- * Turns OpenQASM 3 source into the circuit's registers and layers.
+ * Turns OpenQASM 3 or 2 source into the circuit's registers and layers.
  *
  * Mirrors the backend visitor for supported constructs, but is stricter: it
  * collects unsupported syntax so the extension can keep risky files read-only.

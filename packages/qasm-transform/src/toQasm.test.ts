@@ -87,6 +87,28 @@ describe('toQasm: emission', () => {
         );
     });
 
+    it('writes an OpenQASM 2 file back as OpenQASM 3, library and declarations included', () => {
+        const emitted = roundTrip(
+            'OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[2];\ncreg c[2];\nh q[0];\nmeasure q[0] -> c[0];\n',
+        );
+
+        expect(emitted).toBe(
+            `${HEADER}\n// Register q\nqubit[2] q;\n// Register c\nbit[2] c;\n\n// Layer 1\nh q[0];\n\n// Layer 2\nmeasure q[0] -> c[0];\n`,
+        );
+    });
+
+    it('keeps the other includes of an OpenQASM 2 file, and names the standard library once', () => {
+        const emitted = roundTrip(
+            'OPENQASM 2.0;\ninclude "qelib1.inc";\ninclude "stdgates.inc";\ninclude "mine.inc";\nqreg q[1];\n',
+        );
+
+        expect(emitted).toMatch(/^OPENQASM 3\.0;\ninclude "stdgates\.inc";\ninclude "mine\.inc";\n\n/);
+    });
+
+    it('leaves the includes of an OpenQASM 3 file as they are', () => {
+        expect(roundTrip('OPENQASM 3.0;\ninclude "qelib1.inc";\nqubit[1] q;\n')).toContain('include "qelib1.inc";');
+    });
+
     it('writes controls before targets', () => {
         expect(roundTrip('OPENQASM 3.0;\nqubit[3] q;\nccx q[0], q[1], q[2];\n')).toContain('ccx q[0], q[1], q[2];');
     });
@@ -333,6 +355,8 @@ describe('round trip is idempotent', () => {
         'broadcast measurement': `${HEADER}qubit[3] q;\nbit[3] c;\nh q[1];\nc = measure q;\n`,
         'sliced measurement': `${HEADER}qubit[4] b;\nbit[5] ans;\nx b[0];\nmeasure b[0:3] -> ans[0:3];\n`,
         'old style declarations': `${HEADER}qreg q[2];\ncreg c[2];\nmeasure q -> c;\n`,
+        'OpenQASM 2 file':
+            'OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[2];\ncreg c[2];\nh q[0];\ncx q[0], q[1];\nmeasure q -> c;\n',
         'interleaved registers': `${HEADER}qubit[1] a;\nbit[1] c;\nqubit[1] b;\ncx a[0], b[0];\nmeasure b[0] -> c[0];\n`,
     };
 

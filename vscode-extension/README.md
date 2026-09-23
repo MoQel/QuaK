@@ -17,9 +17,13 @@ undo, search, split view and source control keep working exactly as they always 
 
 ## Current Preview State
 
-QuaK reads a subset of OpenQASM 3. A file that fits into that subset can be edited in
-the circuit view; anything else opens read-only, with a note naming what stood in the
-way. Editing the text is never restricted.
+QuaK reads a subset of OpenQASM 3, and OpenQASM 2 files as well. A file that fits into
+that subset can be edited in the circuit view; anything else opens read-only, with a note
+naming what stood in the way. Editing the text is never restricted.
+
+An OpenQASM 2 file becomes OpenQASM 3 on the first edit in the circuit view: the header,
+`qelib1.inc`, `qreg` and `creg` are written in their OpenQASM 3 spelling. Opening the file
+alone changes nothing.
 
 Nothing is rewritten behind your back. If saving the circuit would drop something, be it
 a construct QuaK does not support or one of your comments, it says so instead.

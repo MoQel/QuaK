@@ -37,7 +37,7 @@ describe('classifyText: document state', () => {
         ['an unsupported construct', `${HEADER}qubit[2] q;\nbarrier q;\n`],
         ['a rotation gate without its angle', `${HEADER}qubit[2] q;\nrx q[0];\n`],
         ['a comment below the header', `${HEADER}qubit[2] q;\n// below\nh q[0];\n`],
-        ['an OpenQASM 2 header', 'OPENQASM 2.0;\nqreg q[2];\nh q[0];\n'],
+        ['a version it does not know', 'OPENQASM 4.0;\nqubit[2] q;\nh q[0];\n'],
         ['no qubit register', 'OPENQASM 3.0;\n'],
         ['nothing at all', ''],
     ])('keeps a document with %s read-only', (_case, source) => {
@@ -241,8 +241,8 @@ describe('diagnosticsFor', () => {
     });
 
     it('says nothing per line when the version is the problem', () => {
-        // `qreg` and every gate operand below it are consequences of the version.
-        expect(diagnosticsIn('OPENQASM 2.0;\nqreg q[2];\nh q[0];\n')).toEqual([]);
+        // Whatever the body holds is read against a version this editor does not know.
+        expect(diagnosticsIn('OPENQASM 4.0;\nfoo q[0];\n')).toEqual([]);
     });
 
     it('names the unsupported construct where it sits', () => {

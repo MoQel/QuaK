@@ -441,14 +441,24 @@ describe('classify: the reason a document cannot be edited', () => {
     });
 
     it('names the version instead of every rejection it causes', () => {
-        const classification = classify(toCircuit('OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[2];\nh q[0];\n'));
+        const classification = classify(toCircuit('OPENQASM 4.0;\ninclude "future.inc";\nfoo q[0];\n'));
 
-        expect(classification).toMatchObject({ kind: 'unsupportedVersion', version: '2.0' });
+        expect(classification).toMatchObject({ kind: 'unsupportedVersion', version: '4.0' });
     });
 
-    it('rejects a version 2 header even when the body is valid OpenQASM 3', () => {
-        // Writing this circuit back would keep the header and emit `qubit[n]` under it.
-        expect(kindOf('OPENQASM 2.0;\nqubit[2] q;\nh q[0];\n')).toBe('unsupportedVersion');
+    it('reads an OpenQASM 2 file, as the backend does', () => {
+        const source =
+            'OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[2];\ncreg c[2];\nh q[0];\ncx q[0], q[1];\nmeasure q -> c;\n';
+
+        expect(kindOf(source)).toBe('editable');
+        expect(circuitOf(source).registers.map((register) => register.type)).toEqual([
+            'Quantum_Register',
+            'Classic_Register',
+        ]);
+    });
+
+    it('reads an OpenQASM 2 header over an OpenQASM 3 body too, since both are written back as 3', () => {
+        expect(kindOf('OPENQASM 2.0;\nqubit[2] q;\nh q[0];\n')).toBe('editable');
     });
 
     it.each(['OPENQASM 3;', 'OPENQASM 3.0;', 'OPENQASM 3.1;'])('accepts %s as version 3', (version) => {

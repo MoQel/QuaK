@@ -42,7 +42,7 @@ const COPY: {
 
     unsupportedVersion: ({ version }) => ({
         headline: `This file declares OpenQASM ${version}.`,
-        detail: 'The circuit editor reads OpenQASM 3. Text editing is unaffected.',
+        detail: 'The circuit editor reads OpenQASM 2 and 3. Text editing is unaffected.',
     }),
 
     // Not an error: the file is valid OpenQASM, it just holds more than the editor can write back.

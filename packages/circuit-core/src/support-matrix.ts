@@ -39,7 +39,7 @@ const SUPPORTED_GATES: readonly OperationIdentifier[] = [
 ];
 
 /**
- * Every gate `stdgates.inc` defines, plus the two language builtins.
+ * Every gate `stdgates.inc` and `qelib1.inc` define, plus the two language builtins.
  *
  * Not a list of what we support. That is SUPPORTED_GATES. This one separates "a real
  * gate this editor cannot draw" from "a name that exists nowhere", which are different
@@ -82,6 +82,12 @@ const STANDARD_GATE_NAMES: ReadonlySet<string> = new Set([
     'u1',
     'u2',
     'u3',
+    // qelib1.inc only, for OpenQASM 2 files
+    'u0',
+    'cu1',
+    'cu3',
+    'rxx',
+    'rzz',
     // Language builtins, available without an include
     'U',
     'gphase',

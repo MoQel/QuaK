@@ -108,6 +108,15 @@ describe('the visitor rejects what the matrix says it rejects', () => {
         expect(rejection).toMatchObject({ kind: 'unsupported', message: "Unsupported gate 'sdg'." });
     });
 
+    it('calls a qelib1.inc gate of an OpenQASM 2 file unsupported, not unknown', () => {
+        const [rejection, ...rest] = toCircuit(
+            'OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[2];\ncu1(pi) q[0], q[1];\n',
+        ).unsupported;
+
+        expect(rest).toEqual([]);
+        expect(rejection).toMatchObject({ kind: 'unsupported', message: "Unsupported gate 'cu1'." });
+    });
+
     it('calls a name OpenQASM never declares invalid, which is a different thing to say', () => {
         const [rejection, ...rest] = toCircuit('OPENQASM 3.0;\nqubit[1] q;\nfoo q[0];\n').unsupported;
 

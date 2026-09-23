@@ -59,10 +59,10 @@ circuit is a projection. There is no second persistent state; circuit edits go s
 into the document as text changes. Anything else would raise the question which version
 wins, and would break undo and git.
 
-**Lossless over visual.** The editor supports a subset of OpenQASM 3, and writing a
-circuit back regenerates the whole file. A document may contain things regeneration
-would destroy: unsupported constructs, but also user comments, which are content and not
-formatting. The rule is absolute:
+**Lossless over visual.** The editor supports a subset of OpenQASM 3 (OpenQASM 2 is read
+and converted, see below), and writing a circuit back regenerates the whole file. A
+document may contain things regeneration would destroy: unsupported constructs, but also
+user comments, which are content and not formatting. The rule is absolute:
 
 > Visual **editing** is only available for documents that regenerate losslessly.
 > Everything else is read-only, with a notice explaining why. Text editing is never
@@ -165,6 +165,13 @@ reason, as `unsupported` when the OpenQASM is valid and as `invalid` when it is 
 user therefore sees every reason at once rather than the first. A transformation that
 silently drops a statement is perfectly round-trip idempotent and still lossy.
 
+**OpenQASM 2 is read and written back as OpenQASM 3.** Like the backend, the visitor
+accepts an `OPENQASM 2.0;` header, `qreg q[n];` and `creg c[n];`, and treats
+`qelib1.inc` as the standard library. The generator only writes OpenQASM 3, so the first
+edit in the circuit view converts the file: the header becomes `OPENQASM 3.0;`,
+`include "qelib1.inc";` becomes `include "stdgates.inc";`, and the declarations become
+`qubit[n] q;` and `bit[n] c;`. Opening the file changes nothing; only a write does.
+
 **The support matrix is the single source.** `packages/circuit-core/src/support-matrix.ts`
 lists which statements and gates round-trip. The visitor consults it, the tests assert
 against it, and it decides which of the three document states a file lands in. It is also
@@ -191,7 +198,7 @@ extension reads it.
 | `@quak/circuit-core` | DTOs, gate types, support matrix, wire index, angle formatting, the quantikz and Dirac notation mappers | nothing |
 | `@quak/ui` | The shadcn primitives both hosts use | radix, tailwind-merge, lucide, react as a peer |
 | `@quak/circuit-editor` | The circuit editor with its integrated gate library | circuit-core, ui |
-| `@quak/qasm-transform` | OpenQASM 3 ↔ circuit, for the extension only | antlr4ng |
+| `@quak/qasm-transform` | OpenQASM 3 ↔ circuit (OpenQASM 2 read as well), for the extension only | antlr4ng |
 
 The web IDE consumes these through re-export shims, so its import paths did not change.
 The boundary is enforced by dependency-cruiser in CI: `packages/` must not import from

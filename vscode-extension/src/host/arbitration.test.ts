@@ -91,7 +91,7 @@ describe('applyOptIn', () => {
                 problems: [{ line: 1, column: 0, construct: 'syntax', message: 'boom', kind: 'invalid' }],
             },
         ],
-        ['an OpenQASM 2 header', { kind: 'unsupportedVersion', version: '2.0' }],
+        ['an unknown version', { kind: 'unsupportedVersion', version: '4.0' }],
         ['no register', { kind: 'noRegister', hasVersion: true, hasInclude: true }],
         ['nothing at all', { kind: 'empty' }],
     ])('does not let the opt-in carry over to %s', (_case, classification) => {

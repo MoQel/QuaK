@@ -10,19 +10,36 @@ import {
     type MeasurementDto,
     type QuantumOperationDto,
 } from '@quak/circuit-core';
-import type { QasmPreamble } from './toCircuit.ts';
+import { majorVersion, type QasmPreamble } from './toCircuit.ts';
 import { layerMarker, registerMarker } from './structuralComments.ts';
 
 /** What a file gets when it had no header of its own: valid standalone OpenQASM. */
 const DEFAULT_PREAMBLE: QasmPreamble = { version: '3.0', includes: ['"stdgates.inc"'], headerComments: [] };
 
+const OPENQASM_2_LIBRARY = '"qelib1.inc"';
+const OPENQASM_3_LIBRARY = '"stdgates.inc"';
+
 /**
- * Writes a circuit back out as OpenQASM 3.
+ * The header an OpenQASM 2 file gets once it is written as OpenQASM 3: the version, and
+ * `qelib1.inc` replaced by `stdgates.inc`, which the backend treats as the same library.
+ */
+function asOpenQasm3(preamble: QasmPreamble): QasmPreamble {
+    if (preamble.version === null || majorVersion(preamble.version) !== '2') return preamble;
+
+    const includes = preamble.includes.map((include) =>
+        include === OPENQASM_2_LIBRARY ? OPENQASM_3_LIBRARY : include,
+    );
+    return { ...preamble, version: '3.0', includes: [...new Set(includes)] };
+}
+
+/**
+ * Writes a circuit back out as OpenQASM 3, also when it was read from OpenQASM 2.
  *
  * Mirrors the backend generator for circuit statements. The extension also
  * writes the preserved preamble because it rewrites complete user files.
  */
-export function toQasm(content: CircuitContent, preamble: QasmPreamble = DEFAULT_PREAMBLE): string {
+export function toQasm(content: CircuitContent, source: QasmPreamble = DEFAULT_PREAMBLE): string {
+    const preamble = asOpenQasm3(source);
     const registerNames = new Map(content.registers.map((register) => [register.id, register.name]));
     const lines: string[] = [];
 
