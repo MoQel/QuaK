@@ -6,11 +6,13 @@ import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementaryQuantumGate;
 import edu.kit.quak.core.circuit.model.layer.operation.Measurement;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
+import edu.kit.quak.core.circuit.model.layer.operation.SubcircuitOperation;
 import edu.kit.quak.core.circuit.model.layer.operation.library.QuantumOperationLibrary;
 import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.layer.operation.JpaElementSelector;
 import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.layer.operation.JpaElementaryQuantumGate;
 import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.layer.operation.JpaMeasurement;
 import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.layer.operation.JpaQuantumOperation;
+import edu.kit.quak.infrastructure.circuit.out.db.jpa.entity.layer.operation.JpaSubcircuitOperation;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,10 +43,12 @@ class QuantumOperationJpaMapperTest {
             List.of(),
             List.of(classicBit)
         );
+        SubcircuitOperation domainComposite = new SubcircuitOperation(false, List.of(target), List.of(), "target-circuit-123");
 
         // Act
         JpaQuantumOperation entityGate = mapper.toEntity(domainGate);
         JpaQuantumOperation entityMeasurement = mapper.toEntity(domainMeasurement);
+        JpaQuantumOperation entityComposite = mapper.toEntity(domainComposite);
 
         // Assert
         assertNotNull(entityGate);
@@ -56,6 +60,11 @@ class QuantumOperationJpaMapperTest {
         assertInstanceOf(JpaMeasurement.class, entityMeasurement);
         JpaMeasurement jpaMeasurement = (JpaMeasurement) entityMeasurement;
         assertEquals(QuantumOperationLibrary.MEASURE, jpaMeasurement.getOperationDefinition());
+
+        assertNotNull(entityComposite);
+        assertInstanceOf(JpaSubcircuitOperation.class, entityComposite);
+        JpaSubcircuitOperation jpaComposite = (JpaSubcircuitOperation) entityComposite;
+        assertEquals("target-circuit-123", jpaComposite.getDefinitionCircuitId());
     }
 
     @Test
@@ -81,9 +90,15 @@ class QuantumOperationJpaMapperTest {
         entityMeasurement.setTargetQubits(List.of(entityTarget));
         entityMeasurement.setClassicBits(List.of(entityClassicBit));
 
+        JpaSubcircuitOperation entityComposite = new JpaSubcircuitOperation();
+        entityComposite.setDefinitionCircuitId("target-circuit-123");
+        entityComposite.setInverseForm(false);
+        entityComposite.setTargetQubits(List.of(entityTarget));
+
         // Act
         QuantumOperation domainGate = mapper.toDomain(entityGate);
         QuantumOperation domainMeasurement = mapper.toDomain(entityMeasurement);
+        QuantumOperation domainComposite = mapper.toDomain(entityComposite);
 
         // Assert
         assertNotNull(domainGate);
@@ -95,5 +110,10 @@ class QuantumOperationJpaMapperTest {
         assertInstanceOf(Measurement.class, domainMeasurement);
         Measurement measurement = (Measurement) domainMeasurement;
         assertEquals(QuantumOperationLibrary.MEASURE, measurement.getOperationDefinition());
+
+        assertNotNull(domainComposite);
+        assertInstanceOf(SubcircuitOperation.class, domainComposite);
+        SubcircuitOperation composite = (SubcircuitOperation) domainComposite;
+        assertEquals("target-circuit-123", composite.getDefinitionCircuitId());
     }
 }

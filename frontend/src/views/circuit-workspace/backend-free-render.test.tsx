@@ -58,9 +58,11 @@ const circuitWithMeasurement: CircuitResponse = {
 describe('circuit editor renders without a backend', () => {
     it('renders the library from an operations prop', () => {
         render(
-            <CircuitDragProvider>
-                <LibraryView operations={operations} onOperationSelect={vi.fn()} />
-            </CircuitDragProvider>,
+            <CircuitStoreProvider circuit={circuit} setCircuit={vi.fn()}>
+                <CircuitDragProvider>
+                    <LibraryView operations={operations} onOperationSelect={vi.fn()} />
+                </CircuitDragProvider>
+            </CircuitStoreProvider>,
         );
 
         expect(screen.getByText('Single-qubit gates')).toBeInTheDocument();

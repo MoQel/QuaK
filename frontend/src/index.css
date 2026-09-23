@@ -34,6 +34,7 @@ body,
     --color-logo-end: var(--logo-end);
     --color-destructive-text: var(--destructive-text);
     --color-bg-subtle: var(--bg-subtle);
+    --color-selection: var(--selection);
 }
 
 :root {

@@ -49,6 +49,11 @@ public class CircuitJpaAdapter implements CircuitRepositoryPort {
     }
 
     @Override
+    public List<QuantumCircuit> findAllByProjectId(String projectId) {
+        return repository.findAllByProjectId(projectId).stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
     public QuantumCircuit save(QuantumCircuit domain) {
         String circuitId = domain.getId();
         JpaQuantumCircuit entity = mapper.toEntity(domain);

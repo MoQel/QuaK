@@ -8,6 +8,8 @@ import {
 import { usePanelData } from '@/contexts/panel/PanelDataContext.ts';
 
 import { useEffect, useState } from 'react';
+import { useDispatch } from 'react-redux';
+import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -15,6 +17,11 @@ import { CircuitTabBar } from '@/views/circuit-workspace/CircuitTabBar.tsx';
 import { useCircuitTabs } from '@/contexts/CircuitTabsContext.tsx';
 import { api } from '@/api/api.ts';
 import { OperationDefinitionResponse } from '@/api/dto/library.ts';
+import { SubcircuitOption } from '@/api/dto/circuit.ts';
+import { useProject } from '@/contexts/ProjectContext.tsx';
+import { openTab } from '@/store/tabs/tabsSlice.ts';
+import { NewSubcircuitDialog } from '@/views/circuit-workspace/NewSubcircuitDialog.tsx';
+import { removeSubcircuit, useSubcircuitOptions } from '@/views/circuit-workspace/subcircuits.ts';
 
 const LIBRARY_VISIBILITY_STORAGE_KEY = 'circuit-workspace-library-collapsed';
 
@@ -23,6 +30,24 @@ function CircuitWorkspaceContent() {
     const { activeCircuitTabId, activeCircuit, activeCircuitError, activeCircuitLoading, reloadActiveCircuit } =
         useCircuitTabs();
     const [operations, setOperations] = useState<OperationDefinitionResponse[]>([]);
+    const dispatch = useDispatch();
+
+    const { projectId } = useProject();
+    const { options: subcircuits, reload: reloadSubcircuits } = useSubcircuitOptions(projectId, activeCircuit?.id);
+    const [isNewSubcircuitOpen, setIsNewSubcircuitOpen] = useState(false);
+
+    const openSubcircuit = (option: SubcircuitOption) =>
+        dispatch(openTab({ tab: { id: option.fileId, title: option.name, language: '' } }));
+
+    const handleRemoveSubcircuit = async (option: SubcircuitOption) => {
+        try {
+            await removeSubcircuit(option.fileId);
+            reloadSubcircuits();
+            toast.success(`Removed ${option.name} from library`);
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'Could not remove subcircuit');
+        }
+    };
     const [initialCollapsed] = useState(() => localStorage.getItem(LIBRARY_VISIBILITY_STORAGE_KEY) === 'true');
 
     // Load the gate library once. The circuit editor itself takes these as data,
@@ -47,14 +72,34 @@ function CircuitWorkspaceContent() {
                 />
             );
         }
-        return <CircuitView header={<CircuitTabBar />} />;
+        return <CircuitView header={<CircuitTabBar />} subcircuits={subcircuits} />;
     };
 
     return (
         <CircuitWorkspaceShell
             defaultCollapsed={initialCollapsed}
             onCollapsedChange={(collapsed) => localStorage.setItem(LIBRARY_VISIBILITY_STORAGE_KEY, String(collapsed))}
-            library={<LibraryView operations={operations} onOperationSelect={setSelectedOperation} />}
+            library={
+                <>
+                    <LibraryView
+                        operations={operations}
+                        onOperationSelect={setSelectedOperation}
+                        subcircuits={subcircuits}
+                        onNewSubcircuit={projectId ? () => setIsNewSubcircuitOpen(true) : undefined}
+                        onOpenSubcircuit={openSubcircuit}
+                        onRemoveSubcircuit={handleRemoveSubcircuit}
+                    />
+                    <NewSubcircuitDialog
+                        open={isNewSubcircuitOpen}
+                        onOpenChange={setIsNewSubcircuitOpen}
+                        projectId={projectId}
+                        currentCircuitId={activeCircuit?.id}
+                        currentFileId={activeCircuitTabId ?? undefined}
+                        known={subcircuits}
+                        onAdded={reloadSubcircuits}
+                    />
+                </>
+            }
             editor={renderEditor()}
         />
     );

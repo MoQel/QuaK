@@ -4,6 +4,7 @@ import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.core.circuit.model.layer.Layer;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementaryQuantumGate;
+import edu.kit.quak.core.circuit.model.layer.operation.Measurement;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
 import edu.kit.quak.core.circuit.model.layer.operation.library.ConcreteQuantumOperation;
 import edu.kit.quak.core.circuit.model.layer.operation.library.QuantumOperationLibrary;
@@ -95,7 +96,7 @@ public class QiskitCodeGenerator {
 
         // 1. Parameter / Winkel (In Qiskit kommen Winkel immer vor den Qubits)
         if (quantumOperation instanceof ElementaryQuantumGate elementaryQuantumGate) {
-            QuantumOperationLibrary operationDefinition = quantumOperation.getOperationDefinition();
+            QuantumOperationLibrary operationDefinition = elementaryQuantumGate.getOperationDefinition();
             if (operationDefinition.getDefinition() instanceof ConcreteQuantumOperation<?> definition && definition.isHasRotationAngle()) {
                 double angle = elementaryQuantumGate.getRotationAngle();
                 // Wenn es invers ist, können wir bei Rotationsgattern einfach den Winkel negieren
@@ -124,7 +125,16 @@ public class QiskitCodeGenerator {
     }
 
     private static String getOperatorMethodName(QuantumOperation quantumOperation) {
-        QuantumOperationLibrary operationDefinition = quantumOperation.getOperationDefinition();
+        // operationDefinition sitzt seit der Composite-Einfuehrung pro Subklasse: nur Operationen mit
+        // Library-Definition haben eine. Ein Subcircuit hat keine und wird hier nicht abgebildet.
+        QuantumOperationLibrary operationDefinition;
+        if (quantumOperation instanceof ElementaryQuantumGate elementaryQuantumGate) {
+            operationDefinition = elementaryQuantumGate.getOperationDefinition();
+        } else if (quantumOperation instanceof Measurement measurement) {
+            operationDefinition = measurement.getOperationDefinition();
+        } else {
+            return "";
+        }
         String operatorCode = toCode(operationDefinition);
 
         // Qiskit-spezifisches Invers-Handling

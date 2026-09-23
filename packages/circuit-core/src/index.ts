@@ -9,4 +9,7 @@ export * from './quantumAngle.ts';
 export * from './registerName.ts';
 export * from './circuitContent.ts';
 export * from './circuitIndex.ts';
+export * from './loopBlocks.ts';
+export * from './loopFrames.ts';
+export * from './spans.ts';
 export * from './support-matrix.ts';

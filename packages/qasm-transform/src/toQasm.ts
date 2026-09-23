@@ -4,6 +4,7 @@ import {
     type ElementSelectorDto,
     formatAngle as formatAngleWith,
     GATE_ARITY,
+    toOperationIdentifier,
     getRegisterSize,
     isQuantumRegister,
     type QuantumOperationDto,
@@ -65,11 +66,18 @@ const minInvolvedQubitIndex = (operation: QuantumOperationDto): number => {
 };
 
 function operationToQasm(operation: QuantumOperationDto, registerNames: Map<string, string>): string {
+    // A bare call would name a gate or circuit the file never declares.
+    if (operation.type === 'COMPOSITE_QUANTUM_GATE' || operation.type === 'SUBCIRCUIT_OPERATION') {
+        const kind = operation.type === 'COMPOSITE_QUANTUM_GATE' ? 'user-defined gate' : 'subcircuit';
+        throw new Error(`Cannot write the ${kind} '${operation.identifier}' to QASM.`);
+    }
+
     // `inverseForm` is not emitted because this transform cannot read it back yet.
     let head = operation.identifier.toLowerCase();
 
     // Gate arity decides whether an angle is part of the QASM spelling.
-    if (GATE_ARITY[operation.identifier]?.hasRotationAngle && 'rotationAngle' in operation) {
+    const identifier = toOperationIdentifier(operation.identifier);
+    if (identifier && GATE_ARITY[identifier].hasRotationAngle && 'rotationAngle' in operation) {
         head += `(${formatAngle(operation.rotationAngle)})`;
     }
 

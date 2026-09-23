@@ -1,11 +1,14 @@
 import React, { useMemo, useRef } from 'react';
 import styles from '#circuit-editor.module.css';
-import { QuantumOperationDto, RegisterResponse, getSelectorKey, formatRotationAngle } from '@quak/circuit-core';
+import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@quak/ui/context-menu';
+import { getSelectorKey, QuantumOperationDto, RegisterResponse, formatRotationAngle } from '@quak/circuit-core';
 import { getOperationDefinition, OperationDefinition } from '#operations.ts';
-import { CELL_WIDTH, getSelectorVisualY, isSelectorCollapsed, QUBIT_HEIGHT } from '../util/layout.ts';
+import { CELL_WIDTH, getSelectorVisualY, isSelectorCollapsed, LOOP_GATE_SCALE, QUBIT_HEIGHT } from '../util/layout.ts';
 import { TextIcon } from '@quak/ui/text-icon';
-import { DragData } from '#types.ts';
 import { FlatQubit } from '../util/types.ts';
+import { DragData } from '#types.ts';
+
+const SELECTION_SHADOW = '0 0 0 3px var(--selection), 0 0 10px var(--selection)';
 
 interface ElementaryQuantumGateProps {
     operation: QuantumOperationDto;
@@ -14,9 +17,29 @@ interface ElementaryQuantumGateProps {
     layerIdx: number;
     measurementColor?: string;
     isGhost?: boolean;
-    onDragStart: (operationSize: number) => void;
+    /** Drawn slightly smaller when the gate sits inside a repetition frame, so the box has room. */
+    isInLoop?: boolean;
+    onDragStart: (operationSize: number, grabOffset: number) => void;
     onDragEnd: () => void;
     onDelete: () => void;
+    /** How often the enclosing frame repeats, shown on the menu entry that removes it. */
+    loopRepeatCount?: number;
+    /** Drops the enclosing repetition frame; absent when the gate is not in one. */
+    onRemoveLoop?: () => void;
+    /** Writes the enclosing frame out as literal repetitions; absent when the gate is not in one. */
+    onUnrollLoop?: () => void;
+    /** Opens the angle editor; only offered on a rotation gate (rx/ry/rz). */
+    onEditAngle?: () => void;
+    /** Opens loop dialog to add loop */
+    onAddLoop?: () => void;
+    /** Opens loop dialog to edit loop count */
+    onEditLoop?: () => void;
+    /** Groups selected operations into a composite */
+    onGroup?: () => void;
+    /** Whether this gate is currently selected */
+    isSelected?: boolean;
+    /** Toggles selection on Shift-click */
+    onToggleSelect?: () => void;
 }
 
 export function ElementaryQuantumGate({
@@ -26,13 +49,24 @@ export function ElementaryQuantumGate({
     layerIdx,
     measurementColor = 'var(--classical)',
     isGhost = false,
+    isInLoop = false,
     onDragStart,
     onDragEnd,
     onDelete,
+    loopRepeatCount,
+    onRemoveLoop,
+    onUnrollLoop,
+    onEditAngle,
+    onAddLoop,
+    onEditLoop,
+    onGroup,
+    isSelected = false,
+    onToggleSelect,
 }: Readonly<ElementaryQuantumGateProps>) {
     const definition = getOperationDefinition(operation.identifier);
     const isDraggingRef = useRef(false);
     const interactivity = isGhost ? 'pointer-events-none' : 'pointer-events-auto';
+    const scale = isInLoop ? LOOP_GATE_SCALE : 1;
     const registerNameById = useMemo(
         () => new Map(registers.map((register) => [register.id, register.name])),
         [registers],
@@ -90,7 +124,14 @@ export function ElementaryQuantumGate({
         e.dataTransfer.setData('text/plain', JSON.stringify(data));
         e.dataTransfer.effectAllowed = 'move';
 
-        setTimeout(() => onDragStart?.(definition.totalSize), 0);
+        // Which wire of this gate the pointer grabbed, so the box can stay under the cursor
+        // instead of jumping so that its top wire lands there.
+        const bounds = e.currentTarget.getBoundingClientRect();
+        const grabOffset = Math.floor((e.clientY - bounds.top) / QUBIT_HEIGHT);
+
+        // Use setTimeout to ensure the browser captures the element as the "drag image"
+        // before React potentially re-renders or hides it.
+        setTimeout(() => onDragStart?.(definition.totalSize, grabOffset), 0);
     };
 
     const handleDragEnd = () => {
@@ -102,25 +143,31 @@ export function ElementaryQuantumGate({
 
     // Actual action, decoupled from the event so mouse and keyboard handlers
     // can each keep their own correctly-typed event signature.
-    const triggerDelete = () => {
-        if (!isDraggingRef.current && !isGhost) onDelete?.();
+    const activate = (withShift: boolean) => {
+        if (isDraggingRef.current || isGhost) return;
+        if (withShift) {
+            onToggleSelect?.();
+            return;
+        }
+        onDelete?.();
     };
 
     const handleClick = (e: React.MouseEvent) => {
         e.stopPropagation();
-        triggerDelete();
+        activate(e.shiftKey);
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
             e.stopPropagation();
-            triggerDelete();
+            activate(e.shiftKey);
         }
     };
 
-    return (
+    const gate = (
         <div
+            data-gate
             draggable={!isGhost}
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
@@ -160,6 +207,8 @@ export function ElementaryQuantumGate({
                     relativeY={y - visualTop}
                     definition={definition}
                     interactivity={interactivity}
+                    scale={scale}
+                    isSelected={isSelected}
                 />
             ))}
 
@@ -173,6 +222,8 @@ export function ElementaryQuantumGate({
                     title={operation.type === 'MEASUREMENT' ? (measurementHints[idx] ?? measurementHint) : undefined}
                     angleLabel={angleLabel}
                     interactivity={interactivity}
+                    scale={scale}
+                    isSelected={isSelected}
                 />
             ))}
 
@@ -189,6 +240,38 @@ export function ElementaryQuantumGate({
                     ),
                 )}
         </div>
+    );
+
+    // Only a rotation gate has an angle to edit; everything else would get a menu entry that does
+    // not apply to it. The gate decides this itself because it already holds the definition.
+    const canEditAngle = definition.hasRotationAngle && onEditAngle !== undefined;
+
+    const hasContextMenu = Boolean(
+        canEditAngle || onRemoveLoop || onUnrollLoop || onAddLoop || onEditLoop || onGroup || onDelete,
+    );
+    if (!hasContextMenu) return gate;
+
+    return (
+        <ContextMenu>
+            <ContextMenuTrigger asChild disabled={isGhost}>
+                {gate}
+            </ContextMenuTrigger>
+            <ContextMenuContent>
+                {canEditAngle && <ContextMenuItem onSelect={onEditAngle}>Change angle…</ContextMenuItem>}
+                {onGroup && <ContextMenuItem onSelect={onGroup}>Group…</ContextMenuItem>}
+                {onAddLoop && <ContextMenuItem onSelect={onAddLoop}>Add loop…</ContextMenuItem>}
+                {onEditLoop && <ContextMenuItem onSelect={onEditLoop}>Edit loop ×{loopRepeatCount}…</ContextMenuItem>}
+                {onUnrollLoop && <ContextMenuItem onSelect={onUnrollLoop}>Unroll ×{loopRepeatCount}</ContextMenuItem>}
+                {onRemoveLoop && (
+                    <ContextMenuItem onSelect={onRemoveLoop}>Remove loop ×{loopRepeatCount}</ContextMenuItem>
+                )}
+                {onDelete && (
+                    <ContextMenuItem variant="destructive" onSelect={onDelete}>
+                        Delete
+                    </ContextMenuItem>
+                )}
+            </ContextMenuContent>
+        </ContextMenu>
     );
 }
 
@@ -224,8 +307,16 @@ function ControlPoint({
     relativeY,
     definition,
     interactivity,
-}: Readonly<{ relativeY: number; definition: OperationDefinition; interactivity: string }>) {
-    const size: number = 12;
+    scale,
+    isSelected = false,
+}: Readonly<{
+    relativeY: number;
+    definition: OperationDefinition;
+    interactivity: string;
+    scale: number;
+    isSelected?: boolean;
+}>) {
+    const size: number = 12 * scale;
     return (
         <div
             className={`
@@ -238,9 +329,32 @@ function ControlPoint({
                 top: relativeY + QUBIT_HEIGHT / 2 - size / 2,
                 width: `${size}px`,
                 height: `${size}px`,
+                boxShadow: isSelected ? SELECTION_SHADOW : undefined,
             }}
         />
     );
+}
+
+/** The glyph inside a gate box: a component icon, or its text, stacked over a rotation angle if there is one. */
+function GateIcon({
+    definition,
+    angleLabel,
+}: Readonly<{ definition: OperationDefinition; angleLabel?: string | null }>) {
+    if (definition.icon.type === 'component') {
+        const ComponentIcon = definition.icon.component;
+        return <ComponentIcon className="size-4 stroke-4" />;
+    }
+    if (angleLabel) {
+        return (
+            <div className="flex flex-col items-center justify-center leading-none">
+                <span style={{ fontSize: '12px' }}>{definition.icon.text}</span>
+                <span style={{ fontSize: '9px' }} className="font-semibold opacity-90">
+                    {angleLabel}
+                </span>
+            </div>
+        );
+    }
+    return <TextIcon text={definition.icon.text} />;
 }
 
 function TargetPoint({
@@ -251,6 +365,8 @@ function TargetPoint({
     title,
     angleLabel,
     interactivity,
+    scale,
+    isSelected = false,
 }: Readonly<{
     relativeY: number;
     definition: OperationDefinition;
@@ -259,24 +375,36 @@ function TargetPoint({
     title?: string;
     angleLabel?: string | null;
     interactivity: string;
+    scale: number;
+    isSelected?: boolean;
 }>) {
-    let content: React.ReactNode;
+    // Scaled rather than resized: a transform leaves the grid geometry alone, so a gate inside a
+    // repetition frame keeps sitting exactly on its wire and in its column. Composed with the
+    // measurement's own nudge, which would otherwise be overwritten.
+    const transform =
+        [definition.type === 'MEASUREMENT' ? 'translateY(1px)' : null, scale === 1 ? null : `scale(${scale})`]
+            .filter(Boolean)
+            .join(' ') || undefined;
+    // Selection wins over the measurement accent, so the two are resolved in order rather than nested.
+    const selectionShadow = isSelected ? SELECTION_SHADOW : undefined;
+    const accentShadow = accentColor ? `0 0 0 3px ${accentColor}` : undefined;
 
-    if (definition.icon.type === 'component') {
-        const ComponentIcon = definition.icon.component;
-        content = <ComponentIcon className="size-4 stroke-4" />;
-    } else if (angleLabel) {
-        content = (
-            <div className="flex flex-col items-center justify-center leading-none">
-                <span style={{ fontSize: '12px' }}>{definition.icon.text}</span>
-                <span style={{ fontSize: '9px' }} className="font-semibold opacity-90">
-                    {angleLabel}
-                </span>
-            </div>
-        );
-    } else {
-        content = <TextIcon text={definition.icon.text} />;
-    }
+    // A SWAP is drawn as a bare glyph: the gate's colour becomes its ink instead of its fill, and it
+    // carries no accent ring.
+    const boxStyle: React.CSSProperties = isSWAP
+        ? {
+              backgroundColor: 'transparent',
+              color: definition.color,
+              transform,
+              boxShadow: selectionShadow,
+          }
+        : {
+              backgroundColor: definition.color,
+              color: 'var(--bg-dark)',
+              transform,
+              boxShadow: selectionShadow ?? accentShadow,
+              ...(angleLabel ? { padding: '2px 3px' } : {}),
+          };
 
     return (
         <div
@@ -294,19 +422,9 @@ function TargetPoint({
                     ${isSWAP ? '' : styles.quantumOperation}`}
                 title={title}
                 aria-label={title}
-                style={
-                    isSWAP
-                        ? { backgroundColor: 'transparent', color: definition.color }
-                        : {
-                              backgroundColor: definition.color,
-                              color: 'var(--bg-dark)',
-                              transform: definition.type === 'MEASUREMENT' ? 'translateY(1px)' : undefined,
-                              boxShadow: accentColor ? `0 0 0 3px ${accentColor}` : undefined,
-                              ...(angleLabel ? { padding: '2px 3px' } : {}),
-                          }
-                }
+                style={boxStyle}
             >
-                {content}
+                <GateIcon definition={definition} angleLabel={angleLabel} />
             </div>
         </div>
     );

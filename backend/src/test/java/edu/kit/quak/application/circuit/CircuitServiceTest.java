@@ -157,7 +157,7 @@ class CircuitServiceTest {
 
         // execute
         List<Layer> layers = List.of(new Layer(List.of(gateWithId("own-1"), gateWithId("new-1"))));
-        QuantumCircuit result = service.replaceContent(circuitId, List.of(), layers, user);
+        QuantumCircuit result = service.replaceContent(circuitId, List.of(), layers, List.of(), user);
 
         // verify: ids arrive at the repository unchanged
         List<String> savedIds = result
@@ -167,6 +167,31 @@ class CircuitServiceTest {
             .map(QuantumOperation::getId)
             .toList();
         assertEquals(List.of("own-1", "new-1"), savedIds);
+    }
+
+    @Test
+    void replaceContent_keepsTheSubcircuitDeclaration() {
+        // A full-replace save rebuilds the circuit from its content, so anything that is not content
+        // has to be carried over deliberately. Losing this flag meant declaring a circuit a building
+        // block held only until the next edit of that circuit.
+        String circuitId = "c-1";
+        String projectId = "p-1";
+        User user = mockUser();
+        QuantumCircuit existing = QuantumCircuit.builder()
+            .id(circuitId)
+            .projectId(projectId)
+            .fileId("f-1")
+            .offeredAsSubcircuit(true)
+            .registers(List.of())
+            .layers(List.of())
+            .build();
+        when(repository.findById(circuitId)).thenReturn(Optional.of(existing));
+        when(repository.save(any(QuantumCircuit.class))).thenAnswer(i -> i.getArguments()[0]);
+        mockAccess(projectId, user, ProjectRole.OWNER);
+
+        QuantumCircuit result = service.replaceContent(circuitId, List.of(), List.of(), List.of(), user);
+
+        assertTrue(result.isOfferedAsSubcircuit());
     }
 
     @Test
@@ -188,7 +213,7 @@ class CircuitServiceTest {
 
         // execute & verify
         List<Layer> layers = List.of(new Layer(List.of(gateWithId("stolen-1"))));
-        assertThrows(DomainRuleViolationException.class, () -> service.replaceContent(circuitId, List.of(), layers, user));
+        assertThrows(DomainRuleViolationException.class, () -> service.replaceContent(circuitId, List.of(), layers, List.of(), user));
         verify(repository, never()).save(any());
     }
 
@@ -208,7 +233,7 @@ class CircuitServiceTest {
         mockAccess(projectId, user, ProjectRole.OWNER);
 
         List<Layer> layers = List.of(new Layer(List.of(gateWithId("dup-1"), gateWithId("dup-1"))));
-        assertThrows(DomainRuleViolationException.class, () -> service.replaceContent(circuitId, List.of(), layers, user));
+        assertThrows(DomainRuleViolationException.class, () -> service.replaceContent(circuitId, List.of(), layers, List.of(), user));
         verify(repository, never()).save(any());
     }
 

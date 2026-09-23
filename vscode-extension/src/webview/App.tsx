@@ -29,7 +29,7 @@ export function App() {
 
             <div className="flex min-h-0 flex-1">
                 <CircuitStoreProvider circuit={circuit} setCircuit={setCircuit}>
-                    <CircuitCapabilitiesProvider classicalRegisters={false}>
+                    <CircuitCapabilitiesProvider classicalRegisters={false} compositeGates={false} loops={false}>
                         <CircuitDragProvider>
                             <CircuitWorkspaceShell
                                 defaultCollapsed={initialLibraryCollapsed}

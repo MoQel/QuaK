@@ -1,32 +1,62 @@
 import { Card, CardContent } from '@quak/ui/card';
 import { Button } from '@quak/ui/button';
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
     type CircuitResponse,
     ElementSelectorDto,
     getInvolvedSelectors,
     getRegisterSize,
     getSelectorKey,
+    type QuantumOperationDto,
     isClassicRegister,
     isQuantumRegister,
+    isSubcircuit,
     MeasurementDto,
+    SubcircuitOperationDto,
+    type LoopBlockDto,
     type RegisterResponse,
     REGISTER_TYPE_QUANTUM,
+    type SubcircuitOption,
+    getLoopFrames,
 } from '@quak/circuit-core';
+import { QubitMappingItem, SubcircuitQubitMappingDialog } from './components/SubcircuitQubitMappingDialog.tsx';
 import { QubitWires } from './components/QubitWires.tsx';
 import { QuantumOperationGrid } from './components/QuantumOperationGrid.tsx';
 import { DropzoneGrid } from './components/DropzoneGrid.tsx';
 import { DropPlaceholder } from './components/DropPlaceholder.tsx';
 import { CircuitFooter } from './components/CircuitFooter.tsx';
-import { MeasurementTargetDialog } from './components/MeasurementTargetDialog.tsx';
 import type { FlatQubit, HoverPos, UiLayer, UiQuantumOperation } from './util/types.ts';
-import { CELL_WIDTH, LABEL_WIDTH, QUBIT_HEIGHT, REGISTER_HEADER_HEIGHT, REGISTER_SECTION_GAP } from './util/layout.ts';
+import { layOutColumns, withTerminalMeasurementsLast } from './util/scheduling.ts';
+import { framesAround } from './util/loopMembership.ts';
+import { Cell, operationsInRect, rectBetween } from './util/selection.ts';
+import { LoopFrames } from './components/LoopFrames.tsx';
+import { LoopBlockDialog, LoopDraft } from './components/LoopBlockDialog.tsx';
+import { SelectionBox } from './components/SelectionBox.tsx';
+import { AngleEditTarget, RotationAngleDialog } from './components/RotationAngleDialog.tsx';
+import { createCircuitMutations } from '../circuitMutations.ts';
+import { ungroupComposite } from './util/ungroupComposite.ts';
+import { unrollLoop } from './util/unrollLoop.ts';
+import { groupIntoComposite } from './util/groupIntoComposite.ts';
+import { GroupCompositeDialog } from './components/GroupCompositeDialog.tsx';
+import { MeasurementTargetDialog } from './components/MeasurementTargetDialog.tsx';
+import { CELL_WIDTH, LABEL_WIDTH, QUBIT_HEIGHT } from './util/layout.ts';
 import type { OperationIdentifier } from '../operations.ts';
 import { useCircuitStore } from '../CircuitStoreContext.tsx';
-import { useCircuitCapabilities } from '../CircuitCapabilitiesContext.tsx';
 import { useCircuitDrag } from '../CircuitDragContext.tsx';
-import { createCircuitMutations } from '../circuitMutations.ts';
+import { useCircuitCapabilities } from '../CircuitCapabilitiesContext.tsx';
 import { openRegisterManager } from './components/RegisterManager.tsx';
+
+/** How far the pointer has to travel before a right-press counts as drawing a rectangle. */
+const DRAG_THRESHOLD = 4;
+
+/** A rectangle being dragged out, with what it takes to tell a drag from a click. */
+type Selection = {
+    from: Cell;
+    to: Cell;
+    /** Where the press started, in client pixels. */
+    origin: { x: number; y: number };
+    dragged: boolean;
+};
 
 interface CircuitViewProps {
     /**
@@ -34,16 +64,285 @@ interface CircuitViewProps {
      * file-tab bar here, the extension (one document, one circuit) passes nothing.
      */
     header?: ReactNode;
+    subcircuits?: SubcircuitOption[];
 }
 
-export function CircuitView({ header }: Readonly<CircuitViewProps>) {
+export function CircuitView({ header, subcircuits: availableSubcircuits = [] }: Readonly<CircuitViewProps>) {
     const { circuit, setCircuit } = useCircuitStore();
     const { removeQuantumOperation, addQuantumOperation } = createCircuitMutations(circuit, setCircuit);
+    const {
+        classicalRegisters: canUseClassicalRegisters,
+        compositeGates: canUseCompositeGates,
+        loops: canUseLoops,
+    } = useCircuitCapabilities();
 
-    const { isOperationDragging, draggingOperationSize } = useCircuitDrag();
-    const { classicalRegisters: canUseClassicalRegisters } = useCircuitCapabilities();
+    /** Replaces a composite gate by the operations it is made of; offered on right-click. */
+    const ungroupQuantumOperation = (operationId: string) => {
+        setCircuit((prev) => (prev ? ungroupComposite(prev, operationId) : prev));
+    };
+
+    /**
+     * Drops a repetition frame, leaving the gates it covered in place.
+     *
+     * The body then runs once instead of n times, so this changes what the circuit computes — it is
+     * the deliberate counterpart to the frame being only an annotation, not a container.
+     */
+    const removeLoopBlock = (loopBlockId: string) => {
+        setCircuit((prev) =>
+            prev ? { ...prev, loopBlocks: (prev.loopBlocks ?? []).filter((block) => block.id !== loopBlockId) } : prev,
+        );
+    };
+
+    /**
+     * Writes a repetition frame out in full, so every pass stands in the circuit as its own gates.
+     *
+     * Unlike removing a frame this keeps what the circuit computes; it is the way to open a loop up
+     * when only one of its rounds is supposed to differ.
+     */
+    const unrollLoopBlock = (loopBlockId: string) => {
+        setCircuit((prev) => (prev ? unrollLoop(prev, loopBlockId) : prev));
+    };
+
+    /** The rotation gate whose angle is being edited, or null while the dialog is closed. */
+    const [angleTarget, setAngleTarget] = useState<AngleEditTarget | null>(null);
+
+    interface SubcircuitMappingContext {
+        subcircuitName: string;
+        subcircuitCircuitId: string;
+        subcircuitQubitCount: number;
+        layerIdx?: number;
+        existingOperationId?: string;
+        initialMapping?: QubitMappingItem[];
+    }
+    const [subcircuitMappingContext, setSubcircuitMappingContext] = useState<SubcircuitMappingContext | null>(null);
+
+    const handleEditSubcircuit = (op: SubcircuitOperationDto) => {
+        const option = availableSubcircuits.find((o) => o.circuitId === op.definitionCircuitId);
+        const subcircuitQubitCount =
+            option?.qubitCount ?? Math.max(...(op.subcircuitQubitIndices ?? []), op.targetQubits.length);
+        const initialMapping: QubitMappingItem[] = op.targetQubits.map((targetQubit, idx) => ({
+            subcircuitIndex: op.subcircuitQubitIndices ? op.subcircuitQubitIndices[idx] : idx,
+            targetQubit,
+        }));
+        setSubcircuitMappingContext({
+            subcircuitName: op.definitionName ?? option?.name ?? 'Subcircuit',
+            subcircuitCircuitId: op.definitionCircuitId,
+            subcircuitQubitCount,
+            existingOperationId: op.id,
+            initialMapping,
+        });
+    };
+
+    const handleRequestSubcircuitMapping = (ctx: { subcircuit: SubcircuitOption; layerIdx: number }) => {
+        setSubcircuitMappingContext({
+            subcircuitName: ctx.subcircuit.name,
+            subcircuitCircuitId: ctx.subcircuit.circuitId,
+            subcircuitQubitCount: ctx.subcircuit.qubitCount,
+            layerIdx: ctx.layerIdx,
+            initialMapping: [],
+        });
+    };
+
+    const handleSubcircuitMappingSubmit = (mapping: QubitMappingItem[]) => {
+        if (!subcircuitMappingContext) return;
+        const targetQubits = mapping.map((m) => m.targetQubit);
+        const subcircuitQubitIndices = mapping.map((m) => m.subcircuitIndex);
+
+        if (subcircuitMappingContext.existingOperationId) {
+            setCircuit((prev) => {
+                if (!prev) return prev;
+                return {
+                    ...prev,
+                    layers: prev.layers.map((layer) => ({
+                        quantumOperations: layer.quantumOperations.map((operation) => {
+                            if (
+                                operation.id === subcircuitMappingContext.existingOperationId &&
+                                isSubcircuit(operation)
+                            ) {
+                                return {
+                                    ...operation,
+                                    targetQubits,
+                                    subcircuitQubitIndices,
+                                    body: undefined,
+                                    bindingError: undefined,
+                                };
+                            }
+                            return operation;
+                        }),
+                    })),
+                };
+            });
+        } else {
+            const operation: SubcircuitOperationDto = {
+                id: crypto.randomUUID(),
+                type: 'SUBCIRCUIT_OPERATION',
+                identifier: subcircuitMappingContext.subcircuitName,
+                inverseForm: false,
+                definitionCircuitId: subcircuitMappingContext.subcircuitCircuitId,
+                definitionName: subcircuitMappingContext.subcircuitName,
+                targetQubits,
+                controlQubits: [],
+                subcircuitQubitIndices,
+            };
+            addQuantumOperation({ quantumOperation: operation, layerIdx: subcircuitMappingContext.layerIdx ?? 0 });
+        }
+        setSubcircuitMappingContext(null);
+    };
+
+    /** The rectangle currently being dragged out over the circuit, in grid cells. */
+    const [selection, setSelection] = useState<Selection | null>(null);
+
+    /**
+     * The same value, updated synchronously.
+     *
+     * The pointer handlers have to see what the previous one just set: state updates land on the
+     * next render, so a press and release close together would leave the release looking at `null`
+     * and quietly drop the selection. The state copy is only there to draw the rectangle.
+     */
+    const selectionRef = useRef<Selection | null>(null);
+
+    const updateSelection = (next: Selection | null) => {
+        selectionRef.current = next;
+        setSelection(next);
+    };
+
+    /** Operations chosen for a new frame, waiting for the repeat count. */
+    const [loopDraft, setLoopDraft] = useState<LoopDraft | null>(null);
+
+    /** Currently selected operation IDs for multi-select, grouping, or looping. */
+    const [selectedOperationIds, setSelectedOperationIds] = useState<string[]>([]);
+    const [isGroupDialogOpen, setIsGroupDialogOpen] = useState(false);
+    const [operationsToGroup, setOperationsToGroup] = useState<string[]>([]);
+
+    const handleToggleSelect = (operationId: string) => {
+        setSelectedOperationIds((prev) =>
+            prev.includes(operationId) ? prev.filter((id) => id !== operationId) : [...prev, operationId],
+        );
+    };
+
+    const handleAddLoop = (operationId: string) => {
+        const ids = selectedOperationIds.includes(operationId) ? selectedOperationIds : [operationId];
+        setLoopDraft({
+            id: crypto.randomUUID(),
+            operationIds: ids,
+            initialRepeatCount: 2,
+            isEditing: false,
+        });
+    };
+
+    const handleEditLoop = (enclosingLoop: LoopBlockDto) => {
+        setLoopDraft({
+            id: crypto.randomUUID(),
+            operationIds: enclosingLoop.operationIds,
+            initialRepeatCount: enclosingLoop.repeatCount,
+            isEditing: true,
+            loopBlockId: enclosingLoop.id,
+        });
+    };
+
+    const handleLoopSubmit = (operationIds: string[], repeatCount: number, loopBlockId?: string) => {
+        if (loopBlockId) {
+            setCircuit((prev) =>
+                prev
+                    ? {
+                          ...prev,
+                          loopBlocks: (prev.loopBlocks ?? []).map((block) =>
+                              block.id === loopBlockId ? { ...block, repeatCount } : block,
+                          ),
+                      }
+                    : prev,
+            );
+        } else {
+            addLoopBlock(operationIds, repeatCount);
+        }
+        setSelectedOperationIds([]);
+    };
+
+    const handleGroupSelected = (operationId: string) => {
+        const ids = selectedOperationIds.includes(operationId) ? selectedOperationIds : [operationId];
+        setOperationsToGroup(ids);
+        setIsGroupDialogOpen(true);
+    };
+
+    const handleGroupSubmit = (gateName: string) => {
+        if (!circuit || operationsToGroup.length === 0) return;
+        setCircuit((prev) => (prev ? groupIntoComposite(prev, operationsToGroup, gateName, flatQubits) : prev));
+        setSelectedOperationIds([]);
+    };
+
+    /** The operation area, so pointer positions can be turned into grid cells. */
+    const operationAreaRef = useRef<HTMLDivElement>(null);
+
+    const editRotationAngle = (operation: QuantumOperationDto) => {
+        if (operation.type !== 'ELEMENTARY_QUANTUM_GATE' || !operation.id) return;
+        setAngleTarget({
+            operationId: operation.id,
+            identifier: String(operation.identifier),
+            angle: operation.rotationAngle,
+        });
+    };
+
+    /**
+     * Writes a new angle onto one gate.
+     *
+     * Goes through `setActiveCircuit` like every other circuit edit, so the debounced full-replace
+     * save picks it up — there is deliberately no granular endpoint for a single operation.
+     */
+    const setRotationAngle = (operationId: string, rotationAngle: number) => {
+        setCircuit((prev) =>
+            prev
+                ? {
+                      ...prev,
+                      layers: prev.layers.map((layer) => ({
+                          quantumOperations: layer.quantumOperations.map((op) =>
+                              op.id === operationId && op.type === 'ELEMENTARY_QUANTUM_GATE'
+                                  ? { ...op, rotationAngle }
+                                  : op,
+                          ),
+                      })),
+                  }
+                : prev,
+        );
+    };
+
+    /** Adds a repetition frame over already chosen operations. */
+    const addLoopBlock = (operationIds: string[], repeatCount: number) => {
+        setCircuit((prev) =>
+            prev
+                ? {
+                      ...prev,
+                      loopBlocks: [...(prev.loopBlocks ?? []), { id: crypto.randomUUID(), repeatCount, operationIds }],
+                  }
+                : prev,
+        );
+    };
+
+    const { isOperationDragging, draggingOperationSize, draggingGrabOffset } = useCircuitDrag();
 
     const [hoverPos, setHoverPos] = useState<HoverPos | null>(null);
+
+    // The placeholder is cleared on drop and on leaving a cell, but a drag can also end without
+    // either: pressing Escape, or releasing over a cell that declines the drop (which omits
+    // preventDefault and so never fires one). The dashed rectangle then stayed on the canvas until
+    // the next drag.
+    useEffect(() => {
+        if (!isOperationDragging) setHoverPos(null);
+    }, [isOperationDragging]);
+
+    // Belt and braces, because the line above depends on the drag source dispatching
+    // stopOperationDrag from its own dragend — and dragend does not fire at all when that element
+    // leaves the DOM mid-drag, which is exactly the trap the operation grid keeps its ghost mounted
+    // for. These listeners sit on the window, so they run whatever the source did or did not do.
+    useEffect(() => {
+        const clear = () => setHoverPos(null);
+        window.addEventListener('dragend', clear);
+        window.addEventListener('drop', clear);
+        return () => {
+            window.removeEventListener('dragend', clear);
+            window.removeEventListener('drop', clear);
+        };
+    }, []);
+
     const [draggingOperationId, setDraggingOperationId] = useState<string | null>(null);
     const [measurementDialogOpen, setMeasurementDialogOpen] = useState(false);
     const [expandedClassicRegisterIds, setExpandedClassicRegisterIds] = useState<Set<string>>(() => new Set());
@@ -95,7 +394,34 @@ export function CircuitView({ header }: Readonly<CircuitViewProps>) {
         return buildActiveDropZones(flatQubits, layersWithoutDragOp, draggingOperationSize, selectorRowIndex);
     }, [layersWithoutDragOp, flatQubits, draggingOperationSize, selectorRowIndex]);
 
+    /**
+     * The frames as they are while the dragged operation is out of the circuit.
+     *
+     * This -- not the rendered `loopFrames` -- is what a drop is judged against. The rendered ones
+     * include the placeholder, which pushes a frame aside as it moves, so they shift under the very
+     * pointer that is aiming at them.
+     */
+    const stableFrames = useMemo(
+        () => getLoopFrames(layersWithoutDragOp, circuit?.loopBlocks ?? [], displayRegisters),
+        [layersWithoutDragOp, circuit?.loopBlocks, displayRegisters],
+    );
+
     const uiLayers = useMemo(() => {
+        // A frame's rectangle is reserved against everything that is not a member, so a placeholder
+        // hovering inside one would be pushed straight back out and the preview could never show a
+        // gate joining a loop. Letting the placeholder count as a member for the preview is what
+        // makes the frame grow around it instead -- and it matches what the drop will then do.
+        const previewBlocks = hoverPos
+            ? (circuit?.loopBlocks ?? []).map((block) =>
+                  framesAround(stableFrames, hoverPos.layerIdx, {
+                      min: hoverPos.qubitIdx,
+                      max: hoverPos.qubitIdx + draggingOperationSize - 1,
+                  }).some((frame) => frame.id === block.id)
+                      ? { ...block, operationIds: [...block.operationIds, 'dummy'] }
+                      : block,
+              )
+            : (circuit?.loopBlocks ?? []);
+
         return buildUiLayers({
             activeDropZones,
             displayRegisters,
@@ -103,9 +429,11 @@ export function CircuitView({ header }: Readonly<CircuitViewProps>) {
             flatQubits,
             hoverPos,
             layersWithoutDragOp,
+            loopBlocks: previewBlocks,
             selectorRowIndex,
         });
     }, [
+        circuit?.loopBlocks,
         displayRegisters,
         hoverPos,
         layersWithoutDragOp,
@@ -113,7 +441,112 @@ export function CircuitView({ header }: Readonly<CircuitViewProps>) {
         flatQubits,
         draggingOperationSize,
         selectorRowIndex,
+        stableFrames,
     ]);
+
+    /** Repetition frames, derived from where their members ended up after scheduling. */
+    const loopFrames = useMemo(
+        () => getLoopFrames(uiLayers, circuit?.loopBlocks ?? [], displayRegisters),
+        [uiLayers, circuit?.loopBlocks, displayRegisters],
+    );
+
+    /** The cell under a pointer position, clamped to the grid. */
+    const cellAt = (clientX: number, clientY: number): Cell => {
+        const bounds = operationAreaRef.current!.getBoundingClientRect();
+        const clamp = (value: number, max: number) => Math.min(Math.max(value, 0), Math.max(max, 0));
+
+        return {
+            column: clamp(Math.floor((clientX - bounds.left) / CELL_WIDTH), uiLayers.length),
+            wire: clamp(Math.floor((clientY - bounds.top) / QUBIT_HEIGHT), flatQubits.length - 1),
+        };
+    };
+
+    /** Whether a pointer event landed on a gate rather than on empty canvas. */
+    const isOnGate = (event: React.PointerEvent | React.MouseEvent) =>
+        (event.target as Element).closest('[data-gate]') !== null;
+
+    /** Whether a pointer event landed on empty circuit canvas rather than on a gate, menu, dialog, or outside node. */
+    const isCanvasEvent = (event: React.PointerEvent | React.MouseEvent) => {
+        const target = event.target as Element | null;
+        if (!target) return false;
+        if (
+            target.closest('[data-slot^="context-menu"], [role="menu"], [role="menuitem"], [data-radix-portal]') !==
+                null ||
+            !operationAreaRef.current?.contains(target)
+        ) {
+            return false;
+        }
+        return !isOnGate(event);
+    };
+
+    /**
+     * Starts dragging out a selection rectangle on empty canvas.
+     */
+    const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+        if (!isCanvasEvent(event)) return;
+        if (event.button !== 0 && event.button !== 2) return;
+
+        // Capturing means the rest of the drag arrives here even when the pointer leaves the canvas,
+        // so releasing outside cannot leave a selection stuck open.
+        try {
+            event.currentTarget.setPointerCapture(event.pointerId);
+        } catch {
+            // ignore if capture fails
+        }
+        const cell = cellAt(event.clientX, event.clientY);
+        updateSelection({ from: cell, to: cell, origin: { x: event.clientX, y: event.clientY }, dragged: false });
+    };
+
+    /**
+     * Keeps the browser's own menu out of the way of a right-drag on empty canvas — but only there,
+     * so right-clicking a gate or context menu still works as expected.
+     */
+    const handleContextMenu = (event: React.MouseEvent<HTMLDivElement>) => {
+        if (isCanvasEvent(event)) event.preventDefault();
+    };
+
+    const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+        const current = selectionRef.current;
+        if (!current) return;
+
+        const travelled =
+            Math.abs(event.clientX - current.origin.x) + Math.abs(event.clientY - current.origin.y) > DRAG_THRESHOLD;
+
+        updateSelection({
+            ...current,
+            to: cellAt(event.clientX, event.clientY),
+            dragged: current.dragged || travelled,
+        });
+    };
+
+    const handlePointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
+        const current = selectionRef.current;
+        if (!current) return;
+        try {
+            event.currentTarget.releasePointerCapture(event.pointerId);
+        } catch {
+            // ignore
+        }
+
+        const covered = operationsInRect(uiLayers, circuit?.registers ?? [], rectBetween(current.from, current.to));
+        updateSelection(null);
+
+        if (!current.dragged) {
+            if (!event.shiftKey) {
+                setSelectedOperationIds([]);
+            }
+            return;
+        }
+
+        const coveredIds = covered.map((operation) => operation.id!).filter(Boolean);
+        if (coveredIds.length > 0) {
+            if (event.shiftKey) {
+                setSelectedOperationIds((prev) => Array.from(new Set([...prev, ...coveredIds])));
+            } else {
+                setSelectedOperationIds(coveredIds);
+            }
+        }
+    };
 
     const operationColumnCount = Math.max(uiLayers.length + 1, 1);
     const operationAreaWidth = operationColumnCount * CELL_WIDTH;
@@ -166,22 +599,44 @@ export function CircuitView({ header }: Readonly<CircuitViewProps>) {
                             onToggleClassicRegister={toggleClassicRegister}
                         />
 
-                        <div className="absolute inset-y-0" style={{ left: LABEL_WIDTH, width: operationAreaWidth }}>
+                        <div
+                            ref={operationAreaRef}
+                            className="absolute inset-y-0"
+                            style={{ left: LABEL_WIDTH, width: operationAreaWidth }}
+                            onPointerDown={handlePointerDown}
+                            onPointerMove={handlePointerMove}
+                            onPointerUp={handlePointerUp}
+                            onContextMenu={handleContextMenu}
+                        >
                             <QuantumOperationGrid
                                 uiLayers={uiLayers}
                                 registers={displayRegisters}
                                 flatQubits={flatQubits}
                                 isOperationDragging={isOperationDragging}
+                                loopBlocks={circuit?.loopBlocks ?? []}
                                 removeQuantumOperation={removeQuantumOperation}
+                                removeLoopBlock={removeLoopBlock}
+                                unrollLoopBlock={unrollLoopBlock}
+                                ungroupQuantumOperation={ungroupQuantumOperation}
+                                editRotationAngle={editRotationAngle}
                                 setDraggingOperationId={setDraggingOperationId}
                                 setHoverPos={setHoverPos}
                                 draggingOperation={draggingOperation}
+                                onEditSubcircuit={handleEditSubcircuit}
+                                selectedOperationIds={selectedOperationIds}
+                                onToggleSelect={handleToggleSelect}
+                                onAddLoop={canUseLoops ? handleAddLoop : undefined}
+                                onEditLoop={canUseLoops ? handleEditLoop : undefined}
+                                onGroupSelected={canUseCompositeGates ? handleGroupSelected : undefined}
                             />
 
                             <DropzoneGrid
                                 flatQubits={flatQubits}
                                 uiLayers={uiLayers}
+                                loopFrames={stableFrames}
                                 activeDropZones={activeDropZones}
+                                draggingOperationSize={draggingOperationSize}
+                                draggingGrabOffset={draggingGrabOffset}
                                 setHoverPos={setHoverPos}
                                 setDraggingOperationId={setDraggingOperationId}
                                 onRequestMeasurementTarget={
@@ -192,13 +647,18 @@ export function CircuitView({ header }: Readonly<CircuitViewProps>) {
                                           }
                                         : undefined
                                 }
+                                onRequestSubcircuitMapping={handleRequestSubcircuitMapping}
                             />
+
+                            <LoopFrames frames={loopFrames} />
 
                             <DropPlaceholder
                                 hoverPos={hoverPos}
                                 draggingOperationSize={draggingOperationSize}
                                 flatQubits={flatQubits}
                             />
+
+                            {selection && <SelectionBox rect={rectBetween(selection.from, selection.to)} />}
                         </div>
                     </div>
                     <CircuitFooter uiLayers={uiLayers} circuitWidth={circuitWidth} />
@@ -226,7 +686,33 @@ export function CircuitView({ header }: Readonly<CircuitViewProps>) {
                             setMeasurementContext(null);
                         }}
                     />
+                    <SubcircuitQubitMappingDialog
+                        open={subcircuitMappingContext !== null}
+                        onOpenChange={(open) => {
+                            if (!open) setSubcircuitMappingContext(null);
+                        }}
+                        subcircuitName={subcircuitMappingContext?.subcircuitName ?? ''}
+                        subcircuitQubitCount={subcircuitMappingContext?.subcircuitQubitCount ?? 0}
+                        flatQubits={flatQubits.filter((q) => q.section === 'quantum')}
+                        initialMapping={subcircuitMappingContext?.initialMapping}
+                        onSubmit={handleSubcircuitMappingSubmit}
+                    />
                 </div>
+                {/* Outside the scrolling canvas: these are modals, not part of the circuit. */}
+                <RotationAngleDialog
+                    target={angleTarget}
+                    onSubmit={setRotationAngle}
+                    onClose={() => setAngleTarget(null)}
+                />
+
+                <GroupCompositeDialog
+                    open={isGroupDialogOpen}
+                    onOpenChange={setIsGroupDialogOpen}
+                    operationCount={operationsToGroup.length}
+                    onSubmit={handleGroupSubmit}
+                />
+
+                <LoopBlockDialog draft={loopDraft} onSubmit={handleLoopSubmit} onClose={() => setLoopDraft(null)} />
             </CardContent>
         </Card>
     );
@@ -239,31 +725,32 @@ interface BuildUiLayersInput {
     flatQubits: FlatQubit[];
     hoverPos: HoverPos | null;
     layersWithoutDragOp: UiLayer[];
+    loopBlocks: LoopBlockDto[];
     selectorRowIndex: Map<string, number>;
 }
 
+/**
+ * Rows in render order, with the y each is drawn at.
+ *
+ * The rows follow each other with nothing in between. A header bar above every register, and the
+ * gap between the quantum and classical sections, cut straight through each gate reaching across
+ * two registers -- and a composed gate on `cin[0], b[0], a[0]` reaches across three. Every row
+ * carries a label naming its register and index, so the header said little the reader did not have.
+ *
+ * A collapsed classical register is a single row standing for all its bits.
+ */
 function buildFlatQubits(displayRegisters: RegisterResponse[], collapsedClassicRegisterIds: Set<string>): FlatQubit[] {
     let globalCounter = 0;
     let visualYOffset = 0;
-    let classicSectionStarted = false;
 
     return displayRegisters.flatMap((register, registerIndex) => {
-        const startsClassicSection = isClassicRegister(register) && !classicSectionStarted;
-        if (registerIndex > 0 && startsClassicSection) {
-            visualYOffset += REGISTER_SECTION_GAP;
-        }
-
         const size = getRegisterSize(register);
         const headerY = visualYOffset;
         const collapsed = isClassicRegister(register) && collapsedClassicRegisterIds.has(register.id);
-        const showHeader = !collapsed;
         const visibleRows = collapsed ? 1 : size;
-        const firstRowY = headerY + (showHeader ? REGISTER_HEADER_HEIGHT : 0);
+        const firstRowY = headerY;
 
-        visualYOffset += (showHeader ? REGISTER_HEADER_HEIGHT : 0) + visibleRows * QUBIT_HEIGHT;
-        if (isClassicRegister(register)) {
-            classicSectionStarted = true;
-        }
+        visualYOffset += visibleRows * QUBIT_HEIGHT;
 
         return Array.from({ length: visibleRows }).map((_, relativeIndex) => ({
             regId: register.id,
@@ -296,6 +783,7 @@ function buildLayersWithoutDragOp(
     selectorRowIndex: Map<string, number>,
 ): UiLayer[] {
     if (!circuit?.layers) return [];
+    const loopBlocks = circuit.loopBlocks ?? [];
 
     const operations = circuit.layers.flatMap((layer, layerIndex) =>
         layer.quantumOperations
@@ -304,7 +792,7 @@ function buildLayersWithoutDragOp(
     );
 
     operations.sort((left, right) => compareCanonicalOrder(left, right, selectorRowIndex));
-    return rescheduleOperations(operations, selectorRowIndex);
+    return rescheduleOperations(withTerminalMeasurementsLast(operations), selectorRowIndex, loopBlocks);
 }
 
 function buildActiveDropZones(
@@ -342,6 +830,7 @@ function buildUiLayers({
     flatQubits,
     hoverPos,
     layersWithoutDragOp,
+    loopBlocks,
     selectorRowIndex,
 }: BuildUiLayersInput): UiLayer[] {
     if (!displayRegisters.length) return [];
@@ -356,31 +845,36 @@ function buildUiLayers({
     }
 
     allOperations.sort((left, right) => compareCanonicalOrder(left, right, selectorRowIndex));
-    return rescheduleOperations(allOperations, selectorRowIndex, hoverPos?.layerIdx);
+    return rescheduleOperations(
+        withTerminalMeasurementsLast(allOperations),
+        selectorRowIndex,
+        loopBlocks,
+        hoverPos?.layerIdx,
+    );
 }
 
+/**
+ * ASAP scheduling, through the layout that knows about repetition frames.
+ *
+ * A frame is placed as a unit and reserves its rectangle, so nothing that is not a member can slide
+ * into a column a member leaves free on its own wire -- which would render inside the drawn frame
+ * while running once. The span comes from the rendered row of each selector, so folding a register
+ * cannot make two wires look like one.
+ */
 function rescheduleOperations(
     allOperations: UiQuantumOperation[],
     selectorRowIndex: Map<string, number>,
+    loopBlocks: LoopBlockDto[],
     dummyLayerIndex?: number,
 ): UiLayer[] {
-    const newLayers: UiLayer[] = [];
-    const lastLayerPerSelector = new Map<string, number>();
-
-    for (const operation of allOperations) {
-        const involvedKeys = getInvolvedSelectors(operation).map(getSelectorKey);
-        const earliestLayer = findEarliestLayer(involvedKeys, lastLayerPerSelector, operation, dummyLayerIndex);
-        const layerIndex = findAvailableLayer(earliestLayer, newLayers, operation, selectorRowIndex);
-
-        while (newLayers.length <= layerIndex) {
-            newLayers.push({ quantumOperations: [] });
-        }
-
-        newLayers[layerIndex].quantumOperations.push(operation);
-        involvedKeys.forEach((key) => lastLayerPerSelector.set(key, layerIndex));
-    }
-
-    return newLayers.filter((layer) => layer.quantumOperations.length > 0);
+    return layOutColumns(allOperations, loopBlocks, {
+        spanOf: (operation) => {
+            const [min, max] = getOperationSpan(operation, selectorRowIndex);
+            return { min, max };
+        },
+        minColumnFor: (operation) =>
+            operation.type === 'DUMMY' && dummyLayerIndex !== undefined ? dummyLayerIndex : 0,
+    });
 }
 
 function buildDummyOperation(
@@ -448,51 +942,6 @@ function hasOperationAtLeft(
             return spansOverlap(dropSpan, getOperationSpan(operation, selectorRowIndex));
         }),
     );
-}
-
-function findEarliestLayer(
-    involvedKeys: string[],
-    lastLayerPerSelector: Map<string, number>,
-    operation: UiQuantumOperation,
-    dummyLayerIndex?: number,
-): number {
-    const earliestLayer = Math.max(0, ...involvedKeys.map((key) => lastLayerPerSelector.get(key) ?? -1));
-
-    return operation.type === 'DUMMY' && dummyLayerIndex !== undefined
-        ? Math.max(earliestLayer, dummyLayerIndex)
-        : earliestLayer;
-}
-
-function findAvailableLayer(
-    startLayer: number,
-    layers: UiLayer[],
-    operation: UiQuantumOperation,
-    selectorRowIndex: Map<string, number>,
-): number {
-    let layerIndex = startLayer;
-
-    while (layerIndex < layers.length && hasCollisionInLayer(operation, layers[layerIndex], selectorRowIndex)) {
-        layerIndex++;
-    }
-
-    return layerIndex;
-}
-
-function hasCollisionInLayer(
-    operation: UiQuantumOperation,
-    layer: UiLayer,
-    selectorRowIndex: Map<string, number>,
-): boolean {
-    const requiredKeys = new Set(getInvolvedSelectors(operation).map(getSelectorKey));
-    const operationSpan = getOperationSpan(operation, selectorRowIndex);
-
-    return layer.quantumOperations.some((existingOperation) => {
-        const existingKeys = getInvolvedSelectors(existingOperation).map(getSelectorKey);
-        return (
-            existingKeys.some((key) => requiredKeys.has(key)) ||
-            spansOverlap(operationSpan, getOperationSpan(existingOperation, selectorRowIndex))
-        );
-    });
 }
 
 function compareCanonicalOrder(

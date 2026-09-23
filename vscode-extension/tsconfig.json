@@ -25,5 +25,10 @@
     "include": [
         "src",
         "../packages/circuit-editor/src"
+    ],
+    "exclude": [
+        "../packages/circuit-editor/src/**/*.test.ts",
+        "../packages/circuit-editor/src/**/*.test.tsx",
+        "../packages/circuit-editor/src/test"
     ]
 }

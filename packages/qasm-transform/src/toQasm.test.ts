@@ -163,6 +163,48 @@ describe('circuits built by the editor, not by the parser', () => {
     });
 });
 
+describe('operations it cannot write yet', () => {
+    const register = { id: 'q', name: 'q', type: 'Quantum_Register' as const, numberOfQubits: 2 };
+    const wires = [
+        { registerId: 'q', index: 0 },
+        { registerId: 'q', index: 1 },
+    ];
+    const containing = (operation: CircuitContent['layers'][number]['quantumOperations'][number]): CircuitContent => ({
+        registers: [register],
+        layers: [{ quantumOperations: [operation] }],
+    });
+
+    it('refuses a user-defined gate instead of writing a call to an undeclared name', () => {
+        const content = containing({
+            id: 'bell',
+            type: 'COMPOSITE_QUANTUM_GATE',
+            identifier: 'bell',
+            inverseForm: false,
+            targetQubits: wires,
+            controlQubits: [],
+            portLabels: ['a', 'b'],
+            usedQubitPositions: [0, 1],
+            body: [],
+        });
+
+        expect(() => toQasm(content)).toThrow(/user-defined gate 'bell'/);
+    });
+
+    it('refuses a subcircuit, whose body lives in another file', () => {
+        const content = containing({
+            id: 'sub',
+            type: 'SUBCIRCUIT_OPERATION',
+            identifier: 'helper',
+            inverseForm: false,
+            targetQubits: wires,
+            controlQubits: [],
+            definitionCircuitId: 'other',
+        });
+
+        expect(() => toQasm(content)).toThrow(/subcircuit 'helper'/);
+    });
+});
+
 describe('formatAngle: symbolic, so round trips do not decay', () => {
     it.each([
         [Math.PI, 'pi'],

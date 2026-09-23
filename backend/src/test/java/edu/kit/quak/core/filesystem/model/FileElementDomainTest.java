@@ -70,7 +70,7 @@ class FileElementDomainTest {
         File file = new File("OldName", dummyParentId);
 
         Instant beforeRename = file.getLastAccess();
-
+        Thread.sleep(15);
         file.rename("NewName");
 
         assertEquals("NewName", file.getName());

@@ -1,12 +1,12 @@
 import { Gauge, Plus, X as LucideX } from 'lucide-react';
 import { ComponentType } from 'react';
-import { GATE_ARITY, type GateArity, type OperationIdentifier } from '@quak/circuit-core';
+import { GATE_ARITY, type GateArity, type GateIdentifier, type OperationIdentifier } from '@quak/circuit-core';
 
 // Domain types live in circuit-core. They are re-exported here for existing importers.
 // This file owns the presentation layer (icons, colors, shapes) and composes it
 // onto the shared arity, which the QASM transform reads too, so the two cannot
 // disagree about how many qubits a gate takes.
-export type { OperationIdentifier };
+export type { GateIdentifier, OperationIdentifier };
 
 export type ShapeClass = 'rounded-none' | 'rounded-full';
 

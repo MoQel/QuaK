@@ -7,4 +7,4 @@ import java.util.List;
  * stateless code endpoints: parsing OpenQASM yields plain content the client
  * merges into its active circuit.
  */
-public record CircuitContentResponse(List<RegisterResponse> registers, List<LayerResponse> layers) {}
+public record CircuitContentResponse(List<RegisterResponse> registers, List<LayerResponse> layers, List<LoopBlockDto> loopBlocks) {}

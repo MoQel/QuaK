@@ -1,28 +1,30 @@
 import { createContext, useContext, useMemo, type ReactNode } from 'react';
 
+/**
+ * What a host can persist. The editor offers only what the host can store: the extension writes
+ * the circuit back into a .qasm file through `@quak/qasm-transform`, and a construct that
+ * package cannot write would be dropped on the next write and would make the document read-only
+ * on the next read. The web IDE stores all of them through the backend.
+ */
 export interface CircuitCapabilities {
-    /**
-     * Whether the host can persist classical registers and measurements.
-     *
-     * The web IDE can: the backend circuit model carries both. The VSCode
-     * extension cannot yet, because `@quak/qasm-transform` neither parses
-     * `creg`/`measure` nor writes them back, so a measurement added here would
-     * be silently dropped on the next write and would make the document
-     * read-only on the next read. Hosts that cannot store them must not offer
-     * them.
-     */
     classicalRegisters: boolean;
+    compositeGates: boolean;
+    loops: boolean;
 }
 
-const DEFAULT_CAPABILITIES: CircuitCapabilities = { classicalRegisters: true };
+const FULLY_CAPABLE: CircuitCapabilities = { classicalRegisters: true, compositeGates: true, loops: true };
 
-const CircuitCapabilitiesContext = createContext<CircuitCapabilities>(DEFAULT_CAPABILITIES);
+const CircuitCapabilitiesContext = createContext<CircuitCapabilities>(FULLY_CAPABLE);
 
 export function CircuitCapabilitiesProvider({
-    classicalRegisters,
     children,
-}: Readonly<CircuitCapabilities & { children: ReactNode }>) {
-    const capabilities = useMemo(() => ({ classicalRegisters }), [classicalRegisters]);
+    ...lacking
+}: Readonly<Partial<CircuitCapabilities> & { children: ReactNode }>) {
+    const { classicalRegisters, compositeGates, loops } = { ...FULLY_CAPABLE, ...lacking };
+    const capabilities = useMemo(
+        () => ({ classicalRegisters, compositeGates, loops }),
+        [classicalRegisters, compositeGates, loops],
+    );
     return <CircuitCapabilitiesContext.Provider value={capabilities}>{children}</CircuitCapabilitiesContext.Provider>;
 }
 

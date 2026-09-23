@@ -8,16 +8,17 @@
     "types": "./src/index.ts",
     "exports": {
         ".": "./src/index.ts",
-        "./lib/utils": "./src/lib/utils.ts",
         "./badge": "./src/badge.tsx",
         "./button": "./src/button.tsx",
         "./card": "./src/card.tsx",
+        "./context-menu": "./src/context-menu.tsx",
+        "./dialog": "./src/dialog.tsx",
         "./input": "./src/input.tsx",
         "./label": "./src/label.tsx",
-        "./select": "./src/select.tsx",
-        "./dialog": "./src/dialog.tsx",
+        "./lib/utils": "./src/lib/utils.ts",
         "./popover": "./src/popover.tsx",
         "./resizable": "./src/resizable.tsx",
+        "./select": "./src/select.tsx",
         "./separator": "./src/separator.tsx",
         "./text-icon": "./src/text-icon.tsx",
         "./tooltip": "./src/tooltip.tsx"
@@ -26,6 +27,7 @@
         "typecheck": "tsc --noEmit"
     },
     "dependencies": {
+        "@radix-ui/react-context-menu": "^2.2.15",
         "@radix-ui/react-dialog": "^1.1.14",
         "@radix-ui/react-label": "^2.1.4",
         "@radix-ui/react-popover": "^1.1.15",

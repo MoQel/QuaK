@@ -47,6 +47,16 @@
     --phase: hsl(203 100% 60%);
     --quantum: hsl(334 74% 36%);
     --non-unitary-and-modifiers: hsl(0 0% 50%);
+    /* User-defined (composite) gates: distinct purple to set apart from subcircuits */
+    --composite: hsl(275 60% 48%);
+    --subcircuit: hsl(195 45% 40%);
+    /* Repetition frames. Must not be --composite: a frame is frequently drawn around a composite
+       gate, and in the same color the two read as one object instead of a box around a box. Amber
+       is free of the gate palette above, so it cannot be mistaken for a gate kind either. */
+    --loop-frame: hsl(35 92% 42%);
+    /* Selection rectangle and selected operations: emerald green to contrast with blue gates and loops */
+    --selection: hsl(142 71% 45%);
+    --selection-bg: color-mix(in srgb, var(--selection) 15%, transparent);
 
     --destructive: hsl(0 50% 50%);
     --destructive-hover: hsl(0 50% 45%);
@@ -65,6 +75,11 @@ body.vscode-high-contrast {
     --phase: hsl(202 100% 86%);
     --quantum: hsl(334 100% 75%);
     --non-unitary-and-modifiers: hsl(0 0% 70%);
+    --composite: hsl(275 75% 65%);
+    --subcircuit: hsl(195 55% 55%);
+    --loop-frame: hsl(38 95% 62%);
+    --selection: hsl(142 71% 45%);
+    --selection-bg: color-mix(in srgb, var(--selection) 20%, transparent);
 
     --destructive: hsl(0 50% 30%);
     --destructive-hover: hsl(0 50% 40%);
