@@ -72,6 +72,11 @@ describe('wordAt - which role', () => {
         ['the gate behind a modifier', 'ctrl @ |x q[0], q[1];', 'gate'],
         ['a modifier itself', '|ctrl @ x q[0], q[1];', 'keyword'],
         ['an operand of a measurement', 'measure |q[0] -> c[0];', 'register'],
+        ['the target of a measurement', 'measure q[0] -> |c[0];', 'register'],
+        ['the register a measurement is assigned to', '|c[0] = measure q[0];', 'register'],
+        ['a whole register a measurement is assigned to', '|c = measure q;', 'register'],
+        ['the qubit of an assigned measurement', 'c[0] = measure |q[0];', 'register'],
+        ['a gate followed by a comparison, which is no assignment', '|h == 1;', 'gate'],
     ])('calls %s a %s', (_case, source, role) => {
         expect(at(source)?.role).toBe(role);
     });

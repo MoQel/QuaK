@@ -8,6 +8,7 @@ const word = (text: string, role: WordRole): QasmWord => ({ text, role, start: 0
 const REGISTERS: RegisterResponse[] = [
     { id: 'qreg:q', name: 'q', type: 'Quantum_Register', numberOfQubits: 2 },
     { id: 'qreg:wide', name: 'wide', type: 'Quantum_Register', numberOfQubits: 12 },
+    { id: 'creg:c', name: 'c', type: 'Classic_Register', numberOfBits: 3 },
 ];
 
 const hover = (text: string, role: WordRole): string | null => hoverFor(word(text, role), REGISTERS);
@@ -61,6 +62,13 @@ describe('hoverFor: registers', () => {
         expect(text).toContain('`q[0]`, `q[1]`');
     });
 
+    it('tells a classical register from a qubit register', () => {
+        const text = hover('c', 'register');
+
+        expect(text).toContain('classical register');
+        expect(text).toContain('`c[0]`, `c[1]`, `c[2]`');
+    });
+
     it('names only the ends of a long register', () => {
         expect(hover('wide', 'register')).toContain('`wide[0]` … `wide[11]`');
     });
@@ -77,7 +85,16 @@ describe('hoverFor: registers', () => {
 describe('hoverFor: keywords', () => {
     it('explains what this editor does with a declaration', () => {
         expect(hover('qubit', 'keyword')).toContain('one wire per qubit');
-        expect(hover('bit', 'keyword')).toContain('read-only');
+        expect(hover('bit', 'keyword')).toContain('below the qubit wires');
+        expect(hover('creg', 'keyword')).toContain('writes it back as `bit`');
+    });
+
+    it('says where a measurement writes its result, in both spellings', () => {
+        const text = hover('measure', 'keyword');
+
+        expect(text).toContain('measure q[0] -> c[0];');
+        expect(text).toContain('c[0] = measure q[0];');
+        expect(text).not.toContain('read-only');
     });
 
     it('leaves the language to itself where it has nothing of its own to say', () => {

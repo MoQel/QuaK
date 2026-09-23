@@ -21,6 +21,17 @@ describe('classifyText: document state', () => {
         expect(circuit?.registers).toHaveLength(1);
     });
 
+    it('accepts classical registers and measurements, and hands both to the webview', () => {
+        const { state, circuit } = classifyText(`${HEADER}qubit[2] q;\nbit[2] c;\nh q[0];\nc = measure q;\n`);
+
+        expect(state).toBe('editable');
+        expect(circuit?.registers.map((register) => register.type)).toEqual(['Quantum_Register', 'Classic_Register']);
+        expect(circuit?.layers[1].quantumOperations.map((operation) => operation.type)).toEqual([
+            'MEASUREMENT',
+            'MEASUREMENT',
+        ]);
+    });
+
     it.each([
         ['a syntax error', `${HEADER}qubit[2 q;\n`],
         ['an unsupported construct', `${HEADER}qubit[2] q;\nbarrier q;\n`],

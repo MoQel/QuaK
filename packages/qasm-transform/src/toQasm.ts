@@ -7,6 +7,7 @@ import {
     toOperationIdentifier,
     getRegisterSize,
     isQuantumRegister,
+    type MeasurementDto,
     type QuantumOperationDto,
 } from '@quak/circuit-core';
 import type { QasmPreamble } from './toCircuit.ts';
@@ -33,12 +34,11 @@ export function toQasm(content: CircuitContent, preamble: QasmPreamble = DEFAULT
     for (const include of preamble.includes) lines.push(`include ${include};`);
     if (preamble.version || preamble.includes.length > 0) lines.push('');
 
-    // CircuitContent carries only quantum registers.
-    const quantumRegisters = content.registers.filter(isQuantumRegister);
-    for (const register of quantumRegisters) {
-        lines.push(registerMarker(register.name), `qubit[${getRegisterSize(register)}] ${register.name};`);
+    for (const register of content.registers) {
+        const type = isQuantumRegister(register) ? 'qubit' : 'bit';
+        lines.push(registerMarker(register.name), `${type}[${getRegisterSize(register)}] ${register.name};`);
     }
-    if (quantumRegisters.length > 0) lines.push('');
+    if (content.registers.length > 0) lines.push('');
 
     // Number only layers that still contain real operations.
     let layerNumber = 0;
@@ -52,7 +52,7 @@ export function toQasm(content: CircuitContent, preamble: QasmPreamble = DEFAULT
 
         lines.push(layerMarker(++layerNumber));
         for (const operation of operations) {
-            lines.push(operationToQasm(operation, registerNames));
+            lines.push(...operationToQasm(operation, registerNames));
         }
         lines.push('');
     }
@@ -65,12 +65,14 @@ const minInvolvedQubitIndex = (operation: QuantumOperationDto): number => {
     return indices.length > 0 ? Math.min(...indices) : 0;
 };
 
-function operationToQasm(operation: QuantumOperationDto, registerNames: Map<string, string>): string {
+function operationToQasm(operation: QuantumOperationDto, registerNames: Map<string, string>): string[] {
     // A bare call would name a gate or circuit the file never declares.
     if (operation.type === 'COMPOSITE_QUANTUM_GATE' || operation.type === 'SUBCIRCUIT_OPERATION') {
         const kind = operation.type === 'COMPOSITE_QUANTUM_GATE' ? 'user-defined gate' : 'subcircuit';
         throw new Error(`Cannot write the ${kind} '${operation.identifier}' to QASM.`);
     }
+
+    if (operation.type === 'MEASUREMENT') return measurementToQasm(operation, registerNames);
 
     // `inverseForm` is not emitted because this transform cannot read it back yet.
     let head = operation.identifier.toLowerCase();
@@ -86,7 +88,23 @@ function operationToQasm(operation: QuantumOperationDto, registerNames: Map<stri
         selectorToQasm(selector, registerNames),
     );
 
-    return operands.length > 0 ? `${head} ${operands.join(', ')};` : `${head};`;
+    return [operands.length > 0 ? `${head} ${operands.join(', ')};` : `${head};`];
+}
+
+/**
+ * One `measure q[i] -> c[j];` per measured qubit. A measurement without a classic bit
+ * would read back as unsupported, so it is refused and the host rejects the edit.
+ */
+function measurementToQasm(measurement: MeasurementDto, registerNames: Map<string, string>): string[] {
+    const { targetQubits, classicBits } = measurement;
+    if (targetQubits.length === 0 || classicBits.length !== targetQubits.length) {
+        throw new Error('Cannot write a measurement to QASM without one classic bit per measured qubit.');
+    }
+
+    return targetQubits.map(
+        (qubit, position) =>
+            `measure ${selectorToQasm(qubit, registerNames)} -> ${selectorToQasm(classicBits[position], registerNames)};`,
+    );
 }
 
 const selectorToQasm = (selector: ElementSelectorDto, registerNames: Map<string, string>): string =>

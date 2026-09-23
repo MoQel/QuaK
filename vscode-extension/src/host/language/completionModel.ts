@@ -1,5 +1,6 @@
 import {
     GATE_ARITY,
+    isClassicRegister,
     isGateSupported,
     isQuantumRegister,
     getRegisterSize,
@@ -8,7 +9,7 @@ import {
     type OperationDefinitionResponse,
     type RegisterResponse,
 } from '@quak/circuit-core';
-import { OPERATIONS } from '../../shared/operations.ts';
+import { OPERATIONS, operationById } from '../../shared/operations.ts';
 import type { CompletionContext } from './qasmContext.ts';
 
 export interface CompletionSuggestion {
@@ -35,13 +36,29 @@ export function completionsFor(
     return context.kind === 'gate' ? gateCalls(registers) : indices(context.register, registers);
 }
 
-const gateCalls = (registers: readonly RegisterResponse[]): CompletionSuggestion[] =>
-    SUPPORTED.map(({ operation, arity }) => ({
+const gateCalls = (registers: readonly RegisterResponse[]): CompletionSuggestion[] => [
+    ...SUPPORTED.map(({ operation, arity }) => ({
         label: operation.id,
         insert: gateCall(operation, arity, wires(registers)),
         detail: operation.name,
         documentation: operation.description,
-    }));
+    })),
+    measurement(registers),
+];
+
+/** In the arrow form, the one `toQasm` writes. */
+function measurement(registers: readonly RegisterResponse[]): CompletionSuggestion {
+    const definition = operationById('measure');
+    const qubit = wires(registers)[0] ?? 'qubit';
+    const bit = bits(registers)[0] ?? 'bit';
+
+    return {
+        label: 'measure',
+        insert: `measure \${1:${qubit}} -> \${2:${bit}};`,
+        detail: definition?.name ?? 'Measure',
+        documentation: definition?.description,
+    };
+}
 
 function gateCall(operation: OperationDefinitionResponse, arity: GateArity, available: readonly string[]): string {
     const angle = operation.parameters?.length ? `(\${1:pi/2})` : '';
@@ -71,6 +88,13 @@ const wires = (registers: readonly RegisterResponse[]): string[] =>
         .filter(isQuantumRegister)
         .flatMap((register) =>
             Array.from({ length: register.numberOfQubits }, (_, index) => `${register.name}[${index}]`),
+        );
+
+const bits = (registers: readonly RegisterResponse[]): string[] =>
+    registers
+        .filter(isClassicRegister)
+        .flatMap((register) =>
+            Array.from({ length: register.numberOfBits }, (_, index) => `${register.name}[${index}]`),
         );
 
 function indices(name: string, registers: readonly RegisterResponse[]): CompletionSuggestion[] {

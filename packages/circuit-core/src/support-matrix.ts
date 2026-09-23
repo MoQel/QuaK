@@ -99,7 +99,6 @@ const UNSUPPORTED_STATEMENT_RULES: Readonly<Record<string, string>> = {
     breakStatement: 'control flow',
     calStatement: 'calibration',
     calibrationGrammarStatement: 'calibration',
-    classicalDeclarationStatement: 'classical declarations',
     constDeclarationStatement: 'constant declarations',
     continueStatement: 'control flow',
     defStatement: 'subroutine definitions',
@@ -112,8 +111,6 @@ const UNSUPPORTED_STATEMENT_RULES: Readonly<Record<string, string>> = {
     gateStatement: 'gate definitions',
     ifStatement: 'control flow',
     ioDeclarationStatement: 'io declarations',
-    measureArrowAssignmentStatement: 'measurement',
-    oldStyleDeclarationStatement: 'OpenQASM 2 style declarations',
     pragma: 'pragma',
     resetStatement: 'reset',
     returnStatement: 'control flow',
@@ -127,6 +124,10 @@ export const SUPPORT_MATRIX: readonly SupportMatrixEntry[] = [
     { construct: 'includeStatement', kind: 'statement', status: 'supported', provisional: true },
     { construct: 'quantumDeclarationStatement', kind: 'statement', status: 'supported', provisional: true },
     { construct: 'gateCallStatement', kind: 'statement', status: 'supported', provisional: true },
+    { construct: 'classicalDeclarationStatement', kind: 'statement', status: 'supported' },
+    { construct: 'oldStyleDeclarationStatement', kind: 'statement', status: 'supported' },
+    { construct: 'measureArrowAssignmentStatement', kind: 'statement', status: 'supported' },
+    { construct: 'measureExpression', kind: 'statement', status: 'supported' },
 
     ...SUPPORTED_GATES.map(
         (construct): SupportMatrixEntry => ({ construct, kind: 'gate', status: 'supported', provisional: true }),

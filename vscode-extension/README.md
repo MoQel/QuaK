@@ -11,7 +11,7 @@ undo, search, split view and source control keep working exactly as they always 
 - Build and change a circuit by dragging gates; the `.qasm` file updates as you go.
 - Edit the text and the circuit side by side; both views stay in sync.
 - Open the same file in more than one circuit view at a time.
-- Hover a gate or a qubit register to see what it does.
+- Hover a gate or a register to see what it does.
 - Syntax highlighting, comment toggling and bracket matching for `.qasm` files.
 - Follows your VS Code colour theme, light or dark.
 
@@ -24,7 +24,8 @@ way. Editing the text is never restricted.
 Nothing is rewritten behind your back. If saving the circuit would drop something, be it
 a construct QuaK does not support or one of your comments, it says so instead.
 
-Measurement is not editable yet: a file containing one opens read-only.
+Classical registers and measurements can be edited too. A measurement is written back
+as one `measure q[i] -> c[j];` per bit, whichever form the file used.
 
 ## Language Support
 
@@ -32,11 +33,11 @@ QuaK claims `.qasm` files as OpenQASM and brings syntax highlighting, comment to
 and bracket matching with it.
 
 Hover a gate to see its name, what it does, how many qubits it acts on and, where it is
-small enough to read, its matrix. Hover a qubit register to see how wide it is.
+small enough to read, its matrix. Hover a register to see how wide it is.
 
-Type at the start of a statement to see the gates QuaK can draw; picking one inserts the
-full call with your registers filled in. Type `[` after a register name to see the qubits
-that register has.
+Type at the start of a statement to see the gates QuaK can draw, and `measure`; picking
+one inserts the full call with your registers filled in. Type `[` after a register name
+to see the qubits or bits that register has.
 
 The Problems panel shows two things, each of which can be switched off on its own:
 errors in your code, and what keeps a file read-only in the circuit view.

@@ -32,13 +32,13 @@ const insertOf = (name: string, registers: readonly RegisterResponse[] = Q2): st
     suggestion(name, registers).insert;
 
 describe('completionsFor - gate calls', () => {
-    it('offers only the gates the circuit editor can draw', () => {
+    it('offers only the operations the circuit editor can draw', () => {
         // A set, not a sequence: VSCode re-sorts the list by label.
         expect(
             gates()
                 .map((entry) => entry.label)
                 .sort(),
-        ).toEqual(['ccx', 'cx', 'cz', 'h', 'rx', 'ry', 'rz', 's', 'swap', 't', 'x', 'y', 'z']);
+        ).toEqual(['ccx', 'cx', 'cz', 'h', 'measure', 'rx', 'ry', 'rz', 's', 'swap', 't', 'x', 'y', 'z']);
     });
 
     it('carries the gate name and description', () => {
@@ -69,6 +69,15 @@ describe('completionsFor - gate calls', () => {
         expect(insertOf('cx', [classical('c', 4), quantum('q', 2)])).toBe('cx ${1:q[0]}, ${2:q[1]};');
     });
 
+    it('measures the first qubit into the first classical bit, in the form toQasm writes', () => {
+        expect(insertOf('measure', [quantum('q', 2), classical('c', 2)])).toBe('measure ${1:q[0]} -> ${2:c[0]};');
+    });
+
+    it('names the roles of a measurement when there is no classical register to write to', () => {
+        expect(insertOf('measure')).toBe('measure ${1:q[0]} -> ${2:bit};');
+        expect(insertOf('measure', [])).toBe('measure ${1:qubit} -> ${2:bit};');
+    });
+
     it('puts the angle of a rotation in the first tab stop', () => {
         expect(insertOf('rx')).toBe('rx(${1:pi/2}) ${2:q[0]};');
     });
@@ -88,6 +97,12 @@ describe('completionsFor - register indices', () => {
 
         expect(sorted.map((entry) => entry.label)).toEqual(suggestions.map((entry) => entry.label));
         expect(sorted.at(-1)?.label).toBe('10');
+    });
+
+    it('offers one entry per bit of a classical register, for the target of a measurement', () => {
+        const suggestions = completionsFor({ kind: 'index', register: 'c' }, [quantum('q', 1), classical('c', 2)]);
+
+        expect(suggestions.map((entry) => entry.detail)).toEqual(['c[0]', 'c[1]']);
     });
 
     it('offers nothing for an undeclared register', () => {

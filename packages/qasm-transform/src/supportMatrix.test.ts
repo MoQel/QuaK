@@ -36,6 +36,21 @@ describe('support matrix is consistent with the rest of the transform', () => {
     });
 });
 
+describe('the visitor accepts what the matrix says it supports', () => {
+    // One statement per supported rule the visitor reads beyond qubits and gate calls.
+    const STATEMENTS: Record<string, string> = {
+        classicalDeclarationStatement: 'bit[2] c;',
+        oldStyleDeclarationStatement: 'creg c[2];',
+        measureArrowAssignmentStatement: 'bit[2] c;\nmeasure q -> c;',
+        measureExpression: 'bit[2] c;\nc = measure q;',
+    };
+
+    it.each(Object.entries(STATEMENTS))('accepts %s', (rule, statement) => {
+        expect(SUPPORT_MATRIX).toContainEqual(expect.objectContaining({ construct: rule, status: 'supported' }));
+        expect(isEditable(toCircuit(`${HEADER}qubit[2] q;\n${statement}\n`))).toBe(true);
+    });
+});
+
 describe('the visitor rejects what the matrix says it rejects', () => {
     // One valid OpenQASM statement per rule the matrix lists as unsupported.
     const STATEMENTS: Record<string, string> = {
@@ -46,7 +61,6 @@ describe('the visitor rejects what the matrix says it rejects', () => {
         breakStatement: 'break;',
         calStatement: 'cal { }',
         calibrationGrammarStatement: 'defcalgrammar "openpulse";',
-        classicalDeclarationStatement: 'bit[2] c;',
         constDeclarationStatement: 'const int n = 4;',
         continueStatement: 'continue;',
         defStatement: 'def f() { }',
@@ -59,8 +73,6 @@ describe('the visitor rejects what the matrix says it rejects', () => {
         gateStatement: 'gate my a { h a; }',
         ifStatement: 'if (true) { h q[0]; }',
         ioDeclarationStatement: 'input int x;',
-        measureArrowAssignmentStatement: 'measure q[0];',
-        oldStyleDeclarationStatement: 'creg c[2];',
         pragma: 'pragma keep going',
         resetStatement: 'reset q[0];',
         returnStatement: 'return;',

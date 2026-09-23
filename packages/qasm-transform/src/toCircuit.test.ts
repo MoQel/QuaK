@@ -3,7 +3,7 @@ import { isQuantumRegister, type ElementaryQuantumGateDto } from '@quak/circuit-
 import { classify, isEditable, toCircuit } from './toCircuit.ts';
 import { circuitOf, HEADER } from './testFixtures.ts';
 
-/** The transform only ever produces quantum registers; narrows for assertions. */
+/** Size of the first qubit register; narrows for assertions. */
 const qubitsIn = (source: string): number => circuitOf(source).registers.filter(isQuantumRegister)[0].numberOfQubits;
 
 describe('toCircuit: registers', () => {
@@ -42,6 +42,190 @@ describe('toCircuit: registers', () => {
     it('rejects a non-constant register size instead of guessing', () => {
         const result = toCircuit(`${HEADER}const int n = 4;\nqubit[n] q;\n`);
         expect(result.unsupported.map((u) => u.construct)).toContain('qubitType');
+    });
+});
+
+describe('toCircuit: classical registers', () => {
+    it.each([
+        ['bit[n] c;', 'bit[3] c;'],
+        ['creg c[n];', 'creg c[3];'],
+    ])('reads %s as a classical register', (_form, declaration) => {
+        const { registers } = circuitOf(`${HEADER}qubit[1] q;\n${declaration}\n`);
+
+        expect(registers).toEqual([
+            { id: 'qreg:q', name: 'q', type: 'Quantum_Register', numberOfQubits: 1 },
+            { id: 'creg:c', name: 'c', type: 'Classic_Register', numberOfBits: 3 },
+        ]);
+    });
+
+    it.each(['bit c;', 'creg c;'])('treats %s without a size as a single bit', (declaration) => {
+        const { registers } = circuitOf(`${HEADER}qubit[1] q;\n${declaration}\n`);
+
+        expect(registers[1]).toMatchObject({ type: 'Classic_Register', numberOfBits: 1 });
+    });
+
+    it('reads qreg as a qubit register, as the backend does', () => {
+        expect(qubitsIn(`${HEADER}qreg q[2];\n`)).toBe(2);
+    });
+
+    it('keeps the declaration order across both kinds', () => {
+        const { registers } = circuitOf(`${HEADER}bit[1] c;\nqubit[1] q;\ncreg d[2];\n`);
+
+        expect(registers.map((register) => register.name)).toEqual(['c', 'q', 'd']);
+    });
+
+    it.each([
+        ['twice', 'bit[2] c;\nbit[4] c;', /classical register 'c' is declared more than once/],
+        ['once per kind', 'bit[2] q;', /'q' is already declared as a qubit register/],
+    ])('rejects a name declared %s instead of resizing it', (_case, declarations, message) => {
+        const result = toCircuit(`${HEADER}qubit[2] q;\n${declarations}\n`);
+
+        expect(result.unsupported[0]).toMatchObject({ kind: 'invalid', message: expect.stringMatching(message) });
+        expect(isEditable(result)).toBe(false);
+    });
+
+    it.each(['bit[0] c;', 'bit[n] c;', 'creg c[0];'])(
+        'rejects %s, whose size is no positive constant',
+        (declaration) => {
+            const result = toCircuit(`${HEADER}qubit[1] q;\n${declaration}\n`);
+
+            expect(result.unsupported[0].message).toMatch(/positive constant integer/);
+            expect(isEditable(result)).toBe(false);
+        },
+    );
+
+    it('does not count a classical register as something to draw on', () => {
+        expect(classify(toCircuit(`${HEADER}bit[2] c;\n`)).kind).toBe('noRegister');
+    });
+
+    it('rejects a gate on a classical register', () => {
+        const result = toCircuit(`${HEADER}qubit[1] q;\nbit[1] c;\nx c[0];\n`);
+
+        expect(result.unsupported[0]).toMatchObject({
+            kind: 'invalid',
+            message: expect.stringMatching(/classical register/),
+        });
+    });
+});
+
+describe('toCircuit: measurements', () => {
+    const DECLARED = `${HEADER}qubit[3] q;\nbit[3] c;\n`;
+
+    /** `q[i] -> c[j]` per measurement, layer by layer. */
+    const measuredIn = (source: string): string[][] =>
+        circuitOf(source).layers.map((layer) =>
+            layer.quantumOperations.map((operation) => {
+                if (operation.type !== 'MEASUREMENT') return operation.identifier;
+                const [qubit] = operation.targetQubits;
+                const [bit] = operation.classicBits;
+                return `${qubit.registerId}[${qubit.index}] -> ${bit.registerId}[${bit.index}]`;
+            }),
+        );
+
+    it('reads the arrow form as a measurement DTO', () => {
+        const [layer] = circuitOf(`${DECLARED}measure q[1] -> c[2];\n`).layers;
+
+        expect(layer.quantumOperations).toEqual([
+            {
+                id: expect.any(String),
+                type: 'MEASUREMENT',
+                identifier: 'MEASURE',
+                inverseForm: false,
+                targetQubits: [{ registerId: 'qreg:q', index: 1 }],
+                controlQubits: [],
+                classicBits: [{ registerId: 'creg:c', index: 2 }],
+            },
+        ]);
+    });
+
+    it('reads the assignment form exactly like the arrow form', () => {
+        const arrow = circuitOf(`${DECLARED}measure q[1] -> c[2];\n`);
+        const assignment = circuitOf(`${DECLARED}c[2] = measure q[1];\n`);
+
+        expect(assignment).toEqual(arrow);
+    });
+
+    it.each([
+        ['arrow', 'measure q -> c;'],
+        ['assignment', 'c = measure q;'],
+    ])(
+        'broadcasts the %s form over whole registers, pairing position by position, in one layer',
+        (_form, statement) => {
+            expect(measuredIn(`${DECLARED}${statement}\n`)).toEqual([
+                ['qreg:q[0] -> creg:c[0]', 'qreg:q[1] -> creg:c[1]', 'qreg:q[2] -> creg:c[2]'],
+            ]);
+        },
+    );
+
+    it('expands a slice per bit, as the backend does', () => {
+        const source = `${HEADER}qubit[4] b;\nbit[5] ans;\nmeasure b[0:3] -> ans[1:4];\n`;
+
+        expect(measuredIn(source)[0]).toEqual([
+            'qreg:b[0] -> creg:ans[1]',
+            'qreg:b[1] -> creg:ans[2]',
+            'qreg:b[2] -> creg:ans[3]',
+            'qreg:b[3] -> creg:ans[4]',
+        ]);
+    });
+
+    it.each([
+        ['an open end', 'measure q[1:] -> c[:1];', ['qreg:q[1] -> creg:c[0]', 'qreg:q[2] -> creg:c[1]']],
+        ['a step', 'measure q[0:2:2] -> c[2:-2:0];', ['qreg:q[0] -> creg:c[2]', 'qreg:q[2] -> creg:c[0]']],
+        ['a single qubit against a one-bit slice', 'measure q[0] -> c[1:1];', ['qreg:q[0] -> creg:c[1]']],
+    ])('reads a slice with %s', (_case, statement, expected) => {
+        expect(measuredIn(`${DECLARED}${statement}\n`)[0]).toEqual(expected);
+    });
+
+    it('gives every measurement of a broadcast its own stable id', () => {
+        const source = `${DECLARED}measure q -> c;\n`;
+        const ids = circuitOf(source).layers[0].quantumOperations.map((operation) => operation.id);
+
+        expect(new Set(ids).size).toBe(3);
+        expect(circuitOf(source).layers[0].quantumOperations.map((operation) => operation.id)).toEqual(ids);
+    });
+
+    it('keeps measurements in source order among the gates', () => {
+        expect(measuredIn(`${DECLARED}h q[0];\nmeasure q[0] -> c[0];\nx q[1];\n`)).toEqual([
+            ['H'],
+            ['qreg:q[0] -> creg:c[0]'],
+            ['X'],
+        ]);
+    });
+
+    it('rejects a measurement without a classic bit, which the circuit model cannot hold', () => {
+        const result = toCircuit(`${DECLARED}measure q[0];\n`);
+
+        expect(result.unsupported).toEqual([
+            expect.objectContaining({ kind: 'unsupported', message: expect.stringMatching(/classic bit/) }),
+        ]);
+        expect(isEditable(result)).toBe(false);
+    });
+
+    it.each([
+        ['mismatched widths', 'measure q[0:2] -> c[0:1];', /3 qubit\(s\) to 2 classic bit\(s\)/],
+        ['an unknown classical register', 'measure q[0] -> d[0];', /unknown classical register 'd'/],
+        ['an unknown qubit register', 'measure r[0] -> c[0];', /unknown qubit register 'r'/],
+        ['a bit outside the register', 'measure q[0] -> c[3];', /outside register 'c'/],
+        ['a qubit written as the target', 'measure q[0] -> q[1];', /'q', which is not a classical register/],
+        ['a classical register measured', 'measure c[0] -> c[1];', /'c', which is not a qubit register/],
+        ['a step of zero', 'measure q[0:0:2] -> c[0:0:2];', /step cannot be zero/],
+    ])('calls %s invalid', (_case, statement, message) => {
+        const result = toCircuit(`${DECLARED}${statement}\n`);
+
+        expect(result.unsupported[0]).toMatchObject({ kind: 'invalid', message: expect.stringMatching(message) });
+        expect(isEditable(result)).toBe(false);
+    });
+
+    it.each([
+        ['a set', 'measure q[{0, 1}] -> c[0:1];'],
+        ['a variable index', 'measure q[i] -> c[0];'],
+        ['a hardware qubit', 'measure $0 -> c[0];'],
+        ['a compound assignment', 'c[0] |= measure q[0];'],
+    ])('rejects %s as unsupported', (_case, statement) => {
+        const result = toCircuit(`${DECLARED}${statement}\n`);
+
+        expect(result.syntaxErrors).toEqual([]);
+        expect(result.unsupported[0]?.kind).toBe('unsupported');
     });
 });
 
@@ -182,8 +366,10 @@ describe('toCircuit: strictness', () => {
         ['control flow', 'for int i in [0:2] { h q[0]; }'],
         ['conditionals', 'if (true) { h q[0]; }'],
         ['gate definitions', 'gate mygate a { h a; }'],
-        ['classical declarations', 'bit[2] c;'],
-        ['measurement into a register', 'c = measure q;'],
+        ['classical declarations other than bit registers', 'int[8] n;'],
+        ['an initialized bit register', 'bit[2] c = "01";'],
+        ['classical assignment', 'bit[2] c;\nc = 1;'],
+        ['a measurement without a classic bit', 'measure q[0];'],
         ['reset', 'reset q[0];'],
         ['barrier', 'barrier q;'],
         ['gate modifiers', 'ctrl @ x q[0], q[1];'],
@@ -275,7 +461,7 @@ describe('classify: the reason a document cannot be edited', () => {
     });
 
     it('names the unsupported construct rather than the register it prevented', () => {
-        expect(kindOf('OPENQASM 3.0;\nqreg q[2];\nh q[0];\n')).toBe('unsupported');
+        expect(kindOf('OPENQASM 3.0;\nqubit[n] q;\nh q[0];\n')).toBe('unsupported');
         expect(kindOf(`${HEADER}barrier;\n`)).toBe('unsupported');
     });
 
@@ -411,6 +597,13 @@ describe('toCircuit: layers are read the way the document writes them', () => {
     it('gives every gate a layer of its own where no marker of ours says otherwise', () => {
         // A hand-written file states no parallelism, so there is none to read out of it.
         expect(identifiersIn(`${HEADER}qubit[2] q;\nh q[0];\ncx q[0], q[1];\n`)).toEqual([['H'], ['CX']]);
+    });
+
+    it('reads measurements under a marker as one layer, like gates', () => {
+        const marked = `${HEADER}\n// Register q\nqubit[2] q;\n// Register c\nbit[2] c;\n\n// Layer 1\nh q[0];\n\n// Layer 2\nmeasure q[0] -> c[0];\nc[1] = measure q[1];\n`;
+
+        expect(toCircuit(marked).unsupported).toEqual([]);
+        expect(identifiersIn(marked)).toEqual([['H'], ['MEASURE', 'MEASURE']]);
     });
 
     it('stops sharing layers where the marker sequence breaks', () => {

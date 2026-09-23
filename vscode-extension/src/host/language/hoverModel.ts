@@ -92,12 +92,17 @@ function wires(name: string, size: number): string {
 
 const KEYWORD_HOVERS: Readonly<Record<string, string>> = {
     qubit: paragraphs('**qubit** declares a qubit register.', 'QuaK draws one wire per qubit.'),
-    bit: paragraphs(
-        '**bit** declares a classical register.',
-        'The circuit view shows qubits only, so a file declaring one opens read-only.',
+    bit: paragraphs('**bit** declares a classical register.', 'QuaK draws it below the qubit wires.'),
+    creg: paragraphs(
+        '**creg** declares a classical register, the OpenQASM 2 spelling of `bit`.',
+        'QuaK writes it back as `bit` on the next edit in the circuit view.',
+    ),
+    qreg: paragraphs(
+        '**qreg** declares a qubit register, the OpenQASM 2 spelling of `qubit`.',
+        'QuaK writes it back as `qubit` on the next edit in the circuit view.',
     ),
     measure: paragraphs(
         `**measure**: ${operationById('measure')?.description ?? 'measures a qubit.'}`,
-        'Measurement cannot be edited in the circuit view yet, so a file using it opens read-only.',
+        'The result goes to a classical bit, as in `measure q[0] -> c[0];` or `c[0] = measure q[0];`.',
     ),
 };

@@ -58,6 +58,35 @@ describe('toQasm: emission', () => {
         expect(parsed.unsupported.map((u) => u.construct)).toEqual(['comment']);
     });
 
+    it('declares classical registers in the order the circuit holds them, with the backend marker', () => {
+        const parsed = parseEditable(`${HEADER}bit[2] c;\nqubit[2] q;\n`);
+
+        expect(toQasm(parsed.content, parsed.preamble)).toBe(
+            `${HEADER}\n// Register c\nbit[2] c;\n// Register q\nqubit[2] q;\n`,
+        );
+    });
+
+    it('writes both old style declarations in the OpenQASM 3 spelling', () => {
+        const emitted = roundTrip(`${HEADER}qreg q[2];\ncreg c[2];\n`);
+
+        expect(emitted).toContain('qubit[2] q;\n// Register c\nbit[2] c;');
+    });
+
+    it.each([
+        ['the arrow form', 'measure q[1] -> c[0];'],
+        ['the assignment form', 'c[0] = measure q[1];'],
+    ])('writes a measurement read from %s with the arrow, as the backend does', (_form, statement) => {
+        expect(roundTrip(`${HEADER}qubit[2] q;\nbit[1] c;\n${statement}\n`)).toContain(
+            '// Layer 1\nmeasure q[1] -> c[0];\n',
+        );
+    });
+
+    it('writes a broadcast as one measurement per bit, in one layer', () => {
+        expect(roundTrip(`${HEADER}qubit[2] q;\nbit[2] c;\nmeasure q -> c;\n`)).toContain(
+            '// Layer 1\nmeasure q[0] -> c[0];\nmeasure q[1] -> c[1];\n',
+        );
+    });
+
     it('writes controls before targets', () => {
         expect(roundTrip('OPENQASM 3.0;\nqubit[3] q;\nccx q[0], q[1], q[2];\n')).toContain('ccx q[0], q[1], q[2];');
     });
@@ -151,6 +180,36 @@ describe('circuits built by the editor, not by the parser', () => {
         expect(isEditable(toCircuit(emitted))).toBe(true);
     });
 
+    it('writes a measurement placed through the target dialog and reads the same one back', () => {
+        const measurement = {
+            id: 'b3f1c2d4',
+            type: 'MEASUREMENT' as const,
+            identifier: 'MEASURE',
+            inverseForm: false as const,
+            targetQubits: [{ registerId: 'r', index: 0 }],
+            controlQubits: [] as [],
+            classicBits: [{ registerId: 'k', index: 1 }],
+        };
+        const content: CircuitContent = {
+            registers: [
+                { id: 'r', name: 'q', type: 'Quantum_Register', numberOfQubits: 1 },
+                { id: 'k', name: 'c', type: 'Classic_Register', numberOfBits: 2 },
+            ],
+            layers: [{ quantumOperations: [measurement] }],
+        };
+
+        const emitted = toQasm(content);
+        const [reread] = circuitOf(emitted).layers[0].quantumOperations;
+
+        expect(emitted).toContain('measure q[0] -> c[1];');
+        expect(reread).toEqual({
+            ...measurement,
+            id: expect.any(String),
+            targetQubits: [{ registerId: 'qreg:q', index: 0 }],
+            classicBits: [{ registerId: 'creg:c', index: 1 }],
+        });
+    });
+
     it('numbers layer markers contiguously across an empty layer', () => {
         const content = gateDroppedByEditor('H', 0);
         content.layers.push({ quantumOperations: [] }, gateDroppedByEditor('X', 0).layers[0]);
@@ -188,6 +247,38 @@ describe('operations it cannot write yet', () => {
         });
 
         expect(() => toQasm(content)).toThrow(/user-defined gate 'bell'/);
+    });
+
+    it.each([
+        ['no classic bit', []],
+        [
+            'more classic bits than measured qubits',
+            [
+                { registerId: 'c', index: 0 },
+                { registerId: 'c', index: 1 },
+            ],
+        ],
+    ])('refuses a measurement with %s instead of writing one it cannot read back', (_case, classicBits) => {
+        const content: CircuitContent = {
+            registers: [register, { id: 'c', name: 'c', type: 'Classic_Register', numberOfBits: 2 }],
+            layers: [
+                {
+                    quantumOperations: [
+                        {
+                            id: 'm',
+                            type: 'MEASUREMENT',
+                            identifier: 'MEASURE',
+                            inverseForm: false,
+                            targetQubits: [wires[0]],
+                            controlQubits: [],
+                            classicBits,
+                        },
+                    ],
+                },
+            ],
+        };
+
+        expect(() => toQasm(content)).toThrow(/one classic bit per measured qubit/);
     });
 
     it('refuses a subcircuit, whose body lives in another file', () => {
@@ -237,6 +328,12 @@ describe('round trip is idempotent', () => {
         swap: `${HEADER}qubit[2] q;\nswap q[0], q[1];\n`,
         rotations: `${HEADER}qubit[1] q;\nrx(pi/2) q[0];\nry(tau) q[0];\nrz(-pi/4) q[0];\n`,
         'multiple registers': `${HEADER}qubit[2] a;\nqubit[1] b;\nh a[0];\ncx a[1], b[0];\n`,
+        'measured bell pair': `${HEADER}qubit[2] q;\nbit[2] c;\nh q[0];\ncx q[0], q[1];\nmeasure q[0] -> c[0];\nmeasure q[1] -> c[1];\n`,
+        'assignment form': `${HEADER}qubit[2] q;\nbit[2] c;\nh q[0];\nc[1] = measure q[0];\n`,
+        'broadcast measurement': `${HEADER}qubit[3] q;\nbit[3] c;\nh q[1];\nc = measure q;\n`,
+        'sliced measurement': `${HEADER}qubit[4] b;\nbit[5] ans;\nx b[0];\nmeasure b[0:3] -> ans[0:3];\n`,
+        'old style declarations': `${HEADER}qreg q[2];\ncreg c[2];\nmeasure q -> c;\n`,
+        'interleaved registers': `${HEADER}qubit[1] a;\nbit[1] c;\nqubit[1] b;\ncx a[0], b[0];\nmeasure b[0] -> c[0];\n`,
     };
 
     it.each(Object.entries(fixtures))('%s survives generate → parse → generate unchanged', (_name, source) => {

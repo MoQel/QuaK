@@ -1,23 +1,32 @@
 import {
     GATE_ARITY,
+    isClassicRegister,
     isGateSupported,
+    isQuantumRegister,
     isStandardGate,
     toOperationIdentifier,
     unsupportedStatementRules,
     type CircuitContent,
     type ElementSelectorDto,
     type LayerResponse,
+    type MeasurementDto,
     type QuantumOperationDto,
-    type QuantumRegisterResponse,
+    type RegisterResponse,
     OperationIdentifier,
 } from '@quak/circuit-core';
 import { evaluateAngle, QasmUnsupportedError } from './angleExpression.ts';
 import { layerMarker, registerMarker } from './structuralComments.ts';
 import { parseQasm, type QasmComment, type QasmSyntaxError } from './parse.ts';
 import {
+    ClassicalDeclarationStatementContext,
+    DesignatorContext,
     GateCallStatementContext,
     GateOperandContext,
+    IndexedIdentifierContext,
+    MeasureExpressionContext,
+    OldStyleDeclarationStatementContext,
     QuantumDeclarationStatementContext,
+    RangeExpressionContext,
     StatementContext,
     type ProgramContext,
     GateOperandListContext,
@@ -107,7 +116,7 @@ export function classify(result: ToCircuitResult): DocumentClassification {
         return { kind: 'unsupportedVersion', version };
     }
 
-    // Ahead of the register checks: `qreg q[2];` does declare one, just not readably.
+    // Ahead of the register checks: `qubit[n] q;` does declare one, just not readably.
     // Also ahead of the errors below, because a statement we walked past is exactly what
     // makes a later reference to it look undefined.
     const constructs = result.unsupported.filter((entry) => entry.kind === 'unsupported' && !isComment(entry));
@@ -158,8 +167,7 @@ type SourcePosition = { start: { line: number; column: number } | null };
 type SourceSpan = { start: { start: number } | null; stop: { stop: number } | null };
 
 class CircuitBuilder {
-    // Classical registers are rejected because CircuitContent carries only qubits.
-    readonly registers: QuantumRegisterResponse[] = [];
+    readonly registers: RegisterResponse[] = [];
     readonly layers: LayerResponse[] = [];
     readonly unsupported: QasmRejection[] = [];
     readonly includes: string[] = [];
@@ -169,11 +177,11 @@ class CircuitBuilder {
         private readonly continuedLayers: ReadonlySet<number>,
     ) {}
 
-    /** Opens a layer, unless this operation was written as part of the one before it. */
-    place(operation: QuantumOperationDto, line: number): void {
+    /** Opens a layer, unless these operations were written as part of the one before it. */
+    place(operations: QuantumOperationDto[], line: number): void {
         const open = this.layers.at(-1);
-        if (open && this.continuedLayers.has(line)) open.quantumOperations.push(operation);
-        else this.layers.push({ quantumOperations: [operation] });
+        if (open && this.continuedLayers.has(line)) open.quantumOperations.push(...operations);
+        else this.layers.push({ quantumOperations: operations });
     }
 
     /**
@@ -188,7 +196,7 @@ class CircuitBuilder {
         return truncate(this.source.slice(from, to + 1).replaceAll(/\s+/g, ' '));
     }
 
-    registerByName(name: string): QuantumRegisterResponse | undefined {
+    registerByName(name: string): RegisterResponse | undefined {
         return this.registers.find((register) => register.name === name);
     }
 
@@ -258,7 +266,7 @@ export function toCircuit(source: string): ToCircuitResult {
 
     const content: CircuitContent = { registers: builder.registers, layers: builder.layers };
     return {
-        content: builder.registers.length > 0 ? content : null,
+        content: builder.registers.some(isQuantumRegister) ? content : null,
         preamble: {
             version: tokenText(tree.version()?.VersionSpecifier()),
             includes: builder.includes,
@@ -276,9 +284,35 @@ function visitStatement(statement: StatementContext, builder: CircuitBuilder): v
         return;
     }
 
+    const classical = statement.classicalDeclarationStatement();
+    if (classical) {
+        visitClassicalDeclaration(classical, builder);
+        return;
+    }
+
+    const oldStyle = statement.oldStyleDeclarationStatement();
+    if (oldStyle) {
+        visitOldStyleDeclaration(oldStyle, builder);
+        return;
+    }
+
     const gateCall = statement.gateCallStatement();
     if (gateCall) {
         visitGateCall(gateCall, builder);
+        return;
+    }
+
+    const measurement = statement.measureArrowAssignmentStatement();
+    if (measurement) {
+        visitMeasurement(measurement, measurement.measureExpression(), measurement.indexedIdentifier(), builder);
+        return;
+    }
+
+    // `c = measure q;` is the other spelling of `measure q -> c;`. Any other assignment is classical computation.
+    const assignment = statement.assignmentStatement();
+    const measured = assignment?.EQUALS() ? assignment.measureExpression() : null;
+    if (assignment && measured) {
+        visitMeasurement(assignment, measured, assignment.indexedIdentifier(), builder);
         return;
     }
 
@@ -310,34 +344,108 @@ function visitQuantumDeclaration(ctx: QuantumDeclarationStatementContext, builde
         return;
     }
 
-    const designator = ctx.qubitType().designator();
+    const size = registerSize(ctx, ctx.qubitType().designator(), 'qubitType', builder);
+    if (size === null) return;
 
-    let size = 1; // `qubit q;` with no [n] is a single qubit.
-    if (designator) {
-        const parsed = constantInt(designator.expression().getText());
-        if (parsed === null || parsed < 1) {
-            builder.reject(
-                ctx,
-                'qubitType',
-                `Register size must be a positive constant integer: ${builder.excerpt(ctx)}`,
-            );
-            return;
-        }
-        size = parsed;
-    }
+    declare(ctx, 'quantumDeclarationStatement', quantumRegister(name, size), builder);
+}
 
-    // Duplicate declarations would make earlier gate indices ambiguous.
-    if (builder.registerByName(name)) {
-        builder.invalid(ctx, 'quantumDeclarationStatement', `Qubit register '${name}' is declared more than once.`);
+/** `bit[n] c;` is the OpenQASM 3 spelling of `creg c[n];`. Every other type is classical computation. */
+function visitClassicalDeclaration(ctx: ClassicalDeclarationStatementContext, builder: CircuitBuilder): void {
+    const bitType = ctx.scalarType()?.BIT() ? ctx.scalarType() : null;
+    if (!bitType) {
+        builder.reject(
+            ctx,
+            'scalarType',
+            `Only bit registers are supported as classical declarations: ${builder.excerpt(ctx)}`,
+        );
         return;
     }
 
-    builder.registers.push({
-        id: `qreg:${name}`,
-        name,
-        type: 'Quantum_Register',
-        numberOfQubits: size,
-    });
+    // Writing the register back as `bit[n] c;` would drop the value.
+    if (ctx.declarationExpression()) {
+        builder.reject(
+            ctx,
+            'declarationExpression',
+            `Initialized bit registers are not supported: ${builder.excerpt(ctx)}`,
+        );
+        return;
+    }
+
+    const name = tokenText(ctx.Identifier());
+    if (name === null) {
+        builder.invalid(ctx, 'classicalDeclarationStatement', 'This classical register has no name.');
+        return;
+    }
+
+    const size = registerSize(ctx, bitType.designator(), 'scalarType', builder);
+    if (size === null) return;
+
+    declare(ctx, 'classicalDeclarationStatement', classicRegister(name, size), builder);
+}
+
+/** `qreg q[n];` and `creg c[n];`, which OpenQASM 3 still accepts. They are written back in the newer spelling. */
+function visitOldStyleDeclaration(ctx: OldStyleDeclarationStatementContext, builder: CircuitBuilder): void {
+    const name = tokenText(ctx.Identifier());
+    if (name === null) {
+        builder.invalid(ctx, 'oldStyleDeclarationStatement', 'This register has no name.');
+        return;
+    }
+
+    const size = registerSize(ctx, ctx.designator(), 'designator', builder);
+    if (size === null) return;
+
+    const register = ctx.QREG() ? quantumRegister(name, size) : classicRegister(name, size);
+    declare(ctx, 'oldStyleDeclarationStatement', register, builder);
+}
+
+const quantumRegister = (name: string, numberOfQubits: number): RegisterResponse => ({
+    id: `qreg:${name}`,
+    name,
+    type: 'Quantum_Register',
+    numberOfQubits,
+});
+
+const classicRegister = (name: string, numberOfBits: number): RegisterResponse => ({
+    id: `creg:${name}`,
+    name,
+    type: 'Classic_Register',
+    numberOfBits,
+});
+
+/** The declared size, 1 without a designator, or null after reporting why it is not a positive constant. */
+function registerSize(
+    ctx: SourcePosition & SourceSpan,
+    designator: DesignatorContext | null,
+    construct: string,
+    builder: CircuitBuilder,
+): number | null {
+    if (!designator) return 1;
+
+    const size = constantInt(designator.expression().getText());
+    if (size === null || size < 1) {
+        builder.reject(ctx, construct, `Register size must be a positive constant integer: ${builder.excerpt(ctx)}`);
+        return null;
+    }
+    return size;
+}
+
+function declare(ctx: SourcePosition, construct: string, register: RegisterResponse, builder: CircuitBuilder): void {
+    // Duplicate declarations would make earlier indices ambiguous.
+    const existing = builder.registerByName(register.name);
+    if (existing) {
+        const kind = isQuantumRegister(existing) ? 'qubit register' : 'classical register';
+        builder.invalid(
+            ctx,
+            construct,
+            existing.type === register.type
+                ? `A ${kind} '${register.name}' is declared more than once.`
+                : `'${register.name}' is already declared as a ${kind}.`,
+        );
+        return;
+    }
+
+    builder.registers.push(register);
 }
 
 function visitGateCall(ctx: GateCallStatementContext, builder: CircuitBuilder): void {
@@ -383,7 +491,200 @@ function visitGateCall(ctx: GateCallStatementContext, builder: CircuitBuilder): 
         rotationAngle,
     } as QuantumOperationDto;
 
-    builder.place(operation, ctx.start?.line ?? 0);
+    builder.place([operation], ctx.start?.line ?? 0);
+}
+
+/**
+ * `measure q[0] -> c[0];` and `c[0] = measure q[0];`, one operation per measured qubit.
+ *
+ * Each side names one index, a slice or a whole register, paired position by position.
+ */
+function visitMeasurement(
+    ctx: SourcePosition & SourceSpan,
+    measure: MeasureExpressionContext | null,
+    target: IndexedIdentifierContext | null,
+    builder: CircuitBuilder,
+): void {
+    if (!measure) {
+        builder.reject(ctx, 'measureArrowAssignmentStatement', `Unsupported measurement: ${builder.excerpt(ctx)}`);
+        return;
+    }
+
+    if (!target) {
+        builder.reject(
+            ctx,
+            'measureArrowAssignmentStatement',
+            `A measurement must assign its result to a classic bit, as in measure q[0] -> c[0]: ${builder.excerpt(ctx)}`,
+        );
+        return;
+    }
+
+    const operand = measure.gateOperand();
+    if (!operand) {
+        builder.invalid(ctx, 'measureExpression', 'This measurement names no qubit.');
+        return;
+    }
+
+    const measured = operand.indexedIdentifier();
+    if (!measured) {
+        // e.g. a hardware qubit like `$0`, which the circuit model does not represent.
+        builder.reject(operand, 'gateOperand', `Unsupported measurement operand: ${builder.excerpt(operand)}`);
+        return;
+    }
+
+    const qubits = selectElements(operand, measured, 'Quantum_Register', builder);
+    const bits = selectElements(target, target, 'Classic_Register', builder);
+    if (!qubits || !bits) return;
+
+    if (qubits.length !== bits.length) {
+        builder.invalid(
+            ctx,
+            'measureExpression',
+            `Measurement assigns ${qubits.length} qubit(s) to ${bits.length} classic bit(s); both sides must be the same width: ${builder.excerpt(ctx)}`,
+        );
+        return;
+    }
+
+    const line = ctx.start?.line ?? 0;
+    const id = `op:${line}:${ctx.start?.column ?? 0}`;
+    const operations = qubits.map(
+        (qubit, position): MeasurementDto => ({
+            id: qubits.length === 1 ? id : `${id}:${position}`,
+            type: 'MEASUREMENT',
+            identifier: 'MEASURE',
+            inverseForm: false,
+            targetQubits: [qubit],
+            controlQubits: [],
+            classicBits: [bits[position]],
+        }),
+    );
+
+    builder.place(operations, line);
+}
+
+/**
+ * What one side of a measurement selects: every element of an unindexed register, one for
+ * `r[i]`, and the expanded slice for `r[a:b]`, all in the order the backend expands them.
+ */
+function selectElements(
+    ctx: SourcePosition & SourceSpan,
+    indexed: IndexedIdentifierContext,
+    expected: RegisterResponse['type'],
+    builder: CircuitBuilder,
+): ElementSelectorDto[] | null {
+    const reads = expected === 'Quantum_Register' ? 'reads' : 'writes to';
+    const kind = expected === 'Quantum_Register' ? 'qubit register' : 'classical register';
+    const registerName = tokenText(indexed.Identifier());
+    if (registerName === null) {
+        builder.invalid(ctx, 'measureExpression', `This measurement ${reads} no ${kind}.`);
+        return null;
+    }
+
+    const register = builder.registerByName(registerName);
+    if (!register) {
+        builder.invalid(ctx, 'measureExpression', `Measurement ${reads} unknown ${kind} '${registerName}'.`);
+        return null;
+    }
+    if (register.type !== expected) {
+        builder.invalid(ctx, 'measureExpression', `Measurement ${reads} '${registerName}', which is not a ${kind}.`);
+        return null;
+    }
+
+    const size = isClassicRegister(register) ? register.numberOfBits : register.numberOfQubits;
+    const indices = selectedIndices(ctx, indexed, size, builder);
+    if (!indices) return null;
+
+    const outside = indices.find((index) => index < 0 || index >= size);
+    if (outside !== undefined) {
+        builder.invalid(ctx, 'indexOperator', `Index ${outside} is outside register '${registerName}' (size ${size}).`);
+        return null;
+    }
+    if (indices.length === 0) {
+        builder.invalid(
+            ctx,
+            'indexOperator',
+            `Selection covers nothing in register '${registerName}': ${builder.excerpt(ctx)}`,
+        );
+        return null;
+    }
+
+    return indices.map((index) => ({ registerId: register.id, index }));
+}
+
+function selectedIndices(
+    ctx: SourcePosition & SourceSpan,
+    indexed: IndexedIdentifierContext,
+    size: number,
+    builder: CircuitBuilder,
+): number[] | null {
+    const indexOperators = indexed.indexOperator();
+    if (indexOperators.length === 0) return Array.from({ length: size }, (_, index) => index);
+
+    if (indexOperators.length > 1) {
+        builder.reject(ctx, 'indexOperator', `Nested indexing is not supported: ${builder.excerpt(ctx)}`);
+        return null;
+    }
+
+    const indexOperator = indexOperators[0];
+    const expressions = indexOperator.expression();
+    const ranges = indexOperator.rangeExpression();
+    if (indexOperator.setExpression() || expressions.length + ranges.length !== 1) {
+        builder.reject(ctx, 'indexOperator', `An index must select one element or one slice: ${builder.excerpt(ctx)}`);
+        return null;
+    }
+
+    if (ranges.length === 1) return sliceIndices(ctx, ranges[0], size, builder);
+
+    const index = constantInt(expressions[0].getText());
+    if (index === null) {
+        builder.reject(ctx, 'indexOperator', `Index must be a constant integer: ${builder.excerpt(ctx)}`);
+        return null;
+    }
+    return [index];
+}
+
+/** `[a:b]`, `[a:step:b]` and the open `[a:]`, `[:b]`, `[:]`. The stop is inclusive, as in OpenQASM. */
+function sliceIndices(
+    ctx: SourcePosition & SourceSpan,
+    range: RangeExpressionContext,
+    size: number,
+    builder: CircuitBuilder,
+): number[] | null {
+    const expressions = range.expression();
+    const colons = range.COLON().length;
+    const values = expressions.map((expression) => constantInt(expression.getText()));
+    if (values.some((value) => value === null)) {
+        builder.reject(ctx, 'rangeExpression', `Slice bounds must be constant integers: ${builder.excerpt(ctx)}`);
+        return null;
+    }
+    const [first, second, third] = values as number[];
+
+    let start = 0;
+    let step = 1;
+    let stop = size - 1;
+    if (colons === 2 && expressions.length === 3) {
+        [start, step, stop] = [first, second, third];
+    } else if (colons === 1 && expressions.length === 2) {
+        [start, stop] = [first, second];
+    } else if (colons === 1 && expressions.length === 1) {
+        if (range.getChild(0) === expressions[0]) start = first;
+        else stop = first;
+    } else if (!(colons === 1 && expressions.length === 0)) {
+        builder.reject(ctx, 'rangeExpression', `Unsupported slice: ${builder.excerpt(ctx)}`);
+        return null;
+    }
+
+    if (step === 0) {
+        builder.invalid(ctx, 'rangeExpression', `A slice step cannot be zero: ${builder.excerpt(ctx)}`);
+        return null;
+    }
+
+    const indices: number[] = [];
+    for (let value = start; step > 0 ? value <= stop : value >= stop; value += step) {
+        indices.push(value);
+        if (indices.length > size) break;
+    }
+    return indices;
 }
 
 /** The gate's parameter in radians, or null after reporting why it has none. */
@@ -511,6 +812,14 @@ function parseOperand(operand: GateOperandContext, builder: CircuitBuilder): Ele
         builder.invalid(operand, 'gateOperand', `Gate references unknown qubit register '${registerName}'.`);
         return null;
     }
+    if (!isQuantumRegister(register)) {
+        builder.invalid(
+            operand,
+            'gateOperand',
+            `Gate references '${registerName}', which is a classical register and cannot hold a qubit.`,
+        );
+        return null;
+    }
     const size = register.numberOfQubits;
 
     const indexOperators = indexed.indexOperator();
@@ -582,15 +891,15 @@ function startOfFirstStatement(tree: ProgramContext): number {
 interface StructuralComments {
     /** Keys of the comments `toQasm` would have written itself, so they are not a user's. */
     markerKeys: Set<string>;
-    /** Gate-call lines written inside the layer opened above them, rather than opening one. */
+    /** Operation lines written inside the layer opened above them, rather than opening one. */
     continuedLayers: Set<number>;
 }
 
 /**
  * Reads the `// Register` and `// Layer` comments back.
  *
- * A layer marker sits above the *first* operation of its layer: a gate call opens a new
- * layer only where one stands directly above it, and the calls below share that layer.
+ * A layer marker sits above the *first* operation of its layer: an operation opens a new
+ * layer only where one stands directly above it, and the operations below share that layer.
  *
  * The sequence has to read 1, 2, 3 in order. At the first comment that breaks it the
  * matching stops, because from there this is no longer a document we produced, and an
@@ -608,13 +917,16 @@ function readStructuralComments(tree: ProgramContext, comments: readonly QasmCom
         const statement = statementOrScope.statement();
         if (!statement) continue;
 
-        const declaration = statement.quantumDeclarationStatement();
+        const declaration =
+            statement.quantumDeclarationStatement() ??
+            statement.classicalDeclarationStatement() ??
+            statement.oldStyleDeclarationStatement();
         if (declaration) {
             addRegisterMarker(markerKeys, declaration);
             continue;
         }
 
-        const line = statement.gateCallStatement()?.start?.line ?? 0;
+        const line = operationStatement(statement)?.start?.line ?? 0;
         if (line <= 1) continue;
 
         const above = commentByLine.get(line - 1);
@@ -641,8 +953,20 @@ function firstCommentPerLine(comments: readonly QasmComment[]): Map<number, stri
     return byLine;
 }
 
+/** The statements that put operations into a layer. */
+const operationStatement = (statement: StatementContext): SourcePosition | null =>
+    statement.gateCallStatement() ??
+    statement.measureArrowAssignmentStatement() ??
+    (statement.assignmentStatement()?.measureExpression() ? statement.assignmentStatement() : null);
+
 /** A declaration with no name has no `// Register x` we could have written above it. */
-function addRegisterMarker(keys: Set<string>, declaration: QuantumDeclarationStatementContext): void {
+function addRegisterMarker(
+    keys: Set<string>,
+    declaration:
+        | QuantumDeclarationStatementContext
+        | ClassicalDeclarationStatementContext
+        | OldStyleDeclarationStatementContext,
+): void {
     const name = tokenText(declaration.Identifier());
     const line = declaration.start?.line ?? 0;
     if (name === null || line <= 1) return;

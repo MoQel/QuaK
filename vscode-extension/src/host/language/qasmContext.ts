@@ -90,15 +90,34 @@ export function wordAt(text: string, offset: number): QasmWord | null {
     const context = contextAt(text, start);
     if (!context.inCode) return null;
 
-    return { text: word, role: roleOf(word, context.before), start, end };
+    return { text: word, role: roleOf(word, context.before, isAssigned(text, end)), start, end };
 }
 
-function roleOf(word: string, before: readonly string[]): WordRole {
+function roleOf(word: string, before: readonly string[], assigned: boolean): WordRole {
     if (MODIFIERS.has(word) || KEYWORDS.has(word) || DECLARATION_KEYWORDS.has(word)) return 'keyword';
 
-    // The first name in a statement is the gate being called, ignoring modifiers.
-    // Everything after it is an argument, so a register.
-    return namesSoFar(before).length === 0 ? 'gate' : 'register';
+    // The first name in a statement is the gate being called, ignoring modifiers,
+    // unless the statement assigns to it. Everything after it is an argument, so a register.
+    return namesSoFar(before).length === 0 && !assigned ? 'gate' : 'register';
+}
+
+/** Whether the name ending here is assigned to, as `c` is in `c = measure q;` and `c[0] = measure q[0];`. */
+function isAssigned(text: string, end: number): boolean {
+    let index = skipSpaces(text, end);
+    if (text[index] === '[') {
+        const closing = text.indexOf(']', index);
+        if (closing === -1) return false;
+        index = skipSpaces(text, closing + 1);
+    }
+
+    return text[index] === '=' && text[index + 1] !== '=';
+}
+
+function skipSpaces(text: string, index: number): number {
+    let end = index;
+    while (end < text.length && /\s/.test(text[end])) end += 1;
+
+    return end;
 }
 
 /** Returns null where there is nothing useful to suggest. */
