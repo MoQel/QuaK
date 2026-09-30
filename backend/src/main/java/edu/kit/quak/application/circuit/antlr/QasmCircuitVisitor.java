@@ -28,6 +28,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
@@ -783,10 +784,6 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
      * result somewhere, and inventing a register the user never declared would put state into the
      * circuit that its source does not contain. A bare `measure q[0];` is therefore a clear error
      * rather than a silent half-measurement.
-     *
-     * A slice expands into one measurement per bit, the way everything statically decidable is
-     * expanded here. Taking only the first index instead would quietly measure one qubit and drop
-     * the rest -- a wrong circuit that still looks like it parsed.
      */
     @Override
     public Void visitMeasureArrowAssignmentStatement(OpenQASM3Parser.MeasureArrowAssignmentStatementContext ctx) {
@@ -794,10 +791,8 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
             // e.g. a `defcal` style quantum call, which has no editor representation.
             throw new QasmParseException("Unsupported measurement statement: " + ctx.getText());
         }
-        if (definitionUnderConstruction != null || qubitBindings != null) {
-            throw new QasmParseException("A gate body cannot contain a measurement, but '%s' does.".formatted(ctx.getText()));
-        }
         if (ctx.indexedIdentifier() == null) {
+            rejectMeasurementInGateBody(ctx);
             throw new QasmParseException(
                 "A measurement must assign its result to a classic bit, e.g. `measure %s -> c[0];`.".formatted(
                     ctx.measureExpression().gateOperand().getText()
@@ -805,8 +800,27 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
             );
         }
 
-        List<ElementSelector> targetQubits = resolveMeasuredQubits(ctx.measureExpression().gateOperand());
-        List<ElementSelector> classicBits = resolveClassicBits(ctx.indexedIdentifier());
+        emitMeasurements(ctx, ctx.measureExpression().gateOperand(), ctx.indexedIdentifier());
+        return null;
+    }
+
+    /**
+     * Emits one {@link Measurement} per measured qubit, paired position by position with the classic
+     * bits. Shared by `measure q -> c;` and `c = measure q;`, which mean the same.
+     *
+     * A slice expands into one measurement per bit, the way everything statically decidable is
+     * expanded here. Taking only the first index instead would quietly measure one qubit and drop
+     * the rest -- a wrong circuit that still looks like it parsed.
+     */
+    private void emitMeasurements(
+        ParserRuleContext ctx,
+        OpenQASM3Parser.GateOperandContext measuredOperand,
+        OpenQASM3Parser.IndexedIdentifierContext target
+    ) {
+        rejectMeasurementInGateBody(ctx);
+
+        List<ElementSelector> targetQubits = resolveMeasuredQubits(measuredOperand);
+        List<ElementSelector> classicBits = resolveClassicBits(target);
         if (targetQubits.size() != classicBits.size()) {
             throw new QasmParseException(
                 "Measurement assigns %d qubit(s) to %d classic bit(s) in '%s'; both sides must be the same width.".formatted(
@@ -829,7 +843,12 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
                 )
             );
         }
-        return null;
+    }
+
+    private void rejectMeasurementInGateBody(ParserRuleContext ctx) {
+        if (definitionUnderConstruction != null || qubitBindings != null) {
+            throw new QasmParseException("A gate body cannot contain a measurement, but '%s' does.".formatted(ctx.getText()));
+        }
     }
 
     /**
@@ -876,9 +895,24 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
         return false;
     }
 
-    /** An assigned variable is no longer a compile-time constant, so its binding is dropped. */
+    /**
+     * An assigned variable is no longer a compile-time constant, so its binding is dropped.
+     *
+     * `c = measure q;` is the other spelling of `measure q -> c;` and emits the same measurements.
+     */
     @Override
     public Void visitAssignmentStatement(OpenQASM3Parser.AssignmentStatementContext ctx) {
+        if (ctx.measureExpression() != null) {
+            if (ctx.EQUALS() == null) {
+                throw new QasmParseException(
+                    "A measurement can only be assigned with '=', not combined with '%s' in '%s'.".formatted(
+                        ctx.op.getText(),
+                        ctx.getText()
+                    )
+                );
+            }
+            emitMeasurements(ctx, ctx.measureExpression().gateOperand(), ctx.indexedIdentifier());
+        }
         evaluator.unbind(ctx.indexedIdentifier().Identifier().getText());
         return null;
     }

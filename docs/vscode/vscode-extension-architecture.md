@@ -186,8 +186,6 @@ frames. Classical registers and measurements need no flag. The visitor reads `bi
 and `creg c[n];` as well as `measure q -> c;` and `c = measure q;`, on single bits,
 slices and whole registers, the way the backend visitor does. The generator writes them
 back as `bit[n] c;` and one `measure q[i] -> c[j];` per bit, as the backend generator does.
-One difference remains: the backend drops the assignment form without a word, and the
-extension reads it.
 
 ---
 
