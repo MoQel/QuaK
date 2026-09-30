@@ -69,13 +69,18 @@ export const collectCustomGates = (circuit: CircuitResponse | undefined): Custom
  * code generator separates exactly those, by name plus rendered body, when it emits declarations.
  */
 const signatureOf = (gate: CompositeQuantumGateDto): string => {
-    const parameterIndexOf = new Map(gate.targetQubits.map((qubit, position) => [getSelectorKey(qubit), position]));
+    const parameterIndexOf = new Map<string, number>(
+        gate.targetQubits.map((qubit, position) => [getSelectorKey(qubit), position]),
+    );
 
     // A body operation may only address the gate's own parameters, so an unknown selector means the
     // call is malformed. It is kept verbatim rather than dropped, so two malformed calls that differ
     // still compare as different instead of silently collapsing into one entry.
-    const renderSelector = (selector: ElementSelectorDto): string =>
-        String(parameterIndexOf.get(getSelectorKey(selector)) ?? `@${getSelectorKey(selector)}`);
+    const renderSelector = (selector: ElementSelectorDto): string => {
+        const key = getSelectorKey(selector);
+        const index = parameterIndexOf.get(key);
+        return index === undefined ? `@${key}` : String(index);
+    };
 
     const renderOperation = (operation: QuantumOperationDto): string => {
         const controls = operation.controlQubits.map(renderSelector).join(',');

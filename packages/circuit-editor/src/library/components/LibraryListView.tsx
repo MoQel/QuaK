@@ -132,12 +132,13 @@ function LibraryListView({
                     <SectionHeader title="Compositions" />
                     {customGates.map((gate) => {
                         const contents = (gate.template.body ?? []).map((part) => part.identifier).join(', ');
+                        const qubits = pluralize(gate.portLabels.length, 'qubit');
                         return (
                             <ListRow
                                 key={gate.key}
                                 tile={<LibraryCompositeElement gate={gate} />}
                                 title={gate.name}
-                                description={`${pluralize(gate.portLabels.length, 'qubit')}${contents ? ` · ${contents}` : ''}`}
+                                description={contents ? `${qubits} · ${contents}` : qubits}
                             />
                         );
                     })}

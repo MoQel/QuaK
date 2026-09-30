@@ -46,11 +46,11 @@ export class CircuitEditorProvider implements vscode.CustomTextEditorProvider {
         ];
     }
 
-    public async resolveCustomTextEditor(
+    public resolveCustomTextEditor(
         document: vscode.TextDocument,
         webviewPanel: vscode.WebviewPanel,
         _token: vscode.CancellationToken,
-    ): Promise<void> {
+    ): void {
         const key = document.uri.toString();
         this.panels.add(key, webviewPanel);
 

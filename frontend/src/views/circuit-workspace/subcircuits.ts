@@ -56,18 +56,16 @@ export function useSubcircuitOptions(
 
 /** Every file in the project, flattened out of the directory tree. */
 export async function collectProjectFiles(elements: FileElementDto[]): Promise<FileElementDto[]> {
-    const files: FileElementDto[] = [];
-    for (const element of elements) {
-        if (element.type === 'file') {
-            files.push(element);
-        } else if (element.type === 'directory') {
+    const perElement = await Promise.all(
+        elements.map(async (element): Promise<FileElementDto[]> => {
+            if (element.type === 'file') return [element];
+            if (element.type !== 'directory') return [];
+
             const directory = await api.get<DirectoryContentsResponse>(`/api/directory/${element.id}`);
-            if (directory.contents) {
-                files.push(...(await collectProjectFiles(directory.contents)));
-            }
-        }
-    }
-    return files;
+            return directory.contents ? collectProjectFiles(directory.contents) : [];
+        }),
+    );
+    return perElement.flat();
 }
 
 /**

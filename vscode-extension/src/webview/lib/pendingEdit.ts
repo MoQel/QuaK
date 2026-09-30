@@ -16,7 +16,7 @@ export const showsPendingEdit = (input: {
     pending: PendingEdit | undefined;
     documentVersion: number | undefined;
     rejectedRequestId: string | undefined;
-    appliedRequestId?: string | undefined;
+    appliedRequestId?: string;
 }): boolean =>
     input.pending !== undefined &&
     (input.documentVersion === undefined || input.documentVersion <= input.pending.baseVersion) &&

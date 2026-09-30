@@ -708,30 +708,19 @@ function sliceIndices(
     size: number,
     builder: CircuitBuilder,
 ): number[] | null {
-    const expressions = range.expression();
-    const colons = range.COLON().length;
-    const values = expressions.map((expression) => constantInt(expression.getText()));
-    if (values.some((value) => value === null)) {
+    const values = range.expression().map((expression) => constantInt(expression.getText()));
+    if (values.includes(null)) {
         builder.reject(ctx, 'rangeExpression', `Slice bounds must be constant integers: ${builder.excerpt(ctx)}`);
         return null;
     }
-    const [first, second, third] = values as number[];
 
-    let start = 0;
-    let step = 1;
-    let stop = size - 1;
-    if (colons === 2 && expressions.length === 3) {
-        [start, step, stop] = [first, second, third];
-    } else if (colons === 1 && expressions.length === 2) {
-        [start, stop] = [first, second];
-    } else if (colons === 1 && expressions.length === 1) {
-        if (range.getChild(0) === expressions[0]) start = first;
-        else stop = first;
-    } else if (!(colons === 1 && expressions.length === 0)) {
+    const bounds = sliceBounds(range, values as number[], size);
+    if (!bounds) {
         builder.reject(ctx, 'rangeExpression', `Unsupported slice: ${builder.excerpt(ctx)}`);
         return null;
     }
 
+    const { start, step, stop } = bounds;
     if (step === 0) {
         builder.invalid(ctx, 'rangeExpression', `A slice step cannot be zero: ${builder.excerpt(ctx)}`);
         return null;
@@ -743,6 +732,24 @@ function sliceIndices(
         if (indices.length > size) break;
     }
     return indices;
+}
+
+/** Start, step and stop of a slice, an open end standing for the register's own bound. */
+function sliceBounds(
+    range: RangeExpressionContext,
+    values: number[],
+    size: number,
+): { start: number; step: number; stop: number } | null {
+    const colons = range.COLON().length;
+    if (colons === 2 && values.length === 3) return { start: values[0], step: values[1], stop: values[2] };
+    if (colons !== 1) return null;
+
+    const whole = { start: 0, step: 1, stop: size - 1 };
+    if (values.length === 0) return whole;
+    if (values.length === 2) return { ...whole, start: values[0], stop: values[1] };
+
+    // One endpoint: `[2:]` counts up from it, `[:2]` counts up to it.
+    return range.getChild(0) === range.expression()[0] ? { ...whole, start: values[0] } : { ...whole, stop: values[0] };
 }
 
 /** The gate's parameter in radians, or null after reporting why it has none. */
