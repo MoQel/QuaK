@@ -186,6 +186,8 @@ frames. Classical registers and measurements need no flag. The visitor reads `bi
 and `creg c[n];` as well as `measure q -> c;` and `c = measure q;`, on single bits,
 slices and whole registers, the way the backend visitor does. The generator writes them
 back as `bit[n] c;` and one `measure q[i] -> c[j];` per bit, as the backend generator does.
+Gate calls on whole registers or slices (`h q;`, `cx a, b;`, `x q[1:2];`) expand the same
+way, into one call per qubit.
 
 ---
 

@@ -103,7 +103,7 @@ describe('toCircuit: classical registers', () => {
 
         expect(result.unsupported[0]).toMatchObject({
             kind: 'invalid',
-            message: expect.stringMatching(/classical register/),
+            message: "Gate references 'c', which is not a qubit register.",
         });
     });
 });
@@ -279,9 +279,64 @@ describe('toCircuit: gates', () => {
 });
 
 // Operands that name several qubits cannot be represented as one visual gate.
-describe('toCircuit: an operand must name exactly one qubit', () => {
+describe('toCircuit: gate calls on registers expand, as in the backend', () => {
+    /** `identifier controls -> targets` per operation, layer by layer. */
+    const callsIn = (source: string): string[][] =>
+        circuitOf(source).layers.map((layer) =>
+            layer.quantumOperations.map((operation) => {
+                const names = (selectors: { registerId: string; index: number }[]) =>
+                    selectors.map((selector) => `${selector.registerId.slice(5)}${selector.index}`).join(',');
+                const controls = names(operation.controlQubits);
+                return `${operation.identifier} ${controls ? `${controls} -> ` : ''}${names(operation.targetQubits)}`;
+            }),
+        );
+
+    it('applies a gate to every qubit of a register, in one layer', () => {
+        expect(callsIn(`${HEADER}qubit[3] q;\nh q;\n`)).toEqual([['H q0', 'H q1', 'H q2']]);
+    });
+
+    it('pairs two registers position by position', () => {
+        expect(callsIn(`${HEADER}qubit[2] a;\nqubit[2] b;\ncx a, b;\n`)).toEqual([['CX a0 -> b0', 'CX a1 -> b1']]);
+    });
+
+    it('repeats a single qubit against a register, one layer per use of the shared qubit', () => {
+        expect(callsIn(`${HEADER}qubit[1] a;\nqubit[3] b;\ncx a[0], b;\n`)).toEqual([
+            ['CX a0 -> b0'],
+            ['CX a0 -> b1'],
+            ['CX a0 -> b2'],
+        ]);
+    });
+
+    it('expands a slice over its qubits only', () => {
+        expect(callsIn(`${HEADER}qubit[4] q;\nx q[1:2];\n`)).toEqual([['X q1', 'X q2']]);
+    });
+
+    it('carries the angle to every expanded call', () => {
+        const angles = circuitOf(`${HEADER}qubit[2] q;\nrx(pi/2) q;\n`).layers[0].quantumOperations.map(
+            (operation) => (operation as ElementaryQuantumGateDto).rotationAngle,
+        );
+
+        expect(angles).toEqual([Math.PI / 2, Math.PI / 2]);
+    });
+
+    it('gives every expanded call its own stable id', () => {
+        const source = `${HEADER}qubit[3] q;\nh q;\n`;
+        const ids = circuitOf(source).layers[0].quantumOperations.map((operation) => operation.id);
+
+        expect(new Set(ids).size).toBe(3);
+        expect(circuitOf(source).layers[0].quantumOperations.map((operation) => operation.id)).toEqual(ids);
+    });
+
+    it('rejects registers of different sizes as invalid', () => {
+        const result = toCircuit(`${HEADER}qubit[2] a;\nqubit[3] b;\ncx a, b;\n`);
+
+        expect(result.unsupported[0]).toMatchObject({
+            kind: 'invalid',
+            message: expect.stringMatching(/different sizes \(2 and 3\)/),
+        });
+    });
+
     it.each([
-        ['a range', 'h q[0:1];'],
         ['a list', 'h q[0, 2];'],
         ['a set', 'h q[{0, 2}];'],
         ['nested indexing', 'h q[0][0];'],
@@ -292,16 +347,10 @@ describe('toCircuit: an operand must name exactly one qubit', () => {
         expect(isEditable(result)).toBe(false);
     });
 
-    it('rejects a broadcast over a whole multi-qubit register', () => {
-        const result = toCircuit(`${HEADER}qubit[3] q;\nh q;\n`);
-
-        expect(result.unsupported[0].message).toMatch(/all 3 qubits/);
-        expect(isEditable(result)).toBe(false);
-    });
-
     it.each([
         ['past the end', 'h q[9];'],
         ['negative', 'h q[-1];'],
+        ['in a slice', 'h q[1:5];'],
     ])('rejects an index %s of the register', (_case, statement) => {
         const result = toCircuit(`${HEADER}qubit[3] q;\n${statement}\n`);
 

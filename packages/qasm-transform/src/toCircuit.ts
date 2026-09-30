@@ -1,5 +1,7 @@
 import {
     GATE_ARITY,
+    getInvolvedSelectors,
+    getSelectorKey,
     isClassicRegister,
     isGateSupported,
     isQuantumRegister,
@@ -164,6 +166,11 @@ function tokenText(node: { symbol: { tokenIndex: number; text?: string | null } 
 
 type SourcePosition = { start: { line: number; column: number } | null };
 
+const sharesQubit = (layer: LayerResponse, operation: QuantumOperationDto): boolean => {
+    const used = new Set(layer.quantumOperations.flatMap(getInvolvedSelectors).map(getSelectorKey));
+    return getInvolvedSelectors(operation).some((selector) => used.has(getSelectorKey(selector)));
+};
+
 /** Enough of a parse-tree node to find the text it was built from. */
 type SourceSpan = { start: { start: number } | null; stop: { stop: number } | null };
 
@@ -178,11 +185,24 @@ class CircuitBuilder {
         private readonly continuedLayers: ReadonlySet<number>,
     ) {}
 
-    /** Opens a layer, unless these operations were written as part of the one before it. */
+    /**
+     * Opens a layer, unless these operations were written as part of the one before it.
+     * Operations of one statement share a layer as long as they touch different qubits.
+     */
     place(operations: QuantumOperationDto[], line: number): void {
-        const open = this.layers.at(-1);
-        if (open && this.continuedLayers.has(line)) open.quantumOperations.push(...operations);
-        else this.layers.push({ quantumOperations: operations });
+        let layer = this.layers.at(-1);
+        if (!layer || !this.continuedLayers.has(line)) layer = this.open();
+
+        for (const [position, operation] of operations.entries()) {
+            if (position > 0 && sharesQubit(layer, operation)) layer = this.open();
+            layer.quantumOperations.push(operation);
+        }
+    }
+
+    private open(): LayerResponse {
+        const layer: LayerResponse = { quantumOperations: [] };
+        this.layers.push(layer);
+        return layer;
     }
 
     /**
@@ -464,35 +484,65 @@ function visitGateCall(ctx: GateCallStatementContext, builder: CircuitBuilder): 
     const identifier = resolveSupportedGate(gateName, ctx, builder);
     if (!identifier) return;
 
-    const operands = parseOperands(operandList, builder);
-    if (!operands) return;
+    const slots = parseOperands(operandList, builder);
+    if (!slots) return;
 
     const { controlSize, targetSize, type } = GATE_ARITY[identifier];
     const expected = controlSize + targetSize;
-    if (operands.length !== expected) {
+    if (slots.length !== expected) {
         const qubits = expected === 1 ? 'qubit' : 'qubits';
-        builder.invalid(ctx, identifier, `Gate '${gateName}' takes ${expected} ${qubits}, not ${operands.length}.`);
+        builder.invalid(ctx, identifier, `Gate '${gateName}' takes ${expected} ${qubits}, not ${slots.length}.`);
         return;
     }
 
-    // OpenQASM lists controls before targets.
-    const controlQubits = operands.slice(0, controlSize);
-    const targetQubits = operands.slice(controlSize);
+    const calls = broadcast(slots, ctx, gateName, builder);
+    if (!calls) return;
 
     const rotationAngle = resolveRotationAngle(ctx, identifier, gateName, builder);
     if (rotationAngle === null) return;
 
-    const operation = {
-        id: `op:${ctx.start?.line ?? 0}:${ctx.start?.column ?? 0}`,
-        type,
-        identifier,
-        inverseForm: false,
-        targetQubits,
-        controlQubits,
-        rotationAngle,
-    } as QuantumOperationDto;
+    const line = ctx.start?.line ?? 0;
+    const id = `op:${line}:${ctx.start?.column ?? 0}`;
+    const operations = calls.map(
+        (operands, position) =>
+            ({
+                id: calls.length === 1 ? id : `${id}:${position}`,
+                type,
+                identifier,
+                inverseForm: false,
+                // OpenQASM lists controls before targets.
+                targetQubits: operands.slice(controlSize),
+                controlQubits: operands.slice(0, controlSize),
+                rotationAngle,
+            }) as QuantumOperationDto,
+    );
 
-    builder.place([operation], ctx.start?.line ?? 0);
+    builder.place(operations, line);
+}
+
+/**
+ * The operand lists of the single calls a gate call on registers stands for, as the backend
+ * expands them: registers pair up position by position, and a single qubit repeats against them.
+ */
+function broadcast(
+    slots: ElementSelectorDto[][],
+    ctx: SourcePosition,
+    gateName: string,
+    builder: CircuitBuilder,
+): ElementSelectorDto[][] | null {
+    const widths = [...new Set(slots.map((slot) => slot.length).filter((width) => width > 1))];
+    if (widths.length > 1) {
+        builder.invalid(
+            ctx,
+            'gateOperandList',
+            `Gate '${gateName}' is called on registers of different sizes (${widths.join(' and ')}); they must match.`,
+        );
+        return null;
+    }
+
+    return Array.from({ length: widths[0] ?? 1 }, (_, position) =>
+        slots.map((slot) => (slot.length === 1 ? slot[0] : slot[position])),
+    );
 }
 
 /**
@@ -533,8 +583,8 @@ function visitMeasurement(
         return;
     }
 
-    const qubits = selectElements(operand, measured, 'Quantum_Register', builder);
-    const bits = selectElements(target, target, 'Classic_Register', builder);
+    const qubits = selectElements(operand, measured, 'Quantum_Register', 'Measurement reads', builder);
+    const bits = selectElements(target, target, 'Classic_Register', 'Measurement writes to', builder);
     if (!qubits || !bits) return;
 
     if (qubits.length !== bits.length) {
@@ -564,30 +614,33 @@ function visitMeasurement(
 }
 
 /**
- * What one side of a measurement selects: every element of an unindexed register, one for
- * `r[i]`, and the expanded slice for `r[a:b]`, all in the order the backend expands them.
+ * What an operand selects: every element of an unindexed register, one for `r[i]`, and the
+ * expanded slice for `r[a:b]`, all in the order the backend expands them.
+ *
+ * `subject` opens the messages, as in `Gate references` or `Measurement writes to`.
  */
 function selectElements(
     ctx: SourcePosition & SourceSpan,
     indexed: IndexedIdentifierContext,
     expected: RegisterResponse['type'],
+    subject: string,
     builder: CircuitBuilder,
 ): ElementSelectorDto[] | null {
-    const reads = expected === 'Quantum_Register' ? 'reads' : 'writes to';
     const kind = expected === 'Quantum_Register' ? 'qubit register' : 'classical register';
+    const construct = subject.startsWith('Gate') ? 'gateOperand' : 'measureExpression';
     const registerName = tokenText(indexed.Identifier());
     if (registerName === null) {
-        builder.invalid(ctx, 'measureExpression', `This measurement ${reads} no ${kind}.`);
+        builder.invalid(ctx, construct, `${subject} no ${kind}.`);
         return null;
     }
 
     const register = builder.registerByName(registerName);
     if (!register) {
-        builder.invalid(ctx, 'measureExpression', `Measurement ${reads} unknown ${kind} '${registerName}'.`);
+        builder.invalid(ctx, construct, `${subject} unknown ${kind} '${registerName}'.`);
         return null;
     }
     if (register.type !== expected) {
-        builder.invalid(ctx, 'measureExpression', `Measurement ${reads} '${registerName}', which is not a ${kind}.`);
+        builder.invalid(ctx, construct, `${subject} '${registerName}', which is not a ${kind}.`);
         return null;
     }
 
@@ -768,20 +821,24 @@ function resolveSupportedGate(
     return identifier;
 }
 
-function parseOperands(operandList: GateOperandListContext, builder: CircuitBuilder): ElementSelectorDto[] | undefined {
-    const operands: ElementSelectorDto[] = [];
+/** One list of qubits per operand: a single qubit, or those of a register or slice. */
+function parseOperands(
+    operandList: GateOperandListContext,
+    builder: CircuitBuilder,
+): ElementSelectorDto[][] | undefined {
+    const slots: ElementSelectorDto[][] = [];
     for (const operand of operandList.gateOperand()) {
-        const selector = parseOperand(operand, builder);
-        if (!selector) return undefined;
-        operands.push(selector);
+        const slot = parseOperand(operand, builder);
+        if (!slot) return undefined;
+        slots.push(slot);
     }
 
-    if (endsWithComma(operandList, operands.length)) {
+    if (endsWithComma(operandList, slots.length)) {
         builder.reject(operandList, 'gateOperandList', trailingComma(builder.excerpt(operandList)));
         return undefined;
     }
 
-    return operands;
+    return slots;
 }
 
 /**
@@ -793,13 +850,8 @@ const endsWithComma = (list: { COMMA(): unknown[] }, entries: number): boolean =
 
 const trailingComma = (excerpt: string): string => `A trailing comma is not supported: ${excerpt}`;
 
-/**
- * Resolves one gate operand, the `q[0]` in `h q[0]`, to a single qubit.
- *
- * OpenQASM operands can name a whole register or slice. The visual circuit model
- * needs one concrete qubit, so broader operands are rejected.
- */
-function parseOperand(operand: GateOperandContext, builder: CircuitBuilder): ElementSelectorDto | null {
+/** The qubits one gate operand names: `q[0]`, a whole register `q`, or a slice `q[0:1]`. */
+function parseOperand(operand: GateOperandContext, builder: CircuitBuilder): ElementSelectorDto[] | null {
     const indexed = operand.indexedIdentifier();
     if (!indexed) {
         // e.g. a hardware qubit like `$0`, which the circuit model does not represent.
@@ -807,66 +859,7 @@ function parseOperand(operand: GateOperandContext, builder: CircuitBuilder): Ele
         return null;
     }
 
-    const registerName = indexed.Identifier().getText();
-    const register = builder.registerByName(registerName);
-    if (!register) {
-        builder.invalid(operand, 'gateOperand', `Gate references unknown qubit register '${registerName}'.`);
-        return null;
-    }
-    if (!isQuantumRegister(register)) {
-        builder.invalid(
-            operand,
-            'gateOperand',
-            `Gate references '${registerName}', which is a classical register and cannot hold a qubit.`,
-        );
-        return null;
-    }
-    const size = register.numberOfQubits;
-
-    const indexOperators = indexed.indexOperator();
-    if (indexOperators.length === 0) {
-        // `h q;` is only unambiguous for a single-qubit register.
-        if (size !== 1) {
-            builder.reject(
-                operand,
-                'gateOperand',
-                `'${builder.excerpt(operand)}' applies the gate to all ${size} qubits of '${registerName}'; broadcasting is not supported.`,
-            );
-            return null;
-        }
-        return { registerId: register.id, index: 0 };
-    }
-
-    if (indexOperators.length > 1) {
-        builder.reject(operand, 'indexOperator', `Nested indexing is not supported: ${builder.excerpt(operand)}`);
-        return null;
-    }
-
-    const indexOperator = indexOperators[0];
-    const expressions = indexOperator.expression();
-    // Ranges, sets and lists name more than one qubit.
-    if (indexOperator.setExpression() || indexOperator.rangeExpression().length > 0 || expressions.length !== 1) {
-        builder.reject(operand, 'indexOperator', `Qubit index must select a single qubit: ${builder.excerpt(operand)}`);
-        return null;
-    }
-
-    const index = constantInt(expressions[0].getText());
-    if (index === null) {
-        builder.reject(operand, 'indexOperator', `Qubit index must be a constant integer: ${builder.excerpt(operand)}`);
-        return null;
-    }
-
-    // Out-of-range gates would be invisible in the editor.
-    if (index < 0 || index >= size) {
-        builder.invalid(
-            operand,
-            'indexOperator',
-            `Qubit index ${index} is outside register '${registerName}' (size ${size}).`,
-        );
-        return null;
-    }
-
-    return { registerId: register.id, index };
+    return selectElements(operand, indexed, 'Quantum_Register', 'Gate references', builder);
 }
 
 /** Variable or expression indices are not supported. */
