@@ -1,11 +1,6 @@
 #!/usr/bin/env node
-// tsconfig's "exclude" does not reach files that hand-written code imports, so
-// the generated parser would otherwise have to meet this package's strictness.
-// It does not (unused locals, an unused type alias), and no one may fix it since
-// regenerating overwrites the file.
-//
-// Marking the generated files opaque keeps noUnusedLocals et al. on for the code
-// we actually write. Part of `npm run generate`, so it survives regeneration.
+// Marks the generated parser opaque to the type checker. tsconfig's "exclude" does not apply to files that hand-written
+// code imports, and the generated code does not meet noUnusedLocals. Runs as part of `npm run generate`.
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';

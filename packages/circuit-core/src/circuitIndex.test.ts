@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { buildWireIndex } from '@quak/circuit-core';
-import { ClassicRegisterResponse, QuantumRegisterResponse, RegisterResponse } from '@/api/dto/circuit';
+import { buildWireIndex } from './circuitIndex.ts';
+import { ClassicRegisterResponse, QuantumRegisterResponse, RegisterResponse } from './dto/circuit.ts';
 
 const quantumRegister = (id: string, numberOfQubits: number): QuantumRegisterResponse => ({
     id,

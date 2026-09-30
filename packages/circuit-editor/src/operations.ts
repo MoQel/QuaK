@@ -2,10 +2,7 @@ import { Gauge, Plus, X as LucideX } from 'lucide-react';
 import { ComponentType } from 'react';
 import { GATE_ARITY, type GateArity, type OperationIdentifier } from '@quak/circuit-core';
 
-// Domain types live in circuit-core. They are re-exported here for existing importers.
-// This file owns the presentation layer (icons, colors, shapes) and composes it
-// onto the shared arity, which the QASM transform reads too, so the two cannot
-// disagree about how many qubits a gate takes.
+// How operations look (icons, colours, shapes), on top of the arity from circuit-core.
 export type { GateIdentifier, OperationIdentifier } from '@quak/circuit-core';
 
 export type ShapeClass = 'rounded-none' | 'rounded-full';
@@ -63,10 +60,7 @@ const normalizeOperationIdentifier = (identifier: unknown): OperationIdentifier 
     return null;
 };
 
-/**
- * Takes `unknown` on purpose: identifiers can come from parsed QASM, so an
- * unrecognized gate must render as a labelled box rather than crash the editor.
- */
+/** Unknown identifiers, e.g. from parsed QASM, render as a labelled box instead of crashing. */
 export const getOperationDefinition = (identifier: unknown): OperationDefinition => {
     const normalizedIdentifier = normalizeOperationIdentifier(identifier);
 

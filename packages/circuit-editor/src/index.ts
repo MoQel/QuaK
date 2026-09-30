@@ -1,8 +1,5 @@
-// @quak/circuit-editor. The circuit editor with its integrated gate library.
-//
-// Backend-free by construction: the host supplies the circuit and a setter through
-// CircuitStoreProvider, and provides the theme tokens the styles reference. What an
-// edit means downstream (REST save, .qasm rewrite) is the host's business.
+// @quak/circuit-editor: the circuit editor with its gate library. The host supplies the circuit and its
+// setter through CircuitStoreProvider, and the theme tokens listed in editor.css.
 
 export { CircuitView } from './circuit/CircuitView.tsx';
 export { CircuitToolbar } from './circuit/components/CircuitToolbar.tsx';

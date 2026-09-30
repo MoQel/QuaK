@@ -1,11 +1,6 @@
 import { createContext, useContext, useMemo, type ReactNode } from 'react';
 
-/**
- * What a host can persist. The editor offers only what the host can store: the extension writes
- * the circuit back into a .qasm file through `@quak/qasm-transform`, and a construct that
- * package cannot write would be dropped on the next write and would make the document read-only
- * on the next read. The web IDE stores all of them through the backend.
- */
+/** What the host can persist. The editor hides the controls for anything the host would drop. */
 export interface CircuitCapabilities {
     classicalRegisters: boolean;
     compositeGates: boolean;

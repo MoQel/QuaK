@@ -2,7 +2,7 @@ import { Check, Copy } from 'lucide-react';
 import { type CSSProperties } from 'react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { Button } from '@/components/ui/button.tsx';
+import { Button } from '@quak/ui/button';
 import { useTheme } from '@/theme.tsx';
 import type { ExportStatus } from '@quak/circuit-editor';
 

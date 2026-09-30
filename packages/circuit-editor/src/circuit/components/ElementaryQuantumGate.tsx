@@ -141,8 +141,8 @@ export function ElementaryQuantumGate({
         }, 100);
     };
 
-    // Actual action, decoupled from the event so mouse and keyboard handlers
-    // can each keep their own correctly-typed event signature.
+    // Actual action, decoupled from the event so mouse and keyboard handlers can each keep their own correctly-typed
+    // event signature.
     const activate = (withShift: boolean) => {
         if (isDraggingRef.current || isGhost) return;
         if (withShift) {

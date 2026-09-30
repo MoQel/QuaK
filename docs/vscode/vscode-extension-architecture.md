@@ -172,7 +172,7 @@ edit in the circuit view converts the file: the header becomes `OPENQASM 3.0;`,
 `include "qelib1.inc";` becomes `include "stdgates.inc";`, and the declarations become
 `qubit[n] q;` and `bit[n] c;`. Opening the file changes nothing; only a write does.
 
-**The support matrix is the single source.** `packages/circuit-core/src/support-matrix.ts`
+**The support matrix is the single source.** `packages/circuit-core/src/supportMatrix.ts`
 lists which statements and gates round-trip. The visitor consults it, the tests assert
 against it, and it decides which of the three document states a file lands in. It is also
 where an unsupported construct's user-facing wording comes from.
@@ -198,11 +198,13 @@ way, into one call per qubit.
 | `@quak/circuit-core` | DTOs, gate types, support matrix, wire index, angle formatting, the quantikz and Dirac notation mappers | nothing |
 | `@quak/ui` | The shadcn primitives both hosts use | radix, tailwind-merge, lucide, react as a peer |
 | `@quak/circuit-editor` | The circuit editor with its integrated gate library | circuit-core, ui |
-| `@quak/qasm-transform` | OpenQASM 3 ↔ circuit (OpenQASM 2 read as well), for the extension only | antlr4ng |
+| `@quak/qasm-transform` | OpenQASM 3 ↔ circuit (OpenQASM 2 read as well), for the extension only | circuit-core, antlr4ng |
 
-The web IDE consumes these through re-export shims, so its import paths did not change.
-The boundary is enforced by dependency-cruiser in CI: `packages/` must not import from
-`frontend/`, imports must resolve, dependencies must be declared, no cycles.
+Both hosts import them by package name, such as `@quak/circuit-core` or `@quak/ui/button`.
+dependency-cruiser enforces the layers in CI: circuit-core depends on no other package, ui
+knows nothing about circuits, qasm-transform has no UI, and neither the editor nor the webview
+bundles the parser. `packages/` must not import from `frontend/` or `vscode-extension/`,
+imports must resolve, dependencies must be declared, and there are no cycles.
 
 The gate library is not fetched at runtime. `operation-definitions.json` is imported from
 the backend resources at build time, so the definitions have one source and ship inside
@@ -247,5 +249,5 @@ There is no publish pipeline yet; it needs a Marketplace publisher account and a
 - `vscode-extension/README.dev.md`: source layout, edit flow, dev commands
 - `vscode-extension/src/host/circuitEditorProvider.ts`: where document, parse and
   arbitration meet
-- `packages/circuit-core/src/support-matrix.ts`: what the editor claims to support
+- `packages/circuit-core/src/supportMatrix.ts`: what the editor claims to support
 - `backend/src/main/antlr/`: the grammars both parsers come from

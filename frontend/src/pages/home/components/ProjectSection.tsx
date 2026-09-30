@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.tsx';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@quak/ui/card';
 
 export function ProjectSection({
     title,

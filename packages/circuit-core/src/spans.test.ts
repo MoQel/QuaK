@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { ElementaryQuantumGateDto, RegisterResponse } from '@/api/dto/circuit.ts';
-import { doSpansOverlap, getOperationSpan, toGlobalQubitIndex } from '@quak/circuit-core';
+import { ElementaryQuantumGateDto, RegisterResponse } from './dto/circuit.ts';
+import { doSpansOverlap, getOperationSpan, toGlobalQubitIndex } from './spans.ts';
 
 /** Register layout of the ripple-carry adder: wires cin[0]=0, a[0..3]=1..4, b[0..3]=5..8, cout[0]=9. */
 const adderRegisters: RegisterResponse[] = [

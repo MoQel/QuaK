@@ -10,8 +10,17 @@ import {
     type MeasurementDto,
     type QuantumOperationDto,
 } from '@quak/circuit-core';
-import { majorVersion, type QasmPreamble } from './toCircuit.ts';
+import { majorVersion } from './classify.ts';
+import type { QasmPreamble } from './toCircuit.ts';
 import { layerMarker, registerMarker } from './structuralComments.ts';
+
+/** A circuit this transform cannot write, as opposed to a defect in it. */
+export class QasmWriteError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = 'QasmWriteError';
+    }
+}
 
 /** What a file gets when it had no header of its own: valid standalone OpenQASM. */
 const DEFAULT_PREAMBLE: QasmPreamble = { version: '3.0', includes: ['"stdgates.inc"'], headerComments: [] };
@@ -20,8 +29,8 @@ const OPENQASM_2_LIBRARY = '"qelib1.inc"';
 const OPENQASM_3_LIBRARY = '"stdgates.inc"';
 
 /**
- * The header an OpenQASM 2 file gets once it is written as OpenQASM 3: the version, and
- * `qelib1.inc` replaced by `stdgates.inc`, which the backend treats as the same library.
+ * The header an OpenQASM 2 file gets once it is written as OpenQASM 3: the version, and `qelib1.inc` replaced by
+ * `stdgates.inc`, which the backend treats as the same library.
  */
 function asOpenQasm3(preamble: QasmPreamble): QasmPreamble {
     if (preamble.version === null || majorVersion(preamble.version) !== '2') return preamble;
@@ -32,12 +41,7 @@ function asOpenQasm3(preamble: QasmPreamble): QasmPreamble {
     return { ...preamble, version: '3.0', includes: [...new Set(includes)] };
 }
 
-/**
- * Writes a circuit back out as OpenQASM 3, also when it was read from OpenQASM 2.
- *
- * Mirrors the backend generator for circuit statements. The extension also
- * writes the preserved preamble because it rewrites complete user files.
- */
+/** Writes a circuit as OpenQASM 3, with the preserved preamble of the file it was read from. */
 export function toQasm(content: CircuitContent, source: QasmPreamble = DEFAULT_PREAMBLE): string {
     const preamble = asOpenQasm3(source);
     const registerNames = new Map(content.registers.map((register) => [register.id, register.name]));
@@ -86,7 +90,7 @@ function operationToQasm(operation: QuantumOperationDto, registerNames: Map<stri
     // A bare call would name a gate or circuit the file never declares.
     if (operation.type === 'COMPOSITE_QUANTUM_GATE' || operation.type === 'SUBCIRCUIT_OPERATION') {
         const kind = operation.type === 'COMPOSITE_QUANTUM_GATE' ? 'user-defined gate' : 'subcircuit';
-        throw new Error(`Cannot write the ${kind} '${operation.identifier}' to QASM.`);
+        throw new QasmWriteError(`Cannot write the ${kind} '${operation.identifier}' to QASM.`);
     }
 
     if (operation.type === 'MEASUREMENT') return measurementToQasm(operation, registerNames);
@@ -109,13 +113,13 @@ function operationToQasm(operation: QuantumOperationDto, registerNames: Map<stri
 }
 
 /**
- * One `measure q[i] -> c[j];` per measured qubit. A measurement without a classic bit
- * would read back as unsupported, so it is refused and the host rejects the edit.
+ * One `measure q[i] -> c[j];` per measured qubit. A measurement without a classic bit would read back as unsupported,
+ * so it is refused and the host rejects the edit.
  */
 function measurementToQasm(measurement: MeasurementDto, registerNames: Map<string, string>): string[] {
     const { targetQubits, classicBits } = measurement;
     if (targetQubits.length === 0 || classicBits.length !== targetQubits.length) {
-        throw new Error('Cannot write a measurement to QASM without one classic bit per measured qubit.');
+        throw new QasmWriteError('Cannot write a measurement to QASM without one classic bit per measured qubit.');
     }
 
     return targetQubits.map(
@@ -127,9 +131,7 @@ function measurementToQasm(measurement: MeasurementDto, registerNames: Map<strin
 const selectorToQasm = (selector: ElementSelectorDto, registerNames: Map<string, string>): string =>
     `${registerNames.get(selector.registerId) ?? 'q'}[${selector.index}]`;
 
-/**
- * QASM spelling for the constants `angleExpression` reads back.
- */
+/** QASM spelling for the constants `angleExpression` reads back. */
 const QASM_ANGLE_SYMBOLS: AngleSymbols = {
     pi: 'pi',
     tau: 'tau',
@@ -138,12 +140,9 @@ const QASM_ANGLE_SYMBOLS: AngleSymbols = {
     plain: String,
 };
 
-/**
- * Formats an angle for QASM, symbolically where possible. A non-finite angle has no
- * QASM spelling; writing `0` for it would change the circuit without a word, so it is
- * refused and the host rejects the edit.
- */
+/** Formats an angle for QASM, symbolically where possible. A non-finite angle has no QASM spelling and is refused. */
 export const formatAngle = (angle: number): string => {
-    if (!Number.isFinite(angle)) throw new Error(`Cannot write a non-finite rotation angle (${angle}) to QASM.`);
+    if (!Number.isFinite(angle))
+        throw new QasmWriteError(`Cannot write a non-finite rotation angle (${angle}) to QASM.`);
     return formatAngleWith(angle, QASM_ANGLE_SYMBOLS);
 };

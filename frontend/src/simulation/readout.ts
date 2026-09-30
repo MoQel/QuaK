@@ -1,4 +1,4 @@
-import { CircuitResponse, isClassicRegister } from '@/api/dto/circuit.ts';
+import { CircuitResponse, isClassicRegister } from '@quak/circuit-core';
 import { ReadoutRegisterInfo, SimulationOutcome } from '@/simulation/simulation.types.ts';
 import type { WireIndex } from '@quak/circuit-core';
 import { throwSimulationError } from '@/simulation/simulation.errors.ts';

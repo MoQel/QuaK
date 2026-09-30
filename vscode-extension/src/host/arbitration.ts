@@ -4,13 +4,7 @@ import { isWritable, type DocumentState, type EditRejectedReason } from '../shar
 
 export type EditDecision = { kind: 'apply' } | { kind: 'reject'; reason: EditRejectedReason };
 
-/**
- * Turns the classification into what the user may do with the document.
- *
- * The opt-in is remembered per document, but the document keeps changing: a file
- * unlocked for its comments can grow an unsupported statement a minute later. The
- * user agreed to lose comments, nothing else.
- */
+/** What the user may do with the document. The opt-in unlocks comments only, never a construct added later. */
 export function applyOptIn(input: { classification: DocumentClassification; hasOptedIn: boolean }): DocumentState {
     if (input.classification.kind === 'editable') {
         return 'editable';
@@ -33,8 +27,7 @@ export function decideEdit(input: {
         return { kind: 'reject', reason: 'stale' };
     }
 
-    // Asking what may be written, rather than listing what may not: a state added
-    // later is refused until someone says otherwise.
+    // Asks what may be written, so a state added later is refused by default.
     if (!isWritable(input.documentState)) {
         return { kind: 'reject', reason: 'readOnly' };
     }

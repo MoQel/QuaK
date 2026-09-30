@@ -8,15 +8,15 @@
         "test:all": "npm run test:backend & npm run test:frontend & wait",
         "test:backend": "cd backend && ./gradlew test",
         "test:frontend": "cd frontend && npm run test",
-        "test:packages": "npm run test --workspace @quak/qasm-transform && npm run test --workspace @quak/circuit-editor",
+        "test:packages": "npm run test --workspace=packages --if-present",
         "test:extension": "cd vscode-extension && npm run test",
         "test:extension:integration": "cd vscode-extension && npm run test:integration",
         "test:sequential": "npm run test:backend && npm run test:frontend",
         "lint": "eslint .",
-        "lint:boundaries": "depcruise packages --config .dependency-cruiser.cjs",
+        "lint:boundaries": "depcruise packages vscode-extension/src --config .dependency-cruiser.cjs",
         "typecheck": "npm run typecheck:frontend && npm run typecheck:packages && npm run typecheck:extension",
         "typecheck:frontend": "cd frontend && npm run typecheck",
-        "typecheck:packages": "cd packages/circuit-core && npm run typecheck && cd ../ui && npm run typecheck && cd ../circuit-editor && npm run typecheck && cd ../qasm-transform && npm run typecheck",
+        "typecheck:packages": "npm run typecheck --workspace=packages",
         "check:generated": "npm run check:generated --workspace @quak/qasm-transform",
         "typecheck:extension": "cd vscode-extension && npm run typecheck",
         "build:extension": "cd vscode-extension && npm run build",
@@ -40,7 +40,7 @@
         "lint-staged": "^16.2.7",
         "prettier": "^3.8.1",
         "typescript-eslint": "^8.26.1",
-        "vitest": "^4.1.10"
+        "vitest": "^4.1.11"
     },
     "workspaces": [
         "frontend",

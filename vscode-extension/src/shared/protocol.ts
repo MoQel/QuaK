@@ -1,7 +1,6 @@
-// Shared message types for the VSCode extension host and the circuit editor webview.
-// VSCode provides the postMessage transport. This file defines the application protocol.
+// Shared message types for the VSCode extension host and the circuit editor webview. VSCode provides the postMessage
+// transport. This file defines the application protocol.
 import type { CircuitContent, CircuitResponse } from '@quak/circuit-core';
-// Type-only on purpose: a value import here would pull the ANTLR parser into the webview bundle.
 import type { DocumentClassification } from '@quak/qasm-transform';
 
 export interface ReadyMessage {
@@ -32,8 +31,8 @@ export interface WebviewErrorMessage {
 export type WebviewMessage = ReadyMessage | ApplyEditMessage | EnableEditingMessage | WebviewErrorMessage;
 
 /**
- * Whether the document may be edited through the circuit view. `failed` is ours, not
- * the document's: the transform threw, so nothing about the file is known.
+ * Whether the document may be edited through the circuit view. `failed` is ours, not the document's: the transform
+ * threw, so nothing about the file is known.
  */
 export type DocumentState = 'editable' | 'readOnly' | 'editableByChoice' | 'failed';
 
@@ -50,11 +49,7 @@ export interface DocumentChangedMessage {
     classification: DocumentClassification | null;
 }
 
-/**
- * The edit landed. `documentChanged` follows whenever the text actually changed; this
- * message is what clears the optimistic circuit when it did not (an edit that produced
- * byte-identical QASM fires no document change).
- */
+/** The edit landed. Clears the optimistic circuit when the QASM was unchanged and no `documentChanged` follows. */
 export interface EditAppliedMessage {
     type: 'editApplied';
     requestId: string;
@@ -79,9 +74,7 @@ export interface EditRejectedMessage {
 /** Host -> webview. */
 export type HostMessage = DocumentChangedMessage | EditAppliedMessage | EditRejectedMessage;
 
-// Both bundles ship together, so the types above are the contract. The guards below
-// exist because postMessage delivers `unknown`: a message the other side never sent
-// (or sent half-formed) must be reported, not dispatched on a field that is not there.
+// postMessage delivers `unknown`, so every incoming message is checked before it is dispatched.
 
 const WEBVIEW_MESSAGE_TYPES: ReadonlySet<string> = new Set<WebviewMessage['type']>([
     'ready',

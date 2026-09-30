@@ -2,27 +2,15 @@
 /* the ui primitives animate their popovers and tooltips with these */
 @import 'tw-animate-css';
 
-/* Brings what the editor needs everywhere: the @source directives for its own
-   sources, its gate colours and the destructive palette. What it cannot know is
-   host-specific and supplied below. */
+/* The editor's @source directives, gate colours and destructive palette. */
 @import '@quak/circuit-editor/editor.css';
 
-/* The editor and the ui primitives use `dark:` variants. The web IDE keys those
-   off a .dark class it sets itself; here the theme comes from VSCode, which puts
-   vscode-light / vscode-dark / vscode-high-contrast on the body instead. Without
-   this the dark: rules never match and hover feedback silently does nothing. */
+/* VSCode marks a dark theme on the body (vscode-dark, vscode-high-contrast), not with a .dark class. */
 @custom-variant dark (&:is(body.vscode-dark *, body.vscode-high-contrast *));
 
-/* The packages reference these tokens but deliberately do not define them, so
-   each host supplies its own. A webview should look like VSCode rather than like
-   the web IDE, so surfaces, text and borders map onto VSCode's own theme colours:
-   https://code.visualstudio.com/api/extension-guides/webview#theming-webview-content
-   Theme variables are named after theme colours with '.' replaced by '-', e.g.
-   editor.background -> --vscode-editor-background.
-
-   The colours VSCode has no equivalent for, the gate colours and that
-   destructive means red, carry the editor's own meaning and come from the
-   package, so a circuit reads the same in both products. */
+/* Theme tokens the packages use but leave to each host. Surfaces, text and borders map onto VSCode's theme colours:
+   https://code.visualstudio.com/api/extension-guides/webview#theming-webview-content Gate colours and destructive come
+   from the package, so a circuit looks the same in both products. */
 @theme inline {
     --color-bg: var(--bg);
     --color-bg-dark: var(--bg-dark);
@@ -42,8 +30,7 @@
 }
 
 :root {
-    /* The webview is an editor, so its surfaces are the editor's, not a panel's
-       or the sidebar's. */
+    /* Editor surfaces, not panel or sidebar ones. */
     --bg: var(--vscode-editor-background);
     --bg-dark: var(--vscode-editor-background);
     --bg-subtle: var(--vscode-editor-background);
@@ -64,14 +51,12 @@
     --ring: var(--vscode-focusBorder);
 }
 
-/* --font-mono is deliberately not set: the gate labels use var(--font-mono), which
-   resolves to Tailwind's default mono stack in both products. Overriding it with
-   VSCode's editor font made the gate icons render differently here. */
+/* --font-mono stays Tailwind's default, so gate labels render as in the web IDE. */
 body {
     margin: 0;
     background-color: var(--vscode-editor-background);
     color: var(--vscode-editor-foreground);
-    font-family: var(--vscode-font-family);
+    font-family: var(--vscode-font-family), sans-serif;
     font-size: var(--vscode-font-size);
     font-weight: var(--vscode-font-weight);
 }

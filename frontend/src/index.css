@@ -2,9 +2,7 @@
 @import 'tw-animate-css';
 @import './dockview.css';
 
-/* Brings what the editor needs everywhere: the @source directives for its own
-   sources, its gate colours and the destructive palette. The tokens it names but
-   leaves to the host are defined below. */
+/* The editor's @source directives, gate colours and destructive palette. Its theme tokens are defined below. */
 @import '@quak/circuit-editor/editor.css';
 @custom-variant dark (&:is(.dark *));
 
@@ -38,9 +36,6 @@ body,
 }
 
 :root {
-    /* Global layout. These used to live in App.module.css, where they only loaded as
-       a side effect of the circuit editor importing that file for its class names.
-       CSS modules do not scope element selectors, so they were global by accident. */
     margin: 0 auto;
     text-align: center;
     --quantumOperationSpacing: 24px;

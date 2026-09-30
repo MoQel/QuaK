@@ -57,9 +57,7 @@ const COPY: {
         offersOptIn: true,
     }),
 
-    // Not only syntax: an undefined gate or register lands here too, and both mean the
-    // file is wrong rather than merely beyond this editor. Whatever could still be read
-    // is drawn, so the headline must not deny it.
+    // Also undefined gates and registers. Whatever could still be read is drawn, so the headline says so.
     invalid: ({ problems }, hasCircuit) => ({
         headline: hasCircuit
             ? 'Read-only: this file has errors, so the circuit below is incomplete.'
@@ -80,11 +78,7 @@ const EDITING_BY_CHOICE: NoticeCopy = {
     detail: 'Comments below the header will be dropped when the circuit is written back.',
 };
 
-/**
- * Explains why the circuit cannot be edited, and what to do about it.
- *
- * The reason is decided in the transform. This only puts it in words.
- */
+/** Explains why the circuit cannot be edited, and what to do about it. */
 export function DocumentNotice({ state, classification, hasCircuit, onEditAnyway }: Readonly<DocumentNoticeProps>) {
     const copy = noticeFor(state, classification, hasCircuit);
     if (!copy) return null;
@@ -114,8 +108,7 @@ function noticeFor(
     // Before everything else: with no classification there is nothing to explain.
     if (state === 'failed') return ANALYSIS_FAILED;
 
-    // Outranks the classification: the comments are still there, but the user has
-    // already seen this notice and accepted what happens to them.
+    // The user has already accepted losing the comments.
     if (state === 'editableByChoice') return EDITING_BY_CHOICE;
     if (!classification) return null;
 

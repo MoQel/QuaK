@@ -22,11 +22,7 @@ export interface LatexCodePreviewProps {
 
 interface QuantikzExportButtonProps {
     circuit: CircuitResponse | null;
-    /**
-     * How the generated LaTeX is displayed in the dialog. The web IDE injects a
-     * syntax-highlighted block. The extension omits it so `react-syntax-highlighter`
-     * stays out of the webview bundle and the default plain block is used.
-     */
+    /** Renders the LaTeX in the dialog. The default plain block keeps a syntax highlighter out of the webview. */
     renderCode?: (props: LatexCodePreviewProps) => ReactNode;
 }
 
@@ -71,8 +67,8 @@ export function QuantikzExportButton({ circuit, renderCode = defaultRenderCode }
     );
 }
 
-// Dependency-light fallback: a plain scrollable code block with a copy button, no
-// syntax highlighter. Consumers that want highlighting inject their own renderer.
+// Dependency-light fallback: a plain scrollable code block with a copy button, no syntax highlighter. Consumers that
+// want highlighting inject their own renderer.
 function defaultRenderCode({ code, onCopy, status }: LatexCodePreviewProps): ReactNode {
     return (
         <div className="relative rounded-md border border-border bg-bg-subtle overflow-y-auto">

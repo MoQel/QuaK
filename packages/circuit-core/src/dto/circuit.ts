@@ -1,6 +1,6 @@
 // Circuit DTOs shared by the web IDE, the extension and the QASM transform.
 
-import type { GateIdentifier, QuantumOperationType } from '../gate-types.ts';
+import type { GateIdentifier, QuantumOperationType } from '../gateTypes.ts';
 
 export interface ElementSelectorDto {
     registerId: string;
@@ -218,10 +218,4 @@ export interface RegisterRequest {
     size: number;
 }
 
-export const getClassicCircuitWidth = (circuitData: CircuitResponse): number => {
-    return circuitData.registers.reduce((sum, reg) => {
-        return isClassicRegister(reg) ? sum + reg.numberOfBits : sum;
-    }, 0);
-};
-
-export { type QuantumOperationType } from '../gate-types.ts';
+export { type QuantumOperationType } from '../gateTypes.ts';

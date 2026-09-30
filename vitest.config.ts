@@ -1,10 +1,8 @@
 import { defineConfig } from 'vitest/config';
 
-// Each suite keeps its own config, next to the code it tests. This only tells a run
-// started at the repo root (the IDE's, or a bare `vitest`) where those suites are.
-// Without it such a run collects every test file and none of their aliases.
+// Lets a run started at the repo root (an IDE, or a bare `vitest`) find each suite's own config.
 export default defineConfig({
     test: {
-        projects: ['frontend', 'packages/qasm-transform', 'vscode-extension'],
+        projects: ['frontend', 'packages/*/vitest.config.ts', 'vscode-extension'],
     },
 });

@@ -11,7 +11,7 @@ import {
     QuantumRegisterResponse,
     REGISTER_TYPE_CLASSIC,
     REGISTER_TYPE_QUANTUM,
-} from '@/api/dto/circuit';
+} from '@quak/circuit-core';
 import type { OperationIdentifier } from '@quak/circuit-core';
 import { SimulationResult } from '@/simulation/simulation.types.ts';
 

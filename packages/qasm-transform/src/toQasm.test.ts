@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { CircuitContent, OperationIdentifier } from '@quak/circuit-core';
-import { isEditable, toCircuit } from './toCircuit.ts';
-import { formatAngle, toQasm } from './toQasm.ts';
+import { isEditable } from './classify.ts';
+import { toCircuit } from './toCircuit.ts';
+import { formatAngle, QasmWriteError, toQasm } from './toQasm.ts';
 import { circuitOf, HEADER, parseEditable } from './testFixtures.ts';
 
 const roundTrip = (source: string) => {
@@ -9,8 +10,8 @@ const roundTrip = (source: string) => {
     return toQasm(parsed.content, parsed.preamble);
 };
 
-// The editor packs independent operations into one layer, so this is the normal
-// shape of a saved circuit, not an edge case.
+// The editor packs independent operations into one layer, so this is the normal shape of a saved circuit, not an edge
+// case.
 const TWO_LAYERS_THREE_GATES =
     `${HEADER}\n// Register q\nqubit[3] q;\n\n` + '// Layer 1\nh q[0];\nx q[1];\n\n// Layer 2\ncx q[0], q[1];\n';
 
@@ -31,7 +32,6 @@ describe('toQasm: emission', () => {
         expect(isEditable(toCircuit(emitted))).toBe(true);
     });
 
-    // Generated markers must not make generated files read-only.
     it('emits structural markers without making its own output read-only', () => {
         const emitted = roundTrip('OPENQASM 3.0;\nqubit[2] q;\nh q[0];\ncx q[0], q[1];\n');
 
@@ -140,7 +140,6 @@ describe('toQasm: emission', () => {
     });
 });
 
-// Editor-created DTOs may carry default angles on gates that are not parametric.
 describe('what toQasm writes, toCircuit has to accept again', () => {
     it('round trips a circuit whose layers hold more than one operation', () => {
         const reread = toCircuit(roundTrip(TWO_LAYERS_THREE_GATES));
@@ -150,7 +149,6 @@ describe('what toQasm writes, toCircuit has to accept again', () => {
     });
 
     it('leaves a file of its own byte for byte alone', () => {
-        // Anything less rewrites the user's file on an edit that changed nothing else.
         expect(roundTrip(TWO_LAYERS_THREE_GATES)).toBe(TWO_LAYERS_THREE_GATES);
     });
 });
@@ -273,6 +271,7 @@ describe('operations it cannot write yet', () => {
         });
 
         expect(() => toQasm(content)).toThrow(/user-defined gate 'bell'/);
+        expect(() => toQasm(content)).toThrow(QasmWriteError);
     });
 
     it.each([
@@ -305,6 +304,7 @@ describe('operations it cannot write yet', () => {
         };
 
         expect(() => toQasm(content)).toThrow(/one classic bit per measured qubit/);
+        expect(() => toQasm(content)).toThrow(QasmWriteError);
     });
 
     it('refuses a subcircuit, whose body lives in another file', () => {
@@ -319,6 +319,7 @@ describe('operations it cannot write yet', () => {
         });
 
         expect(() => toQasm(content)).toThrow(/subcircuit 'helper'/);
+        expect(() => toQasm(content)).toThrow(QasmWriteError);
     });
 });
 
@@ -336,12 +337,11 @@ describe('formatAngle: symbolic, so round trips do not decay', () => {
         expect(formatAngle(angle)).toBe(expected);
     });
 
-    // Writing `rx(0)` for an angle nobody chose would put a different circuit into the
-    // user's file without a word. Refusing lets the host reject the edit instead.
     it.each([Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY])(
         'refuses to write %s rather than silently writing 0',
         (angle) => {
             expect(() => formatAngle(angle)).toThrow(/non-finite/);
+            expect(() => formatAngle(angle)).toThrow(QasmWriteError);
         },
     );
 });

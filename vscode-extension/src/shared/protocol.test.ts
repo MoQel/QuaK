@@ -1,8 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { isHostMessage, isWebviewMessage } from './protocol.ts';
 
-// postMessage delivers `unknown`. Dispatching on a field that is not there would be a
-// silent no-op at best and a crash in a message handler at worst.
 describe('isWebviewMessage', () => {
     it.each([
         ['ready', { type: 'ready' }],

@@ -1,7 +1,7 @@
 import { useAppDispatch } from '@/hooks/useAppDispatch.ts';
 import React, { useState } from 'react';
 import { moveTab, setDragging } from '@/store/tabs/tabsSlice.ts';
-import { cn } from '@/lib/utils.ts';
+import { cn } from '@quak/ui/lib/utils';
 
 export function EditorDropZoneSlot({
     targetGroupId,

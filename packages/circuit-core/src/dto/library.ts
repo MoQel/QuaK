@@ -1,4 +1,4 @@
-import type { OperationIdentifier } from '../gate-types.ts';
+import type { OperationIdentifier } from '../gateTypes.ts';
 
 export interface OperationDefinitionResponse {
     id: string;

@@ -1,4 +1,4 @@
-import { Button } from '@/components/ui/button.tsx';
+import { Button } from '@quak/ui/button';
 import { RefreshCw } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -14,7 +14,7 @@ import {
     RegisterResponse,
     REGISTER_TYPE_CLASSIC,
     REGISTER_TYPE_QUANTUM,
-} from '@/api/dto/circuit.ts';
+} from '@quak/circuit-core';
 import type { OperationIdentifier } from '@quak/circuit-editor';
 import { useActiveCode } from '@/hooks/editor/useActiveCode.ts';
 
@@ -23,12 +23,7 @@ interface ParseEditorButtonProps {
     setCircuit: (circuit: CircuitResponse) => void;
 }
 
-/**
- * Parses the active editor's code into the circuit, via the backend's
- * `/api/circuit/parse`. Web-IDE only: the shared circuit editor has no backend,
- * so this is injected into `CircuitToolbar`'s `start` slot. The extension does the
- * same job locally with `@quak/qasm-transform`.
- */
+/** Parses the active editor's code into the circuit through the backend's `/api/circuit/parse`. */
 export function ParseEditorButton({ circuit, setCircuit }: Readonly<ParseEditorButtonProps>) {
     const [isParsing, setIsParsing] = useState(false);
     const { activeCodeTabId, getActiveCode } = useActiveCode();
@@ -79,8 +74,8 @@ export function ParseEditorButton({ circuit, setCircuit }: Readonly<ParseEditorB
     );
 }
 
-// Content-only parse result: the backend returns registers and layers without any
-// circuit identity. Ids are re-mapped onto the active circuit during normalization.
+// Content-only parse result: the backend returns registers and layers without any circuit identity. Ids are re-mapped
+// onto the active circuit during normalization.
 type ParserRegister = Partial<RegisterResponse> & {
     id?: string;
     name?: string;
@@ -139,7 +134,7 @@ export const normalizeParsedCircuit = (
 
     const registers: RegisterResponse[] = (parsed.registers ?? []).map((register, index) => {
         const type =
-            register.type ?? (register.numberOfBits !== undefined ? REGISTER_TYPE_CLASSIC : REGISTER_TYPE_QUANTUM);
+            register.type ?? (register.numberOfBits === undefined ? REGISTER_TYPE_QUANTUM : REGISTER_TYPE_CLASSIC);
         const typeIndex = registerTypeIndexes.get(type) ?? 0;
         registerTypeIndexes.set(type, typeIndex + 1);
         const currentRegister = currentRegistersByType.get(type)?.[typeIndex];

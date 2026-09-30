@@ -9,15 +9,16 @@ import {
     isCompositeGate,
     isQuantumRegister,
     isSubcircuit,
-} from '@/api/dto/circuit.ts';
-import { buildWireIndex, type WireIndex } from '@quak/circuit-core';
+    buildWireIndex,
+    type WireIndex,
+} from '@quak/circuit-core';
 import { MeasurementMapping } from '@/simulation/simulation.types.ts';
 import { throwSimulationError } from '@/simulation/simulation.errors.ts';
 
 export interface CircuitContext {
     /**
-     * Qubit and classical-bit numbering, from the same index the notation mappers
-     * use. The two are separate numberings: qubit 0 and classic bit 0 both exist.
+     * Qubit and classical-bit numbering, from the same index the notation mappers use. The two are separate numberings:
+     * qubit 0 and classic bit 0 both exist.
      */
     quantumWires: WireIndex;
     classicWires: WireIndex;

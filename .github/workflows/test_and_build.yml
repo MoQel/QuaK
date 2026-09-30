@@ -164,7 +164,7 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      # Shared packages/ must not import from frontend/.
+      # Layer rules between packages/, frontend/ and vscode-extension/.
       - name: Check package boundaries (dependency-cruiser)
         run: npm run lint:boundaries
 

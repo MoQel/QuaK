@@ -59,10 +59,7 @@ type Selection = {
 };
 
 interface CircuitViewProps {
-    /**
-     * Slot above the canvas, for chrome only the host has: the web IDE puts its
-     * file-tab bar here, the extension (one document, one circuit) passes nothing.
-     */
+    /** Host-specific chrome above the canvas, such as the web IDE's file tabs. */
     header?: ReactNode;
     subcircuits?: SubcircuitOption[];
 }
@@ -148,30 +145,13 @@ export function CircuitView({ header, subcircuits: availableSubcircuits = [] }: 
         const targetQubits = mapping.map((m) => m.targetQubit);
         const subcircuitQubitIndices = mapping.map((m) => m.subcircuitIndex);
 
-        if (subcircuitMappingContext.existingOperationId) {
-            setCircuit((prev) => {
-                if (!prev) return prev;
-                return {
-                    ...prev,
-                    layers: prev.layers.map((layer) => ({
-                        quantumOperations: layer.quantumOperations.map((operation) => {
-                            if (
-                                operation.id === subcircuitMappingContext.existingOperationId &&
-                                isSubcircuit(operation)
-                            ) {
-                                return {
-                                    ...operation,
-                                    targetQubits,
-                                    subcircuitQubitIndices,
-                                    body: undefined,
-                                    bindingError: undefined,
-                                };
-                            }
-                            return operation;
-                        }),
-                    })),
-                };
-            });
+        const { existingOperationId } = subcircuitMappingContext;
+        if (existingOperationId) {
+            const remap = (operation: QuantumOperationDto): QuantumOperationDto =>
+                isSubcircuit(operation)
+                    ? { ...operation, targetQubits, subcircuitQubitIndices, body: undefined, bindingError: undefined }
+                    : operation;
+            setCircuit((prev) => (prev ? updateOperation(prev, existingOperationId, remap) : prev));
         } else {
             const operation: SubcircuitOperationDto = {
                 id: crypto.randomUUID(),
@@ -289,20 +269,9 @@ export function CircuitView({ header, subcircuits: availableSubcircuits = [] }: 
      * save picks it up — there is deliberately no granular endpoint for a single operation.
      */
     const setRotationAngle = (operationId: string, rotationAngle: number) => {
-        setCircuit((prev) =>
-            prev
-                ? {
-                      ...prev,
-                      layers: prev.layers.map((layer) => ({
-                          quantumOperations: layer.quantumOperations.map((op) =>
-                              op.id === operationId && op.type === 'ELEMENTARY_QUANTUM_GATE'
-                                  ? { ...op, rotationAngle }
-                                  : op,
-                          ),
-                      })),
-                  }
-                : prev,
-        );
+        const rotate = (operation: QuantumOperationDto): QuantumOperationDto =>
+            operation.type === 'ELEMENTARY_QUANTUM_GATE' ? { ...operation, rotationAngle } : operation;
+        setCircuit((prev) => (prev ? updateOperation(prev, operationId, rotate) : prev));
     };
 
     /** Adds a repetition frame over already chosen operations. */
@@ -335,11 +304,11 @@ export function CircuitView({ header, subcircuits: availableSubcircuits = [] }: 
     // for. These listeners sit on the window, so they run whatever the source did or did not do.
     useEffect(() => {
         const clear = () => setHoverPos(null);
-        window.addEventListener('dragend', clear);
-        window.addEventListener('drop', clear);
+        globalThis.addEventListener('dragend', clear);
+        globalThis.addEventListener('drop', clear);
         return () => {
-            window.removeEventListener('dragend', clear);
-            window.removeEventListener('drop', clear);
+            globalThis.removeEventListener('dragend', clear);
+            globalThis.removeEventListener('drop', clear);
         };
     }, []);
 
@@ -538,7 +507,7 @@ export function CircuitView({ header, subcircuits: availableSubcircuits = [] }: 
             return;
         }
 
-        const coveredIds = covered.map((operation) => operation.id!).filter(Boolean);
+        const coveredIds = covered.map((operation) => operation.id).filter(Boolean);
         if (coveredIds.length > 0) {
             if (event.shiftKey) {
                 setSelectedOperationIds((prev) => Array.from(new Set([...prev, ...coveredIds])));
@@ -739,6 +708,22 @@ interface BuildUiLayersInput {
  *
  * A collapsed classical register is a single row standing for all its bits.
  */
+/** The circuit with `update` applied to the operation of that id, wherever it sits. */
+function updateOperation(
+    circuit: CircuitResponse,
+    operationId: string,
+    update: (operation: QuantumOperationDto) => QuantumOperationDto,
+): CircuitResponse {
+    return {
+        ...circuit,
+        layers: circuit.layers.map((layer) => ({
+            quantumOperations: layer.quantumOperations.map((operation) =>
+                operation.id === operationId ? update(operation) : operation,
+            ),
+        })),
+    };
+}
+
 function buildFlatQubits(displayRegisters: RegisterResponse[], collapsedClassicRegisterIds: Set<string>): FlatQubit[] {
     let globalCounter = 0;
     let visualYOffset = 0;

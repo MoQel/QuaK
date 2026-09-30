@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { GATE_ARITY, SUPPORT_MATRIX, isGateSupported, unsupportedStatementRules } from '@quak/circuit-core';
 import { OpenQASM3Parser } from './generated/OpenQASM3Parser.js';
-import { isEditable, toCircuit } from './toCircuit.ts';
+import { isEditable } from './classify.ts';
+import { toCircuit } from './toCircuit.ts';
 import { HEADER } from './testFixtures.ts';
 
-// The matrix is useful only if the transform cannot quietly disagree with it.
 describe('support matrix is consistent with the rest of the transform', () => {
     it('names only statement rules the grammar actually has', () => {
-        // The visitor finds the rule by its name on the parse tree. A misspelt key would
-        // never match, and its statement would come back as an "unrecognized statement".
+        // The visitor finds the rule by its name on the parse tree. A misspelt key would never match, and its statement
+        // would come back as an "unrecognized statement".
         const unknown = Object.keys(unsupportedStatementRules()).filter(
             (rule) => !OpenQASM3Parser.ruleNames.includes(rule),
         );
@@ -22,8 +22,8 @@ describe('support matrix is consistent with the rest of the transform', () => {
     });
 
     it('does not claim MEASURE or DUMMY as gate calls', () => {
-        // `measure` is not a gateCallStatement in the grammar, and DUMMY is a
-        // drag-time placeholder that never exists in a document.
+        // `measure` is not a gateCallStatement in the grammar, and DUMMY is a drag-time placeholder that never exists
+        // in a document.
         expect(isGateSupported('MEASURE')).toBe(false);
         expect(isGateSupported('DUMMY')).toBe(false);
     });
@@ -94,8 +94,8 @@ describe('the visitor rejects what the matrix says it rejects', () => {
     });
 
     it('keeps support a matrix decision, not an arity one', () => {
-        // DUMMY has a shape and is still not supported. It is also not OpenQASM, so this
-        // rule can only be stated here. No document can reach it through a gate call.
+        // DUMMY has a shape and is still not supported. It is also not OpenQASM, so this rule can only be stated here.
+        // No document can reach it through a gate call.
         expect(GATE_ARITY.DUMMY).toBeDefined();
         expect(isGateSupported('DUMMY')).toBe(false);
     });
@@ -174,9 +174,6 @@ describe('comments are detected, not silently dropped', () => {
     });
 
     it('keeps recognising markers after a layer that holds more than one operation', () => {
-        // A marker sits above the *first* operation of its layer. Counting gate calls
-        // instead of layers made every marker below a multi-operation layer look like a
-        // stranger's comment, so a document QuaK had written came back read-only.
         const result = toCircuit(
             'OPENQASM 3.0;\n// Register q\nqubit[3] q;\n\n// Layer 1\nh q[0];\nx q[1];\n\n// Layer 2\ncx q[0], q[1];\n',
         );

@@ -7,7 +7,8 @@ import {
     isCompositeGate,
     isQuantumRegister,
     isSubcircuit,
-} from '@/api/dto/circuit.ts';
+    toExecutionOrder,
+} from '@quak/circuit-core';
 import * as qulacs from 'qulacs-wasm';
 import { Complex } from 'qulacs-wasm';
 import {
@@ -18,7 +19,6 @@ import {
     validateOperations,
 } from '@/simulation/circuitContext.ts';
 import { applyGateToState } from '@/simulation/qulacsGates.ts';
-import { toExecutionOrder } from '@quak/circuit-core';
 import {
     Bit,
     buildOutcomes,

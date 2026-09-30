@@ -11,13 +11,12 @@ import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { toast } from 'sonner';
 
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@quak/ui/button';
+import { Card, CardContent } from '@quak/ui/card';
 import { CircuitTabBar } from '@/views/circuit-workspace/CircuitTabBar.tsx';
 import { useCircuitTabs } from '@/contexts/CircuitTabsContext.tsx';
 import { api } from '@/api/api.ts';
-import { OperationDefinitionResponse } from '@/api/dto/library.ts';
-import { SubcircuitOption } from '@/api/dto/circuit.ts';
+import { OperationDefinitionResponse, SubcircuitOption } from '@quak/circuit-core';
 import { useProject } from '@/contexts/ProjectContext.tsx';
 import { openTab } from '@/store/tabs/tabsSlice.ts';
 import { NewSubcircuitDialog } from '@/views/circuit-workspace/NewSubcircuitDialog.tsx';
@@ -50,17 +49,14 @@ function CircuitWorkspaceContent() {
     };
     const [initialCollapsed] = useState(() => localStorage.getItem(LIBRARY_VISIBILITY_STORAGE_KEY) === 'true');
 
-    // Load the gate library once. The circuit editor itself takes these as data,
-    // so it stays renderable without a backend.
+    // Load the gate library once; the editor takes it as data.
     useEffect(() => {
         api.get<OperationDefinitionResponse[]>('/api/operations')
             .then(setOperations)
             .catch((e) => console.error('Failed to fetch quantum operations:', e));
     }, []);
 
-    // A file can be open while its circuit is still being fetched, or after the
-    // fetch failed. Both are web-IDE states (the extension parses the open
-    // document synchronously), so they are decided here, not in the shared editor.
+    // A file can be open while its circuit is still loading or after the fetch failed.
     const renderEditor = () => {
         if (!activeCircuitTabId) return <NoFileOpen />;
         if (!activeCircuit) {
@@ -105,9 +101,7 @@ function CircuitWorkspaceContent() {
     );
 }
 
-// Circuits exist per file only, so without an active file tab there is nothing to
-// show. Mirrors the Code Editor's "No file open" state. This is a web-IDE concept,
-// which is why it lives here and not in the shared editor.
+// Mirrors the code editor's "No file open" state.
 function NoFileOpen() {
     return (
         <Card className="h-full overflow-hidden border-none rounded-none bg-bg-subtle p-0 gap-0">
@@ -153,9 +147,7 @@ function CircuitUnavailable({
 export function CircuitWorkspace() {
     const { activeCircuit, setActiveCircuit } = useCircuitTabs();
 
-    // This is where the web IDE decides what an edit means: a local change plus the
-    // debounced full-circuit save in CircuitTabsContext. The extension provides the
-    // same two values backed by the .qasm document instead.
+    // An edit is a local change plus the debounced full-circuit save in CircuitTabsContext.
     return (
         <CircuitStoreProvider circuit={activeCircuit} setCircuit={setActiveCircuit}>
             <CircuitDragProvider>

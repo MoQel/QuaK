@@ -61,7 +61,7 @@ function operandLine(controls: number, targets: number): string {
 
 const plural = (amount: number, noun: string): string => `${amount} ${noun}${amount === 1 ? '' : 's'}`;
 
-/** A plain grid up to 4×4: a hover renders no LaTeX, and anything larger is read wrong more easily than the description. */
+/** A plain grid up to 4×4; hovers render no LaTeX, and larger matrices are hard to read as text. */
 function matrixBlock(matrix: MatrixInfoDto | undefined): string | undefined {
     if (!matrix || matrix.computable.length === 0 || matrix.rows > 4 || matrix.cols > 4) return undefined;
 

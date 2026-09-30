@@ -9,7 +9,7 @@ import React, {
     useState,
 } from 'react';
 import { api } from '@/api/api.ts';
-import { CircuitResponse } from '@/api/dto/circuit.ts';
+import { CircuitResponse } from '@quak/circuit-core';
 import { useAppSelector } from '@/hooks/useAppSelector.ts';
 import { useProject } from '@/contexts/ProjectContext.tsx';
 import { saveCircuitContent, withResolvedSubcircuits } from '@/views/circuit-workspace/circuitPersistence.ts';

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { toLabeledDirac } from '@quak/circuit-core/notation/dirac';
+import { toLabeledDirac } from './index.ts';
 import {
     CircuitResponse,
     ElementaryQuantumGateDto,
@@ -7,7 +7,7 @@ import {
     LayerResponse,
     QuantumOperationDto,
     QuantumRegisterResponse,
-} from '@/api/dto/circuit.ts';
+} from '../../dto/circuit.ts';
 
 const quantumRegister = (id: string, numberOfQubits: number, name = id): QuantumRegisterResponse => ({
     id,

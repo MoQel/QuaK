@@ -1,5 +1,5 @@
-// Works out what the cursor is pointing at from the text alone.
-// Whether a name actually refers to a declared register is decided by `ClassificationCache`.
+// Works out what the cursor is pointing at from the text alone. Whether a name actually refers to a declared register
+// is decided by `ClassificationCache`.
 
 export type WordRole = 'gate' | 'register' | 'keyword';
 
@@ -96,8 +96,8 @@ export function wordAt(text: string, offset: number): QasmWord | null {
 function roleOf(word: string, before: readonly string[], assigned: boolean): WordRole {
     if (MODIFIERS.has(word) || KEYWORDS.has(word) || DECLARATION_KEYWORDS.has(word)) return 'keyword';
 
-    // The first name in a statement is the gate being called, ignoring modifiers,
-    // unless the statement assigns to it. Everything after it is an argument, so a register.
+    // The first name in a statement is the gate being called, ignoring modifiers, unless the statement assigns to it.
+    // Everything after it is an argument, so a register.
     return namesSoFar(before).length === 0 && !assigned ? 'gate' : 'register';
 }
 
@@ -166,8 +166,8 @@ function contextAt(text: string, offset: number): Context {
             if (skipped > offset) return { inCode: false, before };
             index = skipped;
         } else if (STATEMENT_END.test(text[index])) {
-            // Also drops any `[` left open by broken code, which would otherwise
-            // make the rest of the file look like one long index.
+            // Also drops any `[` left open by broken code, which would otherwise make the rest of the file look like
+            // one long index.
             before = [];
             indexing = [];
             index += 1;
@@ -201,14 +201,13 @@ function skipNonCode(text: string, index: number): number | null {
 function endOf(text: string, terminator: string, from: number, length: number): number {
     const found = text.indexOf(terminator, from);
 
-    // One past the end, so that an unterminated comment covers every offset,
-    // including one at the very end of the text.
+    // One past the end, so that an unterminated comment covers every offset, including one at the very end of the text.
     return found === -1 ? text.length + 1 : found + length;
 }
 
 /**
- * Strings cannot span lines (`'"' ~["\r\t\n]+? '"'`), so a quote without a partner on
- * its own line opens nothing and we only step over the quote character itself.
+ * Strings cannot span lines (`'"' ~["\r\t\n]+? '"'`), so a quote without a partner on its own line opens nothing and we
+ * only step over the quote character itself.
  */
 function stringEnd(text: string, index: number): number {
     const closing = text.indexOf(text[index], index + 1);

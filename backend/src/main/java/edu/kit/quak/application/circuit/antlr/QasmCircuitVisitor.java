@@ -57,6 +57,10 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
     /** The built-in include names, listed in error messages so the user sees what needs no file. */
     private static final String STANDARD_LIBRARY_LIST = STANDARD_LIBRARIES.stream().sorted().collect(Collectors.joining("', '"));
 
+    private static final String SLICE_START = " slice start";
+
+    private static final String SLICE_STOP = " slice stop";
+
     // Transient content-only circuit: it carries no identity (id/projectId/fileId) because only
     // its registers and layers are returned to the client. Registers are created from the qubit
     // declarations found in the code.
@@ -231,61 +235,71 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
         return stringLiteral;
     }
 
+    /** The circuit a @composition annotation points at, by id, by name, or both. */
+    private record Composition(String circuitId, String circuitName) {}
+
     @Override
     public Void visitStatement(OpenQASM3Parser.StatementContext ctx) {
-        if (ctx.gateStatement() != null) {
-            String gateName = ctx.gateStatement().Identifier().getText();
-            String circuitId = null;
-            String circuitName = null;
-            boolean hasCompositionAnnotation = false;
-            if (ctx.annotation() != null && !ctx.annotation().isEmpty()) {
-                for (var ann : ctx.annotation()) {
-                    String kw = ann.AnnotationKeyword() != null ? ann.AnnotationKeyword().getText() : "";
-                    if (kw.equalsIgnoreCase("@composition")) {
-                        hasCompositionAnnotation = true;
-                        String rem = ann.RemainingLineContent() != null ? ann.RemainingLineContent().getText().trim() : "";
-                        circuitId = parseCircuitIdFromAnnotation(rem);
-                        circuitName = parseCircuitNameFromAnnotation(rem);
-                        break;
-                    }
-                }
-            }
-            if (!hasCompositionAnnotation && pendingComposition) {
-                hasCompositionAnnotation = true;
-                circuitId = pendingSubcircuitId;
-                circuitName = pendingSubcircuitName;
-                pendingComposition = false;
-                pendingSubcircuitId = null;
-                pendingSubcircuitName = null;
-            }
-            if (hasCompositionAnnotation) {
-                if (circuitId == null) {
-                    if (circuitName != null && !circuitName.isBlank()) {
-                        Optional<String> resolved = includeLoader.resolveCircuitId(currentFileId, circuitName);
-                        if (resolved.isPresent()) {
-                            circuitId = resolved.get();
-                        } else if (currentFileId != null && includeLoader != QasmIncludeLoader.NONE) {
-                            throw new QasmParseException(
-                                "Could not resolve subcircuit file '%s': no such file in this project.".formatted(circuitName)
-                            );
-                        }
-                    }
-                }
-                if (circuitId == null) {
-                    circuitId = UUID.randomUUID().toString();
-                }
-                subcircuitsByGateName.put(gateName, circuitId);
-                if (circuitName != null && !circuitName.isBlank()) {
-                    subcircuitNamesByGateName.put(gateName, circuitName);
-                }
-                List<Integer> qubitIndices = extractSubcircuitQubitIndices(ctx.gateStatement());
-                if (qubitIndices != null && !qubitIndices.isEmpty()) {
-                    subcircuitQubitIndicesByGateName.put(gateName, qubitIndices);
-                }
-                return null; // Skip statement body of pseudo composite gate
+        Composition composition = ctx.gateStatement() != null ? compositionOf(ctx) : null;
+        if (composition == null) {
+            return super.visitStatement(ctx);
+        }
+        registerSubcircuit(ctx.gateStatement(), composition);
+        return null; // Skip statement body of pseudo composite gate
+    }
+
+    /** The @composition annotation on this statement, or the one read just before it; null when there is none. */
+    private Composition compositionOf(OpenQASM3Parser.StatementContext ctx) {
+        for (var ann : ctx.annotation()) {
+            String kw = ann.AnnotationKeyword() != null ? ann.AnnotationKeyword().getText() : "";
+            if (kw.equalsIgnoreCase("@composition")) {
+                String rem = ann.RemainingLineContent() != null ? ann.RemainingLineContent().getText().trim() : "";
+                return new Composition(parseCircuitIdFromAnnotation(rem), parseCircuitNameFromAnnotation(rem));
             }
         }
-        return super.visitStatement(ctx);
+        if (!pendingComposition) {
+            return null;
+        }
+        Composition pending = new Composition(pendingSubcircuitId, pendingSubcircuitName);
+        pendingComposition = false;
+        pendingSubcircuitId = null;
+        pendingSubcircuitName = null;
+        return pending;
+    }
+
+    private void registerSubcircuit(OpenQASM3Parser.GateStatementContext gateStatement, Composition composition) {
+        String gateName = gateStatement.Identifier().getText();
+        String circuitName = composition.circuitName();
+        boolean named = circuitName != null && !circuitName.isBlank();
+
+        String circuitId = composition.circuitId();
+        if (circuitId == null && named) {
+            circuitId = resolveSubcircuitId(circuitName);
+        }
+        if (circuitId == null) {
+            circuitId = UUID.randomUUID().toString();
+        }
+
+        subcircuitsByGateName.put(gateName, circuitId);
+        if (named) {
+            subcircuitNamesByGateName.put(gateName, circuitName);
+        }
+        List<Integer> qubitIndices = extractSubcircuitQubitIndices(gateStatement);
+        if (!qubitIndices.isEmpty()) {
+            subcircuitQubitIndicesByGateName.put(gateName, qubitIndices);
+        }
+    }
+
+    /** The id of the project circuit with this name, or null outside a project, where none can be looked up. */
+    private String resolveSubcircuitId(String circuitName) {
+        Optional<String> resolved = includeLoader.resolveCircuitId(currentFileId, circuitName);
+        if (resolved.isPresent()) {
+            return resolved.get();
+        }
+        if (currentFileId != null && includeLoader != QasmIncludeLoader.NONE) {
+            throw new QasmParseException("Could not resolve subcircuit file '%s': no such file in this project.".formatted(circuitName));
+        }
+        return null;
     }
 
     @Override
@@ -302,11 +316,11 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
 
     private List<Integer> extractSubcircuitQubitIndices(OpenQASM3Parser.GateStatementContext gateStatement) {
         if (gateStatement == null || gateStatement.qubits == null || gateStatement.qubits.Identifier() == null) {
-            return null;
+            return List.of();
         }
         List<org.antlr.v4.runtime.tree.TerminalNode> idNodes = gateStatement.qubits.Identifier();
         if (idNodes.isEmpty()) {
-            return null;
+            return List.of();
         }
         List<Integer> indices = new ArrayList<>();
         java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("(\\d+)$");
@@ -316,7 +330,7 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
             if (matcher.find()) {
                 indices.add(Integer.parseInt(matcher.group(1)));
             } else {
-                return null;
+                return List.of();
             }
         }
         return indices;
@@ -385,7 +399,7 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
     /**
      * Declares a classical register, or resizes one already declared under that name.
      *
-     * A classical register is where a measurement writes its result, so it has to exist in the
+     * <p>A classical register is where a measurement writes its result, so it has to exist in the
      * circuit before any `measure ... -> c[i]` can refer to it.
      */
     private void declareClassicRegister(String registerName, int size) {
@@ -451,7 +465,7 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
         }
 
         for (List<ElementSelector> operands : broadcast(operandSlots, gateName)) {
-            emitGateCall(gateName, operands, arguments, ctx);
+            emitGateCall(gateName, operands, arguments);
         }
         return null;
     }
@@ -459,7 +473,7 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
     /**
      * The operand lists of the individual calls a (possibly broadcast) gate call stands for.
      *
-     * A gate named on registers applies once per qubit: `h q;` on a two-qubit register is two H
+     * <p>A gate named on registers applies once per qubit: `h q;` on a two-qubit register is two H
      * gates, and `cx a, b;` pairs them up. Reading only the first qubit instead -- which is what
      * this did before -- produced a circuit quietly missing most of its gates. A single qubit
      * repeats against a register, so `cx a[0], b;` controls every qubit of b from a[0].
@@ -495,12 +509,7 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
     }
 
     /** Emits one gate call on already resolved operands. */
-    private void emitGateCall(
-        String gateName,
-        List<ElementSelector> operands,
-        List<Double> arguments,
-        OpenQASM3Parser.GateCallStatementContext ctx
-    ) {
+    private void emitGateCall(String gateName, List<ElementSelector> operands, List<Double> arguments) {
         // A subcircuit is declared as a `gate` carrying a @composition annotation, so it also ends up
         // in gateDefinitions. The annotation is the more specific statement and therefore wins: only
         // it names another circuit, while the declaration itself is deliberately empty.
@@ -780,7 +789,7 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
     /**
      * A measurement (`measure b[0] -> ans[0];`, or a slice like `measure b[0:3] -> ans[0:3];`).
      *
-     * The classic bit is not optional: the circuit model requires a measurement to assign its
+     * <p>The classic bit is not optional: the circuit model requires a measurement to assign its
      * result somewhere, and inventing a register the user never declared would put state into the
      * circuit that its source does not contain. A bare `measure q[0];` is therefore a clear error
      * rather than a silent half-measurement.
@@ -806,11 +815,8 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
 
     /**
      * Emits one {@link Measurement} per measured qubit, paired position by position with the classic
-     * bits. Shared by `measure q -> c;` and `c = measure q;`, which mean the same.
-     *
-     * A slice expands into one measurement per bit, the way everything statically decidable is
-     * expanded here. Taking only the first index instead would quietly measure one qubit and drop
-     * the rest -- a wrong circuit that still looks like it parsed.
+     * bits. Shared by `measure q -> c;` and `c = measure q;`, which mean the same. A slice or a whole
+     * register expands into one measurement per bit.
      */
     private void emitMeasurements(
         ParserRuleContext ctx,
@@ -854,12 +860,12 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
     /**
      * A reset (`reset cin;`, or a whole register).
      *
-     * A circuit starts in |0...0>, so resetting a qubit that nothing has touched yet asks for the
+     * <p>A circuit starts in |0...0>, so resetting a qubit that nothing has touched yet asks for the
      * state it is already in -- the statement is redundant and emitting nothing keeps the circuit
      * exactly right. That is the shape real files use it in: a block of resets at the top saying
      * "start from zero".
      *
-     * A reset *after* something acted on the qubit is a different operation entirely -- it collapses
+     * <p>A reset *after* something acted on the qubit is a different operation entirely -- it collapses
      * live state mid-circuit -- and there is no operation type for it. It is rejected rather than
      * dropped, because dropping it would leave a circuit that quietly computes something else.
      */
@@ -898,7 +904,7 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
     /**
      * An assigned variable is no longer a compile-time constant, so its binding is dropped.
      *
-     * `c = measure q;` is the other spelling of `measure q -> c;` and emits the same measurements.
+     * <p>`c = measure q;` is the other spelling of `measure q -> c;` and emits the same measurements.
      */
     @Override
     public Void visitAssignmentStatement(OpenQASM3Parser.AssignmentStatementContext ctx) {
@@ -1206,7 +1212,7 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
      * Indices an {@code indexedIdentifier} selects in a register of the given size: the whole
      * register when unindexed, one index for {@code r[i]}, and the expanded slice for {@code r[a:b]}.
      *
-     * Shared by measurements and gate operands, which select the same way.
+     * <p>Shared by measurements and gate operands, which select the same way.
      */
     private List<ElementSelector> resolveSelectors(
         OpenQASM3Parser.IndexedIdentifierContext indexedIdentifier,
@@ -1215,27 +1221,8 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
         String registerName,
         String what
     ) {
-        List<OpenQASM3Parser.IndexOperatorContext> indexOperators = indexedIdentifier.indexOperator();
-        List<Integer> indices = new ArrayList<>();
-
-        if (indexOperators == null || indexOperators.isEmpty()) {
-            // `measure b -> ans;` addresses the whole register.
-            for (int i = 0; i < registerSize; i++) {
-                indices.add(i);
-            }
-        } else {
-            OpenQASM3Parser.IndexOperatorContext indexOperator = indexOperators.getFirst();
-            if (indexOperator.rangeExpression() != null && !indexOperator.rangeExpression().isEmpty()) {
-                indices.addAll(sliceIndices(indexOperator.rangeExpression().getFirst(), registerSize, what));
-            } else {
-                for (OpenQASM3Parser.ExpressionContext expression : indexOperator.expression()) {
-                    indices.add(toIntExact(evaluator.evaluateInt(expression, what + " index")));
-                }
-            }
-        }
-
         List<ElementSelector> selectors = new ArrayList<>();
-        for (int index : indices) {
+        for (int index : selectedIndices(indexedIdentifier, registerSize, what)) {
             if (index < 0 || index >= registerSize) {
                 throw new QasmParseException(
                     "%s index %d is outside register '%s', which has %d.".formatted(what, index, registerName, registerSize)
@@ -1249,52 +1236,78 @@ public class QasmCircuitVisitor extends OpenQASM3ParserBaseVisitor<Void> {
         return selectors;
     }
 
+    /** Every index for an unindexed register, the listed ones for `r[i]`, the expanded slice for `r[a:b]`. */
+    private List<Integer> selectedIndices(OpenQASM3Parser.IndexedIdentifierContext indexedIdentifier, int registerSize, String what) {
+        List<OpenQASM3Parser.IndexOperatorContext> indexOperators = indexedIdentifier.indexOperator();
+        if (indexOperators == null || indexOperators.isEmpty()) {
+            // `measure b -> ans;` addresses the whole register.
+            List<Integer> indices = new ArrayList<>();
+            for (int i = 0; i < registerSize; i++) {
+                indices.add(i);
+            }
+            return indices;
+        }
+
+        OpenQASM3Parser.IndexOperatorContext indexOperator = indexOperators.getFirst();
+        if (indexOperator.rangeExpression() != null && !indexOperator.rangeExpression().isEmpty()) {
+            return sliceIndices(indexOperator.rangeExpression().getFirst(), registerSize, what);
+        }
+        List<Integer> indices = new ArrayList<>();
+        for (OpenQASM3Parser.ExpressionContext expression : indexOperator.expression()) {
+            indices.add(toIntExact(evaluator.evaluateInt(expression, what + " index")));
+        }
+        return indices;
+    }
+
     /**
      * Expands a register slice. Unlike a for-loop range both endpoints are optional here -- `[0:]`
      * and `[:3]` are legal register slices -- so they default to the register's own bounds. The
      * stop is inclusive, matching the loop ranges.
      */
     private List<Integer> sliceIndices(OpenQASM3Parser.RangeExpressionContext range, int registerSize, String what) {
-        List<OpenQASM3Parser.ExpressionContext> expressions = range.expression();
-        int colons = range.COLON().size();
-
-        long start;
-        long step;
-        long stop;
-        if (colons == 2 && expressions.size() == 3) {
-            start = evaluator.evaluateInt(expressions.get(0), what + " slice start");
-            step = evaluator.evaluateInt(expressions.get(1), what + " slice step");
-            stop = evaluator.evaluateInt(expressions.get(2), what + " slice stop");
-        } else if (colons == 1 && expressions.size() == 2) {
-            start = evaluator.evaluateInt(expressions.get(0), what + " slice start");
-            step = 1;
-            stop = evaluator.evaluateInt(expressions.get(1), what + " slice stop");
-        } else if (colons == 1 && expressions.size() == 1) {
-            // One endpoint given: `[2:]` counts up from it, `[:2]` counts up to it.
-            boolean startGiven = range.getChild(0) == expressions.getFirst();
-            start = startGiven ? evaluator.evaluateInt(expressions.getFirst(), what + " slice start") : 0;
-            step = 1;
-            stop = startGiven ? registerSize - 1L : evaluator.evaluateInt(expressions.getFirst(), what + " slice stop");
-        } else if (colons == 1) {
-            start = 0;
-            step = 1;
-            stop = registerSize - 1L;
-        } else {
-            throw new QasmParseException("Unsupported %s slice '[%s]'.".formatted(what, range.getText()));
-        }
-
+        SliceBounds bounds = sliceBounds(range, registerSize, what);
+        long step = bounds.step();
         if (step == 0) {
             throw new QasmParseException("A %s slice step cannot be zero in '[%s]'.".formatted(what, range.getText()));
         }
 
         List<Integer> indices = new ArrayList<>();
-        for (long value = start; step > 0 ? value <= stop : value >= stop; value += step) {
+        for (long value = bounds.start(); step > 0 ? value <= bounds.stop() : value >= bounds.stop(); value += step) {
             indices.add(toIntExact(value));
             if (indices.size() > registerSize) {
                 throw new QasmParseException("Slice '[%s]' selects more than register size %d.".formatted(range.getText(), registerSize));
             }
         }
         return indices;
+    }
+
+    private record SliceBounds(long start, long step, long stop) {}
+
+    /** Start, step and stop of a slice, an open end standing for the register's own bound. */
+    private SliceBounds sliceBounds(OpenQASM3Parser.RangeExpressionContext range, int registerSize, String what) {
+        List<OpenQASM3Parser.ExpressionContext> expressions = range.expression();
+        int colons = range.COLON().size();
+
+        if (colons == 2 && expressions.size() == 3) {
+            long start = evaluator.evaluateInt(expressions.get(0), what + SLICE_START);
+            long step = evaluator.evaluateInt(expressions.get(1), what + " slice step");
+            return new SliceBounds(start, step, evaluator.evaluateInt(expressions.get(2), what + SLICE_STOP));
+        }
+        if (colons != 1) {
+            throw new QasmParseException("Unsupported %s slice '[%s]'.".formatted(what, range.getText()));
+        }
+        if (expressions.size() == 2) {
+            long start = evaluator.evaluateInt(expressions.get(0), what + SLICE_START);
+            return new SliceBounds(start, 1, evaluator.evaluateInt(expressions.get(1), what + SLICE_STOP));
+        }
+        if (expressions.size() == 1) {
+            // One endpoint given: `[2:]` counts up from it, `[:2]` counts up to it.
+            OpenQASM3Parser.ExpressionContext endpoint = expressions.getFirst();
+            return range.getChild(0) == endpoint
+                ? new SliceBounds(evaluator.evaluateInt(endpoint, what + SLICE_START), 1, registerSize - 1L)
+                : new SliceBounds(0, 1, evaluator.evaluateInt(endpoint, what + SLICE_STOP));
+        }
+        return new SliceBounds(0, 1, registerSize - 1L);
     }
 
     private List<String> identifiers(OpenQASM3Parser.IdentifierListContext list) {

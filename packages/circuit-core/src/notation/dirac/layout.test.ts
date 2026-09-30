@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { assembleDirac } from '@quak/circuit-core/notation/dirac';
+import { assembleDirac } from './index.ts';
 
 describe('assembleDirac', () => {
     it('joins everything into a single product for the inline layout', () => {

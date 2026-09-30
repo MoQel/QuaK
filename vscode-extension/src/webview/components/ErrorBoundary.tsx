@@ -10,13 +10,8 @@ interface ErrorBoundaryState {
 }
 
 /**
- * Keeps a render crash from leaving an empty panel.
- *
- * React unmounts the whole tree when a render throws, and a webview has nowhere to
- * report that: no console anyone reads, no stack in the extension log. So the crash
- * is handed to the host and something is put on screen in place of the editor.
- *
- * A class is not a style choice here. There is no hook form of this.
+ * Hands a render crash to the host's log and shows a fallback instead of an empty panel. A class, because React has no
+ * hook form of an error boundary.
  */
 export class ErrorBoundary extends Component<Readonly<ErrorBoundaryProps>, ErrorBoundaryState> {
     public override state: ErrorBoundaryState = { failed: false };

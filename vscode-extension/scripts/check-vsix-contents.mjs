@@ -3,8 +3,8 @@ import { mkdtempSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-// Checks the same VSIX produced by the package script, catching accidental
-// publication of workspace files through monorepo dependency symlinks.
+// Checks the same VSIX produced by the package script, catching accidental publication of workspace files through
+// monorepo dependency symlinks.
 
 const END_OF_CENTRAL_DIRECTORY_SIGNATURE = 0x06054b50;
 const CENTRAL_DIRECTORY_HEADER_SIGNATURE = 0x02014b50;

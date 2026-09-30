@@ -1,8 +1,4 @@
-/* Styles for the gate boxes, extracted from the web IDE's App.module.css.
-   The colour tokens (--bg-light, --text, --font-mono) and the gate colours
-   (--hadamard, --quantum, ...) are deliberately NOT defined here: the host
-   provides them, so the editor follows the app's theme in the web IDE and
-   VSCode's theme in the extension instead of carrying a second palette. */
+/* Gate box styles. The theme tokens (--bg-light, --text) come from the host, the gate colours from editor.css. */
 
 .libraryElement,
 .quantumOperation {

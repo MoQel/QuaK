@@ -1,7 +1,5 @@
-// Recognized denominators of pi: everything up to 12, plus the powers of two QFT and
-// phase gates use. One list for every notation, so the gate box, the Dirac view, the
-// quantikz export and the QASM writer agree on which angles have a symbolic form.
-// Pass `denominators` for anything outside that set.
+// Denominators of pi that get a symbolic form: 1 to 12 and the powers of two QFT and phase gates use. Shared by every
+// notation, so all of them agree on which angles are symbolic.
 const DEFAULT_PI_DENOMINATORS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 16, 32, 64, 128];
 const DEFAULT_TOLERANCE = 1e-9;
 
@@ -71,8 +69,8 @@ export function angleToUnicode(angle: QuantumAngle): string {
 }
 
 /**
- * How an angle is spelled. QASM and UI labels share recognition but use
- * different alphabets: `2*pi/3` in QASM, `2π/3` in the editor.
+ * How an angle is spelled. QASM and UI labels share recognition but use different alphabets: `2*pi/3` in QASM, `2π/3`
+ * in the editor.
  */
 export interface AngleSymbols {
     pi: string;
@@ -84,12 +82,7 @@ export interface AngleSymbols {
     plain: (angle: number) => string;
 }
 
-/**
- * Formats an angle in radians, symbolically where possible.
- *
- * This compatibility API keeps the existing QASM and gate-label callers stable
- * while newer notation code can use `resolveAngle` plus a renderer directly.
- */
+/** Formats an angle in radians, symbolically where possible. */
 export function formatAngle(angle: number, symbols: AngleSymbols): string {
     if (!Number.isFinite(angle) || angle === 0) return '0';
 
@@ -170,20 +163,14 @@ const NAMED_CONSTANTS: Record<string, number> = {
 };
 
 /**
- * A decimal number, written so it can match only one way.
- *
- * The obvious `\d*\.?\d+` is ambiguous — for `123` the two parts can split four ways — and every
- * split is retried when the rest of the pattern fails, which is what made this quadratic on input
- * that turns out not to be an angle.
+ * A decimal number, written so an input can match only one way. `\d*\.?\d+` can split `123` in several ways and
+ * backtracks quadratically on input that is not an angle.
  */
 const NUMBER = String.raw`\d+(?:\.\d+)?|\.\d+`;
 
 /**
- * The part before any `/`: an optional sign, an optional factor, an optional named constant —
- * `-2*pi`, `π`, `2pi`, `1.5708`, `tau`.
- *
- * The separator is `\s*(?:\*\s*)?` rather than `\s*\*?\s*`: the latter can split a run of spaces
- * at any point, so it backtracks through every position before giving up.
+ * The part before any `/`: an optional sign, factor and named constant, as in `-2*pi`, `π`, `2pi`, `1.5708` or `tau`.
+ * The separator `\s*(?:\*\s*)?` avoids the backtracking of `\s*\*?\s*`.
  */
 const MAGNITUDE_PATTERN = new RegExp(String.raw`^([+-])?\s*(${NUMBER})?\s*(?:\*\s*)?(pi|π|tau|τ|e)?$`, 'i');
 
@@ -193,19 +180,14 @@ const DIVISOR_PATTERN = new RegExp(`^(${NUMBER})$`);
 /**
  * Reads an angle the user typed, in radians, or null when it is not an angle.
  *
- * The inverse of {@link formatRotationAngle}, and it has to be: the box shows `π/2`, so that is what
- * someone editing it will type back. Accepting only decimals would mean every edit silently rounds
- * the angle to whatever was typed, and a `parse → toCode` round trip would turn a clean `pi/2` into
- * `1.57`. Plain numbers are still accepted, since that is what an angle from elsewhere looks like.
- *
- * Deliberately not a full expression evaluator: sums and nested parentheses are rejected rather than
- * half-supported, which keeps a typo an error instead of a silently different circuit.
+ * The inverse of {@link formatRotationAngle}: accepts what the gate box shows (`π/2`, `2pi/3`) and
+ * plain numbers. Sums and nested parentheses are rejected rather than half-supported.
  */
 export function parseRotationAngle(input: string): number | null {
     const text = input.trim();
     if (text === '') return null;
 
-    // Split on the divisor first, so neither half has to describe the other. One `/` at most.
+    // At most one `/`, so split on it first.
     const parts = text.split('/');
     if (parts.length > 2) return null;
 

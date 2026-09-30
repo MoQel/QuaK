@@ -61,8 +61,8 @@ function LibraryBoxView({
         });
     }
 
-    // Present even without any subcircuit when the host can create one: otherwise there would be no
-    // place to make the first one from.
+    // Present even without any subcircuit when the host can create one: otherwise there would be no place to make the
+    // first one from.
     if (subcircuits.length > 0 || onNewSubcircuit) {
         sections.push({
             title: 'Subcircuits',

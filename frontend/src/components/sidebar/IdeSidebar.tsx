@@ -20,12 +20,12 @@ import {
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
-import { Button } from '@/components/ui/button.tsx';
+import { Button } from '@quak/ui/button';
 import { useAuth } from '@/contexts/AuthContext.tsx';
 import { useDockview } from '@/contexts/DockviewContext.tsx';
 import { useProject } from '@/contexts/ProjectContext.tsx';
 import { PANELS, PANEL_TITLES } from '@/lib/layout/layout-utils.ts';
-import { cn } from '@/lib/utils.ts';
+import { cn } from '@quak/ui/lib/utils';
 import { useProjectActionsDialog } from '@/components/projects/useProjectActionsDialog.tsx';
 import { useTheme } from '@/theme.tsx';
 
@@ -240,15 +240,19 @@ export function IdeSidebar() {
 }
 
 function sidebarItemClassName({ active = false, collapsed, muted = false }: SidebarItemStyleOptions) {
+    let tone = 'text-text hover:bg-bg';
+    if (active) {
+        tone =
+            'bg-bg text-special before:absolute before:bottom-2 before:left-0 before:top-2 before:w-0.5 before:rounded-full before:bg-special';
+    } else if (muted) {
+        tone = 'text-text-muted hover:bg-bg hover:text-text';
+    }
+
     return cn(
         'relative flex h-10 w-full items-center rounded-md text-sm font-medium transition-colors',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-special/60',
         collapsed ? 'justify-center px-0' : 'gap-3 px-3',
-        active
-            ? 'bg-bg text-special before:absolute before:bottom-2 before:left-0 before:top-2 before:w-0.5 before:rounded-full before:bg-special'
-            : muted
-              ? 'text-text-muted hover:bg-bg hover:text-text'
-              : 'text-text hover:bg-bg',
+        tone,
     );
 }
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { ElementaryQuantumGateDto, LoopBlockDto, RegisterResponse } from '@/api/dto/circuit.ts';
-import { getLoopFrames } from '@quak/circuit-core';
+import { ElementaryQuantumGateDto, LoopBlockDto, RegisterResponse } from './dto/circuit.ts';
+import { getLoopFrames } from './loopFrames.ts';
 
 const registers: RegisterResponse[] = [{ id: 'r1', name: 'q', type: 'Quantum_Register', numberOfQubits: 4 }];
 

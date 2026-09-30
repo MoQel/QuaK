@@ -18,8 +18,7 @@ const ROTATION_GATES = new Set(['RX', 'RY', 'RZ']);
 const TRAILING_COLUMNS = 1; // Keep trailing wire column so the rendered circuit does not end directly at the last gate.
 
 /**
- * Exports circuits using Quantikz2 syntax
- * (quantikz package v1.0+, loaded via \usetikzlibrary{quantikz2}).
+ * Exports circuits using Quantikz2 syntax (quantikz package v1.0+, loaded via \usetikzlibrary{quantikz2}).
  */
 export function toQuantikz(circuit: CircuitResponse): string {
     const wireIndex = buildWireIndex(circuit.registers);
@@ -53,7 +52,7 @@ export function toStandaloneQuantikzDocument(circuit: CircuitResponse): string {
     return toStandaloneDocument(toQuantikz(circuit));
 }
 
-export function toStandaloneDocument(latexCode: string): string {
+function toStandaloneDocument(latexCode: string): string {
     return [
         String.raw`\documentclass[tikz,border=2pt]{standalone}`,
         String.raw`\usepackage{tikz}`,

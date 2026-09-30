@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '@/api/api.ts';
-import { CircuitResponse, SubcircuitOption } from '@/api/dto/circuit.ts';
+import { CircuitResponse, SubcircuitOption } from '@quak/circuit-core';
 import {
     CreateFileRequest,
     DirectoryContentsResponse,

@@ -1,5 +1,4 @@
-// Shared gate/operation type identifiers. Presentation (icons, colors, shapes)
-// lives in the editor layer, not here.
+// Gate and operation identifiers. Presentation (icons, colors, shapes) lives in circuit-editor.
 
 export type OperationIdentifier =
     | 'H'
@@ -19,13 +18,10 @@ export type OperationIdentifier =
     | 'DUMMY';
 
 /**
- * The name an operation carries: one of the built-ins above, or a user-defined gate's own name.
- *
- * `string & {}` rather than a plain `string`: a bare union with `string` is collapsed to `string`
- * by the compiler, which drops the built-in names from autocomplete and reads as if the field were
- * constrained when it is not. This keeps the suggestions while still accepting any name.
+ * A built-in identifier or a user-defined gate's name. `string & Record<never, never>` instead of `string` keeps the
+ * built-in names in autocomplete, which a plain union with `string` would drop.
  */
-export type GateIdentifier = OperationIdentifier | (string & {});
+export type GateIdentifier = OperationIdentifier | (string & Record<never, never>);
 
 export type QuantumOperationType =
     | 'ELEMENTARY_QUANTUM_GATE'
@@ -35,13 +31,8 @@ export type QuantumOperationType =
     | 'DUMMY';
 
 /**
- * How many qubits an operation consumes, and in which role. Domain, not
- * presentation: the editor draws gates with it, and the QASM transform needs it
- * to split an operand list. OpenQASM writes controls first, so `cx q[0], q[1]`
- * is only unambiguous if you know CX takes one control and one target.
- *
- * Mirrors the backend's `QuantumOperationLibrary` definitions. The fixture suite
- * is what keeps the two honest.
+ * How many qubits an operation takes, and in which role. OpenQASM lists controls first, so the QASM transform needs
+ * this to split an operand list. Mirrors the backend's `QuantumOperationLibrary`.
  */
 export interface GateArity {
     type: QuantumOperationType;

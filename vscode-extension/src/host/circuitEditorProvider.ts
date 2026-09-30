@@ -1,5 +1,5 @@
-// Host-side controller for the .qasm custom editor. It owns the VSCode document,
-// creates webviews, broadcasts document snapshots, and applies approved edits.
+// Host-side controller for the .qasm custom editor. It owns the VSCode document, creates webviews, broadcasts document
+// snapshots, and applies approved edits.
 import * as vscode from 'vscode';
 import { toQasm, type DocumentClassification } from '@quak/qasm-transform';
 import { applyOptIn, decideEdit, PanelRegistry } from './arbitration.ts';
@@ -38,8 +38,7 @@ export class CircuitEditorProvider implements vscode.CustomTextEditorProvider {
                 supportsMultipleEditorsPerDocument: true,
             }),
             vscode.workspace.onDidChangeTextDocument((event) => provider.broadcast(event.document)),
-            // Closing the file ends the opt-in: the user agreed to lose the comments in
-            // that document, once. Keeping it would silently skip the notice next time.
+            // Closing the file ends the opt-in, so the notice shows again next time.
             vscode.workspace.onDidCloseTextDocument((document) =>
                 provider.editingEnabled.delete(document.uri.toString()),
             ),

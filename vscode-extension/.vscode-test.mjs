@@ -9,8 +9,7 @@ const shared = {
     },
 };
 
-// Both ends of what package.json claims to support. Testing only "stable" left the
-// engines floor an assertion nobody checked.
+// Both ends of the supported range: the engines floor and the current stable.
 export default defineConfig([
     { label: 'stable', version: 'stable', ...shared },
     { label: 'minimum', version: '1.90.0', ...shared },

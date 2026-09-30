@@ -27,10 +27,8 @@ const UNREADABLE = 'This statement cannot be read.';
 const MISSING_TOKEN = /^missing (.+?) at /;
 
 /**
- * ANTLR's default listener prints to stderr. Syntax errors belong in the document
- * state instead. None of its wording survives: it names grammar rules and lists every
- * token that could have followed. Nor do its positions, which blame the token *after*
- * a gap that the hidden channel can put lines away.
+ * Collects syntax errors in our own words instead of printing ANTLR's to stderr. ANTLR's messages name grammar rules,
+ * and its positions point at the token after a gap, possibly lines later.
  */
 class CollectingErrorListener extends BaseErrorListener {
     readonly errors: QasmSyntaxError[] = [];
@@ -80,12 +78,12 @@ class CollectingErrorListener extends BaseErrorListener {
             return { line, column, message: `Unexpected character '${this.characterAt(line, column)}'.` };
         }
 
-        // Ahead of the rest: a file that simply stops is not an unreadable statement.
-        // EOF also sits behind the final newline, on a line the reader cannot see.
+        // Ahead of the rest: a file that simply stops is not an unreadable statement. EOF also sits behind the final
+        // newline, on a line the reader cannot see.
         if (offendingSymbol.type === Token.EOF) return this.endOfContent();
 
-        // ANTLR gives up at the token that ruled everything out, which is where the
-        // *next* statement starts. The unreadable one began earlier.
+        // ANTLR gives up at the token that ruled everything out, which is where the *next* statement starts. The
+        // unreadable one began earlier.
         if (e instanceof NoViableAltException && e.startToken) {
             return { line: e.startToken.line, column: e.startToken.column, message: UNREADABLE };
         }
@@ -149,12 +147,10 @@ export interface ParseResult {
 }
 
 /**
- * Parses OpenQASM 3 source and collects syntax errors without throwing.
- * Turning the tree into a supported circuit is handled by `toCircuit`.
+ * Parses OpenQASM source and collects syntax errors without throwing.
  *
- * Two stages, because the editor reparses on every keystroke: SLL is an order of
- * magnitude faster on long files but gives up more readily and reports nothing
- * usable when it does, so whatever it rejects is parsed again the accurate way.
+ * Tries the fast SLL prediction first, since the editor reparses on every keystroke, and parses
+ * again with full LL only when SLL gives up, which it also does on some valid input.
  */
 export function parseQasm(source: string): ParseResult {
     return parseFast(source) ?? parseThorough(source);
@@ -177,12 +173,7 @@ function newParser(source: string) {
     return { parser, tokens, listener };
 }
 
-/**
- * Null for anything the second stage has to look at again, which is not only real
- * syntax errors: SLL also bails on input full LL prediction would have accepted.
- *
- * Bailing skips the error listener, so a rejected parse has no errors to hand on.
- */
+/** Null when SLL gives up; the thorough parse then decides and reports the errors. */
 function parseFast(source: string): ParseResult | null {
     const { parser, tokens, listener } = newParser(source);
     parser.interpreter.predictionMode = PredictionMode.SLL;

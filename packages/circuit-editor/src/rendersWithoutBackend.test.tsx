@@ -1,11 +1,9 @@
 import { CircuitDragProvider, CircuitStoreProvider, CircuitView, LibraryView } from '@quak/circuit-editor';
 import { vi, describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { CircuitResponse } from '@/api/dto/circuit.ts';
-import { OperationDefinitionResponse } from '@/api/dto/library.ts';
+import { CircuitResponse, OperationDefinitionResponse } from '@quak/circuit-core';
 
-// The point of these tests: the circuit editor and the library render from plain
-// props alone: no CircuitTabsContext, no /api mock, no backend.
+// The editor and the library render from props alone: no tab context, no /api mock, no backend.
 
 const circuit: CircuitResponse = {
     id: 'c1',
@@ -30,8 +28,7 @@ const operations: OperationDefinitionResponse[] = [
     },
 ];
 
-// A classical register and a measurement, the shapes development added. They render
-// through the same store the extension uses, with no backend and no tab context.
+// A classical register with a measurement into it.
 const circuitWithMeasurement: CircuitResponse = {
     id: 'c2',
     registers: [
@@ -92,14 +89,13 @@ describe('circuit editor renders without a backend', () => {
             </CircuitStoreProvider>,
         );
 
-        // The quantum wire is labelled as before.
         expect(screen.getByText('q[0]')).toBeInTheDocument();
 
         // Classical registers start collapsed, as one row that can be opened.
         expect(screen.getByRole('button', { name: 'Expand classical register' })).toBeInTheDocument();
 
-        // The measurement is drawn, and where it writes to is named: once on the gate
-        // itself and once on the connector routed to the classic bit.
+        // The measurement is drawn, and where it writes to is named: once on the gate itself and once on the connector
+        // routed to the classic bit.
         expect(screen.getAllByTitle('q[0] -> c[0]')).toHaveLength(2);
     });
 });

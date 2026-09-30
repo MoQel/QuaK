@@ -2,12 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { parseQasm } from './parse.ts';
 import { HEADER } from './testFixtures.ts';
 
-// Half-written files are the normal state while someone is typing, so where these
-// errors point decides whether the editor is helpful or in the way.
 describe('parseQasm: a file that stops mid-statement', () => {
     it('points at the last line the user wrote, not behind the final newline', () => {
-        // ANTLR blames the EOF token, which sits on the empty line after the newline,
-        // a line the reader cannot see.
+        // ANTLR blames the EOF token, which sits on the empty line after the newline, a line the reader cannot see.
         const [error, ...rest] = parseQasm(`${HEADER}qubit[2] q;\n\n// Layer 1\nh q[\n`).errors;
 
         expect(rest).toEqual([]);
@@ -29,15 +26,14 @@ describe('parseQasm: a file that stops mid-statement', () => {
     });
 
     it('says the statement is unfinished instead of quoting the input', () => {
-        // "no viable alternative at input 'hq['" describes tokens the reader never
-        // typed next to each other.
+        // "no viable alternative at input 'hq['" describes tokens the reader never typed next to each other.
         expect(parseQasm(`${HEADER}qubit[2] q;\nh q[\n`).errors[0].message).toMatch(/ends in the middle/i);
     });
 });
 
-// ANTLR reports the position of the token it is holding. For something left out that
-// is the token *after* the gap, which the hidden channel can put lines away: blank
-// lines and comments are skipped before the parser notices anything is wrong.
+// ANTLR reports the position of the token it is holding. For something left out that is the token *after* the gap,
+// which the hidden channel can put lines away: blank lines and comments are skipped before the parser notices anything
+// is wrong.
 describe('parseQasm: a token that was left out', () => {
     it('points at the gap, not at the statement that happens to follow it', () => {
         // ANTLR blames the `h` three lines down, past a blank line and a comment.
@@ -87,12 +83,12 @@ describe('parseQasm: errors ANTLR already places well', () => {
     });
 });
 
-// The fast first stage reports nothing and gives up on more than just broken files,
-// so everything below it has to come out of the second stage unchanged.
+// The fast first stage reports nothing and gives up on more than just broken files, so everything below it has to come
+// out of the second stage unchanged.
 describe('parseQasm: what the fast stage skips', () => {
     it('reports a missing token, the one kind of error the fast stage swallows', () => {
-        // `missing ';'` fails a token match rather than an alternative prediction, and
-        // that path throws past the error listener when the parser is told to bail.
+        // `missing ';'` fails a token match rather than an alternative prediction, and that path throws past the error
+        // listener when the parser is told to bail.
         const { errors } = parseQasm(`${HEADER}qubit[2] q\nh q[0];\n`);
 
         expect(errors).toHaveLength(1);
@@ -111,8 +107,6 @@ describe('parseQasm: what the fast stage skips', () => {
     });
 });
 
-// ANTLR words its errors for a grammar author, down to listing every token that could
-// have followed. None of that reaches the document.
 describe('parseQasm: a statement the parser cannot read at all', () => {
     const MISSING_SEMICOLON = `${HEADER}qubit[2] q;\nh q[0]\nx q[1];\n`;
 
@@ -126,7 +120,6 @@ describe('parseQasm: a statement the parser cannot read at all', () => {
     });
 
     it('reports it once, not again for the separator recovery went on to want', () => {
-        // The second report read `Missing ';' after 'x'`, about a token that is fine.
         expect(parseQasm(MISSING_SEMICOLON).errors).toHaveLength(1);
     });
 

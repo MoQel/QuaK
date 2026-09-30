@@ -1,6 +1,7 @@
 import { expect } from 'vitest';
 import type { CircuitContent } from '@quak/circuit-core';
-import { isEditable, toCircuit, type ToCircuitResult } from './toCircuit.ts';
+import { isEditable } from './classify.ts';
+import { toCircuit, type ToCircuitResult } from './toCircuit.ts';
 
 // Shared by the transform test suites. Not exported from the package.
 

@@ -4,12 +4,8 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import * as vscode from 'vscode';
 
-// These run inside a real VSCode. They cover the wiring that unit tests cannot
-// reach: that the custom editor is registered, opens for .qasm, tolerates several
-// panels on one document, and leaves the document an ordinary TextDocument.
-// What a webview receives is deliberately not asserted here. Messages to a
-// webview cannot be observed from the outside, so those rules live in
-// arbitration.test.ts instead.
+// Runs inside a real VSCode and covers the wiring unit tests cannot reach. What a webview receives cannot be observed
+// from outside; those rules are tested in arbitration.test.ts.
 
 const EXTENSION_ID = 'quak.quak-vscode';
 const VIEW_TYPE = 'quak.circuitEditor';
@@ -57,8 +53,8 @@ suiteTeardown(() => {
 const openTabs = (): number => vscode.window.tabGroups.all.reduce((count, group) => count + group.tabs.length, 0);
 
 /**
- * Same trap as `undo` below: the command resolves once dispatched, not once the tabs
- * are gone. Leaving a webview tab behind costs the next test the focus it assumes.
+ * Same trap as `undo` below: the command resolves once dispatched, not once the tabs are gone. Leaving a webview tab
+ * behind costs the next test the focus it assumes.
  */
 async function closeAllEditors(): Promise<void> {
     await vscode.commands.executeCommand('workbench.action.closeAllEditors');
@@ -132,7 +128,7 @@ suite('QuaK circuit editor', () => {
         const [tab] = customTabsFor(uri);
         assert.ok(tab, 'expected a circuit editor tab');
         assert.notEqual(tab.group.viewColumn, vscode.ViewColumn.One);
-        // The text editor has to survive it. The circuit is a second view, not a swap.
+        // The text editor stays open.
         assert.equal(
             vscode.window.visibleTextEditors.some((editor) => editor.document.uri.toString() === uri.toString()),
             true,
@@ -156,7 +152,7 @@ suite('QuaK circuit editor', () => {
         await vscode.commands.executeCommand('quak.showSource', uri);
 
         assert.equal(vscode.window.activeTextEditor?.document.uri.toString(), uri.toString());
-        // The circuit stays open. This is a way back, not a way out.
+        // The circuit stays open.
         assert.equal(customTabsFor(uri).length, 1);
     });
 
@@ -196,9 +192,7 @@ suite('QuaK circuit editor', () => {
         assert.equal(await vscode.workspace.applyEdit(edit), true);
         assert.notEqual(document.getText(), before);
 
-        // executeCommand resolves once the command is dispatched, not once the
-        // document has caught up, so wait for the change itself. Asserting right
-        // after the await made this test fail every few runs.
+        // executeCommand resolves once dispatched, not once the document has caught up.
         const restored = changeTo(document, before);
         await vscode.commands.executeCommand('undo');
         await restored;
@@ -222,9 +216,7 @@ suite('QuaK circuit editor', () => {
     });
 });
 
-// The circuit editor is deliberately never opened here: the findings belong to the
-// file, and this is the part unit tests cannot reach: that they are published at
-// all, land on the right line, and go away again.
+// Without a circuit editor: findings are published, land on the right line and go away again.
 const HEADER = 'OPENQASM 3.0;\ninclude "stdgates.inc";\n';
 const UNSUPPORTED = `${HEADER}qubit[2] q;\nbarrier q;\n`;
 const MISSING_SEMICOLON = `${HEADER}qubit[2] q\nh q[0];\n`;
@@ -233,8 +225,8 @@ const ourDiagnostics = (uri: vscode.Uri): vscode.Diagnostic[] =>
     // Other extensions publish for .qasm too. Only ours carry this source.
     vscode.languages.getDiagnostics(uri).filter((diagnostic) => diagnostic.source === SOURCE);
 
-// Below the Mocha timeout, so a failure here reports what it was waiting for rather
-// than only that the test ran out of time.
+// Below the Mocha timeout, so a failure here reports what it was waiting for rather than only that the test ran out of
+// time.
 const DIAGNOSTICS_TIMEOUT_MS = 10_000;
 
 const describeDiagnostics = (found: readonly vscode.Diagnostic[]): string =>
@@ -243,12 +235,8 @@ const describeDiagnostics = (found: readonly vscode.Diagnostic[]): string =>
         : found.map((entry) => `${String(entry.code)} on line ${entry.range.start.line}`).join(', ');
 
 /**
- * Resolves once our diagnostics for `uri` look the way the test expects.
- *
- * Polled as well as event driven. Waiting on onDidChangeDiagnostics alone made a
- * publish that lands before the listener attaches hang until Mocha gave up, and the
- * listener was then never disposed, so it kept re-running a stale predicate for the
- * rest of the run.
+ * Resolves once our diagnostics for `uri` match. Polls as well as listening, so a publish that lands before the
+ * listener attaches is not missed.
  */
 function waitForDiagnostics(
     uri: vscode.Uri,
@@ -296,15 +284,14 @@ suite('QuaK diagnostics', () => {
         const extension = vscode.extensions.getExtension(EXTENSION_ID);
         assert.ok(extension, `extension ${EXTENSION_ID} not found`);
         await extension.activate();
-        // A run that never reached its teardown leaves the settings in the test
-        // instance's user data, so start from a known state.
+        // A run that never reached its teardown leaves the settings in the test instance's user data, so start from a
+        // known state.
         await resetDiagnosticSettings();
     });
 
     teardown(async () => {
         await closeAllEditors();
-        // Here rather than in the test that changes it: a timeout skips a test's own
-        // cleanup.
+        // Here rather than in the test that changes it: a timeout skips a test's own cleanup.
         await resetDiagnosticSettings();
     });
 
@@ -353,8 +340,8 @@ suite('QuaK diagnostics', () => {
     }
 
     test('still reports an error while sync-support reporting is off', async () => {
-        // Switched off before the file is opened, so the findings appearing is the event
-        // waited for rather than a state that was already there.
+        // Switched off before the file is opened, so the findings appearing is the event waited for rather than a state
+        // that was already there.
         await vscode.workspace
             .getConfiguration()
             .update(DIAGNOSTICS_SYNC_SUPPORT, false, vscode.ConfigurationTarget.Global);
@@ -378,13 +365,12 @@ suite('QuaK diagnostics', () => {
         assert.deepEqual(await waitForDiagnostics(uri, (found) => found.length === 0), []);
     });
 
-    // Not covered: that closing a file takes its findings with it. VSCode disposes a
-    // TextDocument some time after its last editor closes, not with it, so a test for
-    // that waits on a timer nobody controls. It timed out at 20s when tried.
+    // Not covered: closing a file removes its findings. VSCode disposes a document some time after its last editor
+    // closes, so such a test would wait on a timer nobody controls.
 });
 
-// Only what a unit test cannot reach: that the provider is registered and answers for
-// the word under the cursor. What it says is asserted in hoverModel.test.ts.
+// Only what a unit test cannot reach: that the provider is registered and answers for the word under the cursor. What
+// it says is asserted in hoverModel.test.ts.
 const HOVER_ENABLED = 'quak.hover.enabled';
 
 const COMPLETION_ENABLED = 'quak.completion.enabled';
@@ -468,8 +454,8 @@ async function completionsAt(uri: vscode.Uri, line: number, character: number): 
     return list?.items ?? [];
 }
 
-// VSCode's own word-based suggestions come back from that command too, so the kinds
-// this extension uses are what separates ours from the words already in the file.
+// VSCode's own word-based suggestions come back from that command too, so the kinds this extension uses are what
+// separates ours from the words already in the file.
 const OUR_KINDS = [vscode.CompletionItemKind.Function, vscode.CompletionItemKind.Value];
 
 const ours = (items: vscode.CompletionItem[]): vscode.CompletionItem[] =>

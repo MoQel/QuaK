@@ -3,14 +3,8 @@ import type { WebviewErrorMessage } from '../../shared/protocol.ts';
 /** What the host needs to log a webview failure. */
 export type ErrorReport = Omit<WebviewErrorMessage, 'type'>;
 
-/**
- * Everything the ErrorBoundary cannot see.
- *
- * A boundary only catches what throws during render. A failing event handler, timer
- * or promise lands on the webview console instead, which nobody opens, so these are
- * forwarded to the host as well.
- */
-export function reportUncaughtErrors(report: (error: ErrorReport) => void, target: EventTarget = window): void {
+/** Forwards what an ErrorBoundary cannot catch (event handlers, timers, promises) to the host's log. */
+export function reportUncaughtErrors(report: (error: ErrorReport) => void, target: EventTarget = globalThis): void {
     target.addEventListener('error', (event) => {
         const { error, message } = event as ErrorEvent;
         report(describe(error, message));

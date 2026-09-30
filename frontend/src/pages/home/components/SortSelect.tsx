@@ -1,5 +1,5 @@
 import { ArrowDownAZ, Clock } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select.tsx';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@quak/ui/select';
 import type { SortMode } from '../types';
 
 export function SortSelect({ value, onChange }: Readonly<{ value: SortMode; onChange: (value: SortMode) => void }>) {

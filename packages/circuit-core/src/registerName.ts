@@ -1,13 +1,8 @@
 /**
- * Whether a register name can be written into an OpenQASM document.
+ * Whether a register name can be written into an OpenQASM document. The name reaches generated
+ * code verbatim, so anything but an identifier produces a file that no longer parses.
  *
- * A register name reaches generated code verbatim, in `qubit[2] q;` and in every
- * operand that follows. A name that is not an identifier therefore does not
- * produce a worse-looking file, it produces one that no longer parses, and the
- * extension would hand the user back a document it can no longer read.
- *
- * Mirrors the `Identifier` rule and the keyword list of
- * `backend/src/main/antlr/OpenQASM3Lexer.g4`.
+ * Mirrors the `Identifier` rule and the keywords of `backend/src/main/antlr/OpenQASM3Lexer.g4`.
  */
 
 const FIRST_CHARACTER = String.raw`_\p{Lu}\p{Ll}\p{Lt}\p{Lm}\p{Lo}\p{Nl}`;

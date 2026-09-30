@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { checkRegisterName } from '@quak/circuit-core';
+import { checkRegisterName } from './registerName.ts';
 
-// A register name is written into generated OpenQASM verbatim, so anything the
-// grammar would not accept as an Identifier must be refused before it is created.
+// A register name is written into generated OpenQASM verbatim, so anything the grammar would not accept as an
+// Identifier must be refused before it is created.
 describe('checkRegisterName', () => {
     it.each(['q', 'q0', '_c', 'my_reg', 'Ψ'])('accepts %s', (name) => {
         expect(checkRegisterName(name)).toBeNull();

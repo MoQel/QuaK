@@ -1,72 +1,48 @@
 import {
     GATE_ARITY,
-    getInvolvedSelectors,
-    getSelectorKey,
-    isClassicRegister,
     isGateSupported,
     isQuantumRegister,
     isStandardGate,
     toOperationIdentifier,
     unsupportedStatementRules,
     type CircuitContent,
-    type ElementSelectorDto,
-    type LayerResponse,
     type MeasurementDto,
+    type OperationIdentifier,
     type QuantumOperationDto,
     type RegisterResponse,
-    OperationIdentifier,
 } from '@quak/circuit-core';
 import { evaluateAngle, QasmUnsupportedError } from './angleExpression.ts';
-import { layerMarker, registerMarker } from './structuralComments.ts';
-import { parseQasm, type QasmComment, type QasmSyntaxError } from './parse.ts';
+import { CircuitBuilder, type QasmRejection } from './circuitBuilder.ts';
+import { parseQasm, type QasmSyntaxError } from './parse.ts';
 import {
+    constantInt,
+    endsWithComma,
+    tokenText,
+    trailingComma,
+    type SourcePosition,
+    type SourceSpan,
+} from './parseTree.ts';
+import { broadcast, parseOperands, selectElements } from './selection.ts';
+import { commentKey, readStructuralComments } from './structuralComments.ts';
+import type {
     ClassicalDeclarationStatementContext,
     DesignatorContext,
     GateCallStatementContext,
-    GateOperandContext,
     IndexedIdentifierContext,
     MeasureExpressionContext,
     OldStyleDeclarationStatementContext,
+    ProgramContext,
     QuantumDeclarationStatementContext,
-    RangeExpressionContext,
     StatementContext,
-    type ProgramContext,
-    GateOperandListContext,
 } from './generated/OpenQASM3Parser.js';
 
-/**
- * Why the transform refused something. Two different things to tell a user.
- *
- * `invalid` means the document is wrong and no OpenQASM tool would accept it.
- * `unsupported` means the document is fine and this editor cannot write it back.
- * Reporting the first as the second is what made a typo read as a missing feature.
- */
-export type RejectionKind = 'invalid' | 'unsupported';
-
-export interface QasmRejection {
-    line: number;
-    column: number;
-    /** Grammar rule or gate name, for the support matrix. */
-    construct: string;
-    message: string;
-    kind: RejectionKind;
-}
-
-/**
- * The parts of the document that frame the circuit without being part of it.
- *
- * The extension rewrites the full file after a visual edit. Version, includes
- * and top-of-file comments are preserved here so they are not dropped.
- */
+/** What frames the circuit in the file: version, includes and the comments above them. Kept for the rewrite. */
 export interface QasmPreamble {
     /** e.g. "3.0" from `OPENQASM 3.0;`. */
     version: string | null;
     /** Include targets verbatim, in source order, e.g. `"stdgates.inc"`. */
     includes: string[];
-    /**
-     * Comments before the first statement. Later comments are tied to statements
-     * the visual editor may move or delete, so they are reported as unsupported.
-     */
+    /** Comments before the first statement. Later ones are reported as unsupported. */
     headerComments: string[];
 }
 
@@ -78,184 +54,12 @@ export interface ToCircuitResult {
     unsupported: QasmRejection[];
 }
 
-/** Why a document is, or is not, editable through the circuit view. */
-export type DocumentClassification =
-    | { kind: 'editable' }
-    | { kind: 'invalid'; problems: QasmRejection[] }
-    | { kind: 'unsupportedVersion'; version: string }
-    | { kind: 'unsupported'; constructs: QasmRejection[] }
-    | { kind: 'commentsOnly'; comments: QasmRejection[] }
-    | { kind: 'empty' }
-    /** Nothing to draw yet; the notice names the lines that are still missing. */
-    | { kind: 'noRegister'; hasVersion: boolean; hasInclude: boolean };
-
-/** OpenQASM 2 is read as well, the way the backend reads it, and written back as OpenQASM 3. */
-const SUPPORTED_MAJOR_VERSIONS: ReadonlySet<string> = new Set(['2', '3']);
-
-/** `OPENQASM 3;` and `OPENQASM 3.0;` declare the same major version. */
-export const majorVersion = (version: string): string => version.split('.')[0];
-
-/** Comments are the one rejection a user can knowingly accept, so they stand apart. */
-const isComment = (entry: QasmRejection): boolean => entry.construct === 'comment';
-
-/** A syntax error is a rejection too; carrying one shape keeps the notice and the diagnostics simple. */
-const asRejection = (error: QasmSyntaxError): QasmRejection => ({ ...error, construct: 'syntax', kind: 'invalid' });
-
-/**
- * Names the single most useful reason a document cannot be edited visually.
- *
- * The order of the checks is the design: whatever matches first is the cause, and
- * most of what follows is a consequence of it.
- */
-export function classify(result: ToCircuitResult): DocumentClassification {
-    if (result.syntaxErrors.length > 0) {
-        // On their own: the visitor walks past a broken parse tree and rejects fragments
-        // that were never real statements, which next to the actual error is noise.
-        return { kind: 'invalid', problems: result.syntaxErrors.map(asRejection) };
-    }
-
-    const { version, includes, headerComments } = result.preamble;
-    if (version !== null && !SUPPORTED_MAJOR_VERSIONS.has(majorVersion(version))) {
-        return { kind: 'unsupportedVersion', version };
-    }
-
-    // Ahead of the register checks: `qubit[n] q;` does declare one, just not readably.
-    // Also ahead of the errors below, because a statement we walked past is exactly what
-    // makes a later reference to it look undefined.
-    const constructs = result.unsupported.filter((entry) => entry.kind === 'unsupported' && !isComment(entry));
-    if (constructs.length > 0) {
-        return { kind: 'unsupported', constructs };
-    }
-
-    const problems = result.unsupported.filter((entry) => entry.kind === 'invalid');
-    if (problems.length > 0) {
-        return { kind: 'invalid', problems };
-    }
-
-    if (result.content === null) {
-        const nothingWritten = version === null && includes.length === 0 && headerComments.length === 0;
-        if (nothingWritten) return { kind: 'empty' };
-
-        return { kind: 'noRegister', hasVersion: version !== null, hasInclude: includes.length > 0 };
-    }
-
-    // Last, so the opt-in is only offered where accepting it actually unlocks editing.
-    const comments = result.unsupported.filter(isComment);
-    if (comments.length > 0) {
-        return { kind: 'commentsOnly', comments };
-    }
-
-    return { kind: 'editable' };
-}
-
-/** Editable means the transform can regenerate the document; `classify` names the reasons it cannot. */
-export const isEditable = (result: ToCircuitResult): boolean => classify(result).kind === 'editable';
-
 const UNSUPPORTED_STATEMENTS = unsupportedStatementRules();
 
 /**
- * The text of a token the tree may not really have: the generated accessors type every
- * child as present, but error recovery both drops them and invents them, the invented
- * ones reading `<missing Identifier>`.
- */
-function tokenText(node: { symbol: { tokenIndex: number; text?: string | null } } | null | undefined): string | null {
-    if (!node || node.symbol.tokenIndex < 0) return null;
-
-    return node.symbol.text ?? null;
-}
-
-type SourcePosition = { start: { line: number; column: number } | null };
-
-const sharesQubit = (layer: LayerResponse, operation: QuantumOperationDto): boolean => {
-    const used = new Set(
-        layer.quantumOperations
-            .flatMap((placed) => getInvolvedSelectors(placed))
-            .map((selector) => getSelectorKey(selector)),
-    );
-    return getInvolvedSelectors(operation).some((selector) => used.has(getSelectorKey(selector)));
-};
-
-/** Enough of a parse-tree node to find the text it was built from. */
-type SourceSpan = { start: { start: number } | null; stop: { stop: number } | null };
-
-class CircuitBuilder {
-    readonly registers: RegisterResponse[] = [];
-    readonly layers: LayerResponse[] = [];
-    readonly unsupported: QasmRejection[] = [];
-    readonly includes: string[] = [];
-
-    constructor(
-        private readonly source: string,
-        private readonly continuedLayers: ReadonlySet<number>,
-    ) {}
-
-    /**
-     * Opens a layer, unless these operations were written as part of the one before it.
-     * Operations of one statement share a layer as long as they touch different qubits.
-     */
-    place(operations: QuantumOperationDto[], line: number): void {
-        let layer = this.layers.at(-1);
-        if (!layer || !this.continuedLayers.has(line)) layer = this.open();
-
-        for (const [position, operation] of operations.entries()) {
-            if (position > 0 && sharesQubit(layer, operation)) layer = this.open();
-            layer.quantumOperations.push(operation);
-        }
-    }
-
-    private open(): LayerResponse {
-        const layer: LayerResponse = { quantumOperations: [] };
-        this.layers.push(layer);
-        return layer;
-    }
-
-    /**
-     * What the user wrote for a construct, cut from the source: `getText()` walks a
-     * node's default channel, losing every space and picking up invented tokens.
-     */
-    excerpt(ctx: SourceSpan): string {
-        const from = ctx.start?.start ?? -1;
-        const to = ctx.stop?.stop ?? -1;
-        if (from < 0 || to < from) return '';
-
-        return truncate(this.source.slice(from, to + 1).replaceAll(/\s+/g, ' '));
-    }
-
-    registerByName(name: string): RegisterResponse | undefined {
-        return this.registers.find((register) => register.name === name);
-    }
-
-    /** Valid OpenQASM this editor cannot write back. */
-    reject(ctx: SourcePosition, construct: string, message: string): void {
-        this.push(ctx, construct, message, 'unsupported');
-    }
-
-    /** OpenQASM that is wrong, whatever tool reads it. */
-    invalid(ctx: SourcePosition, construct: string, message: string): void {
-        this.push(ctx, construct, message, 'invalid');
-    }
-
-    private push(ctx: SourcePosition, construct: string, message: string, kind: RejectionKind): void {
-        this.unsupported.push({
-            line: ctx.start?.line ?? 0,
-            column: ctx.start?.column ?? 0,
-            construct,
-            message,
-            kind,
-        });
-    }
-}
-
-/**
- * Turns OpenQASM 3 or 2 source into the circuit's registers and layers.
- *
- * Mirrors the backend visitor for supported constructs, but is stricter: it
- * collects unsupported syntax so the extension can keep risky files read-only.
- *
- * Layers are read the way the document writes them, so a file QuaK wrote comes back
- * from a read and a write unchanged.
- *
- * Ids are derived from source positions so React keys stay stable across reparses.
+ * Turns OpenQASM 3 or 2 source into the circuit's registers and layers, and records every construct it cannot write
+ * back. Layers are read as the document writes them. Ids come from source positions, so they stay stable across
+ * reparses.
  */
 export function toCircuit(source: string): ToCircuitResult {
     const { tree, errors, comments } = parseQasm(source);
@@ -372,7 +176,7 @@ function visitQuantumDeclaration(ctx: QuantumDeclarationStatementContext, builde
     const size = registerSize(ctx, ctx.qubitType().designator(), 'qubitType', builder);
     if (size === null) return;
 
-    declare(ctx, 'quantumDeclarationStatement', quantumRegister(name, size), builder);
+    declareRegister(ctx, 'quantumDeclarationStatement', quantumRegister(name, size), builder);
 }
 
 /** `bit[n] c;` is the OpenQASM 3 spelling of `creg c[n];`. Every other type is classical computation. */
@@ -406,7 +210,7 @@ function visitClassicalDeclaration(ctx: ClassicalDeclarationStatementContext, bu
     const size = registerSize(ctx, bitType.designator(), 'scalarType', builder);
     if (size === null) return;
 
-    declare(ctx, 'classicalDeclarationStatement', classicRegister(name, size), builder);
+    declareRegister(ctx, 'classicalDeclarationStatement', classicRegister(name, size), builder);
 }
 
 /** `qreg q[n];` and `creg c[n];`, which OpenQASM 3 still accepts. They are written back in the newer spelling. */
@@ -421,7 +225,7 @@ function visitOldStyleDeclaration(ctx: OldStyleDeclarationStatementContext, buil
     if (size === null) return;
 
     const register = ctx.QREG() ? quantumRegister(name, size) : classicRegister(name, size);
-    declare(ctx, 'oldStyleDeclarationStatement', register, builder);
+    declareRegister(ctx, 'oldStyleDeclarationStatement', register, builder);
 }
 
 const quantumRegister = (name: string, numberOfQubits: number): RegisterResponse => ({
@@ -455,7 +259,12 @@ function registerSize(
     return size;
 }
 
-function declare(ctx: SourcePosition, construct: string, register: RegisterResponse, builder: CircuitBuilder): void {
+function declareRegister(
+    ctx: SourcePosition,
+    construct: string,
+    register: RegisterResponse,
+    builder: CircuitBuilder,
+): void {
     // Duplicate declarations would make earlier indices ambiguous.
     const existing = builder.registerByName(register.name);
     if (existing) {
@@ -522,31 +331,6 @@ function visitGateCall(ctx: GateCallStatementContext, builder: CircuitBuilder): 
     );
 
     builder.place(operations, line);
-}
-
-/**
- * The operand lists of the single calls a gate call on registers stands for, as the backend
- * expands them: registers pair up position by position, and a single qubit repeats against them.
- */
-function broadcast(
-    slots: ElementSelectorDto[][],
-    ctx: SourcePosition,
-    gateName: string,
-    builder: CircuitBuilder,
-): ElementSelectorDto[][] | null {
-    const widths = [...new Set(slots.map((slot) => slot.length).filter((width) => width > 1))];
-    if (widths.length > 1) {
-        builder.invalid(
-            ctx,
-            'gateOperandList',
-            `Gate '${gateName}' is called on registers of different sizes (${widths.join(' and ')}); they must match.`,
-        );
-        return null;
-    }
-
-    return Array.from({ length: widths[0] ?? 1 }, (_, position) =>
-        slots.map((slot) => (slot.length === 1 ? slot[0] : slot[position])),
-    );
 }
 
 /**
@@ -617,141 +401,6 @@ function visitMeasurement(
     builder.place(operations, line);
 }
 
-/**
- * What an operand selects: every element of an unindexed register, one for `r[i]`, and the
- * expanded slice for `r[a:b]`, all in the order the backend expands them.
- *
- * `subject` opens the messages, as in `Gate references` or `Measurement writes to`.
- */
-function selectElements(
-    ctx: SourcePosition & SourceSpan,
-    indexed: IndexedIdentifierContext,
-    expected: RegisterResponse['type'],
-    subject: string,
-    builder: CircuitBuilder,
-): ElementSelectorDto[] | null {
-    const kind = expected === 'Quantum_Register' ? 'qubit register' : 'classical register';
-    const construct = subject.startsWith('Gate') ? 'gateOperand' : 'measureExpression';
-    const registerName = tokenText(indexed.Identifier());
-    if (registerName === null) {
-        builder.invalid(ctx, construct, `${subject} no ${kind}.`);
-        return null;
-    }
-
-    const register = builder.registerByName(registerName);
-    if (!register) {
-        builder.invalid(ctx, construct, `${subject} unknown ${kind} '${registerName}'.`);
-        return null;
-    }
-    if (register.type !== expected) {
-        builder.invalid(ctx, construct, `${subject} '${registerName}', which is not a ${kind}.`);
-        return null;
-    }
-
-    const size = isClassicRegister(register) ? register.numberOfBits : register.numberOfQubits;
-    const indices = selectedIndices(ctx, indexed, size, builder);
-    if (!indices) return null;
-
-    const outside = indices.find((index) => index < 0 || index >= size);
-    if (outside !== undefined) {
-        builder.invalid(ctx, 'indexOperator', `Index ${outside} is outside register '${registerName}' (size ${size}).`);
-        return null;
-    }
-    if (indices.length === 0) {
-        builder.invalid(
-            ctx,
-            'indexOperator',
-            `Selection covers nothing in register '${registerName}': ${builder.excerpt(ctx)}`,
-        );
-        return null;
-    }
-
-    return indices.map((index) => ({ registerId: register.id, index }));
-}
-
-function selectedIndices(
-    ctx: SourcePosition & SourceSpan,
-    indexed: IndexedIdentifierContext,
-    size: number,
-    builder: CircuitBuilder,
-): number[] | null {
-    const indexOperators = indexed.indexOperator();
-    if (indexOperators.length === 0) return Array.from({ length: size }, (_, index) => index);
-
-    if (indexOperators.length > 1) {
-        builder.reject(ctx, 'indexOperator', `Nested indexing is not supported: ${builder.excerpt(ctx)}`);
-        return null;
-    }
-
-    const indexOperator = indexOperators[0];
-    const expressions = indexOperator.expression();
-    const ranges = indexOperator.rangeExpression();
-    if (indexOperator.setExpression() || expressions.length + ranges.length !== 1) {
-        builder.reject(ctx, 'indexOperator', `An index must select one element or one slice: ${builder.excerpt(ctx)}`);
-        return null;
-    }
-
-    if (ranges.length === 1) return sliceIndices(ctx, ranges[0], size, builder);
-
-    const index = constantInt(expressions[0].getText());
-    if (index === null) {
-        builder.reject(ctx, 'indexOperator', `Index must be a constant integer: ${builder.excerpt(ctx)}`);
-        return null;
-    }
-    return [index];
-}
-
-/** `[a:b]`, `[a:step:b]` and the open `[a:]`, `[:b]`, `[:]`. The stop is inclusive, as in OpenQASM. */
-function sliceIndices(
-    ctx: SourcePosition & SourceSpan,
-    range: RangeExpressionContext,
-    size: number,
-    builder: CircuitBuilder,
-): number[] | null {
-    const values = range.expression().map((expression) => constantInt(expression.getText()));
-    if (values.includes(null)) {
-        builder.reject(ctx, 'rangeExpression', `Slice bounds must be constant integers: ${builder.excerpt(ctx)}`);
-        return null;
-    }
-
-    const bounds = sliceBounds(range, values as number[], size);
-    if (!bounds) {
-        builder.reject(ctx, 'rangeExpression', `Unsupported slice: ${builder.excerpt(ctx)}`);
-        return null;
-    }
-
-    const { start, step, stop } = bounds;
-    if (step === 0) {
-        builder.invalid(ctx, 'rangeExpression', `A slice step cannot be zero: ${builder.excerpt(ctx)}`);
-        return null;
-    }
-
-    const indices: number[] = [];
-    for (let value = start; step > 0 ? value <= stop : value >= stop; value += step) {
-        indices.push(value);
-        if (indices.length > size) break;
-    }
-    return indices;
-}
-
-/** Start, step and stop of a slice, an open end standing for the register's own bound. */
-function sliceBounds(
-    range: RangeExpressionContext,
-    values: number[],
-    size: number,
-): { start: number; step: number; stop: number } | null {
-    const colons = range.COLON().length;
-    if (colons === 2 && values.length === 3) return { start: values[0], step: values[1], stop: values[2] };
-    if (colons !== 1) return null;
-
-    const whole = { start: 0, step: 1, stop: size - 1 };
-    if (values.length === 0) return whole;
-    if (values.length === 2) return { ...whole, start: values[0], stop: values[1] };
-
-    // One endpoint: `[2:]` counts up from it, `[:2]` counts up to it.
-    return range.getChild(0) === range.expression()[0] ? { ...whole, start: values[0] } : { ...whole, stop: values[0] };
-}
-
 /** The gate's parameter in radians, or null after reporting why it has none. */
 function resolveRotationAngle(
     ctx: GateCallStatementContext,
@@ -815,9 +464,7 @@ function resolveSupportedGate(
     ctx: GateCallStatementContext,
     builder: CircuitBuilder,
 ): OperationIdentifier | undefined {
-    // A name OpenQASM never declares is a defect in the document, not a gap in this
-    // editor, and gate definitions of their own already make a document unsupported,
-    // so nothing else could have introduced it.
+    // Gate definitions already make a document unsupported, so an unknown name is an error in the document.
     if (!isStandardGate(gateName)) {
         builder.invalid(ctx, 'gateCallStatement', `Unknown gate '${gateName}'.`);
         return undefined;
@@ -832,151 +479,10 @@ function resolveSupportedGate(
     return identifier;
 }
 
-/** One list of qubits per operand: a single qubit, or those of a register or slice. */
-function parseOperands(
-    operandList: GateOperandListContext,
-    builder: CircuitBuilder,
-): ElementSelectorDto[][] | undefined {
-    const slots: ElementSelectorDto[][] = [];
-    for (const operand of operandList.gateOperand()) {
-        const slot = parseOperand(operand, builder);
-        if (!slot) return undefined;
-        slots.push(slot);
-    }
-
-    if (endsWithComma(operandList, slots.length)) {
-        builder.reject(operandList, 'gateOperandList', trailingComma(builder.excerpt(operandList)));
-        return undefined;
-    }
-
-    return slots;
-}
-
-/**
- * OpenQASM allows a comma after the last entry of a list. We write the list without it,
- * so accepting one silently would edit the file on the next save.
- */
-const endsWithComma = (list: { COMMA(): unknown[] }, entries: number): boolean =>
-    entries > 0 && list.COMMA().length >= entries;
-
-const trailingComma = (excerpt: string): string => `A trailing comma is not supported: ${excerpt}`;
-
-/** The qubits one gate operand names: `q[0]`, a whole register `q`, or a slice `q[0:1]`. */
-function parseOperand(operand: GateOperandContext, builder: CircuitBuilder): ElementSelectorDto[] | null {
-    const indexed = operand.indexedIdentifier();
-    if (!indexed) {
-        // e.g. a hardware qubit like `$0`, which the circuit model does not represent.
-        builder.reject(operand, 'gateOperand', `Unsupported gate operand: ${builder.excerpt(operand)}`);
-        return null;
-    }
-
-    return selectElements(operand, indexed, 'Quantum_Register', 'Gate references', builder);
-}
-
-/** Variable or expression indices are not supported. */
-const constantInt = (text: string): number | null => {
-    const trimmed = text.trim();
-    if (!/^-?\d+$/.test(trimmed)) return null;
-    return Number.parseInt(trimmed, 10);
-};
-
-const truncate = (text: string): string => (text.length > 60 ? `${text.slice(0, 60)}…` : text);
-
-/**
- * Line of the first non-comment statement. Empty files treat all comments as header.
- */
+/** Line of the first non-comment statement. In an empty file every comment is header. */
 function startOfFirstStatement(tree: ProgramContext): number {
     const versionLine = tree.version()?.start?.line;
     const firstStatementLine = tree.statementOrScope()[0]?.start?.line;
 
     return Math.min(versionLine ?? Number.POSITIVE_INFINITY, firstStatementLine ?? Number.POSITIVE_INFINITY);
 }
-
-/** What this document's structural comments say. One walk answers both, so they cannot disagree. */
-interface StructuralComments {
-    /** Keys of the comments `toQasm` would have written itself, so they are not a user's. */
-    markerKeys: Set<string>;
-    /** Operation lines written inside the layer opened above them, rather than opening one. */
-    continuedLayers: Set<number>;
-}
-
-/**
- * Reads the `// Register` and `// Layer` comments back.
- *
- * A layer marker sits above the *first* operation of its layer: an operation opens a new
- * layer only where one stands directly above it, and the operations below share that layer.
- *
- * The sequence has to read 1, 2, 3 in order. At the first comment that breaks it the
- * matching stops, because from there this is no longer a document we produced, and an
- * unrecognised comment is kept, never dropped. A file with no markers of ours never
- * enters the sequence, so every gate call keeps a layer to itself.
- */
-function readStructuralComments(tree: ProgramContext, comments: readonly QasmComment[]): StructuralComments {
-    const commentByLine = firstCommentPerLine(comments);
-
-    const markerKeys = new Set<string>();
-    const continuedLayers = new Set<number>();
-    let expectedLayer = 1;
-
-    for (const statementOrScope of tree.statementOrScope()) {
-        const statement = statementOrScope.statement();
-        if (!statement) continue;
-
-        const declaration =
-            statement.quantumDeclarationStatement() ??
-            statement.classicalDeclarationStatement() ??
-            statement.oldStyleDeclarationStatement();
-        if (declaration) {
-            addRegisterMarker(markerKeys, declaration);
-            continue;
-        }
-
-        const line = operationStatement(statement)?.start?.line ?? 0;
-        if (line <= 1) continue;
-
-        const above = commentByLine.get(line - 1);
-        if (above === undefined) {
-            // No comment above: written as part of a layer one of our markers opened.
-            if (expectedLayer > 1) continuedLayers.add(line);
-            continue;
-        }
-        if (above !== layerMarker(expectedLayer)) break;
-
-        markerKeys.add(commentKey(line - 1, layerMarker(expectedLayer)));
-        expectedLayer += 1;
-    }
-
-    return { markerKeys, continuedLayers };
-}
-
-/** Only the first comment on a line can sit above a statement. */
-function firstCommentPerLine(comments: readonly QasmComment[]): Map<number, string> {
-    const byLine = new Map<number, string>();
-    for (const comment of comments) {
-        if (!byLine.has(comment.line)) byLine.set(comment.line, comment.text.trim());
-    }
-    return byLine;
-}
-
-/** The statements that put operations into a layer. */
-const operationStatement = (statement: StatementContext): SourcePosition | null =>
-    statement.gateCallStatement() ??
-    statement.measureArrowAssignmentStatement() ??
-    (statement.assignmentStatement()?.measureExpression() ? statement.assignmentStatement() : null);
-
-/** A declaration with no name has no `// Register x` we could have written above it. */
-function addRegisterMarker(
-    keys: Set<string>,
-    declaration:
-        | QuantumDeclarationStatementContext
-        | ClassicalDeclarationStatementContext
-        | OldStyleDeclarationStatementContext,
-): void {
-    const name = tokenText(declaration.Identifier());
-    const line = declaration.start?.line ?? 0;
-    if (name === null || line <= 1) return;
-
-    keys.add(commentKey(line - 1, registerMarker(name)));
-}
-
-const commentKey = (line: number, text: string): string => `${line}:${text.trim()}`;

@@ -29,11 +29,7 @@ import { useCircuitStore } from '#CircuitStoreContext.tsx';
 import { useCircuitCapabilities } from '#CircuitCapabilitiesContext.tsx';
 import { createCircuitMutations } from '#circuitMutations.ts';
 
-/**
- * The register manager lives in the toolbar, but the canvas needs to open it too
- * ("no registers yet", "measure into which bit?"). A window event keeps those
- * call sites from having to thread a handler through the whole tree.
- */
+/** Lets the canvas open the register manager too, without threading a handler through the tree. */
 const OPEN_REGISTER_MANAGER_EVENT = 'open-register-manager';
 
 export function openRegisterManager(): void {
@@ -64,8 +60,8 @@ export function RegisterManager() {
         return () => globalThis.removeEventListener(OPEN_REGISTER_MANAGER_EVENT, handler as EventListener);
     }, []);
 
-    // The name is written into generated OpenQASM verbatim, so it has to be an
-    // identifier there before it may be created here.
+    // The name is written into generated OpenQASM verbatim, so it has to be an identifier there before it may be
+    // created here.
     const nameProblem = checkRegisterName(newRegName);
 
     const handleAddRegister = () => {

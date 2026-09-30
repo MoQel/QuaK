@@ -2,21 +2,14 @@ import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { openTab } from '@/store/tabs/tabsSlice.ts';
 import { toast } from 'sonner';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog.tsx';
-import { Button } from '@/components/ui/button.tsx';
-import { Input } from '@/components/ui/input.tsx';
-import { Label } from '@/components/ui/label.tsx';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select.tsx';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@quak/ui/dialog';
+import { Button } from '@quak/ui/button';
+import { Input } from '@quak/ui/input';
+import { Label } from '@quak/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@quak/ui/select';
 import { FileElementDto } from '@/api/dto/filesystem.ts';
 import { createSubcircuitFile, findUndeclaredCircuitFiles, offerAsSubcircuit } from './subcircuits.ts';
-import { SubcircuitOption } from '@/api/dto/circuit.ts';
+import { SubcircuitOption } from '@quak/circuit-core';
 import { useProject } from '@/contexts/ProjectContext.tsx';
 
 interface NewSubcircuitDialogProps {

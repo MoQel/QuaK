@@ -1,7 +1,7 @@
-import { Button } from '@/components/ui/button.tsx';
+import { Button } from '@quak/ui/button';
 import { FileCode2 } from 'lucide-react';
 import { generateCircuitCode } from '@/views/circuit-workspace/circuitPersistence.ts';
-import { CircuitResponse } from '@/api/dto/circuit.ts';
+import { CircuitResponse } from '@quak/circuit-core';
 import { useState } from 'react';
 import { toast } from 'sonner';
 

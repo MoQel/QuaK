@@ -1,16 +1,11 @@
-import { DialogHeader, DialogTitle } from '@/components/ui/dialog.tsx';
+import { DialogHeader, DialogTitle } from '@quak/ui/dialog';
 import { Form, FormField } from '@/components/ui/form.tsx';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ParentRefresh } from '@/views/project-manager-view/ProjectManagerContexts.ts';
 import { JSX, useContext } from 'react';
-import {
-    ContextMenuItem,
-    ContextMenuSub,
-    ContextMenuSubContent,
-    ContextMenuSubTrigger,
-} from '@/components/ui/context-menu';
+import { ContextMenuItem, ContextMenuSub, ContextMenuSubContent, ContextMenuSubTrigger } from '@quak/ui/context-menu';
 import { DialogCloseButtons, TextInput } from '@/views/project-manager-view/util/FormComponents.tsx';
 import { api } from '@/api/api.ts';
 import { CreateFileRequest, DirectoryRequest } from '@/api/dto/filesystem';

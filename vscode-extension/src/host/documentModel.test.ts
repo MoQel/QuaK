@@ -79,7 +79,6 @@ describe('classifyText: document state', () => {
     });
 });
 
-// Counting reads is the point: what the cache saves is a full ANTLR parse per keystroke.
 describe('ClassificationCache', () => {
     function fakeDocument(uri: string, text: string) {
         let reads = 0;
@@ -116,8 +115,7 @@ describe('ClassificationCache', () => {
         };
     }
 
-    // Rethrown rather than ignored: a test on this path is not meant to be passing
-    // because the cache quietly caught something.
+    // Fails the test instead of letting the cache swallow an unexpected error.
     const unexpectedFailure = (error: unknown): never => {
         throw error;
     };
@@ -220,7 +218,6 @@ describe('ClassificationCache', () => {
     });
 });
 
-// Only what the user can act on. A cause explains its own consequences.
 describe('diagnosticsFor', () => {
     const diagnosticsIn = (source: string, categories: DiagnosticCategories = ALL) =>
         diagnosticsFor(classifyText(source).classification, categories);
@@ -228,8 +225,7 @@ describe('diagnosticsFor', () => {
         diagnosticsIn(source, categories).map((entry) => entry.construct);
 
     it('reports syntax errors and nothing the recovered parse tree invented', () => {
-        // The visitor walks on after a syntax error and rejects fragments that are not
-        // real statements, and reporting those next to the actual error is noise.
+        // The fragments the visitor rejects after a syntax error are not reported.
         const constructs = constructsIn(`${HEADER}qubit[2 q;\nh q[0]\nfoo q[1];\n`);
 
         expect(constructs).not.toHaveLength(0);
@@ -312,9 +308,7 @@ describe('diagnosticsFor', () => {
     });
 });
 
-// A missing token is reported at the end of the line before it, which is where a
-// range would start empty. Whether that stays visible is decided in diagnostics.ts,
-// but the input to it is pinned here.
+// A missing token sits at the end of the previous line; diagnostics.ts widens the range from there.
 describe('diagnosticsFor: findings that sit at the end of a line', () => {
     it('places a missing token past the last character of its line', () => {
         const source = 'OPENQASM 3.0;\n\n// Register q\nqubit[2] q\n\n// Layer 1\nh q[0];\n';
@@ -326,7 +320,6 @@ describe('diagnosticsFor: findings that sit at the end of a line', () => {
     });
 });
 
-// The one place where two counting conventions meet.
 describe('positionOf', () => {
     const at = (line: number, column: number): DocumentDiagnostic => ({
         line,

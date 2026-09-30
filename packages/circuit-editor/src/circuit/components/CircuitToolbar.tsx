@@ -7,11 +7,7 @@ import { createCircuitMutations } from '#circuitMutations.ts';
 import { RegisterManager } from './RegisterManager.tsx';
 
 interface CircuitToolbarProps {
-    /**
-     * Slot on the left of the toolbar, for actions only the host has: the web IDE
-     * puts the quantikz export and "parse active editor" here, the extension its
-     * own export button.
-     */
+    /** Host-specific actions on the left of the toolbar. */
     start?: ReactNode;
 }
 

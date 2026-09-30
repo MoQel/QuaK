@@ -27,9 +27,7 @@ export function LibraryView({
 }: Readonly<LibraryViewProps>) {
     const [boxMode, setBoxMode] = useState(true);
 
-    // The gates the open circuit itself defines. They are not part of the catalogue, which holds
-    // only the built-ins, so they are read straight off the circuit and follow it: a file with a
-    // new `gate` in it makes that gate appear here without a round trip.
+    // The gates the open circuit defines itself, read off the circuit so they follow its changes.
     const { circuit } = useCircuitStore();
     const customGates = useMemo(() => collectCustomGates(circuit), [circuit]);
 

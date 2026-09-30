@@ -10,8 +10,7 @@ tasks.register("removeCustomNode", Delete) {
     delete node.yarnWorkDir
 }
 
-// npm ci must run from the workspace root to read the lockfile instead of rewriting it.
-// There @quak/* gets linked into node_modules
+// npm ci runs from the workspace root, which reads the lockfile and links @quak/* into node_modules.
 tasks.named("npm_ci") {
     workingDir = layout.projectDirectory.file("..")
 }

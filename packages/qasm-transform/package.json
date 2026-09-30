@@ -21,6 +21,6 @@
     },
     "devDependencies": {
         "antlr4ng-cli": "^2.0.0",
-        "vitest": "^4.1.10"
+        "vitest": "^4.1.11"
     }
 }

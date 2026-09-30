@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { CircuitResponse, ElementaryQuantumGateDto } from '@/api/dto/circuit.ts';
-import { toCircuitContent } from '@quak/circuit-core';
+import { toCircuitContent } from './circuitContent.ts';
+import { CircuitResponse, ElementaryQuantumGateDto } from './dto/circuit.ts';
 
 const gate = (id: string): ElementaryQuantumGateDto => ({
     id,

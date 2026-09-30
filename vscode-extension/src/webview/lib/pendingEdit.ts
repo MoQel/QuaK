@@ -7,11 +7,7 @@ export interface PendingEdit {
     circuit: CircuitResponse;
 }
 
-/**
- * Returns whether an optimistic circuit edit should still be shown: until the host
- * broadcasts a newer document, rejects the edit, or confirms it without a document
- * change (the written QASM was byte-identical, so no newer version ever arrives).
- */
+/** Whether an optimistic edit is still shown: until the host sends a newer document, rejects it or confirms it. */
 export const showsPendingEdit = (input: {
     pending: PendingEdit | undefined;
     documentVersion: number | undefined;

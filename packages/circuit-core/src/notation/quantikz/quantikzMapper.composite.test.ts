@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { toQuantikz } from '@quak/circuit-core/notation/quantikz';
-import type { CircuitResponse, CompositeQuantumGateDto } from '@quak/circuit-core';
+import { toQuantikz } from './index.ts';
+import type { CircuitResponse, CompositeQuantumGateDto } from '#dto/circuit.ts';
 
 const sel = (index: number) => ({ registerId: 'r1', index });
 

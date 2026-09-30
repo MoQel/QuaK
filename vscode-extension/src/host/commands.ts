@@ -4,8 +4,7 @@ import { CircuitEditorProvider } from './circuitEditorProvider.ts';
 
 export function registerCommands(output: vscode.OutputChannel): vscode.Disposable[] {
     return [
-        // Besides, not in place: the file stays open as text, which is the whole point of
-        // the circuit being a second view of it rather than a replacement.
+        // Beside the text, since the circuit is a second view of the file.
         vscode.commands.registerCommand('quak.openCircuitEditorToSide', (uri?: vscode.Uri) =>
             openCircuitEditor(uri, vscode.ViewColumn.Beside),
         ),
@@ -57,6 +56,6 @@ function activeQasmUri(): vscode.Uri | undefined {
     return input instanceof vscode.TabInputCustom && isQasm(input.uri) ? input.uri : undefined;
 }
 
-// By extension, not by language id: the custom editor is registered for the pattern too,
-// so a file it could not be opened for is not a target here either.
+// By extension, not by language id: the custom editor is registered for the pattern too, so a file it could not be
+// opened for is not a target here either.
 const isQasm = (uri: vscode.Uri): boolean => uri.path.endsWith('.qasm');

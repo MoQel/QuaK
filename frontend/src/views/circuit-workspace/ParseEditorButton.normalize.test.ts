@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { normalizeParsedCircuit } from './ParseEditorButton.tsx';
-import type { CircuitResponse, SubcircuitOperationDto } from '@/api/dto/circuit.ts';
+import type { CircuitResponse, SubcircuitOperationDto } from '@quak/circuit-core';
 
 /**
  * Everything the parser produces goes through this before it reaches the circuit, so a field the

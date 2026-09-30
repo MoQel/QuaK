@@ -29,7 +29,7 @@ function useActivePanelId(props: IDockviewHeaderActionsProps): string | undefine
  * Circuit panel, the generate-code action on the Code panel — and only while a file is open
  * (mirrors the panels' "No file open" state).
  */
-export function PanelHeaderActions(props: IDockviewHeaderActionsProps) {
+export function PanelHeaderActions(props: Readonly<IDockviewHeaderActionsProps>) {
     const activePanelId = useActivePanelId(props);
     const { activeCircuit, setActiveCircuit, activeCircuitTabId } = useCircuitTabs();
     const { setActiveCode } = useActiveCode();
@@ -39,8 +39,8 @@ export function PanelHeaderActions(props: IDockviewHeaderActionsProps) {
     if (activePanelId === 'circuit') {
         if (!activeCircuit) return null;
 
-        // The header sits outside the circuit panel, so it needs its own store:
-        // same two values, so both stay in sync through CircuitTabsContext.
+        // The header sits outside the circuit panel, so it needs its own store: same two values, so both stay in sync
+        // through CircuitTabsContext.
         return (
             <div className="flex items-center h-full pl-4">
                 <CircuitStoreProvider circuit={activeCircuit} setCircuit={setActiveCircuit}>

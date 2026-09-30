@@ -1,13 +1,13 @@
 import { Dispatch, SetStateAction } from 'react';
 import { Settings2, Eye, Filter, Cpu, Target, AlertTriangle } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@quak/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@quak/ui/popover';
+import { Button } from '@quak/ui/button';
+import { Label } from '@quak/ui/label';
 import { SimulationMode, SimulationOptions } from '@/simulation/simulation.types';
 import { SmartInput } from '@/views/results-view/SmartInput.tsx';
 import { Switch } from '@/components/ui/switch.tsx';
-import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip.tsx';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@quak/ui/tooltip';
 
 interface ToolbarProps {
     options: SimulationOptions;

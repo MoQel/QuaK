@@ -1,16 +1,16 @@
 import { describe, it, expect } from 'vitest';
-import { toQuantikz, toStandaloneQuantikzDocument } from '@quak/circuit-core/notation/quantikz';
+import { toQuantikz, toStandaloneQuantikzDocument } from './index.ts';
 import type {
     CircuitResponse,
     ClassicRegisterResponse,
     ElementaryQuantumGateDto,
     ElementSelectorDto,
     MeasurementDto,
-    OperationIdentifier,
     QuantumOperationDto,
     QuantumRegisterResponse,
     RegisterResponse,
-} from '@quak/circuit-core';
+} from '#dto/circuit.ts';
+import type { OperationIdentifier } from '#gateTypes.ts';
 
 // fixture builders
 

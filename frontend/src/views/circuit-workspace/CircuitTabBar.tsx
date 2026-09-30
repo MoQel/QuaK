@@ -6,7 +6,7 @@ import {
     ContextMenuItem,
     ContextMenuSeparator,
     ContextMenuTrigger,
-} from '@/components/ui/context-menu.tsx';
+} from '@quak/ui/context-menu';
 import { useAppDispatch } from '@/hooks/useAppDispatch.ts';
 import { useAppSelector } from '@/hooks/useAppSelector.ts';
 import { moveTab, setActiveTab, setDragging } from '@/store/tabs/tabsSlice.ts';

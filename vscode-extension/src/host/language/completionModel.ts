@@ -68,10 +68,7 @@ function gateCall(operation: OperationDefinitionResponse, arity: GateArity, avai
     return `${operation.id}${angle} ${operands.join(', ')};`;
 }
 
-/**
- * One wire per operand, never the same twice: `cx q[0], q[0]` is not even unitary.
- * Falls back to naming the roles when the document has too few wires to go around.
- */
+/** A distinct wire per operand, or the role names when the document has too few wires. */
 function operandsFor(arity: GateArity, available: readonly string[]): string[] {
     const total = arity.controlSize + arity.targetSize;
     if (available.length >= total) return available.slice(0, total);

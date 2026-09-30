@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Keeps the committed TypeScript parser in sync with the backend grammars.
-// Hashing avoids requiring a JDK in ordinary JS checks.
+// Keeps the committed TypeScript parser in sync with the backend grammars. Hashing avoids requiring a JDK in ordinary
+// JS checks.
 import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';

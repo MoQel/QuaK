@@ -1,5 +1,4 @@
-import { ElementaryQuantumGateDto } from '@/api/dto/circuit.ts';
-import { resolveWireIndices, type WireIndex } from '@quak/circuit-core';
+import { ElementaryQuantumGateDto, resolveWireIndices, type WireIndex } from '@quak/circuit-core';
 import { Disposable } from '@/simulation/simulation.types.ts';
 import { throwSimulationError } from '@/simulation/simulation.errors.ts';
 import * as qulacs from 'qulacs-wasm';

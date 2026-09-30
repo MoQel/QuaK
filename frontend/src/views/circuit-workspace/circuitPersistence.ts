@@ -1,6 +1,5 @@
 import { api } from '@/api/api.ts';
-import { CircuitResponse, isSubcircuit, SubcircuitOperationDto } from '@/api/dto/circuit.ts';
-import { toCircuitContent } from '@quak/circuit-core';
+import { CircuitResponse, isSubcircuit, SubcircuitOperationDto, toCircuitContent } from '@quak/circuit-core';
 
 /** Persists the full content (registers, layers and loop frames) of a circuit to the backend. */
 export const saveCircuitContent = (circuit: CircuitResponse): Promise<CircuitResponse> =>

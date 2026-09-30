@@ -1,5 +1,5 @@
-// Publishes what the transform found into the text editor, so a .qasm file explains
-// itself without the circuit editor being open.
+// Publishes what the transform found into the text editor, so a .qasm file explains itself without the circuit editor
+// being open.
 import * as vscode from 'vscode';
 import {
     diagnosticsFor,
@@ -21,7 +21,7 @@ const SEVERITY: Record<DiagnosticSeverity, vscode.DiagnosticSeverity> = {
     hint: vscode.DiagnosticSeverity.Hint,
 };
 
-/** Keeps a diagnostic collection in step with every open .qasm document, whether or not a circuit editor is showing it: the findings are about the file. */
+/** Keeps the diagnostics of every open .qasm document current, whether or not a circuit editor shows it. */
 export function registerDiagnostics(documents: ClassificationCache): vscode.Disposable[] {
     const collection = vscode.languages.createDiagnosticCollection('quak');
 
@@ -36,8 +36,7 @@ export function registerDiagnostics(documents: ClassificationCache): vscode.Disp
         // Change events arrive for git diffs, output channels and settings too.
         if (!isQasmDocument(document)) return;
 
-        // Setting the result rather than skipping: a category switched off has to take
-        // its existing findings with it.
+        // Set even when empty, so switching a category off removes its findings.
         collection.set(document.uri, findingsIn(document));
     };
 
@@ -46,8 +45,7 @@ export function registerDiagnostics(documents: ClassificationCache): vscode.Disp
         // Ahead of the parse, so nothing is parsed only to be discarded.
         if (!reportsAnything(wanted)) return [];
 
-        // Nothing to report about a document that could not be analysed. The reason is
-        // in the log, and stale squiggles would be worse than none.
+        // A document that could not be analysed gets no squiggles; the reason is in the log.
         const classified = documents.of(document);
         const findings = classified ? diagnosticsFor(classified.classification, wanted) : [];
 
@@ -87,8 +85,8 @@ function rangeOf(entry: DocumentDiagnostic, document: vscode.TextDocument): vsco
     const position = positionOf(entry);
     const line = document.lineAt(Math.min(position.line, document.lineCount - 1));
 
-    // Something missing is reported at the end of the line before it, and a range that
-    // starts there is empty, an invisible marker. Back up to cover the last character.
+    // Something missing is reported at the end of the line before it, and a range that starts there is empty, an
+    // invisible marker. Back up to cover the last character.
     const start = Math.min(position.column, Math.max(0, line.text.length - 1));
 
     return new vscode.Range(new vscode.Position(line.lineNumber, start), line.range.end);

@@ -47,8 +47,7 @@ describe('decideEdit', () => {
     });
 
     it('writes to a document the user opted into editing', () => {
-        // The one way past the read-only rule, and it takes a deliberate act:
-        // the user was shown what would be lost and asked for it anyway.
+        // The opt-in: the user was shown what would be lost.
         expect(decideEdit({ documentVersion: 7, documentState: 'editableByChoice', baseVersion: 7 })).toEqual({
             kind: 'apply',
         });
@@ -95,8 +94,8 @@ describe('applyOptIn', () => {
         ['no register', { kind: 'noRegister', hasVersion: true, hasInclude: true }],
         ['nothing at all', { kind: 'empty' }],
     ])('does not let the opt-in carry over to %s', (_case, classification) => {
-        // The document changes while it is open. Consent to losing comments is not
-        // consent to losing a statement that appeared afterwards.
+        // The document changes while it is open. Consent to losing comments is not consent to losing a statement that
+        // appeared afterwards.
         expect(applyOptIn({ classification, hasOptedIn: true })).toBe('readOnly');
     });
 });

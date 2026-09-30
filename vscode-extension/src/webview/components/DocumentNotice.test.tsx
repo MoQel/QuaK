@@ -49,7 +49,6 @@ describe('what a document without a circuit is told to add', () => {
     });
 });
 
-// A notice that says there is nothing to see contradicts the pane below it.
 describe('what a file with errors is told', () => {
     const BROKEN: DocumentClassification = {
         kind: 'invalid',

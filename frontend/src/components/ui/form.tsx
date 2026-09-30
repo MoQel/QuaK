@@ -11,8 +11,8 @@ import {
     type FieldValues,
 } from 'react-hook-form';
 
-import { cn } from '@/lib/utils';
-import { Label } from '@/components/ui/label';
+import { cn } from '@quak/ui/lib/utils';
+import { Label } from '@quak/ui/label';
 
 const Form = FormProvider;
 
@@ -31,8 +31,10 @@ const FormField = <
 >({
     ...props
 }: ControllerProps<TFieldValues, TName>) => {
+    const field = React.useMemo(() => ({ name: props.name }), [props.name]);
+
     return (
-        <FormFieldContext.Provider value={{ name: props.name }}>
+        <FormFieldContext.Provider value={field}>
             <Controller {...props} />
         </FormFieldContext.Provider>
     );
@@ -69,9 +71,10 @@ const FormItemContext = React.createContext<FormItemContextValue>({} as FormItem
 
 function FormItem({ className, ...props }: React.ComponentProps<'div'>) {
     const id = React.useId();
+    const item = React.useMemo(() => ({ id }), [id]);
 
     return (
-        <FormItemContext.Provider value={{ id }}>
+        <FormItemContext.Provider value={item}>
             <div data-slot="form-item" className={cn('grid gap-2', className)} {...props} />
         </FormItemContext.Provider>
     );

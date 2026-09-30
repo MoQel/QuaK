@@ -1,4 +1,4 @@
-import { GATE_ARITY, type OperationIdentifier } from './gate-types.ts';
+import { GATE_ARITY, type OperationIdentifier } from './gateTypes.ts';
 
 export type SupportStatus = 'supported' | 'unsupported';
 
@@ -39,13 +39,8 @@ const SUPPORTED_GATES: readonly OperationIdentifier[] = [
 ];
 
 /**
- * Every gate `stdgates.inc` and `qelib1.inc` define, plus the two language builtins.
- *
- * Not a list of what we support. That is SUPPORTED_GATES. This one separates "a real
- * gate this editor cannot draw" from "a name that exists nowhere", which are different
- * things to tell a user. It is sound because gate definitions of their own make a
- * document unsupported anyway, so in a file we would otherwise accept, every gate call
- * has to resolve to one of these.
+ * Every gate `stdgates.inc` and `qelib1.inc` define, plus the builtins `U` and `gphase`. Tells a real gate this editor
+ * cannot draw (unsupported) from a name that exists nowhere (invalid).
  */
 const STANDARD_GATE_NAMES: ReadonlySet<string> = new Set([
     // stdgates.inc

@@ -77,11 +77,7 @@ const removeOperationFromLayers = (layers: CircuitResponse['layers'], operationI
         }))
         .filter((layer) => layer.quantumOperations.length > 0);
 
-/**
- * Register- and operation-level edits on the circuit. Pure: every change is a new
- * `CircuitResponse` handed to `setCircuit`. What persistence means is the host's
- * business (the web IDE debounces a full save, the extension rewrites the .qasm).
- */
+/** Register and operation edits. Every change is a new `CircuitResponse` handed to `setCircuit`. */
 export function createCircuitMutations(circuit: CircuitResponse | undefined, setCircuit: CircuitStore['setCircuit']) {
     const addQubit = (registerId?: string) => {
         if (!circuit) return;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { User as UserIcon } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@quak/ui/lib/utils';
 
 interface UserAvatarProps {
     /** The URL of the avatar image (may be null/undefined). */

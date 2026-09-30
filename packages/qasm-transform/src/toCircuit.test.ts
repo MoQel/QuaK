@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { isQuantumRegister, type ElementaryQuantumGateDto } from '@quak/circuit-core';
-import { classify, isEditable, toCircuit } from './toCircuit.ts';
+import { classify, isEditable } from './classify.ts';
+import { toCircuit } from './toCircuit.ts';
 import { circuitOf, HEADER } from './testFixtures.ts';
 
 /** Size of the first qubit register; narrows for assertions. */
@@ -278,7 +279,6 @@ describe('toCircuit: gates', () => {
     });
 });
 
-// Operands that name several qubits cannot be represented as one visual gate.
 describe('toCircuit: gate calls on registers expand, as in the backend', () => {
     /** `identifier controls -> targets` per operation, layer by layer. */
     const callsIn = (source: string): string[][] =>
@@ -400,7 +400,6 @@ describe('toCircuit: rotation angles', () => {
         expect(isEditable(result)).toBe(false);
     });
 
-    // Prototype keys must not resolve as named constants.
     it.each(['constructor', '__proto__', 'valueOf'])('rejects the prototype key %s as an angle', (name) => {
         const result = toCircuit(`${HEADER}qubit[1] q;\nrx(${name}) q[0];\n`);
 
@@ -409,7 +408,6 @@ describe('toCircuit: rotation angles', () => {
     });
 });
 
-// Unsupported constructs must be detected before the extension rewrites the file.
 describe('toCircuit: strictness', () => {
     it.each([
         ['control flow', 'for int i in [0:2] { h q[0]; }'],
@@ -442,7 +440,6 @@ describe('toCircuit: strictness', () => {
     });
 });
 
-// Preamble is not circuit content, but it belongs to the user's file.
 describe('toCircuit: preamble is preserved, not dropped', () => {
     it('captures the version and the includes in source order', () => {
         const result = toCircuit('OPENQASM 3.0;\ninclude "stdgates.inc";\ninclude "custom.inc";\nqubit[1] q;\n');
@@ -478,7 +475,6 @@ describe('toCircuit: stable identity across re-parses', () => {
     });
 });
 
-// The reason a document is read-only is decided once, here, and only worded elsewhere.
 describe('classify: the reason a document cannot be edited', () => {
     const kindOf = (source: string) => classify(toCircuit(source)).kind;
 
@@ -555,8 +551,6 @@ describe('classify: the reason a document cannot be edited', () => {
     });
 });
 
-// Every prefix of a document is a document while someone types it. A throw reaches the
-// user as a defect of the extension and takes the circuit off the screen.
 describe('toCircuit: a half-written document is read, not thrown at', () => {
     const TYPED: Record<string, string> = {
         'a generated circuit': `${HEADER}\n// Register q\nqubit[3] q;\n\n// Layer 1\nh q[0];\ncx q[0], q[1];\nrx(pi/2) q[2];\n`,
@@ -580,7 +574,6 @@ describe('toCircuit: a half-written document is read, not thrown at', () => {
         }
     });
 
-    // Named, so a failure points at the accessor instead of at an offset.
     it.each([
         ['a version without a number', 'OPENQASM'],
         ['an include without a closing quote', 'OPENQASM 3.0;\ninclude "x.inc;\n'],
@@ -590,7 +583,6 @@ describe('toCircuit: a half-written document is read, not thrown at', () => {
         expect(() => toCircuit(source)).not.toThrow();
     });
 
-    // Whatever a broken file provokes, it is answered in words the reader can act on.
     const PARSER_INTERNALS =
         /no viable alternative|extraneous input|mismatched input|token recognition|expecting \{|<missing /;
 
@@ -604,7 +596,6 @@ describe('toCircuit: a half-written document is read, not thrown at', () => {
         }
     });
 
-    // The guards keep the transform alive. The syntax error is what explains the file.
     it('never lets a guard speak for a document that parses', () => {
         const messages = [toCircuit('OPENQASM 3.0;\ninclude "x.inc;\n'), toCircuit(`${HEADER}qubit[] q;\n`)].map(
             (result) => {
@@ -618,8 +609,7 @@ describe('toCircuit: a half-written document is read, not thrown at', () => {
     });
 });
 
-// A rejection quotes the line it is about, so the excerpt has to read the way the user
-// wrote it: `getText()` loses every space and picks up the tokens recovery invented.
+// `getText()` would lose every space and pick up the tokens error recovery invented.
 describe('toCircuit: what a rejection quotes back', () => {
     it.each([
         ['barrier q;', 'Unsupported barrier: barrier q;'],
@@ -640,8 +630,6 @@ describe('toCircuit: what a rejection quotes back', () => {
     });
 });
 
-// Reading each operation as a layer of its own re-wrote the file on the next save,
-// turning the two layers the user had written into three.
 describe('toCircuit: layers are read the way the document writes them', () => {
     // Not `circuitOf`: one case below is deliberately read-only and still has layers to check.
     const identifiersIn = (source: string) =>
@@ -673,8 +661,6 @@ describe('toCircuit: layers are read the way the document writes them', () => {
     });
 });
 
-// OpenQASM allows a comma after the last entry of a list. `toQasm` writes the list
-// without one, so accepting it silently removed it from the file on the next save.
 describe('toCircuit: a trailing comma is not ours to drop', () => {
     it.each([
         ['a single operand', 'h q[0], ;'],

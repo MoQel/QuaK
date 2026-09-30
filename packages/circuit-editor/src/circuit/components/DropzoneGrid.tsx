@@ -136,8 +136,7 @@ const libraryOperation = (
         inverseForm: false,
         targetQubits,
         controlQubits,
-        // Only rx/ry/rz carry an angle. Giving an H or an X a "default rotation" is data that
-        // means nothing, and anything writing the circuit out has to know to ignore it again.
+        // Only rx/ry/rz carry an angle; every other gate gets 0.
         rotationAngle: getOperationDefinition(data.operationIdentifier).hasRotationAngle ? Math.PI / 2 : 0,
     } as ElementaryQuantumGateDto;
 };

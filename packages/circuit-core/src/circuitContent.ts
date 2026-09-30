@@ -7,13 +7,8 @@ export interface CircuitContent {
 }
 
 /**
- * The circuit stripped of transient UI state: the DUMMY drop placeholder only
- * exists while a drag is in flight, and layers left empty by removing it carry
- * no meaning either.
- *
- * Anything that turns a circuit into something durable needs this first: the
- * web IDE before it saves or asks the backend for code, the extension before it
- * generates QASM for the document.
+ * The circuit without transient UI state: the DUMMY placeholder that only exists during a drag, and the layers left
+ * empty without it. Needed before a circuit is saved or turned into code.
  */
 export const toCircuitContent = (circuit: CircuitResponse): CircuitContent => {
     const layers = circuit.layers
@@ -22,8 +17,8 @@ export const toCircuitContent = (circuit: CircuitResponse): CircuitContent => {
         }))
         .filter((layer) => layer.quantumOperations.length > 0);
 
-    // The frames have to travel with every save: the endpoint is full-replace, so omitting them
-    // means "this circuit has none" and the first autosave after parsing a loop would wipe it.
+    // The frames have to travel with every save: the endpoint is full-replace, so omitting them means "this circuit has
+    // none" and the first autosave after parsing a loop would wipe it.
     return {
         registers: circuit.registers,
         layers,

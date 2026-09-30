@@ -5,15 +5,12 @@ import reactRefresh from 'eslint-plugin-react-refresh';
 import tseslint from 'typescript-eslint';
 import eslintConfigPrettier from 'eslint-config-prettier';
 
-// One config for the whole monorepo. The areas differ in what they may assume:
-// the web IDE, the circuit editor and the UI primitives are React in a browser,
-// circuit-core and qasm-transform have neither React nor DOM, the extension host
+// One config for the whole monorepo. The areas differ in what they may assume: the web IDE, the circuit editor and the
+// UI primitives are React in a browser, circuit-core and qasm-transform have neither React nor DOM, the extension host
 // is Node, and the extension webview is React in a browser again.
 
 export default tseslint.config(
-    // packages/qasm-transform/src/generated is ANTLR output, not hand-written code:
-    // linting it would only produce findings nobody may fix, since regenerating
-    // from the .g4 overwrites the file.
+    // ANTLR output: regenerating overwrites any fix.
     {
         ignores: [
             '**/dist/**',
@@ -21,8 +18,7 @@ export default tseslint.config(
             '**/.vscode-test/**',
             'backend/**',
             'packages/qasm-transform/src/generated/**',
-            // Agent worktrees are whole checkouts of this repo; linting them
-            // reports every finding twice and from paths nobody can act on.
+            // Local agent worktrees, full copies of the repo.
             '.claude/**',
         ],
     },
@@ -46,8 +42,8 @@ export default tseslint.config(
         },
     },
 
-    // React in a browser: the web IDE, the shared circuit editor and UI primitives,
-    // and the extension webview (a sandboxed browser frame).
+    // React in a browser: the web IDE, the shared circuit editor and UI primitives, and the extension webview (a
+    // sandboxed browser frame).
     {
         files: [
             'frontend/**/*.{ts,tsx}',
@@ -65,8 +61,7 @@ export default tseslint.config(
         rules: {
             ...reactHooks.configs.recommended.rules,
             'react-refresh/only-export-components': 'off',
-            // The editor's effects deliberately list fewer dependencies than the rule
-            // wants (see the comments at those effects); the rule would only be noise.
+            // The editor's effects list fewer dependencies than the rule wants, on purpose; see the comments there.
             'react-hooks/exhaustive-deps': 'off',
         },
     },
@@ -79,8 +74,8 @@ export default tseslint.config(
         },
     },
 
-    // Extension host and its shared protocol: run in Node (the shared part must stay
-    // environment-neutral, so it gets no browser globals either).
+    // Extension host and its shared protocol: run in Node (the shared part must stay environment-neutral, so it gets no
+    // browser globals either).
     {
         files: ['vscode-extension/src/**/*.ts'],
         ignores: ['vscode-extension/src/webview/**'],

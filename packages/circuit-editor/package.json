@@ -8,7 +8,6 @@
     "types": "./src/index.ts",
     "exports": {
         ".": "./src/index.ts",
-        "./styles.css": "./src/circuit-editor.module.css",
         "./editor.css": "./src/editor.css"
     },
     "imports": {
@@ -34,6 +33,6 @@
         "@testing-library/react": "^16.3.2",
         "@vitejs/plugin-react": "^4.3.4",
         "jsdom": "^27.0.1",
-        "vitest": "^4.1.10"
+        "vitest": "^4.1.11"
     }
 }
