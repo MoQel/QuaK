@@ -1,6 +1,5 @@
 import { useMemo, useState, ReactNode } from 'react';
-import { OperationDefinitionResponse } from '@/api/dto/library';
-import { CircuitResponse } from '@/api/dto/circuit';
+import { OperationDefinitionResponse, CircuitResponse } from '@quak/circuit-core';
 import { PanelDataContext } from '@/contexts/panel/PanelDataContext';
 
 export const PanelDataProvider = ({ children }: { children: ReactNode }) => {

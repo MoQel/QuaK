@@ -1,4 +1,4 @@
-import { CircuitResponse } from '@/api/dto/circuit.ts';
+import { CircuitResponse } from '@quak/circuit-core';
 import { SimulationOptions, SimulationResult } from '@/simulation/simulation.types.ts';
 
 // Action types

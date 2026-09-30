@@ -1,13 +1,12 @@
 import type { AddPanelPositionOptions, DockviewApi, SerializedDockview } from 'dockview-react';
 
-export const LAYOUT_STORAGE_KEY = 'ide-dockview-layout-v1';
+export const LAYOUT_STORAGE_KEY = 'ide-dockview-layout-v2';
 
 export const PANELS = {
     circuit: 'circuit',
     code: 'code',
     file: 'file',
     inspector: 'inspector',
-    library: 'library',
     results: 'results',
 };
 
@@ -22,14 +21,13 @@ const BOTTOM_H = 350;
  */
 export const DEFAULT_GRID: string[][] = [
     [PANELS.file, PANELS.circuit, PANELS.code],
-    [PANELS.library, PANELS.inspector, PANELS.results],
+    [PANELS.inspector, PANELS.results],
 ];
 
 /** The sizes `buildDefaultLayout` hands out, reused when a panel is reopened. */
 const DEFAULT_SIZES: Record<string, Pick<PanelPlacement, 'initialWidth' | 'initialHeight'>> = {
     [PANELS.file]: { initialWidth: LEFT_W },
     [PANELS.code]: { initialWidth: RIGHT_W },
-    [PANELS.library]: { initialWidth: LEFT_W },
     [PANELS.results]: { initialWidth: RIGHT_W },
 };
 
@@ -120,15 +118,7 @@ export const buildDefaultLayout = (api: DockviewApi) => {
         initialWidth: RIGHT_W,
     });
 
-    // 4. Fill bottom row (left / right of inspector)
-    api.addPanel({
-        id: PANELS.library,
-        component: PANELS.library,
-        title: 'Library',
-        position: { referencePanel: inspector, direction: 'left' },
-        initialWidth: LEFT_W,
-    });
-
+    // 4. Fill bottom row (right of inspector)
     api.addPanel({
         id: PANELS.results,
         component: PANELS.results,
@@ -143,7 +133,6 @@ export const PANEL_TITLES: Record<string, string> = {
     code: 'Code Editor',
     file: 'Project',
     inspector: 'Inspector',
-    library: 'Library',
     results: 'Results',
 };
 

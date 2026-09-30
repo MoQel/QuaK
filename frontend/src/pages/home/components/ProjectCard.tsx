@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FolderOpen, MoreVertical, Pencil, Pin, PinOff, Trash2, Users } from 'lucide-react';
 
-import { Button } from '@/components/ui/button.tsx';
-import { Card, CardContent } from '@/components/ui/card.tsx';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover.tsx';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip.tsx';
+import { Button } from '@quak/ui/button';
+import { Card, CardContent } from '@quak/ui/card';
+import { Popover, PopoverContent, PopoverTrigger } from '@quak/ui/popover';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@quak/ui/tooltip';
 import type { ProjectDetailsResponse } from '@/api/dto/filesystem.ts';
 import UserAvatar from '@/components/UserAvatar.tsx';
 

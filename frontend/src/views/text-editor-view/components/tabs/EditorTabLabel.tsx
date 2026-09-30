@@ -1,5 +1,5 @@
-import { cn } from '@/lib/utils.ts';
-import { Button } from '@/components/ui/button.tsx';
+import { cn } from '@quak/ui/lib/utils';
+import { Button } from '@quak/ui/button';
 import { X } from 'lucide-react';
 import React from 'react';
 import { Tab } from '@/store/tabs/tabsTypes.ts';

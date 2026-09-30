@@ -1,7 +1,7 @@
 import { IDockviewPanelHeaderProps } from 'dockview-react';
 import { X } from 'lucide-react';
 import React, { useCallback, useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button.tsx';
+import { Button } from '@quak/ui/button';
 
 export const CustomTabRenderer = (props: IDockviewPanelHeaderProps) => {
     const { api } = props;

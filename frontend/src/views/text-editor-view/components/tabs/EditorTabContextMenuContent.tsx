@@ -6,7 +6,7 @@ import {
     ContextMenuSub,
     ContextMenuSubContent,
     ContextMenuSubTrigger,
-} from '@/components/ui/context-menu.tsx';
+} from '@quak/ui/context-menu';
 import { GROUP_BOTTOM, GROUP_MAIN, GROUP_RIGHT } from '@/store/tabs/tabsSlice.ts';
 import { languages } from '@/views/text-editor-view/languages/languages.ts';
 import { Check } from 'lucide-react';

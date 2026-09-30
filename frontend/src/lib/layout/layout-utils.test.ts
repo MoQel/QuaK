@@ -39,11 +39,11 @@ const branch = (children: SerializedDockview['grid']['root'][]): SerializedDockv
 
 describe('layout-utils panel placement', () => {
     it('restores a panel inside its previous tab group when possible', () => {
-        const placement = getSavedPanelPlacement(layout(leaf('left-group', ['file', 'library'])), 'library');
+        const placement = getSavedPanelPlacement(layout(leaf('bottom-group', ['inspector', 'results'])), 'results');
 
         expect(placement).toEqual({
             position: {
-                referenceGroup: 'left-group',
+                referenceGroup: 'bottom-group',
                 direction: 'within',
                 index: 1,
             },
@@ -62,7 +62,7 @@ describe('layout-utils panel placement', () => {
     });
 
     it('drops saved placement when the reference no longer exists', () => {
-        const placement = getSavedPanelPlacement(layout(leaf('left-group', ['file', 'library'])), 'library');
+        const placement = getSavedPanelPlacement(layout(leaf('bottom-group', ['inspector', 'results'])), 'results');
         const api = {
             getGroup: () => undefined,
         } as unknown as DockviewApi;
@@ -87,22 +87,22 @@ describe('layout-utils default placement', () => {
     });
 
     it('falls back to the nearest open neighbour on its left', () => {
-        expect(getDefaultPlacement('results', apiWithOpen('library'))).toEqual({
-            position: { referencePanel: 'library', direction: 'right' },
+        expect(getDefaultPlacement('results', apiWithOpen('inspector'))).toEqual({
+            position: { referencePanel: 'inspector', direction: 'right' },
             initialWidth: 520,
         });
     });
 
     it('recreates a fully closed row as a row of the grid, not inside a neighbour', () => {
         // Nothing from the bottom row is open, so naming a top-row panel would split its cell.
-        expect(getDefaultPlacement('library', apiWithOpen('file', 'circuit', 'code'))).toEqual({
+        expect(getDefaultPlacement('inspector', apiWithOpen('file', 'circuit', 'code'))).toEqual({
             position: { direction: 'below' },
             initialHeight: 350,
         });
     });
 
     it('adds a closed top row above the bottom one', () => {
-        expect(getDefaultPlacement('circuit', apiWithOpen('library', 'inspector'))).toEqual({
+        expect(getDefaultPlacement('circuit', apiWithOpen('inspector', 'results'))).toEqual({
             position: { direction: 'above' },
         });
     });
@@ -134,11 +134,11 @@ describe('layout-utils restorePlacement', () => {
     it('restores a remembered tab group that still exists', () => {
         const api = {
             getPanel: (id: string) => (id === 'circuit' ? { id } : undefined),
-            getGroup: () => ({ id: 'left-group' }),
+            getGroup: () => ({ id: 'bottom-group' }),
         } as unknown as DockviewApi;
-        const saved = { position: { referenceGroup: 'left-group', direction: 'within' as const, index: 1 } };
+        const saved = { position: { referenceGroup: 'bottom-group', direction: 'within' as const, index: 1 } };
 
-        expect(restorePlacement('library', api, saved)).toEqual({ position: saved.position });
+        expect(restorePlacement('results', api, saved)).toEqual({ position: saved.position });
     });
 
     it('ignores a remembered tab group whose group is gone', () => {

@@ -1,4 +1,4 @@
-import { cn } from '@/lib/utils.ts';
+import { cn } from '@quak/ui/lib/utils';
 import React from 'react';
 
 export interface GhostTabProps {

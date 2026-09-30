@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, ReactNode, KeyboardEvent } from 'react';
-import { cn } from '@/lib/utils';
+import { cn } from '@quak/ui/lib/utils';
 import { GhostTab } from '@/components/GhostTab.tsx';
 
 export interface TabItem {

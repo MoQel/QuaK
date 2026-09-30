@@ -1,11 +1,11 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.tsx';
-import { Button } from '@/components/ui/button.tsx';
+import { Card, CardContent, CardHeader, CardTitle } from '@quak/ui/card';
+import { Button } from '@quak/ui/button';
 import { memo } from 'react';
 import { BlockMath, InlineMath } from 'react-katex'; // LaTex rendering
 import 'katex/dist/katex.min.css'; // LaTex rendering
 import { X, Microscope, Info } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { OperationDefinitionResponse } from '@/api/dto/library.ts';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@quak/ui/tooltip';
+import { OperationDefinitionResponse } from '@quak/circuit-core';
 
 interface InspectorViewProps {
     operationDefinition: OperationDefinitionResponse | undefined;
@@ -148,8 +148,11 @@ function InspectorViewComponent({ operationDefinition, onClear }: Readonly<Inspe
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y">
-                                        {info.truthTable.map((row, idx) => (
-                                            <tr key={idx} className="hover:bg-muted/20 transition-colors">
+                                        {info.truthTable.map((row) => (
+                                            <tr
+                                                key={`${row.input}->${row.output}`}
+                                                className="hover:bg-muted/20 transition-colors"
+                                            >
                                                 <td className="px-3 py-2 font-mono text-xs">
                                                     <SafeInlineMath math={row.input} />
                                                 </td>

@@ -1,4 +1,4 @@
-import { Card } from '@/components/ui/card.tsx';
+import { Card } from '@quak/ui/card';
 import { useAppSelector } from '@/hooks/useAppSelector.ts';
 import { useMemo } from 'react';
 import { GROUP_BOTTOM, GROUP_MAIN, GROUP_RIGHT } from '@/store/tabs/tabsSlice.ts';

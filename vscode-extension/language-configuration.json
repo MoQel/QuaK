@@ -1,0 +1,27 @@
+// Vendored from microsoft/qsharp (MIT); see THIRD-PARTY-NOTICES.txt.
+// https://github.com/microsoft/qsharp/blob/main/source/vscode/language-configuration-openqasm.json
+{
+    "comments": {
+        "lineComment": "//",
+        "blockComment": ["/*", "*/"]
+    },
+    "brackets": [
+        ["[", "]"],
+        ["(", ")"],
+        ["{", "}"]
+    ],
+    "autoClosingPairs": [
+        ["[", "]"],
+        ["(", ")"],
+        ["{", "}"],
+        ["'", "'"],
+        { "open": "\"", "close": "\"", "notIn": ["string"] }
+    ],
+    "surroundingPairs": [
+        ["[", "]"],
+        ["(", ")"],
+        ["{", "}"],
+        ["'", "'"],
+        ["\"", "\""]
+    ]
+}

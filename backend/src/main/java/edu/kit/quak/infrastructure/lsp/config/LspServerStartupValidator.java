@@ -41,7 +41,7 @@ public class LspServerStartupValidator {
         List<String> command = config.getCommand();
 
         if (command == null || command.isEmpty()) {
-            log.warn("LSP [{}]: No command configured — server will not be available.", language);
+            log.warn("LSP [{}]: No command configured, server will not be available.", language);
             return;
         }
 
@@ -50,7 +50,7 @@ public class LspServerStartupValidator {
 
         if (binaryPath.isAbsolute()) {
             if (!Files.exists(binaryPath)) {
-                log.warn("LSP [{}]: Binary not found at '{}' — server will not be available.", language, binary);
+                log.warn("LSP [{}]: Binary not found at '{}', server will not be available.", language, binary);
             } else if (!Files.isExecutable(binaryPath)) {
                 log.warn("LSP [{}]: Binary '{}' exists but is not executable.", language, binary);
             } else {
