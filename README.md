@@ -208,4 +208,4 @@ If you wish to remove the custom nodejs install, run `gradlew :removeCustomNode`
 
 Copyright (c) 2025 MoQel
 
-This project is available under the [MIT License](./LICENSE)
+This project is available under the [MIT License](./LICENSE). The licenses of the third-party packages it ships are listed in [THIRD-PARTY-LICENSES.md](./THIRD-PARTY-LICENSES.md).

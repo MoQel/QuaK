@@ -1,0 +1,68 @@
+name: Licenses
+
+# Checks that every shipped third-party package is licensed compatibly with MIT, and keeps THIRD-PARTY-LICENSES.md
+# current. Runs the OSS Review Toolkit with the configuration in .ort.yml and .ort/.
+
+on:
+  push:
+    branches:
+      - "development"
+      - "main"
+  pull_request:
+    branches:
+      - "development"
+      - "main"
+  workflow_dispatch:
+
+concurrency:
+  group: licenses-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  licenses:
+    name: licenses
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: ${{ github.head_ref }}
+
+      # The ORT image unpacks to about 13 GB.
+      - name: Free disk space
+        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+
+      # The action mounts $HOME into the container and only clones the community ort-config when
+      # ~/.ort/config is empty.
+      - name: Provide the ORT configuration
+        run: |
+          mkdir -p "$HOME/.ort/config"
+          cp .ort/config/* "$HOME/.ort/config/"
+          echo "ORT_TEMPLATE=${GITHUB_WORKSPACE/$USER/ort}/.ort/templates/THIRD-PARTY-LICENSES.md.ftl" >> "$GITHUB_ENV"
+
+      - name: Run ORT
+        id: ort
+        uses: oss-review-toolkit/ort-ci-github-action@086d928d24ef1653dc0777296b312fda5faaaf52 # v1.2.0
+        with:
+          image: ghcr.io/oss-review-toolkit/ort:94.2.0@sha256:7504a0929236a9bd22946d1cce9359af5cc1f822e25379dfb03e9150613eff4a
+          run: cache-dependencies,labels,analyzer,evaluator,reporter,upload-results
+          fail-on: violations
+          report-formats: PlainTextTemplate,StaticHTML,CycloneDX
+          ort-cli-report-args: >-
+            -O PlainTextTemplate=template.path=${{ env.ORT_TEMPLATE }}
+            -O CycloneDX=output.file.formats=json
+
+      # Runs even when the check fails, so the file always lists what is shipped.
+      - name: Commit THIRD-PARTY-LICENSES.md
+        if: ${{ !cancelled() && github.event_name == 'push' }}
+        env:
+          REPORT: ${{ steps.ort.outputs.results-path }}/THIRD-PARTY-LICENSES.md
+        run: |
+          [[ -f "$REPORT" ]] || { echo "No report was generated."; exit 0; }
+          cp "$REPORT" THIRD-PARTY-LICENSES.md
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add THIRD-PARTY-LICENSES.md
+          git diff --staged --quiet || (git commit -m "docs: automated update of third-party licenses" && git pull --rebase origin ${{ github.ref_name }} && git push)

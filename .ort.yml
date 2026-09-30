@@ -1,0 +1,34 @@
+# Repository configuration for the OSS Review Toolkit (ORT), read by .github/workflows/licenses.yml.
+# https://oss-review-toolkit.org/ort/docs/configuration/ort-yml
+
+analyzer:
+  package_managers:
+    # ORT itself runs on Java 25, which Gradle 8.13 cannot run on. ORT downloads a Temurin 21 for the Gradle build.
+    GradleInspector:
+      options:
+        javaVersion: "21"
+    # qasmlsp depends on tliron/kutil, whose tags were deleted upstream. Its versions only exist in the Go module proxy.
+    GoMod:
+      options:
+        forceDirectGoProxy: "false"
+
+excludes:
+  paths:
+    - pattern: "backend/package.json"
+      reason: "BUILD_TOOL_OF"
+      comment: "Prettier and its Java plugin, used by Spotless to format the backend sources."
+  scopes:
+    - pattern: "devDependencies"
+      reason: "DEV_DEPENDENCY_OF"
+      comment: "npm build and test tooling. The extension bundles its runtime code from the workspace packages."
+    - pattern: "annotationProcessor|antlr|compileClasspath"
+      reason: "BUILD_DEPENDENCY_OF"
+      comment: "Gradle compile-time scopes. The jar ships the runtime classpath."
+    - pattern: "test.*"
+      reason: "TEST_DEPENDENCY_OF"
+      comment: "Gradle test scopes."
+
+# Licenses that are not compatible with MIT fail the check. Once a case is decided, record it here:
+# https://oss-review-toolkit.org/ort/docs/configuration/ort-yml#resolutions
+resolutions:
+  rule_violations: []
