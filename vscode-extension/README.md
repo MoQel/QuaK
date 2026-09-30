@@ -10,7 +10,6 @@ undo, search, split view and source control keep working exactly as they always 
 
 - Build and change a circuit by dragging gates; the `.qasm` file updates as you go.
 - Edit the text and the circuit side by side; both views stay in sync.
-- Open the same file in more than one circuit view at a time.
 - Hover a gate or a register to see what it does.
 - Syntax highlighting, comment toggling and bracket matching for `.qasm` files.
 - Follows your VS Code colour theme, light or dark.
@@ -42,6 +41,9 @@ small enough to read, its matrix. Hover a register to see how wide it is.
 Type at the start of a statement to see the gates QuaK can draw, and `measure`; picking
 one inserts the full call with your registers filled in. Type `[` after a register name
 to see the qubits or bits that register has.
+
+The syntax highlighting grammar comes from [microsoft/qsharp](https://github.com/microsoft/qsharp)
+(MIT), see `THIRD-PARTY-NOTICES.txt`.
 
 The Problems panel shows two things, each of which can be switched off on its own:
 errors in your code, and what keeps a file read-only in the circuit view.

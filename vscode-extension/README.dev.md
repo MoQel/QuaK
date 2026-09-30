@@ -1,7 +1,7 @@
 # QuaK VSCode Extension Package
 
 This document describes the extension package for developers. The public
-Marketplace README is `README.md`.
+Marketplace README is [`README.md`](README.md).
 
 ## Runtime Areas
 
@@ -51,7 +51,7 @@ Keep host-only code out of `webview/`: it must not import `vscode`. Keep React
 and DOM code inside `webview/`.
 
 `syntaxes/openqasm.tmLanguage.json` and `language-configuration.json` are vendored
-from microsoft/qsharp under MIT, recorded in `THIRD-PARTY-NOTICES.txt`. Keep the
+from [microsoft/qsharp](https://github.com/microsoft/qsharp) under MIT, recorded in [`THIRD-PARTY-NOTICES.txt`](THIRD-PARTY-NOTICES.txt). Keep the
 grammar byte-identical to upstream apart from its attribution block, so refreshing
 it stays a plain diff.
 

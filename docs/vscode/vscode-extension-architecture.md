@@ -4,7 +4,7 @@ Orientation for developers picking up the extension. It covers what the extensio
 how it is put together and why the load-bearing decisions were made. The mechanics (source
 layout, build commands, edit flow step by step) live in
 [`vscode-extension/README.dev.md`](../../vscode-extension/README.dev.md); the Marketplace
-text is `vscode-extension/README.md`.
+text is [`vscode-extension/README.md`](../../vscode-extension/README.md).
 
 ---
 
@@ -102,12 +102,12 @@ Codespaces are untested rather than unsupported; the extension declares
 Every parse of the document yields one of four states, and the circuit view has to
 distinguish them.
 
-| State | Meaning | Behaviour |
-|---|---|---|
-| `editable` | Parses, every construct within the support matrix, no comments below the header | Circuit editing enabled, both directions in sync |
-| `readOnly` | Syntax errors, unsupported constructs, or comments that regeneration would drop | Circuit renders where possible; writing is refused at the protocol level. A notice names the reason |
-| `editableByChoice` | Only comments stood in the way and the user explicitly opted in | Editing enabled; the comments below the header are dropped on the next write |
-| `failed` | The transform threw. That is a defect of ours, not a property of the file | Read-only, with a notice saying so. The stack goes to the QuaK output channel |
+| State              | Meaning                                                                         | Behaviour                                                                                           |
+| ------------------ | ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `editable`         | Parses, every construct within the support matrix, no comments below the header | Circuit editing enabled, both directions in sync                                                    |
+| `readOnly`         | Syntax errors, unsupported constructs, or comments that regeneration would drop | Circuit renders where possible; writing is refused at the protocol level. A notice names the reason |
+| `editableByChoice` | Only comments stood in the way and the user explicitly opted in                 | Editing enabled; the comments below the header are dropped on the next write                        |
+| `failed`           | The transform threw. That is a defect of ours, not a property of the file       | Read-only, with a notice saying so. The stack goes to the QuaK output channel                       |
 
 `editableByChoice` exists so that losslessness does not become a dead end. The opt-in is an
 action the user takes, never a side effect of a gate drop. It is currently a button in
@@ -119,22 +119,22 @@ skipped.
 
 ## Host ↔ webview protocol
 
-Defined in `vscode-extension/src/shared/protocol.ts`. Small on purpose.
+Defined in [`vscode-extension/src/shared/protocol.ts`](../../vscode-extension/src/shared/protocol.ts). Small on purpose.
 
-| Direction | Message | Meaning |
-|---|---|---|
-| webview → host | `ready` | Webview mounted; the host answers with `documentChanged` |
-| webview → host | `applyEdit { requestId, content, baseVersion }` | Please write this circuit, assuming the document is still at `baseVersion` |
-| webview → host | `enableEditing` | Opt in to lossy editing for this document |
-| webview → host | `webviewError { message, stack }` | The circuit editor crashed while rendering |
-| host → webview | `documentChanged { circuit, version, state, classification }` | Authoritative state, broadcast to every panel of the URI |
-| host → webview | `editApplied { requestId, version }` | The edit landed; clears the optimistic circuit when the written text was identical and no `documentChanged` follows |
-| host → webview | `editRejected { requestId, reason, currentVersion }` | `stale`, `readOnly` or `applyFailed` |
+| Direction      | Message                                                       | Meaning                                                                                                             |
+| -------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| webview → host | `ready`                                                       | Webview mounted; the host answers with `documentChanged`                                                            |
+| webview → host | `applyEdit { requestId, content, baseVersion }`               | Please write this circuit, assuming the document is still at `baseVersion`                                          |
+| webview → host | `enableEditing`                                               | Opt in to lossy editing for this document                                                                           |
+| webview → host | `webviewError { message, stack }`                             | The circuit editor crashed while rendering                                                                          |
+| host → webview | `documentChanged { circuit, version, state, classification }` | Authoritative state, broadcast to every panel of the URI                                                            |
+| host → webview | `editApplied { requestId, version }`                          | The edit landed; clears the optimistic circuit when the written text was identical and no `documentChanged` follows |
+| host → webview | `editRejected { requestId, reason, currentVersion }`          | `stale`, `readOnly` or `applyFailed`                                                                                |
 
 Arbitration is a pure function (`arbitration.ts`) so it can be tested without VSCode:
 the edit must match the current document version and the document must be writable.
 `applyOptIn` determines the edit state from its classification and the user's opt-in.
-Only `commentsOnly` can be enabled through opt-in. `PanelRegistry` keeps track of open panels per URI, 
+Only `commentsOnly` can be enabled through opt-in. `PanelRegistry` keeps track of open panels per URI,
 which the broadcast sends updates to.
 Which states are writable is defined once, in `protocol.ts`, and asked as a question,
 so a state added later is refused until someone decides otherwise.
@@ -143,13 +143,70 @@ Rejected edits are rebased on the next `documentChanged`. At human interaction s
 Accepted edits are applied as a `WorkspaceEdit`, which is what puts them into VSCode's
 undo history: Ctrl+Z in the text editor undoes a circuit edit.
 
+### Typing in the text
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant VS as VSCode
+    participant H as Host
+    participant T as qasm-transform
+    participant W as Webview
+    U->>VS: types in the .qasm file
+    VS->>H: onDidChangeTextDocument
+    H->>H: ClassificationCache.of(document)
+    H->>T: toCircuit(text), then classify(result)
+    T-->>H: circuit, preamble, classification
+    H->>VS: diagnostics for the Problems panel
+    H->>W: documentChanged { circuit, version, state, classification }
+    W->>W: renders the notice and the circuit
+```
+
+The diagnostics (`diagnostics.ts`) and the editor provider both listen for text changes and
+both ask `ClassificationCache`, which parses each document version once. Hover and completion
+read the registers from the same cache but read the text around the cursor themselves,
+because a half-typed expression often does not parse.
+
+### Editing the circuit
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant W as Webview
+    participant H as Host
+    participant T as qasm-transform
+    participant VS as VSCode
+    U->>W: drops a gate
+    W->>W: shows the edit at once (pending)
+    W->>H: applyEdit { requestId, content, baseVersion }
+    H->>H: decideEdit: version current? state writable?
+    alt rejected
+        H-->>W: editRejected { stale | readOnly | applyFailed }
+    else accepted
+        H->>T: toQasm(content, preamble)
+        T-->>H: OpenQASM text
+        H->>VS: WorkspaceEdit replaces the whole document
+        VS->>H: onDidChangeTextDocument
+        H->>W: documentChanged with the new version
+        H-->>W: editApplied
+    end
+    W->>W: drops the pending edit, the host's state applies
+```
+
+The webview never holds OpenQASM text; it knows only the circuit. Parsing and writing happen
+in the host alone, so there is one place that decides about the document, and the parser
+stays out of the webview bundle. `pendingEdit.ts` shows the optimistic circuit until a newer
+document arrives or the host rejects or confirms the edit.
+
 ---
 
 ## The QASM transformation
 
 `packages/qasm-transform` turns OpenQASM 3 into the circuit model and back. It is a
 TypeScript port of the backend's Java visitor and code generator, and it is generated
-from **the same `.g4` grammars** in `backend/src/main/antlr/`. ANTLR has an official
+from **the same `.g4` grammars** in [`backend/src/main/antlr/`](../../backend/src/main/antlr/). These are
+the official OpenQASM 3 grammars, taken from the
+[OpenQASM repository](https://github.com/openqasm/openqasm/tree/main/source/grammar). ANTLR has an official
 TypeScript target, so the grammar stays a single source. `npm run check:generated` fails
 when the generated parser falls behind the grammar it came from.
 
@@ -193,12 +250,12 @@ way, into one call per qubit.
 
 ## Shared packages
 
-| Package | Contents | Depends on |
-|---|---|---|
-| `@quak/circuit-core` | DTOs, gate types, support matrix, wire index, angle formatting, the quantikz and Dirac notation mappers | nothing |
-| `@quak/ui` | The shadcn primitives both hosts use | radix, tailwind-merge, lucide, react as a peer |
-| `@quak/circuit-editor` | The circuit editor with its integrated gate library | circuit-core, ui |
-| `@quak/qasm-transform` | OpenQASM 3 ↔ circuit (OpenQASM 2 read as well), for the extension only | circuit-core, antlr4ng |
+| Package                | Contents                                                                                                | Depends on                                     |
+| ---------------------- | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| `@quak/circuit-core`   | DTOs, gate types, support matrix, wire index, angle formatting, the quantikz and Dirac notation mappers | nothing                                        |
+| `@quak/ui`             | The shadcn primitives both hosts use                                                                    | radix, tailwind-merge, lucide, react as a peer |
+| `@quak/circuit-editor` | The circuit editor with its integrated gate library                                                     | circuit-core, ui                               |
+| `@quak/qasm-transform` | OpenQASM 3 ↔ circuit (OpenQASM 2 read as well), for the extension only                                  | circuit-core, antlr4ng                         |
 
 Both hosts import them by package name, such as `@quak/circuit-core` or `@quak/ui/button`.
 dependency-cruiser enforces the layers in CI: circuit-core depends on no other package, ui
@@ -219,7 +276,7 @@ highlighting, comment toggling and bracket matching for `.qasm` files. On top of
 that it publishes its own diagnostics, what the circuit editor cannot write back,
 so a file explains itself in the Problems panel without the circuit view being open.
 
-Hover shows information about the gate or qubit register under the cursor, using the 
+Hover shows information about the gate or qubit register under the cursor, using the
 same operation definitions and support data as the circuit editor and diagnostics.
 
 Completion suggests the gate calls the circuit editor can draw, as snippets filled with
@@ -246,8 +303,8 @@ There is no publish pipeline yet; it needs a Marketplace publisher account and a
 
 ## Where to look next
 
-- `vscode-extension/README.dev.md`: source layout, edit flow, dev commands
-- `vscode-extension/src/host/circuitEditorProvider.ts`: where document, parse and
+- [`vscode-extension/README.dev.md`](../../vscode-extension/README.dev.md): source layout, edit flow, dev commands
+- [`vscode-extension/src/host/circuitEditorProvider.ts`](../../vscode-extension/src/host/circuitEditorProvider.ts): where document, parse and
   arbitration meet
-- `packages/circuit-core/src/supportMatrix.ts`: what the editor claims to support
-- `backend/src/main/antlr/`: the grammars both parsers come from
+- [`packages/circuit-core/src/supportMatrix.ts`](../../packages/circuit-core/src/supportMatrix.ts): what the editor claims to support
+- [`backend/src/main/antlr/`](../../backend/src/main/antlr/): the grammars both parsers come from
