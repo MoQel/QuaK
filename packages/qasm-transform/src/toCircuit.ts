@@ -167,7 +167,11 @@ function tokenText(node: { symbol: { tokenIndex: number; text?: string | null } 
 type SourcePosition = { start: { line: number; column: number } | null };
 
 const sharesQubit = (layer: LayerResponse, operation: QuantumOperationDto): boolean => {
-    const used = new Set(layer.quantumOperations.flatMap(getInvolvedSelectors).map(getSelectorKey));
+    const used = new Set(
+        layer.quantumOperations
+            .flatMap((placed) => getInvolvedSelectors(placed))
+            .map((selector) => getSelectorKey(selector)),
+    );
     return getInvolvedSelectors(operation).some((selector) => used.has(getSelectorKey(selector)));
 };
 
@@ -287,7 +291,7 @@ export function toCircuit(source: string): ToCircuitResult {
 
     const content: CircuitContent = { registers: builder.registers, layers: builder.layers };
     return {
-        content: builder.registers.some(isQuantumRegister) ? content : null,
+        content: builder.registers.some((register) => isQuantumRegister(register)) ? content : null,
         preamble: {
             version: tokenText(tree.version()?.VersionSpecifier()),
             includes: builder.includes,
