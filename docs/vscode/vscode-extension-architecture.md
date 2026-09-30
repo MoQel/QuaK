@@ -143,6 +143,61 @@ Rejected edits are rebased on the next `documentChanged`. At human interaction s
 Accepted edits are applied as a `WorkspaceEdit`, which is what puts them into VSCode's
 undo history: Ctrl+Z in the text editor undoes a circuit edit.
 
+### Typing in the text
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant VS as VSCode
+    participant H as Host
+    participant T as qasm-transform
+    participant W as Webview
+    U->>VS: types in the .qasm file
+    VS->>H: onDidChangeTextDocument
+    H->>H: ClassificationCache.of(document)
+    H->>T: toCircuit(text), then classify(result)
+    T-->>H: circuit, preamble, classification
+    H->>VS: diagnostics for the Problems panel
+    H->>W: documentChanged { circuit, version, state, classification }
+    W->>W: renders the notice and the circuit
+```
+
+The diagnostics (`diagnostics.ts`) and the editor provider both listen for text changes and
+both ask `ClassificationCache`, which parses each document version once. Hover and completion
+read the registers from the same cache but read the text around the cursor themselves,
+because a half-typed expression often does not parse.
+
+### Editing the circuit
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant W as Webview
+    participant H as Host
+    participant T as qasm-transform
+    participant VS as VSCode
+    U->>W: drops a gate
+    W->>W: shows the edit at once (pending)
+    W->>H: applyEdit { requestId, content, baseVersion }
+    H->>H: decideEdit: version current? state writable?
+    alt rejected
+        H-->>W: editRejected { stale | readOnly | applyFailed }
+    else accepted
+        H->>T: toQasm(content, preamble)
+        T-->>H: OpenQASM text
+        H->>VS: WorkspaceEdit replaces the whole document
+        VS->>H: onDidChangeTextDocument
+        H->>W: documentChanged with the new version
+        H-->>W: editApplied
+    end
+    W->>W: drops the pending edit, the host's state applies
+```
+
+The webview never holds OpenQASM text; it knows only the circuit. Parsing and writing happen
+in the host alone, so there is one place that decides about the document, and the parser
+stays out of the webview bundle. `pendingEdit.ts` shows the optimistic circuit until a newer
+document arrives or the host rejects or confirms the edit.
+
 ---
 
 ## The QASM transformation
