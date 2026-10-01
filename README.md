@@ -2,7 +2,6 @@
 
 [![License](https://img.shields.io/github/license/MoQel/QuaK)](LICENSE) 
 [![CI](https://img.shields.io/github/actions/workflow/status/MoQel/QuaK/test_and_build.yml?label=CI)](https://github.com/MoQel/QuaK/actions/workflows/test_and_build.yml)
-[![Deploy](https://img.shields.io/github/actions/workflow/status/MoQel/QuaK/deploy.yml?label=deploy)](https://github.com/MoQel/QuaK/actions/workflows/deploy.yml)
 
 ## About
 
@@ -149,37 +148,8 @@ npm run test
 
 ## Deployment
 
-The project will automatically be deployed when a change to the *development*-branch happens.
-
-### Setting up the Deployment Server
-
-On a server of your choice, set up the following:
-
-* [Docker](https://docs.docker.com/engine/install/)
-* [Dokku](https://dokku.com/docs/getting-started/installation/)
-  * Make sure to enable `vhost` during the installation-dialog (this is the default)
-
-Then, run the following commands:
-
-```bash
-dokku apps:create quak
-dokku builder:set quak build-dir backend
-
-# Set up an ssh-key
-ssh-keygen -f github -N ""
-cat github.pub | sudo sshcommand acl-add dokku runner@github
-cat github
-# Save the content of the private for later
-# You may also want to move the ssh-keys somewhere else
-```
-
-We now want to set the GitHub-Secrets inside this repository:
-
-* *DEPLOYMENT_SERVER_ADDRESS*
-* *DEPLOYMENT_SERVER_SSH_KEY*
-  * This has the content of the private-key generated above
-
-Lastly, make sure that all relevant ports (e.g. 8080) are exposed to the outside world.
+Deployment is managed separately. Pushes to this repository do not deploy automatically.
+The workflow builds `backend/Dockerfile` and runs the image behind Traefik. `main` is served at the production domain, any other branch at its own preview domain.
 
 ## Legacy Execution (Not Recommended)
 

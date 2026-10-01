@@ -1,4 +1,7 @@
-[#-- Renders THIRD-PARTY-LICENSES.md from an ORT result. Used by .github/workflows/licenses.yml. --]
+[#-- Renders THIRD-PARTY-LICENSES.md from an ORT result. Used by .github/workflows/licenses.yml.
+     https://oss-review-toolkit.org/ort/docs/configuration/reporter-templates
+     ORT's own NOTICE templates list copyrights found by the scanner, which this check does not run. This one lists
+     the packages instead. --]
 [#assign view = LicenseView.CONCLUDED_OR_DECLARED_AND_DETECTED]
 [#assign shipped = packages?filter(p -> !p.excluded)]
 [#assign ecosystems = [
