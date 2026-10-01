@@ -6,7 +6,7 @@ import { ProjectProvider } from '@/contexts/ProjectContext';
 import { DockviewProvider } from '@/contexts/DockviewContext';
 import { PanelDataProvider } from '@/contexts/panel/PanelDataProvider';
 import { CircuitTabsProvider } from '@/contexts/CircuitTabsContext.tsx';
-import { cn } from '@/lib/utils.ts';
+import { cn } from '@quak/ui/lib/utils';
 
 export const Layout: React.FC = () => {
     const { pathname } = useLocation();

@@ -3,12 +3,12 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Cell } from 'recharts';
 import { ChartContainer, ChartTooltip } from '@/components/ui/chart';
 import type { ChartConfig } from '@/components/ui/chart';
 import { RefreshCcw, FilterX, AlertTriangle } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@quak/ui/card';
+import { Badge } from '@quak/ui/badge';
 import { SimulationToolbar } from '@/views/results-view/SimulationToolbar.tsx';
 import { CustomTooltipContent } from '@/views/results-view/CustomTooltipContent.tsx';
-import { getCircuitWidth, isQuantumRegister } from '@/api/dto/circuit';
-import type { CircuitResponse } from '@/api/dto/circuit';
+import { getCircuitWidth, isQuantumRegister } from '@quak/circuit-core';
+import type { CircuitResponse } from '@quak/circuit-core';
 import { useQuantumSimulation } from '@/hooks/results/useQuantumSimulation.ts';
 import type {
     MeasurementMapping,
@@ -21,7 +21,7 @@ import type {
 import { useChartData } from '@/hooks/results/useChartData.ts';
 import type { Endianness } from '@/hooks/results/useChartData.ts';
 import { getBarColor } from '@/views/results-view/util/quantum-utils.ts';
-import { Button } from '@/components/ui/button';
+import { Button } from '@quak/ui/button';
 import {
     Dialog,
     DialogClose,
@@ -31,7 +31,7 @@ import {
     DialogHeader,
     DialogTitle,
     DialogTrigger,
-} from '@/components/ui/dialog.tsx';
+} from '@quak/ui/dialog';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle';
 import type { ReactNode } from 'react';
 import { useCircuitTabs } from '@/contexts/CircuitTabsContext.tsx';

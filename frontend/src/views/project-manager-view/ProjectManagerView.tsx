@@ -1,7 +1,7 @@
-import { Card, CardContent } from '@/components/ui/card.tsx';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog.tsx';
+import { Card, CardContent } from '@quak/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@quak/ui/dialog';
 import { Project } from '@/views/project-manager-view/Project.tsx';
-import { Button } from '@/components/ui/button.tsx';
+import { Button } from '@quak/ui/button';
 import React, { ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { Form, FormField } from '@/components/ui/form.tsx';
 import { z, ZodObject, ZodRawShape } from 'zod';

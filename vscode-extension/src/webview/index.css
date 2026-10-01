@@ -1,0 +1,62 @@
+@import 'tailwindcss';
+/* the ui primitives animate their popovers and tooltips with these */
+@import 'tw-animate-css';
+
+/* The editor's @source directives, gate colours and destructive palette. */
+@import '@quak/circuit-editor/editor.css';
+
+/* VSCode marks a dark theme on the body (vscode-dark, vscode-high-contrast), not with a .dark class. */
+@custom-variant dark (&:is(body.vscode-dark *, body.vscode-high-contrast *));
+
+/* Theme tokens the packages use but leave to each host. Surfaces, text and borders map onto VSCode's theme colours:
+   https://code.visualstudio.com/api/extension-guides/webview#theming-webview-content Gate colours and destructive come
+   from the package, so a circuit looks the same in both products. */
+@theme inline {
+    --color-bg: var(--bg);
+    --color-bg-dark: var(--bg-dark);
+    --color-bg-light: var(--bg-light);
+    --color-bg-light-hover: var(--bg-light-hover);
+    --color-bg-subtle: var(--bg-subtle);
+    --color-border: var(--border);
+    --color-text: var(--text);
+    --color-text-muted: var(--text-muted);
+    --color-destructive: var(--destructive);
+    --color-destructive-hover: var(--destructive-hover);
+    --color-destructive-text: var(--destructive-text);
+    --color-special: var(--special);
+    --color-special-hover: var(--special-hover);
+    --color-highlight: var(--highlight);
+    --color-ring: var(--ring);
+}
+
+:root {
+    /* Editor surfaces, not panel or sidebar ones. */
+    --bg: var(--vscode-editor-background);
+    --bg-dark: var(--vscode-editor-background);
+    --bg-subtle: var(--vscode-editor-background);
+
+    /* Raised surfaces and secondary buttons. */
+    --bg-light: var(--vscode-button-secondaryBackground);
+    --bg-light-hover: var(--vscode-button-secondaryHoverBackground);
+
+    --text: var(--vscode-editor-foreground);
+    --text-muted: var(--vscode-descriptionForeground);
+    --border: var(--vscode-panel-border, var(--vscode-editorWidget-border));
+
+    /* "special" is the web IDE's primary action, which is what a VSCode button is. */
+    --special: var(--vscode-button-background);
+    --special-hover: var(--vscode-button-hoverBackground);
+
+    --highlight: var(--vscode-focusBorder);
+    --ring: var(--vscode-focusBorder);
+}
+
+/* --font-mono stays Tailwind's default, so gate labels render as in the web IDE. */
+body {
+    margin: 0;
+    background-color: var(--vscode-editor-background);
+    color: var(--vscode-editor-foreground);
+    font-family: var(--vscode-font-family), sans-serif;
+    font-size: var(--vscode-font-size);
+    font-weight: var(--vscode-font-weight);
+}

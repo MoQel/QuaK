@@ -104,13 +104,29 @@ repeatable but not guaranteed to be byte-for-byte identical.
 
 ---
 
+## Updating a Language Server
+
+The versions are pinned in the dependency files next to each `setup.sh`, which
+the Dockerfile and the license check read as well.
+
+- Python: change the versions in `servers/python/requirements.txt`.
+- QASM: run `go get github.com/orangekame3/qasmtools@<version>` and
+  `go mod tidy` in `servers/qasm`. `go.mod` declares `qasmlsp` as a tool.
+
+The license check then fails until the update is recorded, see
+[Third-party licenses](../../docs/DEVELOPMENT.md#third-party-licenses). Go
+modules declare no license, so the entry of every changed module in
+`.ort/config/curations.yml` needs its new version and license.
+
+---
+
 ## Adding a New Language Server
 
 ### Backend
 
 1. Create a directory under `servers/<language>/`
 2. Add a `setup.sh` that installs the server binary into a local subdirectory (e.g. `go/bin/`, `venv/bin/`, `node_modules/.bin/`)
-3. Add the necessary dependency file (`requirements.txt`, `package.json`, `go.mod`, etc.)
+3. Add the necessary dependency file (`requirements.txt`, `package.json`, `go.mod`, etc.) and add its path to the dependency filter in `.github/workflows/licenses.yml`
 4. Run `./setup-all.sh` — it discovers all `setup.sh` scripts automatically
 5. Add the server to `application-local.yaml`:
 
@@ -147,6 +163,8 @@ lsp/
       venv/             — gitignored
     qasm/
       setup.sh          — installs qasmlsp via go install into go/bin/
+      go.mod, go.sum    — pin qasmlsp as a tool and its dependencies (committed)
+      imports.go        — imports qasmtools, so the license check sees its modules
       go/bin/           — gitignored
       go/pkg/           — gitignored (module cache)
 ```

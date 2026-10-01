@@ -1,4 +1,4 @@
-import { Separator } from '@/components/ui/separator.tsx';
+import { Separator } from '@quak/ui/separator';
 import type { TooltipContentProps } from 'recharts';
 import { getBarColor } from '@/views/results-view/util/quantum-utils.ts';
 

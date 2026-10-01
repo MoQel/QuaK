@@ -1,0 +1,69 @@
+/*
+ * What the circuit editor needs from the host that renders it. Import once from the host's stylesheet:
+ *     @import '@quak/circuit-editor/editor.css';
+ *
+ * The host supplies two things itself:
+ *
+ * 1. The colour tokens:
+ *      --bg  --bg-dark  --bg-light  --bg-light-hover  --bg-subtle
+ *      --text  --text-muted  --border
+ *      --special  --special-hover  --highlight  --ring
+ *
+ * 2. Tailwind's `dark` variant:
+ *      web IDE:   @custom-variant dark (&:is(.dark *));
+ *      extension: @custom-variant dark (&:is(body.vscode-dark *, body.vscode-high-contrast *));
+ *
+ * Gate colours and their dark values are defined here, so a circuit looks the same in every host.
+ */
+
+/* Tailwind scans only the project its stylesheet sits in, so the editor's sources and the ui primitives are added here.
+   Paths resolve from this file. */
+@source '.';
+@source '../../ui/src';
+
+:root {
+    --quantumOperationWidth: 40px;
+    --quantumOperationHeight: 40px;
+
+    /* Gate colours and destructive belong to the editor, not to the host theme. Light values; dark ones below. */
+    --hadamard: hsl(357 95% 45%);
+    --classical: hsl(223 100% 31%);
+    --phase: hsl(203 100% 60%);
+    --quantum: hsl(334 74% 36%);
+    --non-unitary-and-modifiers: hsl(0 0% 50%);
+    /* User-defined (composite) gates: distinct purple to set apart from subcircuits */
+    --composite: hsl(275 60% 48%);
+    --subcircuit: hsl(195 45% 40%);
+    /* Repetition frames. Must not be --composite: a frame is frequently drawn around a composite
+       gate, and in the same color the two read as one object instead of a box around a box. Amber
+       is free of the gate palette above, so it cannot be mistaken for a gate kind either. */
+    --loop-frame: hsl(35 92% 42%);
+    /* Selection rectangle and selected operations: emerald green to contrast with blue gates and loops */
+    --selection: hsl(142 71% 45%);
+    --selection-bg: color-mix(in srgb, var(--selection) 15%, transparent);
+
+    --destructive: hsl(0 50% 50%);
+    --destructive-hover: hsl(0 50% 45%);
+    --destructive-text: hsl(0 75% 45%);
+}
+
+/* Matches both dark-mode markers: .dark in the web IDE, the vscode-dark / vscode-high-contrast body classes. Not
+   wrapped in :where(), which would drop the specificity below :root's and let the light values win. */
+.dark,
+body.vscode-dark,
+body.vscode-high-contrast {
+    --hadamard: hsl(357 95% 64%);
+    --classical: hsl(218 100% 64%);
+    --phase: hsl(202 100% 86%);
+    --quantum: hsl(334 100% 75%);
+    --non-unitary-and-modifiers: hsl(0 0% 70%);
+    --composite: hsl(275 75% 65%);
+    --subcircuit: hsl(195 55% 55%);
+    --loop-frame: hsl(38 95% 62%);
+    --selection: hsl(142 71% 45%);
+    --selection-bg: color-mix(in srgb, var(--selection) 20%, transparent);
+
+    --destructive: hsl(0 50% 30%);
+    --destructive-hover: hsl(0 50% 40%);
+    --destructive-text: hsl(0 85% 65%);
+}

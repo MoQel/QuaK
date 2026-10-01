@@ -1,9 +1,9 @@
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@quak/ui/card';
+import { Button } from '@quak/ui/button';
+import { Label } from '@quak/ui/label';
+import { Separator } from '@quak/ui/separator';
+import { Badge } from '@quak/ui/badge';
 import { useTheme } from '@/theme';
 
 export const Settings: React.FC = () => {

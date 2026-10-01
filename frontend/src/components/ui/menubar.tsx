@@ -2,7 +2,7 @@ import * as React from 'react';
 import * as MenubarPrimitive from '@radix-ui/react-menubar';
 import { CheckIcon, ChevronRightIcon, CircleIcon } from 'lucide-react';
 
-import { cn } from '@/lib/utils';
+import { cn } from '@quak/ui/lib/utils';
 // Import the shared styles
 import { menuContentStyle, menuItemStyle, menuTriggerStyle } from '@/components/ui/utils';
 
@@ -24,7 +24,7 @@ function MenubarGroup({ ...props }: React.ComponentProps<typeof MenubarPrimitive
     return <MenubarPrimitive.Group data-slot="menubar-group" {...props} />;
 }
 
-function MenubarPortal({ ...props }: React.ComponentProps<typeof MenubarPrimitive.Portal>) {
+function MenubarPortal({ ...props }: Readonly<React.ComponentProps<typeof MenubarPrimitive.Portal>>) {
     return <MenubarPrimitive.Portal data-slot="menubar-portal" {...props} />;
 }
 
@@ -175,7 +175,7 @@ function MenubarShortcut({ className, ...props }: React.ComponentProps<'span'>) 
     );
 }
 
-function MenubarSub({ ...props }: React.ComponentProps<typeof MenubarPrimitive.Sub>) {
+function MenubarSub({ ...props }: Readonly<React.ComponentProps<typeof MenubarPrimitive.Sub>>) {
     return <MenubarPrimitive.Sub data-slot="menubar-sub" {...props} />;
 }
 

@@ -7,7 +7,7 @@ import {
     unsplitAllGroups,
     unsplitGroup,
 } from '@/store/tabs/tabsSlice.ts';
-import { Button } from '@/components/ui/button.tsx';
+import { Button } from '@quak/ui/button';
 import { MoreVertical, SplitSquareHorizontal, SplitSquareVertical, X } from 'lucide-react';
 import {
     DropdownMenu,
