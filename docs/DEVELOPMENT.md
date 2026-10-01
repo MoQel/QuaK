@@ -26,9 +26,11 @@ We use projects to organize issues that should be addressed within a certain tim
 
 ## Third-party licenses
 Every pull request runs the [OSS Review Toolkit](https://oss-review-toolkit.org/) (`.github/workflows/licenses.yml`) over the Gradle, npm, pip and Go dependencies that QuaK ships.
-The check fails for a dependency whose license is not compatible with MIT according to the [OSADL matrix](https://www.osadl.org/html/CompatMatrix.html), or that declares no license.
+The check fails for a dependency whose license is not compatible with MIT according to the [OSADL matrix](https://www.osadl.org/html/CompatMatrix.html), whose license the matrix does not rate, or that declares no license.
+A dependency under a choice of licenses passes if one choice is compatible.
 
-- A dependency without license metadata gets a curation in `.ort/config/curations.yml`, with the source of the license.
-- A dependency that is not compatible is decided by a maintainer and recorded as a resolution in `.ort.yml`.
+- A dependency without license metadata gets a [curation](https://oss-review-toolkit.org/ort/docs/configuration/package-curations) in `.ort/config/curations.yml`, with the source of the license.
+- A dependency that is not compatible is decided and recorded as a [resolution](https://oss-review-toolkit.org/ort/docs/configuration/resolutions) in `.ort.yml`. Unmodified Java and Python libraries under a weak copyleft license (LGPL, EPL, MPL) are resolved there already.
+- npm build tools belong in `devDependencies`, everything the web app ships in `dependencies`.
 
 After a merge, the workflow regenerates [THIRD-PARTY-LICENSES.md](../THIRD-PARTY-LICENSES.md). The HTML report and the CycloneDX SBOM of each run are attached to the workflow run as artifacts.

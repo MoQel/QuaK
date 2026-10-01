@@ -20,7 +20,9 @@ excludes:
   scopes:
     - pattern: "devDependencies"
       reason: "DEV_DEPENDENCY_OF"
-      comment: "npm build and test tooling. The extension bundles its runtime code from the workspace packages."
+      comment: >-
+        npm build and test tooling. The extension declares all bundled code as devDependencies; those libraries are
+        also dependencies of the web app or the workspace packages.
     - pattern: "annotationProcessor|antlr|compileClasspath"
       reason: "BUILD_DEPENDENCY_OF"
       comment: "Gradle compile-time scopes. The jar ships the runtime classpath."
@@ -28,7 +30,25 @@ excludes:
       reason: "TEST_DEPENDENCY_OF"
       comment: "Gradle test scopes."
 
-# Licenses that are not compatible with MIT fail the check. Once a case is decided, record it here:
-# https://oss-review-toolkit.org/ort/docs/configuration/ort-yml#resolutions
+# Violations of .ort/config/evaluator.rules.kts that were decided to be acceptable.
+# https://oss-review-toolkit.org/ort/docs/configuration/resolutions
 resolutions:
-  rule_violations: []
+  rule_violations:
+    - message: >-
+        .*inbound license (LGPL-[0-9.]+-(only|or-later)|GPL-2\.0-only WITH Classpath-exception-2\.0)
+        of '(Maven|PyPI):.*
+      reason: "DYNAMIC_LINKAGE_EXCEPTION"
+      comment: >-
+        The backend loads these Java libraries as separate, unmodified jars, the Python language server imports these
+        packages unmodified from its virtual environment. The Classpath exception permits linking.
+    - message: ".*inbound license (EPL-[12]\\.0|MPL-2\\.0) of '(Maven|PyPI):.*"
+      reason: "NOT_MODIFIED_EXCEPTION"
+      comment: "The copyleft of these licenses applies per file, and the files are used unmodified."
+    - message: ".*inbound license GPL-2\\.0-or-later of 'PyPI::pylint:.*"
+      reason: "CANT_FIX_EXCEPTION"
+      comment: >-
+        A plugin of the Python language server. The server image only runs on our own server and is not
+        distributed, which is what the GPL sets conditions for. Decide again before the image is published.
+    - message: ".*inbound license CC0-1\\.0 of .*"
+      reason: "CANT_FIX_EXCEPTION"
+      comment: "CC0-1.0 waives all rights. The OSADL matrix does not rate it."
