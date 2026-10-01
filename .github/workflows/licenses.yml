@@ -1,6 +1,6 @@
 name: Licenses
 
-# Checks that every shipped third-party package is licensed compatibly with MIT, and keeps THIRD-PARTY-LICENSES.md
+# Checks that every shipped third-party package is licensed compatibly with MIT, and that THIRD-PARTY-LICENSES.md is
 # current. Runs the OSS Review Toolkit with the configuration in .ort.yml and .ort/.
 
 on:
@@ -19,10 +19,12 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # The job always runs and skips its steps instead of filtering by paths, so it can be a required status check.
   licenses:
     name: licenses
     permissions:
-      contents: write
+      contents: read
+      pull-requests: read
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -30,13 +32,34 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
 
+      - name: Detect dependency changes
+        id: filter
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        with:
+          base: ${{ github.ref_name }}
+          filters: |
+            dependencies:
+              - "**/package.json"
+              - "**/package-lock.json"
+              - "backend/*.gradle"
+              - "backend/gradle/**"
+              - "backend/lsp/servers/python/requirements.txt"
+              - "backend/lsp/servers/qasm/go.mod"
+              - "backend/lsp/servers/qasm/go.sum"
+              - ".ort.yml"
+              - ".ort/**"
+              - ".github/workflows/licenses.yml"
+              - "THIRD-PARTY-LICENSES.md"
+
       # The ORT image unpacks to about 13 GB.
       - name: Free disk space
+        if: &check ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.dependencies == 'true' }}
         run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
 
       # The action mounts $HOME into the container and only clones the community ort-config when
       # ~/.ort/config is empty.
       - name: Provide the ORT configuration
+        if: *check
         run: |
           mkdir -p "$HOME/.ort/config"
           cp .ort/config/* "$HOME/.ort/config/"
@@ -44,6 +67,7 @@ jobs:
 
       - name: Run ORT
         id: ort
+        if: *check
         uses: oss-review-toolkit/ort-ci-github-action@086d928d24ef1653dc0777296b312fda5faaaf52 # v1.2.0
         with:
           image: ghcr.io/oss-review-toolkit/ort:94.2.0@sha256:7504a0929236a9bd22946d1cce9359af5cc1f822e25379dfb03e9150613eff4a
@@ -54,15 +78,27 @@ jobs:
             -O PlainTextTemplate=template.path=${{ env.ORT_TEMPLATE }}
             -O CycloneDX=output.file.formats=json
 
-      # Runs even when the check fails, so the file always lists what is shipped.
-      - name: Commit THIRD-PARTY-LICENSES.md
-        if: ${{ !cancelled() && github.event_name == 'push' }}
+      - name: Explain the failed check
+        if: ${{ failure() && steps.ort.outcome == 'failure' }}
+        run: |
+          MESSAGE="ORT found license violations or could not resolve the dependencies. The log of the Run ORT step lists each one with how to fix it, docs/DEVELOPMENT.md describes curations and resolutions."
+          echo "$MESSAGE" >> "$GITHUB_STEP_SUMMARY"
+          echo "::error::$MESSAGE"
+
+      # Runs even when the check fails, so a changed dependency also shows up here.
+      - name: Check THIRD-PARTY-LICENSES.md
+        if: ${{ !cancelled() && steps.ort.outcome != 'skipped' }}
         env:
           REPORT: ${{ steps.ort.outputs.results-path }}/THIRD-PARTY-LICENSES.md
         run: |
           [[ -f "$REPORT" ]] || { echo "No report was generated."; exit 0; }
-          cp "$REPORT" THIRD-PARTY-LICENSES.md
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add THIRD-PARTY-LICENSES.md
-          git diff --staged --quiet || (git commit -m "docs: automated update of third-party licenses" && git pull --rebase origin ${{ github.ref_name }} && git push)
+          diff -u THIRD-PARTY-LICENSES.md "$REPORT" > licenses.diff && exit 0
+          FIX="Replace it with THIRD-PARTY-LICENSES.md from the ort-results artifact of this run and commit it, see docs/DEVELOPMENT.md."
+          {
+            echo "THIRD-PARTY-LICENSES.md is out of date. $FIX"
+            echo '```diff'
+            head -c 60000 licenses.diff
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "::error file=THIRD-PARTY-LICENSES.md::THIRD-PARTY-LICENSES.md is out of date. $FIX"
+          exit 1
