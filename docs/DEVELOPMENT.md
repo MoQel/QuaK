@@ -33,4 +33,4 @@ A dependency under a choice of licenses passes if one choice is compatible.
 - A dependency that is not compatible is decided and recorded as a [resolution](https://oss-review-toolkit.org/ort/docs/configuration/resolutions) in `.ort.yml`. Unmodified Java and Python libraries under a weak copyleft license (LGPL, EPL, MPL) are resolved there already.
 - npm build tools belong in `devDependencies`, everything the web app ships in `dependencies`.
 
-After a merge, the workflow regenerates [THIRD-PARTY-LICENSES.md](../THIRD-PARTY-LICENSES.md). The HTML report and the CycloneDX SBOM of each run are attached to the workflow run as artifacts.
+The check only runs when a dependency or its configuration changes. It also fails when [THIRD-PARTY-LICENSES.md](../THIRD-PARTY-LICENSES.md) does not match the dependencies; replace the file with the one from the `ort-results` artifact of the run and commit it with the pull request. The artifact also contains the HTML report and the CycloneDX SBOM.
