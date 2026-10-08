@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.*;
 @Slf4j
 @RestController
 @RequestMapping("/api/directory")
-@Tag(name = "Files", description = "File and directory management operations")
+@Tag(name = "Directories", description = "Directory management operations")
 public class DirectoryRestAdapter {
 
     private final DirectoryServicePort service;

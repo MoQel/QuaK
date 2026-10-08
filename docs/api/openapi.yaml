@@ -24,18 +24,24 @@ servers:
 security:
 - basicAuth: []
 tags:
-- name: Files
-  description: File and directory management operations
-- name: Operation Definitions
-  description: Definitions of quantum operations
 - name: Circuit
   description: Controls operations on a quantum circuit
+- name: Operation Definitions
+  description: Definitions of quantum operations
+- name: Users
+  description: Current user and user lookup endpoints
+- name: Files
+  description: File management operations
 - name: Projects
   description: Project management operations
 - name: Authentication
   description: Authentication and user session management endpoints
 - name: Project Roles
   description: Project role management operations
+- name: Directories
+  description: Directory management operations
+- name: Editor State
+  description: Editor state of a project
 paths:
   /api/file/{fId}/content:
     get:
@@ -101,7 +107,7 @@ paths:
   /api/editor-state/{projectId}:
     get:
       tags:
-      - editor-state-rest-adapter
+      - Editor State
       operationId: getByProjectId
       parameters:
       - name: projectId
@@ -130,7 +136,7 @@ paths:
                 $ref: "#/components/schemas/EditorStateResponse"
     put:
       tags:
-      - editor-state-rest-adapter
+      - Editor State
       operationId: save
       parameters:
       - name: projectId
@@ -166,7 +172,7 @@ paths:
   /api/circuit/{circuitId}:
     put:
       tags:
-      - circuit-rest-adapter
+      - Circuit
       operationId: replaceContent
       parameters:
       - name: circuitId
@@ -201,7 +207,7 @@ paths:
                 $ref: "#/components/schemas/CircuitResponse"
     delete:
       tags:
-      - circuit-rest-adapter
+      - Circuit
       operationId: delete
       parameters:
       - name: circuitId
@@ -440,7 +446,7 @@ paths:
   /api/directory/:
     post:
       tags:
-      - Files
+      - Directories
       operationId: createDirectory
       parameters:
       - name: parent-id
@@ -476,7 +482,7 @@ paths:
   /api/circuit/{circuitId}/register:
     post:
       tags:
-      - circuit-rest-adapter
+      - Circuit
       operationId: addRegister
       parameters:
       - name: circuitId
@@ -512,7 +518,7 @@ paths:
   /api/circuit/{circuitId}/register/{registerId}:
     post:
       tags:
-      - circuit-rest-adapter
+      - Circuit
       operationId: addQubit
       parameters:
       - name: circuitId
@@ -546,7 +552,7 @@ paths:
                 $ref: "#/components/schemas/CircuitResponse"
     delete:
       tags:
-      - circuit-rest-adapter
+      - Circuit
       operationId: deleteRegister
       parameters:
       - name: circuitId
@@ -581,7 +587,7 @@ paths:
   /api/circuit/{circuitId}/register/{registerId}/bit:
     post:
       tags:
-      - circuit-rest-adapter
+      - Circuit
       operationId: addClassicBit
       parameters:
       - name: circuitId
@@ -616,7 +622,7 @@ paths:
   /api/circuit/{circuitId}/operation:
     post:
       tags:
-      - circuit-rest-adapter
+      - Circuit
       operationId: addQuantumOperation
       parameters:
       - name: circuitId
@@ -651,7 +657,7 @@ paths:
                 $ref: "#/components/schemas/CircuitResponse"
     patch:
       tags:
-      - circuit-rest-adapter
+      - Circuit
       operationId: moveQuantumOperation
       parameters:
       - name: circuitId
@@ -687,7 +693,7 @@ paths:
   /api/circuit/qasmCode:
     post:
       tags:
-      - circuit-rest-adapter
+      - Circuit
       operationId: generateQasmCode
       requestBody:
         content:
@@ -717,7 +723,7 @@ paths:
   /api/circuit/parse:
     post:
       tags:
-      - circuit-rest-adapter
+      - Circuit
       operationId: parseQasmCode
       parameters:
       - name: fileId
@@ -753,7 +759,7 @@ paths:
   /api/circuit/file/{fileId}/subcircuit:
     post:
       tags:
-      - circuit-rest-adapter
+      - Circuit
       operationId: offerAsSubcircuit
       parameters:
       - name: fileId
@@ -787,7 +793,7 @@ paths:
                 $ref: "#/components/schemas/CircuitResponse"
     delete:
       tags:
-      - circuit-rest-adapter
+      - Circuit
       operationId: revokeSubcircuit
       parameters:
       - name: fileId
@@ -1017,7 +1023,7 @@ paths:
   /api/directory/{dId}:
     get:
       tags:
-      - Files
+      - Directories
       operationId: retrieveDirectory
       parameters:
       - name: dId
@@ -1046,7 +1052,7 @@ paths:
                 $ref: "#/components/schemas/DirectoryContentsResponse"
     delete:
       tags:
-      - Files
+      - Directories
       operationId: deleteDirectory
       parameters:
       - name: dId
@@ -1071,7 +1077,7 @@ paths:
           description: No Content
     patch:
       tags:
-      - Files
+      - Directories
       operationId: renameDirectory
       parameters:
       - name: dId
@@ -1107,7 +1113,7 @@ paths:
   /api/users/search:
     get:
       tags:
-      - Authentication
+      - Users
       operationId: searchUsers
       parameters:
       - name: email
@@ -1169,7 +1175,7 @@ paths:
   /api/operations:
     get:
       tags:
-      - operation-definition-rest-adapter
+      - Operation Definitions
       operationId: getAllGates
       responses:
         "401":
@@ -1195,7 +1201,7 @@ paths:
   /api/operations/{id}:
     get:
       tags:
-      - operation-definition-rest-adapter
+      - Operation Definitions
       operationId: getGateById
       parameters:
       - name: id
@@ -1225,7 +1231,7 @@ paths:
   /api/me:
     get:
       tags:
-      - Authentication
+      - Users
       operationId: getCurrentUser
       responses:
         "401":
@@ -1249,7 +1255,7 @@ paths:
   /api/circuit/project/{projectId}/subcircuits:
     get:
       tags:
-      - circuit-rest-adapter
+      - Circuit
       operationId: listSubcircuits
       parameters:
       - name: projectId
@@ -1286,7 +1292,7 @@ paths:
   /api/circuit/project/{projectId}/subcircuit-disallowed-files:
     get:
       tags:
-      - circuit-rest-adapter
+      - Circuit
       operationId: listDisallowedFileIds
       parameters:
       - name: projectId
@@ -1323,7 +1329,7 @@ paths:
   /api/circuit/file/{fileId}:
     get:
       tags:
-      - circuit-rest-adapter
+      - Circuit
       operationId: getByFileId
       parameters:
       - name: fileId
@@ -1408,7 +1414,7 @@ paths:
   /api/circuit/{circuitId}/reset:
     delete:
       tags:
-      - circuit-rest-adapter
+      - Circuit
       operationId: reset
       parameters:
       - name: circuitId
@@ -1438,7 +1444,7 @@ paths:
   /api/circuit/{circuitId}/register/{registerId}/{qubitIdx}:
     delete:
       tags:
-      - circuit-rest-adapter
+      - Circuit
       operationId: removeQubit
       parameters:
       - name: circuitId
@@ -1479,7 +1485,7 @@ paths:
   /api/circuit/{circuitId}/register/{registerId}/bit/{bitIdx}:
     delete:
       tags:
-      - circuit-rest-adapter
+      - Circuit
       operationId: removeClassicBit
       parameters:
       - name: circuitId
@@ -1520,7 +1526,7 @@ paths:
   /api/circuit/{circuitId}/operation/{operationId}:
     delete:
       tags:
-      - circuit-rest-adapter
+      - Circuit
       operationId: removeQuantumOperation
       parameters:
       - name: circuitId
