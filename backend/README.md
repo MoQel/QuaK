@@ -31,16 +31,16 @@ If the PR pipeline fails due to formatting, run `./gradlew spotlessApply` locall
 
 The backend automatically provides an OpenAPI (Swagger) specification based on the Spring controllers.
 
-### Automated Workflow
-* **Generation:** The spec is generated via `./gradlew generateOpenApiDocs`.
-* **Automatic Updates:**
-    * When code is merged into **`main`** or **`development`**, the CI pipeline automatically updates the file at `docs/api/openapi.yaml`.
-    * For **Pull Requests**, the spec is generated and stored as a CI artifact for validation, but not committed to the branch.
-* **Manual Generation:** You can run the command locally to update the spec file:
+### Keeping the spec current
+The spec is committed at `docs/api/openapi.yaml`. The `OpenAPI / spec-up-to-date` check of the CI pipeline generates it again and fails if the committed file differs, so every change to the API has to come with an updated spec.
+
+* **After changing endpoints, DTOs or `OpenApiConfig.java`:** regenerate the spec and commit it together with your change:
   ```bash
   cd backend
   ./gradlew generateOpenApiDocs
   ```
+* **If the `OpenAPI / spec-up-to-date` check fails:** the job summary shows the difference. Run the command above and commit the result.
+* **Merge conflicts in `docs/api/openapi.yaml`:** do not resolve them by hand. Resolve the conflicts in the code, run the command again, and commit the regenerated file.
 
 ### Configuration (`OpenApiConfig.java`)
 The file `src/main/java/edu/kit/quak/infrastructure/config/OpenApiConfig.java` contains the global configuration for the API documentation.
