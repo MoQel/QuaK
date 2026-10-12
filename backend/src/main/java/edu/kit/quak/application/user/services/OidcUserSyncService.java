@@ -5,6 +5,7 @@ import edu.kit.quak.application.user.ports.in.OidcSyncServicePort;
 import edu.kit.quak.application.user.ports.in.OidcUserInfo;
 import edu.kit.quak.application.user.ports.out.UserRepositoryPort;
 import edu.kit.quak.core.user.model.User;
+import edu.kit.quak.core.user.model.UserProfile;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -53,22 +54,18 @@ public class OidcUserSyncService implements OidcSyncServicePort {
 
     private User updateUser(User user, OidcUserInfo userInfo) {
         log.info("Updating existing user '{}' from OIDC data", user.getId());
-        user.updateFromOidc(
-            userInfo.email(),
-            userInfo.emailVerified(),
-            userInfo.fullName(),
-            userInfo.givenName(),
-            userInfo.familyName(),
-            userInfo.picture()
-        );
+        user.updateFromOidc(toProfile(userInfo));
         return userRepository.save(user);
     }
 
     private User createUser(String issuer, String sub, OidcUserInfo userInfo) {
         log.info("Creating new user for issuer='{}' sub='{}'", issuer, sub);
-        User user = User.createFromOidc(
-            issuer,
-            sub,
+        User user = User.createFromOidc(issuer, sub, toProfile(userInfo));
+        return userRepository.save(user);
+    }
+
+    private static UserProfile toProfile(OidcUserInfo userInfo) {
+        return new UserProfile(
             userInfo.email(),
             userInfo.emailVerified(),
             userInfo.fullName(),
@@ -76,6 +73,5 @@ public class OidcUserSyncService implements OidcSyncServicePort {
             userInfo.familyName(),
             userInfo.picture()
         );
-        return userRepository.save(user);
     }
 }

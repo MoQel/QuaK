@@ -7,4 +7,6 @@ public interface EditorStateRepositoryPort {
     Optional<EditorState> findByProjectIdAndUserId(String projectId, String userId);
 
     EditorState save(EditorState editorState);
+
+    void deleteAllByUserId(String userId);
 }

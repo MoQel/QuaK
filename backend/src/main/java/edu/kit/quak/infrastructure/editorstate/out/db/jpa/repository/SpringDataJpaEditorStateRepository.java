@@ -6,4 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface SpringDataJpaEditorStateRepository extends JpaRepository<JpaEditorState, String> {
     Optional<JpaEditorState> findByProjectIdAndUserId(String projectId, String userId);
+
+    void deleteAllByUserId(String userId);
 }

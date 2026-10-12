@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import edu.kit.quak.application.circuit.ports.in.CircuitServicePort;
@@ -17,6 +18,7 @@ import edu.kit.quak.core.filesystem.model.File;
 import edu.kit.quak.core.filesystem.model.Project;
 import edu.kit.quak.core.user.model.User;
 import edu.kit.quak.shared.tags.UnitTest;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -90,5 +92,21 @@ class ProjectServiceTest {
         when(repository.findById(anyString())).thenReturn(Optional.empty());
 
         assertThrows(ProjectNotFoundException.class, () -> service.renameProject("99", "New", testUser));
+    }
+
+    @Test
+    void removeAllProjectsOwnedBy_removesEachProjectWithCircuitsAndRoles() {
+        Project first = new Project("P1", testUser.getId());
+        Project second = new Project("P2", testUser.getId());
+        when(repository.getProjectsByOwnerId(testUser.getId())).thenReturn(List.of(first, second));
+
+        service.removeAllProjectsOwnedBy(testUser.getId());
+
+        for (Project project : List.of(first, second)) {
+            verify(circuitService).deleteAllByProjectId(project.getId());
+            verify(roleRepository).deleteAllByProjectId(project.getId());
+            verify(repository).deleteById(project.getId());
+        }
+        verifyNoInteractions(roleService);
     }
 }

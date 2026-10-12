@@ -12,6 +12,8 @@ import lombok.Setter;
 @NoArgsConstructor
 public class User {
 
+    public static final String GUEST_ISSUER = "guest";
+
     private UUID id;
     private String issuer;
     private String sub;
@@ -21,9 +23,11 @@ public class User {
     private String givenName;
     private String familyName;
     private String avatarUrl;
+    private boolean guest;
     private Instant createdAt;
     private Instant updatedAt;
     private Instant lastLoginAt;
+    private Instant lastActiveAt;
 
     public User(UUID id, String issuer, String sub) {
         this.id = id;
@@ -32,36 +36,36 @@ public class User {
     }
 
     // Business Methods
-    public void updateFromOidc(String email, Boolean emailVerified, String name, String givenName, String familyName, String avatarUrl) {
-        this.email = email;
-        this.emailVerified = emailVerified;
-        this.name = name;
-        this.givenName = givenName;
-        this.familyName = familyName;
-        this.avatarUrl = avatarUrl;
+    public void updateFromOidc(UserProfile profile) {
+        this.email = profile.email();
+        this.emailVerified = profile.emailVerified();
+        this.name = profile.name();
+        this.givenName = profile.givenName();
+        this.familyName = profile.familyName();
+        this.avatarUrl = profile.avatarUrl();
         this.lastLoginAt = Instant.now();
     }
 
-    public static User createFromOidc(
-        String issuer,
-        String sub,
-        String email,
-        Boolean emailVerified,
-        String name,
-        String givenName,
-        String familyName,
-        String avatarUrl
-    ) {
+    public static User createFromOidc(String issuer, String sub, UserProfile profile) {
         User user = new User();
         user.setIssuer(issuer);
         user.setSub(sub);
-        user.setEmail(email);
-        user.setEmailVerified(emailVerified);
-        user.setName(name);
-        user.setGivenName(givenName);
-        user.setFamilyName(familyName);
-        user.setAvatarUrl(avatarUrl);
-        user.setLastLoginAt(Instant.now());
+        user.updateFromOidc(profile);
         return user;
+    }
+
+    public static User createGuest() {
+        User user = new User();
+        user.setIssuer(GUEST_ISSUER);
+        user.setSub(UUID.randomUUID().toString());
+        user.setName("Guest");
+        user.setGuest(true);
+        user.setLastLoginAt(Instant.now());
+        user.setLastActiveAt(user.getLastLoginAt());
+        return user;
+    }
+
+    public void recordActivity() {
+        this.lastActiveAt = Instant.now();
     }
 }

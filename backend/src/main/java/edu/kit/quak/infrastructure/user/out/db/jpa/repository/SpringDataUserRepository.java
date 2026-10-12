@@ -1,6 +1,7 @@
 package edu.kit.quak.infrastructure.user.out.db.jpa.repository;
 
 import edu.kit.quak.infrastructure.user.out.db.jpa.entity.JpaUser;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -29,4 +30,7 @@ public interface SpringDataUserRepository extends JpaRepository<JpaUser, UUID> {
      * Used for user search/autocomplete in the invitation flow.
      */
     List<JpaUser> findByEmailContainingIgnoreCase(String email);
+
+    @Query("SELECT u FROM JpaUser u WHERE u.guest = true AND COALESCE(u.lastActiveAt, u.createdAt) < :inactiveSince")
+    List<JpaUser> findInactiveGuests(@Param("inactiveSince") Instant inactiveSince);
 }

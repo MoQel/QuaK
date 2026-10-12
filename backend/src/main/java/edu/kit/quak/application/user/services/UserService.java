@@ -1,8 +1,11 @@
 package edu.kit.quak.application.user.services;
 
+import edu.kit.quak.application.common.ports.out.DomainEventPublisherPort;
 import edu.kit.quak.application.user.exceptions.UserNotFoundException;
 import edu.kit.quak.application.user.ports.in.UserServicePort;
+import edu.kit.quak.application.user.ports.out.ProjectRoleRepositoryPort;
 import edu.kit.quak.application.user.ports.out.UserRepositoryPort;
+import edu.kit.quak.core.user.event.UserDeletedEvent;
 import edu.kit.quak.core.user.model.AuthenticatedUser;
 import edu.kit.quak.core.user.model.User;
 import java.util.List;
@@ -10,6 +13,7 @@ import java.util.Optional;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Service for user-related business logic. Handles user authentication,
@@ -21,9 +25,17 @@ import org.springframework.stereotype.Service;
 public class UserService implements UserServicePort {
 
     private final UserRepositoryPort userRepository;
+    private final ProjectRoleRepositoryPort roleRepository;
+    private final DomainEventPublisherPort eventPublisher;
 
-    public UserService(UserRepositoryPort userRepository) {
+    public UserService(
+        UserRepositoryPort userRepository,
+        ProjectRoleRepositoryPort roleRepository,
+        DomainEventPublisherPort eventPublisher
+    ) {
         this.userRepository = userRepository;
+        this.roleRepository = roleRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -79,5 +91,14 @@ public class UserService implements UserServicePort {
             return List.of();
         }
         return userRepository.findAllByIds(ids);
+    }
+
+    @Override
+    @Transactional
+    public void deleteUser(UUID id) {
+        log.info("Deleting user '{}'", id);
+        eventPublisher.publish(new UserDeletedEvent(id));
+        roleRepository.deleteAllByUserId(id);
+        userRepository.deleteById(id);
     }
 }

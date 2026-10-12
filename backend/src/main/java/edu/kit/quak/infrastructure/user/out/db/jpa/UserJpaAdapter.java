@@ -5,6 +5,7 @@ import edu.kit.quak.core.user.model.User;
 import edu.kit.quak.infrastructure.user.out.db.jpa.entity.JpaUser;
 import edu.kit.quak.infrastructure.user.out.db.jpa.mapper.UserJpaMapper;
 import edu.kit.quak.infrastructure.user.out.db.jpa.repository.SpringDataUserRepository;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -46,6 +47,11 @@ public class UserJpaAdapter implements UserRepositoryPort {
     @Override
     public Optional<User> findByEmail(String email) {
         return repository.findByEmail(email).map(mapper::toDomain);
+    }
+
+    @Override
+    public List<User> findInactiveGuests(Instant inactiveSince) {
+        return repository.findInactiveGuests(inactiveSince).stream().map(mapper::toDomain).toList();
     }
 
     @Override

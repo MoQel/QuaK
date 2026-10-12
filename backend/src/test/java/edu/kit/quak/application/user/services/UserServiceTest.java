@@ -3,8 +3,11 @@ package edu.kit.quak.application.user.services;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import edu.kit.quak.application.common.ports.out.DomainEventPublisherPort;
 import edu.kit.quak.application.user.exceptions.UserNotFoundException;
+import edu.kit.quak.application.user.ports.out.ProjectRoleRepositoryPort;
 import edu.kit.quak.application.user.ports.out.UserRepositoryPort;
+import edu.kit.quak.core.user.event.UserDeletedEvent;
 import edu.kit.quak.core.user.model.AuthenticatedUser;
 import edu.kit.quak.core.user.model.User;
 import java.util.Optional;
@@ -24,6 +27,12 @@ class UserServiceTest {
 
     @Mock
     private UserRepositoryPort userRepository;
+
+    @Mock
+    private ProjectRoleRepositoryPort roleRepository;
+
+    @Mock
+    private DomainEventPublisherPort eventPublisher;
 
     @InjectMocks
     private UserService userService;
@@ -133,5 +142,15 @@ class UserServiceTest {
             assertTrue(exception.getMessage().contains("google"));
             assertTrue(exception.getMessage().contains("unknown-sub"));
         }
+    }
+
+    @Test
+    @DisplayName("deleteUser publishes the deletion event and removes the user with their role assignments")
+    void deleteUserRemovesUserAndPublishesEvent() {
+        userService.deleteUser(testUserId);
+
+        verify(eventPublisher).publish(new UserDeletedEvent(testUserId));
+        verify(roleRepository).deleteAllByUserId(testUserId);
+        verify(userRepository).deleteById(testUserId);
     }
 }

@@ -7,5 +7,6 @@ import java.util.UUID;
  *
  * @param authenticated Whether the user is authenticated
  * @param userId Unique identifier of the authenticated user, or null if not authenticated
+ * @param guest Whether the authenticated user is a guest account
  */
-public record RestAuthStatusResponse(boolean authenticated, UUID userId) {}
+public record RestAuthStatusResponse(boolean authenticated, UUID userId, boolean guest) {}

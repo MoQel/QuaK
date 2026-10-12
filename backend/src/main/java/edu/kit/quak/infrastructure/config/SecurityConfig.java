@@ -1,7 +1,9 @@
 package edu.kit.quak.infrastructure.config;
 
+import edu.kit.quak.application.user.ports.in.GuestServicePort;
 import edu.kit.quak.application.user.ports.in.OidcSyncServicePort;
 import edu.kit.quak.application.user.ports.in.OidcUserInfo;
+import edu.kit.quak.infrastructure.user.in.web.security.GuestActivityFilter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -26,6 +28,7 @@ import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequest
 import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
@@ -56,7 +59,8 @@ public class SecurityConfig {
         HttpSecurity http,
         OAuth2AuthorizationRequestResolver authorizationRequestResolver,
         AuthenticationSuccessHandler authenticationSuccessHandler,
-        OAuth2UserEnrichmentService oAuth2UserEnrichmentService
+        OAuth2UserEnrichmentService oAuth2UserEnrichmentService,
+        GuestServicePort guestService
     ) throws Exception {
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -67,6 +71,7 @@ public class SecurityConfig {
                     .ignoringRequestMatchers("/api/auth/**", "/login/**", "/oauth2/**")
             )
             .addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class)
+            .addFilterAfter(new GuestActivityFilter(guestService), AnonymousAuthenticationFilter.class)
             .authorizeHttpRequests(auth ->
                 auth
                     .requestMatchers(
@@ -77,6 +82,7 @@ public class SecurityConfig {
                         "/login/**",
                         "/oauth2/**",
                         "/api/auth/user",
+                        "/api/auth/guest",
                         "/error",
                         "/*.js",
                         "/*.css",
@@ -106,9 +112,7 @@ public class SecurityConfig {
             .logout(logout ->
                 logout
                     .logoutUrl("/api/auth/logout")
-                    .logoutSuccessHandler((request, response, authentication) -> {
-                        response.setStatus(jakarta.servlet.http.HttpServletResponse.SC_OK);
-                    })
+                    .logoutSuccessHandler((request, response, authentication) -> response.setStatus(HttpServletResponse.SC_OK))
                     .invalidateHttpSession(true)
                     .deleteCookies("JSESSIONID")
                     .permitAll()
@@ -172,9 +176,7 @@ public class SecurityConfig {
                     params.put("prompt", "select_account");
                 }
             })
-            .attributes(attrs -> {
-                attrs.put("code_verifier", codeVerifier);
-            })
+            .attributes(attrs -> attrs.put("code_verifier", codeVerifier))
             .build();
     }
 
@@ -188,7 +190,7 @@ public class SecurityConfig {
             byte[] hash = digest.digest(codeVerifier.getBytes());
             return Base64.getUrlEncoder().withoutPadding().encodeToString(hash);
         } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("Failed to generate code challenge", e);
+            throw new IllegalStateException("Failed to generate code challenge", e);
         }
     }
 
@@ -220,29 +222,26 @@ public class SecurityConfig {
     }
 
     private OidcUserInfo mapToUserInfo(OAuth2User principal) {
-        String sub =
-            principal.getAttribute("sub") != null
-                ? principal.getAttribute("sub").toString()
-                : (principal.getAttribute("id") != null ? principal.getAttribute("id").toString() : null);
-
-        Boolean emailVerified =
-            principal.getAttribute("email_verified") != null ? (Boolean) principal.getAttribute("email_verified") : true;
-
-        String picture =
-            principal.getAttribute("picture") != null
-                ? principal.getAttribute("picture").toString()
-                : (principal.getAttribute("avatar_url") != null ? principal.getAttribute("avatar_url").toString() : null);
-
-        // Logic to handle different attribute names across providers
+        // Providers differ in attribute names: GitHub uses "id" and "avatar_url", OIDC providers use "sub" and "picture"
         return new OidcUserInfo(
-            sub,
+            firstAttribute(principal, "sub", "id"),
             principal.getAttribute("email"),
-            emailVerified,
+            !Boolean.FALSE.equals(principal.getAttribute("email_verified")),
             principal.getAttribute("name"),
             principal.getAttribute("given_name"),
             principal.getAttribute("family_name"),
-            picture
+            firstAttribute(principal, "picture", "avatar_url")
         );
+    }
+
+    private static String firstAttribute(OAuth2User principal, String... names) {
+        for (String name : names) {
+            Object value = principal.getAttribute(name);
+            if (value != null) {
+                return value.toString();
+            }
+        }
+        return null;
     }
 
     @Bean

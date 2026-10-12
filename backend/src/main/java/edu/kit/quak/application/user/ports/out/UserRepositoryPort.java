@@ -1,6 +1,7 @@
 package edu.kit.quak.application.user.ports.out;
 
 import edu.kit.quak.core.user.model.User;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -34,6 +35,14 @@ public interface UserRepositoryPort {
      * @return A list of matching users
      */
     List<User> searchByEmail(String email);
+
+    /**
+     * Finds all guests that have not been active since the given instant.
+     *
+     * @param inactiveSince Guests whose last activity is before this instant are returned
+     * @return The inactive guests
+     */
+    List<User> findInactiveGuests(Instant inactiveSince);
 
     void deleteById(UUID id);
 

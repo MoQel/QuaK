@@ -32,7 +32,7 @@ public interface UserServicePort {
      *
      * @param authenticatedUser The authenticated user's claims
      * @return The user's UUID
-     * @throws UserNotFoundException if user doesn't exist
+     * @throws edu.kit.quak.application.user.exceptions.UserNotFoundException if user doesn't exist
      */
     UUID getAuthenticatedUserId(AuthenticatedUser authenticatedUser);
 
@@ -43,4 +43,12 @@ public interface UserServicePort {
      * @return A list of found users
      */
     List<User> findAllByIds(List<UUID> ids);
+
+    /**
+     * Deletes the user together with their role assignments and publishes a
+     * {@link edu.kit.quak.core.user.event.UserDeletedEvent} so that other contexts remove their data.
+     *
+     * @param id The ID of the user to delete
+     */
+    void deleteUser(UUID id);
 }

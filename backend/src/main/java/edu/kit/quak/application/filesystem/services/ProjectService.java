@@ -16,6 +16,7 @@ import edu.kit.quak.core.user.model.ProjectRoleAssignment;
 import edu.kit.quak.core.user.model.User;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -93,11 +94,14 @@ public class ProjectService implements ProjectServicePort {
 
         verifyOwnerAccess(project, user);
 
-        // Removes all circuits linked to the project's files
-        circuitService.deleteAllByProjectId(pId);
-        // Clean up all role assignments for this project
-        roleRepository.deleteAllByProjectId(pId);
-        repository.deleteById(pId);
+        delete(pId);
+    }
+
+    @Override
+    public void removeAllProjectsOwnedBy(UUID ownerId) {
+        List<Project> projects = repository.getProjectsByOwnerId(ownerId);
+        log.info("Removing {} projects owned by user '{}'", projects.size(), ownerId);
+        projects.forEach(project -> delete(project.getId()));
     }
 
     @Override
@@ -132,6 +136,14 @@ public class ProjectService implements ProjectServicePort {
 
         // Merge both lists, avoiding duplicates
         return Stream.concat(ownedProjects.stream(), viewerProjects.stream()).distinct().toList();
+    }
+
+    private void delete(String pId) {
+        // Removes all circuits linked to the project's files
+        circuitService.deleteAllByProjectId(pId);
+        // Clean up all role assignments for this project
+        roleRepository.deleteAllByProjectId(pId);
+        repository.deleteById(pId);
     }
 
     private Project retrieveWithoutAuth(String id) {
