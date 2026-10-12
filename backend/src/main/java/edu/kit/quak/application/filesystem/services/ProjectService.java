@@ -2,12 +2,14 @@ package edu.kit.quak.application.filesystem.services;
 
 import edu.kit.quak.application.circuit.ports.in.CircuitServicePort;
 import edu.kit.quak.application.common.exceptions.AccessDeniedException;
+import edu.kit.quak.application.common.ports.out.DomainEventPublisherPort;
 import edu.kit.quak.application.filesystem.exception.ProjectNotFoundException;
 import edu.kit.quak.application.filesystem.ports.in.ProjectServicePort;
 import edu.kit.quak.application.filesystem.ports.out.FileContentRepositoryPort;
 import edu.kit.quak.application.filesystem.ports.out.ProjectRepositoryPort;
 import edu.kit.quak.application.user.ports.in.ProjectRoleServicePort;
 import edu.kit.quak.application.user.ports.out.ProjectRoleRepositoryPort;
+import edu.kit.quak.core.filesystem.event.ProjectDeletedEvent;
 import edu.kit.quak.core.filesystem.exception.DuplicateNameException;
 import edu.kit.quak.core.filesystem.model.File;
 import edu.kit.quak.core.filesystem.model.Project;
@@ -42,19 +44,22 @@ public class ProjectService implements ProjectServicePort {
     private final ProjectRoleServicePort roleService;
     private final ProjectRoleRepositoryPort roleRepository;
     private final CircuitServicePort circuitService;
+    private final DomainEventPublisherPort eventPublisher;
 
     public ProjectService(
         ProjectRepositoryPort repository,
         FileContentRepositoryPort fileContentRepository,
         ProjectRoleServicePort roleService,
         ProjectRoleRepositoryPort roleRepository,
-        CircuitServicePort circuitService
+        CircuitServicePort circuitService,
+        DomainEventPublisherPort eventPublisher
     ) {
         this.repository = repository;
         this.fileContentRepository = fileContentRepository;
         this.roleService = roleService;
         this.roleRepository = roleRepository;
         this.circuitService = circuitService;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -94,14 +99,14 @@ public class ProjectService implements ProjectServicePort {
 
         verifyOwnerAccess(project, user);
 
-        delete(pId);
+        delete(project);
     }
 
     @Override
     public void removeAllProjectsOwnedBy(UUID ownerId) {
         List<Project> projects = repository.getProjectsByOwnerId(ownerId);
         log.info("Removing {} projects owned by user '{}'", projects.size(), ownerId);
-        projects.forEach(project -> delete(project.getId()));
+        projects.forEach(this::delete);
     }
 
     @Override
@@ -138,12 +143,15 @@ public class ProjectService implements ProjectServicePort {
         return Stream.concat(ownedProjects.stream(), viewerProjects.stream()).distinct().toList();
     }
 
-    private void delete(String pId) {
+    private void delete(Project project) {
+        String pId = project.getId();
         // Removes all circuits linked to the project's files
         circuitService.deleteAllByProjectId(pId);
         // Clean up all role assignments for this project
         roleRepository.deleteAllByProjectId(pId);
+        fileContentRepository.deleteContents(project.getAllFiles().stream().map(File::getId).toList());
         repository.deleteById(pId);
+        eventPublisher.publish(new ProjectDeletedEvent(pId));
     }
 
     private Project retrieveWithoutAuth(String id) {

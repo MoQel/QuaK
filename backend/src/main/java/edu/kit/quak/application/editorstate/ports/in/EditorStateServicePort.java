@@ -14,4 +14,7 @@ public interface EditorStateServicePort {
 
     /** Deletes all editor states of the given user, without an access check. */
     void deleteAllByUserId(UUID userId);
+
+    /** Deletes the editor states of all users for the given project, without an access check. */
+    void deleteAllByProjectId(String projectId);
 }

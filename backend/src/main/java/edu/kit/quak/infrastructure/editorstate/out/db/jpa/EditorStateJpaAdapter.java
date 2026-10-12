@@ -31,6 +31,11 @@ public class EditorStateJpaAdapter implements EditorStateRepositoryPort {
         repository.deleteAllByUserId(userId);
     }
 
+    @Override
+    public void deleteAllByProjectId(String projectId) {
+        repository.deleteAllByProjectId(projectId);
+    }
+
     private EditorState toDomain(JpaEditorState entity) {
         return new EditorState(entity.getId(), entity.getProjectId(), entity.getUserId(), entity.getTabsJson());
     }

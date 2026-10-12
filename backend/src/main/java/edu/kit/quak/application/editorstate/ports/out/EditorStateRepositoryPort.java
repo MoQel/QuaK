@@ -9,4 +9,6 @@ public interface EditorStateRepositoryPort {
     EditorState save(EditorState editorState);
 
     void deleteAllByUserId(String userId);
+
+    void deleteAllByProjectId(String projectId);
 }

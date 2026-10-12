@@ -4,16 +4,20 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import edu.kit.quak.application.circuit.ports.in.CircuitServicePort;
+import edu.kit.quak.application.common.ports.out.DomainEventPublisherPort;
 import edu.kit.quak.application.filesystem.exception.ProjectNotFoundException;
 import edu.kit.quak.application.filesystem.ports.out.FileContentRepositoryPort;
 import edu.kit.quak.application.filesystem.ports.out.ProjectRepositoryPort;
 import edu.kit.quak.application.user.ports.in.ProjectRoleServicePort;
 import edu.kit.quak.application.user.ports.out.ProjectRoleRepositoryPort;
+import edu.kit.quak.core.filesystem.event.ProjectDeletedEvent;
+import edu.kit.quak.core.filesystem.model.Directory;
 import edu.kit.quak.core.filesystem.model.File;
 import edu.kit.quak.core.filesystem.model.Project;
 import edu.kit.quak.core.user.model.User;
@@ -46,12 +50,15 @@ class ProjectServiceTest {
     @Mock
     private CircuitServicePort circuitService;
 
+    @Mock
+    private DomainEventPublisherPort eventPublisher;
+
     private ProjectService service;
     private User testUser;
 
     @BeforeEach
     void setUp() {
-        service = new ProjectService(repository, fileContentRepository, roleService, roleRepository, circuitService);
+        service = new ProjectService(repository, fileContentRepository, roleService, roleRepository, circuitService, eventPublisher);
         testUser = new User();
         testUser.setId(UUID.randomUUID());
     }
@@ -108,5 +115,26 @@ class ProjectServiceTest {
             verify(repository).deleteById(project.getId());
         }
         verifyNoInteractions(roleService);
+    }
+
+    @Test
+    void removeProject_deletesContentsOfAllFilesAndPublishesEvent() {
+        Project project = new Project("P1", testUser.getId());
+        File topLevel = new File("top.qasm", project.getId());
+        Directory dir = new Directory("Dir", project.getId());
+        File nested = new File("nested.qasm", dir.getId());
+        dir.addChild(nested);
+        project.addChild(dir);
+        project.addChild(topLevel);
+        when(repository.findById(project.getId())).thenReturn(Optional.of(project));
+        when(roleService.hasMinimumRole(any(), any(), any())).thenReturn(true);
+
+        service.removeProject(project.getId(), testUser);
+
+        verify(fileContentRepository).deleteContents(
+            argThat(ids -> ids.size() == 2 && ids.containsAll(List.of(topLevel.getId(), nested.getId())))
+        );
+        verify(repository).deleteById(project.getId());
+        verify(eventPublisher).publish(new ProjectDeletedEvent(project.getId()));
     }
 }

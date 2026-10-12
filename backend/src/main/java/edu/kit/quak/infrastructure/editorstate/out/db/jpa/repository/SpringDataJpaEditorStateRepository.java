@@ -8,4 +8,6 @@ public interface SpringDataJpaEditorStateRepository extends JpaRepository<JpaEdi
     Optional<JpaEditorState> findByProjectIdAndUserId(String projectId, String userId);
 
     void deleteAllByUserId(String userId);
+
+    void deleteAllByProjectId(String projectId);
 }

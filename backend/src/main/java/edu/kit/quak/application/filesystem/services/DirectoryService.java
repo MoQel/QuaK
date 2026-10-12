@@ -1,14 +1,18 @@
 package edu.kit.quak.application.filesystem.services;
 
+import edu.kit.quak.application.circuit.ports.in.CircuitServicePort;
 import edu.kit.quak.application.filesystem.delegator.FileElementContainerRepositoryDelegator;
 import edu.kit.quak.application.filesystem.exception.DirectoryNotFoundException;
 import edu.kit.quak.application.filesystem.ports.in.DirectoryServicePort;
 import edu.kit.quak.application.filesystem.ports.out.DirectoryRepositoryPort;
+import edu.kit.quak.application.filesystem.ports.out.FileContentRepositoryPort;
 import edu.kit.quak.application.user.ports.in.ProjectRoleServicePort;
 import edu.kit.quak.core.filesystem.model.Directory;
+import edu.kit.quak.core.filesystem.model.File;
 import edu.kit.quak.core.filesystem.model.FileElement;
 import edu.kit.quak.core.filesystem.model.FileElementContainer;
 import edu.kit.quak.core.user.model.User;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,14 +22,20 @@ import org.springframework.transaction.annotation.Transactional;
 public class DirectoryService extends AbstractFileElementService<Directory> implements DirectoryServicePort {
 
     private final DirectoryRepositoryPort repository;
+    private final FileContentRepositoryPort contentRepository;
+    private final CircuitServicePort circuitService;
 
     public DirectoryService(
         DirectoryRepositoryPort repository,
         FileElementContainerRepositoryDelegator delegator,
-        ProjectRoleServicePort roleService
+        ProjectRoleServicePort roleService,
+        FileContentRepositoryPort contentRepository,
+        CircuitServicePort circuitService
     ) {
         super(delegator, roleService);
         this.repository = repository;
+        this.contentRepository = contentRepository;
+        this.circuitService = circuitService;
     }
 
     // region Create
@@ -82,6 +92,9 @@ public class DirectoryService extends AbstractFileElementService<Directory> impl
         FileElementContainer<?> parent = getParentById(directory.getParentId());
         parent.removeChild(directory);
         delegator.save(parent);
+        List<String> fileIds = directory.getAllFiles().stream().map(File::getId).toList();
+        contentRepository.deleteContents(fileIds);
+        fileIds.forEach(circuitService::deleteByFileId);
         delegator.touchRootProject(directory.getParentId());
     }
 

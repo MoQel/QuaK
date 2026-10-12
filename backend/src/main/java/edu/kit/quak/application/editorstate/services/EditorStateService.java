@@ -50,6 +50,12 @@ public class EditorStateService implements EditorStateServicePort {
         repository.deleteAllByUserId(userId.toString());
     }
 
+    @Override
+    public void deleteAllByProjectId(String projectId) {
+        log.debug("Deleting all editor states. projectId={}", projectId);
+        repository.deleteAllByProjectId(projectId);
+    }
+
     // The editor state is per-user UI state, so VIEWER access is sufficient for both reading and writing.
     private void verifyAccess(String projectId, User user) {
         if (!projectRoleService.hasMinimumRole(projectId, user.getId(), ProjectRole.VIEWER)) {

@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import edu.kit.quak.core.filesystem.exception.DuplicateNameException;
 import edu.kit.quak.shared.tags.UnitTest;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
@@ -65,12 +66,12 @@ class FileElementDomainTest {
     }
 
     @Test
-    void fileRenameUpdatesLastAccess() throws InterruptedException {
+    void fileRenameUpdatesLastAccess() {
         String dummyParentId = "d-" + UUID.randomUUID();
         File file = new File("OldName", dummyParentId);
+        Instant beforeRename = Instant.now().minusSeconds(60);
+        file.setLastAccess(beforeRename);
 
-        Instant beforeRename = file.getLastAccess();
-        Thread.sleep(15);
         file.rename("NewName");
 
         assertEquals("NewName", file.getName());
@@ -139,5 +140,23 @@ class FileElementDomainTest {
         DuplicateNameException ex = assertThrows(DuplicateNameException.class, () -> dir.addChild(f2));
 
         assertTrue(ex.getMessage().toLowerCase().contains("exists"));
+    }
+
+    @Test
+    void getAllFilesIncludesFilesOfNestedDirectories() {
+        Project project = new Project("MyProject");
+        File topLevel = new File("top.qasm", project.getId());
+        Directory dir = new Directory("Dir", project.getId());
+        Directory nested = new Directory("Nested", dir.getId());
+        File deep = new File("deep.qasm", nested.getId());
+        nested.addChild(deep);
+        dir.addChild(nested);
+        project.addChild(dir);
+        project.addChild(topLevel);
+
+        List<File> files = project.getAllFiles();
+
+        assertEquals(2, files.size());
+        assertTrue(files.containsAll(List.of(topLevel, deep)));
     }
 }
