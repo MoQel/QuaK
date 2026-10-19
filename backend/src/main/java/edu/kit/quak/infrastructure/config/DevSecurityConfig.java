@@ -1,7 +1,9 @@
 package edu.kit.quak.infrastructure.config;
 
+import edu.kit.quak.application.user.ports.in.GuestServicePort;
 import edu.kit.quak.application.user.ports.in.OidcSyncServicePort;
 import edu.kit.quak.application.user.ports.in.OidcUserInfo;
+import edu.kit.quak.infrastructure.user.in.web.security.GuestActivityFilter;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -20,6 +22,7 @@ import org.springframework.security.oauth2.client.authentication.OAuth2Authentic
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.web.cors.CorsConfiguration;
@@ -65,12 +68,16 @@ public class DevSecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain devSecurityFilterChain(HttpSecurity http, OAuth2UserEnrichmentService oAuth2UserEnrichmentService)
-        throws Exception {
+    public SecurityFilterChain devSecurityFilterChain(
+        HttpSecurity http,
+        OAuth2UserEnrichmentService oAuth2UserEnrichmentService,
+        GuestServicePort guestService
+    ) throws Exception {
         http
             .cors(cors -> cors.configurationSource(devCorsConfigurationSource()))
             // Disable CSRF for easier API testing in development
             .csrf(csrf -> csrf.disable())
+            .addFilterAfter(new GuestActivityFilter(guestService), AnonymousAuthenticationFilter.class)
             .authorizeHttpRequests(auth ->
                 auth
                     .requestMatchers(
@@ -94,8 +101,9 @@ public class DevSecurityConfig {
                         "/v3/api-docs/**",
                         // H2 Console for development
                         "/h2-console/**",
-                        // Auth status endpoint
-                        "/api/auth/user"
+                        // Auth status and guest sign-in endpoints
+                        "/api/auth/user",
+                        "/api/auth/guest"
                     )
                     .permitAll()
                     .anyRequest()
@@ -125,7 +133,7 @@ public class DevSecurityConfig {
                 OAuth2User principal = oauthToken.getPrincipal();
                 String registrationId = oauthToken.getAuthorizedClientRegistrationId();
 
-                OidcUserInfo userInfo = mapToUserInfo(principal);
+                OidcUserInfo userInfo = OAuth2UserInfoMapper.toUserInfo(principal);
                 try {
                     edu.kit.quak.core.user.model.User user = oidcUserSyncService.syncUser(registrationId, userInfo);
                     request.getSession().setAttribute("userId", user.getId());
@@ -137,32 +145,6 @@ public class DevSecurityConfig {
             }
             delegate.onAuthenticationSuccess(request, response, authentication);
         };
-    }
-
-    private OidcUserInfo mapToUserInfo(OAuth2User principal) {
-        String sub =
-            principal.getAttribute("sub") != null
-                ? principal.getAttribute("sub").toString()
-                : (principal.getAttribute("id") != null ? principal.getAttribute("id").toString() : null);
-
-        Boolean emailVerified =
-            principal.getAttribute("email_verified") != null ? (Boolean) principal.getAttribute("email_verified") : true;
-
-        String picture =
-            principal.getAttribute("picture") != null
-                ? principal.getAttribute("picture").toString()
-                : (principal.getAttribute("avatar_url") != null ? principal.getAttribute("avatar_url").toString() : null);
-
-        // Logic to handle different attribute names across providers
-        return new OidcUserInfo(
-            sub,
-            principal.getAttribute("email"),
-            emailVerified,
-            principal.getAttribute("name"),
-            principal.getAttribute("given_name"),
-            principal.getAttribute("family_name"),
-            picture
-        );
     }
 
     @Bean

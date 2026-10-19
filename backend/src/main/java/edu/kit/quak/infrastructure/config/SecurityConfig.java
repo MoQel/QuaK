@@ -206,7 +206,7 @@ public class SecurityConfig {
                 String registrationId = oauthToken.getAuthorizedClientRegistrationId();
 
                 // Map attributes dynamically based on provider
-                OidcUserInfo userInfo = mapToUserInfo(principal);
+                OidcUserInfo userInfo = OAuth2UserInfoMapper.toUserInfo(principal);
 
                 try {
                     edu.kit.quak.core.user.model.User user = oidcUserSyncService.syncUser(registrationId, userInfo);
@@ -219,29 +219,6 @@ public class SecurityConfig {
             }
             delegate.onAuthenticationSuccess(request, response, authentication);
         };
-    }
-
-    private OidcUserInfo mapToUserInfo(OAuth2User principal) {
-        // Providers differ in attribute names: GitHub uses "id" and "avatar_url", OIDC providers use "sub" and "picture"
-        return new OidcUserInfo(
-            firstAttribute(principal, "sub", "id"),
-            principal.getAttribute("email"),
-            !Boolean.FALSE.equals(principal.getAttribute("email_verified")),
-            principal.getAttribute("name"),
-            principal.getAttribute("given_name"),
-            principal.getAttribute("family_name"),
-            firstAttribute(principal, "picture", "avatar_url")
-        );
-    }
-
-    private static String firstAttribute(OAuth2User principal, String... names) {
-        for (String name : names) {
-            Object value = principal.getAttribute(name);
-            if (value != null) {
-                return value.toString();
-            }
-        }
-        return null;
     }
 
     @Bean
