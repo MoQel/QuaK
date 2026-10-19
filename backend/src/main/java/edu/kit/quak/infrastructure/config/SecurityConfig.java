@@ -2,8 +2,8 @@ package edu.kit.quak.infrastructure.config;
 
 import edu.kit.quak.application.user.ports.in.GuestServicePort;
 import edu.kit.quak.application.user.ports.in.OidcSyncServicePort;
-import edu.kit.quak.application.user.ports.in.OidcUserInfo;
 import edu.kit.quak.infrastructure.user.in.web.security.GuestActivityFilter;
+import edu.kit.quak.infrastructure.user.in.web.security.OAuth2LoginSuccessHandler;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -12,32 +12,28 @@ import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
-import java.util.List;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.HttpStatus;
+import org.springframework.lang.NonNull;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
 import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
-import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
-import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
-import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
-import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
@@ -58,7 +54,7 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(
         HttpSecurity http,
         OAuth2AuthorizationRequestResolver authorizationRequestResolver,
-        AuthenticationSuccessHandler authenticationSuccessHandler,
+        OidcSyncServicePort oidcSyncService,
         OAuth2UserEnrichmentService oAuth2UserEnrichmentService,
         GuestServicePort guestService
     ) throws Exception {
@@ -107,7 +103,7 @@ public class SecurityConfig {
                 oauth2
                     .authorizationEndpoint(authorization -> authorization.authorizationRequestResolver(authorizationRequestResolver))
                     .userInfoEndpoint(userInfo -> userInfo.userService(oAuth2UserEnrichmentService))
-                    .successHandler(authenticationSuccessHandler)
+                    .successHandler(new OAuth2LoginSuccessHandler(oidcSyncService, frontendUrl))
             )
             .logout(logout ->
                 logout
@@ -119,13 +115,9 @@ public class SecurityConfig {
             )
             .exceptionHandling(exception ->
                 exception
-                    .authenticationEntryPoint(
-                        new org.springframework.security.web.authentication.HttpStatusEntryPoint(
-                            org.springframework.http.HttpStatus.UNAUTHORIZED
-                        )
-                    )
+                    .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
                     .accessDeniedHandler((request, response, accessDeniedException) -> {
-                        response.setStatus(org.springframework.http.HttpStatus.FORBIDDEN.value());
+                        response.setStatus(HttpStatus.FORBIDDEN.value());
                         response.setContentType("application/json");
                         response
                             .getWriter()
@@ -145,13 +137,13 @@ public class SecurityConfig {
 
         return new OAuth2AuthorizationRequestResolver() {
             @Override
-            public OAuth2AuthorizationRequest resolve(jakarta.servlet.http.HttpServletRequest request) {
+            public OAuth2AuthorizationRequest resolve(HttpServletRequest request) {
                 OAuth2AuthorizationRequest authorizationRequest = defaultResolver.resolve(request);
                 return authorizationRequest != null ? customizeAuthorizationRequest(authorizationRequest, null) : null;
             }
 
             @Override
-            public OAuth2AuthorizationRequest resolve(jakarta.servlet.http.HttpServletRequest request, String clientRegistrationId) {
+            public OAuth2AuthorizationRequest resolve(HttpServletRequest request, String clientRegistrationId) {
                 OAuth2AuthorizationRequest authorizationRequest = defaultResolver.resolve(request, clientRegistrationId);
                 return authorizationRequest != null ? customizeAuthorizationRequest(authorizationRequest, clientRegistrationId) : null;
             }
@@ -195,50 +187,18 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationSuccessHandler authenticationSuccessHandler(OidcSyncServicePort oidcUserSyncService) {
-        SimpleUrlAuthenticationSuccessHandler delegate = new SimpleUrlAuthenticationSuccessHandler();
-        delegate.setDefaultTargetUrl(frontendUrl + "/");
-        delegate.setAlwaysUseDefaultTargetUrl(true);
-
-        return (request, response, authentication) -> {
-            if (authentication instanceof OAuth2AuthenticationToken oauthToken) {
-                OAuth2User principal = oauthToken.getPrincipal();
-                String registrationId = oauthToken.getAuthorizedClientRegistrationId();
-
-                // Map attributes dynamically based on provider
-                OidcUserInfo userInfo = OAuth2UserInfoMapper.toUserInfo(principal);
-
-                try {
-                    edu.kit.quak.core.user.model.User user = oidcUserSyncService.syncUser(registrationId, userInfo);
-                    request.getSession().setAttribute("userId", user.getId());
-                } catch (IllegalArgumentException e) {
-                    org.springframework.security.core.context.SecurityContextHolder.clearContext();
-                    response.sendRedirect(frontendUrl + "/login?error=email_exists");
-                    return;
-                }
-            }
-            delegate.onAuthenticationSuccess(request, response, authentication);
-        };
-    }
-
-    @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of(frontendUrl));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-        configuration.setAllowedHeaders(List.of("*"));
-        configuration.setAllowCredentials(true);
-
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
+        return CorsConfigurations.allowingOrigins(frontendUrl);
     }
 
     private static class CsrfCookieFilter extends OncePerRequestFilter {
 
         @Override
-        protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-            throws ServletException, IOException {
+        protected void doFilterInternal(
+            @NonNull HttpServletRequest request,
+            @NonNull HttpServletResponse response,
+            @NonNull FilterChain filterChain
+        ) throws ServletException, IOException {
             CsrfToken csrfToken = (CsrfToken) request.getAttribute(CsrfToken.class.getName());
             if (csrfToken != null) {
                 csrfToken.getToken();

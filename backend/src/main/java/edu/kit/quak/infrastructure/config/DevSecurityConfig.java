@@ -2,9 +2,8 @@ package edu.kit.quak.infrastructure.config;
 
 import edu.kit.quak.application.user.ports.in.GuestServicePort;
 import edu.kit.quak.application.user.ports.in.OidcSyncServicePort;
-import edu.kit.quak.application.user.ports.in.OidcUserInfo;
 import edu.kit.quak.infrastructure.user.in.web.security.GuestActivityFilter;
-import java.util.List;
+import edu.kit.quak.infrastructure.user.in.web.security.OAuth2LoginSuccessHandler;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,16 +17,10 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
-import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
-import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
-import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
-import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 /**
  * Development-only security configuration. This configuration is ONLY active
@@ -35,9 +28,8 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
  * is enabled.
  *
  * <p>
- * It replaces OAuth2/OIDC with simple HTTP Basic authentication for easier
- * development and API
- * testing via Swagger UI.
+ * It adds HTTP Basic authentication next to OAuth2/OIDC for easier development
+ * and API testing via Swagger UI.
  *
  * <p>
  * Usage: Run with -Dspring.profiles.active=dev or set
@@ -114,37 +106,12 @@ public class DevSecurityConfig {
             .oauth2Login(oauth2 ->
                 oauth2
                     .userInfoEndpoint(userInfo -> userInfo.userService(oAuth2UserEnrichmentService))
-                    .successHandler(devAuthenticationSuccessHandler())
+                    .successHandler(new OAuth2LoginSuccessHandler(oidcUserSyncService, frontendUrl))
             )
             // Allow frames for H2 console
             .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()));
 
         return http.build();
-    }
-
-    @Bean
-    public AuthenticationSuccessHandler devAuthenticationSuccessHandler() {
-        SimpleUrlAuthenticationSuccessHandler delegate = new SimpleUrlAuthenticationSuccessHandler();
-        delegate.setDefaultTargetUrl(frontendUrl + "/");
-        delegate.setAlwaysUseDefaultTargetUrl(true);
-
-        return (request, response, authentication) -> {
-            if (authentication instanceof OAuth2AuthenticationToken oauthToken) {
-                OAuth2User principal = oauthToken.getPrincipal();
-                String registrationId = oauthToken.getAuthorizedClientRegistrationId();
-
-                OidcUserInfo userInfo = OAuth2UserInfoMapper.toUserInfo(principal);
-                try {
-                    edu.kit.quak.core.user.model.User user = oidcUserSyncService.syncUser(registrationId, userInfo);
-                    request.getSession().setAttribute("userId", user.getId());
-                } catch (IllegalArgumentException e) {
-                    org.springframework.security.core.context.SecurityContextHolder.clearContext();
-                    response.sendRedirect(frontendUrl + "/login?error=email_exists");
-                    return;
-                }
-            }
-            delegate.onAuthenticationSuccess(request, response, authentication);
-        };
     }
 
     @Bean
@@ -165,14 +132,6 @@ public class DevSecurityConfig {
 
     @Bean
     public CorsConfigurationSource devCorsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of(frontendUrl, "http://localhost:8080"));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("*"));
-        configuration.setAllowCredentials(true);
-
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
+        return CorsConfigurations.allowingOrigins(frontendUrl, "http://localhost:8080");
     }
 }
