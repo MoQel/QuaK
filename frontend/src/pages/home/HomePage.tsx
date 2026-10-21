@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FolderOpen, Plus, Users } from 'lucide-react';
 
 import { Button } from '@/components/ui/button.tsx';
+import { GuestBanner } from '@/components/guest/GuestBanner.tsx';
 import { useProjectActionsDialog } from '@/components/projects/useProjectActionsDialog.tsx';
 
 import { api } from '@/api/api.ts';
@@ -204,6 +205,8 @@ export function HomePage() {
                     }}
                 />
             )}
+
+            <GuestBanner />
 
             <div className="mb-6">
                 <h1 className="text-3xl font-bold mb-2 text-text leading-tight py-1">Projects</h1>

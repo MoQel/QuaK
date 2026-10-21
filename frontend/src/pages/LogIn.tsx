@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, UserRound } from 'lucide-react';
 import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { GUEST_DATA_NOTICE } from '@/components/guest/guestNotice';
+import { Separator } from '@/components/ui/separator';
+import { cn } from '@/lib/utils';
 import './LandingPageAlternative.css';
 
 const GoogleMark = () => (
@@ -34,15 +37,34 @@ const GithubMark = () => (
     </svg>
 );
 
+const loginButtonClassName =
+    'flex w-full rounded-xl cursor-pointer items-center justify-center gap-3 px-5 py-3.5 text-sm font-bold';
+
 export const LoginOptions: React.FC = () => {
-    const { login } = useAuth();
+    const { login, guestEnabled, signInAsGuest } = useAuth();
+    const [guestPending, setGuestPending] = useState(false);
+    const [guestError, setGuestError] = useState<string | null>(null);
+
+    const continueAsGuest = () => {
+        setGuestPending(true);
+        setGuestError(null);
+        signInAsGuest()
+            .catch((error) => {
+                console.error('Guest sign-in failed:', error);
+                setGuestError('Guest access is currently unavailable. Please try again later.');
+            })
+            .finally(() => setGuestPending(false));
+    };
 
     return (
         <div className="space-y-3">
             <button
                 type="button"
                 onClick={() => login('google')}
-                className="flex w-full rounded-xl cursor-pointer items-center justify-center gap-3 border border-[#8d9692] bg-white px-5 py-3.5 text-sm font-bold hover:border-[#00876c] hover:text-[#00735c]"
+                className={cn(
+                    loginButtonClassName,
+                    'border border-[#8d9692] bg-white hover:border-[#00876c] hover:text-[#00735c]',
+                )}
             >
                 <GoogleMark />
                 Continue with Google
@@ -50,11 +72,38 @@ export const LoginOptions: React.FC = () => {
             <button
                 type="button"
                 onClick={() => login('github')}
-                className="flex w-full rounded-xl cursor-pointer items-center justify-center gap-3 bg-[#202725] px-5 py-3.5 text-sm font-bold text-white hover:bg-black"
+                className={cn(loginButtonClassName, 'bg-[#202725] text-white hover:bg-black')}
             >
                 <GithubMark />
                 Continue with GitHub
             </button>
+            {guestEnabled && (
+                <>
+                    <div className="flex items-center gap-3 py-1 text-xs text-[#59635f]" aria-hidden="true">
+                        <Separator className="flex-1 bg-[#c9cfcc]" />
+                        or
+                        <Separator className="flex-1 bg-[#c9cfcc]" />
+                    </div>
+                    <button
+                        type="button"
+                        onClick={continueAsGuest}
+                        disabled={guestPending}
+                        className={cn(
+                            loginButtonClassName,
+                            'border border-dashed border-[#8d9692] bg-transparent hover:border-[#00876c] hover:text-[#00735c] disabled:cursor-wait disabled:opacity-60',
+                        )}
+                    >
+                        <UserRound className="h-5 w-5" aria-hidden="true" />
+                        Continue as guest
+                    </button>
+                    <p className="text-xs leading-5 text-[#59635f]">No account needed. {GUEST_DATA_NOTICE}</p>
+                    {guestError && (
+                        <p role="alert" className="text-xs text-[#791f20]">
+                            {guestError}
+                        </p>
+                    )}
+                </>
+            )}
         </div>
     );
 };

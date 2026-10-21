@@ -7,7 +7,7 @@ import { api } from '@/api/api';
 
 interface UserDto {
     userId: string;
-    email: string;
+    email: string | null;
     name: string;
     avatarUrl: string | null;
     emailVerified: boolean;
@@ -63,7 +63,9 @@ export const Profile: React.FC = () => {
                             <UserAvatar avatarUrl={user.avatarUrl} alt={user.name} size="lg" />
                             <div className="flex-1">
                                 <CardTitle className="text-2xl mb-2">{user.name}</CardTitle>
-                                <CardDescription className="text-base mb-3">{user.email}</CardDescription>
+                                <CardDescription className="text-base mb-3">
+                                    {user.email ?? 'Guest account'}
+                                </CardDescription>
                                 <div className="flex gap-2 flex-wrap">
                                     {user.emailVerified && (
                                         <Badge variant="secondary" className="bg-special text-text pointer-events-none">

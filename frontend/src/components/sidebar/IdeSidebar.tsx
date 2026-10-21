@@ -21,7 +21,10 @@ import {
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
+import { Badge } from '@/components/ui/badge.tsx';
 import { Button } from '@/components/ui/button.tsx';
+import { GuestLogoutDialog } from '@/components/guest/GuestLogoutDialog.tsx';
+import { GUEST_DATA_NOTICE } from '@/components/guest/guestNotice.ts';
 import { useAuth } from '@/contexts/AuthContext.tsx';
 import { useDockview } from '@/contexts/DockviewContext.tsx';
 import { useProject } from '@/contexts/ProjectContext.tsx';
@@ -67,7 +70,8 @@ export function IdeSidebar() {
     const navigate = useNavigate();
     const { pathname } = useLocation();
     const isIdeView = pathname.startsWith('/project');
-    const { logout } = useAuth();
+    const { logout, isGuest } = useAuth();
+    const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
     const { theme, toggleTheme } = useTheme();
     const { projectId, projectName, refreshProject } = useProject();
     const { dialog, openDeleteProjectDialog, openRenameProjectDialog } = useProjectActionsDialog();
@@ -75,6 +79,14 @@ export function IdeSidebar() {
     const [collapsed, setCollapsed] = useState(false);
     const isDark = theme === 'dark';
     const projectTitle = isIdeView ? (projectName ?? 'QuaK') : 'QuaK';
+
+    const requestLogout = () => {
+        if (isGuest) {
+            setLogoutDialogOpen(true);
+        } else {
+            logout();
+        }
+    };
 
     return (
         <aside
@@ -84,6 +96,7 @@ export function IdeSidebar() {
             )}
         >
             {dialog}
+            <GuestLogoutDialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen} onConfirm={logout} />
             <header
                 className={cn(
                     'flex shrink-0 items-center border-b border-border',
@@ -195,6 +208,8 @@ export function IdeSidebar() {
                     {NAV_ITEMS.map((item) => {
                         const Icon = item.icon;
                         const active = item.isActive(pathname);
+                        const showGuestHint = isGuest && item.to === '/profile';
+                        const collapsedTitle = collapsed ? item.label : undefined;
 
                         return (
                             <li key={item.to}>
@@ -202,10 +217,18 @@ export function IdeSidebar() {
                                     to={item.to}
                                     className={sidebarItemClassName({ active, collapsed, muted: true })}
                                     aria-label={item.label}
-                                    title={collapsed ? item.label : undefined}
+                                    title={showGuestHint ? `Guest session. ${GUEST_DATA_NOTICE}` : collapsedTitle}
                                 >
                                     <Icon className="size-5 shrink-0" />
                                     {!collapsed && <span className="truncate">{item.label}</span>}
+                                    {showGuestHint && !collapsed && (
+                                        <Badge
+                                            variant="outline"
+                                            className="ml-auto border-special/40 bg-special/10 text-[10px] font-semibold uppercase text-special"
+                                        >
+                                            Guest
+                                        </Badge>
+                                    )}
                                 </Link>
                             </li>
                         );
@@ -230,7 +253,7 @@ export function IdeSidebar() {
                         className={sidebarItemClassName({ collapsed, muted: true })}
                         aria-label="Logout"
                         title={collapsed ? 'Logout' : undefined}
-                        onClick={logout}
+                        onClick={requestLogout}
                     >
                         <LogOut className="size-5 shrink-0" />
                         {!collapsed && <span className="truncate">Logout</span>}
