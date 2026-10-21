@@ -56,6 +56,20 @@ public class EditorStateService implements EditorStateServicePort {
         repository.deleteAllByProjectId(projectId);
     }
 
+    @Override
+    public void transferAllByUserId(UUID fromUserId, UUID toUserId) {
+        log.debug("Transferring editor states. fromUserId={}, toUserId={}", fromUserId, toUserId);
+        String receiver = toUserId.toString();
+        for (EditorState state : repository.findAllByUserId(fromUserId.toString())) {
+            if (repository.findByProjectIdAndUserId(state.getProjectId(), receiver).isPresent()) {
+                repository.deleteById(state.getId());
+            } else {
+                state.setUserId(receiver);
+                repository.save(state);
+            }
+        }
+    }
+
     // The editor state is per-user UI state, so VIEWER access is sufficient for both reading and writing.
     private void verifyAccess(String projectId, User user) {
         if (!projectRoleService.hasMinimumRole(projectId, user.getId(), ProjectRole.VIEWER)) {

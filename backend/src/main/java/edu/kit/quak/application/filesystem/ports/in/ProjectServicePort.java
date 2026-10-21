@@ -25,5 +25,11 @@ public interface ProjectServicePort {
     List<Project> listProjects(User user);
 
     /** Removes all projects owned by the given user, without an access check. */
-    void removeAllProjectsOwnedBy(UUID ownerId);
+    void deleteAllByOwnerId(UUID ownerId);
+
+    /**
+     * Moves all projects of one owner to another, without an access check. A project whose name the new owner
+     * already uses is numbered, e.g. "Demo (2)".
+     */
+    void transferAllByOwnerId(UUID fromOwnerId, UUID toOwnerId);
 }

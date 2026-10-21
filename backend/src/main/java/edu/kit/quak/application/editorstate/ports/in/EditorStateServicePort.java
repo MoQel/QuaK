@@ -17,4 +17,10 @@ public interface EditorStateServicePort {
 
     /** Deletes the editor states of all users for the given project, without an access check. */
     void deleteAllByProjectId(String projectId);
+
+    /**
+     * Moves all editor states of one user to another, without an access check. Where the receiving user already
+     * has a state for the same project, that state is kept.
+     */
+    void transferAllByUserId(UUID fromUserId, UUID toUserId);
 }

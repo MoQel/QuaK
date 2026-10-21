@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -19,6 +20,7 @@ import edu.kit.quak.infrastructure.user.in.web.rest.mapper.AuthenticationMapper;
 import edu.kit.quak.infrastructure.user.in.web.security.GuestActivityFilter;
 import edu.kit.quak.infrastructure.user.in.web.security.GuestAuthenticationToken;
 import edu.kit.quak.infrastructure.user.in.web.security.GuestSessionAuthenticator;
+import edu.kit.quak.infrastructure.user.in.web.security.GuestUpgradeSession;
 import edu.kit.quak.shared.tags.IntegrationTest;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
@@ -29,6 +31,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -124,5 +127,32 @@ class GuestAuthRestAdapterTest {
         mockMvc.perform(post("/api/auth/guest")).andExpect(status().isOk());
 
         verify(guestService).createGuest(null);
+    }
+
+    @Test
+    @DisplayName("POST /api/auth/guest/upgrade remembers the guest for the following OAuth2 login")
+    void remembersGuestForUpgrade() throws Exception {
+        MockHttpSession session = (MockHttpSession) mockMvc
+            .perform(post("/api/auth/guest/upgrade").with(authentication(new GuestAuthenticationToken("guest-sub"))))
+            .andExpect(status().isNoContent())
+            .andReturn()
+            .getRequest()
+            .getSession(false);
+
+        assertNotNull(session);
+        assertEquals("guest-sub", GuestUpgradeSession.take(requestWith(session)).orElseThrow());
+    }
+
+    @Test
+    @WithMockUser
+    @DisplayName("POST /api/auth/guest/upgrade rejects callers that are not guests")
+    void rejectsUpgradeOfNonGuest() throws Exception {
+        mockMvc.perform(post("/api/auth/guest/upgrade")).andExpect(status().isUnprocessableEntity());
+    }
+
+    private static MockHttpServletRequest requestWith(MockHttpSession session) {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setSession(session);
+        return request;
     }
 }

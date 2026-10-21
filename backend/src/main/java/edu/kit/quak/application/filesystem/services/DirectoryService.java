@@ -92,7 +92,7 @@ public class DirectoryService extends AbstractFileElementService<Directory> impl
         FileElementContainer<?> parent = getParentById(directory.getParentId());
         parent.removeChild(directory);
         delegator.save(parent);
-        List<String> fileIds = directory.getAllFiles().stream().map(File::getId).toList();
+        List<String> fileIds = directory.allFiles().stream().map(File::getId).toList();
         contentRepository.deleteContents(fileIds);
         fileIds.forEach(circuitService::deleteByFileId);
         delegator.touchRootProject(directory.getParentId());

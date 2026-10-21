@@ -17,6 +17,6 @@ public class UserDeletedProjectListener {
 
     @EventListener
     public void onUserDeleted(UserDeletedEvent event) {
-        projectService.removeAllProjectsOwnedBy(event.userId());
+        projectService.deleteAllByOwnerId(event.userId());
     }
 }

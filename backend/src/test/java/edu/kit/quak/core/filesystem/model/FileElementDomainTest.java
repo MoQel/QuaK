@@ -143,7 +143,7 @@ class FileElementDomainTest {
     }
 
     @Test
-    void getAllFilesIncludesFilesOfNestedDirectories() {
+    void allFilesIncludesFilesOfNestedDirectories() {
         Project project = new Project("MyProject");
         File topLevel = new File("top.qasm", project.getId());
         Directory dir = new Directory("Dir", project.getId());
@@ -154,9 +154,19 @@ class FileElementDomainTest {
         project.addChild(dir);
         project.addChild(topLevel);
 
-        List<File> files = project.getAllFiles();
+        List<File> files = project.allFiles();
 
         assertEquals(2, files.size());
         assertTrue(files.containsAll(List.of(topLevel, deep)));
+    }
+
+    @Test
+    void newProjectStartsWithInitialFileOfItsOwner() {
+        UUID owner = UUID.randomUUID();
+
+        Project project = Project.create("Demo", owner);
+
+        assertEquals(owner, project.getOwnerId());
+        assertEquals(List.of(Project.INITIAL_FILE_NAME), project.allFiles().stream().map(File::getName).toList());
     }
 }

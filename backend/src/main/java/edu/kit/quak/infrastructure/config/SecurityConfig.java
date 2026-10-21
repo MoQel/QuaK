@@ -1,8 +1,9 @@
 package edu.kit.quak.infrastructure.config;
 
 import edu.kit.quak.application.user.ports.in.GuestServicePort;
-import edu.kit.quak.application.user.ports.in.OidcSyncServicePort;
+import edu.kit.quak.application.user.ports.in.OAuthSignInServicePort;
 import edu.kit.quak.infrastructure.user.in.web.security.GuestActivityFilter;
+import edu.kit.quak.infrastructure.user.in.web.security.GuestSessionAuthenticator;
 import edu.kit.quak.infrastructure.user.in.web.security.OAuth2LoginSuccessHandler;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -54,9 +55,10 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(
         HttpSecurity http,
         OAuth2AuthorizationRequestResolver authorizationRequestResolver,
-        OidcSyncServicePort oidcSyncService,
+        OAuthSignInServicePort signInService,
         OAuth2UserEnrichmentService oAuth2UserEnrichmentService,
-        GuestServicePort guestService
+        GuestServicePort guestService,
+        GuestSessionAuthenticator guestSessionAuthenticator
     ) throws Exception {
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -103,7 +105,7 @@ public class SecurityConfig {
                 oauth2
                     .authorizationEndpoint(authorization -> authorization.authorizationRequestResolver(authorizationRequestResolver))
                     .userInfoEndpoint(userInfo -> userInfo.userService(oAuth2UserEnrichmentService))
-                    .successHandler(new OAuth2LoginSuccessHandler(oidcSyncService, frontendUrl))
+                    .successHandler(new OAuth2LoginSuccessHandler(signInService, guestSessionAuthenticator, frontendUrl))
             )
             .logout(LogoutConfigurations.apiLogout(guestService))
             .exceptionHandling(exception ->

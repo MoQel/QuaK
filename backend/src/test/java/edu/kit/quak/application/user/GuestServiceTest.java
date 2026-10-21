@@ -7,15 +7,20 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import edu.kit.quak.application.common.ports.out.DomainEventPublisherPort;
 import edu.kit.quak.application.user.exceptions.AlreadyAuthenticatedException;
+import edu.kit.quak.application.user.exceptions.UserNotFoundException;
+import edu.kit.quak.application.user.ports.in.ProjectRoleServicePort;
 import edu.kit.quak.application.user.ports.in.UserServicePort;
 import edu.kit.quak.application.user.ports.out.UserRepositoryPort;
 import edu.kit.quak.application.user.services.GuestService;
+import edu.kit.quak.core.user.event.GuestUpgradedEvent;
 import edu.kit.quak.core.user.model.AuthenticatedUser;
 import edu.kit.quak.core.user.model.User;
 import edu.kit.quak.shared.tags.UnitTest;
@@ -27,6 +32,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -40,6 +46,12 @@ class GuestServiceTest {
 
     @Mock
     UserServicePort userService;
+
+    @Mock
+    ProjectRoleServicePort roleService;
+
+    @Mock
+    DomainEventPublisherPort eventPublisher;
 
     @InjectMocks
     GuestService guestService;
@@ -119,5 +131,31 @@ class GuestServiceTest {
         guestService.deleteGuest("gone");
 
         verifyNoInteractions(userService);
+    }
+
+    @Test
+    @DisplayName("moves the data of a guest to the account before deleting the guest")
+    void upgradesGuest() {
+        User guest = guestWithId();
+        UUID accountId = UUID.randomUUID();
+        when(userRepository.findByIssuerAndSub(User.GUEST_ISSUER, guest.getSub())).thenReturn(Optional.of(guest));
+
+        guestService.upgradeGuest(guest.getSub(), accountId);
+
+        InOrder order = inOrder(eventPublisher, roleService, userService);
+        order.verify(eventPublisher).publish(new GuestUpgradedEvent(guest.getId(), accountId));
+        order.verify(roleService).transferAllByUserId(guest.getId(), accountId);
+        order.verify(userService).deleteUser(guest.getId());
+    }
+
+    @Test
+    @DisplayName("refuses to upgrade an unknown guest")
+    void rejectsUnknownGuestUpgrade() {
+        UUID accountId = UUID.randomUUID();
+        when(userRepository.findByIssuerAndSub(User.GUEST_ISSUER, "gone")).thenReturn(Optional.empty());
+
+        assertThrows(UserNotFoundException.class, () -> guestService.upgradeGuest("gone", accountId));
+
+        verifyNoInteractions(eventPublisher, roleService, userService);
     }
 }

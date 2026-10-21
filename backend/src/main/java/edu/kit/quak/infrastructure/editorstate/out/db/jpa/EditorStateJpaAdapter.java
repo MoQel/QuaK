@@ -4,6 +4,7 @@ import edu.kit.quak.application.editorstate.ports.out.EditorStateRepositoryPort;
 import edu.kit.quak.core.editorstate.model.EditorState;
 import edu.kit.quak.infrastructure.editorstate.out.db.jpa.entity.JpaEditorState;
 import edu.kit.quak.infrastructure.editorstate.out.db.jpa.repository.SpringDataJpaEditorStateRepository;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.stereotype.Repository;
 
@@ -24,6 +25,16 @@ public class EditorStateJpaAdapter implements EditorStateRepositoryPort {
     @Override
     public EditorState save(EditorState editorState) {
         return toDomain(repository.saveAndFlush(toEntity(editorState)));
+    }
+
+    @Override
+    public List<EditorState> findAllByUserId(String userId) {
+        return repository.findAllByUserId(userId).stream().map(this::toDomain).toList();
+    }
+
+    @Override
+    public void deleteById(String id) {
+        repository.deleteById(id);
     }
 
     @Override

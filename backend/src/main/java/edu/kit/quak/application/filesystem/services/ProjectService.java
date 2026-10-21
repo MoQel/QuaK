@@ -1,6 +1,5 @@
 package edu.kit.quak.application.filesystem.services;
 
-import edu.kit.quak.application.circuit.ports.in.CircuitServicePort;
 import edu.kit.quak.application.common.exceptions.AccessDeniedException;
 import edu.kit.quak.application.common.ports.out.DomainEventPublisherPort;
 import edu.kit.quak.application.filesystem.exception.ProjectNotFoundException;
@@ -8,13 +7,11 @@ import edu.kit.quak.application.filesystem.ports.in.ProjectServicePort;
 import edu.kit.quak.application.filesystem.ports.out.FileContentRepositoryPort;
 import edu.kit.quak.application.filesystem.ports.out.ProjectRepositoryPort;
 import edu.kit.quak.application.user.ports.in.ProjectRoleServicePort;
-import edu.kit.quak.application.user.ports.out.ProjectRoleRepositoryPort;
 import edu.kit.quak.core.filesystem.event.ProjectDeletedEvent;
-import edu.kit.quak.core.filesystem.exception.DuplicateNameException;
 import edu.kit.quak.core.filesystem.model.File;
 import edu.kit.quak.core.filesystem.model.Project;
+import edu.kit.quak.core.filesystem.service.ProjectNaming;
 import edu.kit.quak.core.user.model.ProjectRole;
-import edu.kit.quak.core.user.model.ProjectRoleAssignment;
 import edu.kit.quak.core.user.model.User;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -29,64 +26,42 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class ProjectService implements ProjectServicePort {
 
-    private static final String INITIAL_QASM_FILE_NAME = "hello_world.qasm";
-    private static final String INITIAL_QASM_CONTENT = """
-        OPENQASM 3.0;
-
-        qubit[2] q;
-
-        h q[0];
-        cx q[0], q[1];
-        """;
+    private static final byte[] INITIAL_FILE_CONTENT = Project.INITIAL_FILE_CONTENT.getBytes(StandardCharsets.UTF_8);
 
     private final ProjectRepositoryPort repository;
     private final FileContentRepositoryPort fileContentRepository;
     private final ProjectRoleServicePort roleService;
-    private final ProjectRoleRepositoryPort roleRepository;
-    private final CircuitServicePort circuitService;
     private final DomainEventPublisherPort eventPublisher;
 
     public ProjectService(
         ProjectRepositoryPort repository,
         FileContentRepositoryPort fileContentRepository,
         ProjectRoleServicePort roleService,
-        ProjectRoleRepositoryPort roleRepository,
-        CircuitServicePort circuitService,
         DomainEventPublisherPort eventPublisher
     ) {
         this.repository = repository;
         this.fileContentRepository = fileContentRepository;
         this.roleService = roleService;
-        this.roleRepository = roleRepository;
-        this.circuitService = circuitService;
         this.eventPublisher = eventPublisher;
     }
 
     @Override
-    public Project createProject(Project project, User user) {
-        log.info("Creating project '{}' for user '{}'", project.getName(), user.getId());
-        checkForDuplicateProjectName(project.getName(), null, user);
-        project.setOwnerId(user.getId());
-        File initialFile = new File(INITIAL_QASM_FILE_NAME, project.getId());
-        project.addChild(initialFile);
-        Project savedProject = repository.save(project);
-        fileContentRepository.saveContent(initialFile.getId(), INITIAL_QASM_CONTENT.getBytes(StandardCharsets.UTF_8));
+    public Project createProject(Project container, User user) {
+        log.info("Creating project '{}' for user '{}'", container.getName(), user.getId());
+        ProjectNaming.ensureAvailable(container.getName(), repository.getProjectsByOwnerId(user.getId()));
 
-        // Auto-assign OWNER role to the creator
-        ProjectRoleAssignment ownerRole = new ProjectRoleAssignment(user.getId(), savedProject.getId(), ProjectRole.OWNER);
-        roleRepository.save(ownerRole);
-        log.info("Assigned OWNER role to user '{}' for project '{}'", user.getId(), savedProject.getId());
-
-        return savedProject;
+        Project project = repository.save(Project.create(container.getName(), user.getId()));
+        project.allFiles().forEach(file -> fileContentRepository.saveContent(file.getId(), INITIAL_FILE_CONTENT));
+        roleService.assignOwner(project.getId(), user.getId());
+        return project;
     }
 
     @Override
     public Project renameProject(String pId, String newName, User user) {
         log.info("Renaming project '{}' to '{}' for user '{}'", pId, newName, user.getId());
         Project project = retrieveWithoutAuth(pId);
-
         verifyOwnerAccess(project, user);
-        checkForDuplicateProjectName(newName, pId, user);
+        ProjectNaming.ensureAvailableForRename(project, newName, repository.getProjectsByOwnerId(user.getId()));
 
         project.rename(newName);
         return repository.save(project);
@@ -96,17 +71,27 @@ public class ProjectService implements ProjectServicePort {
     public void removeProject(String pId, User user) {
         log.info("Removing project '{}' for user '{}'", pId, user.getId());
         Project project = retrieveWithoutAuth(pId);
-
         verifyOwnerAccess(project, user);
 
         delete(project);
     }
 
     @Override
-    public void removeAllProjectsOwnedBy(UUID ownerId) {
+    public void deleteAllByOwnerId(UUID ownerId) {
         List<Project> projects = repository.getProjectsByOwnerId(ownerId);
         log.info("Removing {} projects owned by user '{}'", projects.size(), ownerId);
         projects.forEach(this::delete);
+    }
+
+    @Override
+    public void transferAllByOwnerId(UUID fromOwnerId, UUID toOwnerId) {
+        List<Project> projects = repository.getProjectsByOwnerId(fromOwnerId);
+        log.info("Transferring {} projects from user '{}' to user '{}'", projects.size(), fromOwnerId, toOwnerId);
+        ProjectNaming.makeNamesUnique(projects, repository.getProjectsByOwnerId(toOwnerId));
+        for (Project project : projects) {
+            project.transferTo(toOwnerId);
+            repository.save(project);
+        }
     }
 
     @Override
@@ -125,31 +110,17 @@ public class ProjectService implements ProjectServicePort {
     @Override
     public List<Project> listProjects(User user) {
         log.debug("Listing projects for user '{}'", user.getId());
-
-        // Get projects owned by the user
         List<Project> ownedProjects = repository.getProjectsByOwnerId(user.getId());
-
-        // Get projects where the user has VIEWER role
-        List<ProjectRoleAssignment> viewerAssignments = roleRepository.findAllByUserIdAndRole(user.getId(), ProjectRole.VIEWER);
-
-        List<Project> viewerProjects = viewerAssignments
-            .stream()
-            .map(assignment -> repository.findById(assignment.getProjectId()))
-            .filter(java.util.Optional::isPresent)
-            .map(java.util.Optional::get)
-            .toList();
+        List<Project> viewerProjects = repository.findAllByIds(roleService.findProjectIdsByUserIdAndRole(user.getId(), ProjectRole.VIEWER));
 
         // Merge both lists, avoiding duplicates
         return Stream.concat(ownedProjects.stream(), viewerProjects.stream()).distinct().toList();
     }
 
+    /** Deletes the project with its file contents; other contexts remove their data on the published event. */
     private void delete(Project project) {
         String pId = project.getId();
-        // Removes all circuits linked to the project's files
-        circuitService.deleteAllByProjectId(pId);
-        // Clean up all role assignments for this project
-        roleRepository.deleteAllByProjectId(pId);
-        fileContentRepository.deleteContents(project.getAllFiles().stream().map(File::getId).toList());
+        fileContentRepository.deleteContents(project.allFiles().stream().map(File::getId).toList());
         repository.deleteById(pId);
         eventPublisher.publish(new ProjectDeletedEvent(pId));
     }
@@ -185,28 +156,6 @@ public class ProjectService implements ProjectServicePort {
         if (!roleService.hasMinimumRole(project.getId(), user.getId(), ProjectRole.OWNER)) {
             log.debug("Access denied: User '{}' is not OWNER of project '{}'", user.getId(), project.getId());
             throw new AccessDeniedException("project", project.getId());
-        }
-    }
-
-    /**
-     * Checks that no other project owned by the same user already has the given
-     * name (case-insensitive).
-     *
-     * @param name             the desired name
-     * @param excludeProjectId the ID of the project being renamed (null for
-     *                         creation)
-     * @param user             the owner
-     * @throws DuplicateNameException if a duplicate name exists
-     */
-    private void checkForDuplicateProjectName(String name, String excludeProjectId, User user) {
-        boolean nameExists = repository
-            .getProjectsByOwnerId(user.getId())
-            .stream()
-            .filter(p -> !p.getId().equals(excludeProjectId))
-            .anyMatch(p -> p.getName().equalsIgnoreCase(name));
-
-        if (nameExists) {
-            throw new DuplicateNameException(name);
         }
     }
 }

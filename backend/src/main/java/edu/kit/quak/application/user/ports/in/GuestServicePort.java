@@ -3,6 +3,7 @@ package edu.kit.quak.application.user.ports.in;
 import edu.kit.quak.core.user.model.AuthenticatedUser;
 import edu.kit.quak.core.user.model.User;
 import java.time.Instant;
+import java.util.UUID;
 
 /** Input port for guest account operations. */
 public interface GuestServicePort {
@@ -28,6 +29,15 @@ public interface GuestServicePort {
      * @param subject The guest's generated subject
      */
     void deleteGuest(String subject);
+
+    /**
+     * Moves all data of a guest to a real account and deletes the guest afterwards.
+     *
+     * @param subject   The guest's generated subject
+     * @param accountId The ID of the account that receives the guest's data
+     * @throws edu.kit.quak.application.user.exceptions.UserNotFoundException if no guest with the subject exists
+     */
+    void upgradeGuest(String subject, UUID accountId);
 
     /**
      * Deletes guest accounts that have not been active since the given instant, each in its own transaction.

@@ -61,4 +61,37 @@ public interface ProjectRoleServicePort {
      * @return true if the user has the minimum role or higher
      */
     boolean hasMinimumRole(String projectId, UUID userId, ProjectRole minimumRole);
+
+    /**
+     * Moves all role assignments of one user to another, without an access check. Where the receiving user already
+     * has a role on the same project, the higher of both roles is kept.
+     *
+     * @param fromUserId the user whose assignments are moved
+     * @param toUserId   the user who receives them
+     */
+    void transferAllByUserId(UUID fromUserId, UUID toUserId);
+
+    /**
+     * Makes a user the owner of a newly created project, without an access check.
+     *
+     * @param projectId the project's ID
+     * @param ownerId   the creator's UUID
+     */
+    void assignOwner(String projectId, UUID ownerId);
+
+    /**
+     * Lists the IDs of all projects on which a user has exactly the given role.
+     *
+     * @param userId the user's UUID
+     * @param role   the role to filter by
+     * @return the matching project IDs
+     */
+    List<String> findProjectIdsByUserIdAndRole(UUID userId, ProjectRole role);
+
+    /**
+     * Deletes all role assignments of a project, without an access check.
+     *
+     * @param projectId the project's ID
+     */
+    void deleteAllByProjectId(String projectId);
 }

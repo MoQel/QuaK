@@ -53,13 +53,13 @@ public abstract class FileElementContainer<T extends FileElementContainer<T>> ex
     }
 
     /** Returns all files in this container and its nested containers. */
-    public List<File> getAllFiles() {
+    public List<File> allFiles() {
         return contents
             .stream()
             .flatMap(element ->
                 switch (element) {
                     case File file -> Stream.of(file);
-                    case FileElementContainer<?> container -> container.getAllFiles().stream();
+                    case FileElementContainer<?> container -> container.allFiles().stream();
                     default -> Stream.empty();
                 }
             )
@@ -78,7 +78,7 @@ public abstract class FileElementContainer<T extends FileElementContainer<T>> ex
     public boolean hasChildWithName(String name, String excludeId) {
         return contents
             .stream()
-            .filter(existing -> excludeId == null || !existing.getId().equals(excludeId))
+            .filter(existing -> !existing.getId().equals(excludeId))
             .anyMatch(existing -> existing.getName().equalsIgnoreCase(name));
     }
 }

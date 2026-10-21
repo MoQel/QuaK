@@ -1,8 +1,9 @@
 package edu.kit.quak.infrastructure.config;
 
 import edu.kit.quak.application.user.ports.in.GuestServicePort;
-import edu.kit.quak.application.user.ports.in.OidcSyncServicePort;
+import edu.kit.quak.application.user.ports.in.OAuthSignInServicePort;
 import edu.kit.quak.infrastructure.user.in.web.security.GuestActivityFilter;
+import edu.kit.quak.infrastructure.user.in.web.security.GuestSessionAuthenticator;
 import edu.kit.quak.infrastructure.user.in.web.security.OAuth2LoginSuccessHandler;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -55,17 +56,18 @@ public class DevSecurityConfig {
     @Value("${app.frontend.url:http://localhost:5173}")
     private String frontendUrl;
 
-    private final OidcSyncServicePort oidcUserSyncService;
+    private final OAuthSignInServicePort signInService;
 
-    public DevSecurityConfig(OidcSyncServicePort oidcUserSyncService) {
-        this.oidcUserSyncService = oidcUserSyncService;
+    public DevSecurityConfig(OAuthSignInServicePort signInService) {
+        this.signInService = signInService;
     }
 
     @Bean
     public SecurityFilterChain devSecurityFilterChain(
         HttpSecurity http,
         OAuth2UserEnrichmentService oAuth2UserEnrichmentService,
-        GuestServicePort guestService
+        GuestServicePort guestService,
+        GuestSessionAuthenticator guestSessionAuthenticator
     ) throws Exception {
         http
             .cors(cors -> cors.configurationSource(devCorsConfigurationSource()))
@@ -108,7 +110,7 @@ public class DevSecurityConfig {
             .oauth2Login(oauth2 ->
                 oauth2
                     .userInfoEndpoint(userInfo -> userInfo.userService(oAuth2UserEnrichmentService))
-                    .successHandler(new OAuth2LoginSuccessHandler(oidcUserSyncService, frontendUrl))
+                    .successHandler(new OAuth2LoginSuccessHandler(signInService, guestSessionAuthenticator, frontendUrl))
             )
             .logout(LogoutConfigurations.apiLogout(guestService))
             // Allow frames for H2 console
