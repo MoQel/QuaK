@@ -1,4 +1,4 @@
-package edu.kit.quak.core.circuit.codegen;
+package edu.kit.quak.core.circuit.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;

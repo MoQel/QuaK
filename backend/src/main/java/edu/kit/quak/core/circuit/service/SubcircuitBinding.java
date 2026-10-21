@@ -1,5 +1,6 @@
-package edu.kit.quak.core.circuit.model;
+package edu.kit.quak.core.circuit.service;
 
+import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.core.circuit.model.layer.Layer;
 import edu.kit.quak.core.circuit.model.layer.operation.CompositeQuantumGate;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;

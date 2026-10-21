@@ -1,4 +1,4 @@
-package edu.kit.quak.core.circuit.codegen;
+package edu.kit.quak.core.circuit.service;
 
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
 import edu.kit.quak.core.circuit.model.layer.Layer;
@@ -14,7 +14,9 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-public class QrispCodeGenerator {
+public final class QrispCodeGenerator {
+
+    private QrispCodeGenerator() {}
 
     public static String toCode(QuantumCircuit quantumCircuit) {
         StringBuilder codeStringBuilder = new StringBuilder();

@@ -1,4 +1,4 @@
-package edu.kit.quak.core.circuit.codegen;
+package edu.kit.quak.core.circuit.service;
 
 import edu.kit.quak.application.circuit.antlr.QasmService;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;

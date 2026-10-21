@@ -1,4 +1,4 @@
-package edu.kit.quak.core.circuit.codegen;
+package edu.kit.quak.core.circuit.service;
 
 import edu.kit.quak.core.circuit.model.LoopBlock;
 import edu.kit.quak.core.circuit.model.QuantumCircuit;
@@ -27,7 +27,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
-public class QasmCodeGenerator {
+public final class QasmCodeGenerator {
+
+    private QasmCodeGenerator() {}
 
     /**
      * How to write a qubit and which name each user-defined gate is declared under.
