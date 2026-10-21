@@ -19,7 +19,7 @@ Hexagonal Architecture solves this by defining [`incoming & outgoing ports`](htt
 [`Input ports`](https://github.com/MoQel/QuaK/tree/development/backend/src/main/java/edu/kit/quak/application/filesystem/ports/in) specify the interface through which the application can be accessed. 
 Various adapters—such as [`web controllers`](https://github.com/MoQel/QuaK/tree/development/backend/src/main/java/edu/kit/quak/infrastructure/in/web/rest), messaging systems, or other external systems—use these input ports to invoke the use cases via dependency injection.
 
-The [`use cases`](https://github.com/MoQel/QuaK/tree/development/backend/src/main/java/edu/kit/quak/application/filesystem/services) implement the input ports and encapsulate the **business rules**, operating on [`domain entities`](https://github.com/MoQel/QuaK/tree/development/backend/src/main/java/edu/kit/quak/core/filesystem/model) that represent the core domain model. 
+The [`use cases`](https://github.com/MoQel/QuaK/tree/development/backend/src/main/java/edu/kit/quak/application/filesystem/services) implement the input ports and orchestrate them, while the **business rules** live in the core: in the [`domain entities`](https://github.com/MoQel/QuaK/tree/development/backend/src/main/java/edu/kit/quak/core/filesystem/model) that represent the core domain model and in [`domain services`](https://github.com/MoQel/QuaK/tree/development/backend/src/main/java/edu/kit/quak/core/filesystem/service) for rules that span several of them. 
 
 [`Output ports`](https://github.com/MoQel/QuaK/tree/development/backend/src/main/java/edu/kit/quak/application/filesystem/ports/out) define how the system interacts with external resources, such as databases or external services.
 
@@ -38,7 +38,8 @@ between DTOs and domain POJOs.
 
 Defines the input ports of the application.
 These ports are implemented by services located in application/{domain}/services.
-The services represent the use cases and encapsulate the business rules.
+The services represent the use cases: they load and store data, check access and call the domain model,
+which holds the business rules.
 
 #### `application/{domain}/ports/out`
 
@@ -49,6 +50,17 @@ Defines the output ports used by application services to interact with external 
 
 Contains the domain model expressed as pure POJOs.
 Domain entities have no dependencies on application or infrastructure layers.
+
+#### `core/{domain}/service`
+
+Contains domain services: stateless business rules that span several domain objects, e.g. unique project
+names per owner (`ProjectNaming`). They are `final` classes with static methods, receive all data as
+parameters and depend only on the core. Rules of a single object belong into that object instead.
+
+#### `core/{domain}/event`
+
+Contains domain events, e.g. `ProjectDeletedEvent`. Other contexts react to them with listeners in
+`infrastructure/{domain}/in/event` that call only their own input ports.
 
 ##### `infrastructure/{domain}/out/db/jpa`
 
