@@ -4,41 +4,10 @@ import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { GUEST_DATA_NOTICE } from '@/components/guest/guestNotice';
 import { Separator } from '@/components/ui/separator';
-import { cn } from '@/lib/utils';
+import { LandingAlert } from '@/components/landing/LandingAlert';
+import { LandingButton } from '@/components/landing/LandingButton';
+import { GithubMark, GoogleMark } from '@/components/landing/BrandMarks';
 import './LandingPageAlternative.css';
-
-const GoogleMark = () => (
-    <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
-        <path
-            fill="#4285F4"
-            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09Z"
-        />
-        <path
-            fill="#34A853"
-            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23Z"
-        />
-        <path
-            fill="#FBBC05"
-            d="M5.84 14.09A6.6 6.6 0 0 1 5.49 12c0-.73.13-1.43.35-2.09V7.07H2.18A11 11 0 0 0 1 12c0 1.78.43 3.45 1.18 4.93l3.66-2.84Z"
-        />
-        <path
-            fill="#EA4335"
-            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15A10.56 10.56 0 0 0 12 1a11 11 0 0 0-9.82 6.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53Z"
-        />
-    </svg>
-);
-
-const GithubMark = () => (
-    <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
-        <path
-            fill="currentColor"
-            d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.44 9.8 8.21 11.39.6.11.79-.26.79-.58v-2.23c-3.34.73-4.03-1.42-4.03-1.42-.55-1.39-1.33-1.76-1.33-1.76-1.09-.74.08-.73.08-.73 1.21.09 1.84 1.24 1.84 1.24 1.07 1.83 2.81 1.3 3.49 1 .11-.78.42-1.31.76-1.61-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.12-.3-.54-1.52.12-3.18 0 0 1.01-.32 3.3 1.23A11.5 11.5 0 0 1 12 6.8c1.02 0 2.05.14 3 .4 2.3-1.55 3.3-1.23 3.3-1.23.66 1.66.24 2.88.12 3.18.77.84 1.24 1.91 1.24 3.22 0 4.61-2.81 5.62-5.48 5.92.43.37.82 1.1.82 2.22v3.3c0 .32.19.69.8.57A12 12 0 0 0 12 0Z"
-        />
-    </svg>
-);
-
-const loginButtonClassName =
-    'flex w-full rounded-xl cursor-pointer items-center justify-center gap-3 px-5 py-3.5 text-sm font-bold';
 
 export const LoginOptions: React.FC = () => {
     const { login, guestEnabled, signInAsGuest } = useAuth();
@@ -58,50 +27,27 @@ export const LoginOptions: React.FC = () => {
 
     return (
         <div className="space-y-3">
-            <button
-                type="button"
-                onClick={() => login('google')}
-                className={cn(
-                    loginButtonClassName,
-                    'border border-[#8d9692] bg-white hover:border-[#00876c] hover:text-[#00735c]',
-                )}
-            >
+            <LandingButton variant="light" onClick={() => login('google')}>
                 <GoogleMark />
                 Continue with Google
-            </button>
-            <button
-                type="button"
-                onClick={() => login('github')}
-                className={cn(loginButtonClassName, 'bg-[#202725] text-white hover:bg-black')}
-            >
+            </LandingButton>
+            <LandingButton variant="dark" onClick={() => login('github')}>
                 <GithubMark />
                 Continue with GitHub
-            </button>
+            </LandingButton>
             {guestEnabled && (
                 <>
-                    <div className="flex items-center gap-3 py-1 text-xs text-[#59635f]" aria-hidden="true">
-                        <Separator className="flex-1 bg-[#c9cfcc]" />
+                    <div className="flex items-center gap-3 py-1 text-xs text-landing-ink-muted" aria-hidden="true">
+                        <Separator className="flex-1 bg-landing-border-strong" />
                         or
-                        <Separator className="flex-1 bg-[#c9cfcc]" />
+                        <Separator className="flex-1 bg-landing-border-strong" />
                     </div>
-                    <button
-                        type="button"
-                        onClick={continueAsGuest}
-                        disabled={guestPending}
-                        className={cn(
-                            loginButtonClassName,
-                            'border border-dashed border-[#8d9692] bg-transparent hover:border-[#00876c] hover:text-[#00735c] disabled:cursor-wait disabled:opacity-60',
-                        )}
-                    >
+                    <LandingButton variant="dashed" onClick={continueAsGuest} disabled={guestPending}>
                         <UserRound className="h-5 w-5" aria-hidden="true" />
                         Continue as guest
-                    </button>
-                    <p className="text-xs leading-5 text-[#59635f]">No account needed. {GUEST_DATA_NOTICE}</p>
-                    {guestError && (
-                        <p role="alert" className="text-xs text-[#791f20]">
-                            {guestError}
-                        </p>
-                    )}
+                    </LandingButton>
+                    <p className="text-xs leading-5 text-landing-ink-muted">No account needed. {GUEST_DATA_NOTICE}</p>
+                    {guestError && <LandingAlert>{guestError}</LandingAlert>}
                 </>
             )}
         </div>
@@ -137,26 +83,24 @@ export const LogIn: React.FC = () => {
     }
 
     return (
-        <main className="quak-landing min-h-screen bg-[#f7f6f2] text-[#17211f]">
-            <div className="h-1.5 bg-[#00876c]" />
+        <main className="quak-landing min-h-screen bg-landing-canvas-warm text-landing-ink">
+            <div className="h-1.5 bg-landing-accent" />
             <div className="mx-auto flex min-h-[calc(100vh-0.375rem)] max-w-[1180px] flex-col px-5 py-8 sm:px-8">
                 <Link
                     to="/"
-                    className="inline-flex w-fit items-center gap-2 text-sm text-[#59635f] hover:text-[#00735c]"
+                    className="inline-flex w-fit items-center gap-2 text-sm text-landing-ink-muted hover:text-landing-accent-strong"
                 >
                     <ArrowLeft className="h-4 w-4" />
                     QuaK
                 </Link>
 
-                <section className="my-auto w-full max-w-md self-center rounded-3xl border border-[#c9cfcc] bg-[#fbfbf9] p-7 sm:p-10">
-                    <p className="text-xs font-bold uppercase tracking-[0.15em] text-[#59635f]">Workspace access</p>
+                <section className="my-auto w-full max-w-md self-center rounded-3xl border border-landing-border-strong bg-landing-surface-raised p-7 sm:p-10">
+                    <p className="text-xs font-bold uppercase tracking-[0.15em] text-landing-ink-muted">
+                        Workspace access
+                    </p>
                     <h1 className="mt-3 text-3xl font-normal">Sign in to QuaK</h1>
 
-                    {errorMessage && (
-                        <div className="mt-5 rounded-xl border-l-4 border-[#a22223] bg-[#f5e8e8] px-4 py-3 text-sm text-[#791f20]">
-                            {errorMessage}
-                        </div>
-                    )}
+                    {errorMessage && <LandingAlert className="mt-5">{errorMessage}</LandingAlert>}
 
                     <div className="mt-7">
                         <LoginOptions />

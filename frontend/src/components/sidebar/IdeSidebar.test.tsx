@@ -30,11 +30,10 @@ vi.mock('@/contexts/AuthContext.tsx', () => ({
     useAuth: () => auth,
 }));
 
+const themeState = { theme: 'dark', toggleTheme };
+
 vi.mock('@/theme.tsx', () => ({
-    useTheme: () => ({
-        theme: 'dark',
-        toggleTheme,
-    }),
+    useTheme: () => themeState,
 }));
 
 vi.mock('@/components/projects/useProjectActionsDialog.tsx', () => ({
@@ -56,6 +55,7 @@ describe('IdeSidebar', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         auth.isGuest = false;
+        themeState.theme = 'dark';
     });
 
     it('marks open panels and toggles them from the sidebar', () => {
@@ -82,7 +82,7 @@ describe('IdeSidebar', () => {
         expect(screen.getByRole('link', { name: 'Profile' })).toHaveAttribute('href', '/profile');
         expect(screen.getByRole('link', { name: 'Settings' })).toHaveAttribute('href', '/settings');
 
-        fireEvent.click(screen.getByRole('button', { name: 'Toggle dark mode' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Switch to light mode' }));
         fireEvent.click(screen.getByRole('button', { name: 'Logout' }));
 
         expect(toggleTheme).toHaveBeenCalledOnce();
@@ -160,5 +160,28 @@ describe('IdeSidebar', () => {
 
         expect(logout).not.toHaveBeenCalled();
         expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    });
+
+    it('offers the light theme while the dark theme is active', () => {
+        renderSidebar();
+
+        const themeSwitch = screen.getByRole('button', { name: 'Switch to light mode' });
+        expect(themeSwitch).toHaveTextContent('Light Mode');
+    });
+
+    it('offers the dark theme while the light theme is active', () => {
+        themeState.theme = 'light';
+        renderSidebar();
+
+        const themeSwitch = screen.getByRole('button', { name: 'Switch to dark mode' });
+        expect(themeSwitch).toHaveTextContent('Dark Mode');
+    });
+
+    it('names the theme switch in the tooltip of the collapsed sidebar', () => {
+        renderSidebar();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Collapse sidebar' }));
+
+        expect(screen.getByRole('button', { name: 'Switch to light mode' })).toHaveAttribute('title', 'Light Mode');
     });
 });

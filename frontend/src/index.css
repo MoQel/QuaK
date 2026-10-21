@@ -21,6 +21,33 @@
     --color-destructive-text: var(--destructive-text);
     --color-bg-subtle: var(--bg-subtle);
     --color-selection: var(--selection);
+    --color-landing-canvas: var(--landing-canvas);
+    --color-landing-canvas-warm: var(--landing-canvas-warm);
+    --color-landing-surface: var(--landing-surface);
+    --color-landing-surface-raised: var(--landing-surface-raised);
+    --color-landing-surface-tint: var(--landing-surface-tint);
+    --color-landing-border: var(--landing-border);
+    --color-landing-border-strong: var(--landing-border-strong);
+    --color-landing-control-border: var(--landing-control-border);
+    --color-landing-ink: var(--landing-ink);
+    --color-landing-ink-secondary: var(--landing-ink-secondary);
+    --color-landing-ink-muted: var(--landing-ink-muted);
+    --color-landing-accent: var(--landing-accent);
+    --color-landing-accent-strong: var(--landing-accent-strong);
+    --color-landing-accent-soft: var(--landing-accent-soft);
+    --color-landing-button-dark: var(--landing-button-dark);
+    --color-landing-error-text: var(--landing-error-text);
+    --color-landing-error-border: var(--landing-error-border);
+    --color-landing-error-bg: var(--landing-error-bg);
+    --color-landing-showcase: var(--landing-showcase);
+    --color-landing-showcase-border: var(--landing-showcase-border);
+    --color-landing-showcase-text: var(--landing-showcase-text);
+    --color-landing-code-bg: var(--landing-code-bg);
+    --color-landing-code-border: var(--landing-code-border);
+    --color-landing-code-muted: var(--landing-code-muted);
+    --color-landing-code-text: var(--landing-code-text);
+    --color-landing-glow: var(--landing-glow);
+    --color-landing-wire: var(--landing-wire);
 }
 
 :root {
@@ -73,6 +100,36 @@
     /* Selection rectangle and selected operations: emerald green to contrast with blue gates and loops */
     --selection: hsl(142 71% 45%);
     --selection-bg: color-mix(in srgb, var(--selection) 15%, transparent);
+
+    /* Landing and sign-in pages: a fixed light design that does not follow the app theme */
+    --landing-canvas: #f5f7f6;
+    --landing-canvas-warm: #f7f6f2;
+    --landing-surface: #ffffff;
+    --landing-surface-raised: #fbfbf9;
+    --landing-surface-tint: #e9f5f1;
+    --landing-border: #d5e0db;
+    --landing-border-strong: #c9cfcc;
+    --landing-control-border: #8d9692;
+    --landing-ink: #17211f;
+    --landing-ink-secondary: #495450;
+    --landing-ink-muted: #59635f;
+    --landing-accent: #00876c;
+    --landing-accent-strong: #00735c;
+    --landing-accent-soft: #79b8a9;
+    --landing-button-dark: #202725;
+    --landing-error-text: #791f20;
+    --landing-error-border: #a22223;
+    --landing-error-bg: #f5e8e8;
+    --landing-showcase: #002d4c;
+    --landing-showcase-border: #315368;
+    --landing-showcase-text: #c3d6d5;
+    --landing-code-bg: #242629;
+    --landing-code-border: #496775;
+    --landing-code-muted: #b8ccc8;
+    --landing-code-text: #edf7f4;
+    --landing-glow: #b7fff5;
+    --landing-wire: #73968f;
+    --landing-shadow: rgb(0 65 50 / 6%);
 }
 
 .dark {

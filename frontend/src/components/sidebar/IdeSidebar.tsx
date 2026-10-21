@@ -78,6 +78,7 @@ export function IdeSidebar() {
     const { openPanels, togglePanel, resetLayout } = useDockview();
     const [collapsed, setCollapsed] = useState(false);
     const isDark = theme === 'dark';
+    const themeSwitchLabel = isDark ? 'Light Mode' : 'Dark Mode';
     const projectTitle = isIdeView ? (projectName ?? 'QuaK') : 'QuaK';
 
     const requestLogout = () => {
@@ -239,13 +240,12 @@ export function IdeSidebar() {
                     <button
                         type="button"
                         className={sidebarItemClassName({ collapsed, muted: true })}
-                        aria-label="Toggle dark mode"
-                        aria-pressed={isDark}
-                        title={collapsed ? 'Dark Mode' : undefined}
+                        aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+                        title={collapsed ? themeSwitchLabel : undefined}
                         onClick={toggleTheme}
                     >
                         {isDark ? <Sun className="size-5 shrink-0" /> : <Moon className="size-5 shrink-0" />}
-                        {!collapsed && <span className="truncate text-left">Dark Mode</span>}
+                        {!collapsed && <span className="truncate text-left">{themeSwitchLabel}</span>}
                     </button>
 
                     <button
@@ -269,11 +269,10 @@ function sidebarItemClassName({ active = false, collapsed, muted = false }: Side
         'relative flex h-10 w-full items-center rounded-md text-sm font-medium transition-colors',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-special/60',
         collapsed ? 'justify-center px-0' : 'gap-3 px-3',
-        active
-            ? 'bg-bg text-special before:absolute before:bottom-2 before:left-0 before:top-2 before:w-0.5 before:rounded-full before:bg-special'
-            : muted
-              ? 'text-text-muted hover:bg-bg hover:text-text'
-              : 'text-text hover:bg-bg',
+        active &&
+            'bg-bg text-special before:absolute before:bottom-2 before:left-0 before:top-2 before:w-0.5 before:rounded-full before:bg-special',
+        !active && muted && 'text-text-muted hover:bg-bg hover:text-text',
+        !active && !muted && 'text-text hover:bg-bg',
     );
 }
 
