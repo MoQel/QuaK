@@ -21,6 +21,7 @@ import edu.kit.quak.core.user.model.User;
 import edu.kit.quak.shared.tags.UnitTest;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -97,5 +98,26 @@ class GuestServiceTest {
         User guest = User.createGuest();
         guest.setId(UUID.randomUUID());
         return guest;
+    }
+
+    @Test
+    @DisplayName("deletes a guest by its subject")
+    void deletesGuest() {
+        User guest = guestWithId();
+        when(userRepository.findByIssuerAndSub(User.GUEST_ISSUER, guest.getSub())).thenReturn(Optional.of(guest));
+
+        guestService.deleteGuest(guest.getSub());
+
+        verify(userService).deleteUser(guest.getId());
+    }
+
+    @Test
+    @DisplayName("ignores an unknown guest subject")
+    void ignoresUnknownGuest() {
+        when(userRepository.findByIssuerAndSub(User.GUEST_ISSUER, "gone")).thenReturn(Optional.empty());
+
+        guestService.deleteGuest("gone");
+
+        verifyNoInteractions(userService);
     }
 }

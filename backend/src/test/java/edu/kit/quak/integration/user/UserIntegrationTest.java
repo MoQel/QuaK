@@ -1,5 +1,6 @@
 package edu.kit.quak.integration.user;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.oidcLogin;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -127,6 +128,8 @@ class UserIntegrationTest {
         @DisplayName("Should successfully logout authenticated user")
         void logout_authenticated_success() throws Exception {
             mockMvc.perform(post("/api/auth/logout").with(csrf()).with(authenticatedUser())).andExpect(status().isOk());
+
+            assertTrue(userRepository.findById(testUser.getId()).isPresent());
         }
 
         @Test

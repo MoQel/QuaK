@@ -42,6 +42,14 @@ public class GuestService implements GuestServicePort {
     }
 
     @Override
+    public void deleteGuest(String subject) {
+        userRepository
+            .findByIssuerAndSub(User.GUEST_ISSUER, subject)
+            .filter(User::isGuest)
+            .ifPresent(guest -> userService.deleteUser(guest.getId()));
+    }
+
+    @Override
     public int deleteInactiveGuests(Instant inactiveSince) {
         int deleted = 0;
         for (User guest : userRepository.findInactiveGuests(inactiveSince)) {

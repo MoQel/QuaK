@@ -12,6 +12,8 @@ import org.springframework.core.annotation.Order;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -68,7 +70,7 @@ public class DevSecurityConfig {
         http
             .cors(cors -> cors.configurationSource(devCorsConfigurationSource()))
             // Disable CSRF for easier API testing in development
-            .csrf(csrf -> csrf.disable())
+            .csrf(AbstractHttpConfigurer::disable)
             .addFilterAfter(new GuestActivityFilter(guestService), AnonymousAuthenticationFilter.class)
             .authorizeHttpRequests(auth ->
                 auth
@@ -108,8 +110,9 @@ public class DevSecurityConfig {
                     .userInfoEndpoint(userInfo -> userInfo.userService(oAuth2UserEnrichmentService))
                     .successHandler(new OAuth2LoginSuccessHandler(oidcUserSyncService, frontendUrl))
             )
+            .logout(LogoutConfigurations.apiLogout(guestService))
             // Allow frames for H2 console
-            .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()));
+            .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin));
 
         return http.build();
     }

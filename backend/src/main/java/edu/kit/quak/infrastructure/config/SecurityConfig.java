@@ -105,14 +105,7 @@ public class SecurityConfig {
                     .userInfoEndpoint(userInfo -> userInfo.userService(oAuth2UserEnrichmentService))
                     .successHandler(new OAuth2LoginSuccessHandler(oidcSyncService, frontendUrl))
             )
-            .logout(logout ->
-                logout
-                    .logoutUrl("/api/auth/logout")
-                    .logoutSuccessHandler((request, response, authentication) -> response.setStatus(HttpServletResponse.SC_OK))
-                    .invalidateHttpSession(true)
-                    .deleteCookies("JSESSIONID")
-                    .permitAll()
-            )
+            .logout(LogoutConfigurations.apiLogout(guestService))
             .exceptionHandling(exception ->
                 exception
                     .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))

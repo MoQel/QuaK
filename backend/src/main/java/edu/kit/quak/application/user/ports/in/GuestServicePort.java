@@ -23,6 +23,13 @@ public interface GuestServicePort {
     void recordActivity(String subject);
 
     /**
+     * Deletes the guest with the given subject together with its data, e.g. when its session ends.
+     *
+     * @param subject The guest's generated subject
+     */
+    void deleteGuest(String subject);
+
+    /**
      * Deletes guest accounts that have not been active since the given instant, each in its own transaction.
      *
      * @param inactiveSince Guests whose last activity is before this instant are deleted
