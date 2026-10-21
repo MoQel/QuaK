@@ -1,10 +1,11 @@
 package edu.kit.quak.application.user;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -20,7 +21,6 @@ import edu.kit.quak.core.user.model.User;
 import edu.kit.quak.shared.tags.UnitTest;
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -68,25 +68,13 @@ class GuestServiceTest {
     }
 
     @Test
-    @DisplayName("records the activity of an existing guest")
+    @DisplayName("records the activity of a guest without loading it")
     void recordsActivity() {
-        User guest = User.createGuest();
-        Instant before = guest.getLastActiveAt();
-        when(userRepository.findByIssuerAndSub(User.GUEST_ISSUER, guest.getSub())).thenReturn(Optional.of(guest));
+        Instant before = Instant.now();
 
-        guestService.recordActivity(guest.getSub());
+        guestService.recordActivity("guest-sub");
 
-        verify(userRepository).save(guest);
-        assertFalse(guest.getLastActiveAt().isBefore(before));
-    }
-
-    @Test
-    @DisplayName("ignores activity of an unknown guest")
-    void ignoresActivityOfUnknownGuest() {
-        when(userRepository.findByIssuerAndSub(User.GUEST_ISSUER, "gone")).thenReturn(Optional.empty());
-
-        guestService.recordActivity("gone");
-
+        verify(userRepository).updateLastActiveAt(eq(User.GUEST_ISSUER), eq("guest-sub"), argThat(at -> !at.isBefore(before)));
         verify(userRepository, never()).save(any(User.class));
     }
 

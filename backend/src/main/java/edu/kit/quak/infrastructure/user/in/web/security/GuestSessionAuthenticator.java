@@ -23,5 +23,6 @@ public class GuestSessionAuthenticator {
         context.setAuthentication(new GuestAuthenticationToken(guest.getSub()));
         SecurityContextHolder.setContext(context);
         securityContextRepository.saveContext(context, request, response);
+        request.getSession().setAttribute(GuestActivityFilter.LAST_RECORDED_ATTRIBUTE, guest.getLastActiveAt());
     }
 }

@@ -16,6 +16,7 @@ import edu.kit.quak.core.user.model.AuthenticatedUser;
 import edu.kit.quak.core.user.model.User;
 import edu.kit.quak.infrastructure.GlobalExceptionHandler;
 import edu.kit.quak.infrastructure.user.in.web.rest.mapper.AuthenticationMapper;
+import edu.kit.quak.infrastructure.user.in.web.security.GuestActivityFilter;
 import edu.kit.quak.infrastructure.user.in.web.security.GuestAuthenticationToken;
 import edu.kit.quak.infrastructure.user.in.web.security.GuestSessionAuthenticator;
 import edu.kit.quak.shared.tags.IntegrationTest;
@@ -97,6 +98,7 @@ class GuestAuthRestAdapterTest {
         assertNotNull(stored);
         GuestAuthenticationToken token = assertInstanceOf(GuestAuthenticationToken.class, stored.getAuthentication());
         assertEquals(guest.getSub(), token.getPrincipal());
+        assertEquals(guest.getLastActiveAt(), session.getAttribute(GuestActivityFilter.LAST_RECORDED_ATTRIBUTE));
     }
 
     @Test

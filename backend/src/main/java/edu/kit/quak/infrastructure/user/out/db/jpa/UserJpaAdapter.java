@@ -55,6 +55,11 @@ public class UserJpaAdapter implements UserRepositoryPort {
     }
 
     @Override
+    public void updateLastActiveAt(String issuer, String sub, Instant lastActiveAt) {
+        repository.updateLastActiveAt(issuer, sub, lastActiveAt);
+    }
+
+    @Override
     public void deleteById(UUID id) {
         repository.deleteById(id);
     }

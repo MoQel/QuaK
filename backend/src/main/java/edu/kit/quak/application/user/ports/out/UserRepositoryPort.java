@@ -44,6 +44,15 @@ public interface UserRepositoryPort {
      */
     List<User> findInactiveGuests(Instant inactiveSince);
 
+    /**
+     * Sets the last activity of a user without loading it, so that concurrent calls do not conflict.
+     *
+     * @param issuer The OAuth2/OIDC issuer
+     * @param sub The subject claim
+     * @param lastActiveAt The time of the activity
+     */
+    void updateLastActiveAt(String issuer, String sub, Instant lastActiveAt);
+
     void deleteById(UUID id);
 
     /**

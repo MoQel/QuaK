@@ -79,6 +79,19 @@ class GuestCleanupIntegrationTest {
         assertTrue(userRepository.findById(guest.getId()).isPresent());
     }
 
+    @Test
+    @DisplayName("recording the activity keeps a guest from being cleaned up")
+    void recordedActivityKeepsGuest() {
+        User guest = guestService.createGuest(null);
+        markInactiveSince(guest, Instant.now().minus(Duration.ofHours(3)));
+
+        guestService.recordActivity(guest.getSub());
+        entityManager.clear();
+
+        assertEquals(0, guestService.deleteInactiveGuests(Instant.now().minus(Duration.ofHours(2))));
+        assertTrue(userRepository.findById(guest.getId()).isPresent());
+    }
+
     private void markInactiveSince(User guest, Instant lastActiveAt) {
         jpaUserRepository
             .findById(guest.getId())

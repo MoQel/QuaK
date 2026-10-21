@@ -2,6 +2,7 @@ package edu.kit.quak.infrastructure.user.in.web.security;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -81,5 +82,17 @@ class GuestActivityFilterTest {
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.setSession(session);
         return request;
+    }
+
+    @Test
+    @DisplayName("lets the request through when recording the activity fails")
+    void ignoresRecordingFailures() throws Exception {
+        SecurityContextHolder.getContext().setAuthentication(new GuestAuthenticationToken("guest-sub"));
+        doThrow(new IllegalStateException("Record has changed since last read")).when(guestService).recordActivity("guest-sub");
+        MockFilterChain chain = new MockFilterChain();
+
+        new GuestActivityFilter(guestService).doFilter(requestWith(new MockHttpSession()), new MockHttpServletResponse(), chain);
+
+        assertNotNull(chain.getRequest());
     }
 }

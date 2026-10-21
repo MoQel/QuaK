@@ -64,8 +64,4 @@ public class User {
         user.setLastActiveAt(user.getLastLoginAt());
         return user;
     }
-
-    public void recordActivity() {
-        this.lastActiveAt = Instant.now();
-    }
 }

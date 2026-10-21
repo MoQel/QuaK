@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -33,4 +34,8 @@ public interface SpringDataUserRepository extends JpaRepository<JpaUser, UUID> {
 
     @Query("SELECT u FROM JpaUser u WHERE u.guest = true AND COALESCE(u.lastActiveAt, u.createdAt) < :inactiveSince")
     List<JpaUser> findInactiveGuests(@Param("inactiveSince") Instant inactiveSince);
+
+    @Modifying
+    @Query("UPDATE JpaUser u SET u.lastActiveAt = :lastActiveAt WHERE u.issuer = :issuer AND u.sub = :sub")
+    void updateLastActiveAt(@Param("issuer") String issuer, @Param("sub") String sub, @Param("lastActiveAt") Instant lastActiveAt);
 }

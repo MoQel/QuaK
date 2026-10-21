@@ -38,12 +38,7 @@ public class GuestService implements GuestServicePort {
     @Override
     @Transactional
     public void recordActivity(String subject) {
-        userRepository
-            .findByIssuerAndSub(User.GUEST_ISSUER, subject)
-            .ifPresent(guest -> {
-                guest.recordActivity();
-                userRepository.save(guest);
-            });
+        userRepository.updateLastActiveAt(User.GUEST_ISSUER, subject, Instant.now());
     }
 
     @Override
