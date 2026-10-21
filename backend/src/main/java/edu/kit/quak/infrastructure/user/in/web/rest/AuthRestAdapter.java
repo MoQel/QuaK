@@ -10,6 +10,7 @@ import edu.kit.quak.infrastructure.user.in.web.rest.mapper.AuthenticationMapper;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpSession;
 import java.util.Optional;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -28,10 +29,16 @@ public class AuthRestAdapter {
 
     private final AuthServicePort authService;
     private final AuthenticationMapper authenticationMapper;
+    private final boolean guestEnabled;
 
-    public AuthRestAdapter(AuthServicePort authService, AuthenticationMapper authenticationMapper) {
+    public AuthRestAdapter(
+        AuthServicePort authService,
+        AuthenticationMapper authenticationMapper,
+        @Value("${app.guest.enabled:false}") boolean guestEnabled
+    ) {
         this.authService = authService;
         this.authenticationMapper = authenticationMapper;
+        this.guestEnabled = guestEnabled;
     }
 
     @GetMapping("/user")
@@ -41,7 +48,7 @@ public class AuthRestAdapter {
         );
 
         AuthStatusResponse response = authService.getAuthenticationStatus(authenticatedUser);
-        return authenticationMapper.toRestResponse(response);
+        return authenticationMapper.toRestResponse(response, guestEnabled);
     }
 
     @PostMapping("/logout")

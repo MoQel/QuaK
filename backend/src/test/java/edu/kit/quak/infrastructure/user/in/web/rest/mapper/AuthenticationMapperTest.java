@@ -70,13 +70,15 @@ class AuthenticationMapperTest {
         guest.setId(UUID.randomUUID());
         User regular = new User(UUID.randomUUID(), "github", "x");
 
-        RestAuthStatusResponse guestResponse = mapper.toRestResponse(new AuthStatusResponse(true, guest));
-        RestAuthStatusResponse regularResponse = mapper.toRestResponse(new AuthStatusResponse(true, regular));
-        RestAuthStatusResponse anonymous = mapper.toRestResponse(new AuthStatusResponse(false, null));
+        RestAuthStatusResponse guestResponse = mapper.toRestResponse(new AuthStatusResponse(true, guest), true);
+        RestAuthStatusResponse regularResponse = mapper.toRestResponse(new AuthStatusResponse(true, regular), true);
+        RestAuthStatusResponse anonymous = mapper.toRestResponse(new AuthStatusResponse(false, null), false);
 
         assertTrue(guestResponse.guest());
         assertFalse(regularResponse.guest());
         assertFalse(anonymous.guest());
+        assertTrue(guestResponse.guestEnabled());
+        assertFalse(anonymous.guestEnabled());
     }
 
     @Test

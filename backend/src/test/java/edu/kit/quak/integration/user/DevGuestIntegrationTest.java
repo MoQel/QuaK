@@ -25,6 +25,12 @@ class DevGuestIntegrationTest {
 
     @Test
     void anonymousCallerCanSignInAsGuestAndStaysSignedIn() throws Exception {
+        mockMvc
+            .perform(get("/api/auth/user"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.authenticated").value(false))
+            .andExpect(jsonPath("$.guestEnabled").value(true));
+
         MockHttpSession session = (MockHttpSession) mockMvc
             .perform(post("/api/auth/guest"))
             .andExpect(status().isOk())

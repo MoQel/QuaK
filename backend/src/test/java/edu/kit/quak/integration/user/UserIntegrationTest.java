@@ -101,7 +101,11 @@ class UserIntegrationTest {
         @Test
         @DisplayName("Should return authenticated=false when not logged in")
         void authStatus_notLoggedIn_returnsFalse() throws Exception {
-            mockMvc.perform(get("/api/auth/user")).andExpect(status().isOk()).andExpect(jsonPath("$.authenticated").value(false));
+            mockMvc
+                .perform(get("/api/auth/user"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.authenticated").value(false))
+                .andExpect(jsonPath("$.guestEnabled").value(true));
         }
 
         @Test

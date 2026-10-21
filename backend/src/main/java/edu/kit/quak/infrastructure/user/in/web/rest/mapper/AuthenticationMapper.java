@@ -93,7 +93,7 @@ public class AuthenticationMapper {
      * @return The infrastructure-layer REST response
      */
     public RestAuthStatusResponse toRestResponse(User user) {
-        return new RestAuthStatusResponse(true, user.getId(), user.isGuest());
+        return new RestAuthStatusResponse(true, user.getId(), user.isGuest(), true);
     }
 
     /**
@@ -101,16 +101,17 @@ public class AuthenticationMapper {
      * RestAuthStatusResponse.
      *
      * @param response The application-layer response
+     * @param guestEnabled Whether visitors can sign in as a guest
      * @return The infrastructure-layer REST response
      */
-    public RestAuthStatusResponse toRestResponse(AuthStatusResponse response) {
+    public RestAuthStatusResponse toRestResponse(AuthStatusResponse response, boolean guestEnabled) {
         java.util.UUID userId = null;
         boolean guest = false;
         if (response.user() != null) {
             userId = response.user().getId();
             guest = response.user().isGuest();
         }
-        return new RestAuthStatusResponse(response.authenticated(), userId, guest);
+        return new RestAuthStatusResponse(response.authenticated(), userId, guest, guestEnabled);
     }
 
     /**
