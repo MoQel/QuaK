@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 
 import { GithubMark, GoogleMark } from '@/components/brand/BrandMarks.tsx';
-import { Button } from '@/components/ui/button.tsx';
-import { cn } from '@/lib/utils.ts';
+import { Button } from '@quak/ui/button';
+import { cn } from '@quak/ui/lib/utils';
 import { useAuth } from '@/contexts/AuthContext.tsx';
 
 type Provider = 'google' | 'github';

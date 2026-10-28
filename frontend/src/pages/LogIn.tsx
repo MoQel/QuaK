@@ -3,7 +3,7 @@ import { ArrowLeft, UserRound } from 'lucide-react';
 import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { GUEST_DATA_NOTICE } from '@/components/guest/guestNotice';
-import { Separator } from '@/components/ui/separator';
+import { Separator } from '@quak/ui/separator';
 import { LandingAlert } from '@/components/landing/LandingAlert';
 import { LandingButton } from '@/components/landing/LandingButton';
 import { GithubMark, GoogleMark } from '@/components/brand/BrandMarks';

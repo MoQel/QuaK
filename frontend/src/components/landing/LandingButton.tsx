@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 
-import { cn } from '@/lib/utils';
+import { cn } from '@quak/ui/lib/utils';
 
 const landingButtonVariants = cva(
     'flex w-full rounded-xl cursor-pointer items-center justify-center gap-3 px-5 py-3.5 text-sm font-bold',

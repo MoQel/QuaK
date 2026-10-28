@@ -840,6 +840,50 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RestLogoutResponse"
+  /api/auth/guest:
+    post:
+      tags:
+      - Authentication
+      operationId: createGuest
+      responses:
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RestAuthStatusResponse"
+  /api/auth/guest/upgrade:
+    post:
+      tags:
+      - Authentication
+      operationId: startUpgrade
+      responses:
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "204":
+          description: No Content
   /api/project/{pId}:
     get:
       tags:
@@ -1962,6 +2006,18 @@ components:
       properties:
         message:
           type: string
+    RestAuthStatusResponse:
+      type: object
+      properties:
+        authenticated:
+          type: boolean
+        userId:
+          type: string
+          format: uuid
+        guest:
+          type: boolean
+        guestEnabled:
+          type: boolean
     RenameFileRequest:
       type: object
       properties:
@@ -2120,14 +2176,6 @@ components:
         operationCount:
           type: integer
           format: int32
-    RestAuthStatusResponse:
-      type: object
-      properties:
-        authenticated:
-          type: boolean
-        userId:
-          type: string
-          format: uuid
   securitySchemes:
     basicAuth:
       type: http
