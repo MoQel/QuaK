@@ -145,6 +145,8 @@ describe('IdeSidebar', () => {
 
         expect(logout).not.toHaveBeenCalled();
         expect(screen.getByRole('alertdialog', { name: 'End guest session?' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Sign in with Google' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Sign in with GitHub' })).toBeInTheDocument();
 
         fireEvent.click(screen.getByRole('button', { name: 'End session' }));
 

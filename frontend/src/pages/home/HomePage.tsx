@@ -206,7 +206,7 @@ export function HomePage() {
                 />
             )}
 
-            <GuestBanner />
+            <GuestBanner linkToProfile />
 
             <div className="mb-6">
                 <h1 className="text-3xl font-bold mb-2 text-text leading-tight py-1">Projects</h1>

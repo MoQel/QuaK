@@ -8,6 +8,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog.tsx';
+import { GuestUpgradeButtons } from './GuestUpgradeButtons.tsx';
 
 type GuestLogoutDialogProps = {
     open: boolean;
@@ -15,7 +16,7 @@ type GuestLogoutDialogProps = {
     onConfirm: () => void;
 };
 
-/** Asks a guest to confirm signing out, since the guest account cannot be reached again afterwards. */
+/** Asks a guest to confirm signing out, which deletes the guest, and offers to keep its projects instead. */
 export function GuestLogoutDialog({ open, onOpenChange, onConfirm }: Readonly<GuestLogoutDialogProps>) {
     return (
         <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -23,10 +24,11 @@ export function GuestLogoutDialog({ open, onOpenChange, onConfirm }: Readonly<Gu
                 <AlertDialogHeader>
                     <AlertDialogTitle>End guest session?</AlertDialogTitle>
                     <AlertDialogDescription>
-                        After signing out you cannot return to this guest session. Its projects are lost and deleted
-                        automatically.
+                        Signing out deletes this guest session and its projects. Sign in with an account instead to keep
+                        them.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
+                <GuestUpgradeButtons className="grid grid-cols-2" />
                 <AlertDialogFooter>
                     <AlertDialogCancel variant="secondary">Cancel</AlertDialogCancel>
                     <AlertDialogAction variant="destructive" onClick={onConfirm}>

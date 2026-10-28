@@ -8,10 +8,12 @@ const api = vi.hoisted(() => ({ post: vi.fn() }));
 vi.mock('@/api/api', () => ({ api }));
 
 let signInAsGuest: () => Promise<void> = async () => {};
+let upgradeGuest: (provider: 'google' | 'github') => Promise<void> = async () => {};
 
 function AuthState() {
     const auth = useAuth();
     signInAsGuest = auth.signInAsGuest;
+    upgradeGuest = auth.upgradeGuest;
 
     if (auth.isLoading) return <output>loading</output>;
     return (
@@ -74,5 +76,24 @@ describe('AuthProvider', () => {
         await waitFor(() =>
             expect(screen.getByText('authenticated=true guest=true guestEnabled=true')).toBeInTheDocument(),
         );
+    });
+
+    it('marks the guest for an upgrade before redirecting to the provider', async () => {
+        stubAuthStatus({ authenticated: true, userId: 'u-1', guest: true, guestEnabled: true });
+        const location = { href: '' };
+        vi.stubGlobal('location', location);
+        api.post.mockResolvedValue('');
+
+        render(
+            <AuthProvider>
+                <AuthState />
+            </AuthProvider>,
+        );
+        await screen.findByText('authenticated=true guest=true guestEnabled=true');
+
+        await act(() => upgradeGuest('github'));
+
+        expect(api.post).toHaveBeenCalledWith('/api/auth/guest/upgrade');
+        expect(location.href).toMatch(/\/oauth2\/authorization\/github$/);
     });
 });

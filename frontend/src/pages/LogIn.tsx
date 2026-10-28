@@ -6,7 +6,7 @@ import { GUEST_DATA_NOTICE } from '@/components/guest/guestNotice';
 import { Separator } from '@/components/ui/separator';
 import { LandingAlert } from '@/components/landing/LandingAlert';
 import { LandingButton } from '@/components/landing/LandingButton';
-import { GithubMark, GoogleMark } from '@/components/landing/BrandMarks';
+import { GithubMark, GoogleMark } from '@/components/brand/BrandMarks';
 import './LandingPageAlternative.css';
 
 export const LoginOptions: React.FC = () => {

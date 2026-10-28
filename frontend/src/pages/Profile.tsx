@@ -4,6 +4,9 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2 } from 'lucide-react';
 import UserAvatar from '@/components/UserAvatar';
 import { api } from '@/api/api';
+import { GuestBanner } from '@/components/guest/GuestBanner';
+import { useAuth } from '@/contexts/AuthContext';
+import { GuestUpgradeButtons } from '@/components/guest/GuestUpgradeButtons';
 
 interface UserDto {
     userId: string;
@@ -14,6 +17,7 @@ interface UserDto {
 }
 
 export const Profile: React.FC = () => {
+    const { isGuest } = useAuth();
     const [user, setUser] = useState<UserDto | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -58,6 +62,11 @@ export const Profile: React.FC = () => {
             <div className="grid gap-6">
                 {/* Profile Overview Card */}
                 <Card>
+                    {isGuest && (
+                        <CardContent>
+                            <GuestBanner />
+                        </CardContent>
+                    )}
                     <CardHeader>
                         <div className="flex items-start gap-6">
                             <UserAvatar avatarUrl={user.avatarUrl} alt={user.name} size="lg" />
@@ -66,24 +75,39 @@ export const Profile: React.FC = () => {
                                 <CardDescription className="text-base mb-3">
                                     {user.email ?? 'Guest account'}
                                 </CardDescription>
-                                <div className="flex gap-2 flex-wrap">
-                                    {user.emailVerified && (
-                                        <Badge variant="secondary" className="bg-special text-text pointer-events-none">
-                                            Verified Email
+                                {isGuest && (
+                                    <div className="space-y-2 text-center">
+                                        <p className="text-sm text-text-muted">
+                                            Upgrade to a real account. Your projects move over with you.
+                                        </p>
+                                        <GuestUpgradeButtons className="justify-center" />
+                                    </div>
+                                )}
+                                {!isGuest && (
+                                    <div className="flex gap-2 flex-wrap">
+                                        {user.emailVerified && (
+                                            <Badge
+                                                variant="secondary"
+                                                className="bg-special text-text pointer-events-none"
+                                            >
+                                                Verified Email
+                                            </Badge>
+                                        )}
+                                        <Badge variant="outline" className="pointer-events-none">
+                                            User ID: {user.userId}
                                         </Badge>
-                                    )}
-                                    <Badge variant="outline" className="pointer-events-none">
-                                        User ID: {user.userId}
-                                    </Badge>
-                                </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </CardHeader>
-                    <CardContent>
-                        <p className="text-muted-foreground">
-                            Welcome back, {user.name}! This is your personal profile dashboard.
-                        </p>
-                    </CardContent>
+                    {!isGuest && (
+                        <CardContent>
+                            <p className="text-muted-foreground">
+                                Welcome back, {user.name}! This is your personal profile dashboard.
+                            </p>
+                        </CardContent>
+                    )}
                 </Card>
             </div>
         </div>

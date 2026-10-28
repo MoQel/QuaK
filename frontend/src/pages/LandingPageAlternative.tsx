@@ -1,7 +1,7 @@
 import React from 'react';
 import { ArrowUpRight, Braces } from 'lucide-react';
 import { isKitHostname } from '@/lib/hostname';
-import { GithubMark } from '@/components/landing/BrandMarks';
+import { GithubMark } from '@/components/brand/BrandMarks';
 import { LandingExternalLink } from '@/components/landing/LandingExternalLink';
 import { LoginOptions } from './LogIn';
 import './LandingPageAlternative.css';

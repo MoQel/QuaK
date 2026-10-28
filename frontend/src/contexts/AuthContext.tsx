@@ -17,6 +17,7 @@ interface AuthContextType {
     isLoading: boolean;
     login: (provider?: 'google' | 'github') => void;
     signInAsGuest: () => Promise<void>;
+    upgradeGuest: (provider: 'google' | 'github') => Promise<void>;
     logout: () => void;
     checkAuthStatus: () => Promise<void>;
 }
@@ -81,6 +82,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         }
     }, []);
 
+    const upgradeGuest = useCallback(
+        (provider: 'google' | 'github') => api.post('/api/auth/guest/upgrade').then(() => login(provider)),
+        [login],
+    );
+
     const logout = useCallback(() => {
         api.post('/api/auth/logout')
             .catch((error) => console.error('Logout failed:', error))
@@ -99,10 +105,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             isLoading,
             login,
             signInAsGuest,
+            upgradeGuest,
             logout,
             checkAuthStatus,
         }),
-        [user, guestEnabled, isLoading, login, signInAsGuest, logout, checkAuthStatus],
+        [user, guestEnabled, isLoading, login, signInAsGuest, upgradeGuest, logout, checkAuthStatus],
     );
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
