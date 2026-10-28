@@ -17,8 +17,9 @@ RUN python3 -m venv /opt/lsp/python && \
 # Build a static QASM LSP binary so the runtime image does not need Go.
 FROM golang:1.24-bookworm AS qasm-lsp-builder
 
-ARG QASMLSP_VERSION=v0.2.17
-RUN CGO_ENABLED=0 go install "github.com/orangekame3/qasmtools/cmd/qasmlsp@${QASMLSP_VERSION}"
+WORKDIR /src/qasm-lsp
+COPY backend/lsp/servers/qasm/go.mod backend/lsp/servers/qasm/go.sum ./
+RUN CGO_ENABLED=0 GOBIN=/go/bin go install tool
 
 # Build stage - use Debian-based image for better multi-arch support
 FROM eclipse-temurin:21-jdk-jammy AS builder
