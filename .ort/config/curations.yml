@@ -1,0 +1,115 @@
+# Package curations, read by ORT from its configuration directory.
+# https://oss-review-toolkit.org/ort/docs/configuration/package-curations
+#
+# Go modules declare no license in their metadata. The licenses below are taken from deps.dev
+# (https://api.deps.dev/v3/systems/go/packages/<module>/versions/<version>). They are pinned to a version, so a
+# dependency update fails the check with MISSING_LICENSE until its entry is updated here.
+
+- id: "Go::github.com/antlr4-go/antlr/v4:4.13.1"
+  curations:
+    comment: "License from deps.dev."
+    concluded_license: "BSD-3-Clause"
+- id: "Go::github.com/aymanbagabas/go-osc52/v2:2.0.1"
+  curations:
+    comment: "License from deps.dev."
+    concluded_license: "MIT"
+- id: "Go::github.com/gorilla/websocket:1.5.1"
+  curations:
+    comment: "License from deps.dev."
+    concluded_license: "BSD-3-Clause"
+- id: "Go::github.com/iancoleman/strcase:0.3.0"
+  curations:
+    comment: "License from deps.dev."
+    concluded_license: "MIT"
+- id: "Go::github.com/lucasb-eyer/go-colorful:1.2.0"
+  curations:
+    comment: "License from deps.dev."
+    concluded_license: "MIT"
+- id: "Go::github.com/mattn/go-isatty:0.0.20"
+  curations:
+    comment: "License from deps.dev."
+    concluded_license: "MIT"
+- id: "Go::github.com/muesli/termenv:0.16.0"
+  curations:
+    comment: "License from deps.dev."
+    concluded_license: "MIT"
+- id: "Go::github.com/orangekame3/qasmtools:0.2.17"
+  curations:
+    comment: "License from deps.dev."
+    concluded_license: "Apache-2.0"
+- id: "Go::github.com/petermattis/goid:0.0.0-20240813172612-4fcff4a6cae7"
+  curations:
+    comment: "License from deps.dev."
+    concluded_license: "Apache-2.0"
+- id: "Go::github.com/pkg/errors:0.9.1"
+  curations:
+    comment: "License from deps.dev."
+    concluded_license: "BSD-2-Clause"
+- id: "Go::github.com/rivo/uniseg:0.4.7"
+  curations:
+    comment: "License from deps.dev."
+    concluded_license: "MIT"
+- id: "Go::github.com/sasha-s/go-deadlock:0.3.5"
+  curations:
+    comment: "License from deps.dev."
+    concluded_license: "Apache-2.0"
+- id: "Go::github.com/segmentio/ksuid:1.0.4"
+  curations:
+    comment: "License from deps.dev."
+    concluded_license: "MIT"
+- id: "Go::github.com/sourcegraph/jsonrpc2:0.2.0"
+  curations:
+    comment: "License from deps.dev."
+    concluded_license: "MIT"
+- id: "Go::github.com/tliron/commonlog:0.2.18"
+  curations:
+    comment: "License from deps.dev."
+    concluded_license: "Apache-2.0"
+- id: "Go::github.com/tliron/glsp:0.2.2"
+  curations:
+    comment: "License from deps.dev."
+    concluded_license: "Apache-2.0"
+- id: "Go::github.com/tliron/kutil:0.3.26"
+  curations:
+    comment: "License from deps.dev."
+    concluded_license: "Apache-2.0"
+- id: "Go::golang.org/x/crypto:0.26.0"
+  curations:
+    comment: "License from deps.dev."
+    concluded_license: "BSD-3-Clause"
+- id: "Go::golang.org/x/exp:0.0.0-20240506185415-9bf2ced13842"
+  curations:
+    comment: "License from deps.dev."
+    concluded_license: "BSD-3-Clause"
+- id: "Go::golang.org/x/net:0.26.0"
+  curations:
+    comment: "License from deps.dev."
+    concluded_license: "BSD-3-Clause"
+- id: "Go::golang.org/x/sys:0.33.0"
+  curations:
+    comment: "License from deps.dev."
+    concluded_license: "BSD-3-Clause"
+- id: "Go::golang.org/x/term:0.23.0"
+  curations:
+    comment: "License from deps.dev."
+    concluded_license: "BSD-3-Clause"
+- id: "Go::gopkg.in/yaml.v3:3.0.1"
+  curations:
+    comment: "License from deps.dev."
+    concluded_license: "MIT AND Apache-2.0"
+
+# Packages whose metadata names a license that ORT cannot map to an SPDX id, or none at all.
+- id: "Maven:org.antlr:ST4:4.3.4"
+  curations:
+    comment: "The POM declares 'The BSD License' and links https://www.antlr.org/license.html, which is BSD-3-Clause."
+    declared_license_mapping:
+      "The BSD License": "BSD-3-Clause"
+- id: "Maven:org.abego.treelayout:org.abego.treelayout.core:1.0.3"
+  curations:
+    comment: "The POM declares BSD-3-Clause in a form ORT does not map."
+    declared_license_mapping:
+      "BSD 3-Clause \"New\" or \"Revised\" License (BSD-3-Clause)": "BSD-3-Clause"
+- id: "PyPI::mypy-extensions:1.1.0"
+  curations:
+    comment: "PyPI has no license metadata. The repository's LICENSE file and deps.dev state MIT."
+    concluded_license: "MIT"

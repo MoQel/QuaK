@@ -1,8 +1,8 @@
-import { DialogClose, DialogFooter } from '@/components/ui/dialog.tsx';
-import { Button } from '@/components/ui/button.tsx';
+import { DialogClose, DialogFooter } from '@quak/ui/dialog';
+import { Button } from '@quak/ui/button';
 import { ControllerRenderProps, FieldPath, FieldValues } from 'react-hook-form';
 import { FormControl, FormItem, FormLabel } from '@/components/ui/form.tsx';
-import { Input } from '@/components/ui/input.tsx';
+import { Input } from '@quak/ui/input';
 import React from 'react';
 
 interface DialogCloseButtonsProps {

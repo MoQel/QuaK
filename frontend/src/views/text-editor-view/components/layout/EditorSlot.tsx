@@ -1,7 +1,7 @@
 import { useAppDispatch } from '@/hooks/useAppDispatch.ts';
 import { setActiveGroup } from '@/store/tabs/tabsSlice.ts';
 import { EditorTabBar } from '@/views/text-editor-view/components/tabs/EditorTabBar.tsx';
-import { CardContent } from '@/components/ui/card.tsx';
+import { CardContent } from '@quak/ui/card';
 import QLPEditor from '@/views/text-editor-view/components/core/QLPEditor.tsx';
 
 export function EditorSlot({ groupId }: Readonly<{ groupId: string }>) {

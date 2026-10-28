@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@quak/ui/card';
+import { Badge } from '@quak/ui/badge';
 import { Loader2 } from 'lucide-react';
 import UserAvatar from '@/components/UserAvatar';
 import { api } from '@/api/api';

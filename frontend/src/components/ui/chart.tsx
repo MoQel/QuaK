@@ -1,7 +1,7 @@
 import * as React from 'react';
 import * as RechartsPrimitive from 'recharts';
 
-import { cn } from '@/lib/utils';
+import { cn } from '@quak/ui/lib/utils';
 
 // Format: { THEME_NAME: CSS_SELECTOR }
 const THEMES = { light: '', dark: '.dark' } as const;
@@ -41,9 +41,10 @@ function ChartContainer({
 }) {
     const uniqueId = React.useId();
     const chartId = `chart-${id || uniqueId.replaceAll(':', '')}`;
+    const context = React.useMemo(() => ({ config }), [config]);
 
     return (
-        <ChartContext.Provider value={{ config }}>
+        <ChartContext.Provider value={context}>
             <div
                 data-slot="chart"
                 data-chart={chartId}
@@ -123,10 +124,7 @@ function ChartTooltipContent({
         const [item] = payload;
         const key = `${labelKey || item?.dataKey || item?.name || 'value'}`;
         const itemConfig = getPayloadConfigFromPayload(config, item, key);
-        const value =
-            !labelKey && typeof label === 'string'
-                ? config[label as keyof typeof config]?.label || label
-                : itemConfig?.label;
+        const value = !labelKey && typeof label === 'string' ? config[label]?.label || label : itemConfig?.label;
 
         if (labelFormatter) {
             return <div className={cn('font-medium', labelClassName)}>{labelFormatter(value, payload)}</div>;
@@ -152,7 +150,7 @@ function ChartTooltipContent({
                 className,
             )}
         >
-            {!nestLabel ? tooltipLabel : null}
+            {nestLabel ? null : tooltipLabel}
             <div className="grid gap-1.5">
                 {payload
                     .filter((item) => item.type !== 'none')
@@ -304,7 +302,7 @@ function getPayloadConfigFromPayload(config: ChartConfig, payload: unknown, key:
         configLabelKey = payloadPayload[key as keyof typeof payloadPayload] as string;
     }
 
-    return configLabelKey in config ? config[configLabelKey] : config[key as keyof typeof config];
+    return configLabelKey in config ? config[configLabelKey] : config[key];
 }
 
 export { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent, ChartStyle };

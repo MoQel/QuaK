@@ -6,7 +6,7 @@ import type {
     CompositeQuantumGateDto,
     QuantumOperationDto,
     SubcircuitOperationDto,
-} from '@/api/dto/circuit.ts';
+} from '@quak/circuit-core';
 import type { SimulationResult } from '@/simulation/simulation.types.ts';
 
 const sel = (index: number) => ({ registerId: 'qreg-0', index });

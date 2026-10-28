@@ -1272,6 +1272,91 @@ class QasmTest {
         assertEquals(List.of("0->0", "1->1"), pairs);
     }
 
+    // ---- Measurements in assignment form ------------------------------------------------------
+    // `c = measure q;` means the same as `measure q -> c;` and has to produce the same operations.
+
+    @Test
+    void assignedMeasurementWritesToItsClassicBit() {
+        QuantumCircuit circuit = new QasmService().parse(
+            """
+            OPENQASM 3.0;
+            qubit[2] q;
+            bit[2] c;
+            c[0] = measure q[1];
+            """
+        );
+
+        assertEquals(List.of("1->0"), measurementPairs(circuit));
+        Measurement measurement = measurements(circuit).getFirst();
+        assertEquals(circuit.getRegisterByName("q").orElseThrow().getId(), measurement.getTargetQubits().getFirst().getRegisterId());
+        assertEquals(circuit.getRegisterByName("c").orElseThrow().getId(), measurement.getClassicBits().getFirst().getRegisterId());
+    }
+
+    @Test
+    void assignedMeasurementOfAWholeRegisterMeasuresEveryQubit() {
+        QuantumCircuit circuit = new QasmService().parse("OPENQASM 3.0;\nqubit[3] q;\nbit[3] c;\nc = measure q;\n");
+
+        assertEquals(List.of("0->0", "1->1", "2->2"), measurementPairs(circuit));
+    }
+
+    @Test
+    void assignedMeasurementOfASliceExpandsPerBit() {
+        QuantumCircuit circuit = new QasmService().parse("OPENQASM 3.0;\nqubit[4] b;\nbit[5] ans;\nans[1:4] = measure b[0:3];\n");
+
+        assertEquals(List.of("0->1", "1->2", "2->3", "3->4"), measurementPairs(circuit));
+    }
+
+    @Test
+    void assignedMeasurementIsCheckedLikeTheArrowForm() {
+        QasmService qasmService = new QasmService();
+        assertThrows(QasmParseException.class, () -> qasmService.parse("OPENQASM 3.0;\nqubit[4] q;\nbit[2] c;\nc = measure q;\n"));
+        assertThrows(QasmParseException.class, () -> qasmService.parse("OPENQASM 3.0;\nqubit[1] q;\nmissing[0] = measure q[0];\n"));
+        assertThrows(QasmParseException.class, () ->
+            qasmService.parse("OPENQASM 3.0;\nbit[1] c;\ngate g a { c[0] = measure a; }\nqubit[1] q;\ng q[0];\n")
+        );
+    }
+
+    @Test
+    void measurementCombinedWithACompoundAssignmentIsRejected() {
+        QasmParseException exception = assertThrows(QasmParseException.class, () ->
+            new QasmService().parse("OPENQASM 3.0;\nqubit[1] q;\nbit[1] c;\nc[0] |= measure q[0];\n")
+        );
+        assertTrue(exception.getMessage().contains("'='"), exception.getMessage());
+    }
+
+    @Test
+    void assignedMeasurementSurvivesACodeRoundTrip() {
+        QasmService qasmService = new QasmService();
+        QuantumCircuit circuit = qasmService.parse(
+            """
+            OPENQASM 3.0;
+            include "stdgates.inc";
+            qubit[2] q;
+            bit[2] c;
+            h q[0];
+            cx q[0], q[1];
+            c = measure q;
+            """
+        );
+
+        String generatedCode = QasmCodeGenerator.toCode(circuit);
+        assertTrue(generatedCode.contains("measure q[0] -> c[0];"), generatedCode);
+        assertTrue(generatedCode.contains("measure q[1] -> c[1];"), generatedCode);
+        assertEquals(List.of("0->0", "1->1"), measurementPairs(qasmService.parse(generatedCode)));
+    }
+
+    /** `qubit->bit` index pairs of every measurement, sorted so scheduling cannot flake the test. */
+    private List<String> measurementPairs(QuantumCircuit circuit) {
+        return measurements(circuit)
+            .stream()
+            .map(
+                measurement ->
+                    measurement.getTargetQubits().getFirst().getIndex() + "->" + measurement.getClassicBits().getFirst().getIndex()
+            )
+            .sorted()
+            .toList();
+    }
+
     private List<QuantumOperation> elementaryOperations(QuantumCircuit circuit) {
         List<QuantumOperation> operations = new ArrayList<>();
         for (var layer : circuit.getLayers()) {

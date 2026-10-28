@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/api")
-@Tag(name = "Authentication", description = "Authentication and user session management endpoints")
+@Tag(name = "Users", description = "Current user and user lookup endpoints")
 public class UserRestAdapter {
 
     private final UserServicePort userService;

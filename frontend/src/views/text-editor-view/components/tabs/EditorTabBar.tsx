@@ -1,5 +1,5 @@
 import { moveTab, requestLanguageChange, requestSave, setActiveTab, setDragging } from '@/store/tabs/tabsSlice.ts';
-import { ContextMenu, ContextMenuTrigger } from '@/components/ui/context-menu.tsx';
+import { ContextMenu, ContextMenuTrigger } from '@quak/ui/context-menu';
 import { useAppDispatch } from '@/hooks/useAppDispatch.ts';
 import { useAppSelector } from '@/hooks/useAppSelector.ts';
 import { TabBar } from '@/components/TabBar.tsx';

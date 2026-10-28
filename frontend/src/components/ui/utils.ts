@@ -1,4 +1,4 @@
-import { cn } from '@/lib/utils.ts';
+import { cn } from '@quak/ui/lib/utils';
 
 export const menuTriggerStyle = cn(
     'flex items-center rounded-sm px-2 py-1 text-sm font-medium outline-hidden select-none cursor-pointer',

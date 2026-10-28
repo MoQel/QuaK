@@ -6,10 +6,10 @@ import { api, ProblemDetailError } from '@/api/api.ts';
 import type { ProjectRoleResponse, UserSearchResult } from '@/api/dto/roles.ts';
 import type { ProjectDetailsResponse } from '@/api/dto/filesystem.ts';
 
-import { Button } from '@/components/ui/button.tsx';
-import { Input } from '@/components/ui/input.tsx';
-import { Badge } from '@/components/ui/badge.tsx';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog.tsx';
+import { Button } from '@quak/ui/button';
+import { Input } from '@quak/ui/input';
+import { Badge } from '@quak/ui/badge';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@quak/ui/dialog';
 import UserAvatar from '@/components/UserAvatar.tsx';
 
 interface ManageRolesDialogProps {

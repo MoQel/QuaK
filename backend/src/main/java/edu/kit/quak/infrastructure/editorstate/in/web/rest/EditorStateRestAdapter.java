@@ -7,6 +7,7 @@ import edu.kit.quak.core.user.model.User;
 import edu.kit.quak.infrastructure.editorstate.in.web.rest.dto.EditorStateResponse;
 import edu.kit.quak.infrastructure.editorstate.in.web.rest.dto.UpdateEditorStateRequest;
 import edu.kit.quak.infrastructure.user.in.web.rest.mapper.AuthenticationMapper;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 @Slf4j
 @RestController
 @RequestMapping("/api/editor-state")
+@Tag(name = "Editor State", description = "Editor state of a project")
 public class EditorStateRestAdapter {
 
     private final EditorStateServicePort service;

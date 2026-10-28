@@ -32,6 +32,7 @@ import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.LoopBlockDtoMapper
 import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.QuantumOperationDtoMapper;
 import edu.kit.quak.infrastructure.circuit.in.web.rest.mapper.RegisterDtoMapper;
 import edu.kit.quak.infrastructure.user.in.web.rest.mapper.AuthenticationMapper;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -45,6 +46,7 @@ import org.springframework.web.bind.annotation.*;
 @Slf4j
 @RestController
 @RequestMapping("/api/circuit")
+@Tag(name = "Circuit", description = "Controls operations on a quantum circuit")
 public class CircuitRestAdapter {
 
     private final CircuitServicePort service;

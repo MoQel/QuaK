@@ -3,8 +3,8 @@ import { JSX, useCallback, useContext, useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton.tsx';
 import { DialogClose, ParentRefresh, SelectedFolder } from '@/views/project-manager-view/ProjectManagerContexts.ts';
 import './ProjectManagerView.css';
-import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from '@/components/ui/context-menu.tsx';
-import { Dialog, DialogContent } from '@/components/ui/dialog.tsx';
+import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from '@quak/ui/context-menu';
+import { Dialog, DialogContent } from '@quak/ui/dialog';
 import { Delete } from '@/views/project-manager-view/Delete.tsx';
 import { Empty, ListingElement } from '@/views/project-manager-view/util/TreeComponents.tsx';
 
@@ -17,7 +17,7 @@ export type Icon = (open: boolean) => JSX.Element;
  * Provides the functionality to edit the FileElementContainer
  * @param id The id of the element to edit
  * @param openDialog A function that opens a dialog and displays the given elements after their promise resolves.
- * @returns {} A {@link ContextMenuItem}
+ * @returns The context-menu entry that opens the edit dialog
  */
 type Edit = (id: string, openDialog: (content: Promise<JSX.Element>) => void) => JSX.Element;
 
@@ -35,6 +35,7 @@ type ContentFetch = (id: string) => Promise<JSX.Element[]>;
  * @param edit The edit-provider
  * @param icon The icon-function
  * @param deletePath The HTTP-path to request deletion of the element
+ * @param initiallyOpen Whether the container starts expanded
  * @constructor
  */
 export function FileElementContainer({
@@ -45,7 +46,7 @@ export function FileElementContainer({
     icon,
     deletePath,
     initiallyOpen = false,
-}: {
+}: Readonly<{
     name: string;
     id: string;
     getContent: ContentFetch;
@@ -53,11 +54,11 @@ export function FileElementContainer({
     icon: Icon;
     deletePath: string;
     initiallyOpen?: boolean;
-}) {
-    const [content, setContent] = useState([<Skeleton className="h-4" />]);
+}>) {
+    const [content, setContent] = useState([<Skeleton key="loading" className="h-4" />]);
     const [dialogContent, setDialogContent] = useState(<Skeleton className="h-5 mt-5" />);
-    const [reloaded, r] = useState(false);
-    const reload = () => r(!reloaded);
+    const [reloaded, setReloaded] = useState(false);
+    const reload = () => setReloaded(!reloaded);
     const [open, setOpen] = useState(false);
     const [collapsible, setCollapsible] = useState(initiallyOpen);
     const { id: selectedFolderId, setId: setSelectedFolderId, reloadTrigger } = useContext(SelectedFolder);

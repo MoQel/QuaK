@@ -1,8 +1,8 @@
-import { DialogHeader, DialogTitle } from '@/components/ui/dialog.tsx';
+import { DialogHeader, DialogTitle } from '@quak/ui/dialog';
 import { FileElementContainer } from '@/views/project-manager-view/FileElementContainer.tsx';
 import { DialogClose, ParentRefresh } from '@/views/project-manager-view/ProjectManagerContexts.ts';
 import { JSX, useContext } from 'react';
-import { ContextMenuItem } from '@/components/ui/context-menu.tsx';
+import { ContextMenuItem } from '@quak/ui/context-menu';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { getElementForFileElement, type Project, sort } from '@/views/project-manager-view/util/FileElement.tsx';
 import { api } from '@/api/api.ts';
@@ -23,6 +23,7 @@ async function fetchProjectContent(id: string) {
  * Provides a new Project-display using {@link FileElementContainer}
  * @param name The name of the project
  * @param id The id of the project
+ * @param initiallyOpen Whether the project starts expanded
  * @constructor
  */
 export function Project({ name, id, initiallyOpen }: Readonly<{ name: string; id: string; initiallyOpen?: boolean }>) {

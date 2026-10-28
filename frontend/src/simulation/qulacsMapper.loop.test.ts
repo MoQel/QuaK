@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { initQulacs } from 'qulacs-wasm';
 import { QulacsMapper } from './qulacsMapper.ts';
-import type { CircuitResponse, ElementaryQuantumGateDto, LoopBlockDto } from '@/api/dto/circuit.ts';
+import type { CircuitResponse, ElementaryQuantumGateDto, LoopBlockDto } from '@quak/circuit-core';
 import type { SimulationResult } from '@/simulation/simulation.types.ts';
 
 const sel = (index: number) => ({ registerId: 'qreg-0', index });

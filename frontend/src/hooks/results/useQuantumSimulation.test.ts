@@ -1,7 +1,7 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useQuantumSimulation } from './useQuantumSimulation.ts';
-import { CircuitResponse } from '@/api/dto/circuit.ts';
+import { CircuitResponse } from '@quak/circuit-core';
 import { WorkerResponse } from '@/workers/messages.ts';
 import { SimulationOptions, SimulationResult } from '@/simulation/simulation.types.ts';
 
@@ -16,7 +16,7 @@ describe('useQuantumSimulation Hook', () => {
         vi.useFakeTimers();
         vi.clearAllMocks();
 
-        const MockWorker = vi.fn().mockImplementation(() => {
+        const MockWorker = vi.fn().mockImplementation(function () {
             const instance = {
                 postMessage: vi.fn(),
                 terminate: vi.fn(),

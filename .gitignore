@@ -10,6 +10,21 @@ Thumbs.db
 # Global dependencies
 node_modules/
 .vscode/settings.json
-/package-lock.json
 /.claude/
 CLAUDE.md
+
+# Build output
+vscode-extension/dist/
+
+# Coverage reports.
+coverage/
+
+# Downloaded VSCode for integration tests
+vscode-extension/.vscode-test/
+
+# Packaged extension
+*.vsix
+
+# ANTLR debug output. The generated .ts and .tokens ARE committed (the JS CI job
+# has no JDK); these are only for grammar debugging and nothing reads them.
+packages/qasm-transform/src/generated/*.interp

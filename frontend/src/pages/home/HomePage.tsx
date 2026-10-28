@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FolderOpen, Plus, Users } from 'lucide-react';
 
-import { Button } from '@/components/ui/button.tsx';
+import { Button } from '@quak/ui/button';
 import { GuestBanner } from '@/components/guest/GuestBanner.tsx';
 import { useProjectActionsDialog } from '@/components/projects/useProjectActionsDialog.tsx';
 

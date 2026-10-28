@@ -1,14 +1,7 @@
 import React, { useState } from 'react';
 
-import { Button } from '@/components/ui/button.tsx';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog.tsx';
+import { Button } from '@quak/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@quak/ui/dialog';
 import { api } from '@/api/api.ts';
 import type { ProjectDetailsResponse, ProjectRequest } from '@/api/dto/filesystem.ts';
 import { EntityForm } from '@/views/project-manager-view/util/FormUtils.tsx';
