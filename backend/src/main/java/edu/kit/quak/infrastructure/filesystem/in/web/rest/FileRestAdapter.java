@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.*;
 @Slf4j
 @RestController
 @RequestMapping("/api/file")
-@Tag(name = "Files", description = "File and directory management operations")
+@Tag(name = "Files", description = "File management operations")
 public class FileRestAdapter {
 
     private final FileServicePort service;

@@ -4,6 +4,7 @@ import edu.kit.quak.application.library.ports.in.OperationDefinitionServicePort;
 import edu.kit.quak.core.library.model.OperationDefinition;
 import edu.kit.quak.infrastructure.library.in.web.rest.dto.OperationDefinitionResponse;
 import edu.kit.quak.infrastructure.library.in.web.rest.mapper.OperationDefinitionDtoMapper;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 @RestController
 @RequestMapping("/api/operations")
+@Tag(name = "Operation Definitions", description = "Definitions of quantum operations")
 public class OperationDefinitionRestAdapter {
 
     private final OperationDefinitionServicePort gateService;

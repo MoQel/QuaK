@@ -24,16 +24,24 @@ servers:
 security:
 - basicAuth: []
 tags:
-- name: Files
-  description: File and directory management operations
-- name: Operation Definitions
-  description: Definitions of quantum operations
 - name: Circuit
   description: Controls operations on a quantum circuit
+- name: Operation Definitions
+  description: Definitions of quantum operations
+- name: Users
+  description: Current user and user lookup endpoints
+- name: Files
+  description: File management operations
 - name: Projects
   description: Project management operations
 - name: Authentication
   description: Authentication and user session management endpoints
+- name: Project Roles
+  description: Project role management operations
+- name: Directories
+  description: Directory management operations
+- name: Editor State
+  description: Editor state of a project
 paths:
   /api/file/{fId}/content:
     get:
@@ -55,12 +63,6 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "403":
           description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: Not Found
           content:
             application/json:
               schema:
@@ -100,14 +102,201 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: Not Found
+        "200":
+          description: OK
+  /api/editor-state/{projectId}:
+    get:
+      tags:
+      - Editor State
+      operationId: getByProjectId
+      parameters:
+      - name: projectId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "200":
           description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EditorStateResponse"
+    put:
+      tags:
+      - Editor State
+      operationId: save
+      parameters:
+      - name: projectId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateEditorStateRequest"
+        required: true
+      responses:
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EditorStateResponse"
+  /api/circuit/{circuitId}:
+    put:
+      tags:
+      - Circuit
+      operationId: replaceContent
+      parameters:
+      - name: circuitId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCircuitRequest"
+        required: true
+      responses:
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CircuitResponse"
+    delete:
+      tags:
+      - Circuit
+      operationId: delete
+      parameters:
+      - name: circuitId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "204":
+          description: No Content
+  /api/project/{pId}/roles:
+    get:
+      tags:
+      - Project Roles
+      operationId: getRoles
+      parameters:
+      - name: pId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProjectRoleResponse"
+    post:
+      tags:
+      - Project Roles
+      operationId: assignRole
+      parameters:
+      - name: pId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectRoleRequest"
+        required: true
+      responses:
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectRoleResponse"
   /api/project:
     get:
       tags:
@@ -122,12 +311,6 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "403":
           description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: Not Found
           content:
             application/json:
               schema:
@@ -163,12 +346,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
         "201":
           description: Created
           content:
@@ -189,12 +366,6 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "403":
           description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: Not Found
           content:
             application/json:
               schema:
@@ -226,12 +397,6 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "403":
           description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: Not Found
           content:
             application/json:
               schema:
@@ -272,12 +437,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
         "201":
           description: Created
           content:
@@ -287,7 +446,7 @@ paths:
   /api/directory/:
     post:
       tags:
-      - Files
+      - Directories
       operationId: createDirectory
       parameters:
       - name: parent-id
@@ -314,23 +473,29 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
         "201":
           description: Created
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/DirectoryDetailsResponse"
-  /api/circuit:
+  /api/circuit/{circuitId}/register:
     post:
       tags:
-      - circuit-rest-adapter
-      operationId: init
+      - Circuit
+      operationId: addRegister
+      parameters:
+      - name: circuitId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+        required: true
       responses:
         "401":
           description: Unauthorized
@@ -344,12 +509,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
         "201":
           description: Created
           content:
@@ -359,7 +518,7 @@ paths:
   /api/circuit/{circuitId}/register/{registerId}:
     post:
       tags:
-      - circuit-rest-adapter
+      - Circuit
       operationId: addQubit
       parameters:
       - name: circuitId
@@ -385,8 +544,71 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: Not Found
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CircuitResponse"
+    delete:
+      tags:
+      - Circuit
+      operationId: deleteRegister
+      parameters:
+      - name: circuitId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: registerId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CircuitResponse"
+  /api/circuit/{circuitId}/register/{registerId}/bit:
+    post:
+      tags:
+      - Circuit
+      operationId: addClassicBit
+      parameters:
+      - name: circuitId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: registerId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden
           content:
             application/json:
               schema:
@@ -400,7 +622,7 @@ paths:
   /api/circuit/{circuitId}/operation:
     post:
       tags:
-      - circuit-rest-adapter
+      - Circuit
       operationId: addQuantumOperation
       parameters:
       - name: circuitId
@@ -427,12 +649,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
         "201":
           description: Created
           content:
@@ -441,7 +657,7 @@ paths:
                 $ref: "#/components/schemas/CircuitResponse"
     patch:
       tags:
-      - circuit-rest-adapter
+      - Circuit
       operationId: moveQuantumOperation
       parameters:
       - name: circuitId
@@ -468,8 +684,103 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: Not Found
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CircuitResponse"
+  /api/circuit/qasmCode:
+    post:
+      tags:
+      - Circuit
+      operationId: generateQasmCode
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCircuitRequest"
+        required: true
+      responses:
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeneratedCodeResponse"
+  /api/circuit/parse:
+    post:
+      tags:
+      - Circuit
+      operationId: parseQasmCode
+      parameters:
+      - name: fileId
+        in: query
+        required: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          text/plain:
+            schema:
+              type: string
+        required: true
+      responses:
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CircuitContentResponse"
+  /api/circuit/file/{fileId}/subcircuit:
+    post:
+      tags:
+      - Circuit
+      operationId: offerAsSubcircuit
+      parameters:
+      - name: fileId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: forCircuitId
+        in: query
+        required: false
+        schema:
+          type: string
+      responses:
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden
           content:
             application/json:
               schema:
@@ -480,6 +791,31 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CircuitResponse"
+    delete:
+      tags:
+      - Circuit
+      operationId: revokeSubcircuit
+      parameters:
+      - name: fileId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
+          description: OK
   /api/auth/logout:
     post:
       tags:
@@ -494,12 +830,6 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "403":
           description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: Not Found
           content:
             application/json:
               schema:
@@ -534,12 +864,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
         "200":
           description: OK
           content:
@@ -569,14 +893,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "200":
-          description: OK
+        "204":
+          description: No Content
     patch:
       tags:
       - Projects
@@ -602,12 +920,6 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "403":
           description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: Not Found
           content:
             application/json:
               schema:
@@ -642,12 +954,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
         "200":
           description: OK
           content:
@@ -677,14 +983,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "200":
-          description: OK
+        "204":
+          description: No Content
     patch:
       tags:
       - Files
@@ -714,12 +1014,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
         "200":
           description: OK
           content:
@@ -729,7 +1023,7 @@ paths:
   /api/directory/{dId}:
     get:
       tags:
-      - Files
+      - Directories
       operationId: retrieveDirectory
       parameters:
       - name: dId
@@ -750,12 +1044,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
         "200":
           description: OK
           content:
@@ -764,7 +1052,7 @@ paths:
                 $ref: "#/components/schemas/DirectoryContentsResponse"
     delete:
       tags:
-      - Files
+      - Directories
       operationId: deleteDirectory
       parameters:
       - name: dId
@@ -785,17 +1073,11 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "200":
-          description: OK
+        "204":
+          description: No Content
     patch:
       tags:
-      - Files
+      - Directories
       operationId: renameDirectory
       parameters:
       - name: dId
@@ -822,23 +1104,23 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
         "200":
           description: OK
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/DirectoryDetailsResponse"
-  /api/operations:
+  /api/users/search:
     get:
       tags:
-      - operation-definition-rest-adapter
-      operationId: getAllOperationDefinitions
+      - Users
+      operationId: searchUsers
+      parameters:
+      - name: email
+        in: query
+        required: true
+        schema:
+          type: string
       responses:
         "401":
           description: Unauthorized
@@ -852,8 +1134,58 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: Not Found
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserResponse"
+  /api/project/{pId}/roles/me:
+    get:
+      tags:
+      - Project Roles
+      operationId: getMyRole
+      parameters:
+      - name: pId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectRoleResponse"
+  /api/operations:
+    get:
+      tags:
+      - Operation Definitions
+      operationId: getAllGates
+      responses:
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden
           content:
             application/json:
               schema:
@@ -869,8 +1201,8 @@ paths:
   /api/operations/{id}:
     get:
       tags:
-      - operation-definition-rest-adapter
-      operationId: getOperationDefinitionById
+      - Operation Definitions
+      operationId: getGateById
       parameters:
       - name: id
         in: path
@@ -890,12 +1222,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
         "200":
           description: OK
           content:
@@ -905,7 +1231,7 @@ paths:
   /api/me:
     get:
       tags:
-      - Authentication
+      - Users
       operationId: getCurrentUser
       responses:
         "401":
@@ -920,27 +1246,26 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
         "200":
           description: OK
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/UserResponse"
-  /api/circuit/{circuitId}:
+  /api/circuit/project/{projectId}/subcircuits:
     get:
       tags:
-      - circuit-rest-adapter
-      operationId: get
+      - Circuit
+      operationId: listSubcircuits
       parameters:
-      - name: circuitId
+      - name: projectId
         in: path
         required: true
+        schema:
+          type: string
+      - name: excludeCircuitId
+        in: query
+        required: false
         schema:
           type: string
       responses:
@@ -956,8 +1281,71 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: Not Found
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SubcircuitOptionResponse"
+  /api/circuit/project/{projectId}/subcircuit-disallowed-files:
+    get:
+      tags:
+      - Circuit
+      operationId: listDisallowedFileIds
+      parameters:
+      - name: projectId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: currentCircuitId
+        in: query
+        required: false
+        schema:
+          type: string
+      responses:
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+  /api/circuit/file/{fileId}:
+    get:
+      tags:
+      - Circuit
+      operationId: getByFileId
+      parameters:
+      - name: fileId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden
           content:
             application/json:
               schema:
@@ -968,37 +1356,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CircuitResponse"
-    delete:
-      tags:
-      - circuit-rest-adapter
-      operationId: delete
-      parameters:
-      - name: circuitId
-        in: path
-        required: true
-        schema:
-          type: string
-      responses:
-        "401":
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "403":
-          description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "200":
-          description: OK
   /api/auth/user:
     get:
       tags:
@@ -1017,8 +1374,63 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: Not Found
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RestAuthStatusResponse"
+  /api/project/{pId}/roles/{userId}:
+    delete:
+      tags:
+      - Project Roles
+      operationId: removeRole
+      parameters:
+      - name: pId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
+          description: OK
+  /api/circuit/{circuitId}/reset:
+    delete:
+      tags:
+      - Circuit
+      operationId: reset
+      parameters:
+      - name: circuitId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden
           content:
             application/json:
               schema:
@@ -1028,11 +1440,11 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/RestAuthStatusResponse"
+                $ref: "#/components/schemas/CircuitResponse"
   /api/circuit/{circuitId}/register/{registerId}/{qubitIdx}:
     delete:
       tags:
-      - circuit-rest-adapter
+      - Circuit
       operationId: removeQubit
       parameters:
       - name: circuitId
@@ -1064,8 +1476,43 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: Not Found
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CircuitResponse"
+  /api/circuit/{circuitId}/register/{registerId}/bit/{bitIdx}:
+    delete:
+      tags:
+      - Circuit
+      operationId: removeClassicBit
+      parameters:
+      - name: circuitId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: registerId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: bitIdx
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int32
+      responses:
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden
           content:
             application/json:
               schema:
@@ -1079,7 +1526,7 @@ paths:
   /api/circuit/{circuitId}/operation/{operationId}:
     delete:
       tags:
-      - circuit-rest-adapter
+      - Circuit
       operationId: removeQuantumOperation
       parameters:
       - name: circuitId
@@ -1101,12 +1548,6 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "403":
           description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: Not Found
           content:
             application/json:
               schema:
@@ -1145,98 +1586,20 @@ components:
         content:
           type: string
           format: byte
-        contentType:
-          type: string
       required:
       - content
-      - contentType
-    ProjectRequest:
+    UpdateEditorStateRequest:
       type: object
       properties:
-        name:
+        tabsJson:
           type: string
-      required:
-      - name
-    ProjectDetailsResponse:
+    EditorStateResponse:
       type: object
       properties:
-        id:
+        projectId:
           type: string
-        name:
+        tabsJson:
           type: string
-        type:
-          type: string
-        createdOn:
-          type: string
-          format: date-time
-        lastAccess:
-          type: string
-          format: date-time
-    CreateFileRequest:
-      type: object
-      properties:
-        name:
-          type: string
-        contentType:
-          type: string
-          pattern: "^[a-z]+/[-a-z0-9]+$"
-      required:
-      - contentType
-      - name
-    FileDetailsResponse:
-      type: object
-      properties:
-        id:
-          type: string
-        name:
-          type: string
-        type:
-          type: string
-        createdOn:
-          type: string
-          format: date-time
-        lastAccess:
-          type: string
-          format: date-time
-        contentType:
-          type: string
-    DirectoryRequest:
-      type: object
-      properties:
-        name:
-          type: string
-      required:
-      - name
-    DirectoryDetailsResponse:
-      type: object
-      properties:
-        id:
-          type: string
-        name:
-          type: string
-        type:
-          type: string
-        createdOn:
-          type: string
-          format: date-time
-        lastAccess:
-          type: string
-          format: date-time
-    CircuitResponse:
-      type: object
-      properties:
-        id:
-          type: string
-        registers:
-          type: array
-          items:
-            oneOf:
-            - $ref: "#/components/schemas/ClassicRegisterResponse"
-            - $ref: "#/components/schemas/QuantumRegisterResponse"
-        layers:
-          type: array
-          items:
-            $ref: "#/components/schemas/LayerResponse"
     ClassicRegisterResponse:
       allOf:
       - $ref: "#/components/schemas/RegisterResponse"
@@ -1245,6 +1608,35 @@ components:
           numberOfBits:
             type: integer
             format: int32
+    CompositeQuantumGateDto:
+      allOf:
+      - $ref: "#/components/schemas/QuantumOperationDto"
+      - type: object
+        properties:
+          portLabels:
+            type: array
+            items:
+              type: string
+          usedQubitPositions:
+            type: array
+            items:
+              type: integer
+              format: int32
+      - type: object
+        properties:
+          portLabels:
+            type: array
+            items:
+              type: string
+          usedQubitPositions:
+            type: array
+            items:
+              type: integer
+              format: int32
+          body:
+            type: array
+            items:
+              $ref: "#/components/schemas/QuantumOperationDto"
     ElementSelectorDto:
       type: object
       properties:
@@ -1268,8 +1660,22 @@ components:
           type: array
           items:
             oneOf:
+            - $ref: "#/components/schemas/CompositeQuantumGateDto"
             - $ref: "#/components/schemas/ElementaryQuantumGateDto"
             - $ref: "#/components/schemas/MeasurementDto"
+            - $ref: "#/components/schemas/SubcircuitOperationDto"
+    LoopBlockDto:
+      type: object
+      properties:
+        id:
+          type: string
+        repeatCount:
+          type: integer
+          format: int32
+        operationIds:
+          type: array
+          items:
+            type: string
     MeasurementDto:
       allOf:
       - $ref: "#/components/schemas/QuantumOperationDto"
@@ -1286,7 +1692,6 @@ components:
       properties:
         id:
           type: string
-          readOnly: true
         identifier:
           type: string
         inverseForm:
@@ -1324,16 +1729,234 @@ components:
           type: string
       required:
       - type
+    SubcircuitOperationDto:
+      allOf:
+      - $ref: "#/components/schemas/QuantumOperationDto"
+      - type: object
+        properties:
+          definitionCircuitId:
+            type: string
+          subcircuitQubitIndices:
+            type: array
+            items:
+              type: integer
+              format: int32
+          definitionName:
+            type: string
+          bindingError:
+            type: string
+      - type: object
+        properties:
+          definitionCircuitId:
+            type: string
+          subcircuitQubitIndices:
+            type: array
+            items:
+              type: integer
+              format: int32
+          definitionName:
+            type: string
+          body:
+            type: array
+            items:
+              $ref: "#/components/schemas/QuantumOperationDto"
+          bindingError:
+            type: string
+    UpdateCircuitRequest:
+      type: object
+      properties:
+        registers:
+          type: array
+          items:
+            oneOf:
+            - $ref: "#/components/schemas/ClassicRegisterResponse"
+            - $ref: "#/components/schemas/QuantumRegisterResponse"
+        layers:
+          type: array
+          items:
+            $ref: "#/components/schemas/LayerResponse"
+        loopBlocks:
+          type: array
+          items:
+            $ref: "#/components/schemas/LoopBlockDto"
+    CircuitResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        projectId:
+          type: string
+        fileId:
+          type: string
+        registers:
+          type: array
+          items:
+            oneOf:
+            - $ref: "#/components/schemas/ClassicRegisterResponse"
+            - $ref: "#/components/schemas/QuantumRegisterResponse"
+        layers:
+          type: array
+          items:
+            $ref: "#/components/schemas/LayerResponse"
+        loopBlocks:
+          type: array
+          items:
+            $ref: "#/components/schemas/LoopBlockDto"
+    ProjectRoleRequest:
+      type: object
+      properties:
+        userId:
+          type: string
+        role:
+          type: string
+      required:
+      - role
+      - userId
+    ProjectRoleResponse:
+      type: object
+      properties:
+        userId:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+        role:
+          type: string
+        email:
+          type: string
+        name:
+          type: string
+        avatarUrl:
+          type: string
+    ProjectRequest:
+      type: object
+      properties:
+        name:
+          type: string
+      required:
+      - name
+    ProjectDetailsResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+        createdOn:
+          type: string
+          format: date-time
+        lastAccess:
+          type: string
+          format: date-time
+        owner:
+          $ref: "#/components/schemas/UserResponse"
+    UserResponse:
+      type: object
+      properties:
+        userId:
+          type: string
+          format: uuid
+        email:
+          type: string
+        name:
+          type: string
+        avatarUrl:
+          type: string
+        emailVerified:
+          type: boolean
+    CreateFileRequest:
+      type: object
+      properties:
+        name:
+          type: string
+      required:
+      - name
+    FileDetailsResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+        createdOn:
+          type: string
+          format: date-time
+        lastAccess:
+          type: string
+          format: date-time
+    DirectoryRequest:
+      type: object
+      properties:
+        name:
+          type: string
+      required:
+      - name
+    DirectoryDetailsResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+        createdOn:
+          type: string
+          format: date-time
+        lastAccess:
+          type: string
+          format: date-time
+    RegisterRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          enum:
+          - Quantum_Register
+          - Classic_Register
+        size:
+          type: integer
+          format: int32
     AddQuantumOperationRequest:
       type: object
       properties:
         quantumOperation:
           oneOf:
+          - $ref: "#/components/schemas/CompositeQuantumGateDto"
           - $ref: "#/components/schemas/ElementaryQuantumGateDto"
           - $ref: "#/components/schemas/MeasurementDto"
+          - $ref: "#/components/schemas/SubcircuitOperationDto"
         layerIdx:
           type: integer
           format: int32
+    GeneratedCodeResponse:
+      type: object
+      properties:
+        code:
+          type: string
+    CircuitContentResponse:
+      type: object
+      properties:
+        registers:
+          type: array
+          items:
+            oneOf:
+            - $ref: "#/components/schemas/ClassicRegisterResponse"
+            - $ref: "#/components/schemas/QuantumRegisterResponse"
+        layers:
+          type: array
+          items:
+            $ref: "#/components/schemas/LayerResponse"
+        loopBlocks:
+          type: array
+          items:
+            $ref: "#/components/schemas/LoopBlockDto"
     RestLogoutResponse:
       type: object
       properties:
@@ -1359,6 +1982,10 @@ components:
           items:
             $ref: "#/components/schemas/ElementSelectorDto"
         controlQubits:
+          type: array
+          items:
+            $ref: "#/components/schemas/ElementSelectorDto"
+        classicBits:
           type: array
           items:
             $ref: "#/components/schemas/ElementSelectorDto"
@@ -1453,20 +2080,6 @@ components:
           type: string
         output:
           type: string
-    UserResponse:
-      type: object
-      properties:
-        userId:
-          type: string
-          format: uuid
-        email:
-          type: string
-        name:
-          type: string
-        avatarUrl:
-          type: string
-        emailVerified:
-          type: boolean
     FileContentResponse:
       type: object
       properties:
@@ -1492,6 +2105,21 @@ components:
         lastAccess:
           type: string
           format: date-time
+    SubcircuitOptionResponse:
+      type: object
+      properties:
+        circuitId:
+          type: string
+        fileId:
+          type: string
+        name:
+          type: string
+        qubitCount:
+          type: integer
+          format: int32
+        operationCount:
+          type: integer
+          format: int32
     RestAuthStatusResponse:
       type: object
       properties:

@@ -69,10 +69,14 @@ public class OpenApiConfig {
             .tags(
                 List.of(
                     new Tag().name("Authentication").description("Authentication and user session management" + " endpoints"),
+                    new Tag().name("Users").description("Current user and user lookup endpoints"),
                     new Tag().name("Projects").description("Project management operations"),
-                    new Tag().name("Files").description("File and directory management operations"),
+                    new Tag().name("Project Roles").description("Project role management operations"),
+                    new Tag().name("Directories").description("Directory management operations"),
+                    new Tag().name("Files").description("File management operations"),
                     new Tag().name("Operation Definitions").description("Definitions of quantum operations"),
-                    new Tag().name("Circuit").description("Controls operations on a quantum circuit")
+                    new Tag().name("Circuit").description("Controls operations on a quantum circuit"),
+                    new Tag().name("Editor State").description("Editor state of a project")
                 )
             );
     }
