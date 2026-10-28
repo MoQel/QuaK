@@ -10,7 +10,7 @@ import { getModelId, savedVersionIds } from '@/views/text-editor-view/utils/edit
 import { useEditorModelManager } from '@/hooks/editor/useEditorModelManager.ts';
 import { useAppSelector } from '@/hooks/useAppSelector.ts';
 import { useEditorLanguage } from '@/hooks/editor/useEditorLanguage.ts';
-import { cn } from '@/lib/utils.ts';
+import { cn } from '@quak/ui/lib/utils';
 import { lspManager } from '@/lsp/LSPClientManager.ts';
 
 interface QLPEditorProps {

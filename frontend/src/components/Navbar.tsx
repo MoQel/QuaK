@@ -5,7 +5,7 @@ import { Home, User, Settings, LogOut } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCurrentUser } from '@/hooks/useUser';
 import ThemeSwitch from '@/components/ThemeSwitch';
-import { Button } from '@/components/ui/button';
+import { Button } from '@quak/ui/button';
 import UserAvatar from '@/components/UserAvatar';
 
 export const Navbar: React.FC = () => {

@@ -3,12 +3,11 @@ import { BlockMath } from 'react-katex';
 import 'katex/dist/katex.min.css';
 import { Microscope, Copy, Check } from 'lucide-react';
 import { toast } from 'sonner';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.tsx';
-import { Button } from '@/components/ui/button.tsx';
+import { Card, CardContent, CardHeader, CardTitle } from '@quak/ui/card';
+import { Button } from '@quak/ui/button';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle.tsx';
-import { CircuitResponse } from '@/api/dto/circuit.ts';
-import { toLabeledDirac } from '@/notation/dirac/labeledMapper.ts';
-import { Layout } from '@/notation/dirac/layout.ts';
+import { CircuitResponse } from '@quak/circuit-core';
+import { toLabeledDirac, type Layout } from '@quak/circuit-core/notation/dirac';
 
 interface DiracInspectorViewProps {
     circuit: CircuitResponse | undefined;

@@ -1,4 +1,4 @@
-import type { ElementSelectorDto } from '@/api/dto/circuit.ts';
+import type { ElementSelectorDto } from '@quak/circuit-core';
 
 export interface Disposable {
     delete(): void;

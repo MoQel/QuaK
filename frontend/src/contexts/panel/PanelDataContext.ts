@@ -1,6 +1,5 @@
 import { createContext, useContext } from 'react';
-import { OperationDefinitionResponse } from '@/api/dto/library';
-import { CircuitResponse } from '@/api/dto/circuit';
+import { OperationDefinitionResponse, CircuitResponse } from '@quak/circuit-core';
 
 export type PanelContextType = {
     circuit: CircuitResponse | undefined;

@@ -1,5 +1,5 @@
 # ============================================================
-# Local developer config — copy to application-local.yaml (gitignored)
+# Local developer config. Copy to application-local.yaml (gitignored)
 #
 # Setup:
 #   cd backend/lsp && ./setup-all.sh

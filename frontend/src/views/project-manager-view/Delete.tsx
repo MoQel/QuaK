@@ -1,7 +1,7 @@
-import { ContextMenuItem } from '@/components/ui/context-menu.tsx';
-import { FormEvent, JSX, useContext } from 'react';
+import { ContextMenuItem } from '@quak/ui/context-menu';
+import { JSX, SubmitEvent, useContext } from 'react';
 import { DialogClose, ParentRefresh } from '@/views/project-manager-view/ProjectManagerContexts.ts';
-import { DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog.tsx';
+import { DialogDescription, DialogHeader, DialogTitle } from '@quak/ui/dialog';
 import { DialogCloseButtons } from '@/views/project-manager-view/util/FormComponents.tsx';
 import { api } from '@/api/api.ts';
 import { toast } from 'sonner';
@@ -22,7 +22,7 @@ export function Delete({
     const reload = useContext(ParentRefresh);
     const close = useContext(DialogClose);
 
-    const del = (event: FormEvent) => {
+    const del = (event: SubmitEvent<HTMLFormElement>) => {
         event.preventDefault();
         api.delete(endpoint)
             .then(() => {

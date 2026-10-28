@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { CircuitResponse } from '@/api/dto/circuit.ts';
+import { CircuitResponse } from '@quak/circuit-core';
 import { WorkerRequest, WorkerResponse } from '@/workers/messages.ts';
 import { SimulationResult, SimulationOptions } from '@/simulation/simulation.types.ts';
 

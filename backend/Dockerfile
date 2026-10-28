@@ -30,6 +30,8 @@ ARG SKIP_FRONTEND=true
 # the frontend build (vite + swc native addon) needs more headroom.
 ENV NODE_OPTIONS="--max-old-space-size=6144"
 
+# The frontend imports @quak/* packages, which npm links locally via workspaces.
+# This only works if npm install runs from the workspace root.
 WORKDIR /workspace/backend
 
 # Use the checked-in wrapper so local, CI and Docker builds use the same Gradle version.
@@ -41,6 +43,7 @@ COPY backend/src ./src
 
 # Copy the npm workspace metadata so frontend installs use the checked-in lockfile.
 COPY package.json package-lock.json /workspace/
+COPY packages /workspace/packages
 
 # Copy frontend source code only for prod build
 COPY frontend /workspace/frontend

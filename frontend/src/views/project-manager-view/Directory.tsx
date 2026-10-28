@@ -1,8 +1,8 @@
 import { FileElementContainer } from '@/views/project-manager-view/FileElementContainer.tsx';
-import { DialogHeader, DialogTitle } from '@/components/ui/dialog.tsx';
+import { DialogHeader, DialogTitle } from '@quak/ui/dialog';
 import { DialogClose, ParentRefresh } from '@/views/project-manager-view/ProjectManagerContexts.ts';
 import { JSX, useContext } from 'react';
-import { ContextMenuItem } from '@/components/ui/context-menu.tsx';
+import { ContextMenuItem } from '@quak/ui/context-menu';
 import { Folder, FolderOpen } from 'lucide-react';
 import {
     Directory as IDirectory,
