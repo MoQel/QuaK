@@ -33,6 +33,11 @@ body,
     --color-destructive-text: var(--destructive-text);
     --color-bg-subtle: var(--bg-subtle);
     --color-selection: var(--selection);
+    --color-sidebar-foreground: var(--text);
+    --color-sidebar-accent: var(--bg);
+    --color-sidebar-accent-foreground: var(--text);
+    --color-sidebar-border: var(--border);
+    --color-sidebar-ring: var(--special);
 }
 
 :root {

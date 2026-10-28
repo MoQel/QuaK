@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { SidebarProvider } from '@/components/ui/sidebar.tsx';
 import { IdeSidebar } from './IdeSidebar.tsx';
 
 const togglePanel = vi.fn();
@@ -9,6 +10,7 @@ const logout = vi.fn();
 const toggleTheme = vi.fn();
 const openRenameProjectDialog = vi.fn();
 const openDeleteProjectDialog = vi.fn();
+const auth = { logout };
 
 vi.mock('@/contexts/ProjectContext.tsx', () => ({
     useProject: () => ({
@@ -26,16 +28,13 @@ vi.mock('@/contexts/DockviewContext.tsx', () => ({
 }));
 
 vi.mock('@/contexts/AuthContext.tsx', () => ({
-    useAuth: () => ({
-        logout,
-    }),
+    useAuth: () => auth,
 }));
 
+const themeState = { theme: 'dark', toggleTheme };
+
 vi.mock('@/theme.tsx', () => ({
-    useTheme: () => ({
-        theme: 'dark',
-        toggleTheme,
-    }),
+    useTheme: () => themeState,
 }));
 
 vi.mock('@/components/projects/useProjectActionsDialog.tsx', () => ({
@@ -49,13 +48,16 @@ vi.mock('@/components/projects/useProjectActionsDialog.tsx', () => ({
 const renderSidebar = (initialEntries = ['/project/project-1']) =>
     render(
         <MemoryRouter initialEntries={initialEntries}>
-            <IdeSidebar />
+            <SidebarProvider>
+                <IdeSidebar />
+            </SidebarProvider>
         </MemoryRouter>,
     );
 
 describe('IdeSidebar', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        themeState.theme = 'dark';
     });
 
     it('marks open panels and toggles them from the sidebar', () => {
@@ -66,9 +68,8 @@ describe('IdeSidebar', () => {
 
         expect(projectButton).toHaveAttribute('aria-pressed', 'true');
         expect(circuitButton).toHaveAttribute('aria-pressed', 'false');
-        expect(projectButton).toHaveClass('text-special');
-        expect(circuitButton).toHaveClass('text-text');
-        expect(circuitButton.className).not.toContain('hover:text-special');
+        expect(projectButton).toHaveAttribute('data-active', 'true');
+        expect(circuitButton).toHaveAttribute('data-active', 'false');
 
         fireEvent.click(projectButton);
 
@@ -82,7 +83,7 @@ describe('IdeSidebar', () => {
         expect(screen.getByRole('link', { name: 'Profile' })).toHaveAttribute('href', '/profile');
         expect(screen.getByRole('link', { name: 'Settings' })).toHaveAttribute('href', '/settings');
 
-        fireEvent.click(screen.getByRole('button', { name: 'Toggle dark mode' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Switch to light mode' }));
         fireEvent.click(screen.getByRole('button', { name: 'Logout' }));
 
         expect(toggleTheme).toHaveBeenCalledOnce();
@@ -125,6 +126,31 @@ describe('IdeSidebar', () => {
         expect(screen.queryByRole('button', { name: 'Project panel' })).not.toBeInTheDocument();
         expect(screen.queryByRole('button', { name: 'Circuit panel' })).not.toBeInTheDocument();
         expect(screen.queryByRole('button', { name: 'Rename project' })).not.toBeInTheDocument();
-        expect(screen.getByRole('link', { name: 'Settings' })).toHaveClass('text-special');
+        expect(screen.getByRole('link', { name: 'Settings' })).toHaveAttribute('data-active', 'true');
+    });
+
+    it('offers the light theme while the dark theme is active', () => {
+        renderSidebar();
+
+        const themeSwitch = screen.getByRole('button', { name: 'Switch to light mode' });
+        expect(themeSwitch).toHaveTextContent('Light Mode');
+    });
+
+    it('offers the dark theme while the light theme is active', () => {
+        themeState.theme = 'light';
+        renderSidebar();
+
+        const themeSwitch = screen.getByRole('button', { name: 'Switch to dark mode' });
+        expect(themeSwitch).toHaveTextContent('Dark Mode');
+    });
+
+    it('names the theme switch in the tooltip of the collapsed sidebar', async () => {
+        renderSidebar();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Collapse sidebar' }));
+
+        fireEvent.focus(screen.getByRole('button', { name: 'Switch to light mode' }));
+
+        expect(await screen.findByRole('tooltip')).toHaveTextContent('Light Mode');
     });
 });

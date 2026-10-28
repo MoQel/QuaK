@@ -1,4 +1,3 @@
-import { type ReactNode, useState } from 'react';
 import {
     BarChart3,
     CircuitBoard,
@@ -21,6 +20,18 @@ import {
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { Button } from '@quak/ui/button';
+import {
+    Sidebar,
+    SidebarContent,
+    SidebarFooter,
+    SidebarGroup,
+    SidebarGroupLabel,
+    SidebarHeader,
+    SidebarMenu,
+    SidebarMenuButton,
+    SidebarMenuItem,
+    useSidebar,
+} from '@/components/ui/sidebar.tsx';
 import { useAuth } from '@/contexts/AuthContext.tsx';
 import { useDockview } from '@/contexts/DockviewContext.tsx';
 import { useProject } from '@/contexts/ProjectContext.tsx';
@@ -34,12 +45,6 @@ type PanelKey = keyof typeof PANELS;
 type SidebarPanelItem = {
     id: PanelKey;
     icon: LucideIcon;
-};
-
-type SidebarItemStyleOptions = {
-    active?: boolean;
-    collapsed: boolean;
-    muted?: boolean;
 };
 
 const PANEL_ITEMS: SidebarPanelItem[] = [
@@ -70,30 +75,32 @@ export function IdeSidebar() {
     const { projectId, projectName, refreshProject } = useProject();
     const { dialog, openDeleteProjectDialog, openRenameProjectDialog } = useProjectActionsDialog();
     const { openPanels, togglePanel, resetLayout } = useDockview();
-    const [collapsed, setCollapsed] = useState(false);
+    const { state, toggleSidebar } = useSidebar();
+    const collapsed = state === 'collapsed';
     const isDark = theme === 'dark';
+    const themeSwitchLabel = isDark ? 'Light Mode' : 'Dark Mode';
     const projectTitle = isIdeView ? (projectName ?? 'QuaK') : 'QuaK';
 
     return (
-        <aside
-            className={cn(
-                'flex h-full shrink-0 flex-col border-r border-border bg-bg-subtle text-text transition-[width] duration-200 ease-out',
-                collapsed ? 'w-16' : 'w-72',
-            )}
-        >
+        <Sidebar collapsible="icon">
             {dialog}
-            <header
+            <SidebarHeader
                 className={cn(
-                    'flex shrink-0 items-center border-b border-border',
-                    collapsed ? 'h-20 flex-col justify-center gap-2 px-2' : 'h-20 gap-3 px-5',
+                    'h-20 shrink-0 border-b border-border',
+                    collapsed ? 'flex-col justify-center gap-2 px-2' : 'flex-row items-center gap-3 px-5',
                 )}
             >
-                <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-special text-base font-bold text-white shadow-sm">
+                <div
+                    aria-hidden
+                    className="pointer-events-none flex size-10 shrink-0 items-center justify-center rounded-lg bg-special text-base font-bold text-white shadow-sm"
+                >
                     Q
                 </div>
                 {!collapsed && (
                     <>
-                        <span className="min-w-0 flex-1 truncate text-lg font-semibold">{projectTitle}</span>
+                        <span className="pointer-events-none min-w-0 flex-1 truncate text-lg font-semibold">
+                            {projectTitle}
+                        </span>
                         {isIdeView && projectId && projectName && (
                             <div className="flex shrink-0 items-center gap-1">
                                 <Button
@@ -136,128 +143,116 @@ export function IdeSidebar() {
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className={cn('size-8 text-text-muted hover:bg-bg-light hover:text-text', !collapsed && 'ml-auto')}
+                    className="size-8 text-text-muted hover:bg-bg-light hover:text-text"
                     aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
                     title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-                    onClick={() => setCollapsed((current) => !current)}
+                    onClick={toggleSidebar}
                 >
                     {collapsed ? <PanelLeftOpen className="size-4" /> : <PanelLeftClose className="size-4" />}
                 </Button>
-            </header>
+            </SidebarHeader>
 
-            {isIdeView ? (
-                <nav className="flex-1 overflow-y-auto px-2 py-5">
-                    <SidebarSectionLabel collapsed={collapsed}>Panels</SidebarSectionLabel>
-                    <ul className="space-y-1">
-                        {PANEL_ITEMS.map((item) => {
-                            const isOpen = openPanels.has(item.id);
+            <SidebarContent className="py-3">
+                {isIdeView && (
+                    <SidebarGroup>
+                        <SidebarGroupLabel className={SECTION_LABEL_CLASS_NAME}>Panels</SidebarGroupLabel>
+                        <SidebarMenu>
+                            {PANEL_ITEMS.map((item) => {
+                                const isOpen = openPanels.has(item.id);
+                                const Icon = item.icon;
+                                const title = `${PANEL_TITLES[item.id]} panel`;
+
+                                return (
+                                    <SidebarMenuItem key={item.id}>
+                                        <SidebarMenuButton
+                                            className={menuButtonClassName()}
+                                            isActive={isOpen}
+                                            aria-pressed={isOpen}
+                                            aria-label={title}
+                                            tooltip={title}
+                                            onClick={() => togglePanel(item.id)}
+                                        >
+                                            <Icon />
+                                            {!collapsed && <span>{PANEL_TITLES[item.id]}</span>}
+                                        </SidebarMenuButton>
+                                    </SidebarMenuItem>
+                                );
+                            })}
+                            <SidebarMenuItem className="mt-1">
+                                <SidebarMenuButton
+                                    className={menuButtonClassName({ muted: true })}
+                                    aria-label="Reset layout"
+                                    tooltip="Reset layout"
+                                    onClick={resetLayout}
+                                >
+                                    <LayoutGrid />
+                                    {!collapsed && <span>Reset Layout</span>}
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
+                        </SidebarMenu>
+                    </SidebarGroup>
+                )}
+            </SidebarContent>
+
+            <SidebarFooter className="shrink-0 gap-0 border-t border-border py-4">
+                <SidebarGroup className="py-0">
+                    <SidebarGroupLabel className={SECTION_LABEL_CLASS_NAME}>Navigation</SidebarGroupLabel>
+                    <SidebarMenu>
+                        {NAV_ITEMS.map((item) => {
                             const Icon = item.icon;
-                            const title = `${PANEL_TITLES[item.id]} panel`;
 
                             return (
-                                <li key={item.id}>
-                                    <button
-                                        type="button"
-                                        className={sidebarItemClassName({ active: isOpen, collapsed })}
-                                        aria-pressed={isOpen}
-                                        aria-label={title}
-                                        title={collapsed ? title : undefined}
-                                        onClick={() => togglePanel(item.id)}
+                                <SidebarMenuItem key={item.to}>
+                                    <SidebarMenuButton
+                                        asChild
+                                        className={menuButtonClassName({ muted: true })}
+                                        isActive={item.isActive(pathname)}
+                                        tooltip={item.label}
                                     >
-                                        <Icon className="size-5 shrink-0" />
-                                        {!collapsed && <span className="truncate">{PANEL_TITLES[item.id]}</span>}
-                                    </button>
-                                </li>
+                                        <Link to={item.to} aria-label={item.label}>
+                                            <Icon />
+                                            {!collapsed && <span>{item.label}</span>}
+                                        </Link>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
                             );
                         })}
-                    </ul>
-
-                    <button
-                        type="button"
-                        className={cn('mt-2', sidebarItemClassName({ collapsed, muted: true }))}
-                        aria-label="Reset layout"
-                        title={collapsed ? 'Reset layout' : undefined}
-                        onClick={resetLayout}
-                    >
-                        <LayoutGrid className="size-5 shrink-0" />
-                        {!collapsed && <span className="truncate">Reset Layout</span>}
-                    </button>
-                </nav>
-            ) : (
-                <div className="flex-1" />
-            )}
-
-            <footer className="shrink-0 border-t border-border px-2 py-4">
-                <SidebarSectionLabel collapsed={collapsed}>Navigation</SidebarSectionLabel>
-                <ul className="space-y-1">
-                    {NAV_ITEMS.map((item) => {
-                        const Icon = item.icon;
-                        const active = item.isActive(pathname);
-
-                        return (
-                            <li key={item.to}>
-                                <Link
-                                    to={item.to}
-                                    className={sidebarItemClassName({ active, collapsed, muted: true })}
-                                    aria-label={item.label}
-                                    title={collapsed ? item.label : undefined}
-                                >
-                                    <Icon className="size-5 shrink-0" />
-                                    {!collapsed && <span className="truncate">{item.label}</span>}
-                                </Link>
-                            </li>
-                        );
-                    })}
-                </ul>
-
-                <div className="mt-1 space-y-1">
-                    <button
-                        type="button"
-                        className={sidebarItemClassName({ collapsed, muted: true })}
-                        aria-label="Toggle dark mode"
-                        aria-pressed={isDark}
-                        title={collapsed ? 'Dark Mode' : undefined}
-                        onClick={toggleTheme}
-                    >
-                        {isDark ? <Sun className="size-5 shrink-0" /> : <Moon className="size-5 shrink-0" />}
-                        {!collapsed && <span className="truncate text-left">Dark Mode</span>}
-                    </button>
-
-                    <button
-                        type="button"
-                        className={sidebarItemClassName({ collapsed, muted: true })}
-                        aria-label="Logout"
-                        title={collapsed ? 'Logout' : undefined}
-                        onClick={logout}
-                    >
-                        <LogOut className="size-5 shrink-0" />
-                        {!collapsed && <span className="truncate">Logout</span>}
-                    </button>
-                </div>
-            </footer>
-        </aside>
+                        <SidebarMenuItem className="mt-1">
+                            <SidebarMenuButton
+                                className={menuButtonClassName({ muted: true })}
+                                aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+                                tooltip={themeSwitchLabel}
+                                onClick={toggleTheme}
+                            >
+                                {isDark ? <Sun /> : <Moon />}
+                                {!collapsed && <span>{themeSwitchLabel}</span>}
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+                        <SidebarMenuItem>
+                            <SidebarMenuButton
+                                className={menuButtonClassName({ muted: true })}
+                                aria-label="Logout"
+                                tooltip="Logout"
+                                onClick={logout}
+                            >
+                                <LogOut />
+                                {!collapsed && <span>Logout</span>}
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+                    </SidebarMenu>
+                </SidebarGroup>
+            </SidebarFooter>
+        </Sidebar>
     );
 }
 
-function sidebarItemClassName({ active = false, collapsed, muted = false }: SidebarItemStyleOptions) {
-    let tone = 'text-text hover:bg-bg';
-    if (active) {
-        tone =
-            'bg-bg text-special before:absolute before:bottom-2 before:left-0 before:top-2 before:w-0.5 before:rounded-full before:bg-special';
-    } else if (muted) {
-        tone = 'text-text-muted hover:bg-bg hover:text-text';
-    }
+const SECTION_LABEL_CLASS_NAME = 'pointer-events-none px-3 pb-3 text-xs font-bold uppercase text-text-muted';
 
+function menuButtonClassName({ muted = false }: { muted?: boolean } = {}) {
     return cn(
-        'relative flex h-10 w-full items-center rounded-md text-sm font-medium transition-colors',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-special/60',
-        collapsed ? 'justify-center px-0' : 'gap-3 px-3',
-        tone,
+        'h-10 gap-3 px-3 font-medium text-sidebar-foreground [&>svg]:size-5',
+        'group-data-[collapsible=icon]:size-10! group-data-[collapsible=icon]:justify-center',
+        'data-[active=true]:text-special data-[active=true]:before:absolute data-[active=true]:before:bottom-2 data-[active=true]:before:left-0 data-[active=true]:before:top-2 data-[active=true]:before:w-0.5 data-[active=true]:before:rounded-full data-[active=true]:before:bg-special',
+        muted && 'text-text-muted hover:text-text',
     );
-}
-
-function SidebarSectionLabel({ children, collapsed }: Readonly<{ children: ReactNode; collapsed: boolean }>) {
-    if (collapsed) return null;
-
-    return <div className="px-3 pb-3 text-xs font-bold uppercase text-text-muted">{children}</div>;
 }

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { IdeSidebar } from '@/components/sidebar/IdeSidebar.tsx';
+import { SidebarProvider } from '@/components/ui/sidebar.tsx';
 import { Toaster } from '@/components/ui/sonner.tsx';
 import { ProjectProvider } from '@/contexts/ProjectContext';
 import { DockviewProvider } from '@/contexts/DockviewContext';
@@ -18,9 +19,9 @@ export const Layout: React.FC = () => {
             <CircuitTabsProvider>
                 <PanelDataProvider>
                     <DockviewProvider>
-                        <div
+                        <SidebarProvider
                             className={cn(
-                                'flex bg-bg-dark',
+                                'bg-bg-dark',
                                 isIDE ? 'h-screen overflow-hidden' : 'min-h-screen overflow-auto',
                             )}
                         >
@@ -36,7 +37,7 @@ export const Layout: React.FC = () => {
                             </main>
 
                             <Toaster />
-                        </div>
+                        </SidebarProvider>
                     </DockviewProvider>
                 </PanelDataProvider>
             </CircuitTabsProvider>
