@@ -11,10 +11,7 @@ export function GuestBanner({ linkToProfile = false }: Readonly<{ linkToProfile?
     if (!isGuest) return null;
 
     return (
-        <div
-            role="status"
-            className="mb-6 flex items-start gap-3 rounded-lg border border-special/40 bg-special/10 px-4 py-3 text-sm text-text"
-        >
+        <div className="mb-6 flex items-start gap-3 rounded-lg border border-special/40 bg-special/10 px-4 py-3 text-sm text-text">
             <Info className="mt-0.5 size-4 shrink-0 text-special" />
             <p>
                 <span className="font-semibold">You are a Guest user.</span> {GUEST_DATA_NOTICE}{' '}
