@@ -65,11 +65,6 @@ public class UserJpaAdapter implements UserRepositoryPort {
     }
 
     @Override
-    public Optional<UUID> findIdByIssuerAndSub(String issuer, String sub) {
-        return repository.findIdByIssuerAndSub(issuer, sub);
-    }
-
-    @Override
     public List<User> searchByEmail(String email) {
         return repository.findByEmailContainingIgnoreCase(email).stream().map(mapper::toDomain).toList();
     }

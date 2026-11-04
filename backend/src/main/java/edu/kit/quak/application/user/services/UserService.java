@@ -64,22 +64,13 @@ public class UserService implements UserServicePort {
     }
 
     @Override
-    public UUID getAuthenticatedUserId(AuthenticatedUser authenticatedUser) {
-        log.debug("Fetching authenticated user ID for issuer={} sub={}", authenticatedUser.issuer(), authenticatedUser.subject());
-        // Use the efficient query that only fetches the UUID
-        return userRepository
-            .findIdByIssuerAndSub(authenticatedUser.issuer(), authenticatedUser.subject())
-            .orElseThrow(() -> {
-                log.debug("User ID not found for issuer={} sub={}", authenticatedUser.issuer(), authenticatedUser.subject());
-                return new UserNotFoundException(authenticatedUser.issuer(), authenticatedUser.subject());
-            });
-    }
-
-    @Override
-    public List<User> searchByEmail(String emailQuery) {
+    public List<User> searchByEmail(String emailQuery, User searcher) {
         log.debug("Searching users by email query: {}", emailQuery);
         if (emailQuery == null || emailQuery.isBlank()) {
             return List.of();
+        }
+        if (searcher.isGuest()) {
+            return userRepository.findByEmail(emailQuery).stream().toList();
         }
         return userRepository.searchByEmail(emailQuery);
     }

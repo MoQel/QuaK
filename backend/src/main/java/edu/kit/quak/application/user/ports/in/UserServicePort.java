@@ -18,23 +18,14 @@ public interface UserServicePort {
     Optional<User> findByIssuerAndSub(String issuer, String sub);
 
     /**
-     * Searches for users whose email matches the given query.
+     * Searches for users whose email matches the given query. Guests are anonymous, so they only
+     * find a user by the exact email and cannot list registered users by a part of it.
      *
      * @param emailQuery The email search query
+     * @param searcher The user who searches
      * @return A list of matching users
      */
-    List<User> searchByEmail(String emailQuery);
-
-    /**
-     * Efficiently retrieves only the authenticated user's UUID without loading the
-     * full entity. Use
-     * this when only the user ID is needed (e.g., for ownership verification).
-     *
-     * @param authenticatedUser The authenticated user's claims
-     * @return The user's UUID
-     * @throws edu.kit.quak.application.user.exceptions.UserNotFoundException if user doesn't exist
-     */
-    UUID getAuthenticatedUserId(AuthenticatedUser authenticatedUser);
+    List<User> searchByEmail(String emailQuery, User searcher);
 
     /**
      * Finds all users with the given IDs.
