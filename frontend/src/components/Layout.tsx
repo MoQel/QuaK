@@ -5,7 +5,6 @@ import { SidebarProvider } from '@/components/ui/sidebar.tsx';
 import { Toaster } from '@/components/ui/sonner.tsx';
 import { ProjectProvider } from '@/contexts/ProjectContext';
 import { DockviewProvider } from '@/contexts/DockviewContext';
-import { PanelDataProvider } from '@/contexts/panel/PanelDataProvider';
 import { CircuitTabsProvider } from '@/contexts/CircuitTabsContext.tsx';
 import { cn } from '@quak/ui/lib/utils';
 
@@ -17,29 +16,24 @@ export const Layout: React.FC = () => {
     return (
         <ProjectProvider>
             <CircuitTabsProvider>
-                <PanelDataProvider>
-                    <DockviewProvider>
-                        <SidebarProvider
+                <DockviewProvider>
+                    <SidebarProvider
+                        className={cn('bg-bg-dark', isIDE ? 'h-screen overflow-hidden' : 'min-h-screen overflow-auto')}
+                    >
+                        <IdeSidebar />
+
+                        <main
                             className={cn(
-                                'bg-bg-dark',
-                                isIDE ? 'h-screen overflow-hidden' : 'min-h-screen overflow-auto',
+                                'min-w-0 flex-1',
+                                isIDE ? 'min-h-0 overflow-hidden relative' : 'overflow-auto',
                             )}
                         >
-                            <IdeSidebar />
+                            <Outlet />
+                        </main>
 
-                            <main
-                                className={cn(
-                                    'min-w-0 flex-1',
-                                    isIDE ? 'min-h-0 overflow-hidden relative' : 'overflow-auto',
-                                )}
-                            >
-                                <Outlet />
-                            </main>
-
-                            <Toaster />
-                        </SidebarProvider>
-                    </DockviewProvider>
-                </PanelDataProvider>
+                        <Toaster />
+                    </SidebarProvider>
+                </DockviewProvider>
             </CircuitTabsProvider>
         </ProjectProvider>
     );

@@ -1,8 +1,11 @@
 import { fireEvent, render, screen } from '@testing-library/react';
+import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { api } from '@/api/api.ts';
+import { store } from '@/store/store.ts';
+import { closeAll, setFileDirty } from '@/store/tabs/tabsSlice.ts';
 import { SidebarProvider } from '@/components/ui/sidebar.tsx';
 import { IdeSidebar } from './IdeSidebar.tsx';
 
@@ -63,9 +66,11 @@ vi.mock('@/components/projects/useProjectActionsDialog.tsx', () => ({
 const renderSidebar = (initialEntries = ['/project/project-1']) =>
     render(
         <MemoryRouter initialEntries={initialEntries}>
-            <SidebarProvider>
-                <IdeSidebar />
-            </SidebarProvider>
+            <Provider store={store}>
+                <SidebarProvider>
+                    <IdeSidebar />
+                </SidebarProvider>
+            </Provider>
         </MemoryRouter>,
     );
 
@@ -74,6 +79,7 @@ const openProjectActions = () =>
 
 describe('IdeSidebar', () => {
     beforeEach(() => {
+        store.dispatch(closeAll());
         vi.clearAllMocks();
         themeState.theme = 'dark';
     });
@@ -134,7 +140,38 @@ describe('IdeSidebar', () => {
         fireEvent.click(await screen.findByRole('menuitem', { name: 'Grover' }));
 
         expect(navigate).toHaveBeenCalledWith('/project/project-2');
+        await new Promise((resolve) => setTimeout(resolve));
+        expect(screen.getByRole('button', { name: 'Switch project' })).not.toHaveFocus();
     });
+
+    it('asks before leaving a project with unsaved changes', async () => {
+        vi.mocked(api.get).mockResolvedValueOnce([
+            { id: 'project-2', name: 'Grover', lastAccess: '2026-10-02T00:00:00Z' },
+        ]);
+        store.dispatch(setFileDirty({ fileId: 'file-1', isDirty: true }));
+        renderSidebar();
+
+        fireEvent.keyDown(screen.getByRole('button', { name: 'Switch project' }), { key: 'Enter' });
+        fireEvent.click(await screen.findByRole('menuitem', { name: 'Grover' }));
+
+        expect(navigate).not.toHaveBeenCalled();
+        expect(store.getState().tabs.pendingCloseAction).toEqual({
+            type: 'leave',
+            payload: { target: '/project/project-2' },
+        });
+    });
+
+    it.each(['QuaK home', 'Home', 'Profile', 'Settings'])(
+        'asks before the %s link leaves a project with unsaved changes',
+        (name) => {
+            store.dispatch(setFileDirty({ fileId: 'file-1', isDirty: true }));
+            renderSidebar();
+
+            fireEvent.click(screen.getByRole('link', { name }));
+
+            expect(store.getState().tabs.pendingCloseAction?.type).toBe('leave');
+        },
+    );
 
     it('creates a project from the switcher', () => {
         renderSidebar();

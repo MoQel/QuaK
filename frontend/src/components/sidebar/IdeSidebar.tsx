@@ -18,7 +18,7 @@ import {
     User,
     type LucideIcon,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, type MouseEvent } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { Button } from '@quak/ui/button';
@@ -48,6 +48,9 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu.tsx';
+import { useAppDispatch } from '@/hooks/useAppDispatch.ts';
+import { useAppSelector } from '@/hooks/useAppSelector.ts';
+import { safeLeaveProject } from '@/store/tabs/tabsThunks.ts';
 import { useTheme } from '@/theme.tsx';
 
 type PanelKey = keyof typeof PANELS;
@@ -78,6 +81,7 @@ const NAV_ITEMS = [
 
 export function IdeSidebar() {
     const navigate = useNavigate();
+    const dispatch = useAppDispatch();
     const { pathname } = useLocation();
     const isIdeView = pathname.startsWith('/project');
     const { logout } = useAuth();
@@ -90,6 +94,12 @@ export function IdeSidebar() {
     const collapsed = state === 'collapsed';
     const isDark = theme === 'dark';
     const themeSwitchLabel = isDark ? 'Light Mode' : 'Dark Mode';
+    const hasUnsavedChanges = useAppSelector((state) => state.tabs.dirtyFiles.length > 0);
+    const confirmLeave = (target: string) => (event: MouseEvent) => {
+        if (!hasUnsavedChanges) return;
+        event.preventDefault();
+        dispatch(safeLeaveProject(target, navigate));
+    };
     const hasProject = isIdeView && !!projectId && !!projectName;
 
     return (
@@ -98,7 +108,7 @@ export function IdeSidebar() {
             <CreateProject
                 open={createOpen}
                 onOpenChange={setCreateOpen}
-                onSuccess={(project) => navigate(`/project/${project.id}`)}
+                onSuccess={(project) => dispatch(safeLeaveProject(`/project/${project.id}`, navigate))}
             />
             <SidebarHeader
                 className={cn('shrink-0 border-b border-border py-4', collapsed ? 'items-center px-2' : 'px-4')}
@@ -106,6 +116,7 @@ export function IdeSidebar() {
                 <div className="flex items-center gap-2">
                     <Link
                         to="/"
+                        onClick={confirmLeave('/')}
                         aria-label="QuaK home"
                         title="Home"
                         className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-special font-bold text-white shadow-sm hover:bg-special-hover"
@@ -234,7 +245,7 @@ export function IdeSidebar() {
                                         isActive={item.isActive(pathname)}
                                         tooltip={item.label}
                                     >
-                                        <Link to={item.to} aria-label={item.label}>
+                                        <Link to={item.to} aria-label={item.label} onClick={confirmLeave(item.to)}>
                                             <Icon />
                                             {!collapsed && <span>{item.label}</span>}
                                         </Link>

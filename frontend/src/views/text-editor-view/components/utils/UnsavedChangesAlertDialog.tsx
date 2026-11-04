@@ -8,12 +8,14 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog.tsx';
+import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '@/hooks/useAppDispatch.ts';
 import { useAppSelector } from '@/hooks/useAppSelector.ts';
 import { closeAll, closeGroup, closeOthers, closeTab, setPendingClose } from '@/store/tabs/tabsSlice.ts';
 
 export function UnsavedChangesAlertDialog() {
     const dispatch = useAppDispatch();
+    const navigate = useNavigate();
     const pendingAction = useAppSelector((state) => state.tabs.pendingCloseAction);
 
     const isOpen = pendingAction !== null;
@@ -35,6 +37,9 @@ export function UnsavedChangesAlertDialog() {
             case 'all':
                 dispatch(closeAll());
                 break;
+            case 'leave':
+                navigate(pendingAction.payload.target);
+                break;
         }
 
         // Clear the pending state
@@ -52,8 +57,8 @@ export function UnsavedChangesAlertDialog() {
                 <AlertDialogHeader>
                     <AlertDialogTitle>Unsaved Changes</AlertDialogTitle>
                     <AlertDialogDescription>
-                        You are about to close one or more tabs that contain unsaved changes. If you continue, these
-                        changes will be irretrievably lost. Do you still want to close the tabs?
+                        You have unsaved changes. If you continue, these changes will be irretrievably lost. Do you
+                        still want to continue?
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
