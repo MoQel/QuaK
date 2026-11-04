@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { api } from '@/api/api.ts';
 import { SidebarProvider } from '@/components/ui/sidebar.tsx';
 import { IdeSidebar } from './IdeSidebar.tsx';
 
@@ -10,7 +11,17 @@ const logout = vi.fn();
 const toggleTheme = vi.fn();
 const openRenameProjectDialog = vi.fn();
 const openDeleteProjectDialog = vi.fn();
+const navigate = vi.fn();
 const auth = { logout };
+
+vi.mock('@/api/api.ts', () => ({
+    api: { get: vi.fn().mockResolvedValue([]) },
+}));
+
+vi.mock('react-router-dom', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('react-router-dom')>()),
+    useNavigate: () => navigate,
+}));
 
 vi.mock('@/contexts/ProjectContext.tsx', () => ({
     useProject: () => ({
@@ -25,6 +36,10 @@ vi.mock('@/contexts/DockviewContext.tsx', () => ({
         openPanels: new Set(['file', 'library']),
         togglePanel,
     }),
+}));
+
+vi.mock('@/views/project-manager-view/ProjectManagerView.tsx', () => ({
+    CreateProject: ({ open }: { open: boolean }) => (open ? <div data-testid="create-dialog" /> : null),
 }));
 
 vi.mock('@/contexts/AuthContext.tsx', () => ({
@@ -54,6 +69,9 @@ const renderSidebar = (initialEntries = ['/project/project-1']) =>
         </MemoryRouter>,
     );
 
+const openProjectActions = () =>
+    fireEvent.keyDown(screen.getByRole('button', { name: 'Project actions' }), { key: 'Enter' });
+
 describe('IdeSidebar', () => {
     beforeEach(() => {
         vi.clearAllMocks();
@@ -79,6 +97,7 @@ describe('IdeSidebar', () => {
     it('renders navigation, theme toggle, and logout controls', () => {
         renderSidebar();
 
+        expect(screen.getByRole('link', { name: 'QuaK home' })).toHaveAttribute('href', '/');
         expect(screen.getByRole('link', { name: 'Home' })).toHaveAttribute('href', '/');
         expect(screen.getByRole('link', { name: 'Profile' })).toHaveAttribute('href', '/profile');
         expect(screen.getByRole('link', { name: 'Settings' })).toHaveAttribute('href', '/settings');
@@ -104,11 +123,35 @@ describe('IdeSidebar', () => {
         expect(screen.getByText('New Project2')).toBeInTheDocument();
     });
 
+    it('lists projects in the switcher and navigates to the chosen one', async () => {
+        vi.mocked(api.get).mockResolvedValueOnce([
+            { id: 'project-1', name: 'New Project2', lastAccess: '2026-10-01T00:00:00Z' },
+            { id: 'project-2', name: 'Grover', lastAccess: '2026-10-02T00:00:00Z' },
+        ]);
+        renderSidebar();
+
+        fireEvent.keyDown(screen.getByRole('button', { name: 'Switch project' }), { key: 'Enter' });
+        fireEvent.click(await screen.findByRole('menuitem', { name: 'Grover' }));
+
+        expect(navigate).toHaveBeenCalledWith('/project/project-2');
+    });
+
+    it('creates a project from the switcher', () => {
+        renderSidebar();
+
+        fireEvent.keyDown(screen.getByRole('button', { name: 'Switch project' }), { key: 'Enter' });
+        fireEvent.click(screen.getByRole('menuitem', { name: 'New project' }));
+
+        expect(screen.getByTestId('create-dialog')).toBeInTheDocument();
+    });
+
     it('keeps project actions available after the top navbar is hidden', () => {
         renderSidebar();
 
-        fireEvent.click(screen.getByRole('button', { name: 'Rename project' }));
-        fireEvent.click(screen.getByRole('button', { name: 'Delete project' }));
+        openProjectActions();
+        fireEvent.click(screen.getByRole('menuitem', { name: 'Rename' }));
+        openProjectActions();
+        fireEvent.click(screen.getByRole('menuitem', { name: 'Delete' }));
 
         expect(openRenameProjectDialog).toHaveBeenCalledWith(
             { id: 'project-1', name: 'New Project2' },
@@ -125,7 +168,7 @@ describe('IdeSidebar', () => {
 
         expect(screen.queryByRole('button', { name: 'Project panel' })).not.toBeInTheDocument();
         expect(screen.queryByRole('button', { name: 'Circuit panel' })).not.toBeInTheDocument();
-        expect(screen.queryByRole('button', { name: 'Rename project' })).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'Project actions' })).not.toBeInTheDocument();
         expect(screen.getByRole('link', { name: 'Settings' })).toHaveAttribute('data-active', 'true');
     });
 
