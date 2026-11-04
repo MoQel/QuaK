@@ -7,7 +7,6 @@ import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { useEditorCommands } from '@/hooks/editor/useEditorCommands.ts';
 import { EditorDropZoneSlot } from '@/views/text-editor-view/components/layout/EditorDropZoneSlot.tsx';
 import { EditorSlot } from '@/views/text-editor-view/components/layout/EditorSlot.tsx';
-import { UnsavedChangesAlertDialog } from '@/views/text-editor-view/components/utils/UnsavedChangesAlertDialog.tsx';
 import { useLSPSetup } from '@/hooks/editor/useLSPSetup.ts';
 
 export function TextEditorView() {
@@ -26,7 +25,6 @@ export function TextEditorView() {
 
     return (
         <Card className="h-full flex flex-col p-0 border-none rounded-none relative bg-bg-subtle">
-            <UnsavedChangesAlertDialog />
             {/* Top/Bottom split */}
             <PanelGroup direction="vertical" id="outer-group">
                 <Panel
