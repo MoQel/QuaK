@@ -3,6 +3,7 @@ import { Orientation, type DockviewApi, type SerializedDockview } from 'dockview
 
 import {
     getDefaultPlacement,
+    getDefaultSizes,
     getSavedPanelPlacement,
     resolveSavedPanelPlacement,
     restorePlacement,
@@ -74,6 +75,8 @@ describe('layout-utils panel placement', () => {
 /** A DockviewApi that only knows which panels are currently open. */
 const apiWithOpen = (...openIds: string[]): DockviewApi =>
     ({
+        width: 1700,
+        height: 1000,
         getPanel: (id: string) => (openIds.includes(id) ? { id } : undefined),
     }) as unknown as DockviewApi;
 
@@ -82,14 +85,14 @@ describe('layout-utils default placement', () => {
         // file sits left of circuit and code in the default top row.
         expect(getDefaultPlacement('file', apiWithOpen('code'))).toEqual({
             position: { referencePanel: 'code', direction: 'left' },
-            initialWidth: 400,
+            initialWidth: 255,
         });
     });
 
     it('falls back to the nearest open neighbour on its left', () => {
         expect(getDefaultPlacement('results', apiWithOpen('inspector'))).toEqual({
             position: { referencePanel: 'inspector', direction: 'right' },
-            initialWidth: 520,
+            initialWidth: 850,
         });
     });
 
@@ -97,7 +100,7 @@ describe('layout-utils default placement', () => {
         // Nothing from the bottom row is open, so naming a top-row panel would split its cell.
         expect(getDefaultPlacement('inspector', apiWithOpen('file', 'circuit', 'code'))).toEqual({
             position: { direction: 'below' },
-            initialHeight: 350,
+            initialHeight: 320,
         });
     });
 
@@ -127,7 +130,7 @@ describe('layout-utils restorePlacement', () => {
     it('uses the default home when nothing was remembered', () => {
         expect(restorePlacement('file', apiWithOpen('circuit'), undefined)).toEqual({
             position: { referencePanel: 'circuit', direction: 'left' },
-            initialWidth: 400,
+            initialWidth: 255,
         });
     });
 
@@ -143,6 +146,8 @@ describe('layout-utils restorePlacement', () => {
 
     it('ignores a remembered tab group whose group is gone', () => {
         const api = {
+            width: 1700,
+            height: 1000,
             getPanel: (id: string) => (id === 'circuit' ? { id } : undefined),
             getGroup: () => undefined,
         } as unknown as DockviewApi;
@@ -150,7 +155,21 @@ describe('layout-utils restorePlacement', () => {
 
         expect(restorePlacement('file', api, saved)).toEqual({
             position: { referencePanel: 'circuit', direction: 'left' },
-            initialWidth: 400,
+            initialWidth: 255,
         });
+    });
+});
+
+describe('layout-utils default sizes', () => {
+    it('keeps the side panels slim on a 13 inch screen', () => {
+        expect(getDefaultSizes({ width: 1150, height: 700 })).toEqual({ left: 180, right: 360, bottom: 240 });
+    });
+
+    it('grows with the available space on a large screen', () => {
+        expect(getDefaultSizes({ width: 1700, height: 1000 })).toEqual({ left: 255, right: 510, bottom: 320 });
+    });
+
+    it('stops growing on very large monitors', () => {
+        expect(getDefaultSizes({ width: 3400, height: 1800 })).toEqual({ left: 320, right: 600, bottom: 420 });
     });
 });

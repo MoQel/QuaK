@@ -10,9 +10,13 @@ export const PANELS = {
     results: 'results',
 };
 
-const LEFT_W = 400;
-const RIGHT_W = 520;
-const BOTTOM_H = 350;
+const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, Math.round(value)));
+
+export const getDefaultSizes = (api: Pick<DockviewApi, 'width' | 'height'>) => ({
+    left: clamp(api.width * 0.15, 180, 320),
+    right: clamp(api.width * 0.3, 360, 600),
+    bottom: clamp(api.height * 0.32, 240, 420),
+});
 
 /**
  * The default arrangement as rows of panels. Reopening a panel restores it into *this* shape rather
@@ -25,10 +29,10 @@ export const DEFAULT_GRID: string[][] = [
 ];
 
 /** The sizes `buildDefaultLayout` hands out, reused when a panel is reopened. */
-const DEFAULT_SIZES: Record<string, Pick<PanelPlacement, 'initialWidth' | 'initialHeight'>> = {
-    [PANELS.file]: { initialWidth: LEFT_W },
-    [PANELS.code]: { initialWidth: RIGHT_W },
-    [PANELS.results]: { initialWidth: RIGHT_W },
+const getPanelWidths = (api: DockviewApi): Record<string, number> => {
+    const { left, right } = getDefaultSizes(api);
+    const half = Math.round(api.width / 2);
+    return { [PANELS.file]: left, [PANELS.code]: right, [PANELS.inspector]: half, [PANELS.results]: half };
 };
 
 /** Where a panel sits in the default arrangement, or null for one that is not part of it. */
@@ -50,7 +54,8 @@ export const getDefaultPlacement = (panelId: string, api: DockviewApi): PanelPla
 
     const isOpen = (id: string) => !!api.getPanel(id);
     const row = DEFAULT_GRID[home.row];
-    const size = DEFAULT_SIZES[panelId] ?? {};
+    const width = getPanelWidths(api)[panelId];
+    const size = width ? { initialWidth: width } : {};
 
     const nextInRow = row.slice(home.column + 1).find(isOpen);
     if (nextInRow) return { position: { referencePanel: nextInRow, direction: 'left' }, ...size };
@@ -61,7 +66,7 @@ export const getDefaultPlacement = (panelId: string, api: DockviewApi): PanelPla
     // Its whole row is closed, so the row itself has to come back. That is an absolute position:
     // naming a reference panel would split *that panel's cell* instead of adding a row, which is
     // exactly how a reopened panel used to end up stacked inside a neighbour's column.
-    const rowHeight = home.row === DEFAULT_GRID.length - 1 ? { initialHeight: BOTTOM_H } : {};
+    const rowHeight = home.row === DEFAULT_GRID.length - 1 ? { initialHeight: getDefaultSizes(api).bottom } : {};
 
     if (DEFAULT_GRID.slice(0, home.row).flat().some(isOpen)) {
         return { position: { direction: 'below' }, ...rowHeight };
@@ -83,6 +88,7 @@ export const getDefaultPlacement = (panelId: string, api: DockviewApi): PanelPla
  */
 export const buildDefaultLayout = (api: DockviewApi) => {
     api.clear();
+    const sizes = getDefaultSizes(api);
 
     // 1. Top-row anchor
     const circuit = api.addPanel({
@@ -98,7 +104,7 @@ export const buildDefaultLayout = (api: DockviewApi) => {
         component: PANELS.inspector,
         title: 'Inspector',
         position: { referencePanel: circuit, direction: 'below' },
-        initialHeight: BOTTOM_H,
+        initialHeight: sizes.bottom,
     });
 
     // 3. Fill top row (left / right of circuit)
@@ -107,7 +113,7 @@ export const buildDefaultLayout = (api: DockviewApi) => {
         component: PANELS.file,
         title: 'Project',
         position: { referencePanel: circuit, direction: 'left' },
-        initialWidth: LEFT_W,
+        initialWidth: sizes.left,
     });
 
     api.addPanel({
@@ -115,7 +121,7 @@ export const buildDefaultLayout = (api: DockviewApi) => {
         component: PANELS.code,
         title: 'Code Editor',
         position: { referencePanel: circuit, direction: 'right' },
-        initialWidth: RIGHT_W,
+        initialWidth: sizes.right,
     });
 
     // 4. Fill bottom row (right of inspector)
@@ -124,7 +130,7 @@ export const buildDefaultLayout = (api: DockviewApi) => {
         component: PANELS.results,
         title: 'Results',
         position: { referencePanel: inspector, direction: 'right' },
-        initialWidth: RIGHT_W,
+        initialWidth: Math.round(api.width / 2),
     });
 };
 
@@ -187,7 +193,9 @@ export const resolveSavedPanelPlacement = (placement: PanelPlacement, api: Dockv
     if (!placement.position) return placement;
 
     if ('referenceGroup' in placement.position) {
-        return api.getGroup(String(placement.position.referenceGroup)) ? placement : null;
+        const { referenceGroup } = placement.position;
+        const groupId = typeof referenceGroup === 'string' ? referenceGroup : referenceGroup.id;
+        return api.getGroup(groupId) ? placement : null;
     }
 
     return placement;
@@ -219,9 +227,10 @@ export const applyDefaultRowSizes = (api: DockviewApi, panelId: string) => {
 
     const row = DEFAULT_GRID[home.row];
     const groupOf = (id: string) => api.getPanel(id)?.group;
+    const widths = getPanelWidths(api);
 
     for (const id of row) {
-        const width = DEFAULT_SIZES[id]?.initialWidth;
+        const width = widths[id];
         const group = groupOf(id);
         if (width && group) group.api.setSize({ width });
     }
@@ -230,7 +239,7 @@ export const applyDefaultRowSizes = (api: DockviewApi, panelId: string) => {
     // put back to the strip the default layout gives it.
     if (home.row === DEFAULT_GRID.length - 1) {
         const anyGroupInRow = row.map(groupOf).find(Boolean);
-        anyGroupInRow?.api.setSize({ height: BOTTOM_H });
+        anyGroupInRow?.api.setSize({ height: getDefaultSizes(api).bottom });
     }
 };
 
