@@ -22,4 +22,6 @@ public interface SpringDataProjectRoleRepository extends JpaRepository<JpaProjec
     void deleteByUserIdAndProjectId(UUID userId, String projectId);
 
     void deleteAllByProjectId(String projectId);
+
+    void deleteAllByUserId(UUID userId);
 }

@@ -5,6 +5,7 @@ import edu.kit.quak.core.user.model.User;
 import edu.kit.quak.infrastructure.user.out.db.jpa.entity.JpaUser;
 import edu.kit.quak.infrastructure.user.out.db.jpa.mapper.UserJpaMapper;
 import edu.kit.quak.infrastructure.user.out.db.jpa.repository.SpringDataUserRepository;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -49,13 +50,18 @@ public class UserJpaAdapter implements UserRepositoryPort {
     }
 
     @Override
-    public void deleteById(UUID id) {
-        repository.deleteById(id);
+    public List<User> findInactiveGuests(Instant inactiveSince) {
+        return repository.findInactiveGuests(inactiveSince).stream().map(mapper::toDomain).toList();
     }
 
     @Override
-    public Optional<UUID> findIdByIssuerAndSub(String issuer, String sub) {
-        return repository.findIdByIssuerAndSub(issuer, sub);
+    public void updateLastActiveAt(String issuer, String sub, Instant lastActiveAt) {
+        repository.updateLastActiveAt(issuer, sub, lastActiveAt);
+    }
+
+    @Override
+    public void deleteById(UUID id) {
+        repository.deleteById(id);
     }
 
     @Override

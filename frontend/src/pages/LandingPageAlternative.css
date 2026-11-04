@@ -69,7 +69,7 @@
 }
 
 .landing-page.rounded-design .landing-access {
-    box-shadow: 0 8px 32px rgb(0 65 50 / 6%);
+    box-shadow: 0 8px 32px var(--landing-shadow);
 }
 
 .landing-page.rounded-design .landing-capability {
@@ -79,12 +79,12 @@
 }
 
 .landing-page.rounded-design .landing-capability:hover {
-    border-color: #79b8a9;
-    box-shadow: 0 6px 20px rgb(0 65 50 / 6%);
+    border-color: var(--landing-accent-soft);
+    box-shadow: 0 6px 20px var(--landing-shadow);
 }
 
 .landing-page.rounded-design :is(a, button):focus-visible {
-    outline: 3px solid #00876c;
+    outline: 3px solid var(--landing-accent);
     outline-offset: 4px;
 }
 
@@ -142,7 +142,7 @@
 /* Landing-only copy and circuit presentation; the sign-in page shares this file. */
 .landing-page .landing-capability,
 .landing-page .landing-capability:hover {
-    border-color: #d5e0db;
+    border-color: var(--landing-border);
     box-shadow: none;
     transition: none;
 }
@@ -173,7 +173,7 @@
     display: grid;
     gap: 2.5rem;
     min-width: 0;
-    color: #b7fff5;
+    color: var(--landing-glow);
 }
 
 .landing-page .landing-circuit-row {
@@ -186,7 +186,7 @@
 .landing-page .landing-qubit {
     font-family: ui-monospace, monospace;
     font-size: 14px;
-    color: #b8ccc8;
+    color: var(--landing-code-muted);
 }
 
 .landing-page .landing-wire {
@@ -202,7 +202,7 @@
     top: 50%;
     width: 100%;
     height: 1px;
-    background: #73968f;
+    background: var(--landing-wire);
 }
 
 .landing-page .landing-control-column::after {
@@ -212,7 +212,7 @@
     left: 50%;
     height: 5rem;
     width: 1px;
-    background: #b7fff5;
+    background: var(--landing-glow);
 }
 
 .landing-page .landing-hadamard,
@@ -223,8 +223,8 @@
     place-items: center;
     width: 2.5rem;
     height: 2.5rem;
-    border: 1px solid #b7fff5;
-    background: #002d4c;
+    border: 1px solid var(--landing-glow);
+    background: var(--landing-showcase);
     font-size: 16px;
 }
 
@@ -244,7 +244,7 @@
     width: 0.65rem;
     height: 0.65rem;
     border-radius: 50%;
-    background: #b7fff5;
+    background: var(--landing-glow);
 }
 
 .landing-page .landing-access button {

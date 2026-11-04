@@ -3,7 +3,9 @@ package edu.kit.quak.core.filesystem.model;
 import edu.kit.quak.core.filesystem.exception.DuplicateNameException;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * Domain POJO for FileElementContainer A FileElementContainer is a container
@@ -16,7 +18,7 @@ public abstract class FileElementContainer<T extends FileElementContainer<T>> ex
 
     protected Set<FileElement<?>> contents = new HashSet<>();
 
-    public FileElementContainer(String name, String parentId) {
+    protected FileElementContainer(String name, String parentId) {
         super(name, parentId);
     }
 
@@ -50,6 +52,20 @@ public abstract class FileElementContainer<T extends FileElementContainer<T>> ex
         }
     }
 
+    /** Returns all files in this container and its nested containers. */
+    public List<File> allFiles() {
+        return contents
+            .stream()
+            .flatMap(element ->
+                switch (element) {
+                    case File file -> Stream.of(file);
+                    case FileElementContainer<?> container -> container.allFiles().stream();
+                    default -> Stream.empty();
+                }
+            )
+            .toList();
+    }
+
     /**
      * Checks whether a child with the given name (case-insensitive) already exists.
      *
@@ -62,7 +78,7 @@ public abstract class FileElementContainer<T extends FileElementContainer<T>> ex
     public boolean hasChildWithName(String name, String excludeId) {
         return contents
             .stream()
-            .filter(existing -> excludeId == null || !existing.getId().equals(excludeId))
+            .filter(existing -> !existing.getId().equals(excludeId))
             .anyMatch(existing -> existing.getName().equalsIgnoreCase(name));
     }
 }

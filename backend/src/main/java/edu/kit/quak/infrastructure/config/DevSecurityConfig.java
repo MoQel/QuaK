@@ -1,8 +1,10 @@
 package edu.kit.quak.infrastructure.config;
 
-import edu.kit.quak.application.user.ports.in.OidcSyncServicePort;
-import edu.kit.quak.application.user.ports.in.OidcUserInfo;
-import java.util.List;
+import edu.kit.quak.application.user.ports.in.GuestServicePort;
+import edu.kit.quak.application.user.ports.in.OAuthSignInServicePort;
+import edu.kit.quak.infrastructure.user.in.web.security.GuestActivityFilter;
+import edu.kit.quak.infrastructure.user.in.web.security.GuestSessionAuthenticator;
+import edu.kit.quak.infrastructure.user.in.web.security.OAuth2LoginSuccessHandler;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -11,20 +13,17 @@ import org.springframework.core.annotation.Order;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
-import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
-import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
-import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
 import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 /**
  * Development-only security configuration. This configuration is ONLY active
@@ -32,9 +31,8 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
  * is enabled.
  *
  * <p>
- * It replaces OAuth2/OIDC with simple HTTP Basic authentication for easier
- * development and API
- * testing via Swagger UI.
+ * It adds HTTP Basic authentication next to OAuth2/OIDC for easier development
+ * and API testing via Swagger UI.
  *
  * <p>
  * Usage: Run with -Dspring.profiles.active=dev or set
@@ -58,19 +56,24 @@ public class DevSecurityConfig {
     @Value("${app.frontend.url:http://localhost:5173}")
     private String frontendUrl;
 
-    private final OidcSyncServicePort oidcUserSyncService;
+    private final OAuthSignInServicePort signInService;
 
-    public DevSecurityConfig(OidcSyncServicePort oidcUserSyncService) {
-        this.oidcUserSyncService = oidcUserSyncService;
+    public DevSecurityConfig(OAuthSignInServicePort signInService) {
+        this.signInService = signInService;
     }
 
     @Bean
-    public SecurityFilterChain devSecurityFilterChain(HttpSecurity http, OAuth2UserEnrichmentService oAuth2UserEnrichmentService)
-        throws Exception {
+    public SecurityFilterChain devSecurityFilterChain(
+        HttpSecurity http,
+        OAuth2UserEnrichmentService oAuth2UserEnrichmentService,
+        GuestServicePort guestService,
+        GuestSessionAuthenticator guestSessionAuthenticator
+    ) throws Exception {
         http
             .cors(cors -> cors.configurationSource(devCorsConfigurationSource()))
             // Disable CSRF for easier API testing in development
-            .csrf(csrf -> csrf.disable())
+            .csrf(AbstractHttpConfigurer::disable)
+            .addFilterAfter(new GuestActivityFilter(guestService), AnonymousAuthenticationFilter.class)
             .authorizeHttpRequests(auth ->
                 auth
                     .requestMatchers(
@@ -94,8 +97,9 @@ public class DevSecurityConfig {
                         "/v3/api-docs/**",
                         // H2 Console for development
                         "/h2-console/**",
-                        // Auth status endpoint
-                        "/api/auth/user"
+                        // Auth status and guest sign-in endpoints
+                        "/api/auth/user",
+                        "/api/auth/guest"
                     )
                     .permitAll()
                     .anyRequest()
@@ -106,63 +110,13 @@ public class DevSecurityConfig {
             .oauth2Login(oauth2 ->
                 oauth2
                     .userInfoEndpoint(userInfo -> userInfo.userService(oAuth2UserEnrichmentService))
-                    .successHandler(devAuthenticationSuccessHandler())
+                    .successHandler(new OAuth2LoginSuccessHandler(signInService, guestSessionAuthenticator, frontendUrl))
             )
+            .logout(LogoutConfigurations.apiLogout(guestService))
             // Allow frames for H2 console
-            .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()));
+            .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin));
 
         return http.build();
-    }
-
-    @Bean
-    public AuthenticationSuccessHandler devAuthenticationSuccessHandler() {
-        SimpleUrlAuthenticationSuccessHandler delegate = new SimpleUrlAuthenticationSuccessHandler();
-        delegate.setDefaultTargetUrl(frontendUrl + "/");
-        delegate.setAlwaysUseDefaultTargetUrl(true);
-
-        return (request, response, authentication) -> {
-            if (authentication instanceof OAuth2AuthenticationToken oauthToken) {
-                OAuth2User principal = oauthToken.getPrincipal();
-                String registrationId = oauthToken.getAuthorizedClientRegistrationId();
-
-                OidcUserInfo userInfo = mapToUserInfo(principal);
-                try {
-                    edu.kit.quak.core.user.model.User user = oidcUserSyncService.syncUser(registrationId, userInfo);
-                    request.getSession().setAttribute("userId", user.getId());
-                } catch (IllegalArgumentException e) {
-                    org.springframework.security.core.context.SecurityContextHolder.clearContext();
-                    response.sendRedirect(frontendUrl + "/login?error=email_exists");
-                    return;
-                }
-            }
-            delegate.onAuthenticationSuccess(request, response, authentication);
-        };
-    }
-
-    private OidcUserInfo mapToUserInfo(OAuth2User principal) {
-        String sub =
-            principal.getAttribute("sub") != null
-                ? principal.getAttribute("sub").toString()
-                : (principal.getAttribute("id") != null ? principal.getAttribute("id").toString() : null);
-
-        Boolean emailVerified =
-            principal.getAttribute("email_verified") != null ? (Boolean) principal.getAttribute("email_verified") : true;
-
-        String picture =
-            principal.getAttribute("picture") != null
-                ? principal.getAttribute("picture").toString()
-                : (principal.getAttribute("avatar_url") != null ? principal.getAttribute("avatar_url").toString() : null);
-
-        // Logic to handle different attribute names across providers
-        return new OidcUserInfo(
-            sub,
-            principal.getAttribute("email"),
-            emailVerified,
-            principal.getAttribute("name"),
-            principal.getAttribute("given_name"),
-            principal.getAttribute("family_name"),
-            picture
-        );
     }
 
     @Bean
@@ -183,14 +137,6 @@ public class DevSecurityConfig {
 
     @Bean
     public CorsConfigurationSource devCorsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of(frontendUrl, "http://localhost:8080"));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("*"));
-        configuration.setAllowCredentials(true);
-
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
+        return CorsConfigurations.allowingOrigins(frontendUrl, "http://localhost:8080");
     }
 }

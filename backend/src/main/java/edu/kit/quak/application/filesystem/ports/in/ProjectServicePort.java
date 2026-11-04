@@ -3,6 +3,7 @@ package edu.kit.quak.application.filesystem.ports.in;
 import edu.kit.quak.core.filesystem.model.Project;
 import edu.kit.quak.core.user.model.User;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Input port for project-related use cases. Uses only domain concepts, no framework dependencies.
@@ -22,4 +23,13 @@ public interface ProjectServicePort {
 
     /** Lists all projects owned by the user. */
     List<Project> listProjects(User user);
+
+    /** Removes all projects owned by the given user, without an access check. */
+    void deleteAllByOwnerId(UUID ownerId);
+
+    /**
+     * Moves all projects of one owner to another, without an access check. A project whose name the new owner
+     * already uses is numbered, e.g. "Demo (2)".
+     */
+    void transferAllByOwnerId(UUID fromOwnerId, UUID toOwnerId);
 }

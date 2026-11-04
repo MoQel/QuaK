@@ -1,12 +1,17 @@
 package edu.kit.quak.application.user.services;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
+import edu.kit.quak.application.common.ports.out.DomainEventPublisherPort;
 import edu.kit.quak.application.user.exceptions.UserNotFoundException;
+import edu.kit.quak.application.user.ports.out.ProjectRoleRepositoryPort;
 import edu.kit.quak.application.user.ports.out.UserRepositoryPort;
+import edu.kit.quak.core.user.event.UserDeletedEvent;
 import edu.kit.quak.core.user.model.AuthenticatedUser;
 import edu.kit.quak.core.user.model.User;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,6 +29,12 @@ class UserServiceTest {
 
     @Mock
     private UserRepositoryPort userRepository;
+
+    @Mock
+    private ProjectRoleRepositoryPort roleRepository;
+
+    @Mock
+    private DomainEventPublisherPort eventPublisher;
 
     @InjectMocks
     private UserService userService;
@@ -132,6 +143,53 @@ class UserServiceTest {
             );
             assertTrue(exception.getMessage().contains("google"));
             assertTrue(exception.getMessage().contains("unknown-sub"));
+        }
+    }
+
+    @Test
+    @DisplayName("deleteUser publishes the deletion event and removes the user with their role assignments")
+    void deleteUserRemovesUserAndPublishesEvent() {
+        userService.deleteUser(testUserId);
+
+        verify(eventPublisher).publish(new UserDeletedEvent(testUserId));
+        verify(roleRepository).deleteAllByUserId(testUserId);
+        verify(userRepository).deleteById(testUserId);
+    }
+
+    @Nested
+    @DisplayName("searchByEmail")
+    class SearchByEmail {
+
+        @Test
+        @DisplayName("finds registered users by a part of the email")
+        void registeredUserSearchesByPartOfTheEmail() {
+            when(userRepository.searchByEmail("test")).thenReturn(List.of(testUser));
+
+            assertEquals(List.of(testUser), userService.searchByEmail("test", testUser));
+        }
+
+        @Test
+        @DisplayName("lets a guest find a user by the exact email")
+        void guestFindsUserByExactEmail() {
+            when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(testUser));
+
+            assertEquals(List.of(testUser), userService.searchByEmail("test@example.com", User.createGuest()));
+        }
+
+        @Test
+        @DisplayName("does not list users for a guest by a part of the email")
+        void guestDoesNotSearchByPartOfTheEmail() {
+            when(userRepository.findByEmail("test")).thenReturn(Optional.empty());
+
+            assertTrue(userService.searchByEmail("test", User.createGuest()).isEmpty());
+            verify(userRepository, never()).searchByEmail(anyString());
+        }
+
+        @Test
+        @DisplayName("returns nothing for a blank query")
+        void blankQuery() {
+            assertTrue(userService.searchByEmail(" ", testUser).isEmpty());
+            verifyNoInteractions(userRepository);
         }
     }
 }

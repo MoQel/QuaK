@@ -1,7 +1,10 @@
 package edu.kit.quak.infrastructure.config;
 
-import edu.kit.quak.application.user.ports.in.OidcSyncServicePort;
-import edu.kit.quak.application.user.ports.in.OidcUserInfo;
+import edu.kit.quak.application.user.ports.in.GuestServicePort;
+import edu.kit.quak.application.user.ports.in.OAuthSignInServicePort;
+import edu.kit.quak.infrastructure.user.in.web.security.GuestActivityFilter;
+import edu.kit.quak.infrastructure.user.in.web.security.GuestSessionAuthenticator;
+import edu.kit.quak.infrastructure.user.in.web.security.OAuth2LoginSuccessHandler;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -10,31 +13,28 @@ import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
-import java.util.List;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.HttpStatus;
+import org.springframework.lang.NonNull;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
 import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
-import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
-import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
-import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
@@ -55,8 +55,10 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(
         HttpSecurity http,
         OAuth2AuthorizationRequestResolver authorizationRequestResolver,
-        AuthenticationSuccessHandler authenticationSuccessHandler,
-        OAuth2UserEnrichmentService oAuth2UserEnrichmentService
+        OAuthSignInServicePort signInService,
+        OAuth2UserEnrichmentService oAuth2UserEnrichmentService,
+        GuestServicePort guestService,
+        GuestSessionAuthenticator guestSessionAuthenticator
     ) throws Exception {
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -67,6 +69,7 @@ public class SecurityConfig {
                     .ignoringRequestMatchers("/api/auth/**", "/login/**", "/oauth2/**")
             )
             .addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class)
+            .addFilterAfter(new GuestActivityFilter(guestService), AnonymousAuthenticationFilter.class)
             .authorizeHttpRequests(auth ->
                 auth
                     .requestMatchers(
@@ -77,6 +80,7 @@ public class SecurityConfig {
                         "/login/**",
                         "/oauth2/**",
                         "/api/auth/user",
+                        "/api/auth/guest",
                         "/error",
                         "/*.js",
                         "/*.css",
@@ -101,27 +105,14 @@ public class SecurityConfig {
                 oauth2
                     .authorizationEndpoint(authorization -> authorization.authorizationRequestResolver(authorizationRequestResolver))
                     .userInfoEndpoint(userInfo -> userInfo.userService(oAuth2UserEnrichmentService))
-                    .successHandler(authenticationSuccessHandler)
+                    .successHandler(new OAuth2LoginSuccessHandler(signInService, guestSessionAuthenticator, frontendUrl))
             )
-            .logout(logout ->
-                logout
-                    .logoutUrl("/api/auth/logout")
-                    .logoutSuccessHandler((request, response, authentication) -> {
-                        response.setStatus(jakarta.servlet.http.HttpServletResponse.SC_OK);
-                    })
-                    .invalidateHttpSession(true)
-                    .deleteCookies("JSESSIONID")
-                    .permitAll()
-            )
+            .logout(LogoutConfigurations.apiLogout(guestService))
             .exceptionHandling(exception ->
                 exception
-                    .authenticationEntryPoint(
-                        new org.springframework.security.web.authentication.HttpStatusEntryPoint(
-                            org.springframework.http.HttpStatus.UNAUTHORIZED
-                        )
-                    )
+                    .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
                     .accessDeniedHandler((request, response, accessDeniedException) -> {
-                        response.setStatus(org.springframework.http.HttpStatus.FORBIDDEN.value());
+                        response.setStatus(HttpStatus.FORBIDDEN.value());
                         response.setContentType("application/json");
                         response
                             .getWriter()
@@ -141,13 +132,13 @@ public class SecurityConfig {
 
         return new OAuth2AuthorizationRequestResolver() {
             @Override
-            public OAuth2AuthorizationRequest resolve(jakarta.servlet.http.HttpServletRequest request) {
+            public OAuth2AuthorizationRequest resolve(HttpServletRequest request) {
                 OAuth2AuthorizationRequest authorizationRequest = defaultResolver.resolve(request);
                 return authorizationRequest != null ? customizeAuthorizationRequest(authorizationRequest, null) : null;
             }
 
             @Override
-            public OAuth2AuthorizationRequest resolve(jakarta.servlet.http.HttpServletRequest request, String clientRegistrationId) {
+            public OAuth2AuthorizationRequest resolve(HttpServletRequest request, String clientRegistrationId) {
                 OAuth2AuthorizationRequest authorizationRequest = defaultResolver.resolve(request, clientRegistrationId);
                 return authorizationRequest != null ? customizeAuthorizationRequest(authorizationRequest, clientRegistrationId) : null;
             }
@@ -172,9 +163,7 @@ public class SecurityConfig {
                     params.put("prompt", "select_account");
                 }
             })
-            .attributes(attrs -> {
-                attrs.put("code_verifier", codeVerifier);
-            })
+            .attributes(attrs -> attrs.put("code_verifier", codeVerifier))
             .build();
     }
 
@@ -188,81 +177,23 @@ public class SecurityConfig {
             byte[] hash = digest.digest(codeVerifier.getBytes());
             return Base64.getUrlEncoder().withoutPadding().encodeToString(hash);
         } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("Failed to generate code challenge", e);
+            throw new IllegalStateException("Failed to generate code challenge", e);
         }
     }
 
     @Bean
-    public AuthenticationSuccessHandler authenticationSuccessHandler(OidcSyncServicePort oidcUserSyncService) {
-        SimpleUrlAuthenticationSuccessHandler delegate = new SimpleUrlAuthenticationSuccessHandler();
-        delegate.setDefaultTargetUrl(frontendUrl + "/");
-        delegate.setAlwaysUseDefaultTargetUrl(true);
-
-        return (request, response, authentication) -> {
-            if (authentication instanceof OAuth2AuthenticationToken oauthToken) {
-                OAuth2User principal = oauthToken.getPrincipal();
-                String registrationId = oauthToken.getAuthorizedClientRegistrationId();
-
-                // Map attributes dynamically based on provider
-                OidcUserInfo userInfo = mapToUserInfo(principal);
-
-                try {
-                    edu.kit.quak.core.user.model.User user = oidcUserSyncService.syncUser(registrationId, userInfo);
-                    request.getSession().setAttribute("userId", user.getId());
-                } catch (IllegalArgumentException e) {
-                    org.springframework.security.core.context.SecurityContextHolder.clearContext();
-                    response.sendRedirect(frontendUrl + "/login?error=email_exists");
-                    return;
-                }
-            }
-            delegate.onAuthenticationSuccess(request, response, authentication);
-        };
-    }
-
-    private OidcUserInfo mapToUserInfo(OAuth2User principal) {
-        String sub =
-            principal.getAttribute("sub") != null
-                ? principal.getAttribute("sub").toString()
-                : (principal.getAttribute("id") != null ? principal.getAttribute("id").toString() : null);
-
-        Boolean emailVerified =
-            principal.getAttribute("email_verified") != null ? (Boolean) principal.getAttribute("email_verified") : true;
-
-        String picture =
-            principal.getAttribute("picture") != null
-                ? principal.getAttribute("picture").toString()
-                : (principal.getAttribute("avatar_url") != null ? principal.getAttribute("avatar_url").toString() : null);
-
-        // Logic to handle different attribute names across providers
-        return new OidcUserInfo(
-            sub,
-            principal.getAttribute("email"),
-            emailVerified,
-            principal.getAttribute("name"),
-            principal.getAttribute("given_name"),
-            principal.getAttribute("family_name"),
-            picture
-        );
-    }
-
-    @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of(frontendUrl));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-        configuration.setAllowedHeaders(List.of("*"));
-        configuration.setAllowCredentials(true);
-
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
+        return CorsConfigurations.allowingOrigins(frontendUrl);
     }
 
     private static class CsrfCookieFilter extends OncePerRequestFilter {
 
         @Override
-        protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-            throws ServletException, IOException {
+        protected void doFilterInternal(
+            @NonNull HttpServletRequest request,
+            @NonNull HttpServletResponse response,
+            @NonNull FilterChain filterChain
+        ) throws ServletException, IOException {
             CsrfToken csrfToken = (CsrfToken) request.getAttribute(CsrfToken.class.getName());
             if (csrfToken != null) {
                 csrfToken.getToken();

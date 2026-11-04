@@ -6,6 +6,7 @@ import edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity.JpaProject;
 import edu.kit.quak.infrastructure.filesystem.out.db.jpa.mapper.ProjectJpaMapper;
 import edu.kit.quak.infrastructure.filesystem.out.db.jpa.repository.SpringDataFileElementContainerRepository;
 import edu.kit.quak.infrastructure.filesystem.out.db.jpa.repository.SpringDataProjectRepository;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -48,6 +49,11 @@ public class ProjectJpaAdapter implements ProjectRepositoryPort {
     @Override
     public List<Project> getProjectsByOwnerId(UUID ownerId) {
         return repository.findAllByOwnerId(ownerId).stream().map(projectMapper::toDomainEntity).toList();
+    }
+
+    @Override
+    public List<Project> findAllByIds(Collection<String> ids) {
+        return repository.findAllById(ids).stream().map(projectMapper::toDomainEntity).toList();
     }
 
     @Override

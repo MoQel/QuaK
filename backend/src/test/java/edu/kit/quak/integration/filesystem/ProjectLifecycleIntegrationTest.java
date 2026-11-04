@@ -1,6 +1,8 @@
 package edu.kit.quak.integration.filesystem;
 
 import static org.hamcrest.Matchers.hasItem;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.oidcLogin;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -8,11 +10,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import edu.kit.quak.infrastructure.circuit.out.db.jpa.repository.SpringDataJpaCircuitRepository;
+import edu.kit.quak.infrastructure.editorstate.out.db.jpa.repository.SpringDataJpaEditorStateRepository;
 import edu.kit.quak.infrastructure.filesystem.in.web.rest.ApiConstants;
 import edu.kit.quak.infrastructure.filesystem.in.web.rest.dto.DirectoryDetailsResponse;
 import edu.kit.quak.infrastructure.filesystem.in.web.rest.dto.FileDetailsResponse;
 import edu.kit.quak.infrastructure.filesystem.in.web.rest.dto.ProjectDetailsResponse;
+import edu.kit.quak.infrastructure.filesystem.out.db.jpa.repository.SpringDataFileContentRepository;
 import edu.kit.quak.infrastructure.user.out.db.jpa.entity.JpaUser;
+import edu.kit.quak.infrastructure.user.out.db.jpa.repository.SpringDataProjectRoleRepository;
 import edu.kit.quak.infrastructure.user.out.db.jpa.repository.SpringDataUserRepository;
 import edu.kit.quak.shared.tags.IntegrationTest;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,6 +49,18 @@ class ProjectLifecycleIntegrationTest {
 
     @Autowired
     private SpringDataUserRepository userRepository;
+
+    @Autowired
+    private SpringDataFileContentRepository fileContentRepository;
+
+    @Autowired
+    private SpringDataJpaCircuitRepository circuitRepository;
+
+    @Autowired
+    private SpringDataProjectRoleRepository roleRepository;
+
+    @Autowired
+    private SpringDataJpaEditorStateRepository editorStateRepository;
 
     @Autowired
     private jakarta.persistence.EntityManager entityManager;
@@ -161,11 +179,34 @@ class ProjectLifecycleIntegrationTest {
             // Should the directory contain
             .andExpect(jsonPath("$.contents[*].id").value(hasItem(dirId)));
 
+        mockMvc
+            .perform(
+                put("/api/editor-state/" + projectId)
+                    .with(authenticatedUser())
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"tabsJson\": \"[]\"}")
+            )
+            .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/circuit/file/" + fileId).with(authenticatedUser())).andExpect(status().isOk());
+        assertFalse(circuitRepository.findAllByProjectId(projectId).isEmpty());
+        assertFalse(roleRepository.findAllByProjectId(projectId).isEmpty());
+
         // Delete Project (Cascading Delete Test)
         mockMvc.perform(delete("/api/project/" + projectId).with(authenticatedUser()).with(csrf())).andExpect(status().isNoContent());
 
         // Verify that the file is also gone (Accessing file should return 404)
         mockMvc.perform(get("/api/file/" + fileId).with(authenticatedUser())).andExpect(status().isNotFound());
+        assertFalse(fileContentRepository.existsById(fileId));
+        assertTrue(circuitRepository.findAllByProjectId(projectId).isEmpty());
+        assertTrue(roleRepository.findAllByProjectId(projectId).isEmpty());
+        assertTrue(
+            editorStateRepository
+                .findAll()
+                .stream()
+                .noneMatch(state -> projectId.equals(state.getProjectId()))
+        );
     }
 
     @Test

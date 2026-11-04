@@ -64,4 +64,11 @@ public interface ProjectRoleRepositoryPort {
      * @param projectId the project's ID
      */
     void deleteAllByProjectId(String projectId);
+
+    /**
+     * Deletes all role assignments of a given user.
+     *
+     * @param userId the user's UUID
+     */
+    void deleteAllByUserId(UUID userId);
 }
