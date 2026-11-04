@@ -187,7 +187,7 @@ function ProjectToolbar({ projectId, reload }: Readonly<ProjectToolbarProps>) {
 }
 
 interface FormFieldConfig<T extends ZodRawShape> {
-    name: FieldPath<z.infer<ZodObject<T>>>;
+    name: FieldPath<z.input<ZodObject<T>>>;
     placeholder: string;
     label: string;
 }
@@ -196,7 +196,7 @@ interface CreateElementFormProps<T extends ZodRawShape> {
     parent: string;
     onClose: () => void;
     schema: ZodObject<T>;
-    defaults: DefaultValues<z.infer<ZodObject<T>>>;
+    defaults: DefaultValues<z.input<ZodObject<T>>>;
     apiEndpoint: string;
     errorMessage: string;
     fields: FormFieldConfig<T>[];
@@ -217,7 +217,7 @@ function CreateElementForm<T extends ZodRawShape>({
 }: Readonly<CreateElementFormProps<T>>) {
     const reloadParent = useContext(ParentRefresh);
 
-    const form = useForm<z.infer<ZodObject<T>>>({
+    const form = useForm<z.input<ZodObject<T>>, unknown, z.output<ZodObject<T>>>({
         resolver: zodResolver(schema),
         defaultValues: defaults,
     });
