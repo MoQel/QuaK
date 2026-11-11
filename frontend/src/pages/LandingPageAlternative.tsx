@@ -1,5 +1,6 @@
 import React from 'react';
-import { ArrowUpRight, Braces, Github } from 'lucide-react';
+import { ArrowUpRight, Braces } from 'lucide-react';
+import { GithubMark } from '@/components/icons/GithubMark';
 import { isKitHostname } from '@/lib/hostname';
 import { LoginOptions } from './LogIn';
 import './LandingPageAlternative.css';
@@ -111,11 +112,11 @@ export const LandingPageAlternative: React.FC = () => {
                                 </div>
                                 <pre className="overflow-x-auto p-5 font-mono text-sm leading-7 text-[#edf7f4]">
                                     <code>
-                                        <span className="text-[#b7fff5]">OPENQASM</span> 3;{String.fromCharCode(10)}
+                                        <span className="text-[#b7fff5]">OPENQASM</span> 3;{'\n'}
                                         <span className="text-[#b7fff5]">include</span> "stdgates.inc";
-                                        {String.fromCharCode(10)}
-                                        {String.fromCharCode(10)}
-                                        qubit[2] q;{String.fromCharCode(10)}h q[0];{String.fromCharCode(10)}
+                                        {'\n'}
+                                        {'\n'}
+                                        qubit[2] q;{'\n'}h q[0];{'\n'}
                                         cx q[0], q[1];
                                     </code>
                                 </pre>
@@ -164,7 +165,7 @@ export const LandingPageAlternative: React.FC = () => {
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-3 self-start rounded-xl border border-[#17211f] px-6 py-3 text-sm font-bold hover:bg-[#17211f] hover:text-white md:self-auto"
                         >
-                            <Github className="h-4 w-4" />
+                            <GithubMark className="h-4 w-4" />
                             View source on GitHub
                             <ArrowUpRight className="h-4 w-4" />
                         </a>

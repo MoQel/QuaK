@@ -5,7 +5,7 @@ type ThemeSwitchProps = {
     onToggle?: (isDark: boolean) => void;
 };
 
-export default function ThemeSwitch({ onToggle }: ThemeSwitchProps) {
+export default function ThemeSwitch({ onToggle }: Readonly<ThemeSwitchProps>) {
     const { theme, toggleTheme } = useTheme();
     const isDark = theme === 'dark';
 

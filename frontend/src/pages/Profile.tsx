@@ -31,7 +31,7 @@ export const Profile: React.FC = () => {
             }
         };
 
-        fetchProfile();
+        void fetchProfile();
     }, []);
 
     if (loading) {

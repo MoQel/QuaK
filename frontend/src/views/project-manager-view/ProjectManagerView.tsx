@@ -55,7 +55,7 @@ export function ProjectManagerView({ onFileSelect, projectId }: Readonly<Project
     );
 
     useEffect(() => {
-        fetchProjects(projectId).then(setContent);
+        void fetchProjects(projectId).then(setContent);
     }, [reloaded, projectId, projectFilesToken]);
 
     return (
