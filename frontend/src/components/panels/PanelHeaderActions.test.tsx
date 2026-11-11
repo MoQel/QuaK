@@ -42,13 +42,13 @@ describe('PanelHeaderActions', () => {
 
     it('shows the circuit toolbar when the circuit panel is active', () => {
         render(<PanelHeaderActions {...makeProps('circuit')} />);
-        expect(screen.queryByTestId('circuit-toolbar')).not.toBeNull();
+        expect(screen.getByTestId('circuit-toolbar')).toBeInTheDocument();
         expect(screen.queryByTestId('code-toolbar')).toBeNull();
     });
 
     it('shows the code toolbar (generate code) when the code panel is active', () => {
         render(<PanelHeaderActions {...makeProps('code')} />);
-        expect(screen.queryByTestId('code-toolbar')).not.toBeNull();
+        expect(screen.getByTestId('code-toolbar')).toBeInTheDocument();
         expect(screen.queryByTestId('circuit-toolbar')).toBeNull();
     });
 
