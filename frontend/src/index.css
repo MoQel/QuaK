@@ -183,7 +183,7 @@ body,
 
 div.tabs-scrollbar {
     /* Firefox Support: Subtil und dünn */
-    scrollbar-width: thin !important;
-    scrollbar-color: var(--border) transparent !important;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
     scrollbar-gutter: stable;
 }

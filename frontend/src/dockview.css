@@ -98,9 +98,9 @@
 }
 
 /* Close button hover background */
-.dockview-theme-custom .dv-default-tab .dv-default-tab-action:hover {
-    background-color: var(--bg-light) !important;
-    border-radius: 4px !important;
+.dockview-theme-custom .dv-tab .dv-default-tab .dv-default-tab-action:hover {
+    background-color: var(--bg-light);
+    border-radius: 4px;
 }
 
 /* Show close button on tab hover */

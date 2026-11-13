@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useCallback, useContext, useMemo, useState, useEffect, ReactNode } from 'react';
 import { api } from '@/api/api';
 import { API_BASE_URL } from '@/api/backendUrls';
 
@@ -34,7 +34,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     const [user, setUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
-    const checkAuthStatus = async () => {
+    const checkAuthStatus = useCallback(async () => {
         try {
             const response = await fetch(`${API_BASE_URL}/api/auth/user`, {
                 credentials: 'include', // Important: include cookies
@@ -57,41 +57,43 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         } finally {
             setIsLoading(false);
         }
-    };
-
-    useEffect(() => {
-        checkAuthStatus();
     }, []);
 
-    const login = (provider: 'google' | 'github' = 'google') => {
+    useEffect(() => {
+        void checkAuthStatus();
+    }, [checkAuthStatus]);
+
+    const login = useCallback((provider: 'google' | 'github' = 'google') => {
         // Redirect to backend OAuth2 login endpoint
         window.location.href = `${API_BASE_URL}/oauth2/authorization/${provider}`;
-    };
+    }, []);
 
-    const logout = async () => {
-        try {
-            await api.post('/api/auth/logout');
-            setUser(null);
-        } catch (error) {
-            console.error('Logout failed:', error);
-        } finally {
-            // Redirect to home page to ensure all states are cleared
-            window.location.href = '/';
-        }
-    };
+    const logout = useCallback(() => {
+        const requestLogout = async () => {
+            try {
+                await api.post('/api/auth/logout');
+                setUser(null);
+            } catch (error) {
+                console.error('Logout failed:', error);
+            } finally {
+                // Redirect to home page to ensure all states are cleared
+                window.location.href = '/';
+            }
+        };
+        void requestLogout();
+    }, []);
 
-    return (
-        <AuthContext.Provider
-            value={{
-                user,
-                isAuthenticated: !!user,
-                isLoading,
-                login,
-                logout,
-                checkAuthStatus,
-            }}
-        >
-            {children}
-        </AuthContext.Provider>
+    const value = useMemo(
+        () => ({
+            user,
+            isAuthenticated: !!user,
+            isLoading,
+            login,
+            logout,
+            checkAuthStatus,
+        }),
+        [user, isLoading, login, logout, checkAuthStatus],
     );
+
+    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

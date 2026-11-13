@@ -44,7 +44,7 @@ export function useCurrentUser() {
             }
         };
 
-        fetchUser();
+        void fetchUser();
     }, [isAuthenticated, isAuthLoading]);
 
     return { user, loading: loading || isAuthLoading, error };
