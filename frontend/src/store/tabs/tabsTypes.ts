@@ -24,4 +24,5 @@ export type PendingClose =
     | { type: 'tab'; payload: { tabId: string; groupId: string } }
     | { type: 'group'; payload: { groupId: string } }
     | { type: 'all' }
+    | { type: 'leave'; payload: { target: string } }
     | { type: 'others'; payload: { tabId: string; groupId: string } };

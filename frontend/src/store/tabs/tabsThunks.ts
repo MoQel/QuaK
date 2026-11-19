@@ -36,6 +36,15 @@ export const safeCloseAll = () => (dispatch: AppDispatch, getState: () => RootSt
     }
 };
 
+export const safeLeaveProject =
+    (target: string, navigate: (target: string) => void) => (dispatch: AppDispatch, getState: () => RootState) => {
+        if (getState().tabs.dirtyFiles.length > 0) {
+            dispatch(setPendingClose({ type: 'leave', payload: { target } }));
+        } else {
+            navigate(target);
+        }
+    };
+
 export const safeCloseGroup = (groupId: string) => (dispatch: AppDispatch, getState: () => RootState) => {
     const state = getState().tabs;
     const group = state.groups.find((g: EditorGroup) => g.id === groupId);

@@ -308,10 +308,22 @@ interface CreateProjectProps {
     reload?: () => void;
     onSuccess?: (project: ProjectDetailsResponse) => void;
     children?: React.ReactNode;
+    /** Controls the dialog from outside. Without it the dialog opens through its own trigger. */
+    open?: boolean;
+    onOpenChange?: (open: boolean) => void;
 }
 
-export function CreateProject({ reload, onSuccess, children }: Readonly<CreateProjectProps>) {
-    const [open, setOpen] = useState(false);
+export function CreateProject({
+    reload,
+    onSuccess,
+    children,
+    open: controlledOpen,
+    onOpenChange,
+}: Readonly<CreateProjectProps>) {
+    const [ownOpen, setOwnOpen] = useState(false);
+    const controlled = controlledOpen !== undefined;
+    const open = controlled ? controlledOpen : ownOpen;
+    const setOpen = controlled ? (onOpenChange ?? (() => {})) : setOwnOpen;
     const formSchema = z.object({
         name: z.string().min(1, {
             message: 'Name of the project must be at least 1 characters.',
@@ -347,13 +359,15 @@ export function CreateProject({ reload, onSuccess, children }: Readonly<CreatePr
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild className="create-project">
-                {children || (
-                    <Button className="w-full" variant="ghost">
-                        <Plus />
-                    </Button>
-                )}
-            </DialogTrigger>
+            {!controlled && (
+                <DialogTrigger asChild className="create-project">
+                    {children || (
+                        <Button className="w-full" variant="ghost">
+                            <Plus />
+                        </Button>
+                    )}
+                </DialogTrigger>
+            )}
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>Create a new Project</DialogTitle>

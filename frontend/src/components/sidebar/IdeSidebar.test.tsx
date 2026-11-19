@@ -1,7 +1,12 @@
 import { fireEvent, render, screen } from '@testing-library/react';
+import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { api } from '@/api/api.ts';
+import { store } from '@/store/store.ts';
+import { closeAll, setFileDirty } from '@/store/tabs/tabsSlice.ts';
+import { SidebarProvider } from '@/components/ui/sidebar.tsx';
 import { IdeSidebar } from './IdeSidebar.tsx';
 
 const togglePanel = vi.fn();
@@ -9,7 +14,17 @@ const logout = vi.fn();
 const toggleTheme = vi.fn();
 const openRenameProjectDialog = vi.fn();
 const openDeleteProjectDialog = vi.fn();
+const navigate = vi.fn();
 const auth = { logout, isGuest: false };
+
+vi.mock('@/api/api.ts', () => ({
+    api: { get: vi.fn().mockResolvedValue([]) },
+}));
+
+vi.mock('react-router-dom', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('react-router-dom')>()),
+    useNavigate: () => navigate,
+}));
 
 vi.mock('@/contexts/ProjectContext.tsx', () => ({
     useProject: () => ({
@@ -24,6 +39,10 @@ vi.mock('@/contexts/DockviewContext.tsx', () => ({
         openPanels: new Set(['file', 'library']),
         togglePanel,
     }),
+}));
+
+vi.mock('@/views/project-manager-view/ProjectManagerView.tsx', () => ({
+    CreateProject: ({ open }: { open: boolean }) => (open ? <div data-testid="create-dialog" /> : null),
 }));
 
 vi.mock('@/contexts/AuthContext.tsx', () => ({
@@ -47,12 +66,20 @@ vi.mock('@/components/projects/useProjectActionsDialog.tsx', () => ({
 const renderSidebar = (initialEntries = ['/project/project-1']) =>
     render(
         <MemoryRouter initialEntries={initialEntries}>
-            <IdeSidebar />
+            <Provider store={store}>
+                <SidebarProvider>
+                    <IdeSidebar />
+                </SidebarProvider>
+            </Provider>
         </MemoryRouter>,
     );
 
+const openProjectActions = () =>
+    fireEvent.keyDown(screen.getByRole('button', { name: 'Project actions' }), { key: 'Enter' });
+
 describe('IdeSidebar', () => {
     beforeEach(() => {
+        store.dispatch(closeAll());
         vi.clearAllMocks();
         auth.isGuest = false;
         themeState.theme = 'dark';
@@ -66,9 +93,8 @@ describe('IdeSidebar', () => {
 
         expect(projectButton).toHaveAttribute('aria-pressed', 'true');
         expect(circuitButton).toHaveAttribute('aria-pressed', 'false');
-        expect(projectButton).toHaveClass('text-special');
-        expect(circuitButton).toHaveClass('text-text');
-        expect(circuitButton.className).not.toContain('hover:text-special');
+        expect(projectButton).toHaveAttribute('data-active', 'true');
+        expect(circuitButton).toHaveAttribute('data-active', 'false');
 
         fireEvent.click(projectButton);
 
@@ -78,6 +104,7 @@ describe('IdeSidebar', () => {
     it('renders navigation, theme toggle, and logout controls', () => {
         renderSidebar();
 
+        expect(screen.getByRole('link', { name: 'QuaK home' })).toHaveAttribute('href', '/');
         expect(screen.getByRole('link', { name: 'Home' })).toHaveAttribute('href', '/');
         expect(screen.getByRole('link', { name: 'Profile' })).toHaveAttribute('href', '/profile');
         expect(screen.getByRole('link', { name: 'Settings' })).toHaveAttribute('href', '/settings');
@@ -103,11 +130,66 @@ describe('IdeSidebar', () => {
         expect(screen.getByText('New Project2')).toBeInTheDocument();
     });
 
+    it('lists projects in the switcher and navigates to the chosen one', async () => {
+        vi.mocked(api.get).mockResolvedValueOnce([
+            { id: 'project-1', name: 'New Project2', lastAccess: '2026-10-01T00:00:00Z' },
+            { id: 'project-2', name: 'Grover', lastAccess: '2026-10-02T00:00:00Z' },
+        ]);
+        renderSidebar();
+
+        fireEvent.keyDown(screen.getByRole('button', { name: 'Switch project' }), { key: 'Enter' });
+        fireEvent.click(await screen.findByRole('menuitem', { name: 'Grover' }));
+
+        expect(navigate).toHaveBeenCalledWith('/project/project-2');
+        await new Promise((resolve) => setTimeout(resolve));
+        expect(screen.getByRole('button', { name: 'Switch project' })).not.toHaveFocus();
+    });
+
+    it('asks before leaving a project with unsaved changes', async () => {
+        vi.mocked(api.get).mockResolvedValueOnce([
+            { id: 'project-2', name: 'Grover', lastAccess: '2026-10-02T00:00:00Z' },
+        ]);
+        store.dispatch(setFileDirty({ fileId: 'file-1', isDirty: true }));
+        renderSidebar();
+
+        fireEvent.keyDown(screen.getByRole('button', { name: 'Switch project' }), { key: 'Enter' });
+        fireEvent.click(await screen.findByRole('menuitem', { name: 'Grover' }));
+
+        expect(navigate).not.toHaveBeenCalled();
+        expect(store.getState().tabs.pendingCloseAction).toEqual({
+            type: 'leave',
+            payload: { target: '/project/project-2' },
+        });
+    });
+
+    it.each(['QuaK home', 'Home', 'Profile', 'Settings'])(
+        'asks before the %s link leaves a project with unsaved changes',
+        (name) => {
+            store.dispatch(setFileDirty({ fileId: 'file-1', isDirty: true }));
+            renderSidebar();
+
+            fireEvent.click(screen.getByRole('link', { name }));
+
+            expect(store.getState().tabs.pendingCloseAction?.type).toBe('leave');
+        },
+    );
+
+    it('creates a project from the switcher', () => {
+        renderSidebar();
+
+        fireEvent.keyDown(screen.getByRole('button', { name: 'Switch project' }), { key: 'Enter' });
+        fireEvent.click(screen.getByRole('menuitem', { name: 'New project' }));
+
+        expect(screen.getByTestId('create-dialog')).toBeInTheDocument();
+    });
+
     it('keeps project actions available after the top navbar is hidden', () => {
         renderSidebar();
 
-        fireEvent.click(screen.getByRole('button', { name: 'Rename project' }));
-        fireEvent.click(screen.getByRole('button', { name: 'Delete project' }));
+        openProjectActions();
+        fireEvent.click(screen.getByRole('menuitem', { name: 'Rename' }));
+        openProjectActions();
+        fireEvent.click(screen.getByRole('menuitem', { name: 'Delete' }));
 
         expect(openRenameProjectDialog).toHaveBeenCalledWith(
             { id: 'project-1', name: 'New Project2' },
@@ -124,8 +206,33 @@ describe('IdeSidebar', () => {
 
         expect(screen.queryByRole('button', { name: 'Project panel' })).not.toBeInTheDocument();
         expect(screen.queryByRole('button', { name: 'Circuit panel' })).not.toBeInTheDocument();
-        expect(screen.queryByRole('button', { name: 'Rename project' })).not.toBeInTheDocument();
-        expect(screen.getByRole('link', { name: 'Settings' })).toHaveClass('text-special');
+        expect(screen.queryByRole('button', { name: 'Project actions' })).not.toBeInTheDocument();
+        expect(screen.getByRole('link', { name: 'Settings' })).toHaveAttribute('data-active', 'true');
+    });
+
+    it('offers the light theme while the dark theme is active', () => {
+        renderSidebar();
+
+        const themeSwitch = screen.getByRole('button', { name: 'Switch to light mode' });
+        expect(themeSwitch).toHaveTextContent('Light Mode');
+    });
+
+    it('offers the dark theme while the light theme is active', () => {
+        themeState.theme = 'light';
+        renderSidebar();
+
+        const themeSwitch = screen.getByRole('button', { name: 'Switch to dark mode' });
+        expect(themeSwitch).toHaveTextContent('Dark Mode');
+    });
+
+    it('names the theme switch in the tooltip of the collapsed sidebar', async () => {
+        renderSidebar();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Collapse sidebar' }));
+
+        fireEvent.focus(screen.getByRole('button', { name: 'Switch to light mode' }));
+
+        expect(await screen.findByRole('tooltip')).toHaveTextContent('Light Mode');
     });
 
     it('marks the profile entry of a guest session', () => {
@@ -162,28 +269,5 @@ describe('IdeSidebar', () => {
 
         expect(logout).not.toHaveBeenCalled();
         expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
-    });
-
-    it('offers the light theme while the dark theme is active', () => {
-        renderSidebar();
-
-        const themeSwitch = screen.getByRole('button', { name: 'Switch to light mode' });
-        expect(themeSwitch).toHaveTextContent('Light Mode');
-    });
-
-    it('offers the dark theme while the light theme is active', () => {
-        themeState.theme = 'light';
-        renderSidebar();
-
-        const themeSwitch = screen.getByRole('button', { name: 'Switch to dark mode' });
-        expect(themeSwitch).toHaveTextContent('Dark Mode');
-    });
-
-    it('names the theme switch in the tooltip of the collapsed sidebar', () => {
-        renderSidebar();
-
-        fireEvent.click(screen.getByRole('button', { name: 'Collapse sidebar' }));
-
-        expect(screen.getByRole('button', { name: 'Switch to light mode' })).toHaveAttribute('title', 'Light Mode');
     });
 });

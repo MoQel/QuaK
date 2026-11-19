@@ -7,14 +7,15 @@ import 'dockview-core/dist/styles/dockview.css';
 import { CustomTabRenderer } from '@/components/panels/CustomTab.tsx';
 import { PanelHeaderActions } from '@/components/panels/PanelHeaderActions.tsx';
 import { useProject } from '@/contexts/ProjectContext.tsx';
+import { UnsavedChangesAlertDialog } from '@/views/text-editor-view/components/utils/UnsavedChangesAlertDialog.tsx';
+import { PanelDataProvider } from '@/contexts/panel/PanelDataProvider';
 import { useTabsPersistence } from '@/hooks/useTabsPersistence.ts';
 import { useMonacoGarbageCollector } from '@/hooks/editor/useMonacoGarbageCollector.ts';
 import { lspManager } from '@/lsp/LSPClientManager';
 import { useEffect } from 'react';
 
-function App() {
+function ProjectWorkspace({ projectId }: Readonly<{ projectId: string | null }>) {
     const { onReady } = useDockviewLogic();
-    const { projectId } = useProject();
 
     usePreventKeyboardActions();
     useTabsPersistence(projectId);
@@ -25,21 +26,31 @@ function App() {
 
     useEffect(() => {
         return () => lspManager.disposeAll();
-    }, [projectId]);
+    }, []);
 
     return (
         <div className="h-full w-full overflow-hidden bg-bg-dark">
-            <DockviewReact
-                components={componentRegistry}
-                defaultTabComponent={CustomTabRenderer}
-                leftHeaderActionsComponent={PanelHeaderActions}
-                onReady={onReady}
-                className="dockview-theme-custom h-full w-full"
-            />
+            <PanelDataProvider>
+                <DockviewReact
+                    components={componentRegistry}
+                    defaultTabComponent={CustomTabRenderer}
+                    leftHeaderActionsComponent={PanelHeaderActions}
+                    onReady={onReady}
+                    className="dockview-theme-custom h-full w-full"
+                />
+            </PanelDataProvider>
 
+            <UnsavedChangesAlertDialog />
             <Toaster />
         </div>
     );
+}
+
+/** Every project gets its own workspace, so switching runs the same teardown and restore as leaving the IDE. */
+function App() {
+    const { projectId } = useProject();
+
+    return <ProjectWorkspace key={projectId} projectId={projectId} />;
 }
 
 export default App;

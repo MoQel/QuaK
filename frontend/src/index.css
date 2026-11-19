@@ -60,6 +60,11 @@ body,
     --color-landing-code-text: var(--landing-code-text);
     --color-landing-glow: var(--landing-glow);
     --color-landing-wire: var(--landing-wire);
+    --color-sidebar-foreground: var(--text);
+    --color-sidebar-accent: var(--bg);
+    --color-sidebar-accent-foreground: var(--text);
+    --color-sidebar-border: var(--border);
+    --color-sidebar-ring: var(--special);
 }
 
 :root {
