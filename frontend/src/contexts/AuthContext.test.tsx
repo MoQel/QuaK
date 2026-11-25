@@ -1,4 +1,5 @@
-import { act, render, screen, waitFor } from '@testing-library/react';
+import type { ReactNode } from 'react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AuthProvider, useAuth } from './AuthContext';
@@ -7,21 +8,13 @@ const api = vi.hoisted(() => ({ post: vi.fn() }));
 
 vi.mock('@/api/api', () => ({ api }));
 
-let signInAsGuest: () => Promise<void> = async () => {};
-let upgradeGuest: (provider: 'google' | 'github') => Promise<void> = async () => {};
+const wrapper = ({ children }: { children: ReactNode }) => <AuthProvider>{children}</AuthProvider>;
 
-function AuthState() {
-    const auth = useAuth();
-    signInAsGuest = auth.signInAsGuest;
-    upgradeGuest = auth.upgradeGuest;
-
-    if (auth.isLoading) return <output>loading</output>;
-    return (
-        <output>
-            {`authenticated=${auth.isAuthenticated} guest=${auth.isGuest} guestEnabled=${auth.guestEnabled}`}
-        </output>
-    );
-}
+const renderAuth = async () => {
+    const hook = renderHook(() => useAuth(), { wrapper });
+    await waitFor(() => expect(hook.result.current.isLoading).toBe(false));
+    return hook;
+};
 
 const stubAuthStatus = (status: object) =>
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => status }));
@@ -38,43 +31,30 @@ describe('AuthProvider', () => {
     it('reports whether guest access is enabled for signed-out visitors', async () => {
         stubAuthStatus({ authenticated: false, userId: null, guest: false, guestEnabled: true });
 
-        render(
-            <AuthProvider>
-                <AuthState />
-            </AuthProvider>,
-        );
+        const { result } = await renderAuth();
 
-        expect(await screen.findByText('authenticated=false guest=false guestEnabled=true')).toBeInTheDocument();
+        expect(result.current).toMatchObject({ isAuthenticated: false, isGuest: false, guestEnabled: true });
     });
 
     it('recognises a guest session', async () => {
         stubAuthStatus({ authenticated: true, userId: 'u-1', guest: true, guestEnabled: true });
 
-        render(
-            <AuthProvider>
-                <AuthState />
-            </AuthProvider>,
-        );
+        const { result } = await renderAuth();
 
-        expect(await screen.findByText('authenticated=true guest=true guestEnabled=true')).toBeInTheDocument();
+        expect(result.current).toMatchObject({ isAuthenticated: true, isGuest: true, guestEnabled: true });
     });
 
     it('signs in as guest through the backend', async () => {
         stubAuthStatus({ authenticated: false, userId: null, guest: false, guestEnabled: true });
         api.post.mockResolvedValue({ authenticated: true, userId: 'u-2', guest: true, guestEnabled: true });
 
-        render(
-            <AuthProvider>
-                <AuthState />
-            </AuthProvider>,
-        );
-        await screen.findByText('authenticated=false guest=false guestEnabled=true');
+        const { result } = await renderAuth();
 
-        await act(() => signInAsGuest());
+        await act(() => result.current.signInAsGuest());
 
         expect(api.post).toHaveBeenCalledWith('/api/auth/guest');
         await waitFor(() =>
-            expect(screen.getByText('authenticated=true guest=true guestEnabled=true')).toBeInTheDocument(),
+            expect(result.current).toMatchObject({ isAuthenticated: true, isGuest: true, guestEnabled: true }),
         );
     });
 
@@ -84,14 +64,9 @@ describe('AuthProvider', () => {
         vi.stubGlobal('location', location);
         api.post.mockResolvedValue('');
 
-        render(
-            <AuthProvider>
-                <AuthState />
-            </AuthProvider>,
-        );
-        await screen.findByText('authenticated=true guest=true guestEnabled=true');
+        const { result } = await renderAuth();
 
-        await act(() => upgradeGuest('github'));
+        await act(() => result.current.upgradeGuest('github'));
 
         expect(api.post).toHaveBeenCalledWith('/api/auth/guest/upgrade');
         expect(location.href).toMatch(/\/oauth2\/authorization\/github$/);
