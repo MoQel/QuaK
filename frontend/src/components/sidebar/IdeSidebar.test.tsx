@@ -15,7 +15,7 @@ const toggleTheme = vi.fn();
 const openRenameProjectDialog = vi.fn();
 const openDeleteProjectDialog = vi.fn();
 const navigate = vi.fn();
-const auth = { logout };
+const auth = { logout, isGuest: false };
 
 vi.mock('@/api/api.ts', () => ({
     api: { get: vi.fn().mockResolvedValue([]) },
@@ -81,6 +81,7 @@ describe('IdeSidebar', () => {
     beforeEach(() => {
         store.dispatch(closeAll());
         vi.clearAllMocks();
+        auth.isGuest = false;
         themeState.theme = 'dark';
     });
 
@@ -232,5 +233,41 @@ describe('IdeSidebar', () => {
         fireEvent.focus(screen.getByRole('button', { name: 'Switch to light mode' }));
 
         expect(await screen.findByRole('tooltip')).toHaveTextContent('Light Mode');
+    });
+
+    it('marks the profile entry of a guest session', () => {
+        auth.isGuest = true;
+        renderSidebar();
+
+        const profileLink = screen.getByRole('link', { name: 'Profile' });
+        expect(profileLink).toHaveTextContent('Guest');
+        expect(profileLink).toHaveAttribute('title', expect.stringContaining('deleted after 2 hours of inactivity'));
+    });
+
+    it('asks a guest to confirm before signing out', () => {
+        auth.isGuest = true;
+        renderSidebar();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Logout' }));
+
+        expect(logout).not.toHaveBeenCalled();
+        expect(screen.getByRole('alertdialog', { name: 'End guest session?' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Sign in with Google' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Sign in with GitHub' })).toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole('button', { name: 'End session' }));
+
+        expect(logout).toHaveBeenCalledOnce();
+    });
+
+    it('keeps a guest signed in when the logout is cancelled', () => {
+        auth.isGuest = true;
+        renderSidebar();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Logout' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+        expect(logout).not.toHaveBeenCalled();
+        expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
     });
 });

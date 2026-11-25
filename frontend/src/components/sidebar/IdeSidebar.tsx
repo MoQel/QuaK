@@ -21,7 +21,10 @@ import {
 import { useState, type MouseEvent } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
+import { Badge } from '@quak/ui/badge';
 import { Button } from '@quak/ui/button';
+import { GuestLogoutDialog } from '@/components/guest/GuestLogoutDialog.tsx';
+import { GUEST_DATA_NOTICE } from '@/components/guest/guestNotice.ts';
 import {
     Sidebar,
     SidebarContent,
@@ -84,7 +87,8 @@ export function IdeSidebar() {
     const dispatch = useAppDispatch();
     const { pathname } = useLocation();
     const isIdeView = pathname.startsWith('/project');
-    const { logout } = useAuth();
+    const { logout, isGuest } = useAuth();
+    const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
     const { theme, toggleTheme } = useTheme();
     const { projectId, projectName, refreshProject } = useProject();
     const { dialog, openDeleteProjectDialog, openRenameProjectDialog } = useProjectActionsDialog();
@@ -102,9 +106,18 @@ export function IdeSidebar() {
     };
     const hasProject = isIdeView && !!projectId && !!projectName;
 
+    const requestLogout = () => {
+        if (isGuest) {
+            setLogoutDialogOpen(true);
+        } else {
+            logout();
+        }
+    };
+
     return (
         <Sidebar collapsible="icon">
             {dialog}
+            <GuestLogoutDialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen} onConfirm={logout} />
             <CreateProject
                 open={createOpen}
                 onOpenChange={setCreateOpen}
@@ -236,6 +249,7 @@ export function IdeSidebar() {
                     <SidebarMenu>
                         {NAV_ITEMS.map((item) => {
                             const Icon = item.icon;
+                            const showGuestHint = isGuest && item.to === '/profile';
 
                             return (
                                 <SidebarMenuItem key={item.to}>
@@ -245,9 +259,22 @@ export function IdeSidebar() {
                                         isActive={item.isActive(pathname)}
                                         tooltip={item.label}
                                     >
-                                        <Link to={item.to} aria-label={item.label} onClick={confirmLeave(item.to)}>
+                                        <Link
+                                            to={item.to}
+                                            aria-label={item.label}
+                                            title={showGuestHint ? `Guest session. ${GUEST_DATA_NOTICE}` : undefined}
+                                            onClick={confirmLeave(item.to)}
+                                        >
                                             <Icon />
                                             {!collapsed && <span>{item.label}</span>}
+                                            {showGuestHint && !collapsed && (
+                                                <Badge
+                                                    variant="outline"
+                                                    className="ml-auto border-special/40 bg-special/10 text-[10px] font-semibold uppercase text-special"
+                                                >
+                                                    Guest
+                                                </Badge>
+                                            )}
                                         </Link>
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>
@@ -269,7 +296,7 @@ export function IdeSidebar() {
                                 className={menuButtonClassName({ muted: true })}
                                 aria-label="Logout"
                                 tooltip="Logout"
-                                onClick={logout}
+                                onClick={requestLogout}
                             >
                                 <LogOut />
                                 {!collapsed && <span>Logout</span>}

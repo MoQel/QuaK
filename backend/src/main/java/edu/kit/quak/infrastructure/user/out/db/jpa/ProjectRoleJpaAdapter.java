@@ -63,4 +63,9 @@ public class ProjectRoleJpaAdapter implements ProjectRoleRepositoryPort {
     public void deleteAllByProjectId(String projectId) {
         repository.deleteAllByProjectId(projectId);
     }
+
+    @Override
+    public void deleteAllByUserId(UUID userId) {
+        repository.deleteAllByUserId(userId);
+    }
 }

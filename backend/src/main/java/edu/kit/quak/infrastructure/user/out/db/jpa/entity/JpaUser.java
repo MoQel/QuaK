@@ -27,6 +27,9 @@ public class JpaUser {
     @Column(nullable = false)
     private String sub;
 
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean guest;
+
     private String email;
 
     @Column(name = "email_verified")
@@ -53,4 +56,7 @@ public class JpaUser {
 
     @Column(name = "last_login_at", columnDefinition = "TIMESTAMP(6)")
     private Instant lastLoginAt;
+
+    @Column(name = "last_active_at", columnDefinition = "TIMESTAMP(6)")
+    private Instant lastActiveAt;
 }

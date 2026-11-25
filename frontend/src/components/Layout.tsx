@@ -1,5 +1,6 @@
 import React from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
+import { useGuestUpgradeResult } from '@/components/guest/useGuestUpgradeResult.ts';
 import { IdeSidebar } from '@/components/sidebar/IdeSidebar.tsx';
 import { SidebarProvider } from '@/components/ui/sidebar.tsx';
 import { Toaster } from '@/components/ui/sonner.tsx';
@@ -10,6 +11,7 @@ import { cn } from '@quak/ui/lib/utils';
 
 export const Layout: React.FC = () => {
     const { pathname } = useLocation();
+    useGuestUpgradeResult();
 
     const isIDE = pathname.startsWith('/project');
 

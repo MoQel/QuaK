@@ -124,6 +124,18 @@ To run the full application (Backend + Frontend served statically):
     * Runs the Spring Boot backend and MariaDB.
     * Access the app at `http://localhost:8080` (or the configured production port).
 
+#### Guest Accounts
+
+Visitors can try QuaK without signing in. Guest accounts are **enabled by default**, also in production. Set these variables in `backend/.env` to change that:
+
+| Variable                 | Default | Description                                                                                                 |
+| ------------------------ | ------- | ----------------------------------------------------------------------------------------------------------- |
+| `GUEST_ENABLED`          | `true`  | Set to `false` to disable guest accounts.                                                                   |
+| `GUEST_MAX_INACTIVITY`   | `PT2H`  | Inactivity after which a guest and its projects are deleted. Must exceed the session timeout of one hour.   |
+| `GUEST_CLEANUP_INTERVAL` | `PT15M` | How often inactive guests are deleted.                                                                      |
+
+Durations use the ISO-8601 format.
+
 ## Developing
 
 Please have a look at the [developer guidelines](/docs/DEVELOPMENT.md).

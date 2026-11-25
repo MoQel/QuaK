@@ -45,12 +45,13 @@ public class UserRestAdapter {
 
     /**
      * Searches users by email. Returns a list of users whose email contains the
-     * query string.
+     * query string, or for guests the user with exactly that email.
      */
     @GetMapping("/users/search")
     @PreAuthorize("isAuthenticated()")
-    public List<UserResponse> searchUsers(@RequestParam String email) {
-        List<User> users = userService.searchByEmail(email);
+    public List<UserResponse> searchUsers(@RequestParam String email, Authentication authentication) {
+        User searcher = userService.getAuthenticatedUser(authMapper.toDomain(authentication));
+        List<User> users = userService.searchByEmail(email, searcher);
         return users.stream().map(userDtoMapper::toResponse).toList();
     }
 }

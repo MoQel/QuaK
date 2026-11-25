@@ -8,6 +8,7 @@ import edu.kit.quak.core.user.model.ProjectRole;
 import edu.kit.quak.core.user.model.ProjectRoleAssignment;
 import edu.kit.quak.core.user.model.User;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -98,6 +99,43 @@ public class ProjectRoleService implements ProjectRoleServicePort {
         }
         // minimumRole == OWNER
         return userRole == ProjectRole.OWNER;
+    }
+
+    @Override
+    public void transferAllByUserId(UUID fromUserId, UUID toUserId) {
+        roleRepository.findAllByUserId(fromUserId).forEach(assignment -> transfer(assignment, toUserId));
+    }
+
+    @Override
+    public void assignOwner(String projectId, UUID ownerId) {
+        roleRepository.save(new ProjectRoleAssignment(ownerId, projectId, ProjectRole.OWNER));
+        log.info("Assigned OWNER role to user '{}' for project '{}'", ownerId, projectId);
+    }
+
+    @Override
+    public List<String> findProjectIdsByUserIdAndRole(UUID userId, ProjectRole role) {
+        return roleRepository.findAllByUserIdAndRole(userId, role).stream().map(ProjectRoleAssignment::getProjectId).toList();
+    }
+
+    @Override
+    public void deleteAllByProjectId(String projectId) {
+        roleRepository.deleteAllByProjectId(projectId);
+    }
+
+    /** Moves an assignment to another user, or keeps that user's assignment with the higher of both roles. */
+    private void transfer(ProjectRoleAssignment assignment, UUID toUserId) {
+        Optional<ProjectRoleAssignment> existing = roleRepository.findByUserIdAndProjectId(toUserId, assignment.getProjectId());
+        if (existing.isEmpty()) {
+            assignment.setUserId(toUserId);
+            roleRepository.save(assignment);
+            return;
+        }
+        ProjectRoleAssignment kept = existing.get();
+        if (assignment.getRole() == ProjectRole.OWNER && kept.getRole() != ProjectRole.OWNER) {
+            kept.setRole(ProjectRole.OWNER);
+            roleRepository.save(kept);
+        }
+        roleRepository.deleteByUserIdAndProjectId(assignment.getUserId(), assignment.getProjectId());
     }
 
     /**

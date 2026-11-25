@@ -8,6 +8,7 @@ import edu.kit.quak.core.editorstate.model.EditorState;
 import edu.kit.quak.core.user.model.ProjectRole;
 import edu.kit.quak.core.user.model.User;
 import java.util.Optional;
+import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,6 +42,32 @@ public class EditorStateService implements EditorStateServicePort {
             .orElseGet(() -> new EditorState(projectId, user.getId().toString(), tabsJson));
         state.setTabsJson(tabsJson);
         return repository.save(state);
+    }
+
+    @Override
+    public void deleteAllByUserId(UUID userId) {
+        log.debug("Deleting all editor states. userId={}", userId);
+        repository.deleteAllByUserId(userId.toString());
+    }
+
+    @Override
+    public void deleteAllByProjectId(String projectId) {
+        log.debug("Deleting all editor states. projectId={}", projectId);
+        repository.deleteAllByProjectId(projectId);
+    }
+
+    @Override
+    public void transferAllByUserId(UUID fromUserId, UUID toUserId) {
+        log.debug("Transferring editor states. fromUserId={}, toUserId={}", fromUserId, toUserId);
+        String receiver = toUserId.toString();
+        for (EditorState state : repository.findAllByUserId(fromUserId.toString())) {
+            if (repository.findByProjectIdAndUserId(state.getProjectId(), receiver).isPresent()) {
+                repository.deleteById(state.getId());
+            } else {
+                state.setUserId(receiver);
+                repository.save(state);
+            }
+        }
     }
 
     // The editor state is per-user UI state, so VIEWER access is sufficient for both reading and writing.

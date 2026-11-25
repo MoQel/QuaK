@@ -11,6 +11,7 @@ import { Input } from '@quak/ui/input';
 import { Badge } from '@quak/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@quak/ui/dialog';
 import UserAvatar from '@/components/UserAvatar.tsx';
+import { useAuth } from '@/contexts/AuthContext.tsx';
 
 interface ManageRolesDialogProps {
     project: ProjectDetailsResponse;
@@ -19,6 +20,7 @@ interface ManageRolesDialogProps {
 }
 
 export function ManageRolesDialog({ project, open, onOpenChange }: Readonly<ManageRolesDialogProps>) {
+    const { isGuest } = useAuth();
     const [roles, setRoles] = useState<ProjectRoleResponse[]>([]);
     const [isLoadingRoles, setIsLoadingRoles] = useState(false);
 
@@ -180,7 +182,7 @@ export function ManageRolesDialog({ project, open, onOpenChange }: Readonly<Mana
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-text-muted" />
                         <Input
                             id="invite-search"
-                            placeholder="Search by email address..."
+                            placeholder={isGuest ? 'Enter the full email address...' : 'Search by email address...'}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             onFocus={() => searchResults.length > 0 && setShowResults(true)}

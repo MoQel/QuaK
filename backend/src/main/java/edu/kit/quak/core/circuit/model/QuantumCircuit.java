@@ -8,6 +8,7 @@ import edu.kit.quak.core.circuit.model.layer.Layer;
 import edu.kit.quak.core.circuit.model.layer.operation.ElementSelector;
 import edu.kit.quak.core.circuit.model.layer.operation.Measurement;
 import edu.kit.quak.core.circuit.model.layer.operation.QuantumOperation;
+import edu.kit.quak.core.circuit.model.layer.operation.SubcircuitOperation;
 import edu.kit.quak.core.circuit.model.register.ClassicRegister;
 import edu.kit.quak.core.circuit.model.register.QuantumRegister;
 import edu.kit.quak.core.circuit.model.register.Register;
@@ -806,6 +807,37 @@ public class QuantumCircuit extends ElementWithId {
             }
         }
         throw new RegisterNotFoundException(registerId);
+    }
+
+    /** The circuits this one calls directly as subcircuits. */
+    public List<String> referencedCircuitIds() {
+        return layers
+            .stream()
+            .flatMap(layer -> layer.getQuantumOperations().stream())
+            .filter(SubcircuitOperation.class::isInstance)
+            .map(SubcircuitOperation.class::cast)
+            .map(SubcircuitOperation::getDefinitionCircuitId)
+            .filter(Objects::nonNull)
+            .distinct()
+            .toList();
+    }
+
+    /** The number of qubits over all quantum registers. */
+    public int qubitCount() {
+        return registers
+            .stream()
+            .filter(QuantumRegister.class::isInstance)
+            .map(QuantumRegister.class::cast)
+            .mapToInt(QuantumRegister::getNumberOfQubits)
+            .sum();
+    }
+
+    /** The number of operations over all layers. */
+    public int operationCount() {
+        return layers
+            .stream()
+            .mapToInt(layer -> layer.getQuantumOperations().size())
+            .sum();
     }
 
     public String getQuantumRegisterNameById(String quantumRegisterId) {

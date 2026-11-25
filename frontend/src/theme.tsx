@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 type Theme = 'dark' | 'light';
 type ThemeCtx = {
@@ -23,13 +23,10 @@ export function ThemeProvider({ children }: Readonly<{ children: React.ReactNode
         localStorage.setItem(KEY, theme);
     }, [theme]);
 
-    return (
-        <ThemeContext.Provider
-            value={{ theme, setTheme, toggleTheme: () => setTheme((t) => (t === 'dark' ? 'light' : 'dark')) }}
-        >
-            {children}
-        </ThemeContext.Provider>
-    );
+    const toggleTheme = useCallback(() => setTheme((t) => (t === 'dark' ? 'light' : 'dark')), []);
+    const value = useMemo<ThemeCtx>(() => ({ theme, setTheme, toggleTheme }), [theme, toggleTheme]);
+
+    return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
 
 export function useTheme() {

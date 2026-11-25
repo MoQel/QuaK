@@ -4,6 +4,7 @@ import edu.kit.quak.application.filesystem.ports.out.FileContentRepositoryPort;
 import edu.kit.quak.infrastructure.filesystem.out.db.jpa.entity.JpaFileContent;
 import edu.kit.quak.infrastructure.filesystem.out.db.jpa.repository.SpringDataFileContentRepository;
 import edu.kit.quak.infrastructure.filesystem.out.db.jpa.repository.SpringDataJpaFileRepository;
+import java.util.Collection;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
@@ -34,10 +35,7 @@ public class FileContentJpaAdapter implements FileContentRepositoryPort {
                 existing.setContent(content);
                 return existing;
             })
-            .orElseGet(() -> {
-                // Create
-                return new JpaFileContent(fileId, content);
-            });
+            .orElseGet(() -> new JpaFileContent(fileId, content));
 
         // store
         contentRepository.save(entity);
@@ -51,5 +49,10 @@ public class FileContentJpaAdapter implements FileContentRepositoryPort {
     @Override
     public void deleteContent(String fileId) {
         contentRepository.deleteById(fileId);
+    }
+
+    @Override
+    public void deleteContents(Collection<String> fileIds) {
+        contentRepository.deleteAllById(fileIds);
     }
 }

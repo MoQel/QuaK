@@ -1,5 +1,6 @@
 package edu.kit.quak.application.filesystem.ports.out;
 
+import java.util.Collection;
 import java.util.Optional;
 
 public interface FileContentRepositoryPort {
@@ -25,4 +26,11 @@ public interface FileContentRepositoryPort {
      * @param fId ID of the file
      */
     void deleteContent(String fId);
+
+    /**
+     * Deletes the contents of the given files.
+     *
+     * @param fIds IDs of the files
+     */
+    void deleteContents(Collection<String> fIds);
 }
