@@ -1,6 +1,7 @@
 name: SonarQube Cloud
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - "development"
@@ -16,7 +17,7 @@ jobs:
   sonar:
     name: sonar
     # Pull requests from forks get no secrets, so there is no token to scan with.
-    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     permissions:
       contents: read
       pull-requests: read
@@ -46,7 +47,7 @@ jobs:
         run: npm ci --ignore-scripts
 
       - name: Backend tests with JaCoCo
-        run: cd backend && ./gradlew test jacocoTestReport sonarLibraries
+        run: cd backend && ./gradlew test jacocoTestReport
 
       - name: JS tests with coverage
         run: npm run test:coverage

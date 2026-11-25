@@ -25,11 +25,11 @@ We use projects to organize issues that should be addressed within a certain tim
 ⚠️**TBD**
 
 ## Code analysis
-[SonarQube Cloud](https://sonarcloud.io/project/overview?id=moqel_QuaK) analyzes the whole repository as one project on every pull request and every push to `development` and `main` (`.github/workflows/sonar.yml`).
+[SonarQube Cloud](https://sonarcloud.io/project/overview?id=moqel_QuaK) analyzes the whole repository as one project on every pull request and every push to `development` and `main` (`.github/workflows/sonar.yml`). A pull request shows only the issues in its new code; the whole repository is shown for `development`. The workflow can also be started by hand for any branch under Actions > SonarQube Cloud > Run workflow.
 The scan is configured in [sonar-project.properties](../sonar-project.properties) and needs the `SONAR_TOKEN` secret. Automatic analysis must stay disabled in the project, otherwise the CI scan fails.
 
-The workflow collects test coverage before the scan:
-- Backend: `./gradlew test jacocoTestReport sonarLibraries` writes the JaCoCo XML report and copies the compile classpaths to `backend/build/sonar-libs` for the Java analysis.
+The scanner detects the Gradle backend and the npm workspaces itself, including Java classes and libraries and the test files. The workflow collects test coverage before the scan:
+- Backend: `./gradlew test jacocoTestReport` writes the JaCoCo XML report.
 - Frontend, packages and extension: `npm run test:coverage` runs all Vitest suites from the root and writes `coverage/lcov.info`.
 
 Generated parsers are excluded from the analysis and the coverage reports.

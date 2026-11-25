@@ -222,15 +222,6 @@ tasks.named('jacocoTestReport') {
 	}))
 }
 
-// Collects the compile classpaths for sonar.java.libraries and sonar.java.test.libraries
-tasks.register('sonarLibraries', Sync) {
-	group = 'verification'
-	description = 'Copies the main and test compile classpaths to build/sonar-libs for the Sonar scanner'
-	into(layout.buildDirectory.dir('sonar-libs'))
-	into('main') { from(configurations.compileClasspath) }
-	into('test') { from(configurations.testCompileClasspath) }
-}
-
 // Task for fast Unit Tests
 tasks.register('unitTest', Test) {
 	description = 'Runs unit tests.'

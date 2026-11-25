@@ -9,7 +9,7 @@ export default defineConfig({
             provider: 'v8',
             reporter: ['text-summary', 'lcovonly'],
             reportsDirectory: 'coverage',
-            include: ['frontend/src/**', 'packages/*/src/**', 'vscode-extension/src/**'],
+            include: ['{frontend,vscode-extension}/src/**/*.{ts,tsx,js,jsx}', 'packages/*/src/**/*.{ts,tsx,js,jsx}'],
             exclude: ['**/*.d.ts', '**/*.test.{ts,tsx}', '**/test/**', 'packages/qasm-transform/src/generated/**'],
         },
     },
