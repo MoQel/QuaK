@@ -7,6 +7,11 @@ import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from '@quak/ui/co
 import { Dialog, DialogContent } from '@quak/ui/dialog';
 import { Delete } from '@/views/project-manager-view/Delete.tsx';
 import { Empty, ListingElement } from '@/views/project-manager-view/util/TreeComponents.tsx';
+import { toast } from 'sonner';
+
+// One shared id keeps a failing backend from stacking a toast for every open folder.
+const reportLoadFailure = (err: Error) =>
+    toast.error(err.message || 'Failed to load folder contents', { id: 'load-folder-contents' });
 
 /**
  * Provides an icon based on the given open-state of the container.
@@ -65,19 +70,22 @@ export function FileElementContainer({
     const isSelected = selectedFolderId === id;
 
     useEffect(() => {
-        getContent(id).then(setContent);
+        getContent(id).then(setContent).catch(reportLoadFailure);
     }, [id, reloaded, getContent]);
 
     // Re-fetch contents when the toolbar triggers a reload for the selected folder
     useEffect(() => {
         if (isSelected && reloadTrigger > 0) {
-            getContent(id).then(setContent);
+            getContent(id).then(setContent).catch(reportLoadFailure);
         }
     }, [reloadTrigger, isSelected, getContent, id]);
 
     const openDialog = (content: Promise<JSX.Element>) => {
         setOpen(true);
-        content.then(setDialogContent);
+        content.then(setDialogContent).catch((err) => {
+            setOpen(false);
+            toast.error(err.message || 'Failed to open dialog');
+        });
     };
 
     const handleClick = () => {

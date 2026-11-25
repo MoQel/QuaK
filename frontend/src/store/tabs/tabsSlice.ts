@@ -242,7 +242,7 @@ export const tabsSlice = createSlice({
                 language: getLanguageByExtension(tab.title),
             };
 
-            const exists = group.openTabs.find((t) => t.id === action.payload.tab.id);
+            const exists = group.openTabs.some((t) => t.id === action.payload.tab.id);
             if (!exists) {
                 group.openTabs.push(newTab);
             }

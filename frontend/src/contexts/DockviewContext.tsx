@@ -36,9 +36,9 @@ export const useDockview = () => {
 };
 
 export const DockviewProvider = ({ children }: { children: React.ReactNode }) => {
-    const [api, _setApi] = useState<DockviewApi | null>(null);
+    const [api, setApi] = useState<DockviewApi | null>(null);
     // Ensure group type is set
-    const setApi = (newApi: DockviewApi | null) => {
+    const registerApi = (newApi: DockviewApi | null) => {
         if (newApi) {
             newApi.onDidAddPanel((panel) => {
                 requestAnimationFrame(() => applyGroupType(newApi, panel.id));
@@ -52,7 +52,7 @@ export const DockviewProvider = ({ children }: { children: React.ReactNode }) =>
                 });
             });
         }
-        _setApi(newApi);
+        setApi(newApi);
     };
 
     const [openPanels, setOpenPanels] = useState<Set<PanelKey>>(new Set());
@@ -112,7 +112,7 @@ export const DockviewProvider = ({ children }: { children: React.ReactNode }) =>
 
         return {
             api,
-            setApi,
+            setApi: registerApi,
             openPanels,
             syncOpenPanelsFromApi,
             openPanel,

@@ -66,7 +66,7 @@ export function HomePage() {
     };
 
     useEffect(() => {
-        fetchProjects();
+        void fetchProjects();
     }, []);
 
     useEffect(() => {

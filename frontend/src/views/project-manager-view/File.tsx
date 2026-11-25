@@ -31,7 +31,10 @@ export function File(file: Readonly<IFile>) {
 
     const dialogTrigger = (content: Promise<JSX.Element>) => {
         setOpen(true);
-        content.then(setDialogContent);
+        content.then(setDialogContent).catch((err) => {
+            setOpen(false);
+            toast.error(err.message || 'Failed to open dialog');
+        });
     };
 
     const handleFileClick = () => {
