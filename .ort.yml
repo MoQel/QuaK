@@ -26,9 +26,9 @@ excludes:
     - pattern: "annotationProcessor|antlr|compileClasspath"
       reason: "BUILD_DEPENDENCY_OF"
       comment: "Gradle compile-time scopes. The jar ships the runtime classpath."
-    - pattern: "test.*"
+    - pattern: "test.*|jacocoAgent|jacocoAnt"
       reason: "TEST_DEPENDENCY_OF"
-      comment: "Gradle test scopes."
+      comment: "Gradle test scopes and the JaCoCo coverage agent and report tasks."
 
 # Violations of .ort/config/evaluator.rules.kts that were decided to be acceptable.
 # https://oss-review-toolkit.org/ort/docs/configuration/resolutions
