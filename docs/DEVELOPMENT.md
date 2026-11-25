@@ -24,6 +24,16 @@ We use projects to organize issues that should be addressed within a certain tim
 ## Linting
 ⚠️**TBD**
 
+## Code analysis
+[SonarQube Cloud](https://sonarcloud.io/project/overview?id=moqel_QuaK) analyzes the whole repository as one project on every pull request and every push to `development` and `main` (`.github/workflows/sonar.yml`).
+The scan is configured in [sonar-project.properties](../sonar-project.properties) and needs the `SONAR_TOKEN` secret. Automatic analysis must stay disabled in the project, otherwise the CI scan fails.
+
+The workflow collects test coverage before the scan:
+- Backend: `./gradlew test jacocoTestReport sonarLibraries` writes the JaCoCo XML report and copies the compile classpaths to `backend/build/sonar-libs` for the Java analysis.
+- Frontend, packages and extension: `npm run test:coverage` runs all Vitest suites from the root and writes `coverage/lcov.info`.
+
+Generated parsers are excluded from the analysis and the coverage reports.
+
 ## Third-party licenses
 Every pull request runs the [OSS Review Toolkit](https://oss-review-toolkit.org/) (`.github/workflows/licenses.yml`) over the Gradle, npm, pip and Go dependencies that QuaK ships.
 The check fails for a dependency whose license is not compatible with MIT according to the [OSADL matrix](https://www.osadl.org/html/CompatMatrix.html), whose license the matrix does not rate, or that declares no license.

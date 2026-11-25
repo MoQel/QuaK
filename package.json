@@ -10,6 +10,7 @@
         "test:frontend": "cd frontend && npm run test",
         "test:packages": "npm run test --workspace=packages --if-present",
         "test:extension": "cd vscode-extension && npm run test",
+        "test:coverage": "vitest run --coverage",
         "test:extension:integration": "cd vscode-extension && npm run test:integration",
         "test:sequential": "npm run test:backend && npm run test:frontend",
         "lint": "eslint .",
