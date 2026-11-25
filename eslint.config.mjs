@@ -63,6 +63,11 @@ export default tseslint.config(
             'react-refresh/only-export-components': 'off',
             // The editor's effects list fewer dependencies than the rule wants, on purpose; see the comments there.
             'react-hooks/exhaustive-deps': 'off',
+            'react-hooks/set-state-in-effect': 'warn',
+            'react-hooks/refs': 'warn',
+            'react-hooks/error-boundaries': 'warn',
+            'react-hooks/preserve-manual-memoization': 'warn',
+            'react-hooks/purity': 'warn',
         },
     },
 
